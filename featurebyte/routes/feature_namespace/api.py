@@ -20,11 +20,8 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.feature_namespace import (
-    FeatureNamespaceInfo,
-    FeatureNamespaceList,
-    FeatureNamespaceUpdate,
-)
+from featurebyte.schema.feature_namespace import FeatureNamespaceList, FeatureNamespaceUpdate
+from featurebyte.schema.info import FeatureNamespaceInfo
 
 router = APIRouter(prefix="/feature_namespace")
 

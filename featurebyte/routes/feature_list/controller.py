@@ -20,13 +20,13 @@ from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
-    FeatureListInfo,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListSQL,
     FeatureListUpdate,
 )
+from featurebyte.schema.info import FeatureListInfo
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService

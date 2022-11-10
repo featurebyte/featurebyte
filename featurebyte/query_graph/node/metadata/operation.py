@@ -19,7 +19,7 @@ from typing import (
 from typing_extensions import Annotated
 
 from bson import json_util
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, StrEnum, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -56,13 +56,6 @@ class BaseFrozenModel(BaseModel):
         frozen = True
 
 
-class NodeTransform(BaseFrozenModel):
-    """Node Transform"""
-
-    node_type: NodeType
-    parameters: Dict[str, Any]
-
-
 DataColumnT = TypeVar("DataColumnT")
 DerivedColumnT = TypeVar("DerivedColumnT")
 
@@ -73,7 +66,7 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
     """
 
     columns: List[DataColumnT]
-    transforms: List[NodeTransform]
+    transforms: List[str]
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -81,7 +74,7 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
     @classmethod
     def _flatten_columns(
         cls, columns: Sequence[Union[DataColumnT, DerivedColumnT]]
-    ) -> Tuple[Sequence[DataColumnT], List[NodeTransform]]:
+    ) -> Tuple[Sequence[DataColumnT], List[str]]:
         col_map: Dict[DataColumnT, None] = {}
         transforms = []
         for column in columns:
@@ -105,7 +98,7 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
         cls,
         name: Optional[str],
         columns: Sequence[Union[DataColumnT, DerivedColumnT]],
-        transform: NodeTransform,
+        transform: Optional[str],
     ) -> DerivedColumnT:
         """
         Create derived column by flattening the derived columns in the given list of columns
@@ -116,7 +109,7 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
             Output column name
         columns: Sequence[Union[DataColumnT, DerivedColumnT]]
             Input column name
-        transform: NodeTransform
+        transform: Optional[str]
             Node transformation
 
         Returns
@@ -125,7 +118,8 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
             Derive column object
         """
         columns, transforms = cls._flatten_columns(columns)
-        transforms.append(transform)
+        if transform:
+            transforms.append(transform)
         return cast(DerivedColumnT, cls(name=name, columns=columns, transforms=transforms))
 
 
@@ -136,6 +130,7 @@ class SourceDataColumn(BaseFrozenModel):
     tabular_data_id: Optional[PydanticObjectId]
     tabular_data_type: TableDataType
     type: Literal[ViewDataColumnType.SOURCE] = Field(ViewDataColumnType.SOURCE, const=True)
+    filter: bool = Field(default=False)
 
 
 class DerivedDataColumn(
@@ -145,8 +140,16 @@ class DerivedDataColumn(
 
     name: Optional[str]
     columns: List[SourceDataColumn]
-    transforms: List[NodeTransform]
+    transforms: List[str]
     type: Literal[ViewDataColumnType.DERIVED] = Field(ViewDataColumnType.DERIVED, const=True)
+    filter: bool
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_filter_flag(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "filter" not in values:
+            values["filter"] = any(col.filter for col in values["columns"])
+        return values
 
     def __hash__(self) -> int:
         col_dict = self.dict()
@@ -170,14 +173,12 @@ class AggregationColumn(BaseFrozenModel):
     type: Literal[FeatureDataColumnType.AGGREGATION] = Field(
         FeatureDataColumnType.AGGREGATION, const=True
     )
-    columns: List[ViewDataColumn]
+    column: Optional[ViewDataColumn]
+    filter: bool
     groupby_type: Literal[NodeType.GROUPBY, NodeType.ITEM_GROUPBY]
 
     def __hash__(self) -> int:
         col_dict = self.dict()
-        col_dict["columns"] = sorted(
-            [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
-        )
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
 
@@ -188,7 +189,7 @@ class PostAggregationColumn(
 
     name: Optional[str]
     columns: List[AggregationColumn]
-    transforms: List[NodeTransform]
+    transforms: List[str]
     type: Literal[FeatureDataColumnType.POST_AGGREGATION] = Field(
         FeatureDataColumnType.POST_AGGREGATION, const=True
     )
@@ -207,12 +208,24 @@ FeatureDataColumn = Annotated[
 
 
 class GroupOperationStructure(BaseFrozenModel):
-    """StandardOperationStructure class"""
+    """GroupOperationStructure class"""
 
-    source_columns: List[ViewDataColumn] = Field(default_factory=list)
-    derived_columns: List[ViewDataColumn] = Field(default_factory=list)
+    source_columns: List[SourceDataColumn] = Field(default_factory=list)
+    derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     post_aggregation: Optional[PostAggregationColumn]
+
+    @property
+    def tabular_data_ids(self) -> List[PydanticObjectId]:
+        """
+        List of tabular data IDs used in the operation
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        data_ids = [col.tabular_data_id for col in self.source_columns if col.tabular_data_id]
+        return list(set(data_ids))
 
 
 class OperationStructure(BaseFrozenModel):

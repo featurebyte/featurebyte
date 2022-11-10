@@ -22,10 +22,10 @@ from featurebyte.routes.common.schema import (
     VerboseQuery,
 )
 from featurebyte.schema.feature_list_namespace import (
-    FeatureListNamespaceInfo,
     FeatureListNamespaceList,
     FeatureListNamespaceUpdate,
 )
+from featurebyte.schema.info import FeatureListNamespaceInfo
 
 router = APIRouter(prefix="/feature_list_namespace")
 

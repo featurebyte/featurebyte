@@ -131,11 +131,7 @@ def test_extract_operation_structure(feature_model_dict):
         "tabular_data_id": ObjectId(feature_model_dict["tabular_data_ids"][0]),
         "tabular_data_type": "event_data",
     }
-    expected_columns = [
-        SourceDataColumn(name="col_float", **common_source_col_params),
-        SourceDataColumn(name="event_timestamp", **common_source_col_params),
-        SourceDataColumn(name="cust_id", **common_source_col_params),
-    ]
+    expected_columns = [SourceDataColumn(name="col_float", **common_source_col_params)]
     assert op_struct.source_columns == expected_columns
     assert op_struct.derived_columns == []
     assert op_struct.aggregations == [
@@ -146,7 +142,8 @@ def test_extract_operation_structure(feature_model_dict):
             window="30m",
             category=None,
             type="aggregation",
-            columns=expected_columns,
+            column=SourceDataColumn(name="col_float", **common_source_col_params),
+            filter=False,
             groupby_type="groupby",
         )
     ]

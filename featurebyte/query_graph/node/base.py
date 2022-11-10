@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.operation import NodeTransform, OperationStructure
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.mixin import SeriesOutputNodeOpStructMixin
 
 NODE_TYPES = []
@@ -40,15 +40,22 @@ class BaseNode(BaseModel):
             NODE_TYPES.append(cls)
 
     @property
-    def transform_info(self) -> NodeTransform:
+    def transform_info(self) -> str:
         """
         Construct from node transform object from this node
 
         Returns
         -------
-        NodeTransform
+        str
         """
-        return NodeTransform(node_type=self.type, parameters=self.parameters.dict())
+        parameters = sorted(
+            f"{key}='{value}'" if isinstance(value, str) else f"{key}={value}"
+            for key, value in self.parameters.dict().items()
+            if value
+        )
+        if parameters:
+            return f"{str(self.type).lower()}({', '.join(parameters)})"
+        return str(self.type).lower()
 
     @classmethod
     def _extract_column_str_values(

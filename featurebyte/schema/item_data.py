@@ -8,7 +8,7 @@ from pydantic import StrictStr
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 
 
 class ItemDataCreate(DataCreate):

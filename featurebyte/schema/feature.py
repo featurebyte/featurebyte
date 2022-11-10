@@ -18,7 +18,6 @@ from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
 
 
 class FeatureCreate(FeatureByteBaseModel):
@@ -144,17 +143,6 @@ class FeatureBriefInfoList(FeatureByteBaseModel):
         """
         feature_project = DictProject(rule=("data", ["version", "readiness", "created_at"]))
         return FeatureBriefInfoList(__root__=feature_project.project(paginated_data))
-
-
-class FeatureInfo(FeatureNamespaceInfo):
-    """
-    Feature info schema
-    """
-
-    dtype: DBVarType
-    version: VersionComparison
-    readiness: ReadinessComparison
-    versions_info: Optional[FeatureBriefInfoList]
 
 
 class FeatureSQL(FeatureByteBaseModel):

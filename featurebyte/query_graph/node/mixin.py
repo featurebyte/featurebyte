@@ -11,7 +11,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
     NodeOutputCategory,
-    NodeTransform,
     OperationStructure,
     PostAggregationColumn,
     ViewDataColumn,
@@ -21,19 +20,8 @@ from featurebyte.query_graph.node.metadata.operation import (
 class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""
 
-    transform_info: NodeTransform
+    transform_info: str
     output_type: NodeOutputType
-
-    def _get_output_name(self) -> Optional[str]:
-        """
-        Get the node output name
-
-        Returns
-        -------
-        Optional[str]
-            Node name
-        """
-        return None
 
     def derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
@@ -62,18 +50,15 @@ class SeriesOutputNodeOpStructMixin:
             aggregations.extend(inp.aggregations)
 
         node_kwargs: Dict[str, Any] = {}
-        output_name: Optional[str] = self._get_output_name()
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                DerivedDataColumn.create(
-                    name=output_name, columns=columns, transform=self.transform_info
-                )
+                DerivedDataColumn.create(name=None, columns=columns, transform=self.transform_info)
             ]
         else:
             node_kwargs["columns"] = columns
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
-                    name=output_name, columns=aggregations, transform=self.transform_info
+                    name=None, columns=aggregations, transform=self.transform_info
                 )
             ]
 
@@ -86,7 +71,7 @@ class GroupbyNodeOpStructMixin:
     """GroupbyNodeOpStructMixin class"""
 
     type: NodeType
-    transform_info: NodeTransform
+    transform_info: str
     output_type: NodeOutputType
     parameters: Any
 
@@ -103,6 +88,16 @@ class GroupbyNodeOpStructMixin:
         Returns
         -------
         List of aggregation columns
+        """
+
+    @abstractmethod
+    def _exclude_source_columns(self) -> List[str]:
+        """
+        Exclude column to be include in source columns
+
+        Returns
+        -------
+        List of excluded column names
         """
 
     def derive_node_operation_info(
@@ -123,11 +118,9 @@ class GroupbyNodeOpStructMixin:
         OperationStructure
         """
         input_operation_info = inputs[0]
-        columns = [
-            col
-            for col in input_operation_info.columns
-            if col.name in self.get_required_input_columns()  # type: ignore
-        ]
+        wanted_columns = set(self.get_required_input_columns())  # type: ignore
+        wanted_columns.difference_update(self._exclude_source_columns())
+        columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
         output_category = NodeOutputCategory.FEATURE
         if self.type == NodeType.ITEM_GROUPBY and NodeType.JOIN in visited_node_types:
             # if the output of the item_groupby will be used to join with other table,

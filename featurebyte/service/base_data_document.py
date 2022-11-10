@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.persistent import QueryFilter
-from featurebyte.schema.data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document

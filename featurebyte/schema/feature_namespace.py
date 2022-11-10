@@ -11,13 +11,7 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel, FeatureReadiness
-from featurebyte.schema.common.base import (
-    BaseDocumentServiceUpdateSchema,
-    BaseInfo,
-    PaginationMixin,
-)
-from featurebyte.schema.data import DataBriefInfoList
-from featurebyte.schema.entity import EntityBriefInfoList
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class FeatureNamespaceCreate(FeatureByteBaseModel):
@@ -61,23 +55,3 @@ class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
     online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness: Optional[FeatureReadiness]
     default_feature_id: Optional[PydanticObjectId]
-
-
-class NamespaceInfo(BaseInfo):
-    """
-    Namespace info schema
-    """
-
-    entities: EntityBriefInfoList
-    tabular_data: DataBriefInfoList
-    default_version_mode: DefaultVersionMode
-    version_count: int
-
-
-class FeatureNamespaceInfo(NamespaceInfo):
-    """
-    FeatureNamespace info schema
-    """
-
-    dtype: DBVarType
-    default_feature_id: PydanticObjectId

@@ -2,14 +2,13 @@
 This module contains unary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
-from featurebyte.query_graph.node.metadata.column import OutColumnStr
 
 
 class NotNode(BaseSeriesOutputNode):
@@ -71,18 +70,3 @@ class CastNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.CAST] = Field(NodeType.CAST, const=True)
     parameters: Parameters
-
-
-class AliasNode(BaseSeriesOutputNode):
-    """AliasNode class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        name: OutColumnStr
-
-    type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
-    parameters: Parameters
-
-    def _get_output_name(self) -> Optional[str]:
-        return self.parameters.name

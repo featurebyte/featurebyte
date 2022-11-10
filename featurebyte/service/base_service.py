@@ -18,7 +18,6 @@ from featurebyte.models.feature_store import DataModel, FeatureStoreModel
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.data import DataService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -31,6 +30,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.tabular_data import DataService
 
 DocumentService = Union[
     DataService,

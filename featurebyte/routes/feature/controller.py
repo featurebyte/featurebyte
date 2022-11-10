@@ -14,13 +14,13 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature import (
     FeatureCreate,
-    FeatureInfo,
     FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
     FeatureSQL,
     FeatureUpdate,
 )
+from featurebyte.schema.info import FeatureInfo
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService

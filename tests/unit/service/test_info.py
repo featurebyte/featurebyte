@@ -4,18 +4,20 @@ Test for InfoService
 import pytest
 
 from featurebyte.models.feature_store import SnowflakeDetails, TableDetails
-from featurebyte.schema.entity import EntityBriefInfo, EntityInfo
-from featurebyte.schema.event_data import EventDataBriefInfo, EventDataColumnInfo, EventDataInfo
-from featurebyte.schema.feature import (
-    FeatureBriefInfo,
+from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
+from featurebyte.schema.info import (
+    EntityBriefInfo,
+    EntityInfo,
+    EventDataBriefInfo,
+    EventDataColumnInfo,
+    EventDataInfo,
     FeatureInfo,
-    ReadinessComparison,
-    VersionComparison,
+    FeatureListBriefInfo,
+    FeatureListInfo,
+    FeatureListNamespaceInfo,
+    FeatureNamespaceInfo,
+    FeatureStoreInfo,
 )
-from featurebyte.schema.feature_list import FeatureListBriefInfo, FeatureListInfo
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceInfo
-from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
-from featurebyte.schema.feature_store import FeatureStoreInfo
 from featurebyte.service.info import InfoService
 
 
@@ -61,7 +63,7 @@ async def test_get_entity_info(info_service, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_event_data_info(info_service, event_data):
+async def test_get_event_data_info(info_service, event_data, entity):
     """Test get_event_data_info"""
     info = await info_service.get_event_data_info(document_id=event_data.id, verbose=False)
     expected_info = EventDataInfo(
@@ -75,11 +77,11 @@ async def test_get_event_data_info(info_service, event_data):
             table_name="sf_table",
         ),
         default_job_setting=None,
-        entities=[],
+        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
         column_count=9,
         columns_info=None,
         created_at=info.created_at,
-        updated_at=None,
+        updated_at=info.updated_at,
     )
     assert info == expected_info
 
@@ -96,7 +98,7 @@ async def test_get_event_data_info(info_service, event_data):
                 EventDataColumnInfo(name="col_boolean", dtype="BOOL", entity=None),
                 EventDataColumnInfo(name="event_timestamp", dtype="TIMESTAMP", entity=None),
                 EventDataColumnInfo(name="created_at", dtype="TIMESTAMP", entity=None),
-                EventDataColumnInfo(name="cust_id", dtype="INT", entity=None),
+                EventDataColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
             ],
         }
     )
@@ -108,6 +110,24 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     info = await info_service.get_feature_info(
         document_id=production_ready_feature.id, verbose=False
     )
+    expected_metadata = {
+        "input_columns": {
+            "Input0": {"data": "sf_event_data", "column_name": "col_float", "semantic": None}
+        },
+        "derived_columns": {},
+        "aggregations": {
+            "F0": {
+                "name": "sum_30m",
+                "column": "Input0",
+                "function": "sum",
+                "groupby": ["cust_id"],
+                "window": "30m",
+                "category": None,
+                "filter": False,
+            }
+        },
+        "post_aggregation": None,
+    }
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
@@ -121,6 +141,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             default=production_ready_feature.version.to_str(),
         ),
         readiness=ReadinessComparison(this="PRODUCTION_READY", default="PRODUCTION_READY"),
+        metadata=expected_metadata,
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
     )

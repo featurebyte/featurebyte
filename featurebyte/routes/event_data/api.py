@@ -22,12 +22,8 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.event_data import (
-    EventDataCreate,
-    EventDataInfo,
-    EventDataList,
-    EventDataUpdate,
-)
+from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
+from featurebyte.schema.info import EventDataInfo
 
 router = APIRouter(prefix="/event_data")
 

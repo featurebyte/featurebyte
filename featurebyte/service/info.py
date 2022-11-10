@@ -5,15 +5,23 @@ from __future__ import annotations
 
 from bson.objectid import ObjectId
 
-from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.data import DataBriefInfoList
-from featurebyte.schema.entity import EntityBriefInfoList, EntityInfo
-from featurebyte.schema.event_data import EventDataColumnInfo, EventDataInfo
-from featurebyte.schema.feature import FeatureBriefInfoList, FeatureInfo
-from featurebyte.schema.feature_list import FeatureListBriefInfoList, FeatureListInfo
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceInfo
-from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
-from featurebyte.schema.feature_store import FeatureStoreInfo
+from featurebyte.models.feature import FeatureModel
+from featurebyte.schema.feature import FeatureBriefInfoList
+from featurebyte.schema.info import (
+    DataBriefInfoList,
+    EntityBriefInfoList,
+    EntityInfo,
+    EventDataColumnInfo,
+    EventDataInfo,
+    FeatureInfo,
+    FeatureListBriefInfoList,
+    FeatureListInfo,
+    FeatureListNamespaceInfo,
+    FeatureNamespaceInfo,
+    FeatureStoreInfo,
+)
+from featurebyte.schema.semantic import SemanticList
+from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_service import BaseService, DocServiceName
 
 
@@ -91,14 +99,13 @@ class InfoService(BaseService):
         EventDataInfo
         """
         event_data = await self.get_document(DocServiceName.EVENT_DATA, document_id)
-        entity_ids = DictProject(rule=("columns_info", "entity_id")).project(event_data.dict())
         entities = await self.entity_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": entity_ids}}
+            page=1, page_size=0, query_filter={"_id": {"$in": event_data.entity_ids}}
         )
         columns_info = None
         if verbose:
             columns_info = []
-            entity_map = {entity["_id"]: entity["name"] for entity in entities["data"]}
+            entity_map = {ObjectId(entity["_id"]): entity["name"] for entity in entities["data"]}
             for column_info in event_data.columns_info:
                 columns_info.append(
                     EventDataColumnInfo(
@@ -119,6 +126,82 @@ class InfoService(BaseService):
             column_count=len(event_data.columns_info),
             columns_info=columns_info,
         )
+
+    async def _extract_feature_metadata(self, feature: FeatureModel):
+        # extract graph operation structure
+        op_struct = feature.extract_operation_structure()
+
+        # retrieve related tabular data & semantic
+        tabular_data_res = await self.data_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": op_struct.tabular_data_ids}}
+        )
+        tabular_data_list = TabularDataList(**tabular_data_res)
+        semantic_list_res = await self.semantic_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": tabular_data_list.semantic_ids}}
+        )
+        semantic_list = SemanticList(**{**semantic_list_res, "page_size": 1})
+
+        # prepare column mapping
+        column_map = {}
+        semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
+        for tabular_data in tabular_data_list.data:
+            for column in tabular_data.columns_info:
+                column_map[(tabular_data.id, column.name)] = {
+                    "data_name": tabular_data.name,
+                    "semantic": semantic_map.get(column.semantic_id),
+                }
+
+        # construct feature metadata
+        source_columns = {}
+        reference_map = {}
+        for idx, src_col in enumerate(op_struct.source_columns):
+            column_metadata = column_map[(src_col.tabular_data_id, src_col.name)]
+            reference_map[src_col] = f"Input{idx}"
+            source_columns[reference_map[src_col]] = {
+                "data": column_metadata["data_name"],
+                "column_name": src_col.name,
+                "semantic": column_metadata["semantic"],
+            }
+
+        derived_columns = {}
+        for idx, drv_col in enumerate(op_struct.derived_columns):
+            columns = [reference_map[col] for col in drv_col.columns]
+            reference_map[drv_col] = f"X{idx}"
+            derived_columns[reference_map[drv_col]] = {
+                "name": drv_col.name,
+                "inputs": columns,
+                "transforms": drv_col.transforms,
+            }
+
+        aggregation_columns = {}
+        for idx, agg_col in enumerate(op_struct.aggregations):
+            reference_map[agg_col] = f"F{idx}"
+            aggregation_columns[reference_map[agg_col]] = {
+                "name": agg_col.name,
+                "column": reference_map.get(
+                    agg_col.column, None
+                ),  # for count aggregation, column is None
+                "function": agg_col.method,
+                "groupby": agg_col.groupby,
+                "window": agg_col.window,
+                "category": agg_col.category,
+                "filter": agg_col.filter,
+            }
+
+        post_aggregation = None
+        if op_struct.post_aggregation:
+            post_aggregation = {
+                "name": op_struct.post_aggregation.name,
+                "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
+                "transforms": op_struct.post_aggregation.transforms,
+            }
+
+        return {
+            "input_columns": source_columns,
+            "derived_columns": derived_columns,
+            "aggregations": aggregation_columns,
+            "post_aggregation": post_aggregation,
+        }
 
     async def get_feature_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         """
@@ -156,11 +239,13 @@ class InfoService(BaseService):
                 )
             )
 
+        metadata = await self._extract_feature_metadata(feature=feature)
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             versions_info=versions_info,
+            metadata=metadata,
         )
 
     async def get_feature_namespace_info(

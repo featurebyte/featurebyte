@@ -24,10 +24,10 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
-    FeatureStoreInfo,
     FeatureStoreList,
     FeatureStorePreview,
 )
+from featurebyte.schema.info import FeatureStoreInfo
 
 router = APIRouter(prefix="/feature_store")
 

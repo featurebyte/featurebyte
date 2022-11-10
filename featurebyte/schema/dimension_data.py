@@ -9,7 +9,7 @@ from pydantic import StrictStr
 
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 
 
 class DimensionDataCreate(DataCreate):

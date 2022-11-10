@@ -10,7 +10,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.schema.data import DataCreate
+from featurebyte.schema.tabular_data import DataCreate
 
 
 class BaseApiTestSuite:

@@ -11,10 +11,10 @@ from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
-    FeatureStoreInfo,
     FeatureStoreList,
     FeatureStorePreview,
 )
+from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService

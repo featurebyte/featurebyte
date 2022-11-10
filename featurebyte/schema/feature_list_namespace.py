@@ -9,10 +9,8 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
-    FeatureTypeFeatureCount,
 )
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
-from featurebyte.schema.feature_namespace import NamespaceInfo
 
 
 class FeatureListNamespaceList(PaginationMixin):
@@ -43,14 +41,3 @@ class FeatureListNamespaceServiceUpdate(
     deployed_feature_list_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
     default_feature_list_id: Optional[PydanticObjectId]
-
-
-class FeatureListNamespaceInfo(NamespaceInfo):
-    """
-    FeatureListNamespace info schema
-    """
-
-    dtype_distribution: List[FeatureTypeFeatureCount]
-    default_feature_list_id: PydanticObjectId
-    status: FeatureListStatus
-    feature_count: int
