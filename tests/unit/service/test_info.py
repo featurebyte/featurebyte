@@ -165,6 +165,82 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
 
 
 @pytest.mark.asyncio
+async def test_get_feature_info__complex_feature(info_service, feature_iet):
+    """Test get_feature_info"""
+    info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
+    common_agg_parameters = {
+        "filter": False,
+        "groupby": ["cust_id"],
+        "category": None,
+        "window": "24h",
+        "function": "sum",
+    }
+    expected_metadata = {
+        "input_columns": {
+            "Input0": {
+                "data": "sf_event_data",
+                "column_name": "event_timestamp",
+                "semantic": "event_timestamp",
+            },
+            "Input1": {"data": "sf_event_data", "column_name": "cust_id", "semantic": None},
+        },
+        "derived_columns": {
+            "X0": {
+                "name": "a * log(a)",
+                "inputs": ["Input0", "Input1"],
+                "transforms": [
+                    "lag(entity_columns=['cust_id'], offset=1, timestamp_column='event_timestamp')",
+                    "date_diff",
+                    "timedelta_extract(property='day')",
+                    "lag(entity_columns=['cust_id'], offset=1, timestamp_column='event_timestamp')",
+                    "date_diff",
+                    "timedelta_extract(property='day')",
+                    "add(value=0.1)",
+                    "log",
+                    "mul",
+                ],
+            },
+            "X1": {
+                "name": "a",
+                "inputs": ["Input0", "Input1"],
+                "transforms": [
+                    "lag(entity_columns=['cust_id'], offset=1, timestamp_column='event_timestamp')",
+                    "date_diff",
+                    "timedelta_extract(property='day')",
+                ],
+            },
+        },
+        "aggregations": {
+            "F0": {"name": "sum(a * log(a))", "column": "X0", **common_agg_parameters},
+            "F1": {"name": "sum(a) (24h)", "column": "X1", **common_agg_parameters},
+        },
+        "post_aggregation": {
+            "inputs": ["F0", "F1"],
+            "name": "iet_entropy_24h",
+            "transforms": ["mul(value=-1)", "div", "add(value=0.1)", "log", "add"],
+        },
+    }
+    expected_info = FeatureInfo(
+        name="iet_entropy_24h",
+        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
+        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        default_version_mode="AUTO",
+        version_count=1,
+        dtype="FLOAT",
+        default_feature_id=feature_iet.id,
+        version=VersionComparison(
+            this=feature_iet.version.to_str(),
+            default=feature_iet.version.to_str(),
+        ),
+        readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
+        metadata=expected_metadata,
+        created_at=info.created_at,
+        updated_at=info.updated_at,
+    )
+    assert info == expected_info
+
+
+@pytest.mark.asyncio
 async def test_get_feature_namespace_info(info_service, feature_namespace):
     """Test get_feature_namespace_info"""
     info = await info_service.get_feature_namespace_info(

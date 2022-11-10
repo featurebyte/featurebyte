@@ -1,0 +1,385 @@
+{
+    "_id": "636c9860459a4b7d59662277",
+    "dtype": "FLOAT",
+    "entity_ids": [
+        "6332fdb21e8f0eeccc414513"
+    ],
+    "feature_namespace_id": "636c9860459a4b7d59662278",
+    "graph": {
+        "edges": [
+            {
+                "source": "input_1",
+                "target": "project_1"
+            },
+            {
+                "source": "input_1",
+                "target": "project_2"
+            },
+            {
+                "source": "project_1",
+                "target": "lag_1"
+            },
+            {
+                "source": "project_2",
+                "target": "lag_1"
+            },
+            {
+                "source": "project_1",
+                "target": "lag_1"
+            },
+            {
+                "source": "project_1",
+                "target": "date_diff_1"
+            },
+            {
+                "source": "lag_1",
+                "target": "date_diff_1"
+            },
+            {
+                "source": "date_diff_1",
+                "target": "timedelta_extract_1"
+            },
+            {
+                "source": "input_1",
+                "target": "assign_1"
+            },
+            {
+                "source": "timedelta_extract_1",
+                "target": "assign_1"
+            },
+            {
+                "source": "assign_1",
+                "target": "groupby_1"
+            },
+            {
+                "source": "groupby_1",
+                "target": "project_3"
+            },
+            {
+                "source": "project_3",
+                "target": "add_1"
+            },
+            {
+                "source": "add_1",
+                "target": "log_1"
+            },
+            {
+                "source": "timedelta_extract_1",
+                "target": "add_2"
+            },
+            {
+                "source": "add_2",
+                "target": "log_2"
+            },
+            {
+                "source": "timedelta_extract_1",
+                "target": "mul_1"
+            },
+            {
+                "source": "log_2",
+                "target": "mul_1"
+            },
+            {
+                "source": "assign_1",
+                "target": "assign_2"
+            },
+            {
+                "source": "mul_1",
+                "target": "assign_2"
+            },
+            {
+                "source": "assign_2",
+                "target": "groupby_2"
+            },
+            {
+                "source": "groupby_2",
+                "target": "project_4"
+            },
+            {
+                "source": "project_4",
+                "target": "mul_2"
+            },
+            {
+                "source": "mul_2",
+                "target": "div_1"
+            },
+            {
+                "source": "project_3",
+                "target": "div_1"
+            },
+            {
+                "source": "div_1",
+                "target": "add_3"
+            },
+            {
+                "source": "log_1",
+                "target": "add_3"
+            },
+            {
+                "source": "add_3",
+                "target": "alias_1"
+            }
+        ],
+        "nodes": [
+            {
+                "name": "input_1",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        "col_int",
+                        "col_float",
+                        "col_char",
+                        "col_text",
+                        "col_binary",
+                        "col_boolean",
+                        "event_timestamp",
+                        "created_at",
+                        "cust_id"
+                    ],
+                    "feature_store_details": {
+                        "details": {
+                            "account": "sf_account",
+                            "database": "sf_database",
+                            "sf_schema": "sf_schema",
+                            "warehouse": "sf_warehouse"
+                        },
+                        "type": "snowflake"
+                    },
+                    "id": "6332fdb21e8f0eeccc414512",
+                    "table_details": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_table"
+                    },
+                    "timestamp": "event_timestamp",
+                    "type": "event_data"
+                },
+                "type": "input"
+            },
+            {
+                "name": "project_1",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "event_timestamp"
+                    ]
+                },
+                "type": "project"
+            },
+            {
+                "name": "project_2",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "cust_id"
+                    ]
+                },
+                "type": "project"
+            },
+            {
+                "name": "lag_1",
+                "output_type": "series",
+                "parameters": {
+                    "entity_columns": [
+                        "cust_id"
+                    ],
+                    "offset": 1,
+                    "timestamp_column": "event_timestamp"
+                },
+                "type": "lag"
+            },
+            {
+                "name": "date_diff_1",
+                "output_type": "series",
+                "parameters": {},
+                "type": "date_diff"
+            },
+            {
+                "name": "timedelta_extract_1",
+                "output_type": "series",
+                "parameters": {
+                    "property": "day"
+                },
+                "type": "timedelta_extract"
+            },
+            {
+                "name": "assign_1",
+                "output_type": "frame",
+                "parameters": {
+                    "name": "a",
+                    "value": null
+                },
+                "type": "assign"
+            },
+            {
+                "name": "groupby_1",
+                "output_type": "frame",
+                "parameters": {
+                    "agg_func": "sum",
+                    "aggregation_id": "sum_37df3c1a6e32989368abfefa5b6f33403c187d88",
+                    "blind_spot": 1800,
+                    "frequency": 3600,
+                    "keys": [
+                        "cust_id"
+                    ],
+                    "names": [
+                        "sum(a) (24h)"
+                    ],
+                    "parent": "a",
+                    "serving_names": [
+                        "cust_id"
+                    ],
+                    "tile_id": "TEST_TABLE_f3600_m1800_b1800_27e5d9d12dc71b2260ad4bd0506a86ed689263c4",
+                    "time_modulo_frequency": 1800,
+                    "timestamp": "event_timestamp",
+                    "value_by": null,
+                    "windows": [
+                        "24h"
+                    ]
+                },
+                "type": "groupby"
+            },
+            {
+                "name": "project_3",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "sum(a) (24h)"
+                    ]
+                },
+                "type": "project"
+            },
+            {
+                "name": "add_1",
+                "output_type": "series",
+                "parameters": {
+                    "value": 0.1
+                },
+                "type": "add"
+            },
+            {
+                "name": "log_1",
+                "output_type": "series",
+                "parameters": {},
+                "type": "log"
+            },
+            {
+                "name": "add_2",
+                "output_type": "series",
+                "parameters": {
+                    "value": 0.1
+                },
+                "type": "add"
+            },
+            {
+                "name": "log_2",
+                "output_type": "series",
+                "parameters": {},
+                "type": "log"
+            },
+            {
+                "name": "mul_1",
+                "output_type": "series",
+                "parameters": {
+                    "value": null
+                },
+                "type": "mul"
+            },
+            {
+                "name": "assign_2",
+                "output_type": "frame",
+                "parameters": {
+                    "name": "a * log(a)",
+                    "value": null
+                },
+                "type": "assign"
+            },
+            {
+                "name": "groupby_2",
+                "output_type": "frame",
+                "parameters": {
+                    "agg_func": "sum",
+                    "aggregation_id": "sum_3f7083cca3ac69f245ae8f7e03e6bb456f3db96f",
+                    "blind_spot": 1800,
+                    "frequency": 3600,
+                    "keys": [
+                        "cust_id"
+                    ],
+                    "names": [
+                        "sum(a * log(a))"
+                    ],
+                    "parent": "a * log(a)",
+                    "serving_names": [
+                        "cust_id"
+                    ],
+                    "tile_id": "TEST_TABLE_f3600_m1800_b1800_27e5d9d12dc71b2260ad4bd0506a86ed689263c4",
+                    "time_modulo_frequency": 1800,
+                    "timestamp": "event_timestamp",
+                    "value_by": null,
+                    "windows": [
+                        "24h"
+                    ]
+                },
+                "type": "groupby"
+            },
+            {
+                "name": "project_4",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "sum(a * log(a))"
+                    ]
+                },
+                "type": "project"
+            },
+            {
+                "name": "mul_2",
+                "output_type": "series",
+                "parameters": {
+                    "value": -1
+                },
+                "type": "mul"
+            },
+            {
+                "name": "div_1",
+                "output_type": "series",
+                "parameters": {
+                    "value": null
+                },
+                "type": "div"
+            },
+            {
+                "name": "add_3",
+                "output_type": "series",
+                "parameters": {
+                    "value": null
+                },
+                "type": "add"
+            },
+            {
+                "name": "alias_1",
+                "output_type": "series",
+                "parameters": {
+                    "name": "iet_entropy_24h"
+                },
+                "type": "alias"
+            }
+        ]
+    },
+    "name": "iet_entropy_24h",
+    "node_name": "alias_1",
+    "row_index_lineage": [
+        "groupby_2"
+    ],
+    "tabular_data_ids": [
+        "6332fdb21e8f0eeccc414512"
+    ],
+    "tabular_source": {
+        "feature_store_id": "6332fdb21e8f0eeccc414510",
+        "table_details": {
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "table_name": "sf_table"
+        }
+    }
+}

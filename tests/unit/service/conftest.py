@@ -224,6 +224,17 @@ async def feature_fixture(test_dir, event_data, entity, feature_service):
         return feature
 
 
+@pytest_asyncio.fixture(name="feature_iet")
+async def feature_iet_fixture(test_dir, event_data, entity, feature_service):
+    """Feature model (IET feature)"""
+    _ = event_data, entity
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_iet.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        return feature
+
+
 @pytest_asyncio.fixture(name="production_ready_feature")
 async def production_ready_feature_fixture(feature_readiness_service, feature):
     """Production ready readiness feature fixture"""
