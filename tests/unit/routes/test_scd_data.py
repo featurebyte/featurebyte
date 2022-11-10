@@ -26,8 +26,8 @@ class TestSCDDataApi(BaseDataApiTestSuite):
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
-            f'SCDData (id: "{payload["_id"]}") already exists. '
-            f'Get the existing object by `SCDData.get(name="{document_name}")`.',
+            f'{class_name} (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},

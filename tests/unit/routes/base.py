@@ -207,7 +207,7 @@ class BaseApiTestSuite:
         conflict_payload, expected_message = create_conflict_payload_expected_detail
         response = test_api_client.post(f"{self.base_route}", json=conflict_payload)
         assert response.status_code == HTTPStatus.CONFLICT
-        assert response.json()["detail"].lower() == expected_message.lower()
+        assert response.json()["detail"] == expected_message
 
     def test_create_422(
         self,
