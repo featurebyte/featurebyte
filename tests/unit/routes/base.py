@@ -246,7 +246,7 @@ class BaseApiTestSuite:
             f'{self.class_name} (id: "{unknown_id}") not found.'
             f" Please save the {self.class_name_to_save} object first."
         )
-        assert response.json()["detail"].lower() == error_message.lower()
+        assert response.json()["detail"] == error_message
 
     def test_get_422(self, test_api_client_persistent):
         """Test get (unprocessable)"""
