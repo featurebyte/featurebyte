@@ -3,15 +3,15 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
-import re
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.api.data import DataColumn
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData, EventDataColumn
+from featurebyte.api.event_data import EventData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -22,7 +22,6 @@ from featurebyte.exception import (
     TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.feature_store import DataStatus
 from tests.util.helper import patch_import_package
 
 
@@ -65,26 +64,6 @@ def event_data_dict_fixture(snowflake_database_table):
         "user_id": None,
         "status": "DRAFT",
     }
-
-
-@pytest.fixture(name="saved_event_data")
-def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
-    """
-    Saved event data fixture
-    """
-    snowflake_feature_store.save()
-    previous_id = snowflake_event_data.id
-    assert snowflake_event_data.saved is False
-    snowflake_event_data.save()
-    assert snowflake_event_data.saved is True
-    assert snowflake_event_data.id == previous_id
-    assert snowflake_event_data.status == DataStatus.DRAFT
-    assert isinstance(snowflake_event_data.created_at, datetime)
-    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
-
-    # test list event data
-    assert EventData.list() == ["sf_event_data"]
-    yield snowflake_event_data
 
 
 def test_from_tabular_source(snowflake_database_table, event_data_dict):
@@ -144,7 +123,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     Test EventData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.event_data.Configurations"):
+        with patch("featurebyte.api.data.Configurations"):
             EventData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_event_data",
@@ -203,7 +182,7 @@ def test_event_data_column__not_exists(snowflake_event_data):
     assert "'EventData' object has no attribute 'non_exist_column'" in str(exc.value)
 
     # check __getattr__ is working properly
-    assert isinstance(snowflake_event_data.col_int, EventDataColumn)
+    assert isinstance(snowflake_event_data.col_int, DataColumn)
 
     # when accessing the `columns` attribute, make sure we retrieve it properly
     assert set(snowflake_event_data.columns) == {
@@ -231,7 +210,7 @@ def test_event_data_column__as_entity(snowflake_event_data):
     entity.save()
 
     col_int = snowflake_event_data.col_int
-    assert isinstance(col_int, EventDataColumn)
+    assert isinstance(col_int, DataColumn)
     snowflake_event_data.col_int.as_entity("customer")
     assert snowflake_event_data.col_int.info.entity_id == entity.id
 
