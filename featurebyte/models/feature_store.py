@@ -162,6 +162,28 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
 
+    @property
+    def entity_ids(self) -> List[PydanticObjectId]:
+        """
+        List of entity IDs in the data model
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return list(set(col.entity_id for col in self.columns_info if col.entity_id))
+
+    @property
+    def semantic_ids(self) -> List[PydanticObjectId]:
+        """
+        List of semantic IDs in the data model
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return list(set(col.semantic_id for col in self.columns_info if col.semantic_id))
+
     @classmethod
     def validate_column_exists(
         cls,

@@ -29,8 +29,7 @@ from featurebyte.models.feature import (
 )
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.generic import GroupbyNode, ProjectNode
-from featurebyte.query_graph.node.unary import AliasNode
+from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 

@@ -3,19 +3,22 @@ Test for InfoService
 """
 import pytest
 
+from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.feature_store import SnowflakeDetails, TableDetails
-from featurebyte.schema.entity import EntityBriefInfo, EntityInfo
-from featurebyte.schema.event_data import EventDataBriefInfo, EventDataColumnInfo, EventDataInfo
-from featurebyte.schema.feature import (
-    FeatureBriefInfo,
+from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
+from featurebyte.schema.info import (
+    EntityBriefInfo,
+    EntityInfo,
+    EventDataBriefInfo,
+    EventDataColumnInfo,
+    EventDataInfo,
     FeatureInfo,
-    ReadinessComparison,
-    VersionComparison,
+    FeatureListBriefInfo,
+    FeatureListInfo,
+    FeatureListNamespaceInfo,
+    FeatureNamespaceInfo,
+    FeatureStoreInfo,
 )
-from featurebyte.schema.feature_list import FeatureListBriefInfo, FeatureListInfo
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceInfo
-from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
-from featurebyte.schema.feature_store import FeatureStoreInfo
 from featurebyte.service.info import InfoService
 
 
@@ -61,7 +64,7 @@ async def test_get_entity_info(info_service, entity):
 
 
 @pytest.mark.asyncio
-async def test_get_event_data_info(info_service, event_data):
+async def test_get_event_data_info(info_service, event_data, entity):
     """Test get_event_data_info"""
     info = await info_service.get_event_data_info(document_id=event_data.id, verbose=False)
     expected_info = EventDataInfo(
@@ -75,11 +78,11 @@ async def test_get_event_data_info(info_service, event_data):
             table_name="sf_table",
         ),
         default_job_setting=None,
-        entities=[],
+        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
         column_count=9,
         columns_info=None,
         created_at=info.created_at,
-        updated_at=None,
+        updated_at=info.updated_at,
     )
     assert info == expected_info
 
@@ -96,7 +99,7 @@ async def test_get_event_data_info(info_service, event_data):
                 EventDataColumnInfo(name="col_boolean", dtype="BOOL", entity=None),
                 EventDataColumnInfo(name="event_timestamp", dtype="TIMESTAMP", entity=None),
                 EventDataColumnInfo(name="created_at", dtype="TIMESTAMP", entity=None),
-                EventDataColumnInfo(name="cust_id", dtype="INT", entity=None),
+                EventDataColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
             ],
         }
     )
@@ -108,6 +111,25 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     info = await info_service.get_feature_info(
         document_id=production_ready_feature.id, verbose=False
     )
+    expected_metadata = {
+        "main_data": {"name": "sf_event_data", "data_type": "event_data"},
+        "input_columns": {
+            "Input0": {"data": "sf_event_data", "column_name": "col_float", "semantic": None}
+        },
+        "derived_columns": {},
+        "aggregations": {
+            "F0": {
+                "name": "sum_30m",
+                "column": "Input0",
+                "function": "sum",
+                "groupby": ["cust_id"],
+                "window": "30m",
+                "category": None,
+                "filter": False,
+            }
+        },
+        "post_aggregation": None,
+    }
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
@@ -121,6 +143,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             default=production_ready_feature.version.to_str(),
         ),
         readiness=ReadinessComparison(this="PRODUCTION_READY", default="PRODUCTION_READY"),
+        metadata=expected_metadata,
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
     )
@@ -141,6 +164,83 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             ],
         }
     )
+
+
+@pytest.mark.asyncio
+async def test_get_feature_info__complex_feature(info_service, feature_iet):
+    """Test get_feature_info"""
+    info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
+    common_agg_parameters = {
+        "filter": False,
+        "groupby": ["cust_id"],
+        "category": None,
+        "window": "24h",
+        "function": "sum",
+    }
+    expected_metadata = {
+        "main_data": {"name": "sf_event_data", "data_type": "event_data"},
+        "input_columns": {
+            "Input0": {
+                "data": "sf_event_data",
+                "column_name": "event_timestamp",
+                "semantic": "event_timestamp",
+            },
+            "Input1": {"data": "sf_event_data", "column_name": "cust_id", "semantic": None},
+        },
+        "derived_columns": {
+            "X0": {
+                "name": "a * log(a)",
+                "inputs": ["Input0", "Input1"],
+                "transforms": [
+                    "lag(entity_columns=['cust_id'], offset=1, timestamp_column='event_timestamp')",
+                    "date_diff",
+                    "timedelta_extract(property='day')",
+                    "lag(entity_columns=['cust_id'], offset=1, timestamp_column='event_timestamp')",
+                    "date_diff",
+                    "timedelta_extract(property='day')",
+                    "add(value=0.1)",
+                    "log",
+                    "mul",
+                ],
+            },
+            "X1": {
+                "name": "a",
+                "inputs": ["Input0", "Input1"],
+                "transforms": [
+                    "lag(entity_columns=['cust_id'], offset=1, timestamp_column='event_timestamp')",
+                    "date_diff",
+                    "timedelta_extract(property='day')",
+                ],
+            },
+        },
+        "aggregations": {
+            "F0": {"name": "sum(a * log(a))", "column": "X0", **common_agg_parameters},
+            "F1": {"name": "sum(a) (24h)", "column": "X1", **common_agg_parameters},
+        },
+        "post_aggregation": {
+            "inputs": ["F0", "F1"],
+            "name": "iet_entropy_24h",
+            "transforms": ["mul(value=-1)", "div", "add(value=0.1)", "log", "add"],
+        },
+    }
+    expected_info = FeatureInfo(
+        name="iet_entropy_24h",
+        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
+        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        default_version_mode="AUTO",
+        version_count=1,
+        dtype="FLOAT",
+        default_feature_id=feature_iet.id,
+        version=VersionComparison(
+            this=feature_iet.version.to_str(),
+            default=feature_iet.version.to_str(),
+        ),
+        readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
+        metadata=expected_metadata,
+        created_at=info.created_at,
+        updated_at=info.updated_at,
+    )
+    assert info == expected_info
 
 
 @pytest.mark.asyncio
@@ -231,3 +331,31 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         document_id=feature_list_namespace.id, verbose=True
     )
     assert info == expected_info
+
+
+def test_get_main_data(info_service, item_data, event_data, dimension_data):
+    """Test _get_main_data logic"""
+    new_columns_info = []
+    for col in dimension_data.columns_info:
+        new_columns_info.append({**col.dict(), "entity_id": None})
+    dimension_data_without_entity = DimensionDataModel(
+        **{**dimension_data.dict(), "columns_info": new_columns_info}
+    )
+    assert (
+        info_service._get_main_data(
+            [item_data, event_data, dimension_data, dimension_data_without_entity]
+        )
+        == item_data
+    )
+    assert (
+        info_service._get_main_data([event_data, dimension_data, dimension_data_without_entity])
+        == event_data
+    )
+    assert (
+        info_service._get_main_data([dimension_data, dimension_data_without_entity])
+        == dimension_data
+    )
+    assert (
+        info_service._get_main_data([dimension_data_without_entity])
+        == dimension_data_without_entity
+    )

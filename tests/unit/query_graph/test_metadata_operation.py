@@ -4,11 +4,7 @@ Tests for classes defined in featurebyte/query_graph/node/metadata/operation.py
 import pytest
 
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.metadata.operation import (
-    DerivedDataColumn,
-    NodeTransform,
-    SourceDataColumn,
-)
+from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn, SourceDataColumn
 
 
 @pytest.fixture(name="source_col1")
@@ -30,13 +26,13 @@ def source_col2_fixture():
 @pytest.fixture(name="transform_add")
 def transform_add_fixture():
     """Transform (add) fixture"""
-    return NodeTransform(node_type=NodeType.ADD, parameters={})
+    return "add"
 
 
 @pytest.fixture(name="transform_mul")
 def transform_multiply_fixture():
     """Transform (multiply) fixture"""
-    return NodeTransform(node_type=NodeType.MUL, parameters={})
+    return "mul"
 
 
 @pytest.fixture(name="derived_col1")

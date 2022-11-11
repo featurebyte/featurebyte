@@ -3,29 +3,15 @@ DataService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Union
-from typing_extensions import Annotated
+from typing import Any, Optional
 
 from bson import ObjectId
-from pydantic import Field, parse_obj_as
 
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataModel as BaseDataModel
-from featurebyte.models.item_data import ItemDataModel
-from featurebyte.schema.data import DataCreate, DataUpdate
+from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.mixin import Document, DocumentCreateSchema
-
-DataModel = Annotated[Union[EventDataModel, ItemDataModel], Field(discriminator="type")]
-
-
-class TabularDataModel(EventDataModel):
-    """
-    Pseudo Data class to support multiple data types
-    """
-
-    def __new__(cls, **kwargs: Any) -> Any:
-        return parse_obj_as(DataModel, kwargs)  # type: ignore[arg-type]
 
 
 class DataService(BaseDocumentService[BaseDataModel, DataCreate, DataUpdate]):

@@ -12,6 +12,7 @@ def test_extract_operation__single_input_node(global_graph, input_node):
             "name": col,
             "tabular_data_id": input_node.parameters.id,
             "tabular_data_type": "event_data",
+            "filter": False,
             "type": "source",
         }
         for col in input_node.parameters.columns
@@ -21,12 +22,19 @@ def test_extract_operation__single_input_node(global_graph, input_node):
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
 
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == []
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
+
 
 def extract_common_column_parameters(input_node):
     """Extract common column parameters"""
     return {
         "tabular_data_id": input_node.parameters.id,
         "tabular_data_type": input_node.parameters.type,
+        "filter": False,
         "type": "source",
     }
 
@@ -39,12 +47,17 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
 
     project_node = graph.get_node_by_name("project_1")
     op_struct = graph.extract_operation_structure(node=project_node)
-    assert op_struct.columns == [
-        {"name": project_node.parameters.columns[0], **common_column_params}
-    ]
+    expected_columns = [{"name": project_node.parameters.columns[0], **common_column_params}]
+    assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == []
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
 
     project_node = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -53,52 +66,74 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
         input_nodes=[input_node],
     )
     op_struct = graph.extract_operation_structure(node=project_node)
-    assert op_struct.columns == [
+    expected_columns = [
         {"name": "a", **common_column_params},
         {"name": "b", **common_column_params},
     ]
+    assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
 
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == []
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
+
     add_node = graph.get_node_by_name("add_1")
     op_struct = graph.extract_operation_structure(node=add_node)
-    assert op_struct.columns == [
+    expected_derived_columns = [
         {
             "name": None,
             "columns": [
                 {"name": "a", **common_column_params},
                 {"name": "b", **common_column_params},
             ],
-            "transforms": [{"node_type": "add", "parameters": {"value": None}}],
+            "transforms": ["add"],
+            "filter": False,
             "type": "derived",
         }
     ]
+    assert op_struct.columns == expected_derived_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
 
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == expected_derived_columns
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
+
     op_struct = graph.extract_operation_structure(node=assign_node)
-    assert op_struct.columns == [
+    expected_columns = [
         {"name": "ts", **common_column_params},
         {"name": "cust_id", **common_column_params},
         {"name": "a", **common_column_params},
         {"name": "b", **common_column_params},
+    ]
+    expected_derived_columns = [
         {
             "name": "c",
             "columns": [
                 {"name": "a", **common_column_params},
                 {"name": "b", **common_column_params},
             ],
-            "transforms": [
-                {"node_type": "add", "parameters": {"value": None}},
-                {"node_type": "assign", "parameters": {"name": "c", "value": None}},
-            ],
+            "transforms": ["add"],
+            "filter": False,
             "type": "derived",
         },
     ]
+    assert op_struct.columns == expected_columns + expected_derived_columns
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == expected_derived_columns
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
 
 
 def test_extract_operation__filter(graph_four_nodes):
@@ -106,17 +141,19 @@ def test_extract_operation__filter(graph_four_nodes):
     graph, input_node, _, _, filter_node = graph_four_nodes
     op_struct = graph.extract_operation_structure(node=filter_node)
     common_column_params = extract_common_column_parameters(input_node)
-    assert op_struct.columns == [
-        {
-            "name": "column",
-            "columns": [{"name": "column", **common_column_params}],
-            "transforms": [{"node_type": "filter", "parameters": {}}],
-            "type": "derived",
-        }
-    ]
+    expected_columns = [{"name": "column", **common_column_params, "filter": True}]
+    assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == [
+        {"name": "column", **common_column_params, "filter": True}
+    ]
+    assert grp_op_struct.derived_columns == []
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
 
 
 def test_extract_operation__lag(global_graph, input_node):
@@ -142,30 +179,30 @@ def test_extract_operation__lag(global_graph, input_node):
     )
     op_struct = global_graph.extract_operation_structure(node=lag_node)
     common_column_params = extract_common_column_parameters(input_node)
-    assert op_struct.columns == [
+    expected_source_columns = [
+        {"name": "a", **common_column_params},
+        {"name": "cust_id", **common_column_params},
+        {"name": "ts", **common_column_params},
+    ]
+    expected_derived_columns = [
         {
             "name": None,
-            "columns": [
-                {"name": "a", **common_column_params},
-                {"name": "cust_id", **common_column_params},
-                {"name": "ts", **common_column_params},
-            ],
-            "transforms": [
-                {
-                    "node_type": "lag",
-                    "parameters": {
-                        "entity_columns": ["cust_id"],
-                        "timestamp_column": "ts",
-                        "offset": 1,
-                    },
-                },
-            ],
+            "columns": expected_source_columns,
+            "transforms": ["lag(entity_columns=['cust_id'], offset=1, timestamp_column='ts')"],
+            "filter": False,
             "type": "derived",
         }
     ]
+    assert op_struct.columns == expected_derived_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_source_columns
+    assert grp_op_struct.derived_columns == expected_derived_columns
+    assert grp_op_struct.aggregations == []
+    assert grp_op_struct.post_aggregation is None
 
 
 def test_extract_operation__groupby(query_graph_with_groupby):
@@ -178,27 +215,29 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     common_aggregation_params = {
         "groupby": ["cust_id"],
         "method": "avg",
-        "columns": [
-            {"name": "ts", **common_column_params},
-            {"name": "cust_id", **common_column_params},
-            {"name": "a", **common_column_params},
-        ],
+        "column": {"name": "a", **common_column_params},
         "category": None,
         "groupby_type": "groupby",
+        "filter": False,
         "type": "aggregation",
     }
     expected_columns = [
-        {"name": "ts", **common_column_params},
-        {"name": "cust_id", **common_column_params},
         {"name": "a", **common_column_params},
     ]
-    assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == [
+    expected_aggregations = [
         {"name": "a_2h_average", "window": "2h", **common_aggregation_params},
         {"name": "a_48h_average", "window": "48h", **common_aggregation_params},
     ]
+    assert op_struct.columns == expected_columns
+    assert op_struct.aggregations == expected_aggregations
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == []
+    assert grp_op_struct.aggregations == expected_aggregations
+    assert grp_op_struct.post_aggregation is None
 
     # check project on feature group
     project_node = graph.add_operation(
@@ -229,15 +268,20 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         input_nodes=[project_node, eq_node],
     )
     op_struct = graph.extract_operation_structure(node=filter_node)
+    expected_post_aggregation = {
+        "name": "a_2h_average",
+        "type": "post_aggregation",
+        "transforms": ["filter"],
+        "columns": [expected_aggregations[0]],
+    }
     assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == [
-        {
-            "name": "a_2h_average",
-            "type": "post_aggregation",
-            "transforms": [{"node_type": "filter", "parameters": {}}],
-            "columns": [{"name": "a_2h_average", "window": "2h", **common_aggregation_params}],
-        }
-    ]
+    assert op_struct.aggregations == [expected_post_aggregation]
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == expected_columns
+    assert grp_op_struct.derived_columns == []
+    assert grp_op_struct.aggregations == [expected_aggregations[0]]
+    assert grp_op_struct.post_aggregation == expected_post_aggregation
 
 
 def test_extract_operation__item_groupby(
@@ -245,18 +289,18 @@ def test_extract_operation__item_groupby(
 ):
     """Test extract_operation_structure: item groupby"""
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_group_node)
-    common_column_params = extract_common_column_parameters(item_data_input_node)
-    assert op_struct.columns == [{"name": "order_id", **common_column_params}]
+    assert op_struct.columns == []
     assert op_struct.aggregations == [
         {
             "name": "order_size",
             "category": None,
-            "columns": [{"name": "order_id", **common_column_params}],
+            "column": None,
             "groupby": ["order_id"],
             "method": "count",
             "type": "aggregation",
-            "groupby_type": "item_groupby",
             "window": None,
+            "filter": False,
+            "groupby_type": "item_groupby",
         }
     ]
     assert op_struct.output_category == "feature"
@@ -276,22 +320,13 @@ def test_extract_operation__join_double_aggregations(
     # check join & its output
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_join_node)
     common_event_data_column_params = extract_common_column_parameters(event_data_input_node)
-    common_item_data_column_params = extract_common_column_parameters(item_data_input_node)
     order_size_column = {
         "name": "order_size",
-        "columns": [{"name": "order_id", **common_item_data_column_params}],
+        "columns": [],
         "transforms": [
-            {
-                "node_type": "item_groupby",
-                "parameters": {
-                    "agg_func": "count",
-                    "keys": ["order_id"],
-                    "names": ["order_size"],
-                    "parent": None,
-                    "serving_names": ["order_id"],
-                },
-            }
+            "item_groupby(agg_func='count', keys=['order_id'], names=['order_size'], serving_names=['order_id'])"
         ],
+        "filter": False,
         "type": "derived",
     }
     assert op_struct.columns == [
@@ -307,24 +342,65 @@ def test_extract_operation__join_double_aggregations(
 
     # check double aggregations & its output
     op_struct = global_graph.extract_operation_structure(node=groupby_node)
-    assert op_struct.columns == [
-        {"name": "ts", **common_event_data_column_params},
-        {"name": "cust_id", **common_event_data_column_params},
-        order_size_column,
-    ]
-    assert op_struct.aggregations == [
+    expected_aggregations = [
         {
             "name": "order_size_30d_avg",
             "groupby": ["cust_id"],
             "method": "avg",
             "window": "30d",
             "category": None,
-            "columns": [
-                {"name": "ts", **common_event_data_column_params},
-                {"name": "cust_id", **common_event_data_column_params},
-                order_size_column,
-            ],
+            "column": order_size_column,
+            "filter": False,
             "groupby_type": "groupby",
             "type": "aggregation",
         }
     ]
+    assert op_struct.columns == [order_size_column]
+    assert op_struct.aggregations == expected_aggregations
+
+    grp_op_struct = op_struct.to_group_operation_structure()
+    assert grp_op_struct.source_columns == []
+    assert grp_op_struct.derived_columns == [order_size_column]
+    assert grp_op_struct.aggregations == expected_aggregations
+    assert grp_op_struct.post_aggregation is None
+
+
+def test_extract_operation__alias(global_graph, input_node):
+    """Test extract_operation_structure: alias"""
+    project_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    add_node = global_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 10},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_node],
+    )
+    op_struct = global_graph.extract_operation_structure(node=add_node)
+    expected_derived_columns = {
+        "name": None,
+        "columns": [
+            {
+                "name": "a",
+                "tabular_data_id": None,
+                "tabular_data_type": "event_data",
+                "filter": False,
+                "type": "source",
+            }
+        ],
+        "transforms": ["add(value=10)"],
+        "filter": False,
+        "type": "derived",
+    }
+    assert op_struct.columns == [expected_derived_columns]
+    alias_node = global_graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "some_value"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[add_node],
+    )
+    op_struct = global_graph.extract_operation_structure(node=alias_node)
+    assert op_struct.columns == [{**expected_derived_columns, "name": "some_value"}]

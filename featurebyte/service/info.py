@@ -3,24 +3,68 @@ InfoService class
 """
 from __future__ import annotations
 
+from typing import Any, Optional, Type, TypeVar
+
 from bson.objectid import ObjectId
 
-from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.data import DataBriefInfoList
-from featurebyte.schema.entity import EntityBriefInfoList, EntityInfo
-from featurebyte.schema.event_data import EventDataColumnInfo, EventDataInfo
-from featurebyte.schema.feature import FeatureBriefInfoList, FeatureInfo
-from featurebyte.schema.feature_list import FeatureListBriefInfoList, FeatureListInfo
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceInfo
-from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
-from featurebyte.schema.feature_store import FeatureStoreInfo
+from featurebyte.enum import TableDataType
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.schema.feature import FeatureBriefInfoList
+from featurebyte.schema.info import (
+    DataBriefInfoList,
+    EntityBriefInfoList,
+    EntityInfo,
+    EventDataColumnInfo,
+    EventDataInfo,
+    FeatureInfo,
+    FeatureListBriefInfoList,
+    FeatureListInfo,
+    FeatureListNamespaceInfo,
+    FeatureNamespaceInfo,
+    FeatureStoreInfo,
+)
+from featurebyte.schema.semantic import SemanticList
+from featurebyte.schema.tabular_data import TabularDataList
+from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.mixin import Document, DocumentCreateSchema
+
+ObjectT = TypeVar("ObjectT")
 
 
 class InfoService(BaseService):
     """
     InfoService class is responsible for rendering the info of a specific api object.
     """
+
+    @staticmethod
+    async def _get_list_object(
+        service: BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema],
+        document_ids: list[PydanticObjectId],
+        list_object_class: Type[ObjectT],
+    ) -> ObjectT:
+        """
+        Retrieve object through list route & deserialize the records
+
+        Parameters
+        ----------
+        service: BaseDocumentService
+            Service
+        document_ids: list[ObjectId]
+            List of document IDs
+        list_object_class: Type[ObjectT]
+            List object class
+
+        Returns
+        -------
+        ObjectT
+        """
+        res = await service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
+        )
+        return list_object_class(**{**res, "page_size": 1})
 
     async def get_feature_store_info(
         self, document_id: ObjectId, verbose: bool
@@ -91,18 +135,17 @@ class InfoService(BaseService):
         EventDataInfo
         """
         event_data = await self.get_document(DocServiceName.EVENT_DATA, document_id)
-        entity_ids = DictProject(rule=("columns_info", "entity_id")).project(event_data.dict())
         entities = await self.entity_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": entity_ids}}
+            page=1, page_size=0, query_filter={"_id": {"$in": event_data.entity_ids}}
         )
         columns_info = None
         if verbose:
             columns_info = []
-            entity_map = {entity["_id"]: entity["name"] for entity in entities["data"]}
+            entity_map = {ObjectId(entity["_id"]): entity["name"] for entity in entities["data"]}
             for column_info in event_data.columns_info:
                 columns_info.append(
                     EventDataColumnInfo(
-                        **column_info.dict(), entity=entity_map.get(column_info.entity_id)
+                        **column_info.dict(), entity=entity_map.get(column_info.entity_id)  # type: ignore
                     )
                 )
 
@@ -119,6 +162,105 @@ class InfoService(BaseService):
             column_count=len(event_data.columns_info),
             columns_info=columns_info,
         )
+
+    @staticmethod
+    def _get_main_data(tabular_data_list: list[TabularDataModel]) -> TabularDataModel:
+        """
+        Get the main data from the list of tabular data
+
+        Parameters
+        ----------
+        tabular_data_list: list[TabularDataModel]
+            List of tabular data model
+
+        Returns
+        -------
+        TabularDataModel
+        """
+        data_priority_map = {}
+        for tabular_data in tabular_data_list:
+            if tabular_data.type == TableDataType.ITEM_DATA:
+                data_priority_map[3] = tabular_data
+            elif tabular_data.type == TableDataType.EVENT_DATA:
+                data_priority_map[2] = tabular_data
+            elif tabular_data.entity_ids:
+                data_priority_map[1] = tabular_data
+            else:
+                data_priority_map[0] = tabular_data
+        return data_priority_map[max(data_priority_map)]
+
+    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
+        # retrieve related tabular data & semantic
+        tabular_data_list = await self._get_list_object(
+            self.data_service, op_struct.tabular_data_ids, TabularDataList
+        )
+        semantic_list = await self._get_list_object(
+            self.semantic_service, tabular_data_list.semantic_ids, SemanticList
+        )
+
+        # prepare column mapping
+        column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
+        semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
+        for tabular_data in tabular_data_list.data:
+            for column in tabular_data.columns_info:
+                column_map[(tabular_data.id, column.name)] = {
+                    "data_name": tabular_data.name,
+                    "semantic": semantic_map.get(column.semantic_id),  # type: ignore
+                }
+
+        # construct feature metadata
+        source_columns = {}
+        reference_map: dict[Any, str] = {}
+        for idx, src_col in enumerate(op_struct.source_columns):
+            column_metadata = column_map[(src_col.tabular_data_id, src_col.name)]
+            reference_map[src_col] = f"Input{idx}"
+            source_columns[reference_map[src_col]] = {
+                "data": column_metadata["data_name"],
+                "column_name": src_col.name,
+                "semantic": column_metadata["semantic"],
+            }
+
+        derived_columns = {}
+        for idx, drv_col in enumerate(op_struct.derived_columns):
+            columns = [reference_map[col] for col in drv_col.columns]
+            reference_map[drv_col] = f"X{idx}"
+            derived_columns[reference_map[drv_col]] = {
+                "name": drv_col.name,
+                "inputs": columns,
+                "transforms": drv_col.transforms,
+            }
+
+        aggregation_columns = {}
+        for idx, agg_col in enumerate(op_struct.aggregations):
+            reference_map[agg_col] = f"F{idx}"
+            aggregation_columns[reference_map[agg_col]] = {
+                "name": agg_col.name,
+                "column": reference_map.get(
+                    agg_col.column, None
+                ),  # for count aggregation, column is None
+                "function": agg_col.method,
+                "groupby": agg_col.groupby,
+                "window": agg_col.window,
+                "category": agg_col.category,
+                "filter": agg_col.filter,
+            }
+
+        post_aggregation = None
+        if op_struct.post_aggregation:
+            post_aggregation = {
+                "name": op_struct.post_aggregation.name,
+                "inputs": [reference_map[col] for col in op_struct.post_aggregation.columns],
+                "transforms": op_struct.post_aggregation.transforms,
+            }
+
+        main_data = self._get_main_data(tabular_data_list.data)
+        return {
+            "main_data": {"name": main_data.name, "data_type": main_data.type},
+            "input_columns": source_columns,
+            "derived_columns": derived_columns,
+            "aggregations": aggregation_columns,
+            "post_aggregation": post_aggregation,
+        }
 
     async def get_feature_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         """
@@ -156,11 +298,15 @@ class InfoService(BaseService):
                 )
             )
 
+        metadata = await self._extract_feature_metadata(
+            op_struct=feature.extract_operation_structure()
+        )
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             versions_info=versions_info,
+            metadata=metadata,
         )
 
     async def get_feature_namespace_info(

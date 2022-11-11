@@ -20,8 +20,8 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.data import DataService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.tabular_data import DataService
 
 
 async def validate_feature_version_and_namespace_consistency(

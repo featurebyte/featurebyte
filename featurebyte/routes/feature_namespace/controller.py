@@ -7,11 +7,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.feature_namespace import (
-    FeatureNamespaceInfo,
-    FeatureNamespaceList,
-    FeatureNamespaceUpdate,
-)
+from featurebyte.schema.feature_namespace import FeatureNamespaceList, FeatureNamespaceUpdate
+from featurebyte.schema.info import FeatureNamespaceInfo
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.info import InfoService

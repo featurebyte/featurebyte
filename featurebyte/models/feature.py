@@ -22,6 +22,7 @@ from featurebyte.models.base import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -247,6 +248,18 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         if isinstance(value, str):
             return convert_version_string_to_dict(value)
         return value
+
+    def extract_operation_structure(self) -> GroupOperationStructure:
+        """
+        Extract feature operation structure based on query graph.
+
+        Returns
+        -------
+        GroupOperationStructure
+        """
+        # group the view columns by source columns & derived columns
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        return operation_structure.to_group_operation_structure()
 
     class Settings:
         """

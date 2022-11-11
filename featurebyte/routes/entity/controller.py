@@ -7,13 +7,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.routes.common.base import BaseDocumentController, RelationshipMixin
-from featurebyte.schema.entity import (
-    EntityCreate,
-    EntityInfo,
-    EntityList,
-    EntityServiceUpdate,
-    EntityUpdate,
-)
+from featurebyte.schema.entity import EntityCreate, EntityList, EntityServiceUpdate, EntityUpdate
+from featurebyte.schema.info import EntityInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.info import InfoService
 from featurebyte.service.relationship import EntityRelationshipService

@@ -12,8 +12,10 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.enum import SemanticType
+from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate
-from featurebyte.schema.event_data import EventDataCreate
+from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
@@ -22,6 +24,7 @@ from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -87,6 +90,12 @@ def event_data_service_fixture(user, persistent):
 def item_data_service_fixture(user, persistent):
     """ItemData service"""
     return ItemDataService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="dimension_data_service")
+def dimension_data_service_fixture(user, persistent):
+    """DimensionData service"""
+    return DimensionDataService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -162,7 +171,7 @@ async def feature_store_fixture(test_dir, feature_store_service, user):
 
 
 @pytest_asyncio.fixture(name="event_data")
-async def event_data_fixture(test_dir, feature_store, event_data_service, user):
+async def event_data_fixture(test_dir, feature_store, event_data_service, semantic_service, user):
     """EventData model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
@@ -170,6 +179,21 @@ async def event_data_fixture(test_dir, feature_store, event_data_service, user):
         payload = json.loads(fhandle.read())
         event_data = await event_data_service.create_document(
             data=EventDataCreate(**payload, user_id=user.id)
+        )
+        event_timestamp = await semantic_service.get_or_create_document(
+            name=SemanticType.EVENT_TIMESTAMP
+        )
+        columns_info = []
+        for col in event_data.columns_info:
+            col_dict = col.dict()
+            if col.name == "event_timestamp":
+                col_dict["semantic_id"] = event_timestamp.id
+            columns_info.append(col_dict)
+
+        event_data = await event_data_service.update_document(
+            document_id=event_data.id,
+            data=EventDataUpdate(columns_info=columns_info),
+            return_document=True,
         )
         return event_data
 
@@ -183,6 +207,19 @@ async def item_data_fixture(test_dir, feature_store, item_data_service, user):
         payload = json.loads(fhandle.read())
         item_data = await item_data_service.create_document(
             data=ItemDataCreate(**payload, user_id=user.id)
+        )
+        return item_data
+
+
+@pytest_asyncio.fixture(name="dimension_data")
+async def dimension_data_fixture(test_dir, feature_store, dimension_data_service, user):
+    """DimensionData model"""
+    _ = feature_store
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_data.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        item_data = await dimension_data_service.create_document(
+            data=DimensionDataCreate(**payload, user_id=user.id)
         )
         return item_data
 
@@ -202,6 +239,17 @@ async def feature_fixture(test_dir, event_data, entity, feature_service):
     """Feature model"""
     _ = event_data, entity
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        return feature
+
+
+@pytest_asyncio.fixture(name="feature_iet")
+async def feature_iet_fixture(test_dir, event_data, entity, feature_service):
+    """Feature model (IET feature)"""
+    _ = event_data, entity
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_iet.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature = await feature_service.create_document(data=FeatureCreate(**payload))

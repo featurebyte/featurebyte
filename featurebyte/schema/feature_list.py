@@ -5,26 +5,19 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from datetime import datetime
-
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNewVersionMode,
-    FeatureListStatus,
     FeatureReadinessDistribution,
-    FeatureTypeFeatureCount,
 )
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
-from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.feature import VersionComparison
-from featurebyte.schema.feature_namespace import NamespaceInfo
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -98,66 +91,6 @@ class ProductionReadyFractionComparison(FeatureByteBaseModel):
 
     this: float
     default: float
-
-
-class FeatureListBriefInfo(FeatureByteBaseModel):
-    """
-    FeatureList brief info schema
-    """
-
-    version: VersionIdentifier
-    readiness_distribution: FeatureReadinessDistribution
-    created_at: datetime
-    production_ready_fraction: Optional[float] = Field(default=None)
-
-    @root_validator
-    @classmethod
-    def _derive_production_ready_fraction(cls, values: dict[str, Any]) -> Any:
-        if "readiness_distribution" in values and values.get("production_ready_fraction") is None:
-            values["production_ready_fraction"] = values[
-                "readiness_distribution"
-            ].derive_production_ready_fraction()
-        return values
-
-
-class FeatureListBriefInfoList(FeatureByteBaseModel):
-    """
-    Paginated list of feature brief info
-    """
-
-    __root__: List[FeatureListBriefInfo]
-
-    @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureListBriefInfoList:
-        """
-        Construct feature info list from paginated data
-
-        Parameters
-        ----------
-        paginated_data: dict[str, Any]
-            Paginated data
-
-        Returns
-        -------
-        FeatureBriefInfoList
-        """
-        feature_list_project = DictProject(
-            rule=("data", ["version", "readiness_distribution", "created_at"])
-        )
-        return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
-
-
-class FeatureListInfo(NamespaceInfo):
-    """
-    FeatureList info schema
-    """
-
-    dtype_distribution: List[FeatureTypeFeatureCount]
-    status: FeatureListStatus
-    feature_count: int
-    version: VersionComparison
-    production_ready_fraction: ProductionReadyFractionComparison
-    versions_info: Optional[FeatureListBriefInfoList]
 
 
 class FeatureCluster(FeatureByteBaseModel):

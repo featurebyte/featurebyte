@@ -10,7 +10,7 @@ from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.schema.common.base import BaseInfo, PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 
 
 class FeatureStoreCreate(FeatureByteBaseModel):
@@ -30,15 +30,6 @@ class FeatureStoreList(PaginationMixin):
     """
 
     data: List[FeatureStoreModel]
-
-
-class FeatureStoreInfo(BaseInfo):
-    """
-    FeatureStore in schema
-    """
-
-    source: SourceType
-    database_details: DatabaseDetails
 
 
 class FeatureStorePreview(FeatureByteBaseModel):

@@ -147,10 +147,7 @@ class FilterNode(BaseNode):
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                DerivedDataColumn.create(
-                    name=col.name, columns=[col], transform=self.transform_info
-                )
-                for col in input_operation_info.columns
+                type(col)(**{**col.dict(), "filter": True}) for col in input_operation_info.columns
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
@@ -190,7 +187,7 @@ class AssignNode(BaseNode):
         new_column = DerivedDataColumn.create(
             name=new_column_name,
             columns=series_operation_info.columns,
-            transform=self.transform_info,
+            transform=None,
         )
         return OperationStructure(
             columns=input_operation_info.columns + [new_column],
@@ -238,7 +235,12 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    def _exclude_source_columns(self) -> List[str]:
+        cols = self.parameters.keys + [self.parameters.timestamp]
+        return [str(col) for col in cols]
+
     def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
                 name=name,
@@ -246,7 +248,8 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 groupby=self.parameters.keys,
                 window=window,
                 category=self.parameters.value_by,
-                columns=columns,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
                 groupby_type=self.type,
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
@@ -269,7 +272,11 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    def _exclude_source_columns(self) -> List[str]:
+        return [str(key) for key in self.parameters.keys]
+
     def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
                 name=name,
@@ -277,7 +284,8 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 groupby=self.parameters.keys,
                 window=None,
                 category=None,
-                columns=columns,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
                 groupby_type=self.type,
             )
             for name in self.parameters.names
@@ -314,4 +322,43 @@ class Join(BaseNode):
             columns=left_columns + right_columns,
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
+        )
+
+
+class AliasNode(BaseNode):
+    """AliasNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        name: OutColumnStr
+
+    type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
+    parameters: Parameters
+
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        input_operation_info = inputs[0]
+        output_category = input_operation_info.output_category
+
+        node_kwargs: Dict[str, Any] = {}
+        if output_category == NodeOutputCategory.VIEW:
+            last_column = input_operation_info.columns[-1]
+            new_last_column = type(last_column)(
+                **{**last_column.dict(), "name": self.parameters.name}
+            )
+            node_kwargs["columns"] = list(input_operation_info.columns)
+            node_kwargs["columns"][-1] = new_last_column
+        else:
+            last_aggregation = input_operation_info.aggregations[-1]
+            new_last_aggregation = type(last_aggregation)(
+                **{**last_aggregation.dict(), "name": self.parameters.name}
+            )
+            node_kwargs["columns"] = input_operation_info.columns
+            node_kwargs["aggregations"] = list(input_operation_info.aggregations)
+            node_kwargs["aggregations"][-1] = new_last_aggregation
+
+        return OperationStructure(
+            **node_kwargs, output_type=self.output_type, output_category=output_category
         )

@@ -22,7 +22,8 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
+from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
+from featurebyte.schema.info import EntityInfo
 
 router = APIRouter(prefix="/entity")
 

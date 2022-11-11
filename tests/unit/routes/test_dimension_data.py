@@ -40,7 +40,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_dimension_table'}}\") "
             f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]

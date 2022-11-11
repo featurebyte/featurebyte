@@ -10,7 +10,8 @@ from bson.objectid import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.routes.common.base_data import BaseDataDocumentController
-from featurebyte.schema.event_data import EventDataInfo, EventDataList, EventDataUpdate
+from featurebyte.schema.event_data import EventDataList, EventDataUpdate
+from featurebyte.schema.info import EventDataInfo
 from featurebyte.service.event_data import EventDataService
 
 

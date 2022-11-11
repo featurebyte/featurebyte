@@ -4,7 +4,7 @@ Entity API payload schema
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
@@ -16,13 +16,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.models.entity import EntityModel, ParentEntity
-from featurebyte.schema.common.base import (
-    BaseBriefInfo,
-    BaseDocumentServiceUpdateSchema,
-    BaseInfo,
-    PaginationMixin,
-)
-from featurebyte.schema.common.operation import DictProject
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class EntityCreate(FeatureByteBaseModel):
@@ -74,42 +68,3 @@ class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
         ]
-
-
-class EntityBriefInfo(BaseBriefInfo):
-    """
-    Entity brief info schema
-    """
-
-    serving_names: List[str]
-
-
-class EntityBriefInfoList(FeatureByteBaseModel):
-    """
-    Paginated list of entity brief info
-    """
-
-    __root__: List[EntityBriefInfo]
-
-    @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
-        """
-        Construct entity brief info list from paginated data
-
-        Parameters
-        ----------
-        paginated_data: dict[str, Any]
-            Paginated data
-
-        Returns
-        -------
-        EntityBriefInfoList
-        """
-        entity_project = DictProject(rule=("data", ["name", "serving_names"]))
-        return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
-
-
-class EntityInfo(EntityBriefInfo, BaseInfo):
-    """
-    Entity info schema
-    """

@@ -9,6 +9,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
+from featurebyte.query_graph.node.metadata.operation import AggregationColumn, SourceDataColumn
 
 
 @pytest.fixture(name="feature_namespace_dict")
@@ -120,3 +121,29 @@ def test_feature_readiness_ordering():
     )
     assert FeatureReadiness.min() == FeatureReadiness.DEPRECATED
     assert FeatureReadiness.max() == FeatureReadiness.PRODUCTION_READY
+
+
+def test_extract_operation_structure(feature_model_dict):
+    """Test extract_operation_structure method"""
+    feature = FeatureModel(**feature_model_dict)
+    op_struct = feature.extract_operation_structure()
+    common_source_col_params = {
+        "tabular_data_id": ObjectId(feature_model_dict["tabular_data_ids"][0]),
+        "tabular_data_type": "event_data",
+    }
+    expected_columns = [SourceDataColumn(name="col_float", **common_source_col_params)]
+    assert op_struct.source_columns == expected_columns
+    assert op_struct.derived_columns == []
+    assert op_struct.aggregations == [
+        AggregationColumn(
+            name="sum_30m",
+            method="sum",
+            groupby=["cust_id"],
+            window="30m",
+            category=None,
+            type="aggregation",
+            column=SourceDataColumn(name="col_float", **common_source_col_params),
+            filter=False,
+            groupby_type="groupby",
+        )
+    ]
