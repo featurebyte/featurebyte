@@ -374,8 +374,11 @@ def test_get_feature(saved_feature):
     assert feature.saved is True
     assert feature.dict() == saved_feature.dict()
     get_by_id_feat = Feature.get_by_id(feature.id)
-    assert get_by_id_feat == feature
+    assert get_by_id_feat.dict() == feature.dict()
     assert get_by_id_feat.saved is True
+
+    # ensure Proxy object works in binary operations
+    _ = get_by_id_feat == feature
 
     # check audit history
     audit_history = saved_feature.audit()
