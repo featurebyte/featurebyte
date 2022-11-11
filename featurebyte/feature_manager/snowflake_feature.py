@@ -29,7 +29,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -223,20 +223,23 @@ class FeatureManagerSnowflake(BaseModel):
         for tile_id in feature_spec.tile_ids:
             upsert_sql = tm_upsert_tile_feature_mapping.render(
                 tile_id=tile_id,
-                feature_name=feature_spec.feature_name,
-                feature_version=feature_spec.feature_version,
+                feature_name=feature_spec.feature.name,
+                feature_version=feature_spec.feature.version.to_str(),
+                feature_readiness=str(feature_spec.feature.readiness),
+                feature_tabular_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
                 feature_sql=feature_sql,
                 feature_store_table_name=feature_spec.feature_store_table_name,
                 entity_column_names_str=",".join(
                     escape_column_names(feature_spec.entity_column_names)
                 ),
+                is_deleted=False,
             )
             logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
             await self._session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
 
         # enable tile generation with scheduled jobs
-        for tile_spec in feature_spec.tile_specs:
+        for tile_spec in feature_spec.feature.tile_specs:
             logger.info(f"tile_spec: {tile_spec}")
 
             exist_tasks = await self._session.execute_query(
@@ -269,23 +272,21 @@ class FeatureManagerSnowflake(BaseModel):
         for tile_id in feature_spec.tile_ids:
             delete_sql = tm_delete_tile_feature_mapping.render(
                 tile_id=tile_id,
-                feature_name=feature_spec.feature_name,
-                feature_version=feature_spec.feature_version,
+                feature_name=feature_spec.feature.name,
+                feature_version=feature_spec.feature.version.to_str(),
             )
             logger.debug(f"tile_feature_mapping delete_sql: {delete_sql}")
             await self._session.execute_query(delete_sql)
             logger.debug(f"Done delete tile_feature_mapping for {tile_id}")
 
         # disable tile scheduled jobs
-        for tile_spec in feature_spec.tile_specs:
+        for tile_spec in feature_spec.feature.tile_specs:
             logger.info(f"tile_spec: {tile_spec}")
-
             exist_mapping = await self._session.execute_query(
-                f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_spec.tile_id}'"
+                f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_spec.tile_id}' and IS_DELETED = FALSE"
             )
             # only disable tile jobs when there is no tile-feature mapping records for the particular tile
             if exist_mapping is None or len(exist_mapping) == 0:
-
                 exist_tasks = await self._session.execute_query(
                     f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
                 )

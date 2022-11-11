@@ -17,7 +17,7 @@ $$
 
     var select_sql = `
         SELECT FEATURE_NAME, FEATURE_SQL, FEATURE_STORE_TABLE_NAME, FEATURE_ENTITY_COLUMN_NAMES
-        FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '${TILE_ID}'
+        FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '${TILE_ID}' AND IS_DELETED = FALSE
     `
     var result = snowflake.execute({sqlText: select_sql})
     var table_columns = []
