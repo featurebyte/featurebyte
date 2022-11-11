@@ -16,15 +16,17 @@ from featurebyte.schema.dimension_data import DimensionDataUpdate
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
+from featurebyte.schema.scd_data import SCDDataUpdate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 
-DataDocumentService = Union[EventDataService, ItemDataService, DimensionDataService]
-DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate, DimensionDataUpdate]
+DataDocumentService = Union[EventDataService, ItemDataService, DimensionDataService, SCDDataService]
+DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate, DimensionDataUpdate, SCDDataUpdate]
 
 
 class DataUpdateService(BaseService):

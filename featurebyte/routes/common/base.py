@@ -21,6 +21,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import Document
 from featurebyte.service.relationship import ParentT, RelationshipService
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
@@ -32,6 +33,7 @@ DocumentServiceT = TypeVar(
     DimensionDataService,
     EventDataService,
     ItemDataService,
+    SCDDataService,
     FeatureService,
     FeatureNamespaceService,
     FeatureListService,

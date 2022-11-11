@@ -672,6 +672,8 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         """Fixture for columns info"""
         return [
             {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {"name": "effective_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {"name": "end_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
             {
                 "name": "another_created_at",
                 "dtype": "TIMESTAMP",
@@ -681,6 +683,8 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
             {"name": "event_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "dimension_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "surrogate_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "natural_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "item_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
         ]
 
