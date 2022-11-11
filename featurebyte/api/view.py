@@ -3,7 +3,7 @@ View class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, TypeVar, Union
+from typing import Any, List, Optional, Type, TypeVar, Union
 
 from abc import ABC
 
@@ -62,7 +62,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     @classmethod
     @typechecked
-    def from_data(cls: type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
+    def from_data(cls: Type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
         """
         Construct a View object
 
