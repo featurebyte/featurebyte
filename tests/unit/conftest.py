@@ -21,6 +21,7 @@ from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.api.item_data import ItemData
 from featurebyte.app import app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
@@ -301,6 +302,28 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
     )
     assert event_data.node.parameters.id == event_data.id
     yield event_data
+
+
+@pytest.fixture(name="snowflake_item_data")
+def snowflake_item_data_fixture(
+    snowflake_database_table_item_data,
+    mock_get_persistent,
+    snowflake_item_data_id,
+    snowflake_event_data,
+):
+    """
+    Snowflake ItemData object fixture
+    """
+    _ = mock_get_persistent
+    snowflake_event_data.save()
+    yield ItemData.from_tabular_source(
+        tabular_source=snowflake_database_table_item_data,
+        name="sf_item_data",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_data_name=snowflake_event_data.name,
+        _id=snowflake_item_data_id,
+    )
 
 
 @pytest.fixture(name="cust_id_entity")

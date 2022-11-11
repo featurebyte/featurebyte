@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import Field
 from typeguard import typechecked
@@ -63,3 +63,22 @@ class ItemView(View):
     @property
     def inherited_columns(self) -> set[str]:
         return set()
+
+    @property
+    def _getitem_frame_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to frame-like class constructor in __getitem__ method
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        params = super()._getitem_frame_params
+        params.update(
+            {
+                "event_id_column": self.event_id_column,
+                "item_id_column": self.item_id_column,
+                "event_data_id": self.event_data_id,
+            }
+        )
+        return params

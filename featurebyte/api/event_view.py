@@ -150,10 +150,9 @@ class EventView(View):
         -------
         dict[str, Any]
         """
-        return {
-            "default_feature_job_setting": self.default_feature_job_setting,
-            "tabular_data_ids": self.tabular_data_ids,
-        }
+        params = super()._getitem_frame_params
+        params.update({"default_feature_job_setting": self.default_feature_job_setting})
+        return params
 
     @typechecked
     def groupby(
