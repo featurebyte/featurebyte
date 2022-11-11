@@ -377,6 +377,9 @@ def test_get_feature(saved_feature):
     assert get_by_id_feat.dict() == feature.dict()
     assert get_by_id_feat.saved is True
 
+    # ensure Proxy object works in binary operations
+    _ = get_by_id_feat == feature
+
     # check audit history
     audit_history = saved_feature.audit()
     expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
