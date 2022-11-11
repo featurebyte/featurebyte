@@ -230,8 +230,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         if isinstance(other, Series) and type(self) != type(
             other
         ):  # pylint: disable=unidiomatic-typecheck
-            # Checking equality of types directly for cases such as when self is EventViewColumn and
-            # other is Feature - they are both Series but such operations are not allowed.
+            # Checking strict equality of types when both sides are Series is intentional. It is to
+            # handle cases such as when self is EventViewColumn and other is Feature - they are both
+            # Series but such operations are not allowed.
             raise TypeError(
                 f"Operation between {type(self).__name__} and {type(other).__name__} is not "
                 f"supported"
