@@ -36,6 +36,22 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         return str(self.document_class.__fields__["type"].default.value)
 
     @property
+    def tabular_data_type_to_class_name_map(self) -> dict[str, str]:
+        """
+        Tabular data type to class name mapping
+
+        Returns
+        -------
+        dict[str, str]
+        """
+        return {
+            "event_data": "EventData",
+            "item_data": "ItemData",
+            "scd_data": "SCDData",
+            "dimension_data": "DimensionData",
+        }
+
+    @property
     def class_name(self) -> str:
         """
         API Object Class name used to represent the underlying collection name
@@ -79,7 +95,7 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
             ):
                 resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
                     resolution_signature=resolution_signature,
-                    class_name=class_name,
+                    class_name=self.tabular_data_type_to_class_name_map[tabular_data_type],
                     document=conflict_doc,
                 )
                 message += f" Get the existing object by `{resolution_statement}`."

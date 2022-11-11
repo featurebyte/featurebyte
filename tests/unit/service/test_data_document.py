@@ -57,7 +57,7 @@ async def test_data_document_services__creation_conflict(
 
     expected_msg = (
         f'TabularData (id: "{item_data.id}") already exists. '
-        f'Get the existing object by `TabularData.get(name="{item_data.name}")`.'
+        f'Get the existing object by `ItemData.get(name="{item_data.name}")`.'
     )
     assert expected_msg in str(exc.value)
 
@@ -68,6 +68,6 @@ async def test_data_document_services__creation_conflict(
 
     expected_msg = (
         f'TabularData (id: "{event_data.id}") already exists. '
-        f'Get the existing object by `TabularData.get(name="{event_data.name}")`.'
+        f'Get the existing object by `EventData.get(name="{event_data.name}")`.'
     )
     assert expected_msg in str(exc.value)
