@@ -3,6 +3,7 @@ Test for InfoService
 """
 import pytest
 
+from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.feature_store import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
@@ -111,6 +112,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         document_id=production_ready_feature.id, verbose=False
     )
     expected_metadata = {
+        "main_data": {"name": "sf_event_data", "data_type": "event_data"},
         "input_columns": {
             "Input0": {"data": "sf_event_data", "column_name": "col_float", "semantic": None}
         },
@@ -176,6 +178,7 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
         "function": "sum",
     }
     expected_metadata = {
+        "main_data": {"name": "sf_event_data", "data_type": "event_data"},
         "input_columns": {
             "Input0": {
                 "data": "sf_event_data",
@@ -328,3 +331,31 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         document_id=feature_list_namespace.id, verbose=True
     )
     assert info == expected_info
+
+
+def test_get_main_data(info_service, item_data, event_data, dimension_data):
+    """Test _get_main_data logic"""
+    new_columns_info = []
+    for col in dimension_data.columns_info:
+        new_columns_info.append({**col.dict(), "entity_id": None})
+    dimension_data_without_entity = DimensionDataModel(
+        **{**dimension_data.dict(), "columns_info": new_columns_info}
+    )
+    assert (
+        info_service._get_main_data(
+            [item_data, event_data, dimension_data, dimension_data_without_entity]
+        )
+        == item_data
+    )
+    assert (
+        info_service._get_main_data([event_data, dimension_data, dimension_data_without_entity])
+        == event_data
+    )
+    assert (
+        info_service._get_main_data([dimension_data, dimension_data_without_entity])
+        == dimension_data
+    )
+    assert (
+        info_service._get_main_data([dimension_data_without_entity])
+        == dimension_data_without_entity
+    )

@@ -13,6 +13,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
+from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature import FeatureCreate
@@ -23,6 +24,7 @@ from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -88,6 +90,12 @@ def event_data_service_fixture(user, persistent):
 def item_data_service_fixture(user, persistent):
     """ItemData service"""
     return ItemDataService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="dimension_data_service")
+def dimension_data_service_fixture(user, persistent):
+    """DimensionData service"""
+    return DimensionDataService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -199,6 +207,19 @@ async def item_data_fixture(test_dir, feature_store, item_data_service, user):
         payload = json.loads(fhandle.read())
         item_data = await item_data_service.create_document(
             data=ItemDataCreate(**payload, user_id=user.id)
+        )
+        return item_data
+
+
+@pytest_asyncio.fixture(name="dimension_data")
+async def dimension_data_fixture(test_dir, feature_store, dimension_data_service, user):
+    """DimensionData model"""
+    _ = feature_store
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_data.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        item_data = await dimension_data_service.create_document(
+            data=DimensionDataCreate(**payload, user_id=user.id)
         )
         return item_data
 

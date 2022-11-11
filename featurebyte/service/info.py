@@ -3,10 +3,13 @@ InfoService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
+from featurebyte.enum import TableDataType
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
@@ -24,13 +27,44 @@ from featurebyte.schema.info import (
 )
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
+from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.mixin import Document, DocumentCreateSchema
+
+ObjectT = TypeVar("ObjectT")
 
 
 class InfoService(BaseService):
     """
     InfoService class is responsible for rendering the info of a specific api object.
     """
+
+    @staticmethod
+    async def _get_list_object(
+        service: BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema],
+        document_ids: list[PydanticObjectId],
+        list_object_class: Type[ObjectT],
+    ) -> ObjectT:
+        """
+        Retrieve object through list route & deserialize the records
+
+        Parameters
+        ----------
+        service: BaseDocumentService
+            Service
+        document_ids: list[ObjectId]
+            List of document IDs
+        list_object_class: Type[ObjectT]
+            List object class
+
+        Returns
+        -------
+        ObjectT
+        """
+        res = await service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
+        )
+        return list_object_class(**{**res, "page_size": 1})
 
     async def get_feature_store_info(
         self, document_id: ObjectId, verbose: bool
@@ -129,16 +163,40 @@ class InfoService(BaseService):
             columns_info=columns_info,
         )
 
+    @staticmethod
+    def _get_main_data(tabular_data_list: list[TabularDataModel]) -> TabularDataModel:
+        """
+        Get the main data from the list of tabular data
+
+        Parameters
+        ----------
+        tabular_data_list: list[TabularDataModel]
+            List of tabular data model
+
+        Returns
+        -------
+        TabularDataModel
+        """
+        data_priority_map = {}
+        for tabular_data in tabular_data_list:
+            if tabular_data.type == TableDataType.ITEM_DATA:
+                data_priority_map[3] = tabular_data
+            elif tabular_data.type == TableDataType.EVENT_DATA:
+                data_priority_map[2] = tabular_data
+            elif tabular_data.entity_ids:
+                data_priority_map[1] = tabular_data
+            else:
+                data_priority_map[0] = tabular_data
+        return data_priority_map[max(data_priority_map)]
+
     async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tabular data & semantic
-        list_res = await self.data_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": op_struct.tabular_data_ids}}
+        tabular_data_list = await self._get_list_object(
+            self.data_service, op_struct.tabular_data_ids, TabularDataList
         )
-        tabular_data_list = TabularDataList(**list_res)
-        list_res = await self.semantic_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": tabular_data_list.semantic_ids}}
+        semantic_list = await self._get_list_object(
+            self.semantic_service, tabular_data_list.semantic_ids, SemanticList
         )
-        semantic_list = SemanticList(**{**list_res, "page_size": 1})
 
         # prepare column mapping
         column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
@@ -195,7 +253,9 @@ class InfoService(BaseService):
                 "transforms": op_struct.post_aggregation.transforms,
             }
 
+        main_data = self._get_main_data(tabular_data_list.data)
         return {
+            "main_data": {"name": main_data.name, "data_type": main_data.type},
             "input_columns": source_columns,
             "derived_columns": derived_columns,
             "aggregations": aggregation_columns,
