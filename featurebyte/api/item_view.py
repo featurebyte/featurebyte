@@ -56,6 +56,17 @@ class ItemView(View):
             default_feature_job_setting=item_data.default_feature_job_setting,
         )
 
+    def join_event_data_attributes(self, columns: list[str]) -> None:
+        """
+        Join additional attributes from the related EventData
+
+        Parameters
+        ----------
+        columns : list[str]
+            List of column names from the EventData to include
+        """
+        raise
+
     @property
     def protected_attributes(self) -> list[str]:
         """
