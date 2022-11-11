@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+import copy
+
 from pydantic import Field
 from typeguard import typechecked
 
@@ -13,6 +15,7 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 class ItemViewColumn(ViewColumn):
@@ -60,6 +63,9 @@ class ItemView(View):
             default_feature_job_setting=item_data.default_feature_job_setting,
             event_view=event_view,
         )
+        item_view.join_event_data_attributes(
+            [event_view.timestamp_column] + event_view.entity_columns
+        )
         return item_view
 
     def join_event_data_attributes(self, columns: list[str]) -> None:
@@ -69,9 +75,61 @@ class ItemView(View):
         Parameters
         ----------
         columns : list[str]
-            List of column names from the EventData to include
+            List of column names to include from the EventData
+
+        Raises
+        ------
+        ValueError
+            If the any of the provided columns does not exist in the EventData
         """
-        raise
+        for col in columns:
+            if col not in self.event_view.columns:
+                raise ValueError(f"Column does not exist in EventView: {col}")
+
+        left_on = self.event_view.event_id_column
+        left_input_columns = columns
+        left_output_columns = columns
+
+        right_on = self.event_id_column
+        right_input_columns = self.columns
+        right_output_columns = self.columns
+
+        columns_set = set(columns)
+        joined_columns_info = copy.deepcopy(self.columns_info)
+        for column_info in self.event_view.columns_info:
+            if column_info.name in columns_set:
+                joined_columns_info.append(column_info)
+
+        node = self.graph.add_operation(
+            node_type=NodeType.JOIN,
+            node_params={
+                "left_on": left_on,
+                "right_on": right_on,
+                "left_input_columns": left_input_columns,
+                "left_output_columns": left_output_columns,
+                "right_input_columns": right_input_columns,
+                "right_output_columns": right_output_columns,
+                "join_type": "left",
+            },
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[self.event_view.node, self.node],
+        )
+
+        joined_column_lineage_map = copy.deepcopy(self.column_lineage_map)
+        for col in columns:
+            joined_column_lineage_map[col] = self.event_view.column_lineage_map[col]
+        for col, lineage in joined_column_lineage_map.items():
+            joined_column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+
+        joined_row_index_lineage = self._append_to_lineage(self.row_index_lineage, node.name)
+
+        joined_tabular_data_ids = self.tabular_data_ids + self.event_view.tabular_data_ids
+
+        self.node_name = node.name
+        self.columns_info = joined_columns_info
+        self.column_lineage_map = joined_column_lineage_map
+        self.row_index_lineage = joined_row_index_lineage
+        self.__dict__.update({"tabular_data_ids": joined_tabular_data_ids})
 
     @property
     def protected_attributes(self) -> list[str]:

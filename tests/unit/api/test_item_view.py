@@ -1,6 +1,8 @@
 """
 Unit test for ItemView class
 """
+import textwrap
+
 import pytest
 
 from featurebyte.api.item_view import ItemView
@@ -139,3 +141,109 @@ def test_event_view_column_getitem_series(snowflake_item_view):
         {"source": "project_1", "target": "filter_1"},
         {"source": "gt_1", "target": "filter_1"},
     ]
+
+
+def test_join_event_data_attributes(
+    snowflake_item_view,
+    snowflake_event_data_id,
+    snowflake_item_data_id,
+):
+    """
+    Test ItemView automatically joins timestamp column and entity columns from related EventData
+    """
+    view = snowflake_item_view
+
+    # Check node is join which will make event timestamp and EventData entities available
+    assert view.node.dict() == {
+        "name": "join_1",
+        "type": "join",
+        "output_type": "frame",
+        "parameters": {
+            "left_on": "col_int",
+            "right_on": "event_id_col",
+            "left_input_columns": ["event_timestamp"],
+            "left_output_columns": ["event_timestamp"],
+            "right_input_columns": [
+                "event_id_col",
+                "item_id_col",
+                "item_type",
+                "item_amount",
+                "created_at",
+            ],
+            "right_output_columns": [
+                "event_id_col",
+                "item_id_col",
+                "item_type",
+                "item_amount",
+                "created_at",
+            ],
+            "join_type": "left",
+        },
+    }
+
+    # Check Frame attributes
+    assert set(view.tabular_data_ids) == {snowflake_item_data_id, snowflake_event_data_id}
+    assert view.columns == [
+        "event_id_col",
+        "item_id_col",
+        "item_type",
+        "item_amount",
+        "created_at",
+        "event_timestamp",
+    ]
+    assert view.dtypes.to_dict() == {
+        "event_id_col": "INT",
+        "item_id_col": "VARCHAR",
+        "item_type": "VARCHAR",
+        "item_amount": "FLOAT",
+        "created_at": "TIMESTAMP",
+        "event_timestamp": "TIMESTAMP",
+    }
+    assert view.row_index_lineage == ("input_4", "join_1")
+    assert view.column_lineage_map == {
+        "event_id_col": ("input_4", "join_1"),
+        "item_id_col": ("input_4", "join_1"),
+        "item_type": ("input_4", "join_1"),
+        "item_amount": ("input_4", "join_1"),
+        "created_at": ("input_4", "join_1"),
+        "event_timestamp": ("input_3", "join_1"),
+    }
+
+    # Check preview SQL
+    preview_sql = snowflake_item_view.preview_sql()
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          L."event_timestamp" AS "event_timestamp",
+          R."event_id_col" AS "event_id_col",
+          R."item_id_col" AS "item_id_col",
+          R."item_type" AS "item_type",
+          R."item_amount" AS "item_amount",
+          R."created_at" AS "created_at"
+        FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "created_at" AS "created_at",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+        ) AS L
+        LEFT JOIN (
+            SELECT
+              "event_id_col" AS "event_id_col",
+              "item_id_col" AS "item_id_col",
+              "item_type" AS "item_type",
+              "item_amount" AS "item_amount",
+              "created_at" AS "created_at"
+            FROM "sf_database"."sf_schema"."items_table"
+        ) AS R
+          ON L."col_int" = R."event_id_col"
+        LIMIT 10
+        """
+    ).strip()
+    assert preview_sql == expected_sql
