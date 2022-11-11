@@ -217,12 +217,21 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         Series
             output of the binary operation
+
+        Raises
+        ------
+        TypeError
+            If the other series has incompatible type
         """
         if isinstance(other, Series):
             binary_op_series_params = self.binary_op_series_params(other)
         else:
             binary_op_series_params = self.binary_op_series_params()
-        if isinstance(other, Series) and not isinstance(other, type(self)):
+        if isinstance(other, Series) and type(self) != type(
+            other
+        ):  # pylint: disable=unidiomatic-typecheck
+            # Checking equality of types directly for cases such as when self is EventViewColumn and
+            # other is Feature - they are both Series but such operations are not allowed.
             raise TypeError(
                 f"Operation between {type(self).__name__} and {type(other).__name__} is not "
                 f"supported"
