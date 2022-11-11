@@ -227,9 +227,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             binary_op_series_params = self.binary_op_series_params(other)
         else:
             binary_op_series_params = self.binary_op_series_params()
-        if isinstance(other, Series) and type(self) != type(
-            other
-        ):  # pylint: disable=unidiomatic-typecheck
+        # pylint: disable=unidiomatic-typecheck
+        if isinstance(other, Series) and type(self) != type(other):
             # Checking strict equality of types when both sides are Series is intentional. It is to
             # handle cases such as when self is EventViewColumn and other is Feature - they are both
             # Series but such operations are not allowed.
