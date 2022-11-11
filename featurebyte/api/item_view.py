@@ -57,11 +57,26 @@ class ItemView(View):
         )
 
     @property
-    def additional_protected_attributes(self) -> list[str]:
-        return ["event_id_column", "item_id_column"]
+    def protected_attributes(self) -> list[str]:
+        """
+        List of protected attributes used to extract protected_columns
+
+        Returns
+        -------
+        list[str]
+        """
+        return super().protected_attributes + ["event_id_column", "item_id_column"]
 
     @property
     def inherited_columns(self) -> set[str]:
+        """
+        Special columns set which will be automatically added to the object of same class
+        derived from current object
+
+        Returns
+        -------
+        set[str]
+        """
         return set()
 
     @property

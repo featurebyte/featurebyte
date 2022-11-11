@@ -109,18 +109,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         list[str]
         """
-        return ["entity_columns"] + self.additional_protected_attributes
-
-    @property
-    def additional_protected_attributes(self) -> list[str]:
-        """
-        Additional protected attributes to be defined in subclasses
-
-        Returns
-        -------
-        list[str]
-        """
-        return []
+        return ["entity_columns"]
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:

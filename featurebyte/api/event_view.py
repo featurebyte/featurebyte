@@ -118,8 +118,15 @@ class EventView(View):
         return {self.timestamp_column}
 
     @property
-    def additional_protected_attributes(self) -> list[str]:
-        return ["timestamp_column"]
+    def protected_attributes(self) -> list[str]:
+        """
+        List of protected attributes used to extract protected_columns
+
+        Returns
+        -------
+        list[str]
+        """
+        return super().protected_attributes + ["timestamp_column"]
 
     @classmethod
     @typechecked
