@@ -15,12 +15,13 @@ services:
     hostname: featurebyte-server
     container_name: featurebyte-server
     depends_on: [mongo-rs]
+    ### Change to this when we release
+    # image: mydockerimage:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile
       args:
         FEATUREBYTE_NP_PASSWORD: $FEATUREBYTE_NP_PASSWORD  # You need to set an env variable here
-        HOST_IP: $
     volumes:
       - ~/.featurebyte:/home/user/.featurebyte
       - /tmp:/tmp
@@ -31,5 +32,5 @@ services:
       API_PORT: 8088
       WORKERS: 3
     ports:
-      - 127.0.0.1:8088:8088  # featurebyte-server
-      - 127.0.0.1:8089:8089  # jupyter-notebook
+      - "127.0.0.1:8088:8088"  # featurebyte-server
+      - "127.0.0.1:8089:8089"  # jupyter-notebook

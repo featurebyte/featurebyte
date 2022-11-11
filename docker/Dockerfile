@@ -1,4 +1,5 @@
-FROM python:3.8-slim
+# Need to route to different cpu arch
+FROM arm64v8/python:3.8-slim
 
 ARG USER=user
 ARG UID=1000
@@ -45,7 +46,9 @@ RUN pip install databricks-sql-connector==2.1.0 &&\
     jupyter contrib nbextension install
 
 
-RUN chown -R $USER:$USER /home/$USER/
+
+RUN chown -R $USER:$USER /home/$USER/ &&\
+    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
 USER $USER
 WORKDIR /home/$USER/app
 
