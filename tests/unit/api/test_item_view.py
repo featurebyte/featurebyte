@@ -67,6 +67,7 @@ def test_getitem__series_key(snowflake_item_view):
     assert row_subset.event_id_column == snowflake_item_view.event_id_column
     assert row_subset.item_id_column == snowflake_item_view.item_id_column
     assert row_subset.event_data_id == snowflake_item_view.event_data_id
+    assert row_subset.event_view.dict() == snowflake_item_view.event_view.dict()
 
 
 @pytest.mark.parametrize("column", ["event_id_col", "item_id_col"])

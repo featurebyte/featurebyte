@@ -8,6 +8,7 @@ from typing import Any, Optional
 from pydantic import Field
 from typeguard import typechecked
 
+from featurebyte.api.event_view import EventData, EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.models.base import PydanticObjectId
@@ -31,6 +32,7 @@ class ItemView(View):
     item_id_column: str = Field(allow_mutation=False)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
+    event_view: EventView = Field(allow_mutation=False)
 
     @classmethod
     @typechecked
@@ -48,13 +50,17 @@ class ItemView(View):
         ItemView
             constructed ItemView object
         """
-        return cls.from_data(
+        event_data = EventData.get_by_id(item_data.event_data_id)
+        event_view = EventView.from_event_data(event_data)
+        item_view = cls.from_data(
             item_data,
             event_id_column=item_data.event_id_column,
             item_id_column=item_data.item_id_column,
             event_data_id=item_data.event_data_id,
             default_feature_job_setting=item_data.default_feature_job_setting,
+            event_view=event_view,
         )
+        return item_view
 
     def join_event_data_attributes(self, columns: list[str]) -> None:
         """
@@ -105,6 +111,7 @@ class ItemView(View):
                 "event_id_column": self.event_id_column,
                 "item_id_column": self.item_id_column,
                 "event_data_id": self.event_data_id,
+                "event_view": self.event_view,
             }
         )
         return params
