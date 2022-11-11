@@ -466,7 +466,6 @@ async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_fea
 
     yield feature
 
-    await snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
@@ -569,8 +568,6 @@ async def snowflake_feature_list(
 
     yield feature_list
 
-    await snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
-    await snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
 
 

@@ -1,27 +1,18 @@
 """
 This module contains unit tests for FeatureManagerSnowflake
 """
-import json
 from unittest import mock
 
 import pandas as pd
 import pytest
-from pydantic import ValidationError
 
 from featurebyte.common.model_util import get_version
-from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
-    tm_insert_feature_registry,
-    tm_remove_feature_registry,
-    tm_select_feature_registry,
-    tm_update_feature_registry,
-    tm_update_feature_registry_default_false,
     tm_upsert_tile_feature_mapping,
 )
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.utils.snowflake.sql import escape_column_names
 
@@ -36,163 +27,6 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
         feature_store=mock_snowflake_feature.feature_store,
         version=get_version(),
     )
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
-    """
-    Test insert_feature_registry
-    """
-    mock_execute_query.size_effect = None
-    mock_snowflake_feature.__dict__["tabular_data_ids"] = [
-        PydanticObjectId("62d8d944d01041a098785131")
-    ]
-    await feature_manager.insert_feature_registry(mock_snowflake_feature)
-    assert mock_execute_query.call_count == 3
-
-    update_sql = tm_update_feature_registry_default_false.render(feature=mock_snowflake_feature)
-
-    tile_specs_lst = [tile_spec.dict() for tile_spec in mock_snowflake_feature.tile_specs]
-    tile_specs_str = json.dumps(tile_specs_lst).replace("\\", "\\\\")
-
-    insert_sql = tm_insert_feature_registry.render(
-        feature=mock_snowflake_feature,
-        tile_specs_str=tile_specs_str,
-        event_ids_str="62d8d944d01041a098785131",
-    )
-
-    calls = [
-        mock.call(update_sql),
-        mock.call(insert_sql),
-    ]
-    mock_execute_query.assert_has_calls(calls, any_order=True)
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_remove_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
-    """
-    Test remove_feature_registry
-    """
-    mock_execute_query.size_effect = None
-    mock_execute_query.return_value = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m"],
-            "VERSION": ["v1"],
-            "READINESS": ["DRAFT"],
-        }
-    )
-    await feature_manager.remove_feature_registry(mock_snowflake_feature)
-    assert mock_execute_query.call_count == 2
-
-    remove_sql = tm_remove_feature_registry.render(feature=mock_snowflake_feature)
-
-    calls = [
-        mock.call(remove_sql),
-    ]
-    mock_execute_query.assert_has_calls(calls, any_order=True)
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_remove_feature_registry_no_feature(
-    mock_execute_query, mock_snowflake_feature, feature_manager
-):
-    """
-    Test remove_feature_registry no feature
-    """
-    mock_execute_query.size_effect = None
-    mock_execute_query.return_value = []
-
-    with pytest.raises(MissingFeatureRegistryError) as excinfo:
-        await feature_manager.remove_feature_registry(mock_snowflake_feature)
-
-    assert str(excinfo.value) == (
-        f"Feature version does not exist for {mock_snowflake_feature.name} with version "
-        f"{mock_snowflake_feature.version.to_str()}"
-    )
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_remove_feature_registry_feature_version_not_draft(
-    mock_execute_query, mock_snowflake_feature, feature_manager
-):
-    """
-    Test remove_feature_registry feature version readiness not DRAFT
-    """
-    mock_execute_query.size_effect = None
-    mock_execute_query.return_value = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m"],
-            "VERSION": ["v1"],
-            "READINESS": ["PRODUCTION_READY"],
-        }
-    )
-
-    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
-        await feature_manager.remove_feature_registry(mock_snowflake_feature)
-
-    assert str(excinfo.value) == (
-        f"Feature version {mock_snowflake_feature.name} with version {mock_snowflake_feature.version.to_str()} "
-        f"cannot be deleted with readiness PRODUCTION_READY"
-    )
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_manager):
-    """
-    Test retrieve_features
-    """
-    mock_execute_query.return_value = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m"],
-            "VERSION": ["v1"],
-            "READINESS": ["DRAFT"],
-            "IS_DEFAULT": [True],
-            "TIME_MODULO_FREQUENCY_SECOND": [183],
-            "BLIND_SPOT_SECOND": [3],
-            "FREQUENCY_MINUTES": [5],
-            "TILE_SQL": ["SELECT DUMMY"],
-            "TILE_SPECS": [[]],
-            "COLUMN_NAMES": ["c1"],
-            "ONLINE_ENABLED": [True],
-            "EVENT_DATA_IDS": ["626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"],
-        }
-    )
-    f_reg_df = await feature_manager.retrieve_feature_registries(mock_snowflake_feature)
-    assert mock_execute_query.call_count == 1
-
-    sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.name, version=None)
-    calls = [
-        mock.call(sql),
-    ]
-    mock_execute_query.assert_has_calls(calls, any_order=True)
-
-    assert len(f_reg_df) == 1
-    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
-    assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["TILE_SPECS"] == []
-    assert f_reg_df.iloc[0]["EVENT_DATA_IDS"] == "626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"
-
-
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@pytest.mark.asyncio
-async def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature_manager):
-    """
-    Test retrieve_features
-    """
-    mock_execute_query.return_value = ["feature_list1"]
-    await feature_manager.update_feature_registry(mock_snowflake_feature, to_online_enable=True)
-    assert mock_execute_query.call_count == 2
-
-    sql = tm_update_feature_registry.render(feature=mock_snowflake_feature, online_enabled=True)
-    calls = [
-        mock.call(sql),
-    ]
-    mock_execute_query.assert_has_calls(calls, any_order=True)
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -228,7 +62,7 @@ async def test_online_enable(
         feature_name=feature_spec.feature.name,
         feature_version=feature_spec.feature.version.to_str(),
         feature_readiness=str(mock_snowflake_feature.readiness),
-        feature_tabular_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
+        feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
         feature_sql=feature_spec.feature_sql.replace("'", "''"),
         feature_store_table_name=feature_spec.feature_store_table_name,
         entity_column_names_str=",".join(escape_column_names(feature_spec.entity_column_names)),

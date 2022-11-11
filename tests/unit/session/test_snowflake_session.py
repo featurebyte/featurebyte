@@ -162,8 +162,6 @@ EXPECTED_PROCEDURES = [
 ]
 
 EXPECTED_TABLES = [
-    "FEATURE_LIST_REGISTRY",
-    "FEATURE_REGISTRY",
     "METADATA_SCHEMA",
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
@@ -282,7 +280,6 @@ def test_schema_initializer__sql_objects(
             "identifier": "F_TIMESTAMP_TO_INDEX",
             "type": "function",
         },
-        {"filename": "T_FEATURE_REGISTRY.sql", "identifier": "FEATURE_REGISTRY", "type": "table"},
         {
             "filename": "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
             "identifier": "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
@@ -318,11 +315,6 @@ def test_schema_initializer__sql_objects(
             "filename": "SP_TILE_GENERATE_SCHEDULE.sql",
             "identifier": "SP_TILE_GENERATE_SCHEDULE",
             "type": "procedure",
-        },
-        {
-            "filename": "T_FEATURE_LIST_REGISTRY.sql",
-            "identifier": "FEATURE_LIST_REGISTRY",
-            "type": "table",
         },
         {"filename": "SP_TILE_GENERATE.sql", "identifier": "SP_TILE_GENERATE", "type": "procedure"},
         {
