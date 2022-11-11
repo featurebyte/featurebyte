@@ -73,6 +73,8 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         ):
             input_node2 = cast(InputNode, input_node)
             if input_node2.parameters.type == TableDataType.EVENT_DATA:
-                output.append(input_node2.parameters.id)
+                e_id = input_node2.parameters.id
+                if e_id:
+                    output.append(str(e_id))
 
         return output
