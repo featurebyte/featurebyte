@@ -9,7 +9,7 @@ from pydantic import StrictStr
 
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 
 
 class SCDDataCreate(DataCreate):
