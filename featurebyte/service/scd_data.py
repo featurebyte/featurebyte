@@ -14,3 +14,7 @@ class SCDDataService(BaseDataDocumentService[SCDDataModel, SCDDataCreate, SCDDat
     """
 
     document_class = SCDDataModel
+
+    @property
+    def class_name(self) -> str:
+        return "SCDData"

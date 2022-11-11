@@ -864,4 +864,4 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             json=unprocessible_entity_payload,
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"].lower() == expected_message.lower()
+        assert response.json()["detail"] == expected_message

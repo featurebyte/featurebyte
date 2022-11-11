@@ -48,6 +48,7 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
             "event_data": "EventData",
             "item_data": "ItemData",
             "dimension_data": "DimensionData",
+            "scd_data": "SCDData",
         }
 
     @property

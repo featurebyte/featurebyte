@@ -18,7 +18,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
     TestSCDDataApi class
     """
 
-    class_name = "ScdData"
+    class_name = "SCDData"
     base_route = "/scd_data"
     data_create_schema_class = SCDDataCreate
     payload = BaseDataApiTestSuite.load_payload("tests/fixtures/request_payloads/scd_data.json")
@@ -31,15 +31,15 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'ScdData (name: "{document_name}") already exists. '
-            f'Get the existing object by `ScdData.get(name="{document_name}")`.',
+            f'SCDData (name: "{document_name}") already exists. '
+            f'Get the existing object by `SCDData.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
-            f"ScdData (tabular_source: \"{{'feature_store_id': "
+            f"SCDData (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
             "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
-            f'already exists. Get the existing object by `ScdData.get(name="{document_name}")`.',
+            f'already exists. Get the existing object by `SCDData.get(name="{document_name}")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
