@@ -9,14 +9,12 @@ from typeguard import typechecked
 
 from featurebyte.api.agg_func import construct_agg_func
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -34,11 +32,7 @@ class EventViewGroupBy(OpsMixin):
             keys_value = keys
 
         # construct column name entity mapping
-        try:
-            event_data = EventData.get_by_id(obj.event_data_id)
-            columns_info = event_data.columns_info
-        except RecordRetrievalException:
-            columns_info = obj.columns_info
+        columns_info = obj.columns_info
         column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
 
         # construct serving_names
@@ -238,7 +232,7 @@ class EventViewGroupBy(OpsMixin):
                 node_name=feature_node.name,
                 dtype=var_type,
                 row_index_lineage=(groupby_node.name,),
-                tabular_data_ids=[self.obj.event_data_id],
+                tabular_data_ids=self.obj.tabular_data_ids,
                 entity_ids=self.entity_ids,
             )
             # Count features should be 0 instead of NaN when there are no records

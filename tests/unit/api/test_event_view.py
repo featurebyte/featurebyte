@@ -100,9 +100,9 @@ def test_getitem__list_of_str(snowflake_event_view):
     # both event data subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node
     assert (
-        snowflake_event_view.event_data_id
-        == event_view_subset1.event_data_id
-        == event_view_subset2.event_data_id
+        snowflake_event_view.tabular_data_ids
+        == event_view_subset1.tabular_data_ids
+        == event_view_subset2.tabular_data_ids
     )
 
 
@@ -133,7 +133,7 @@ def test_setitem__override_protected_column(snowflake_event_view, column):
     assert column in snowflake_event_view.protected_columns
     with pytest.raises(ValueError) as exc:
         snowflake_event_view[column] = 1
-    expected_msg = f"Timestamp or entity column '{column}' cannot be modified!"
+    expected_msg = f"Column '{column}' cannot be modified!"
     assert expected_msg in str(exc.value)
 
 
@@ -166,11 +166,11 @@ def test_setitem__str_key_series_value(snowflake_event_view):
 
 def test_unary_op_params(snowflake_event_view):
     """
-    Test unary operation inherits event_data_id
+    Test unary operation inherits tabular_data_ids
     """
     column = snowflake_event_view["cust_id"]
     output = column.isnull()
-    assert output.event_data_id == column.event_data_id
+    assert output.tabular_data_ids == column.tabular_data_ids
 
 
 def test_event_view_column_getitem_series(snowflake_event_view):
@@ -180,7 +180,7 @@ def test_event_view_column_getitem_series(snowflake_event_view):
     column = snowflake_event_view["col_float"]
     mask = snowflake_event_view["col_boolean"]
     output = column[mask]
-    assert output.event_data_id == column.event_data_id
+    assert output.tabular_data_ids == column.tabular_data_ids
     assert output.name == column.name
     assert output.dtype == column.dtype
     output_dict = output.dict()
@@ -228,7 +228,7 @@ def test_event_view_column_lag(snowflake_event_view, column, offset, expected_va
         "entity_columns": ["cust_id"],
         "offset": expected_offset_param,
     }
-    assert lagged_column.event_data_id == snowflake_event_view[column].event_data_id
+    assert lagged_column.tabular_data_ids == snowflake_event_view[column].tabular_data_ids
 
 
 def test_event_view_column_lag__invalid(snowflake_event_view):
