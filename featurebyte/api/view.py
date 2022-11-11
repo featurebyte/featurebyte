@@ -120,9 +120,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         dict[str, Any]
         """
-        return {
-            "tabular_data_ids": self.tabular_data_ids,
-        }
+        return {"tabular_data_ids": self.tabular_data_ids}
 
     @property
     def _getitem_series_params(self) -> dict[str, Any]:
