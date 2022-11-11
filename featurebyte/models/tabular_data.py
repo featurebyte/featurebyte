@@ -12,9 +12,11 @@ from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataModel as BaseDataModel
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.models.scd_data import SCDDataModel
 
 DataModel = Annotated[
-    Union[EventDataModel, ItemDataModel, DimensionDataModel], Field(discriminator="type")
+    Union[EventDataModel, ItemDataModel, DimensionDataModel, SCDDataModel],
+    Field(discriminator="type"),
 ]
 
 
