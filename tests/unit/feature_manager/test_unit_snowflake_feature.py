@@ -22,7 +22,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_upsert_tile_feature_mapping,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
@@ -211,13 +211,9 @@ async def test_online_enable(
     """
 
     feature_spec = OnlineFeatureSpec(
-        feature_name=mock_snowflake_feature.name,
-        feature_version=mock_snowflake_feature.version.to_str(),
-        feature_readiness=mock_snowflake_feature.readiness,
-        feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
+        feature=mock_snowflake_feature,
         feature_sql="select * from temp",
         feature_store_table_name="feature_store_table_1",
-        tile_specs=mock_snowflake_feature.tile_specs,
     )
 
     await feature_manager.online_enable(feature_spec)
@@ -229,42 +225,16 @@ async def test_online_enable(
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
-        feature_name=feature_spec.feature_name,
-        feature_version=feature_spec.feature_version,
+        feature_name=feature_spec.feature.name,
+        feature_version=feature_spec.feature.version.to_str(),
         feature_readiness=str(mock_snowflake_feature.readiness),
-        feature_tabular_data_ids=",".join(
-            [str(i) for i in mock_snowflake_feature.tabular_data_ids]
-        ),
+        feature_tabular_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
         feature_sql=feature_spec.feature_sql.replace("'", "''"),
         feature_store_table_name=feature_spec.feature_store_table_name,
         entity_column_names_str=",".join(escape_column_names(feature_spec.entity_column_names)),
         is_deleted=False,
     )
     assert mock_execute_query.call_args_list[0] == mock.call(upsert_sql)
-
-
-@pytest.mark.asyncio
-async def test_online_enable_missing_tile_spec(
-    mock_snowflake_feature,
-    feature_manager,
-):
-    """
-    Test online_enable
-    """
-
-    with pytest.raises(ValidationError) as excinfo:
-        OnlineFeatureSpec(
-            feature_name=mock_snowflake_feature.name,
-            feature_version=mock_snowflake_feature.version.to_str(),
-            feature_readiness=mock_snowflake_feature.readiness,
-            feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
-            feature_sql="select * from temp",
-            feature_store_table_name="feature_store_table_1",
-            tile_specs=[],
-        )
-
-    assert "1 validation error for OnlineFeatureSpec" in str(excinfo.value)
-    assert "tile_specs" in str(excinfo.value)
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -284,18 +254,14 @@ async def test_online_enable_duplicate_tile_task(
     _ = mock_schedule_offline_tiles
     _ = mock_schedule_online_tiles
 
-    online_feature_spec = OnlineFeatureSpec(
-        feature_name=mock_snowflake_feature.name,
-        feature_version=mock_snowflake_feature.version.to_str(),
-        feature_readiness=mock_snowflake_feature.readiness,
-        feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
+    feature_spec = OnlineFeatureSpec(
+        feature=mock_snowflake_feature,
         feature_sql="select * from temp",
         feature_store_table_name="feature_store_table_1",
-        tile_specs=mock_snowflake_feature.tile_specs,
     )
 
     mock_execute_query.side_effect = [None, pd.DataFrame.from_dict({"name": ["task_1"]}), None]
-    await feature_manager.online_enable(online_feature_spec)
+    await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
@@ -313,22 +279,18 @@ async def test_online_disable(
     """
 
     feature_spec = OnlineFeatureSpec(
-        feature_name=mock_snowflake_feature.name,
-        feature_version=mock_snowflake_feature.version.to_str(),
-        feature_readiness=mock_snowflake_feature.readiness,
-        feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
+        feature=mock_snowflake_feature,
         feature_sql="select * from temp",
         feature_store_table_name="feature_store_table_1",
-        tile_specs=mock_snowflake_feature.tile_specs,
     )
 
     mock_execute_query.side_effect = [None, None, None]
     await feature_manager.online_disable(feature_spec)
 
     delete_sql = tm_delete_tile_feature_mapping.render(
-        tile_id=feature_spec.tile_specs[0].tile_id,
-        feature_name=feature_spec.feature_name,
-        feature_version=feature_spec.feature_version,
+        tile_id=feature_spec.tile_ids[0],
+        feature_name=feature_spec.feature.name,
+        feature_version=feature_spec.feature.version.to_str(),
     )
     assert mock_execute_query.call_args_list[0] == mock.call(delete_sql)
 
