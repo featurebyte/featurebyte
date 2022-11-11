@@ -77,7 +77,6 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
                 resolution_signature
                 in UniqueConstraintResolutionSignature.get_existing_object_type()
             ):
-                class_name = "".join(elem.title() for elem in tabular_data_type.split("_"))
                 resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
                     resolution_signature=resolution_signature,
                     class_name=class_name,
