@@ -222,6 +222,11 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             binary_op_series_params = self.binary_op_series_params(other)
         else:
             binary_op_series_params = self.binary_op_series_params()
+        if isinstance(other, Series) and not isinstance(other, type(self)):
+            raise TypeError(
+                f"Operation between {type(self).__name__} and {type(other).__name__} is not "
+                f"supported"
+            )
         return series_binary_operation(
             input_series=self,
             other=other,

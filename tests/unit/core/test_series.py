@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import construct_node
@@ -776,6 +777,24 @@ def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "date_add_1"},
     ]
+
+
+def test_binary_op_between_different_series_classes_not_allowed(dataframe, float_series):
+    """
+    Test binary operation between Series of different types is not allowed
+    """
+
+    class DifferentSeries(Series):
+        pass
+
+    another_dataframe = dataframe.copy()
+    another_dataframe.__dict__.update({"_series_class": DifferentSeries})
+    series_different_type = another_dataframe["VALUE"]
+
+    with pytest.raises(TypeError) as exc:
+        _ = float_series + series_different_type
+
+    assert str(exc.value) == "Operation between Series and DifferentSeries is not supported"
 
 
 def assert_series_attributes_equal(left, right):
