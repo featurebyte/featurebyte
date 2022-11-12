@@ -85,6 +85,9 @@ class QueryObject(FeatureByteBaseModel):
         return GraphInterpreter(
             pruned_graph, source_type=self.feature_store.type
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)
+        # return GraphInterpreter(
+        #     self.graph, source_type=self.feature_store.type
+        # ).construct_preview_sql(node_name=self.node.name, num_rows=limit)
 
     @typechecked
     def preview(self, limit: int = 10) -> pd.DataFrame:

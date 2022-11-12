@@ -94,12 +94,6 @@ class ItemView(View):
         right_input_columns = self.columns
         right_output_columns = self.columns
 
-        columns_set = set(columns)
-        joined_columns_info = copy.deepcopy(self.columns_info)
-        for column_info in self.event_view.columns_info:
-            if column_info.name in columns_set:
-                joined_columns_info.append(column_info)
-
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
             node_params={
@@ -115,15 +109,27 @@ class ItemView(View):
             input_nodes=[self.event_view.node, self.node],
         )
 
+        # Construct new columns_info
+        columns_set = set(columns)
+        joined_columns_info = copy.deepcopy(self.columns_info)
+        for column_info in self.event_view.columns_info:
+            if column_info.name in columns_set:
+                joined_columns_info.append(column_info)
+
+        # Construct new column_lineage_map
         joined_column_lineage_map = copy.deepcopy(self.column_lineage_map)
         for col in columns:
             joined_column_lineage_map[col] = self.event_view.column_lineage_map[col]
         for col, lineage in joined_column_lineage_map.items():
             joined_column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
 
+        # Construct new row_index_lineage
         joined_row_index_lineage = self._append_to_lineage(self.row_index_lineage, node.name)
 
-        joined_tabular_data_ids = self.tabular_data_ids + self.event_view.tabular_data_ids
+        # Construct new tabular_data_ids
+        joined_tabular_data_ids = sorted(
+            set(self.tabular_data_ids + self.event_view.tabular_data_ids)
+        )
 
         self.node_name = node.name
         self.columns_info = joined_columns_info
