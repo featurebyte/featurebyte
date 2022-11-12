@@ -9,6 +9,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import get_node
 
 
 @pytest.fixture(name="snowflake_item_view")
@@ -39,9 +40,11 @@ def test_from_item_data__auto_join_columns(
     Test ItemView automatically joins timestamp column and entity columns from related EventData
     """
     view = ItemView.from_item_data(snowflake_item_data)
+    view_dict = view.dict()
 
     # Check node is a join node which will make event timestamp and EventData entities available
-    assert view.node.dict() == {
+    node_dict = get_node(view_dict["graph"], view_dict["node_name"])
+    assert node_dict == {
         "name": "join_1",
         "type": "join",
         "output_type": "frame",
@@ -86,14 +89,14 @@ def test_from_item_data__auto_join_columns(
         "created_at": "TIMESTAMP",
         "event_timestamp": "TIMESTAMP",
     }
-    assert view.row_index_lineage == ("input_4", "join_1")
-    assert view.column_lineage_map == {
-        "event_id_col": ("input_4", "join_1"),
-        "item_id_col": ("input_4", "join_1"),
-        "item_type": ("input_4", "join_1"),
-        "item_amount": ("input_4", "join_1"),
-        "created_at": ("input_4", "join_1"),
-        "event_timestamp": ("input_3", "join_1"),
+    assert view_dict["row_index_lineage"] == ("input_2", "join_1")
+    assert view_dict["column_lineage_map"] == {
+        "event_id_col": ("input_2", "join_1"),
+        "item_id_col": ("input_2", "join_1"),
+        "item_type": ("input_2", "join_1"),
+        "item_amount": ("input_2", "join_1"),
+        "created_at": ("input_2", "join_1"),
+        "event_timestamp": ("input_1", "join_1"),
     }
 
     # Check preview SQL
@@ -285,9 +288,11 @@ def test_join_event_data_attributes(
     """
     view = snowflake_item_view
     view.join_event_data_attributes(["col_float"])
+    view_dict = view.dict()
 
     # Check node
-    assert view.node.dict() == {
+    node_dict = get_node(view_dict["graph"], view_dict["node_name"])
+    assert node_dict == {
         "name": "join_2",
         "type": "join",
         "output_type": "frame",
@@ -337,15 +342,15 @@ def test_join_event_data_attributes(
         "event_timestamp": "TIMESTAMP",
         "col_float": "FLOAT",
     }
-    assert view.row_index_lineage == ("input_4", "join_1", "join_2")
-    assert view.column_lineage_map == {
-        "event_id_col": ("input_4", "join_1", "join_2"),
-        "item_id_col": ("input_4", "join_1", "join_2"),
-        "item_type": ("input_4", "join_1", "join_2"),
-        "item_amount": ("input_4", "join_1", "join_2"),
-        "created_at": ("input_4", "join_1", "join_2"),
-        "event_timestamp": ("input_3", "join_1", "join_2"),
-        "col_float": ("input_3", "join_2"),
+    assert view_dict["row_index_lineage"] == ("input_2", "join_1", "join_2")
+    assert view_dict["column_lineage_map"] == {
+        "event_id_col": ("input_2", "join_1", "join_2"),
+        "item_id_col": ("input_2", "join_1", "join_2"),
+        "item_type": ("input_2", "join_1", "join_2"),
+        "item_amount": ("input_2", "join_1", "join_2"),
+        "created_at": ("input_2", "join_1", "join_2"),
+        "event_timestamp": ("input_1", "join_1", "join_2"),
+        "col_float": ("input_1", "join_2"),
     }
 
     # Check preview SQL

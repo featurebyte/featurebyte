@@ -10,7 +10,8 @@ import copy
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.event_view import EventData, EventView
+from featurebyte.api.event_data import EventData
+from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.models.base import PydanticObjectId
