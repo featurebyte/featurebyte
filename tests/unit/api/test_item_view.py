@@ -278,7 +278,7 @@ def test_event_view_column_getitem_series(snowflake_item_view):
     ]
 
 
-def test_join_event_data_attributes(
+def test_join_event_data_attributes__more_columns(
     snowflake_item_view,
     snowflake_event_data_id,
     snowflake_item_data_id,
@@ -415,3 +415,12 @@ def test_join_event_data_attributes(
         """
     ).strip()
     assert preview_sql == expected_sql
+
+
+def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
+    """
+    Test join_event_data_attributes with invalid columns
+    """
+    with pytest.raises(ValueError) as exc:
+        snowflake_item_view.join_event_data_attributes(["non_existing_column"])
+    assert str(exc.value) == "Column does not exist in EventData: non_existing_column"
