@@ -138,6 +138,16 @@ class ItemView(View):
         self.__dict__.update({"tabular_data_ids": joined_tabular_data_ids})
 
     @property
+    def timestamp_column(self) -> str:
+        """
+        Event timestamp column
+
+        Returns
+        -------
+        """
+        return self.event_view.timestamp_column
+
+    @property
     def protected_attributes(self) -> list[str]:
         """
         List of protected attributes used to extract protected_columns
@@ -146,7 +156,11 @@ class ItemView(View):
         -------
         list[str]
         """
-        return super().protected_attributes + ["event_id_column", "item_id_column"]
+        return super().protected_attributes + [
+            "event_id_column",
+            "item_id_column",
+            "timestamp_column",
+        ]
 
     @property
     def inherited_columns(self) -> set[str]:

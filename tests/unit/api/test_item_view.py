@@ -40,7 +40,7 @@ def test_from_item_data__auto_join_columns(
     """
     view = ItemView.from_item_data(snowflake_item_data)
 
-    # Check node is join which will make event timestamp and EventData entities available
+    # Check node is a join node which will make event timestamp and EventData entities available
     assert view.node.dict() == {
         "name": "join_1",
         "type": "join",
@@ -136,6 +136,23 @@ def test_from_item_data__auto_join_columns(
     assert preview_sql == expected_sql
 
 
+def test_has_event_timestamp_column(snowflake_item_view):
+    """
+    Test that ItemView inherits the event timestamp column from EventView
+    """
+    assert snowflake_item_view.timestamp_column == "event_timestamp"
+
+
+def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
+    """
+    Test that ItemView inherits the same feature job setting from the EventData
+    """
+    assert (
+        snowflake_item_view.default_feature_job_setting
+        == snowflake_event_data.default_feature_job_setting
+    )
+
+
 def test_getitem__str(snowflake_item_view, snowflake_item_data):
     """
     Test retrieving single column
@@ -173,7 +190,7 @@ def test_getitem__series_key(snowflake_item_view):
     assert row_subset.event_view.dict() == snowflake_item_view.event_view.dict()
 
 
-@pytest.mark.parametrize("column", ["event_id_col", "item_id_col"])
+@pytest.mark.parametrize("column", ["event_id_col", "item_id_col", "event_timestamp"])
 def test_setitem__override_protected_column(snowflake_item_view, column):
     """
     Test attempting to change ItemData's protected columns
