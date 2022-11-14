@@ -19,6 +19,7 @@ from featurebyte.models.item_data import ItemDataModel
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.persistent.base import Persistent
+from featurebyte.routes.common.base import DocumentServiceT
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -302,7 +303,7 @@ class BaseService(OpsServiceMixin):
     ) -> FeatureJobSettingAnalysisService:
         ...
 
-    def as_service(self, doc_service_name: DocServiceName) -> DocumentService:
+    def as_service(self, doc_service_name: DocServiceName) -> DocumentServiceT:
         """
         Convert document service name to document service object
 
@@ -315,7 +316,7 @@ class BaseService(OpsServiceMixin):
         -------
         DocumentServiceT
         """
-        doc_service_name_map: dict[DocServiceName, DocumentService] = {
+        doc_service_name_map: dict[DocServiceName, DocumentServiceT] = {
             DocServiceName.DATA: self.data_service,
             DocServiceName.FEATURE_STORE: self.feature_store_service,
             DocServiceName.ENTITY: self.entity_service,
