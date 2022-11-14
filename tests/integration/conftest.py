@@ -310,6 +310,20 @@ def items_dataframe_fixture(transaction_data_upper_case):
     return df_items
 
 
+@pytest.fixture(name="expected_joined_event_item_dataframe", scope="session")
+def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, items_dataframe):
+    """
+    DataFrame fixture with the expected joined event and item data
+    """
+    df = pd.merge(
+        transaction_data_upper_case[["TRANSACTION_ID", "EVENT_TIMESTAMP", "USER ID"]],
+        items_dataframe,
+        left_on="TRANSACTION_ID",
+        right_on="order_id",
+    )
+    return df
+
+
 @pytest.fixture(name="sqlite_filename", scope="session")
 def sqlite_filename_fixture(transaction_data):
     """
