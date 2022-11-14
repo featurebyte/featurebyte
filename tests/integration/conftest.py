@@ -260,6 +260,7 @@ def transaction_dataframe():
     data["event_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
     # exclude any nanosecond components since it is not supported
     data["event_timestamp"] = data["event_timestamp"].dt.floor("us")
+    data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
     yield data
 
 
@@ -610,13 +611,14 @@ def create_transactions_event_data_from_feature_store(
             "PRODUCT_ACTION": "VARCHAR",
             "SESSION_ID": "INT",
             "AMOUNT": "FLOAT",
+            "TRANSACTION_ID": "VARCHAR",
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
     event_data = EventData.from_tabular_source(
         tabular_source=database_table,
         name=event_data_name,
-        event_id_column="CREATED_AT",
+        event_id_column="TRANSACTION_ID",
         event_timestamp_column="EVENT_TIMESTAMP",
     )
     event_data.update_default_feature_job_setting(
