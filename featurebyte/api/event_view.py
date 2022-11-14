@@ -88,6 +88,7 @@ class EventView(View):
     _series_class = EventViewColumn
 
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
+    event_id_column: str = Field(allow_mutation=False)
 
     @property
     def timestamp_column(self) -> str:
@@ -145,7 +146,9 @@ class EventView(View):
             constructed EventView object
         """
         return cls.from_data(
-            event_data, default_feature_job_setting=event_data.default_feature_job_setting
+            event_data,
+            default_feature_job_setting=event_data.default_feature_job_setting,
+            event_id_column=event_data.event_id_column,
         )
 
     @property
@@ -158,7 +161,12 @@ class EventView(View):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        params.update({"default_feature_job_setting": self.default_feature_job_setting})
+        params.update(
+            {
+                "default_feature_job_setting": self.default_feature_job_setting,
+                "event_id_column": self.event_id_column,
+            }
+        )
         return params
 
     @typechecked
