@@ -289,7 +289,7 @@ def items_dataframe_fixture(transaction_data_upper_case):
     """
     DataFrame fixture with item based data corresponding to the transaction data
     """
-    rng = np.random.RandomState(0)
+    rng = np.random.RandomState(0)  # pylint: disable=no-member
     data = defaultdict(list)
     item_ids = [f"item_{i}" for i in range(100)]
     item_types = [f"type_{i}" for i in range(100)]
