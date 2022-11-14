@@ -40,6 +40,7 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
@@ -133,6 +134,10 @@ app_container_config = {
         {
             "name": "info_service",
             "clazz": InfoService,
+        },
+        {
+            "name": "session_manager_service",
+            "clazz": SessionManagerService,
         },
     ],
     "controllers": [

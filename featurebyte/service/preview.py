@@ -27,16 +27,25 @@ from featurebyte.schema.feature_list import (
     FeatureListSQL,
 )
 from featurebyte.schema.feature_store import FeatureStorePreview
-from featurebyte.service.mixin import OpsServiceMixin
+from featurebyte.service.base_service import BaseService
+from featurebyte.service.session_manager import SessionManagerService
 
 
-class PreviewService(OpsServiceMixin):
+class PreviewService(BaseService):
     """
     PreviewService class
     """
 
-    def __init__(self, user: Any, **kwargs: Any) -> None:  # pylint: disable=unused-argument
-        self.user = user
+    @property
+    def session_manager_service(self) -> SessionManagerService:
+        """
+        SessionManagerService object
+
+        Returns
+        -------
+        SessionManagerService
+        """
+        return SessionManagerService(user=self.user, persistent=self.persistent)
 
     def _convert_dataframe_as_json(self, dataframe: pd.DataFrame) -> str:
         """
@@ -85,7 +94,7 @@ class PreviewService(OpsServiceMixin):
             preview.node_name
         ).parameters.feature_store_details.dict()
         feature_store = FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name)
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
             get_credential=get_credential,
         )
@@ -138,7 +147,7 @@ class PreviewService(OpsServiceMixin):
         feature_store = FeatureStoreModel(
             **feature_store_dict, name=feature_preview.feature_store_name
         )
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
             get_credential=get_credential,
         )
@@ -188,7 +197,7 @@ class PreviewService(OpsServiceMixin):
             feature_store = FeatureStoreModel(
                 **feature_store_dict, name=feature_cluster.feature_store_name
             )
-            db_session = await self._get_feature_store_session(
+            db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
                 get_credential=get_credential,
             )
@@ -241,7 +250,7 @@ class PreviewService(OpsServiceMixin):
         feature_store = FeatureStoreModel(
             **feature_store_dict, name=feature_cluster.feature_store_name
         )
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
             get_credential=get_credential,
         )

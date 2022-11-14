@@ -7,17 +7,21 @@ from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError
 from featurebyte.models import FeatureStoreModel
-from featurebyte.service.base_service import BaseService
+from featurebyte.persistent import Persistent
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 
 
-class SessionManagerService(BaseService):
+class SessionManagerService:
     """
     SessionManagerService class is responsible for retrieving a session manager.
     """
 
-    def get_feature_store_session(
+    def __init__(self, user: Any, persistent: Persistent):
+        self.user = user
+        self.persistent = persistent
+
+    async def get_feature_store_session(
         self, feature_store: FeatureStoreModel, get_credential: Any
     ) -> BaseSession:
         """
