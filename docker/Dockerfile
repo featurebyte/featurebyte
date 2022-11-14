@@ -1,5 +1,5 @@
 # Need to route to different cpu arch
-FROM arm64v8/python:3.8-slim
+FROM python:3.8-slim
 
 ARG USER=user
 ARG UID=1000
