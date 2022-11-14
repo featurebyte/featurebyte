@@ -9,6 +9,7 @@ import os
 import sqlite3
 import tempfile
 import textwrap
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from unittest import mock
@@ -26,6 +27,7 @@ from mongomock_motor import AsyncMongoMockClient
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.item_data import ItemData
 from featurebyte.app import app
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
@@ -282,6 +284,32 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
+@pytest.fixture(name="items_dataframe", scope="session")
+def items_dataframe_fixture(transaction_data_upper_case):
+    """
+    DataFrame fixture with item based data corresponding to the transaction data
+    """
+    rng = np.random.RandomState(0)
+    data = defaultdict(list)
+    item_ids = [f"item_{i}" for i in range(100)]
+    item_types = [f"type_{i}" for i in range(100)]
+
+    def generate_items_for_transaction(transaction_row):
+        order_id = transaction_row["TRANSACTION_ID"]
+        num_items = rng.randint(1, 10)
+        selected_item_ids = rng.choice(item_ids, num_items, replace=False)
+        selected_item_types = rng.choice(item_types, num_items, replace=False)
+        data["order_id"].extend([order_id] * num_items)
+        data["item_id"].extend(selected_item_ids)
+        data["item_type"].extend(selected_item_types)
+
+    for _, row in transaction_data_upper_case.iterrows():
+        generate_items_for_transaction(row)
+
+    df_items = pd.DataFrame(data)
+    return df_items
+
+
 @pytest.fixture(name="sqlite_filename", scope="session")
 def sqlite_filename_fixture(transaction_data):
     """
@@ -295,7 +323,12 @@ def sqlite_filename_fixture(transaction_data):
 
 
 @pytest_asyncio.fixture(name="snowflake_session", scope="session")
-async def snowflake_session_fixture(transaction_data_upper_case, config, snowflake_feature_store):
+async def snowflake_session_fixture(
+    transaction_data_upper_case,
+    items_dataframe,
+    config,
+    snowflake_feature_store,
+):
     """
     Snowflake session
     """
@@ -303,8 +336,13 @@ async def snowflake_session_fixture(transaction_data_upper_case, config, snowfla
     session = await session_manager.get_session(snowflake_feature_store)
     assert isinstance(session, SnowflakeSession)
 
+    # EventData table
     await session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
 
+    # ItemData table
+    await session.register_temp_table("ITEM_DATA_TABLE", items_dataframe)
+
+    # Tile table for tile manager integration tests
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
     df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
     await session.register_temp_table("TEMP_TABLE", df_tiles)
@@ -646,6 +684,28 @@ def snowflake_event_data_fixture(snowflake_session, snowflake_feature_store, use
     return event_data
 
 
+@pytest.fixture(name="snowflake_item_data", scope="session")
+def snowflake_item_data_fixture(
+    snowflake_session,
+    snowflake_feature_store,
+    snowflake_event_data,
+):
+    """Fixture for an ItemData in integration tests"""
+    database_table = snowflake_feature_store.get_table(
+        database_name=snowflake_session.database_name,
+        schema_name=snowflake_session.sf_schema,
+        table_name="ITEM_DATA_TABLE",
+    )
+    event_data = ItemData.from_tabular_source(
+        tabular_source=database_table,
+        name="snowflake_item_data",
+        event_id_column="order_id",
+        item_id_column="item_id",
+        event_data_name=snowflake_event_data.name,
+    )
+    return event_data
+
+
 @pytest.fixture(name="databricks_event_data", scope="session")
 def databricks_event_data_fixture(databricks_session, databricks_feature_store, user_entity):
     """Fixture for an EventData in integration tests"""
@@ -673,3 +733,14 @@ def event_data_fixture(request):
     if kind == "snowflake":
         return request.getfixturevalue("snowflake_event_data")
     return request.getfixturevalue("databricks_event_data")
+
+
+@pytest.fixture(name="item_data", scope="session")
+def item_data_fixture(request):
+    """
+    Fixture for ItemData
+    """
+    if hasattr(request, "param"):
+        # Note: Fixtures for other engines to be added later
+        assert request.param == "snowflake"
+    return request.getfixturevalue("snowflake_item_data")
