@@ -8,7 +8,7 @@ from typing import Iterable, Optional, Tuple, cast
 
 from abc import ABC, abstractmethod
 
-from sqlglot import expressions, parse_one, select
+from sqlglot import expressions, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
