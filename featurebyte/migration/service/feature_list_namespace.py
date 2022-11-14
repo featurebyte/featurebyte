@@ -3,6 +3,8 @@ FeatureListNamespaceMigrationService class
 """
 from __future__ import annotations
 
+from typing import Any, Dict
+
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import MigrationServiceMixin
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -15,7 +17,8 @@ class FeatureListNamespaceMigrationService(FeatureListNamespaceService, Migratio
     async def change_field_name_from_event_data_ids_to_tabular_data_ids(self) -> None:
         """Change field name from event_data_ids to tabular_data_ids"""
         # sample first 10 records before migration
-        query_filter, page_size = {}, 10
+        query_filter: Dict[str, Any] = {}
+        page_size = 10
         _, total_before = await self.persistent.find(
             collection_name="feature_list_namespace", query_filter=query_filter, page_size=page_size
         )

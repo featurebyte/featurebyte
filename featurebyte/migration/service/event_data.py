@@ -3,6 +3,8 @@ EventDataMigrationService class
 """
 from __future__ import annotations
 
+from typing import Any, Dict
+
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import MigrationServiceMixin
 from featurebyte.service.event_data import EventDataService
@@ -24,7 +26,8 @@ class EventDataMigrationService(EventDataService, MigrationServiceMixin):
         )
 
         # sample first 10 few records before migration
-        query_filter, page_size = {}, 10
+        query_filter: Dict[str, Any] = {}
+        page_size = 10
         _, total_before = await self.persistent.find(
             collection_name="tabular_data", query_filter=query_filter, page_size=page_size
         )
