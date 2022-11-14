@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError
-from featurebyte.models import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
@@ -16,6 +16,8 @@ class SessionManagerService:
     """
     SessionManagerService class is responsible for retrieving a session manager.
     """
+
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
