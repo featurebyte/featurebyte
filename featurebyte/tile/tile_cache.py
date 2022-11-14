@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
-from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
@@ -28,6 +27,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 @dataclass
@@ -81,13 +81,13 @@ class TileCache(ABC):
 
     @property
     @abstractmethod
-    def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
+    def tile_manager_class(self) -> Type[TileManagerSnowflake]:
         """
         Returns the TileManager class to be used
 
         Returns
         -------
-        Type[FeatureListManagerSnowflake]
+        Type[TileManagerSnowflake]
         """
 
     @property
@@ -651,8 +651,8 @@ class SnowflakeTileCache(TileCache):
     """Responsible for on-demand tile computation and caching for Snowflake"""
 
     @property
-    def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
-        return FeatureListManagerSnowflake
+    def tile_manager_class(self) -> Type[TileManagerSnowflake]:
+        return TileManagerSnowflake
 
 
 def get_tile_cache(session: BaseSession) -> TileCache:

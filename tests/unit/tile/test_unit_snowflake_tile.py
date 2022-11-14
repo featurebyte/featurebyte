@@ -165,3 +165,24 @@ async def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, til
     mock_execute_query.return_value = []
     flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
     assert flag is True
+
+
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.generate_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.update_tile_entity_tracker")
+@pytest.mark.asyncio
+async def test_generate_tiles_on_demand(
+    mock_generate_tiles,
+    mock_update_tile_entity_tracker,
+    mock_snowflake_tile,
+    tile_manager,
+):
+    """
+    Test generate_tiles_on_demand
+    """
+    mock_generate_tiles.size_effect = None
+    mock_update_tile_entity_tracker.size_effect = None
+
+    await tile_manager.generate_tiles_on_demand([(mock_snowflake_tile, "temp_entity_table")])
+
+    mock_generate_tiles.assert_called_once()
+    mock_update_tile_entity_tracker.assert_called_once()

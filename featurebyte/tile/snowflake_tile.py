@@ -5,12 +5,13 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.base import BaseTileManager
 from featurebyte.tile.snowflake_sql_template import (
     tm_generate_tile,
     tm_insert_tile_registry,
@@ -22,7 +23,7 @@ from featurebyte.tile.snowflake_sql_template import (
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
-class TileManagerSnowflake(BaseModel):
+class TileManagerSnowflake(BaseTileManager):
     """
     Snowflake Tile class
     """
@@ -40,8 +41,7 @@ class TileManagerSnowflake(BaseModel):
         kw: Any
             constructor arguments
         """
-        super().__init__(**kw)
-        self._session = session
+        super().__init__(session=session, **kw)
 
     async def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
