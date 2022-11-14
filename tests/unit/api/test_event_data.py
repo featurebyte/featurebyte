@@ -623,7 +623,7 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert expected_msg in str(exc.value)
 
 
-@patch("featurebyte.service.mixin.SessionManager.get_session")
+@patch("featurebyte.service.session_manager.SessionManager.get_session")
 def test_get_event_data__schema_has_been_changed(mock_get_session, saved_event_data):
     """
     Test retrieving event data after table schema has been changed
