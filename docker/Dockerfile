@@ -41,11 +41,8 @@ COPY ./dist        /home/$USER/app/dist
 
 RUN pip install databricks-sql-connector==2.1.0 &&\
     pip install pyarrow==8.0.0 && \
-    pip install jupyter jupyter_contrib_nbextensions && \
-    pip install --no-index -f /home/$USER/app/dist featurebyte && \
-    jupyter contrib nbextension install
-
-
+    pip install jupyterlab && \
+    pip install --no-index -f /home/$USER/app/dist featurebyte
 
 RUN chown -R $USER:$USER /home/$USER/ &&\
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
