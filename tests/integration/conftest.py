@@ -710,14 +710,17 @@ def snowflake_item_data_fixture(
         schema_name=snowflake_session.sf_schema,
         table_name="ITEM_DATA_TABLE",
     )
-    event_data = ItemData.from_tabular_source(
+    item_data_name = "snowflake_item_data"
+    item_data = ItemData.from_tabular_source(
         tabular_source=database_table,
-        name="snowflake_item_data",
+        name=item_data_name,
         event_id_column="order_id",
         item_id_column="item_id",
         event_data_name=snowflake_event_data.name,
     )
-    return event_data
+    item_data.save()
+    item_data = ItemData.get(item_data_name)
+    return item_data
 
 
 @pytest.fixture(name="databricks_event_data", scope="session")
