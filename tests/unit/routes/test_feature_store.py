@@ -90,7 +90,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         databases = ["a", "b", "c"]
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mock_get_session:
             mock_get_session.return_value.list_databases.return_value = databases
             response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
         assert response.status_code == HTTPStatus.OK
@@ -108,7 +110,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
 
         credentials_error = CredentialsError("Invalid credentials provided.")
         snowflake_connector.side_effect = CredentialsError
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mock_get_session:
             mock_get_session.return_value.list_databases.side_effect = credentials_error
             response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -122,7 +126,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        with patch("featurebyte.service.mixin.SessionManager.get_session"):
+        with patch("featurebyte.service.session_manager.SessionManager.get_session"):
             response = test_api_client.post(f"{self.base_route}/schema", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
@@ -144,7 +148,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         schemas = ["a", "b", "c"]
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mock_get_session:
             mock_get_session.return_value.list_schemas.return_value = schemas
             response = test_api_client.post(
                 f"{self.base_route}/schema?database_name=x", json=feature_store
@@ -160,7 +166,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        with patch("featurebyte.service.mixin.SessionManager.get_session"):
+        with patch("featurebyte.service.session_manager.SessionManager.get_session"):
             response = test_api_client.post(f"{self.base_route}/table", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
@@ -187,7 +193,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         tables = ["a", "b", "c"]
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mock_get_session:
             mock_get_session.return_value.list_tables.return_value = tables
             response = test_api_client.post(
                 f"{self.base_route}/table?database_name=x&schema_name=y", json=feature_store
@@ -203,7 +211,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        with patch("featurebyte.service.mixin.SessionManager.get_session"):
+        with patch("featurebyte.service.session_manager.SessionManager.get_session"):
             response = test_api_client.post(f"{self.base_route}/column", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
@@ -235,7 +243,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         columns = {"a": "TIMESTAMP", "b": "INT", "c": "BOOL"}
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mock_get_session:
             mock_get_session.return_value.list_table_schema.return_value = columns
             response = test_api_client.post(
                 f"{self.base_route}/column?database_name=x&schema_name=y&table_name=z",
