@@ -28,7 +28,6 @@ from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
@@ -664,18 +663,6 @@ def mock_snowflake_feature_list_model(
     )
 
     return mock_feature_list
-
-
-@pytest_asyncio.fixture
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_store):
-    """
-    Feature List Manager fixture
-    """
-    _ = mock_execute_query
-    return FeatureListManagerSnowflake(
-        session=await session_manager.get_session(snowflake_feature_store)
-    )
 
 
 @pytest.fixture(name="mocked_tile_cache")

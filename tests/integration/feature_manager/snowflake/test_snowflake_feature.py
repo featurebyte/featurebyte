@@ -2,7 +2,6 @@
 This module contains integration tests for FeatureSnowflake
 """
 import copy
-import json
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -11,198 +10,8 @@ import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
-from featurebyte.exception import (
-    DuplicatedRegistryError,
-    InvalidFeatureRegistryOperationError,
-    MissingFeatureRegistryError,
-)
-from featurebyte.models.base import PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.utils.snowflake.sql import escape_column_names
-
-
-@pytest.mark.asyncio
-async def test_insert_feature_registry(
-    snowflake_session,
-    snowflake_feature,
-    snowflake_feature_expected_tile_spec_dict,
-    feature_manager,
-):
-    """
-    Test insert_feature_registry
-    """
-    await feature_manager.insert_feature_registry(snowflake_feature)
-
-    result = await snowflake_session.execute_query(
-        "SELECT * FROM FEATURE_REGISTRY WHERE name = 'sum_30m'"
-    )
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-
-    expected_df = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m"],
-            "VERSION": ["v1"],
-            "READINESS": ["DRAFT"],
-            "EVENT_DATA_IDS": ["626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"],
-        }
-    )
-    result_df = result[
-        [
-            "NAME",
-            "VERSION",
-            "READINESS",
-            "EVENT_DATA_IDS",
-        ]
-    ]
-    assert_frame_equal(expected_df, result_df)
-
-    result_tile_spec = json.loads(result["TILE_SPECS"].iloc[0])[0]
-    assert snowflake_feature_expected_tile_spec_dict == result_tile_spec
-
-
-@pytest.mark.asyncio
-async def test_insert_feature_registry_duplicate(
-    snowflake_session, snowflake_feature, feature_manager
-):
-    """
-    Test insert_feature_registry duplicate with exception
-    """
-    await feature_manager.insert_feature_registry(snowflake_feature)
-
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-
-    with pytest.raises(DuplicatedRegistryError) as excinfo:
-        await feature_manager.insert_feature_registry(snowflake_feature)
-
-    assert str(excinfo.value) == (
-        f"Feature version already exist for {snowflake_feature.name} with version "
-        f"{snowflake_feature.version.to_str()}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_remove_feature_registry(snowflake_session, snowflake_feature, feature_manager):
-    """
-    Test remove_feature_registry
-    """
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
-    await feature_manager.insert_feature_registry(snowflake_feature)
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-
-    await feature_manager.remove_feature_registry(snowflake_feature)
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 0
-
-
-@pytest.mark.asyncio
-async def test_remove_feature_registry_no_feature(snowflake_feature, feature_manager):
-    """
-    Test remove_feature_registry no feature
-    """
-    with pytest.raises(MissingFeatureRegistryError) as excinfo:
-        await feature_manager.remove_feature_registry(snowflake_feature)
-
-    assert str(excinfo.value) == (
-        f"Feature version does not exist for {snowflake_feature.name} with version "
-        f"{snowflake_feature.version.to_str()}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_remove_feature_registry_feature_version_not_draft(
-    snowflake_feature, feature_manager
-):
-    """
-    Test remove_feature_registry feature version readiness not DRAFT
-    """
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
-    await feature_manager.insert_feature_registry(snowflake_feature)
-
-    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
-        await feature_manager.remove_feature_registry(snowflake_feature)
-
-    assert str(excinfo.value) == (
-        f"Feature version {snowflake_feature.name} with version {snowflake_feature.version.to_str()} "
-        f"cannot be deleted with readiness PRODUCTION_READY"
-    )
-
-
-@pytest.mark.asyncio
-async def test_update_feature_registry(snowflake_session, snowflake_feature, feature_manager):
-    """
-    Test update_feature_registry
-    """
-    await feature_manager.insert_feature_registry(snowflake_feature)
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-    assert result.iloc[0]["READINESS"] == "DRAFT"
-    assert bool(result.iloc[0]["IS_DEFAULT"]) is True
-
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
-    snowflake_feature.__dict__["is_default"] = False
-    await feature_manager.update_feature_registry(
-        new_feature=snowflake_feature, to_online_enable=snowflake_feature.online_enabled
-    )
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-    assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
-    assert result.iloc[0]["ONLINE_ENABLED"] == snowflake_feature.online_enabled
-    assert bool(result.iloc[0]["IS_DEFAULT"]) is False
-
-
-@pytest.mark.asyncio
-async def test_retrieve_features(snowflake_feature, feature_manager):
-    """
-    Test retrieve_features
-    """
-    await feature_manager.insert_feature_registry(snowflake_feature)
-    f_reg_df = await feature_manager.retrieve_feature_registries(snowflake_feature)
-    assert len(f_reg_df) == 1
-    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
-    assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
-
-    f_reg_df = await feature_manager.retrieve_feature_registries(
-        feature=snowflake_feature, version=VersionIdentifier(name="v1")
-    )
-    assert len(f_reg_df) == 1
-    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
-    assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
-
-
-@pytest.mark.asyncio
-async def test_retrieve_features_multiple(snowflake_feature, feature_manager):
-    """
-    Test retrieve_features return multiple features
-    """
-    await feature_manager.insert_feature_registry(snowflake_feature)
-
-    snowflake_feature.__dict__["version"] = VersionIdentifier(name="v2")
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
-    await feature_manager.insert_feature_registry(snowflake_feature)
-
-    f_reg_df = await feature_manager.retrieve_feature_registries(snowflake_feature)
-    assert len(f_reg_df) == 2
-    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
-    assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
-    assert f_reg_df.iloc[1]["NAME"] == "sum_30m"
-    assert f_reg_df.iloc[1]["VERSION"] == "v2"
-    assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
 @pytest_asyncio.fixture(name="online_enabled_feature_spec")
@@ -247,7 +56,7 @@ async def online_enabled_feature_spec_fixture(
             "FEATURE_NAME": [online_feature_spec.feature.name],
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
             "FEATURE_READINESS": [str(online_feature_spec.feature.readiness)],
-            "FEATURE_TABULAR_DATA_IDS": [
+            "FEATURE_EVENT_DATA_IDS": [
                 ",".join([str(i) for i in online_feature_spec.event_data_ids])
             ],
             "FEATURE_SQL": [feature_sql],
@@ -427,11 +236,12 @@ async def test_get_last_tile_index(
     snowflake_feature_expected_tile_spec_dict,
     feature_manager,
     tile_manager,
+    online_enabled_feature_spec,
 ):
     """
     Test get_last_tile_index
     """
-    await feature_manager.insert_feature_registry(snowflake_feature)
+    _ = online_enabled_feature_spec
 
     await tile_manager.insert_tile_registry(tile_spec=snowflake_feature.tile_specs[0])
     last_index_df = await feature_manager.retrieve_last_tile_index(snowflake_feature)

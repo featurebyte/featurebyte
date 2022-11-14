@@ -29,10 +29,8 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
-from featurebyte.feature_manager.databricks_feature_list import FeatureListManagerDatabricks
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
@@ -380,6 +378,9 @@ async def snowflake_tile(snowflake_session):
     yield tile_spec
 
     await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+    await snowflake_session.execute_query(
+        f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
+    )
     await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
@@ -466,7 +467,6 @@ async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_fea
 
     yield feature
 
-    await snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
@@ -569,25 +569,7 @@ async def snowflake_feature_list(
 
     yield feature_list
 
-    await snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
-    await snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-
-
-@pytest.fixture
-def feature_list_manager(snowflake_session):
-    """
-    Feature Manager fixture
-    """
-    return FeatureListManagerSnowflake(session=snowflake_session)
-
-
-@pytest.fixture
-def feature_list_manager_databricks(databricks_session):
-    """
-    Feature Manager fixture for Databricks
-    """
-    return FeatureListManagerDatabricks(session=databricks_session)
 
 
 @pytest.fixture(name="user_entity", scope="session")

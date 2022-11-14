@@ -1,23 +1,24 @@
 """
 Databricks Tile class
 """
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import asyncio
 
 from databricks_cli.jobs.api import JobsApi
 from databricks_cli.runs.api import RunsApi
 from databricks_cli.sdk import ApiClient
-from pydantic import BaseModel, PrivateAttr
+from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
+from featurebyte.tile.base import BaseTileManager
 
 
-class TileManagerDatabricks(BaseModel):
+class TileManagerDatabricks(BaseTileManager):
     """
     Databricks Tile class
     """
@@ -37,8 +38,7 @@ class TileManagerDatabricks(BaseModel):
         kw: Any
             constructor arguments
         """
-        super().__init__(**kw)
-        self._session = cast(DatabricksSession, session)
+        super().__init__(session=session, **kw)
 
         api_client = ApiClient(
             host=f"https://{self._session.server_hostname}", token=self._session.access_token
