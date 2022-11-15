@@ -6,8 +6,10 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 
+from featurebyte import SnowflakeDetails
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.enum import SourceType
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -215,3 +217,56 @@ def test_get__unexpected_retrieval_exception():
         _ = lazy_feature_store.name
     expected_msg = 'FeatureStore (name: "some random name") not found. Please save the FeatureStore object first.'
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_feature_store_create(mock_get_persistent):
+    """
+    Test the create feature store static method.
+    """
+    feature_store_name_in_test = "sf_featurestore"
+    # We expect to get an error here since we have not stored a feature store yet.
+    with pytest.raises(RecordRetrievalException):
+        loaded_feature_store = FeatureStore.get(feature_store_name_in_test)
+        # This next line is required in order to actually "retrieve" the item since we lazy load.
+        _ = loaded_feature_store.saved
+
+    # before save
+    persistent = mock_get_persistent.return_value
+    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
+    assert cnt == 0 and docs == []
+
+    # call create - this should save, and return an instance
+    snowflake_feature_store = FeatureStore.create(
+        name=feature_store_name_in_test,
+        source_type=SourceType.SNOWFLAKE,
+        details=SnowflakeDetails(
+            account="sf_account",
+            warehouse="sf_warehouse",
+            sf_schema="sf_schema",
+            database="sf_database",
+        ),
+    )
+    # assert that we have a correct instance returned
+    assert isinstance(snowflake_feature_store, FeatureStore)
+
+    # assert that we have saved the feature store correctly
+    assert snowflake_feature_store.saved is True
+    assert snowflake_feature_store.created_at is not None
+    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
+    assert cnt == 1
+    assert (
+        docs[0].items()
+        >= {
+            "name": snowflake_feature_store.name,
+            "created_at": snowflake_feature_store.created_at,
+            "type": "snowflake",
+            "details": {
+                "account": "sf_account",
+                "warehouse": "sf_warehouse",
+                "database": "sf_database",
+                "sf_schema": "sf_schema",
+            },
+            "updated_at": None,
+        }.items()
+    )

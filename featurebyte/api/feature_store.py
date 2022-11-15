@@ -11,8 +11,14 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.config import Configurations
+from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails, TabularSource
+from featurebyte.models.feature_store import (
+    DatabaseDetails,
+    FeatureStoreModel,
+    TableDetails,
+    TabularSource,
+)
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 if TYPE_CHECKING:
@@ -32,6 +38,33 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
+
+    @classmethod
+    def create(cls, name: str, source_type: SourceType, details: DatabaseDetails) -> FeatureStore:
+        """
+        Create will return a new instance of a feature store.
+        We prefer to use this over the default constructor of `FeatureStore` because
+        we want to perform some additional validation checks.
+        Note that this function should only be called once for a specific set of details.
+
+        Parameters
+        ----------
+        name: str
+            feature store name
+        source_type: SourceType
+            type of feature store
+        details: DatabaseDetails
+            details of the database we want to connect to
+
+
+        Returns
+        -------
+        FeatureStore
+        """
+        # Construct object, and save to persistent layer.
+        feature_store = FeatureStore(name=name, type=source_type, details=details)
+        feature_store.save()
+        return feature_store
 
     @typechecked
     def list_databases(self) -> List[str]:
