@@ -19,9 +19,14 @@ def calculate_first_and_last_tile_indices(
     time_modulo_frequency: int,
 ) -> Tuple[Expression, Expression]:
     """
-    Calculate the first (inclusive) and last (exclusive) tile indices for a given point in time,
-    feature window size and feature job settings. Feature value is the result of aggregating tiles
-    within this range.
+    Calculate the first (inclusive) and last (exclusive) tile indices required to compute a feature,
+    given:
+
+    1) point in time
+    2) feature window size
+    3) feature job settings
+
+    Feature value is the result of aggregating tiles within this range.
 
     Parameters
     ----------
