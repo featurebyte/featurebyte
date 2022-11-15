@@ -260,9 +260,10 @@ class BaseDocumentService(
         page_size: int
             Page size
 
-        Returns
-        -------
+        Yields
+        ------
         AsyncIterator[Dict[str, Any]]
+            List query output
         """
         to_iterate, page = True, 1
 
