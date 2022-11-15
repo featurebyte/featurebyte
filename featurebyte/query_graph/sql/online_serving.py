@@ -49,6 +49,7 @@ class OnlineStoreUniversePlan:
                     agg_spec.window, self.max_window_size_by_tile_id[tile_id]
                 )
                 self.params_by_tile_id[tile_id] = {
+                    "keys": agg_spec.keys,
                     "serving_names": agg_spec.serving_names,
                     "frequency": agg_spec.frequency,
                     "time_modulo_frequency": agg_spec.time_modulo_frequency,
@@ -83,7 +84,9 @@ class OnlineStoreUniversePlan:
         assert len(first_and_last_indices_by_tile_id) == 1
 
         tile_id, first_index, last_index = first_and_last_indices_by_tile_id[0]
-        serving_names = self.params_by_tile_id[tile_id]["serving_names"]
+        params = self.params_by_tile_id[tile_id]
+        serving_names = params["serving_names"]
+        keys = params["keys"]
 
         filter_condition = expressions.and_(
             expressions.GTE(this="INDEX", expression=first_index),
@@ -93,7 +96,12 @@ class OnlineStoreUniversePlan:
             expressions.Select(distinct=True)
             .select(
                 expressions.alias_(self._get_point_in_time_expr(), SpecialColumnName.POINT_IN_TIME),
-                *[quoted_identifier(col) for col in serving_names],
+                *[
+                    expressions.alias_(
+                        quoted_identifier(key_col), quoted_identifier(serving_name_col)
+                    )
+                    for key_col, serving_name_col in zip(keys, serving_names)
+                ],
             )
             .from_(tile_id)
             .where(filter_condition)

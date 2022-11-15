@@ -24,7 +24,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
         """
         SELECT DISTINCT
           SYSDATE() AS POINT_IN_TIME,
-          "CUSTOMER_ID"
+          "cust_id" AS "CUSTOMER_ID"
         FROM fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d
         WHERE
           INDEX >= FLOOR((DATE_PART(EPOCH_SECOND, SYSDATE()) - 1800) / 3600) - 48
@@ -47,7 +47,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
         """
         SELECT DISTINCT
           SYSDATE() AS POINT_IN_TIME,
-          "CUSTOMER_ID"
+          "cust_id" AS "CUSTOMER_ID"
         FROM fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178
         WHERE
           INDEX >= FLOOR((DATE_PART(EPOCH_SECOND, SYSDATE()) - 1800) / 3600) - 48
