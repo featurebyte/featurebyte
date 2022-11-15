@@ -14,6 +14,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
+from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
@@ -276,6 +277,12 @@ def snowflake_database_table_fixture(
     yield snowflake_table
 
 
+@pytest.fixture(name="snowflake_dimension_data_id")
+def snowflake_dimension_data_id_fixture():
+    """Snowflake dimension data ID"""
+    return ObjectId("6337f9651050ee7d1234660d")
+
+
 @pytest.fixture(name="snowflake_event_data_id")
 def snowflake_event_data_id_fixture():
     """Snowflake event data ID"""
@@ -301,6 +308,20 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
     )
     assert event_data.node.parameters.id == event_data.id
     yield event_data
+
+
+@pytest.fixture(name="snowflake_dimension_data")
+def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimension_data_id):
+    """DimensionData object fixture"""
+    dimension_data = DimensionData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_dimension_data",
+        dimension_data_id_column="col_int",
+        record_creation_date_column="created_at",
+        _id=snowflake_dimension_data_id,
+    )
+    assert dimension_data.node.parameters.id == dimension_data.id
+    yield dimension_data
 
 
 @pytest.fixture(name="snowflake_item_data")
