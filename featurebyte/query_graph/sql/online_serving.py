@@ -3,7 +3,7 @@ SQL generation for online serving
 """
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from collections import defaultdict
 
@@ -36,13 +36,21 @@ class OnlineStoreUniversePlan:
     def __init__(self, graph: QueryGraph, adapter: BaseAdapter):
         self.graph = graph
         self.adapter = adapter
-        self.max_window_size_by_tile_id = defaultdict(int)
-        self.params_by_tile_id = {}
+        self.max_window_size_by_tile_id: dict[str, int] = defaultdict(int)
+        self.params_by_tile_id: dict[str, Any] = {}
 
     def update(self, node: Node) -> None:
+        """
+        Update state given a query graph node
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+        """
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
-        for node in groupby_nodes:
-            agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(node)
+        for groupby_node in groupby_nodes:
+            agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(groupby_node)
             for agg_spec in agg_specs:
                 tile_id = agg_spec.tile_table_id
                 self.max_window_size_by_tile_id[tile_id] = max(
@@ -56,6 +64,13 @@ class OnlineStoreUniversePlan:
                 }
 
     def get_first_and_last_indices_by_tile_id(self) -> List[Tuple[str, Expression, Expression]]:
+        """
+        Get the first and last tile indices required to compute the feature
+
+        Returns
+        -------
+        List[Tuple[str, Expression, Expression]]
+        """
         out = []
         point_in_time_expr = self._get_point_in_time_expr()
         for tile_id, window_size in self.max_window_size_by_tile_id.items():
@@ -71,6 +86,14 @@ class OnlineStoreUniversePlan:
         return out
 
     def construct_online_store_universe(self) -> Tuple[expressions.Select, List[str]]:
+        """
+        Construct SQL expression that extracts the universe for online store. The result of this SQL
+        contains a point in time column, so it can be used directly as the request table.
+
+        Returns
+        -------
+        Tuple[expressions.Select, List[str]]
+        """
 
         first_and_last_indices_by_tile_id = self.get_first_and_last_indices_by_tile_id()
 
