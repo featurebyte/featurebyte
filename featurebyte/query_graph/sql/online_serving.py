@@ -7,9 +7,9 @@ from typing import Any, List, Tuple
 
 from collections import defaultdict
 
-from sqlglot import Expression, expressions
+from sqlglot import Expression, expressions, parse_one
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -145,7 +145,7 @@ class OnlineStoreUniversePlan:
 
     @classmethod
     def _get_point_in_time_expr(cls) -> Expression:
-        return expressions.Anonymous(this="SYSDATE")
+        return parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)")
 
 
 def get_online_store_feature_compute_sql(

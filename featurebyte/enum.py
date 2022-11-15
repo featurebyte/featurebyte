@@ -175,6 +175,8 @@ class InternalName(StrEnum):
     LAST_TILE_INDEX = "__FB_LAST_TILE_INDEX"
     FIRST_TILE_INDEX = "__FB_FIRST_TILE_INDEX"
 
+    POINT_IN_TIME_SQL_PLACEHOLDER = "__FB_POINT_IN_TIME_SQL_PLACEHOLDER"
+
 
 class WorkerCommand(StrEnum):
     """
