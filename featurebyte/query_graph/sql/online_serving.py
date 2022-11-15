@@ -104,7 +104,8 @@ class OnlineStoreUniversePlan:
         # from the same EventData / ItemData. For the parent child relationship case, we need to
         # identify the least ancestral entity and use that to define the universe. For now, assert
         # that the feature is simple.
-        assert len(first_and_last_indices_by_tile_id) == 1
+        if len(first_and_last_indices_by_tile_id) != 1:
+            raise NotImplementedError()
 
         tile_id, first_index, last_index = first_and_last_indices_by_tile_id[0]
         params = self.params_by_tile_id[tile_id]
