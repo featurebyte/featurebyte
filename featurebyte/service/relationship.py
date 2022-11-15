@@ -115,17 +115,21 @@ class RelationshipService(BaseService):
             updated_document = cast(Relationship, updated_document)
 
             # update all objects which have child_id in their ancestor_ids
-            objects = await self.document_service.list_documents(
-                query_filter={"ancestor_ids": {"$in": [child_id]}}, page_size=0
-            )
-            for obj in objects["data"]:
-                await self.document_service.update_document(
-                    document_id=obj["_id"],
-                    data=self.prepare_document_update_payload(
-                        ancestor_ids=set(obj["ancestor_ids"]).union(updated_document.ancestor_ids),
-                        parents=obj["parents"],
-                    ),
-                )
+            query_filter = {"ancestor_ids": {"$in": [child_id]}}
+            async for results in self.document_service.list_document_iterator(
+                query_filter=query_filter
+            ):
+                for obj in results["data"]:
+                    await self.document_service.update_document(
+                        document_id=obj["_id"],
+                        data=self.prepare_document_update_payload(
+                            ancestor_ids=set(obj["ancestor_ids"]).union(
+                                updated_document.ancestor_ids
+                            ),
+                            parents=obj["parents"],
+                        ),
+                    )
+
             return updated_document
 
     @staticmethod
@@ -175,19 +179,21 @@ class RelationshipService(BaseService):
             updated_document = cast(Relationship, updated_document)
 
             # update all objects which have child_id in their ancestor_ids
-            objects = await self.document_service.list_documents(
-                query_filter={"ancestor_ids": {"$in": [child_id]}}, page_size=0
-            )
-            for obj in objects["data"]:
-                await self.document_service.update_document(
-                    document_id=obj["_id"],
-                    data=self.prepare_document_update_payload(
-                        ancestor_ids=set(obj["ancestor_ids"]).difference(
-                            self.include_object_id(parent_object.ancestor_ids, parent_id)
+            query_filter = {"ancestor_ids": {"$in": [child_id]}}
+            async for results in self.document_service.list_document_iterator(
+                query_filter=query_filter
+            ):
+                for obj in results["data"]:
+                    await self.document_service.update_document(
+                        document_id=obj["_id"],
+                        data=self.prepare_document_update_payload(
+                            ancestor_ids=set(obj["ancestor_ids"]).difference(
+                                self.include_object_id(parent_object.ancestor_ids, parent_id)
+                            ),
+                            parents=obj["parents"],
                         ),
-                        parents=obj["parents"],
-                    ),
-                )
+                    )
+
             return updated_document
 
 

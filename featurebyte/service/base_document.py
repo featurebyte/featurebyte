@@ -247,6 +247,34 @@ class BaseDocumentService(
         )
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
+    async def list_document_iterator(
+        self, query_filter: Dict[str, Any], page_size: int = 1000
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """
+        List documents iterator to retrieve all the results based on given document service & query filter
+
+        Parameters
+        ----------
+        query_filter: Dict[str, Any]
+            Query filter
+        page_size: int
+            Page size
+
+        Returns
+        -------
+        AsyncIterator[Dict[str, Any]]
+        """
+        to_iterate, page = True, 1
+
+        while to_iterate:
+            list_results = await self.list_documents(
+                page=page, page_size=page_size, query_filter=query_filter
+            )
+            yield list_results
+
+            to_iterate = bool(list_results["total"] > (page * page_size))
+            page += 1
+
     def _construct_list_audit_query_filter(
         self, query_filter: Optional[QueryFilter], **kwargs: Any
     ) -> QueryFilter:
