@@ -90,10 +90,9 @@ class DataUpdateService(BaseService):
         ]
         found_id_values = [
             ObjectId(doc["_id"])
-            async for result in service.list_document_iterator(
+            async for doc in service.list_documents_iterator(
                 query_filter={"_id": {"$in": id_values}}
             )
-            for doc in result["data"]
         ]
         missing_id_values = sorted(set(id_values).difference(found_id_values))
         if missing_id_values:

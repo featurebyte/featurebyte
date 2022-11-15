@@ -135,14 +135,13 @@ class DeployService(BaseService):
         # if enabling deployment, check is there any feature with readiness not equal to production ready
         if deployed:
             query_filter = {"_id": {"$in": feature_list.feature_ids}}
-            async for result in self.feature_service.list_document_iterator(
+            async for feature in self.feature_service.list_documents_iterator(
                 query_filter=query_filter
             ):
-                for feature in result["data"]:
-                    if FeatureReadiness(feature["readiness"]) != FeatureReadiness.PRODUCTION_READY:
-                        raise DocumentUpdateError(
-                            "Only FeatureList object of all production ready features can be deployed."
-                        )
+                if FeatureReadiness(feature["readiness"]) != FeatureReadiness.PRODUCTION_READY:
+                    raise DocumentUpdateError(
+                        "Only FeatureList object of all production ready features can be deployed."
+                    )
 
     async def update_feature_list(
         self,

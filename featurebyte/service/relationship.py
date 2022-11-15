@@ -116,19 +116,16 @@ class RelationshipService(BaseService):
 
             # update all objects which have child_id in their ancestor_ids
             query_filter = {"ancestor_ids": {"$in": [child_id]}}
-            async for results in self.document_service.list_document_iterator(
+            async for obj in self.document_service.list_documents_iterator(
                 query_filter=query_filter
             ):
-                for obj in results["data"]:
-                    await self.document_service.update_document(
-                        document_id=obj["_id"],
-                        data=self.prepare_document_update_payload(
-                            ancestor_ids=set(obj["ancestor_ids"]).union(
-                                updated_document.ancestor_ids
-                            ),
-                            parents=obj["parents"],
-                        ),
-                    )
+                await self.document_service.update_document(
+                    document_id=obj["_id"],
+                    data=self.prepare_document_update_payload(
+                        ancestor_ids=set(obj["ancestor_ids"]).union(updated_document.ancestor_ids),
+                        parents=obj["parents"],
+                    ),
+                )
 
             return updated_document
 
@@ -180,19 +177,18 @@ class RelationshipService(BaseService):
 
             # update all objects which have child_id in their ancestor_ids
             query_filter = {"ancestor_ids": {"$in": [child_id]}}
-            async for results in self.document_service.list_document_iterator(
+            async for obj in self.document_service.list_documents_iterator(
                 query_filter=query_filter
             ):
-                for obj in results["data"]:
-                    await self.document_service.update_document(
-                        document_id=obj["_id"],
-                        data=self.prepare_document_update_payload(
-                            ancestor_ids=set(obj["ancestor_ids"]).difference(
-                                self.include_object_id(parent_object.ancestor_ids, parent_id)
-                            ),
-                            parents=obj["parents"],
+                await self.document_service.update_document(
+                    document_id=obj["_id"],
+                    data=self.prepare_document_update_payload(
+                        ancestor_ids=set(obj["ancestor_ids"]).difference(
+                            self.include_object_id(parent_object.ancestor_ids, parent_id)
                         ),
-                    )
+                        parents=obj["parents"],
+                    ),
+                )
 
             return updated_document
 

@@ -247,7 +247,7 @@ class BaseDocumentService(
         )
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
-    async def list_document_iterator(
+    async def list_documents_iterator(
         self, query_filter: Dict[str, Any], page_size: int = 1000
     ) -> AsyncIterator[Dict[str, Any]]:
         """
@@ -271,7 +271,8 @@ class BaseDocumentService(
             list_results = await self.list_documents(
                 page=page, page_size=page_size, query_filter=query_filter
             )
-            yield list_results
+            for doc in list_results["data"]:
+                yield doc
 
             to_iterate = bool(list_results["total"] > (page * page_size))
             page += 1
