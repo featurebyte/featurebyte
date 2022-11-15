@@ -18,9 +18,10 @@ def test_construct_universe_sql(query_graph_with_groupby):
     """
     Test constructing universe sql for a simple point in time groupby
     """
-    plan = OnlineStoreUniversePlan(query_graph_with_groupby, get_sql_adapter(SourceType.SNOWFLAKE))
     node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    plan.update(node)
+    plan = OnlineStoreUniversePlan(
+        query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE)
+    )
     expr, _ = plan.construct_online_store_universe()
     expected_sql = textwrap.dedent(
         """
@@ -41,9 +42,8 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
     Test constructing universe sql for groupby with category
     """
     graph = query_graph_with_category_groupby
-    plan = OnlineStoreUniversePlan(graph, get_sql_adapter(SourceType.SNOWFLAKE))
     node = graph.get_node_by_name("groupby_1")
-    plan.update(node)
+    plan = OnlineStoreUniversePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
     expr, _ = plan.construct_online_store_universe()
     expected_sql = textwrap.dedent(
         """

@@ -29,39 +29,17 @@ class OnlineStoreUniversePlan:
     ----------
     graph: QueryGraph
         Query graph
+    node: Node
+        Query graph node
     adapter: BaseAdapter
         Instance of BaseAdapter for engine specific sql generation
     """
 
-    def __init__(self, graph: QueryGraph, adapter: BaseAdapter):
-        self.graph = graph
+    def __init__(self, graph: QueryGraph, node: Node, adapter: BaseAdapter):
         self.adapter = adapter
         self.max_window_size_by_tile_id: dict[str, int] = defaultdict(int)
         self.params_by_tile_id: dict[str, Any] = {}
-
-    def update(self, node: Node) -> None:
-        """
-        Update state given a query graph node
-
-        Parameters
-        ----------
-        node : Node
-            Query graph node
-        """
-        groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
-        for groupby_node in groupby_nodes:
-            agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(groupby_node)
-            for agg_spec in agg_specs:
-                tile_id = agg_spec.tile_table_id
-                self.max_window_size_by_tile_id[tile_id] = max(
-                    agg_spec.window, self.max_window_size_by_tile_id[tile_id]
-                )
-                self.params_by_tile_id[tile_id] = {
-                    "keys": agg_spec.keys,
-                    "serving_names": agg_spec.serving_names,
-                    "frequency": agg_spec.frequency,
-                    "time_modulo_frequency": agg_spec.time_modulo_frequency,
-                }
+        self._update(graph, node)
 
     def get_first_and_last_indices_by_tile_id(self) -> List[Tuple[str, Expression, Expression]]:
         """
@@ -139,6 +117,32 @@ class OnlineStoreUniversePlan:
 
         return expr, universe_columns
 
+    def _update(self, graph: QueryGraph, node: Node) -> None:
+        """
+        Update state given a query graph node
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            Query graph
+        node: Node
+            Query graph node
+        """
+        groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
+        for groupby_node in groupby_nodes:
+            agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(groupby_node)
+            for agg_spec in agg_specs:
+                tile_id = agg_spec.tile_table_id
+                self.max_window_size_by_tile_id[tile_id] = max(
+                    agg_spec.window, self.max_window_size_by_tile_id[tile_id]
+                )
+                self.params_by_tile_id[tile_id] = {
+                    "keys": agg_spec.keys,
+                    "serving_names": agg_spec.serving_names,
+                    "frequency": agg_spec.frequency,
+                    "time_modulo_frequency": agg_spec.time_modulo_frequency,
+                }
+
     @classmethod
     def _get_point_in_time_expr(cls) -> Expression:
         return expressions.Anonymous(this="SYSDATE")
@@ -168,8 +172,7 @@ def get_online_store_feature_compute_sql(
     planner = FeatureExecutionPlanner(graph, source_type=source_type)
     plan = planner.generate_plan([node])
 
-    universe_plan = OnlineStoreUniversePlan(graph, adapter=get_sql_adapter(source_type))
-    universe_plan.update(node)
+    universe_plan = OnlineStoreUniversePlan(graph, node, adapter=get_sql_adapter(source_type))
     universe_expr, universe_columns = universe_plan.construct_online_store_universe()
 
     sql_expr = plan.construct_combined_sql(
