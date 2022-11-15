@@ -82,24 +82,21 @@ lint-safety: generate-requirements-file
 #* Testing
 test: test-setup
 	poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
-
 	${MAKE} test-teardown
 
 test-setup:
-	cd .github/mongoreplicaset && ./startdb.sh
+	cd .github/mongoreplicaset && docker compose up -d
 
 test-teardown:
-	cd .github/mongoreplicaset && docker-compose down
+	cd .github/mongoreplicaset && docker compose down
 
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
 #* Docker
-docker-img-build:
-	docker buildx build -f ./docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" --cache-from "local/featurebyte:latest" -t "local/featurebyte:latest" .
-
-start-service: docker-img-build
-	cd docker && docker-compose up -d
+start-service:
+	poetry build   # We are exporting dist/ to the image
+	cd docker && docker-compose up --build
 
 stop-service:
 	cd docker && docker-compose down
