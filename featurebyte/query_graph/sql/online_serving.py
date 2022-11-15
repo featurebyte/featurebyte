@@ -93,11 +93,16 @@ class OnlineStoreUniversePlan:
         Returns
         -------
         Tuple[expressions.Select, List[str]]
+
+        Raises
+        ------
+        NotImplementedError
+            if feature is derived from multiple tile tables
         """
 
         first_and_last_indices_by_tile_id = self.get_first_and_last_indices_by_tile_id()
 
-        # TODO: Handle features derived from multiple features
+        # TODO: Handle features derived from multiple tile tables
         #
         # If there are more than one tile tables, the feature is a complex feature derived from
         # multiple features with entities that are identical or have a parent child relationship,
