@@ -414,14 +414,14 @@ class QueryGraph(FeatureByteBaseModel):
                 # remove series path if exists
                 to_prune_target_node = True
                 input_node_names = input_node_names[:1]
-        else:
-            # Update target_columns to include list of required columns for the current node operations
-            target_columns.update(target_node.get_required_input_columns())
 
         # If the current target node produces a new column, we should remove it from the target_columns
         # (as the condition has been matched). If it is not removed, the pruning algorithm may keep the unused
         # assign operation that generate the same column name.
         target_columns = target_columns.difference(target_node.get_new_output_columns())
+
+        # Update target_columns to include list of required columns for the current node operations
+        target_columns.update(target_node.get_required_input_columns())
 
         # reverse topological sort to make sure "target_columns" get filled properly. Example:
         # edges = {"assign_1": ["groupby_1", "project_1"], "project_1", ["groupby_1"], ...}

@@ -1,0 +1,221 @@
+{
+    "edges": [
+        {
+            "source": "input_1",
+            "target": "join_1"
+        },
+        {
+            "source": "input_2",
+            "target": "join_1"
+        },
+        {
+            "source": "join_1",
+            "target": "project_1"
+        },
+        {
+            "source": "project_1",
+            "target": "concat_1"
+        },
+        {
+            "source": "join_1",
+            "target": "project_2"
+        },
+        {
+            "source": "concat_1",
+            "target": "concat_2"
+        },
+        {
+            "source": "project_2",
+            "target": "concat_2"
+        },
+        {
+            "source": "join_1",
+            "target": "assign_1"
+        },
+        {
+            "source": "concat_2",
+            "target": "assign_1"
+        },
+        {
+            "source": "input_1",
+            "target": "join_2"
+        },
+        {
+            "source": "assign_1",
+            "target": "join_2"
+        }
+    ],
+    "nodes": [
+        {
+            "name": "input_1",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    "EVENT_TIMESTAMP",
+                    "CREATED_AT",
+                    "CUST_ID",
+                    "USER ID",
+                    "PRODUCT_ACTION",
+                    "SESSION_ID",
+                    "AMOUNT",
+                    "TRANSACTION_ID"
+                ],
+                "table_details": {
+                    "database_name": "FB_SIMULATE",
+                    "schema_name": "WH_SCHEMA",
+                    "table_name": "EVENT_DATA_TABLE"
+                },
+                "feature_store_details": {
+                    "type": "snowflake",
+                    "details": {
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "sf_database",
+                        "sf_schema": "sf_schema"
+                    }
+                },
+                "type": "event_data",
+                "timestamp": "EVENT_TIMESTAMP",
+                "id": {
+                    "$oid": "637381c2dc0ff623b713f0aa"
+                }
+            }
+        },
+        {
+            "name": "input_2",
+            "type": "input",
+            "output_type": "frame",
+            "parameters": {
+                "columns": [
+                    "order_id",
+                    "item_id",
+                    "item_type"
+                ],
+                "table_details": {
+                    "database_name": "FB_SIMULATE",
+                    "schema_name": "WH_SCHEMA",
+                    "table_name": "ITEM_DATA_TABLE"
+                },
+                "feature_store_details": {
+                    "type": "snowflake",
+                    "details": {
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "sf_database",
+                        "sf_schema": "sf_schema"
+                    }
+                },
+                "type": "item_data",
+                "id": {
+                    "$oid": "637381c5dc0ff623b713f0b1"
+                }
+            }
+        },
+        {
+            "name": "join_1",
+            "type": "join",
+            "output_type": "frame",
+            "parameters": {
+                "left_on": "TRANSACTION_ID",
+                "right_on": "order_id",
+                "left_input_columns": [
+                    "EVENT_TIMESTAMP",
+                    "USER ID"
+                ],
+                "left_output_columns": [
+                    "EVENT_TIMESTAMP",
+                    "USER ID"
+                ],
+                "right_input_columns": [
+                    "order_id",
+                    "item_id",
+                    "item_type"
+                ],
+                "right_output_columns": [
+                    "order_id",
+                    "item_id",
+                    "item_type"
+                ],
+                "join_type": "left"
+            }
+        },
+        {
+            "name": "project_1",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+                "columns": [
+                    "item_id"
+                ]
+            }
+        },
+        {
+            "name": "concat_1",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+                "value": "_"
+            }
+        },
+        {
+            "name": "project_2",
+            "type": "project",
+            "output_type": "series",
+            "parameters": {
+                "columns": [
+                    "item_type"
+                ]
+            }
+        },
+        {
+            "name": "concat_2",
+            "type": "concat",
+            "output_type": "series",
+            "parameters": {
+                "value": null
+            }
+        },
+        {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {
+                "name": "x",
+                "value": null
+            }
+        },
+        {
+            "name": "join_2",
+            "type": "join",
+            "output_type": "frame",
+            "parameters": {
+                "left_on": "TRANSACTION_ID",
+                "right_on": "order_id",
+                "left_input_columns": [
+                    "PRODUCT_ACTION"
+                ],
+                "left_output_columns": [
+                    "PRODUCT_ACTION"
+                ],
+                "right_input_columns": [
+                    "order_id",
+                    "item_id",
+                    "item_type",
+                    "EVENT_TIMESTAMP",
+                    "USER ID",
+                    "x"
+                ],
+                "right_output_columns": [
+                    "order_id",
+                    "item_id",
+                    "item_type",
+                    "EVENT_TIMESTAMP",
+                    "USER ID",
+                    "x"
+                ],
+                "join_type": "left"
+            }
+        }
+    ]
+}
