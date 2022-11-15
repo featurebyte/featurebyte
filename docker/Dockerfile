@@ -1,7 +1,7 @@
 # Need to route to different cpu arch
 FROM python:3.8-slim
 
-ARG USER=user
+ARG USER=fb_user
 ARG UID=1000
 
 ARG FEATUREBYTE_NP_PASSWORD
@@ -11,22 +11,17 @@ ENV FEATUREBYTE_REPOSITORY=${FEATUREBYTE_REPOSITORY?missing_repository}
 ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME=${FEATUREBYTE_NP_USERNAME?missing_username}
 ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_featurebyte_serviceaccount_base64_key}
 
-# Add non-root user
-RUN adduser --uid $UID --disabled-password --gecos '' $USER
-
 # install build tools
 RUN apt-get update && \
     apt-get install -y build-essential netcat && \
     apt-get clean
 
+# install poetry
 RUN pip install --extra-index-url "https://${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME}:${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple/" poetry==1.2.0rc99
 
-# Extend PATH to use pip-installed tools from shell (like alembic)
-ENV PATH="${PATH}:/home/$USER/.local/bin"
-WORKDIR /home/$USER/app
-
 # Copy project files
-COPY poetry.lock pyproject.toml /home/$USER/app/
+WORKDIR /app
+COPY poetry.lock pyproject.toml /app/
 COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
 COPY ./docker/migration.py              /scripts/migration.py
 
@@ -36,17 +31,21 @@ RUN poetry config virtualenvs.create false && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 
-COPY ./featurebyte /home/$USER/app/featurebyte
-COPY ./dist        /home/$USER/app/dist
+# copy featurebyte and featurebyte package
+COPY ./featurebyte /app/featurebyte
+COPY ./dist        /app/dist
 
-RUN pip install databricks-sql-connector==2.1.0 &&\
+# install databricks-connector via pip (dependency error with pyarrow)
+# downgrade pyarrow - backwards compatibility issue with databricks
+RUN pip install databricks-sql-connector==2.1.0 && \
     pip install pyarrow==8.0.0 && \
     pip install jupyterlab && \
-    pip install --no-index -f /home/$USER/app/dist featurebyte
-
-RUN chown -R $USER:$USER /home/$USER/ &&\
+    pip install --no-index -f /app/dist featurebyte && \
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
+
+# Add non-root user
+RUN adduser --uid $UID --disabled-password --gecos '' $USER
+RUN chown -R $USER:$USER /app
 USER $USER
-WORKDIR /home/$USER/app
 
 ENTRYPOINT ["/bin/bash", "/scripts/entrypoint.sh"]

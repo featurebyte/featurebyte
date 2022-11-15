@@ -10,9 +10,9 @@ PYTHONPATH=$PWD python /scripts/migration.py
 # Start notebook
 echo "Starting jupyter notebook"
 echo "Storing notebooks in directory: ~/.featurebyte/notebook"
-if [[ ! -d ~/.featurebyte/notebook ]]; then mkdir ~/.featurebyte/notebook; fi
+if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir /app/.featurebyte/notebook; fi
 jupyter-lab \
-    --notebook-dir=~/.featurebyte/notebook \
+    --notebook-dir=/app/.featurebyte/notebook \
     --port=8089 \
     --NotebookApp.token='' \
     --NotebookApp.password='' \

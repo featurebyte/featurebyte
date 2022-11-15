@@ -23,10 +23,10 @@ services:
       args:
         FEATUREBYTE_NP_PASSWORD: $FEATUREBYTE_NP_PASSWORD  # You need to set an env variable here
     volumes:
-      - ~/.featurebyte:/home/user/.featurebyte
+      - ~/.featurebyte:/app/.featurebyte
       - /tmp:/tmp
-    user: user
     environment:
+      FEATUREBYTE_HOME: /app/.featurebyte
       MONGODB_URI: mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0
       API_HOST: 0.0.0.0
       API_PORT: 8088
