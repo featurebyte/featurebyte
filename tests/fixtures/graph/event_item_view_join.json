@@ -63,16 +63,16 @@
                 ],
                 "table_details": {
                     "database_name": "FB_SIMULATE",
-                    "schema_name": "PUBLIC_20221115201010_599816",
-                    "table_name": "TEST_TABLE"
+                    "schema_name": "WH_SCHEMA",
+                    "table_name": "EVENT_DATA_TABLE"
                 },
                 "feature_store_details": {
                     "type": "snowflake",
                     "details": {
-                        "account": "fm54506.us-central1.gcp",
-                        "warehouse": "COMPUTE_WH",
-                        "database": "FB_SIMULATE",
-                        "sf_schema": "PUBLIC_20221115201010_599816"
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "sf_database",
+                        "sf_schema": "sf_schema"
                     }
                 },
                 "type": "event_data",
@@ -94,16 +94,16 @@
                 ],
                 "table_details": {
                     "database_name": "FB_SIMULATE",
-                    "schema_name": "PUBLIC_20221115201010_599816",
+                    "schema_name": "WH_SCHEMA",
                     "table_name": "ITEM_DATA_TABLE"
                 },
                 "feature_store_details": {
                     "type": "snowflake",
                     "details": {
-                        "account": "fm54506.us-central1.gcp",
-                        "warehouse": "COMPUTE_WH",
-                        "database": "FB_SIMULATE",
-                        "sf_schema": "PUBLIC_20221115201010_599816"
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "sf_database",
+                        "sf_schema": "sf_schema"
                     }
                 },
                 "type": "item_data",
