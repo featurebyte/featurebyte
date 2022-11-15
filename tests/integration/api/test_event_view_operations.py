@@ -187,6 +187,7 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
         "PRODUCT_ACTION",
         "SESSION_ID",
         "AMOUNT",
+        "TRANSACTION_ID",
     ]
 
     # need to specify the constant as float, otherwise results will get truncated
