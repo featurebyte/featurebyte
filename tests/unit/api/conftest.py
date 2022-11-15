@@ -165,6 +165,24 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     yield snowflake_event_data
 
 
+@pytest.fixture(name="saved_dimension_data")
+def saved_dimension_data_fixture(snowflake_feature_store, snowflake_dimension_data):
+    """
+    Saved dimension data fixture
+    """
+    snowflake_feature_store.save()
+    previous_id = snowflake_dimension_data.id
+    assert snowflake_dimension_data.saved is False
+    snowflake_dimension_data.save()
+    assert snowflake_dimension_data.saved is True
+    assert snowflake_dimension_data.id == previous_id
+    assert snowflake_dimension_data.status == DataStatus.DRAFT
+    assert isinstance(snowflake_dimension_data.created_at, datetime)
+    assert isinstance(snowflake_dimension_data.tabular_source.feature_store_id, ObjectId)
+
+    yield snowflake_dimension_data
+
+
 @pytest.fixture(name="snowflake_database_table_item_data")
 def snowflake_database_table_item_data_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
