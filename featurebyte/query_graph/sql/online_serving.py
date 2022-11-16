@@ -363,17 +363,39 @@ def get_online_store_retrieval_sql(
     )
 
     if online_excluded_nodes:
-        planner = FeatureExecutionPlanner(graph, source_type=source_type)
-        plan = planner.generate_plan(online_excluded_nodes)
-        new_request_table_expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
-        new_request_table_name = REQUEST_TABLE_NAME + "_POST_FEATURE_STORE_LOOKUP"
-        new_request_table_columns = request_table_columns + online_store_plan.feature_names
-        ctes = [(new_request_table_name, new_request_table_expr)]
-        expr = plan.construct_combined_sql(
-            request_table_name=new_request_table_name,
-            point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-            request_table_columns=new_request_table_columns,
-            prior_cte_statements=ctes,
+        enriched_request_table_columns = request_table_columns + online_store_plan.feature_names
+        expr = construct_feature_sql_with_enriched_request_table(
+            expr=expr,
+            graph=graph,
+            online_excluded_nodes=online_excluded_nodes,
+            request_table_name=request_table_name,
+            enriched_request_table_columns=enriched_request_table_columns,
+            source_type=source_type,
         )
 
     return sql_to_string(expr, source_type=source_type)
+
+
+def construct_feature_sql_with_enriched_request_table(
+    expr,
+    graph,
+    online_excluded_nodes,
+    request_table_name,
+    enriched_request_table_columns,
+    source_type,
+):
+
+    planner = FeatureExecutionPlanner(graph, source_type=source_type)
+    plan = planner.generate_plan(online_excluded_nodes)
+
+    new_request_table_expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
+    new_request_table_name = request_table_name + "_POST_FEATURE_STORE_LOOKUP"
+    ctes = [(new_request_table_name, new_request_table_expr)]
+
+    expr = plan.construct_combined_sql(
+        request_table_name=new_request_table_name,
+        point_in_time_column=SpecialColumnName.POINT_IN_TIME,
+        request_table_columns=enriched_request_table_columns,
+        prior_cte_statements=ctes,
+    )
+    return expr

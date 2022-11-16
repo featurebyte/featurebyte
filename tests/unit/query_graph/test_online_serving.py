@@ -91,7 +91,7 @@ def test_online_store_feature_retrieval__all_eligible(
     """
     graph, *nodes = query_graph_with_groupby_and_feature_nodes
     sql = get_online_store_retrieval_sql(
-        request_table_name="REQUST_TABLE",
+        request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
         nodes=nodes,
@@ -113,7 +113,7 @@ def test_online_store_feature_retrieval_sql__mixed(
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
     sql = get_online_store_retrieval_sql(
-        request_table_name="REQUST_TABLE",
+        request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID", "order_id"],
         graph=graph,
         nodes=nodes,
