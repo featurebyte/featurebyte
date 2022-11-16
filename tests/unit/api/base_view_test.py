@@ -1,11 +1,12 @@
 """
 Base View test suite
 """
+from abc import abstractmethod
 
 import pytest
 
 from featurebyte.core.series import Series
-from featurebyte.enum import StrEnum
+from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -29,6 +30,7 @@ class BaseViewTestSuite:
     col = ""
     factory_method = None
     use_data_under_test_in_lineage = False
+    view_class = None
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(
@@ -91,6 +93,28 @@ class BaseViewTestSuite:
         )
         assert cust_id.row_index_lineage == expected_lineage
         assert cust_id.parent.node == view_under_test.node
+
+    @abstractmethod
+    def getitem_frame_params_assertions(self, row_subset, view_under_test):
+        """
+        Assertions for testing that columns updated in _getitem_frame_params are copied over.
+        """
+        pass
+
+    def test_getitem__series_key(self, view_under_test):
+        """
+        Test filtering on view object
+        """
+        mask_cust_id = view_under_test[self.col] < 1000
+        assert isinstance(mask_cust_id, Series)
+        assert mask_cust_id.dtype == DBVarType.BOOL
+
+        row_subset = view_under_test[mask_cust_id]
+        assert isinstance(row_subset, self.view_class)
+        assert row_subset.row_index_lineage == (
+            view_under_test.row_index_lineage + (row_subset.node.name,)
+        )
+        self.getitem_frame_params_assertions(row_subset, view_under_test)
 
     def test_unary_op_params(self, view_under_test):
         """

@@ -21,6 +21,10 @@ class TestEventView(BaseViewTestSuite):
     view_type = ViewType.EVENT_VIEW
     col = "cust_id"
     factory_method = EventView.from_event_data
+    view_class = EventView
+
+    def getitem_frame_params_assertions(self, row_subset, view_under_test):
+        assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
 def test_from_event_data(snowflake_event_data):
@@ -78,25 +82,6 @@ def test_getitem__list_of_str(snowflake_event_view):
         snowflake_event_view.tabular_data_ids
         == event_view_subset1.tabular_data_ids
         == event_view_subset2.tabular_data_ids
-    )
-
-
-def test_getitem__series_key(snowflake_event_view):
-    """
-    Test filtering on event data object
-    """
-    mask_cust_id = snowflake_event_view["cust_id"] < 1000
-    assert isinstance(mask_cust_id, Series)
-    assert mask_cust_id.dtype == DBVarType.BOOL
-
-    event_view_row_subset = snowflake_event_view[mask_cust_id]
-    assert isinstance(event_view_row_subset, EventView)
-    assert event_view_row_subset.row_index_lineage == (
-        snowflake_event_view.row_index_lineage + (event_view_row_subset.node.name,)
-    )
-    assert (
-        event_view_row_subset.default_feature_job_setting
-        == snowflake_event_view.default_feature_job_setting
     )
 
 

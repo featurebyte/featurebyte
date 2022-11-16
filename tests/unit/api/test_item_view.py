@@ -7,7 +7,6 @@ import pytest
 
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -23,6 +22,13 @@ class TestItemView(BaseViewTestSuite):
     col = "item_amount"
     factory_method = ItemView.from_item_data
     use_data_under_test_in_lineage = True
+    view_class = ItemView
+
+    def getitem_frame_params_assertions(self, row_subset, view_under_test):
+        assert row_subset.event_id_column == view_under_test.event_id_column
+        assert row_subset.item_id_column == view_under_test.item_id_column
+        assert row_subset.event_data_id == view_under_test.event_data_id
+        assert row_subset.event_view.dict() == view_under_test.event_view.dict()
 
 
 def test_from_item_data__auto_join_columns(
@@ -146,25 +152,6 @@ def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
         snowflake_item_view.default_feature_job_setting
         == snowflake_event_data.default_feature_job_setting
     )
-
-
-def test_getitem__series_key(snowflake_item_view):
-    """
-    Test filtering on ItemData object
-    """
-    mask_cust_id = snowflake_item_view["item_amount"] < 1000
-    assert isinstance(mask_cust_id, Series)
-    assert mask_cust_id.dtype == DBVarType.BOOL
-
-    row_subset = snowflake_item_view[mask_cust_id]
-    assert isinstance(row_subset, ItemView)
-    assert row_subset.row_index_lineage == (
-        snowflake_item_view.row_index_lineage + (row_subset.node.name,)
-    )
-    assert row_subset.event_id_column == snowflake_item_view.event_id_column
-    assert row_subset.item_id_column == snowflake_item_view.item_id_column
-    assert row_subset.event_data_id == snowflake_item_view.event_data_id
-    assert row_subset.event_view.dict() == snowflake_item_view.event_view.dict()
 
 
 def test_setitem__str_key_series_value(
