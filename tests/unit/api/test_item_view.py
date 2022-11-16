@@ -7,7 +7,6 @@ import pytest
 
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -22,6 +21,31 @@ class TestItemView(BaseViewTestSuite):
     view_type = ViewType.ITEM_VIEW
     col = "item_amount"
     factory_method = ItemView.from_item_data
+    use_data_under_test_in_lineage = True
+    view_class = ItemView
+
+    def getitem_frame_params_assertions(self, row_subset, view_under_test):
+        assert row_subset.event_id_column == view_under_test.event_id_column
+        assert row_subset.item_id_column == view_under_test.item_id_column
+        assert row_subset.event_data_id == view_under_test.event_data_id
+        assert row_subset.event_view.dict() == view_under_test.event_view.dict()
+
+    def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
+        return {
+            "mask": view_under_test[self.col] > 1000,
+            "expected_edges": [
+                {"source": "input_1", "target": "join_1"},
+                {"source": "input_2", "target": "join_1"},
+                {"source": "join_1", "target": "project_1"},
+                {"source": "project_1", "target": "gt_1"},
+                {"source": "project_1", "target": "filter_1"},
+                {"source": "gt_1", "target": "filter_1"},
+            ],
+        }
+
+    def test_setitem__str_key_series_value(self, view_under_test):
+        # Override this test to be a no-op since we have a custom test defined below.
+        return
 
 
 def test_from_item_data__auto_join_columns(
@@ -147,43 +171,6 @@ def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
     )
 
 
-def test_getitem__str(snowflake_item_view, snowflake_item_data):
-    """
-    Test retrieving single column
-    """
-    cust_id = snowflake_item_view["item_id_col"]
-    assert isinstance(cust_id, Series)
-    assert cust_id.node.dict(exclude={"name": True}) == {
-        "type": NodeType.PROJECT,
-        "parameters": {"columns": ["item_id_col"]},
-        "output_type": NodeOutputType.SERIES,
-    }
-    assert cust_id.row_index_lineage == (
-        snowflake_item_data.node.name,
-        snowflake_item_view.node.name,
-    )
-    assert cust_id.parent.node == snowflake_item_view.node
-
-
-def test_getitem__series_key(snowflake_item_view):
-    """
-    Test filtering on ItemData object
-    """
-    mask_cust_id = snowflake_item_view["item_amount"] < 1000
-    assert isinstance(mask_cust_id, Series)
-    assert mask_cust_id.dtype == DBVarType.BOOL
-
-    row_subset = snowflake_item_view[mask_cust_id]
-    assert isinstance(row_subset, ItemView)
-    assert row_subset.row_index_lineage == (
-        snowflake_item_view.row_index_lineage + (row_subset.node.name,)
-    )
-    assert row_subset.event_id_column == snowflake_item_view.event_id_column
-    assert row_subset.item_id_column == snowflake_item_view.item_id_column
-    assert row_subset.event_data_id == snowflake_item_view.event_data_id
-    assert row_subset.event_view.dict() == snowflake_item_view.event_view.dict()
-
-
 def test_setitem__str_key_series_value(
     snowflake_item_view,
     snowflake_event_data,
@@ -217,35 +204,6 @@ def test_setitem__str_key_series_value(
         "created_at": expected_lineage_item_data_columns,
         "double_value": (snowflake_item_view.node.name,),
     }
-
-
-def test_event_view_column_getitem_series(snowflake_item_view):
-    """
-    Test ItemViewColumn filter by boolean mask
-    """
-    column = snowflake_item_view["item_amount"]
-    mask = snowflake_item_view["item_amount"] > 10
-    output = column[mask]
-    assert output.tabular_data_ids == column.tabular_data_ids
-    assert output.name == column.name
-    assert output.dtype == column.dtype
-    output_dict = output.dict()
-    assert output_dict["node_name"] == "filter_1"
-    filter_node = next(node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1")
-    assert filter_node == {
-        "name": "filter_1",
-        "type": "filter",
-        "parameters": {},
-        "output_type": "series",
-    }
-    assert output_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
-        {"source": "input_2", "target": "join_1"},
-        {"source": "join_1", "target": "project_1"},
-        {"source": "project_1", "target": "gt_1"},
-        {"source": "project_1", "target": "filter_1"},
-        {"source": "gt_1", "target": "filter_1"},
-    ]
 
 
 def test_join_event_data_attributes__more_columns(

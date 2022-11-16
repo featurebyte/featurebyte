@@ -5,7 +5,6 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -21,6 +20,11 @@ class TestEventView(BaseViewTestSuite):
     view_type = ViewType.EVENT_VIEW
     col = "cust_id"
     factory_method = EventView.from_event_data
+    view_class = EventView
+    bool_col = "col_boolean"
+
+    def getitem_frame_params_assertions(self, row_subset, view_under_test):
+        assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
 def test_from_event_data(snowflake_event_data):
@@ -46,21 +50,6 @@ def test_from_event_data(snowflake_event_data):
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )
-
-
-def test_getitem__str(snowflake_event_view):
-    """
-    Test retrieving single column
-    """
-    cust_id = snowflake_event_view["cust_id"]
-    assert isinstance(cust_id, Series)
-    assert cust_id.node.dict(exclude={"name": True}) == {
-        "type": NodeType.PROJECT,
-        "parameters": {"columns": ["cust_id"]},
-        "output_type": NodeOutputType.SERIES,
-    }
-    assert cust_id.row_index_lineage == (snowflake_event_view.node.name,)
-    assert cust_id.parent.node == snowflake_event_view.node
 
 
 def test_getitem__list_of_str(snowflake_event_view):
@@ -94,79 +83,6 @@ def test_getitem__list_of_str(snowflake_event_view):
         == event_view_subset1.tabular_data_ids
         == event_view_subset2.tabular_data_ids
     )
-
-
-def test_getitem__series_key(snowflake_event_view):
-    """
-    Test filtering on event data object
-    """
-    mask_cust_id = snowflake_event_view["cust_id"] < 1000
-    assert isinstance(mask_cust_id, Series)
-    assert mask_cust_id.dtype == DBVarType.BOOL
-
-    event_view_row_subset = snowflake_event_view[mask_cust_id]
-    assert isinstance(event_view_row_subset, EventView)
-    assert event_view_row_subset.row_index_lineage == (
-        snowflake_event_view.row_index_lineage + (event_view_row_subset.node.name,)
-    )
-    assert (
-        event_view_row_subset.default_feature_job_setting
-        == snowflake_event_view.default_feature_job_setting
-    )
-
-
-def test_setitem__str_key_series_value(snowflake_event_view):
-    """
-    Test assigning Series object to event_view
-    """
-    source_node_name = snowflake_event_view.node.name
-    double_value = snowflake_event_view["col_float"] * 2
-    assert isinstance(double_value, Series)
-    snowflake_event_view["double_value"] = double_value
-    assert snowflake_event_view.node.dict(exclude={"name": True}) == {
-        "type": NodeType.ASSIGN,
-        "parameters": {"name": "double_value", "value": None},
-        "output_type": NodeOutputType.FRAME,
-    }
-    assert snowflake_event_view.column_lineage_map == {
-        "col_binary": (source_node_name,),
-        "col_boolean": (source_node_name,),
-        "col_char": (source_node_name,),
-        "col_float": (source_node_name,),
-        "col_int": (source_node_name,),
-        "col_text": (source_node_name,),
-        "event_timestamp": (source_node_name,),
-        "created_at": (source_node_name,),
-        "cust_id": (source_node_name,),
-        "double_value": (snowflake_event_view.node.name,),
-    }
-
-
-def test_event_view_column_getitem_series(snowflake_event_view):
-    """
-    Test EventViewColumn filter by boolean mask
-    """
-    column = snowflake_event_view["col_float"]
-    mask = snowflake_event_view["col_boolean"]
-    output = column[mask]
-    assert output.tabular_data_ids == column.tabular_data_ids
-    assert output.name == column.name
-    assert output.dtype == column.dtype
-    output_dict = output.dict()
-    assert output_dict["node_name"] == "filter_1"
-    filter_node = next(node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1")
-    assert filter_node == {
-        "name": "filter_1",
-        "type": "filter",
-        "parameters": {},
-        "output_type": "series",
-    }
-    assert output_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "project_1"},
-        {"source": "input_1", "target": "project_2"},
-        {"source": "project_1", "target": "filter_1"},
-        {"source": "project_2", "target": "filter_1"},
-    ]
 
 
 @pytest.mark.parametrize(

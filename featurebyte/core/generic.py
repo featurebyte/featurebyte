@@ -224,7 +224,6 @@ class ProtectedColumnsQueryObject(QueryObject):
         return set(columns)
 
     @property
-    @abstractmethod
     def inherited_columns(self) -> set[str]:
         """
         Special columns set which will be automatically added to the object of same class
@@ -234,3 +233,4 @@ class ProtectedColumnsQueryObject(QueryObject):
         -------
         set[str]
         """
+        return set()

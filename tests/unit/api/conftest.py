@@ -8,6 +8,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte import EventView
+from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.event_data import EventData
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.item_view import ItemView
@@ -228,6 +229,15 @@ def snowflake_item_view_fixture(snowflake_item_data):
     """
     item_view = ItemView.from_item_data(snowflake_item_data)
     yield item_view
+
+
+@pytest.fixture(name="snowflake_dimension_view")
+def snowflake_dimension_view_fixture(snowflake_dimension_data):
+    """
+    DimensionView fixture
+    """
+    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    yield dimension_view
 
 
 @pytest.fixture(name="snowflake_event_view")
