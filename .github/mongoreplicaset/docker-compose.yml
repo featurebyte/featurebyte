@@ -1,13 +1,12 @@
 version: '3.8'
 
 services:
-  mongo:
-    container_name: mongo
-    image: mongo:5
+  mongo-testrs:
+    container_name: mongo-testrs
+    image: mongo:latest
     volumes:
-      - ./rs-init.sh:/scripts/rs-init.sh
       - ./entrypoint.sh:/scripts/entrypoint.sh
     ports:
       - 27021:27021
       - 27022:27022
-    entrypoint: [ "/bin/sh", "./scripts/entrypoint.sh"]
+    entrypoint: [ "/bin/bash", "./scripts/entrypoint.sh"]

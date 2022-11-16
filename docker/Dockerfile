@@ -1,6 +1,7 @@
+# Need to route to different cpu arch
 FROM python:3.8-slim
 
-ARG USER=user
+ARG USER=fb_user
 ARG UID=1000
 
 ARG FEATUREBYTE_NP_PASSWORD
@@ -12,42 +13,39 @@ ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential git dnsutils wget && \
+    apt-get install -y build-essential netcat && \
     apt-get clean
 
-# install mongodb
-RUN wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | apt-key add -
-RUN echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-RUN apt-get update && \
-    apt install -y software-properties-common gnupg apt-transport-https ca-certificates && \
-    apt install -y mongodb-org && \
-    apt-get clean
+# install poetry
+RUN pip install --extra-index-url "https://${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME}:${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple/" poetry==1.2.0rc99
 
-RUN mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME}:${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple/" > ~/.config/pip/pip.conf && \
-    pip install poetry==1.2.0rc99 --no-cache-dir && \
-    rm -rf ~/.config/pip
-
-# Extend PATH to use pip-installed tools from shell (like alembic)
-ENV PATH="${PATH}:/home/$USER/.local/bin"
-
-# Add non-root user
-RUN adduser --uid $UID --disabled-password --gecos '' $USER
+# Copy project files
+WORKDIR /app
+COPY poetry.lock pyproject.toml /app/
+COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
+COPY ./docker/migration.py              /scripts/migration.py
 
 # Install requirements
-COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false && \
     poetry install --only main --extras "server" --no-interaction --no-ansi && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
-RUN pip install --no-cache-dir databricks-sql-connector==2.1.0 && \
-    pip install --no-cache-dir pyarrow==8.0.0
 
-# Copy project files
-COPY ./docker/entrypoint.sh ./docker/migration.py /scripts/
-COPY ./featurebyte /home/$USER/app/featurebyte
-RUN chown "$USER:$USER" -R /home/$USER/app
+# copy featurebyte and featurebyte package
+COPY ./featurebyte /app/featurebyte
+COPY ./dist        /app/dist
 
+# install databricks-connector via pip (dependency error with pyarrow)
+# downgrade pyarrow - backwards compatibility issue with databricks
+RUN pip install databricks-sql-connector==2.1.0 && \
+    pip install pyarrow==8.0.0 && \
+    pip install jupyterlab && \
+    pip install --no-index -f /app/dist featurebyte && \
+    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
+
+# Add non-root user
+RUN adduser --uid $UID --disabled-password --gecos '' $USER
+RUN chown -R $USER:$USER /app
 USER $USER
-WORKDIR /home/$USER/app
 
-ENTRYPOINT ["/bin/sh", "/scripts/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/scripts/entrypoint.sh"]

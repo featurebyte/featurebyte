@@ -64,10 +64,18 @@ class InputNode(BaseNode):
         type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
         id: Optional[PydanticObjectId] = Field(default=None)
 
+    class DimensionDataParameters(BaseParameters):
+        """DimensionDataParameters"""
+
+        type: Literal[TableDataType.DIMENSION_DATA] = Field(
+            TableDataType.DIMENSION_DATA, const=True
+        )
+        id: Optional[PydanticObjectId] = Field(default=None)
+
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Annotated[
-        Union[EventDataParameters, ItemDataParameters, GenericParameters],
+        Union[EventDataParameters, ItemDataParameters, GenericParameters, DimensionDataParameters],
         Field(discriminator="type"),
     ]
 

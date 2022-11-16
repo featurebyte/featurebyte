@@ -9,6 +9,7 @@ from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.session_manager import SessionManagerService
 
 
 class FeatureStoreService(
@@ -19,6 +20,17 @@ class FeatureStoreService(
     """
 
     document_class: Type[FeatureStoreModel] = FeatureStoreModel
+
+    @property
+    def session_manager_service(self) -> SessionManagerService:
+        """
+        SessionManagerService object
+
+        Returns
+        -------
+        SessionManagerService
+        """
+        return SessionManagerService(user=self.user, persistent=self.persistent)
 
     async def list_databases(
         self, feature_store: FeatureStoreModel, get_credential: Any
@@ -38,7 +50,7 @@ class FeatureStoreService(
         List[str]
             List of database names
         """
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         return await db_session.list_databases()
@@ -66,7 +78,7 @@ class FeatureStoreService(
         List[str]
             List of schema names
         """
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         return await db_session.list_schemas(database_name=database_name)
@@ -97,7 +109,7 @@ class FeatureStoreService(
         List[str]
             List of table names
         """
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         return await db_session.list_tables(database_name=database_name, schema_name=schema_name)
@@ -131,7 +143,7 @@ class FeatureStoreService(
         List[ColumnSpec]
             List of ColumnSpec object
         """
-        db_session = await self._get_feature_store_session(
+        db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         table_schema = await db_session.list_table_schema(

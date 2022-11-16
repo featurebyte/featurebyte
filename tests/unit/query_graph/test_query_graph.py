@@ -1,10 +1,12 @@
 """
 Unit test for query graph
 """
+import os.path
 import textwrap
 from collections import defaultdict
 
 import pytest
+from bson import json_util
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SourceType
@@ -474,3 +476,20 @@ def test_query_graph__representation():
     ).strip()
     assert repr(graph) == expected
     assert str(graph) == expected
+
+
+def test_prune__item_view_join_event_view(test_dir):
+    """Test graph pruning on item view join with event view"""
+    fixture_path = os.path.join(test_dir, "fixtures/graph/event_item_view_join.json")
+    with open(fixture_path) as fhandle:
+        graph_dict = json_util.loads(fhandle.read())
+
+    query_graph = QueryGraph(**graph_dict)
+    assert "assign_1" in query_graph.nodes_map
+
+    # check that assign node not get pruned
+    target_node = query_graph.get_node_by_name("join_2")
+    pruned_graph, _ = query_graph.prune(
+        target_node=target_node, target_columns=set(target_node.get_new_output_columns())
+    )
+    assert "assign_1" in pruned_graph.nodes_map

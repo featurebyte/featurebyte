@@ -112,7 +112,11 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         document_id=production_ready_feature.id, verbose=False
     )
     expected_metadata = {
-        "main_data": {"name": "sf_event_data", "data_type": "event_data"},
+        "main_data": {
+            "name": "sf_event_data",
+            "data_type": "event_data",
+            "id": feature_namespace.tabular_data_ids[0],
+        },
         "input_columns": {
             "Input0": {"data": "sf_event_data", "column_name": "col_float", "semantic": None}
         },
@@ -178,7 +182,11 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
         "function": "sum",
     }
     expected_metadata = {
-        "main_data": {"name": "sf_event_data", "data_type": "event_data"},
+        "main_data": {
+            "name": "sf_event_data",
+            "data_type": "event_data",
+            "id": feature_iet.tabular_data_ids[0],
+        },
         "input_columns": {
             "Input0": {
                 "data": "sf_event_data",

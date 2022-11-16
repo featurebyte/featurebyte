@@ -1,19 +1,36 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  featurebyte-service:
-    container_name: featurebyte-service
-    image: local/featurebyte:latest
+  mongo-rs:
+    hostname: mongo-rs
+    container_name: mongo-rs
+    image: "mongo:latest"
+    entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
     volumes:
-      - ~/.featurebyte/mongo:/data
-      - ~/.featurebyte:/home/user/.featurebyte
+      - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
+      - ./data/:/data/
+    ports: []
+
+  featurebyte-server:
+    hostname: featurebyte-server
+    container_name: featurebyte-server
+    depends_on: [mongo-rs]
+    ### Change to this when we release
+    # image: mydockerimage:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        FEATUREBYTE_NP_PASSWORD: $FEATUREBYTE_NP_PASSWORD  # You need to set an env variable here
+    volumes:
+      - ~/.featurebyte:/app/.featurebyte
       - /tmp:/tmp
     environment:
-      MONGODB_URI: mongodb://localhost:27021/?replicaSet=rs0
+      FEATUREBYTE_HOME: /app/.featurebyte
+      MONGODB_URI: mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0
       API_HOST: 0.0.0.0
       API_PORT: 8088
       WORKERS: 3
     ports:
-      - 27021:27021
-      - 27022:27022
-      - 8088:8088
+      - "127.0.0.1:8088:8088"  # featurebyte-server
+      - "127.0.0.1:8089:8089"  # jupyter-notebook

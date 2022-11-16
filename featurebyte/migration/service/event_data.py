@@ -3,6 +3,8 @@ EventDataMigrationService class
 """
 from __future__ import annotations
 
+from typing import Any, Dict
+
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import MigrationServiceMixin
 from featurebyte.service.event_data import EventDataService
@@ -24,20 +26,19 @@ class EventDataMigrationService(EventDataService, MigrationServiceMixin):
         )
 
         # sample first 10 few records before migration
-        sample_docs_before, total_before = await self.persistent.find(
-            collection_name="tabular_data", query_filter={}, page_size=10
+        query_filter: Dict[str, Any] = {}
+        page_size = 10
+        _, total_before = await self.persistent.find(
+            collection_name="tabular_data", query_filter=query_filter, page_size=page_size
         )
-        sample_docs_before_map = {doc["_id"]: doc for doc in sample_docs_before}
 
         # migrate all records and audit records
-        await self.migrate_all_records(query_filter={})
+        await self.migrate_all_records(query_filter=query_filter)
 
         # check the sample records after migration
         sample_docs_after, total_after = await self.persistent.find(
-            collection_name="tabular_data",
-            query_filter={"_id": {"$in": list(sample_docs_before_map)}},
+            collection_name="tabular_data", query_filter=query_filter, page_size=page_size
         )
-        sample_docs_after_map = {doc["_id"]: doc for doc in sample_docs_after}
-        assert total_before == total_after
-        for doc in sample_docs_after_map.values():
+        assert total_before == total_after, (total_before, total_after)
+        for doc in sample_docs_after:
             assert doc["type"] == "event_data"

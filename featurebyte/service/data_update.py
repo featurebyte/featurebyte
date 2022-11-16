@@ -88,10 +88,12 @@ class DataUpdateService(BaseService):
             for col_info in data.columns_info
             if getattr(col_info, field_name)
         ]
-        docs = await service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": id_values}}
-        )
-        found_id_values = [ObjectId(doc["_id"]) for doc in docs["data"]]
+        found_id_values = [
+            ObjectId(doc["_id"])
+            async for doc in service.list_documents_iterator(
+                query_filter={"_id": {"$in": id_values}}
+            )
+        ]
         missing_id_values = sorted(set(id_values).difference(found_id_values))
         if missing_id_values:
             column_name_id_pairs = sorted(

@@ -8,17 +8,12 @@ from typing import Any, Generic, Literal, Optional, Type, TypeVar
 from abc import abstractmethod
 
 from bson.objectid import ObjectId
-from pydantic import ValidationError
 
-from featurebyte.exception import CredentialsError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     PydanticObjectId,
 )
-from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.session.base import BaseSession
-from featurebyte.session.manager import SessionManager
 
 GeneralT = TypeVar("GeneralT")
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
@@ -93,43 +88,6 @@ class OpsServiceMixin:
             return document
         return None
 
-    async def _get_feature_store_session(
-        self, feature_store: FeatureStoreModel, get_credential: Any
-    ) -> BaseSession:
-        """
-        Get session for feature store
-
-        Parameters
-        ----------
-        feature_store: FeatureStoreModel
-            ExtendedFeatureStoreModel object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        BaseSession
-            BaseSession object
-
-        Raises
-        ------
-        CredentialsError
-            When the credentials used to access the feature store is missing or invalid
-        """
-        try:
-            session_manager = SessionManager(
-                credentials={
-                    feature_store.name: await get_credential(
-                        user_id=self.user.id, feature_store_name=feature_store.name
-                    )
-                }
-            )
-            return await session_manager.get_session(feature_store)
-        except ValidationError as exc:
-            raise CredentialsError(
-                f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
-            ) from exc
-
 
 class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
     """
@@ -202,7 +160,7 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
         -------
         SemanticModel
         """
-        documents = await self.list_documents(page=1, page_size=0, query_filter={"name": name})
+        documents = await self.list_documents(query_filter={"name": name})
         if documents["data"]:
             return self.document_class(**documents["data"][0])
         return await self.create_document(data=self.document_create_class(name=name))

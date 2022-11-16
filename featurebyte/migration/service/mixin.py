@@ -7,6 +7,7 @@ from typing import Any, Optional, Protocol
 
 from abc import abstractmethod
 
+from featurebyte.logger import logger
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
 
@@ -69,6 +70,8 @@ class MigrationServiceMixin(Protocol):
         if query_filter is None:
             query_filter = dict(self._construct_list_query_filter())
         to_iterate, page = True, 1
+
+        logger.info(f'Start migrating all records (collection: "{self.collection_name}")')
         while to_iterate:
             docs, total = await self.persistent.find(
                 collection_name=self.collection_name,
@@ -84,3 +87,6 @@ class MigrationServiceMixin(Protocol):
                 )
 
             to_iterate = bool(total > (page * page_size))
+            page += 1
+
+        logger.info(f'Complete migration (collection: "{self.collection_name}")')

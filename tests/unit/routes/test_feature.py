@@ -392,7 +392,9 @@ class TestFeatureApi(BaseApiTestSuite):
     def test_preview_200(self, test_api_client_persistent, feature_preview_payload):
         """Test feature preview (success)"""
         test_api_client, _ = test_api_client_persistent
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
             mock_session = mock_get_session.return_value
             mock_session.execute_query.return_value = expected_df

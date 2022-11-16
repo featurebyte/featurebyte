@@ -81,7 +81,19 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
         assert "created_at" in response_dict
 
-    def test_list_databases__200(self, test_api_client_persistent, create_success_response):
+    @pytest.fixture(name="mock_get_session", autouse=True)
+    def get_mock_get_session_fixture(self):
+        """
+        Return
+        """
+        with patch(
+            "featurebyte.service.session_manager.SessionManager.get_session"
+        ) as mocked_get_session:
+            yield mocked_get_session
+
+    def test_list_databases__200(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
         """
         Test list databases
         """
@@ -90,14 +102,17 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         databases = ["a", "b", "c"]
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
-            mock_get_session.return_value.list_databases.return_value = databases
-            response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
+        mock_get_session.return_value.list_databases.return_value = databases
+        response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
         assert response.status_code == HTTPStatus.OK
         assert response.json() == databases
 
     def test_list_databases__401(
-        self, test_api_client_persistent, create_success_response, snowflake_connector
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        snowflake_connector,
+        mock_get_session,
     ):
         """
         Test list databases with invalid credentials
@@ -108,9 +123,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
 
         credentials_error = CredentialsError("Invalid credentials provided.")
         snowflake_connector.side_effect = CredentialsError
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
-            mock_get_session.return_value.list_databases.side_effect = credentials_error
-            response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
+        mock_get_session.return_value.list_databases.side_effect = credentials_error
+        response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {"detail": str(credentials_error)}
 
@@ -122,8 +136,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        with patch("featurebyte.service.mixin.SessionManager.get_session"):
-            response = test_api_client.post(f"{self.base_route}/schema", json=feature_store)
+        response = test_api_client.post(f"{self.base_route}/schema", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
@@ -135,7 +148,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         }
 
-    def test_list_schemas__200(self, test_api_client_persistent, create_success_response):
+    def test_list_schemas__200(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
         """
         Test list schemas
         """
@@ -144,11 +159,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         schemas = ["a", "b", "c"]
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
-            mock_get_session.return_value.list_schemas.return_value = schemas
-            response = test_api_client.post(
-                f"{self.base_route}/schema?database_name=x", json=feature_store
-            )
+        mock_get_session.return_value.list_schemas.return_value = schemas
+        response = test_api_client.post(
+            f"{self.base_route}/schema?database_name=x", json=feature_store
+        )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == schemas
 
@@ -160,8 +174,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        with patch("featurebyte.service.mixin.SessionManager.get_session"):
-            response = test_api_client.post(f"{self.base_route}/table", json=feature_store)
+        response = test_api_client.post(f"{self.base_route}/table", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
@@ -178,7 +191,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         }
 
-    def test_list_tables__200(self, test_api_client_persistent, create_success_response):
+    def test_list_tables__200(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
         """
         Test list tables
         """
@@ -187,11 +202,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         tables = ["a", "b", "c"]
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
-            mock_get_session.return_value.list_tables.return_value = tables
-            response = test_api_client.post(
-                f"{self.base_route}/table?database_name=x&schema_name=y", json=feature_store
-            )
+        mock_get_session.return_value.list_tables.return_value = tables
+        response = test_api_client.post(
+            f"{self.base_route}/table?database_name=x&schema_name=y", json=feature_store
+        )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == tables
 
@@ -203,8 +217,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        with patch("featurebyte.service.mixin.SessionManager.get_session"):
-            response = test_api_client.post(f"{self.base_route}/column", json=feature_store)
+        response = test_api_client.post(f"{self.base_route}/column", json=feature_store)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
@@ -226,7 +239,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         }
 
-    def test_list_columns__200(self, test_api_client_persistent, create_success_response):
+    def test_list_columns__200(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
         """
         Test list columns
         """
@@ -235,12 +250,11 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         columns = {"a": "TIMESTAMP", "b": "INT", "c": "BOOL"}
-        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
-            mock_get_session.return_value.list_table_schema.return_value = columns
-            response = test_api_client.post(
-                f"{self.base_route}/column?database_name=x&schema_name=y&table_name=z",
-                json=feature_store,
-            )
+        mock_get_session.return_value.list_table_schema.return_value = columns
+        response = test_api_client.post(
+            f"{self.base_route}/column?database_name=x&schema_name=y&table_name=z",
+            json=feature_store,
+        )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == [
             {"name": "a", "dtype": "TIMESTAMP"},
