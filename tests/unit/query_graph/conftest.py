@@ -4,6 +4,7 @@ Common test fixtures used across unit test directories related to query_graph
 import copy
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
@@ -360,6 +361,7 @@ def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
         "parent": None,
         "agg_func": "count",
         "names": ["order_size"],
+        "entity_ids": [ObjectId("63748c9244bc4549b25f8200")],
     }
     groupby_node = global_graph.add_operation(
         node_type=NodeType.ITEM_GROUPBY,

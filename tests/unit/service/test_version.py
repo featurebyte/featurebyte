@@ -6,6 +6,7 @@ import os
 
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
@@ -46,6 +47,7 @@ async def test_create_new_feature_version(
         "timestamp": "event_timestamp",
         "names": ["sum_30m", "sum_2h", "sum_1d"],
         "serving_names": ["cust_id"],
+        "entity_ids": [ObjectId("637449b96d6e838b025328e2")],
     }
     parameters = feature.graph.get_node_by_name("groupby_1").parameters
     assert parameters.dict() == {
