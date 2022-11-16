@@ -240,11 +240,18 @@ def patched_snowflake_session_cls_fixture(
         _ = kwargs
         return tables_output["name"].tolist()
 
+    def mock_get_working_schema_metadata():
+        return {
+            "version": 1,
+            "feature_store_id": "test_feature_store_id",
+        }
+
     with patch("featurebyte.session.snowflake.SnowflakeSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
         mock_session_obj.execute_query.side_effect = mock_execute_query
         mock_session_obj.list_schemas.side_effect = mock_list_schemas
         mock_session_obj.list_tables.side_effect = mock_list_tables
+        mock_session_obj.get_working_schema_metadata.side_effect = mock_get_working_schema_metadata
         mock_session_obj.database_name = snowflake_session_dict_without_credentials["database"]
         mock_session_obj.schema_name = snowflake_session_dict_without_credentials["sf_schema"]
         yield patched_class
@@ -380,8 +387,7 @@ async def test_schema_initializer__dont_reinitialize(
     await snowflake_initializer.initialize()
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
-    assert session.execute_query.call_args_list[:2] == [
-        call(METADATA_QUERY),
+    assert session.execute_query.call_args_list[:1] == [
         call(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
             "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
@@ -405,30 +411,23 @@ async def test_schema_initializer__dont_reinitialize(
     # update mock to have new return value for execute query
     mocked_execute_query = session.execute_query.side_effect
 
-    def new_mock_execute_query(query):
-        if query == METADATA_QUERY:
-            return pd.DataFrame(
-                {
-                    "WORKING_SCHEMA_VERSION": [working_schema_version],
-                    "FEATURE_STORE_ID": "test_store_id",
-                }
-            )
-        return mocked_execute_query(query)
+    # update mock to have new return value for get_working_schema_metadata
+    def new_mocked_get_working_schema_metadata():
+        return {
+            "version": working_schema_version,
+            "feature_store_id": "test_feature_store_id",
+        }
 
-    session.execute_query.side_effect = new_mock_execute_query
+    session.get_working_schema_metadata.side_effect = new_mocked_get_working_schema_metadata
+
+    existing_number_of_calls = len(session.execute_query.call_args_list)
 
     # re-initialize
     await snowflake_initializer.initialize()
-    # verify that only one additional call is made
-    number_of_metadata_calls = 3
-    expected_number_of_calls = (
-        number_of_metadata_calls + len(EXPECTED_FUNCTIONS) + len(EXPECTED_PROCEDURES)
-    )
-    assert len(session.execute_query.call_args_list) == expected_number_of_calls + 1
-    # verify that the new call is the one to check the working version
-    assert session.execute_query.call_args_list[-1:] == [
-        call(METADATA_QUERY),
-    ]
+    # verify that no additional calls to update are made
+    # this is expected since we now mock out the working schema metadata to return the updated version, so
+    # re-initializing should not result in anymore updates
+    assert len(session.execute_query.call_args_list) == existing_number_of_calls
 
 
 @pytest.mark.parametrize("is_schema_missing", [True])
@@ -454,7 +453,7 @@ async def test_schema_initializer__all_missing(
     await SnowflakeSchemaInitializer(session).initialize()
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
-    assert session.execute_query.call_args_list[1:2] == [
+    assert session.execute_query.call_args_list[:1] == [
         call("CREATE SCHEMA FEATUREBYTE"),
     ]
     # Should register custom functions and procedures
