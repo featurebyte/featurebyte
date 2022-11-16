@@ -132,17 +132,38 @@ jobs:
           pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
           poetry config virtualenvs.in-project true
 
-      - name: Install dependencies
+      - name: Install dependencies & start mongo
         if: ${{ needs.flags.outputs.changes != 0 }}
-        run: make install
+        run: |
+          make install
+          make test-setup
 
       - name: Authenticate to Google Cloud
         if: ${{ needs.flags.outputs.changes != 0 }}
-        uses: 'google-github-actions/auth@v0'
+        uses: 'google-github-actions/auth@v1'
         with:
           credentials_json: '${{ secrets.GCR_CLOUD_STORAGE_R }}'
 
-      - name:
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: Download to staging and restoremongo
+        if: ${{ needs.flags.outputs.change != 0 }}
+        run: |
+          gsutil cp gs://featurebyte_staging_bucket/mongodb.tar.gz .
+          docker cp mongodb.tar.gz mongo:/
+          docker exec mongo tar xvf /mongodb.tar.gz
+          docker exec mongo mongorestore --drop --uri 'mongodb://localhost:27021,localhost:27022/?replicaSet=rs0'
+
+      - name: Run migration test
+        if: ${{ needs.flags.outputs.change != 0 }}
+        run: poetry run python -m featurebyte.migration.local_run
+
+      - name: stop mongo
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: |
+          make test-teardown
+
   test:
     needs: [flags, cache]
     runs-on: ubuntu-latest
@@ -217,7 +238,7 @@ jobs:
     - name: Authenticate to Google Cloud
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       id: 'auth'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
 
