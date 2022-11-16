@@ -1,6 +1,8 @@
 """
 Tests functions/methods in routes/common directory
 """
+from typing import List
+
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock
 
@@ -11,9 +13,28 @@ from featurebyte.exception import DocumentConflictError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
 )
 from featurebyte.models.persistent import AuditActionType
 from featurebyte.service.base_document import BaseDocumentService
+
+
+class Document(FeatureByteBaseDocumentModel):
+    """Document class"""
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """Settings class"""
+
+        collection_name = "col"
+        unique_constraints: List[UniqueValuesConstraint] = []
+
+
+class DocumentService(BaseDocumentService):
+    """DocumentService class for testing"""
+
+    # pylint: disable=abstract-method
+
+    document_class = Document
 
 
 @pytest.mark.asyncio
@@ -55,21 +76,6 @@ async def test_check_document_creation_conflict(
     """
     Test check_document_creation_conflict error message
     """
-
-    class Document(FeatureByteBaseDocumentModel):
-        """Document class"""
-
-        class Settings(FeatureByteBaseDocumentModel.Settings):
-            """Settings class"""
-
-            collection_name = "col"
-
-    class DocumentService(BaseDocumentService):
-        """DocumentService class"""
-
-        # pylint: disable=abstract-method
-
-        document_class = Document
 
     persistent = AsyncMock()
     persistent.find_one.return_value = {"_id": "conflict_id_val", "name": "conflict_name_val"}
@@ -285,3 +291,26 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
 def test_construct_list_query_filter(kwargs, expected):
     """Test construct_list_query_filter logic"""
     assert BaseDocumentService._construct_list_query_filter(None, **kwargs) == expected
+
+
+@pytest.mark.asyncio
+async def test_list_documents_iterator(user, persistent):
+    """Test list document iterator"""
+    document_service = DocumentService(user=user, persistent=persistent)
+    total = 15
+    for _ in range(total):
+        await document_service.create_document(data=Document())
+
+    list_results = await document_service.list_documents(page_size=0, page=1, query_filter={})
+    expected_doc_ids = set(doc["_id"] for doc in list_results["data"])
+    assert list_results["total"] == total
+
+    # retrieve list iterator & check results
+    for page_size in [1, 10, 15, 20]:
+        doc_ids = [
+            doc["_id"]
+            async for doc in document_service.list_documents_iterator(
+                query_filter={}, page_size=page_size
+            )
+        ]
+        assert set(doc_ids) == expected_doc_ids

@@ -115,10 +115,10 @@ class RelationshipService(BaseService):
             updated_document = cast(Relationship, updated_document)
 
             # update all objects which have child_id in their ancestor_ids
-            objects = await self.document_service.list_documents(
-                query_filter={"ancestor_ids": {"$in": [child_id]}}, page_size=0
-            )
-            for obj in objects["data"]:
+            query_filter = {"ancestor_ids": {"$in": [child_id]}}
+            async for obj in self.document_service.list_documents_iterator(
+                query_filter=query_filter
+            ):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=self.prepare_document_update_payload(
@@ -126,6 +126,7 @@ class RelationshipService(BaseService):
                         parents=obj["parents"],
                     ),
                 )
+
             return updated_document
 
     @staticmethod
@@ -175,10 +176,10 @@ class RelationshipService(BaseService):
             updated_document = cast(Relationship, updated_document)
 
             # update all objects which have child_id in their ancestor_ids
-            objects = await self.document_service.list_documents(
-                query_filter={"ancestor_ids": {"$in": [child_id]}}, page_size=0
-            )
-            for obj in objects["data"]:
+            query_filter = {"ancestor_ids": {"$in": [child_id]}}
+            async for obj in self.document_service.list_documents_iterator(
+                query_filter=query_filter
+            ):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=self.prepare_document_update_payload(
@@ -188,6 +189,7 @@ class RelationshipService(BaseService):
                         parents=obj["parents"],
                     ),
                 )
+
             return updated_document
 
 
