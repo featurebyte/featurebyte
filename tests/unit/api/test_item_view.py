@@ -22,6 +22,7 @@ class TestItemView(BaseViewTestSuite):
     view_type = ViewType.ITEM_VIEW
     col = "item_amount"
     factory_method = ItemView.from_item_data
+    use_data_under_test_in_lineage = True
 
 
 def test_from_item_data__auto_join_columns(
@@ -145,24 +146,6 @@ def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
         snowflake_item_view.default_feature_job_setting
         == snowflake_event_data.default_feature_job_setting
     )
-
-
-def test_getitem__str(snowflake_item_view, snowflake_item_data):
-    """
-    Test retrieving single column
-    """
-    cust_id = snowflake_item_view["item_id_col"]
-    assert isinstance(cust_id, Series)
-    assert cust_id.node.dict(exclude={"name": True}) == {
-        "type": NodeType.PROJECT,
-        "parameters": {"columns": ["item_id_col"]},
-        "output_type": NodeOutputType.SERIES,
-    }
-    assert cust_id.row_index_lineage == (
-        snowflake_item_data.node.name,
-        snowflake_item_view.node.name,
-    )
-    assert cust_id.parent.node == snowflake_item_view.node
 
 
 def test_getitem__series_key(snowflake_item_view):

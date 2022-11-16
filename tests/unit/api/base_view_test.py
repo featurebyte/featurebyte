@@ -4,7 +4,9 @@ Base View test suite
 
 import pytest
 
+from featurebyte.core.series import Series
 from featurebyte.enum import StrEnum
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 class ViewType(StrEnum):
@@ -26,6 +28,7 @@ class BaseViewTestSuite:
     view_type: ViewType = ""
     col = ""
     factory_method = None
+    use_data_under_test_in_lineage = False
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(
@@ -65,6 +68,29 @@ class BaseViewTestSuite:
                 view_under_test[column] = 1
             expected_msg = f"Column '{column}' cannot be modified!"
             assert expected_msg in str(exc.value)
+
+    def test_getitem__str(self, view_under_test, data_under_test):
+        """
+        Test retrieving single column
+        """
+        cust_id = view_under_test[self.col]
+        assert isinstance(cust_id, Series)
+
+        assert cust_id.node.dict(exclude={"name": True}) == {
+            "type": NodeType.PROJECT,
+            "parameters": {"columns": [self.col]},
+            "output_type": NodeOutputType.SERIES,
+        }
+        expected_lineage = (
+            (view_under_test.node.name,)
+            if not self.use_data_under_test_in_lineage
+            else (
+                data_under_test.node.name,
+                view_under_test.node.name,
+            )
+        )
+        assert cust_id.row_index_lineage == expected_lineage
+        assert cust_id.parent.node == view_under_test.node
 
     def test_unary_op_params(self, view_under_test):
         """

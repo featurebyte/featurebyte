@@ -48,21 +48,6 @@ def test_from_event_data(snowflake_event_data):
     )
 
 
-def test_getitem__str(snowflake_event_view):
-    """
-    Test retrieving single column
-    """
-    cust_id = snowflake_event_view["cust_id"]
-    assert isinstance(cust_id, Series)
-    assert cust_id.node.dict(exclude={"name": True}) == {
-        "type": NodeType.PROJECT,
-        "parameters": {"columns": ["cust_id"]},
-        "output_type": NodeOutputType.SERIES,
-    }
-    assert cust_id.row_index_lineage == (snowflake_event_view.node.name,)
-    assert cust_id.parent.node == snowflake_event_view.node
-
-
 def test_getitem__list_of_str(snowflake_event_view):
     """
     Test retrieving subset of the event data features
