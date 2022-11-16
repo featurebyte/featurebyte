@@ -9,34 +9,24 @@ from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 
 
-@pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(snowflake_event_data, config):
+class TestEventView(BaseViewTestSuite):
     """
-    EventData object fixture
+    EventView test suite
     """
-    _ = config
-    snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s",
-            frequency="6m",
-            time_modulo_frequency="3m",
-        )
-    )
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
-    yield event_view
+
+    protected_columns = ["event_timestamp"]
+    view_type = ViewType.EVENT_VIEW
+    col = "cust_id"
+    factory_method = EventView.from_event_data
 
 
 def test_from_event_data(snowflake_event_data):
     """
     Test from_event_data
     """
-    with pytest.raises(TypeError) as exc:
-        EventView.from_event_data("hello")
-    expected_msg = 'type of argument "event_data" must be featurebyte.api.event_data.EventData; got str instead'
-    assert expected_msg in str(exc.value)
-
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.node == snowflake_event_data.node
@@ -125,18 +115,6 @@ def test_getitem__series_key(snowflake_event_view):
     )
 
 
-@pytest.mark.parametrize("column", ["event_timestamp"])
-def test_setitem__override_protected_column(snowflake_event_view, column):
-    """
-    Test attempting to change event data's timestamp value or entity identifier value
-    """
-    assert column in snowflake_event_view.protected_columns
-    with pytest.raises(ValueError) as exc:
-        snowflake_event_view[column] = 1
-    expected_msg = f"Column '{column}' cannot be modified!"
-    assert expected_msg in str(exc.value)
-
-
 def test_setitem__str_key_series_value(snowflake_event_view):
     """
     Test assigning Series object to event_view
@@ -162,15 +140,6 @@ def test_setitem__str_key_series_value(snowflake_event_view):
         "cust_id": (source_node_name,),
         "double_value": (snowflake_event_view.node.name,),
     }
-
-
-def test_unary_op_params(snowflake_event_view):
-    """
-    Test unary operation inherits tabular_data_ids
-    """
-    column = snowflake_event_view["cust_id"]
-    output = column.isnull()
-    assert output.tabular_data_ids == column.tabular_data_ids
 
 
 def test_event_view_column_getitem_series(snowflake_event_view):
