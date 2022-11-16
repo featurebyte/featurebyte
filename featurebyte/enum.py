@@ -80,6 +80,27 @@ class StrEnum(str, Enum):
     StrEnum class
     """
 
+    def __new__(cls, value: str, doc: str | None = None) -> StrEnum:
+        """
+        Support inline documentation of enum values
+
+        Parameters
+        ----------
+        value: str
+            Value of enum member
+        doc: str
+            Docstring for enum member
+
+        Returns
+        -------
+        StrEnum
+        """
+        self = str.__new__(cls, value)
+        self._value_ = value
+        if doc is not None:
+            self.__doc__ = doc
+        return self
+
     def __repr__(self) -> str:
         return str(self.value)
 
@@ -92,21 +113,21 @@ class DBVarType(StrEnum):
     Database variable type
     """
 
-    BINARY = "BINARY"
-    BOOL = "BOOL"
-    CHAR = "CHAR"
-    DATE = "DATE"
-    FLOAT = "FLOAT"
-    INT = "INT"
-    TIME = "TIME"
-    TIMESTAMP = "TIMESTAMP"
-    VARCHAR = "VARCHAR"
-    OBJECT = "OBJECT"
-    TIMEDELTA = "TIMEDELTA"
-    VOID = "VOID"
-    ARRAY = "ARRAY"
-    MAP = "MAP"
-    STRUCT = "STRUCT"
+    BINARY = "BINARY", "Binary column"
+    BOOL = "BOOL", "Boolean column"
+    CHAR = "CHAR", "Fixed-length string column"
+    DATE = "DATE", "Date column"
+    FLOAT = "FLOAT", "Float / Real column"
+    INT = "INT", "Integer column"
+    TIME = "TIME", "Time column"
+    TIMESTAMP = "TIMESTAMP", "Timestamp column"
+    VARCHAR = "VARCHAR", "Variable-length string column"
+    OBJECT = "OBJECT", "Mixed-type column"
+    TIMEDELTA = "TIMEDELTA", "Time delta column"
+    VOID = "VOID", "Void column"
+    ARRAY = "ARRAY", "Array column"
+    MAP = "MAP", "Map column"
+    STRUCT = "STRUCT", "Struct column"
 
 
 class AggFunc(StrEnum):
@@ -114,13 +135,13 @@ class AggFunc(StrEnum):
     Supported aggregation functions in groupby
     """
 
-    SUM = "sum"
-    AVG = "avg"
-    MIN = "min"
-    MAX = "max"
-    COUNT = "count"
-    NA_COUNT = "na_count"
-    STD = "std"
+    SUM = "sum", "Compute sum of values"
+    AVG = "avg", "Compute average value"
+    MIN = "min", "Compute minimum value"
+    MAX = "max", "Compute maximimum value"
+    COUNT = "count", "Compute row count"
+    NA_COUNT = "na_count", "Compute count of missing values"
+    STD = "std", "Compute standard deviation of values"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -138,12 +159,12 @@ class SourceType(StrEnum):
     Database or data warehouse source type
     """
 
-    SNOWFLAKE = "snowflake"
-    SQLITE = "sqlite"
-    DATABRICKS = "databricks"
+    SNOWFLAKE = "snowflake", "Snowflake connection details"
+    SQLITE = "sqlite", "SQLite connection details"
+    DATABRICKS = "databricks", "DataBricks connection details"
 
     # TEST source type should only be used for mocking in unit tests.
-    TEST = "test"
+    TEST = "test", "For testing only"
 
 
 class SpecialColumnName(StrEnum):

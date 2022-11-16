@@ -12,6 +12,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
+from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
@@ -22,6 +23,10 @@ class EventViewGroupBy(OpsMixin):
     """
     EventViewGroupBy class
     """
+
+    # documentation metadata
+    __fbautodoc__ = ["GroupBy"]
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     @typechecked
     def __init__(self, obj: EventView, keys: Union[str, List[str]], category: Optional[str] = None):

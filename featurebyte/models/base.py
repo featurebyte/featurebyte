@@ -204,11 +204,19 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         Record update datetime when the document get updated at the persistent
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
-    user_id: Optional[PydanticObjectId] = Field(default=None, allow_mutation=False)
-    name: Optional[StrictStr]
-    created_at: Optional[datetime] = Field(default=None, allow_mutation=False)
-    updated_at: Optional[datetime] = Field(default=None, allow_mutation=False)
+    id: PydanticObjectId = Field(
+        default_factory=ObjectId, alias="_id", allow_mutation=False, description="Record identifier"
+    )
+    user_id: Optional[PydanticObjectId] = Field(
+        default=None, allow_mutation=False, description="User identifier"
+    )
+    name: Optional[StrictStr] = Field(description="Record name")
+    created_at: Optional[datetime] = Field(
+        default=None, allow_mutation=False, description="Record creation time"
+    )
+    updated_at: Optional[datetime] = Field(
+        default=None, allow_mutation=False, description="Record last updated time"
+    )
 
     @validator("id", pre=True)
     @classmethod

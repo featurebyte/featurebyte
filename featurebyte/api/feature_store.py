@@ -3,13 +3,15 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, cast
+from typing import Any, List, Optional, cast
 
 from http import HTTPStatus
 
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.database_table import DatabaseTable
+from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
@@ -21,16 +23,15 @@ from featurebyte.models.feature_store import (
 )
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
-if TYPE_CHECKING:
-    from featurebyte.api.database_table import DatabaseTable
-else:
-    DatabaseTable = TypeVar("DatabaseTable")
-
 
 class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
     FeatureStore class
     """
+
+    # documentation metadata
+    __fbautodoc__ = []
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # class variables
     _route = "/feature_store"
@@ -73,7 +74,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
         Returns
         -------
-        list databases
+        List[str]
+            List of databases
 
         Raises
         ------
@@ -170,9 +172,6 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         -------
         DatabaseTable
         """
-        # pylint: disable=import-outside-toplevel
-        from featurebyte.api.database_table import DatabaseTable
-
         return DatabaseTable(
             feature_store=self,
             tabular_source=TabularSource(

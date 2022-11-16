@@ -8,6 +8,7 @@ from typing import Any
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -16,6 +17,10 @@ class Entity(EntityModel, SavableApiObject):
     """
     Entity class
     """
+
+    # documentation metadata
+    __fbautodoc__ = []
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # class variables
     _route = "/entity"

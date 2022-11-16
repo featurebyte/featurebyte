@@ -10,6 +10,7 @@ from typeguard import typechecked
 
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
+from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.enum import TableDataType
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
@@ -20,6 +21,10 @@ class EventData(EventDataModel, DataApiObject):
     """
     EventData class
     """
+
+    # documentation metadata
+    __fbautodoc__ = ["Data"]
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # class variables
     _route = "/event_data"
@@ -71,6 +76,50 @@ class EventData(EventDataModel, DataApiObject):
         Returns
         -------
         EventData
+
+        Examples
+        --------
+
+        Create EventData from a table in the feature store
+
+        >>> credit_card_transactions = EventData.from_tabular_source(  # doctest: +SKIP
+        ...    name="Credit Card Transactions",
+        ...    tabular_source=feature_store.get_table(
+        ...      database_name="DEMO",
+        ...      schema_name="CREDIT_CARD",
+        ...      table_name="TRANSACTIONS"
+        ...    ),
+        ...    event_id_column="TRANSACTIONID",
+        ...    event_timestamp_column="TIMESTAMP",
+        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ... )
+
+        Get information about the EventData
+
+        >>> credit_card_transactions.info(verbose=True)  # doctest: +SKIP
+        {'name': 'CCDEMOTRANSACTIONS',
+        'created_at': '2022-10-17T08:09:15.730000',
+        'updated_at': '2022-11-14T12:15:59.707000',
+        'status': 'DRAFT',
+        'event_timestamp_column': 'TIMESTAMP',
+        'record_creation_date_column': 'RECORD_AVAILABLE_AT',
+        'table_details': {'database_name': 'DEMO',
+        'schema_name': 'CREDIT_CARD',
+        'table_name': 'TRANSACTIONS'},
+        'default_feature_job_setting': {'blind_spot': '30s',
+        'frequency': '60m',
+        'time_modulo_frequency': '15s'},
+        'entities': [{'name': 'ACCOUNTID', 'serving_names': ['ACCOUNTID']}],
+        'column_count': 6,
+        'columns_info': [{'name': 'TRANSACTIONID',
+        'dtype': 'VARCHAR',
+        'entity': None},
+        {'name': 'ACCOUNTID', 'dtype': 'VARCHAR', 'entity': 'ACCOUNTID'},
+        {'name': 'TIMESTAMP', 'dtype': 'TIMESTAMP', 'entity': None},
+        {'name': 'RECORD_AVAILABLE_AT', 'dtype': 'TIMESTAMP', 'entity': None},
+        {'name': 'DESCRIPTION', 'dtype': 'VARCHAR', 'entity': None},
+        {'name': 'AMOUNT', 'dtype': 'FLOAT', 'entity': None}]}
+
         """
         return super().create(
             tabular_source=tabular_source,
@@ -91,7 +140,7 @@ class EventData(EventDataModel, DataApiObject):
         Parameters
         ----------
         feature_job_setting: Optional[FeatureJobSetting]
-            Feature job setting object (if not provided,
+            Feature job setting object (auto-detected if not provided)
         """
         if feature_job_setting is None:
             job_setting_analysis = self.post_async_task(

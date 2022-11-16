@@ -10,6 +10,7 @@ from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.view import View, ViewColumn
+from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.enum import TableDataType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -25,6 +26,10 @@ class EventViewColumn(ViewColumn):
     """
     EventViewColumn class
     """
+
+    # documentation metadata
+    __fbautodoc__ = ["Column"]
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     @typechecked
     def lag(self, entity_columns: Union[str, List[str]], offset: int = 1) -> EventViewColumn:
@@ -84,6 +89,10 @@ class EventView(View):
     """
     EventView class
     """
+
+    # documentation metadata
+    __fbautodoc__ = ["View"]
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     _series_class = EventViewColumn
 
@@ -175,6 +184,7 @@ class EventView(View):
     ) -> EventViewGroupBy:
         """
         Group EventView using a column or list of columns of the EventView object
+        Refer to [EventViewGroupBy](/reference/featurebyte.api.groupby.EventViewGroupBy/)
 
         Parameters
         ----------
