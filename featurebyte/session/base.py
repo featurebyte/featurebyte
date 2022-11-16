@@ -271,6 +271,35 @@ class BaseSession(BaseModel):
             input_pipe.close()
             thread.join(timeout=0)
 
+    async def get_working_schema_metadata(self) -> dict[str, Any]:
+        """Retrieves the working schema version from the table registered in the
+        working schema.
+
+        Returns
+        -------
+        If no working schema version is found, return -1. This should indicate
+        to callers that we probably want to initialize the working schema.
+        """
+
+        query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
+        try:
+            results = await self.execute_query(query)
+        except tuple(EXPECTED_ERRORS):
+            # Snowflake and Databricks will error if the table is not initialized
+            # We will need to catch more errors here if/when we add support for
+            # more platforms.
+            return {
+                "version": MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED,
+            }
+
+        # Check the working schema version if it is already initialized.
+        if results is None or results.empty:
+            return {"version": MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND}
+        return {
+            "version": int(results["WORKING_SCHEMA_VERSION"][0]),
+            "feature_store_id": str(results["FEATURE_STORE_ID"][0]),
+        }
+
     async def execute_query(self, query: str, timeout: float = 600) -> pd.DataFrame | None:
         """
         Execute SQL query
@@ -453,35 +482,6 @@ class BaseSchemaInitializer(ABC):
 
         await self.register_missing_objects()
 
-    async def get_working_schema_metadata(self) -> dict[str, Any]:
-        """Retrieves the working schema version from the table registered in the
-        working schema.
-
-        Returns
-        -------
-        If no working schema version is found, return -1. This should indicate
-        to callers that we probably want to initialize the working schema.
-        """
-
-        query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
-        try:
-            results = await self.session.execute_query(query)
-        except tuple(EXPECTED_ERRORS):
-            # Snowflake and Databricks will error if the table is not initialized
-            # We will need to catch more errors here if/when we add support for
-            # more platforms.
-            return {
-                "version": MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED,
-            }
-
-        # Check the working schema version if it is already initialized.
-        if results is None or results.empty:
-            return {"version": MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND}
-        return {
-            "version": int(results["WORKING_SCHEMA_VERSION"][0]),
-            "feature_store_id": str(results["FEATURE_STORE_ID"][0]),
-        }
-
     async def should_update_schema(self) -> bool:
         """Compares the working_schema_version defined in the codebase, with
         what is registered in working schema table.
@@ -493,7 +493,7 @@ class BaseSchemaInitializer(ABC):
         - the working_schema_version defined in the code base is greater than the version number
           registered in the working schema table.
         """
-        metadata = await self.get_working_schema_metadata()
+        metadata = await self.session.get_working_schema_metadata()
         registered_working_schema_version = int(metadata["version"])
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
             return True
