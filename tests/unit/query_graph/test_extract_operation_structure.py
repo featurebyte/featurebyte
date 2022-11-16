@@ -324,7 +324,7 @@ def test_extract_operation__join_double_aggregations(
         "name": "order_size",
         "columns": [],
         "transforms": [
-            "item_groupby(agg_func='count', keys=['order_id'], names=['order_size'], serving_names=['order_id'])"
+            "item_groupby(agg_func='count', entity_ids=[ObjectId('63748c9244bc4549b25f8200')], keys=['order_id'], names=['order_size'], serving_names=['order_id'])"
         ],
         "filter": False,
         "type": "derived",
