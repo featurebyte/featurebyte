@@ -8,7 +8,7 @@ from typing import Iterable, Optional, Tuple, cast
 
 from abc import ABC, abstractmethod
 
-from sqlglot import expressions, parse_one, select
+from sqlglot import expressions, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
@@ -25,6 +25,7 @@ from featurebyte.query_graph.sql.specs import (
     ItemAggregationSpec,
     PointInTimeAggregationSpec,
 )
+from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
 Window = int
 Frequency = int
@@ -201,18 +202,17 @@ class RequestTablePlan(ABC):
             .select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
             .from_(request_table_name)
         )
-        num_tiles = window_size // frequency
-        point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
-            SpecialColumnName.POINT_IN_TIME.value
+        first_tile_index_expr, last_tile_index_expr = calculate_first_and_last_tile_indices(
+            adapter=self.adapter,
+            point_in_time_expr=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value),
+            window_size=window_size,
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
         )
-        last_time_index_expr = parse_one(
-            f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
-        )
-        first_tile_index_expr = parse_one(f"{last_time_index_expr.sql()} - {num_tiles}")
         expr = select(
             SpecialColumnName.POINT_IN_TIME.value,
             *quoted_serving_names,
-            expressions.alias_(last_time_index_expr, InternalName.LAST_TILE_INDEX.value),
+            expressions.alias_(last_tile_index_expr, InternalName.LAST_TILE_INDEX.value),
             expressions.alias_(first_tile_index_expr, InternalName.FIRST_TILE_INDEX.value),
         ).from_(select_distinct_expr.subquery())
         return expr
