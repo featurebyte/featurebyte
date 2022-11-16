@@ -167,18 +167,6 @@ class ItemView(View):
         ]
 
     @property
-    def inherited_columns(self) -> set[str]:
-        """
-        Special columns set which will be automatically added to the object of same class
-        derived from current object
-
-        Returns
-        -------
-        set[str]
-        """
-        return set()
-
-    @property
     def _getitem_frame_params(self) -> dict[str, Any]:
         """
         Parameters that will be passed to frame-like class constructor in __getitem__ method

@@ -32,8 +32,6 @@ class BaseViewTestSuite:
     use_data_under_test_in_lineage = False
     view_class = None
     bool_col = col
-    # A flag to skip a particular test in a subclass if it needs to be overridden.
-    skip_test_setitem_str_key_series_value = False
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(
@@ -67,9 +65,6 @@ class BaseViewTestSuite:
         """
         Test assigning Series object to event_view
         """
-        if self.skip_test_setitem_str_key_series_value:
-            return
-
         source_node_name = view_under_test.node.name
         double_value = view_under_test[self.col] * 2
         assert isinstance(double_value, Series)
