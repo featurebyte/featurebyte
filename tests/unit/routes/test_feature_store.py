@@ -81,7 +81,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
         assert "created_at" in response_dict
 
-    @pytest.fixture(name="mock_get_session")
+    @pytest.fixture(name="mock_get_session", autouse=True)
     def get_mock_get_session_fixture(self):
         """
         Return
@@ -128,7 +128,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {"detail": str(credentials_error)}
 
-    @pytest.mark.usefixtures("mock_get_session")
     def test_list_schemas__422(self, test_api_client_persistent, create_success_response):
         """
         Test list schemas
@@ -167,7 +166,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == schemas
 
-    @pytest.mark.usefixtures("mock_get_session")
     def test_list_tables_422(self, test_api_client_persistent, create_success_response):
         """
         Test list tables
@@ -211,7 +209,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == tables
 
-    @pytest.mark.usefixtures("mock_get_session")
     def test_list_columns_422(self, test_api_client_persistent, create_success_response):
         """
         Test list columns
