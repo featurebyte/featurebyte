@@ -10,6 +10,7 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStoreUniversePlan,
     get_online_store_feature_compute_sql,
+    get_online_store_retrieval_sql,
 )
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -80,3 +81,46 @@ def test_complex_features_not_implemented(complex_feature_query_graph):
     node, graph = complex_feature_query_graph
     with pytest.raises(NotImplementedError):
         _ = get_online_store_feature_compute_sql(graph, node, SourceType.SNOWFLAKE)
+
+
+def test_online_store_feature_retrieval__all_eligible(
+    query_graph_with_groupby_and_feature_nodes, update_fixtures
+):
+    """
+    Test constructing feature retrieval sql for online store
+    """
+    graph, *nodes = query_graph_with_groupby_and_feature_nodes
+    sql = get_online_store_retrieval_sql(
+        request_table_name="REQUST_TABLE",
+        request_table_columns=["CUSTOMER_ID"],
+        graph=graph,
+        nodes=nodes,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_simple.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_online_store_feature_retrieval_sql__mixed(
+    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+):
+    """
+    Test constructing feature retrieval sql for online store where some features cannot be looked up
+    from the online store and has to be computed on demand
+    """
+    graph, *nodes = mixed_point_in_time_and_item_aggregations_features
+    sql = get_online_store_retrieval_sql(
+        request_table_name="REQUST_TABLE",
+        request_table_columns=["CUSTOMER_ID", "order_id"],
+        graph=graph,
+        nodes=nodes,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_mixed.sql",
+        update_fixture=update_fixtures,
+    )
