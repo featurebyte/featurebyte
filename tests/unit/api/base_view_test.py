@@ -3,7 +3,6 @@ Base View test suite
 """
 
 import pytest
-from _pytest.outcomes import fail
 
 from featurebyte.enum import StrEnum
 
@@ -28,20 +27,24 @@ class BaseViewTestSuite:
     factory_method = None
 
     @pytest.fixture(name="view_under_test")
-    def get_view_under_test(self, snowflake_event_view, snowflake_item_view):
+    def get_view_under_test_fixture(self, snowflake_event_view, snowflake_item_view):
         if self.view_type == ViewType.ITEM_VIEW:
             return snowflake_item_view
         if self.view_type == ViewType.EVENT_VIEW:
             return snowflake_event_view
-        fail(f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType.")
+        pytest.fail(
+            f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
+        )
 
     @pytest.fixture(name="data_under_test")
-    def get_data_under_test(self, snowflake_item_data, snowflake_event_data):
+    def get_data_under_test_fixture(self, snowflake_item_data, snowflake_event_data):
         if self.view_type == ViewType.ITEM_VIEW:
             return snowflake_item_data
         if self.view_type == ViewType.EVENT_VIEW:
             return snowflake_event_data
-        fail(f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType.")
+        pytest.fail(
+            f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
+        )
 
     def test_setitem__override_protected_column(self, view_under_test):
         """
