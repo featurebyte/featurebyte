@@ -32,6 +32,8 @@ class BaseViewTestSuite:
     use_data_under_test_in_lineage = False
     view_class = None
     bool_col = col
+    # A flag to skip a particular test in a subclass if it needs to be overridden.
+    skip_test_setitem_str_key_series_value = False
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(
@@ -60,6 +62,35 @@ class BaseViewTestSuite:
         pytest.fail(
             f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
         )
+
+    def test_setitem__str_key_series_value(self, view_under_test):
+        """
+        Test assigning Series object to event_view
+        """
+        if self.skip_test_setitem_str_key_series_value:
+            return
+
+        source_node_name = view_under_test.node.name
+        double_value = view_under_test[self.col] * 2
+        assert isinstance(double_value, Series)
+        view_under_test["double_value"] = double_value
+        assert view_under_test.node.dict(exclude={"name": True}) == {
+            "type": NodeType.ASSIGN,
+            "parameters": {"name": "double_value", "value": None},
+            "output_type": NodeOutputType.FRAME,
+        }
+        assert view_under_test.column_lineage_map == {
+            "col_binary": (source_node_name,),
+            "col_boolean": (source_node_name,),
+            "col_char": (source_node_name,),
+            "col_float": (source_node_name,),
+            "col_int": (source_node_name,),
+            "col_text": (source_node_name,),
+            "event_timestamp": (source_node_name,),
+            "created_at": (source_node_name,),
+            "cust_id": (source_node_name,),
+            "double_value": (view_under_test.node.name,),
+        }
 
     def test_setitem__override_protected_column(self, view_under_test):
         """

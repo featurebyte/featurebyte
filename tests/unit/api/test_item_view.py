@@ -23,6 +23,7 @@ class TestItemView(BaseViewTestSuite):
     factory_method = ItemView.from_item_data
     use_data_under_test_in_lineage = True
     view_class = ItemView
+    skip_test_setitem_str_key_series_value = True
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.event_id_column == view_under_test.event_id_column

@@ -5,7 +5,6 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -84,33 +83,6 @@ def test_getitem__list_of_str(snowflake_event_view):
         == event_view_subset1.tabular_data_ids
         == event_view_subset2.tabular_data_ids
     )
-
-
-def test_setitem__str_key_series_value(snowflake_event_view):
-    """
-    Test assigning Series object to event_view
-    """
-    source_node_name = snowflake_event_view.node.name
-    double_value = snowflake_event_view["col_float"] * 2
-    assert isinstance(double_value, Series)
-    snowflake_event_view["double_value"] = double_value
-    assert snowflake_event_view.node.dict(exclude={"name": True}) == {
-        "type": NodeType.ASSIGN,
-        "parameters": {"name": "double_value", "value": None},
-        "output_type": NodeOutputType.FRAME,
-    }
-    assert snowflake_event_view.column_lineage_map == {
-        "col_binary": (source_node_name,),
-        "col_boolean": (source_node_name,),
-        "col_char": (source_node_name,),
-        "col_float": (source_node_name,),
-        "col_int": (source_node_name,),
-        "col_text": (source_node_name,),
-        "event_timestamp": (source_node_name,),
-        "created_at": (source_node_name,),
-        "cust_id": (source_node_name,),
-        "double_value": (snowflake_event_view.node.name,),
-    }
 
 
 @pytest.mark.parametrize(
