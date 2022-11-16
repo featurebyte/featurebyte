@@ -276,6 +276,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         agg_func: AggFunc
         names: List[str]
         serving_names: List[str]
+        entity_ids: Optional[List[PydanticObjectId]]
 
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
