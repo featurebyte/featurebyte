@@ -31,6 +31,7 @@ class BaseViewTestSuite:
     factory_method = None
     use_data_under_test_in_lineage = False
     view_class = None
+    bool_col = col
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(
@@ -115,6 +116,45 @@ class BaseViewTestSuite:
             view_under_test.row_index_lineage + (row_subset.node.name,)
         )
         self.getitem_frame_params_assertions(row_subset, view_under_test)
+
+    def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
+        """
+        Override some properties for the view column getitem series test.
+        """
+        return {}
+
+    def test_view_column_getitem_series(self, view_under_test):
+        """
+        Test view column filter by boolean mask
+        """
+        column = view_under_test[self.col]
+        overrides = self.get_test_view_column_get_item_series_fixture_override(view_under_test)
+        mask = overrides["mask"] if "mask" in overrides else view_under_test[self.bool_col]
+
+        output = column[mask]
+        assert output.tabular_data_ids == column.tabular_data_ids
+        assert output.name == column.name
+        assert output.dtype == column.dtype
+        output_dict = output.dict()
+        assert output_dict["node_name"] == "filter_1"
+        filter_node = next(
+            node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1"
+        )
+        assert filter_node == {
+            "name": "filter_1",
+            "type": "filter",
+            "parameters": {},
+            "output_type": "series",
+        }
+        expected_edges = [
+            {"source": "input_1", "target": "project_1"},
+            {"source": "input_1", "target": "project_2"},
+            {"source": "project_1", "target": "filter_1"},
+            {"source": "project_2", "target": "filter_1"},
+        ]
+        if "expected_edges" in overrides:
+            expected_edges = overrides["expected_edges"]
+        assert output_dict["graph"]["edges"] == expected_edges
 
     def test_unary_op_params(self, view_under_test):
         """

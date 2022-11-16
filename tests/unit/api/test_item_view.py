@@ -30,6 +30,19 @@ class TestItemView(BaseViewTestSuite):
         assert row_subset.event_data_id == view_under_test.event_data_id
         assert row_subset.event_view.dict() == view_under_test.event_view.dict()
 
+    def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
+        return {
+            "mask": view_under_test[self.col] > 1000,
+            "expected_edges": [
+                {"source": "input_1", "target": "join_1"},
+                {"source": "input_2", "target": "join_1"},
+                {"source": "join_1", "target": "project_1"},
+                {"source": "project_1", "target": "gt_1"},
+                {"source": "project_1", "target": "filter_1"},
+                {"source": "gt_1", "target": "filter_1"},
+            ],
+        }
+
 
 def test_from_item_data__auto_join_columns(
     snowflake_item_data, snowflake_event_data_id, snowflake_item_data_id
@@ -187,35 +200,6 @@ def test_setitem__str_key_series_value(
         "created_at": expected_lineage_item_data_columns,
         "double_value": (snowflake_item_view.node.name,),
     }
-
-
-def test_event_view_column_getitem_series(snowflake_item_view):
-    """
-    Test ItemViewColumn filter by boolean mask
-    """
-    column = snowflake_item_view["item_amount"]
-    mask = snowflake_item_view["item_amount"] > 10
-    output = column[mask]
-    assert output.tabular_data_ids == column.tabular_data_ids
-    assert output.name == column.name
-    assert output.dtype == column.dtype
-    output_dict = output.dict()
-    assert output_dict["node_name"] == "filter_1"
-    filter_node = next(node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1")
-    assert filter_node == {
-        "name": "filter_1",
-        "type": "filter",
-        "parameters": {},
-        "output_type": "series",
-    }
-    assert output_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
-        {"source": "input_2", "target": "join_1"},
-        {"source": "join_1", "target": "project_1"},
-        {"source": "project_1", "target": "gt_1"},
-        {"source": "project_1", "target": "filter_1"},
-        {"source": "gt_1", "target": "filter_1"},
-    ]
 
 
 def test_join_event_data_attributes__more_columns(

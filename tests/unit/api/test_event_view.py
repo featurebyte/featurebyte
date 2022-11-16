@@ -22,6 +22,7 @@ class TestEventView(BaseViewTestSuite):
     col = "cust_id"
     factory_method = EventView.from_event_data
     view_class = EventView
+    bool_col = "col_boolean"
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
@@ -110,33 +111,6 @@ def test_setitem__str_key_series_value(snowflake_event_view):
         "cust_id": (source_node_name,),
         "double_value": (snowflake_event_view.node.name,),
     }
-
-
-def test_event_view_column_getitem_series(snowflake_event_view):
-    """
-    Test EventViewColumn filter by boolean mask
-    """
-    column = snowflake_event_view["col_float"]
-    mask = snowflake_event_view["col_boolean"]
-    output = column[mask]
-    assert output.tabular_data_ids == column.tabular_data_ids
-    assert output.name == column.name
-    assert output.dtype == column.dtype
-    output_dict = output.dict()
-    assert output_dict["node_name"] == "filter_1"
-    filter_node = next(node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1")
-    assert filter_node == {
-        "name": "filter_1",
-        "type": "filter",
-        "parameters": {},
-        "output_type": "series",
-    }
-    assert output_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "project_1"},
-        {"source": "input_1", "target": "project_2"},
-        {"source": "project_1", "target": "filter_1"},
-        {"source": "project_2", "target": "filter_1"},
-    ]
 
 
 @pytest.mark.parametrize(
