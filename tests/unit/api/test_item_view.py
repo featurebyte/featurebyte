@@ -9,28 +9,19 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
 
 
-@pytest.fixture(name="snowflake_item_view")
-def snowflake_item_view_fixture(snowflake_item_data):
+class TestItemView(BaseViewTestSuite):
     """
-    ItemView fixture
+    ItemView test suite
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
-    yield item_view
 
-
-def test_from_item_data__invalid_input(snowflake_item_data):
-    """
-    Test from_item_data
-    """
-    with pytest.raises(TypeError) as exc:
-        ItemView.from_item_data("hello")
-    expected_msg = (
-        'type of argument "item_data" must be featurebyte.api.item_data.ItemData; got str instead'
-    )
-    assert expected_msg in str(exc.value)
+    protected_columns = ["event_id_col", "item_id_col", "event_timestamp"]
+    view_type = ViewType.ITEM_VIEW
+    col = "item_amount"
+    factory_method = ItemView.from_item_data
 
 
 def test_from_item_data__auto_join_columns(
@@ -193,18 +184,6 @@ def test_getitem__series_key(snowflake_item_view):
     assert row_subset.event_view.dict() == snowflake_item_view.event_view.dict()
 
 
-@pytest.mark.parametrize("column", ["event_id_col", "item_id_col", "event_timestamp"])
-def test_setitem__override_protected_column(snowflake_item_view, column):
-    """
-    Test attempting to change ItemData's protected columns
-    """
-    assert column in snowflake_item_view.protected_columns
-    with pytest.raises(ValueError) as exc:
-        snowflake_item_view[column] = 1
-    expected_msg = f"Column '{column}' cannot be modified!"
-    assert expected_msg in str(exc.value)
-
-
 def test_setitem__str_key_series_value(
     snowflake_item_view,
     snowflake_event_data,
@@ -238,15 +217,6 @@ def test_setitem__str_key_series_value(
         "created_at": expected_lineage_item_data_columns,
         "double_value": (snowflake_item_view.node.name,),
     }
-
-
-def test_unary_op_params(snowflake_item_view):
-    """
-    Test unary operation inherits tabular_data_ids
-    """
-    column = snowflake_item_view["item_amount"]
-    output = column.isnull()
-    assert output.tabular_data_ids == column.tabular_data_ids
 
 
 def test_event_view_column_getitem_series(snowflake_item_view):

@@ -3,13 +3,15 @@ Common test fixtures used across api test directories
 """
 import textwrap
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte import EventView
 from featurebyte.api.event_data import EventData
 from featurebyte.api.item_data import ItemData
+from featurebyte.api.item_view import ItemView
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
 
 
@@ -217,3 +219,29 @@ def snowflake_item_data_fixture(
         event_data_name=saved_event_data.name,
         _id=snowflake_item_data_id,
     )
+
+
+@pytest.fixture(name="snowflake_item_view")
+def snowflake_item_view_fixture(snowflake_item_data):
+    """
+    ItemView fixture
+    """
+    item_view = ItemView.from_item_data(snowflake_item_data)
+    yield item_view
+
+
+@pytest.fixture(name="snowflake_event_view")
+def snowflake_event_view_fixture(snowflake_event_data, config):
+    """
+    EventData object fixture
+    """
+    _ = config
+    snowflake_event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s",
+            frequency="6m",
+            time_modulo_frequency="3m",
+        )
+    )
+    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    yield event_view
