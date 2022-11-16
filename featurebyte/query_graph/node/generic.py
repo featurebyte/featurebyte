@@ -230,6 +230,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         serving_names: List[str]
         tile_id: Optional[str]
         aggregation_id: Optional[str]
+        entity_ids: Optional[List[PydanticObjectId]]
 
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)

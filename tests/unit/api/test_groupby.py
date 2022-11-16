@@ -204,10 +204,11 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
+        "entity_ids": [cust_id_entity.id],
     }
 
 
-def test_groupby__category(snowflake_event_view_with_entity):
+def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
     """
     Test category parameter is captured properly
     """
@@ -239,6 +240,7 @@ def test_groupby__category(snowflake_event_view_with_entity):
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],
+        "entity_ids": [cust_id_entity.id],
     }
 
 

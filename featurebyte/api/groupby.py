@@ -150,6 +150,7 @@ class EventViewGroupBy(OpsMixin):
             "frequency": frequency_seconds,
             "names": feature_names,
             "serving_names": self.serving_names,
+            "entity_ids": self.entity_ids,
         }
 
     @typechecked
