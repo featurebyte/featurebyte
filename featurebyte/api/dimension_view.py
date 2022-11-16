@@ -59,7 +59,6 @@ class DimensionView(View):
         """
         return super().protected_attributes + [
             "dimension_data_id_column",
-            "timestamp_column",
         ]
 
     @property

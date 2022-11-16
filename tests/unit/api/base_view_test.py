@@ -14,6 +14,7 @@ class ViewType(StrEnum):
 
     ITEM_VIEW = "item_view"
     EVENT_VIEW = "event_view"
+    DIMENSION_VIEW = "dimension_view"
 
 
 class BaseViewTestSuite:
@@ -27,21 +28,29 @@ class BaseViewTestSuite:
     factory_method = None
 
     @pytest.fixture(name="view_under_test")
-    def get_view_under_test_fixture(self, snowflake_event_view, snowflake_item_view):
+    def get_view_under_test_fixture(
+        self, snowflake_event_view, snowflake_item_view, snowflake_dimension_view
+    ):
         if self.view_type == ViewType.ITEM_VIEW:
             return snowflake_item_view
         if self.view_type == ViewType.EVENT_VIEW:
             return snowflake_event_view
+        if self.view_type == ViewType.DIMENSION_VIEW:
+            return snowflake_dimension_view
         pytest.fail(
             f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
         )
 
     @pytest.fixture(name="data_under_test")
-    def get_data_under_test_fixture(self, snowflake_item_data, snowflake_event_data):
+    def get_data_under_test_fixture(
+        self, snowflake_item_data, snowflake_event_data, snowflake_dimension_data
+    ):
         if self.view_type == ViewType.ITEM_VIEW:
             return snowflake_item_data
         if self.view_type == ViewType.EVENT_VIEW:
             return snowflake_event_data
+        if self.view_type == ViewType.DIMENSION_VIEW:
+            return snowflake_dimension_data
         pytest.fail(
             f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
         )
