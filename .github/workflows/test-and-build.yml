@@ -145,19 +145,21 @@ jobs:
           credentials_json: '${{ secrets.GCR_CLOUD_STORAGE_R }}'
 
       - name: 'Set up Cloud SDK'
+        if: ${{ needs.flags.outputs.changes != 0 }}
         uses: 'google-github-actions/setup-gcloud@v1'
 
       - name: Download to staging and restoremongo
-        if: ${{ needs.flags.outputs.change != 0 }}
+        if: ${{ needs.flags.outputs.changes != 0 }}
         run: |
           gsutil cp gs://featurebyte_staging_bucket/mongodb.tar.gz .
-          docker cp mongodb.tar.gz mongo:/
-          docker exec mongo tar xvf /mongodb.tar.gz
-          docker exec mongo mongorestore --drop --uri 'mongodb://localhost:27021,localhost:27022/?replicaSet=rs0'
+          docker cp mongodb.tar.gz mongo-testrs:/
+          docker exec mongo-testrs tar xvf /mongodb.tar.gz
+          docker exec mongo-testrs mongorestore --drop --uri 'mongodb://localhost:27021,localhost:27022/?replicaSet=rs0'
+          rm -f mongodb.tar.gz
 
       - name: Run migration test
-        if: ${{ needs.flags.outputs.change != 0 }}
-        run: poetry run python -m featurebyte.migration.local_run
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: poetry run python scripts/migration_test.py
 
       - name: stop mongo
         if: ${{ needs.flags.outputs.changes != 0 }}

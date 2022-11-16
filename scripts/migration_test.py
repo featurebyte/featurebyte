@@ -1,5 +1,6 @@
-# This file is only used for local
-# This file is needed so that __name__ is set properly in featurebyte.migration.run
+# This is run by CI-CD
+# Requires mongodb replicaset to have data inside
+
 import asyncio
 
 from featurebyte.migration.run import run_mongo_migration
