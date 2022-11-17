@@ -113,7 +113,9 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table):
             current_flag="col_char",
             record_creation_date_column="created_at",
         )
-    assert 'SCDData (scd_data.name: "sf_scd_data") exists in saved record.' in str(exc.value)
+    assert 'SlowlyChangingData (scd_data.name: "sf_scd_data") exists in saved record.' in str(
+        exc.value
+    )
 
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table):
