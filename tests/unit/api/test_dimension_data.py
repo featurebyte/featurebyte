@@ -9,6 +9,24 @@ from featurebyte.api.dimension_data import DimensionData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature_store import DataStatus
+from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+
+
+class TestEventDataTestSuite(BaseDataTestSuite):
+
+    data_type = DataType.DIMENSION_DATA
+    col = "col_int"
+    expected_columns = {
+        "col_char",
+        "col_float",
+        "col_boolean",
+        "event_timestamp",
+        "col_text",
+        "created_at",
+        "col_binary",
+        "col_int",
+        "cust_id",
+    }
 
 
 @pytest.fixture(name="dimension_data_dict")

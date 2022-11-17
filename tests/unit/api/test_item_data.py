@@ -22,6 +22,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
+from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 
 @pytest.fixture(name="item_data_dict")
@@ -176,23 +177,11 @@ def test_deserialization__column_name_not_found(
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
 
-def test_item_data_column__not_exists(snowflake_item_data):
-    """
-    Test non-exist column retrieval
-    """
-    with pytest.raises(KeyError) as exc:
-        _ = snowflake_item_data["non_exist_column"]
-    assert 'Column "non_exist_column" does not exist!' in str(exc.value)
+class TestItemDataTestSuite(BaseDataTestSuite):
 
-    with pytest.raises(AttributeError) as exc:
-        _ = snowflake_item_data.non_exist_column
-    assert "'ItemData' object has no attribute 'non_exist_column'" in str(exc.value)
-
-    # check __getattr__ is working properly
-    assert isinstance(snowflake_item_data.event_id_col, DataColumn)
-
-    # when accessing the `columns` attribute, make sure we retrieve it properly
-    assert set(snowflake_item_data.columns) == {
+    data_type = DataType.ITEM_DATA
+    col = "event_id_col"
+    expected_columns = {
         "event_id_col",
         "item_id_col",
         "item_type",
