@@ -41,6 +41,7 @@ from featurebyte.service.relationship import EntityRelationshipService, Semantic
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
@@ -74,6 +75,10 @@ app_container_config = {
         {
             "name": "feature_list_service",
             "clazz": FeatureListService,
+        },
+        {
+            "name": "session_validator_service",
+            "clazz": SessionValidatorService,
         },
         {
             "name": "feature_readiness_service",
@@ -236,7 +241,11 @@ app_container_config = {
         {
             "name": "feature_store_controller",
             "clazz": FeatureStoreController,
-            "depends": ["feature_store_service", "preview_service", "info_service"],
+            "depends": [
+                "feature_store_service",
+                "preview_service",
+                "info_service",
+            ],
         },
         {
             "name": "semantic_controller",
