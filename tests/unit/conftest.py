@@ -333,7 +333,7 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
 
 @pytest.fixture(name="snowflake_scd_data")
 def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
-    """DimensionData object fixture"""
+    """SlowlyChangingData object fixture"""
     scd_data = SlowlyChangingData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_scd_data",

@@ -1,5 +1,5 @@
 """
-SCDData class
+SlowlyChangingData class
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 class SlowlyChangingData(SCDDataModel, DataApiObject):
     """
-    SCDData class
+    SlowlyChangingData class
     """
 
     # class variables
