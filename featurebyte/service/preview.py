@@ -96,7 +96,6 @@ class PreviewService(BaseService):
         feature_store = FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name)
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
 
         preview_sql = GraphInterpreter(
@@ -149,7 +148,6 @@ class PreviewService(BaseService):
         )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
         preview_sql = get_feature_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
@@ -199,7 +197,6 @@ class PreviewService(BaseService):
             )
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
-                get_credential=get_credential,
             )
             preview_sql = get_feature_preview_sql(
                 request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
@@ -252,7 +249,6 @@ class PreviewService(BaseService):
         )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
-            get_credential=get_credential,
         )
 
         return await get_historical_features(

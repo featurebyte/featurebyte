@@ -51,7 +51,7 @@ class FeatureStoreService(
             List of database names
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
         return await db_session.list_databases()
 
@@ -79,7 +79,7 @@ class FeatureStoreService(
             List of schema names
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
         return await db_session.list_schemas(database_name=database_name)
 
@@ -110,7 +110,7 @@ class FeatureStoreService(
             List of table names
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
         return await db_session.list_tables(database_name=database_name, schema_name=schema_name)
 
@@ -144,7 +144,7 @@ class FeatureStoreService(
             List of ColumnSpec object
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store
         )
         table_schema = await db_session.list_table_schema(
             database_name=database_name, schema_name=schema_name, table_name=table_name
