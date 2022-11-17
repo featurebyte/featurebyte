@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from featurebyte.config import Credentials
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -63,6 +63,51 @@ class SessionManager(BaseModel):
 
     credentials: Credentials
 
+    async def get_session_with_params(
+        self, feature_store_name: str, session_type: SourceType, details: DatabaseDetails
+    ) -> BaseSession:
+        """
+        Retrieve or create a new session for the given database source key
+
+        Parameters
+        ----------
+        feature_store_name: str
+            feature store name
+        session_type: SourceType
+            session type
+        details: DatabaseDetails
+            database details
+
+        Returns
+        -------
+        BaseSession
+            Session that can be used to connect to the specified database
+
+        Raises
+        ------
+        ValueError
+            When credentials do not contain the specified data source info
+        """
+        if feature_store_name in self.credentials:
+            credential = self.credentials[feature_store_name]
+            credential_params = credential.credential.dict() if credential else {}
+            json_str = json.dumps(
+                {
+                    "type": session_type,
+                    "details": details.json_dict(),
+                },
+                sort_keys=True,
+            )
+            session = await get_session(
+                item=json_str,
+                credential_params=json.dumps(credential_params, sort_keys=True),
+            )
+            assert isinstance(session, BaseSession)
+            return session
+        raise ValueError(
+            f'Credentials do not contain info for the feature store "{feature_store_name}"!'
+        )
+
     async def get_session(self, item: FeatureStoreModel) -> BaseSession:
         """
         Retrieve or create a new session for the given database source key
@@ -76,19 +121,5 @@ class SessionManager(BaseModel):
         -------
         BaseSession
             Session that can be used to connect to the specified database
-
-        Raises
-        ------
-        ValueError
-            When credentials do not contain the specified data source info
         """
-        if item.name in self.credentials:
-            credential = self.credentials[item.name]
-            credential_params = credential.credential.dict() if credential else {}
-            session = await get_session(
-                item=json.dumps(item.dict(include={"type": True, "details": True}), sort_keys=True),
-                credential_params=json.dumps(credential_params, sort_keys=True),
-            )
-            assert isinstance(session, BaseSession)
-            return session
-        raise ValueError(f'Credentials do not contain info for the feature store "{item.name}"!')
+        return await self.get_session_with_params(item.name, item.type, item.details)
