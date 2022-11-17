@@ -186,6 +186,24 @@ def saved_dimension_data_fixture(snowflake_feature_store, snowflake_dimension_da
     yield snowflake_dimension_data
 
 
+@pytest.fixture(name="saved_scd_data")
+def saved_scd_data_fixture(snowflake_feature_store, snowflake_scd_data):
+    """
+    Saved SCD data fixture
+    """
+    snowflake_feature_store.save()
+    previous_id = snowflake_scd_data.id
+    assert snowflake_scd_data.saved is False
+    snowflake_scd_data.save()
+    assert snowflake_scd_data.saved is True
+    assert snowflake_scd_data.id == previous_id
+    assert snowflake_scd_data.status == DataStatus.DRAFT
+    assert isinstance(snowflake_scd_data.created_at, datetime)
+    assert isinstance(snowflake_scd_data.tabular_source.feature_store_id, ObjectId)
+
+    yield snowflake_scd_data
+
+
 @pytest.fixture(name="snowflake_database_table_item_data")
 def snowflake_database_table_item_data_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store

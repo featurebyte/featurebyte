@@ -23,6 +23,7 @@ from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.api.item_data import ItemData
+from featurebyte.api.scd_data import SCDData
 from featurebyte.app import app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
@@ -283,6 +284,12 @@ def snowflake_dimension_data_id_fixture():
     return ObjectId("6337f9651050ee7d1234660d")
 
 
+@pytest.fixture(name="snowflake_scd_data_id")
+def snowflake_scd_data_id_fixture():
+    """Snowflake SCD data ID"""
+    return ObjectId("6337f9651050ee7d123466cd")
+
+
 @pytest.fixture(name="snowflake_event_data_id")
 def snowflake_event_data_id_fixture():
     """Snowflake event data ID"""
@@ -322,6 +329,23 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
     )
     assert dimension_data.node.parameters.id == dimension_data.id
     yield dimension_data
+
+
+@pytest.fixture(name="snowflake_scd_data")
+def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
+    """DimensionData object fixture"""
+    scd_data = SCDData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_scd_data",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="event_timestamp",
+        end_timestamp_column="event_timestamp",
+        current_flag="col_char",
+        _id=snowflake_scd_data_id,
+    )
+    assert scd_data.node.parameters.id == scd_data.id
+    yield scd_data
 
 
 @pytest.fixture(name="snowflake_item_data")
