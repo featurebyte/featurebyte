@@ -71,6 +71,8 @@ class SlowlyChangingView(View):
             "natural_key_column",
             "surrogate_key_column",
             "effective_timestamp_column",
+            "end_timestamp_column",
+            "current_flag",
         ]
 
     @property

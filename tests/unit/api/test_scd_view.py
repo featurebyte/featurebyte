@@ -10,7 +10,7 @@ class TestSlowlyChangingView(BaseViewTestSuite):
     SlowlyChangingView test suite
     """
 
-    protected_columns = ["col_int", "col_text", "event_timestamp"]
+    protected_columns = ["col_int", "col_text", "event_timestamp", "col_char"]
     view_type = ViewType.SLOWLY_CHANGING_VIEW
     col = "cust_id"
     factory_method = SlowlyChangingView.from_slowly_changing_data
