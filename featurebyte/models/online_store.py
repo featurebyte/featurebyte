@@ -8,6 +8,11 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.sql.online_serving import (
+    get_entities_ids_and_serving_names,
+    get_online_store_feature_compute_sql,
+    get_online_store_table_name_from_graph,
+)
 
 
 class OnlineFeatureSpec(FeatureByteBaseModel):
@@ -27,8 +32,6 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    feature_sql: str
-    feature_store_table_name: str
 
     @property
     def tile_ids(self) -> List[str]:
@@ -45,18 +48,16 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return list(tile_ids_set)
 
     @property
-    def entity_column_names(self) -> List[str]:
+    def serving_names(self) -> List[str]:
         """
-        derived entity_column_names property from tile_specs
+        Derived serving names from the query graph. This will be the join keys in the store table
 
         Returns
         -------
-            derived entity_column_names
+        List[str]
         """
-        entity_column_names_set = set()
-        for tile_spec in self.feature.tile_specs:
-            entity_column_names_set.update(tile_spec.entity_column_names)
-        return sorted(list(entity_column_names_set))
+        _, serving_names = get_entities_ids_and_serving_names(self.feature.graph, self.feature.node)
+        return sorted(serving_names)
 
     @property
     def event_data_ids(self) -> List[str]:
@@ -78,3 +79,29 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
                     output.append(str(e_id))
 
         return output
+
+    @property
+    def feature_sql(self) -> str:
+        """
+        Feature pre-computation SQL for online store
+
+        Returns
+        -------
+        str
+        """
+        return get_online_store_feature_compute_sql(
+            graph=self.feature.graph,
+            node=self.feature.node,
+            source_type=self.feature.feature_store.type,
+        )
+
+    @property
+    def feature_store_table_name(self) -> str:
+        """
+        Name of the online store table for the feature
+
+        Returns
+        -------
+        str
+        """
+        return get_online_store_table_name_from_graph(self.feature.graph, self.feature.node)

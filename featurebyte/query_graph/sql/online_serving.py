@@ -238,6 +238,25 @@ def get_online_store_table_name_from_entity_ids(entity_ids_set: set[ObjectId]) -
     return online_store_table_name
 
 
+def get_online_store_table_name_from_graph(graph: QueryGraph, node: Node) -> str:
+    """
+    Get the online store table given the query graph and node
+
+    Parameters
+    ----------
+    graph : QueryGraph
+        Query graph
+    node : Node
+        Query graph node
+
+    Returns
+    -------
+    str
+    """
+    entity_ids, _ = get_entities_ids_and_serving_names(graph, node)
+    return get_online_store_table_name_from_entity_ids(entity_ids)
+
+
 def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
     """
     Check whether the feature represented by the given node is eligible for online store lookup
