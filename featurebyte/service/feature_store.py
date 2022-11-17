@@ -3,7 +3,7 @@ FeatureStoreService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Type
+from typing import List, Type
 
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -32,9 +32,7 @@ class FeatureStoreService(
         """
         return SessionManagerService(user=self.user, persistent=self.persistent)
 
-    async def list_databases(
-        self, feature_store: FeatureStoreModel, get_credential: Any
-    ) -> List[str]:
+    async def list_databases(self, feature_store: FeatureStoreModel) -> List[str]:
         """
         List databases in feature store
 
@@ -42,8 +40,6 @@ class FeatureStoreService(
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -59,7 +55,6 @@ class FeatureStoreService(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
-        get_credential: Any,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -70,8 +65,6 @@ class FeatureStoreService(
             FeatureStoreModel object
         database_name: str
             Name of database to use
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -88,7 +81,6 @@ class FeatureStoreService(
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
-        get_credential: Any,
     ) -> List[str]:
         """
         List tables in feature store
@@ -101,8 +93,6 @@ class FeatureStoreService(
             Name of database to use
         schema_name: str
             Name of schema to use
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -120,7 +110,6 @@ class FeatureStoreService(
         database_name: str,
         schema_name: str,
         table_name: str,
-        get_credential: Any,
     ) -> List[ColumnSpec]:
         """
         List columns in database table
@@ -135,8 +124,6 @@ class FeatureStoreService(
             Name of schema to use
         table_name: str
             Name of table to use
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------

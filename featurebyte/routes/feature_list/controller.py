@@ -172,7 +172,7 @@ class FeatureListController(
             **params,
         )
 
-    async def preview(self, featurelist_preview: FeatureListPreview, get_credential: Any) -> str:
+    async def preview(self, featurelist_preview: FeatureListPreview) -> str:
         """
         Preview a Feature List
 
@@ -180,8 +180,6 @@ class FeatureListController(
         ----------
         featurelist_preview: FeatureListPreview
             FeaturePreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -195,7 +193,7 @@ class FeatureListController(
         """
         try:
             return await self.preview_service.preview_featurelist(
-                featurelist_preview=featurelist_preview, get_credential=get_credential
+                featurelist_preview=featurelist_preview
             )
         except KeyError as exc:
             raise HTTPException(
@@ -206,7 +204,6 @@ class FeatureListController(
         self,
         training_events: UploadFile,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
-        get_credential: Any,
     ) -> StreamingResponse:
         """
         Get historical features for Feature List
@@ -217,8 +214,6 @@ class FeatureListController(
             Uploaded file
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -234,7 +229,6 @@ class FeatureListController(
             bytestream = await self.preview_service.get_historical_features(
                 training_events=dataframe_from_arrow_stream(training_events.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
-                get_credential=get_credential,
             )
         except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:
             raise HTTPException(

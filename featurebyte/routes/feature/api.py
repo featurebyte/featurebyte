@@ -157,9 +157,7 @@ async def get_feature_preview(
     controller = request.state.app_container.feature_controller
     return cast(
         str,
-        await controller.preview(
-            feature_preview=feature_preview, get_credential=request.state.get_credential
-        ),
+        await controller.preview(feature_preview=feature_preview),
     )
 
 

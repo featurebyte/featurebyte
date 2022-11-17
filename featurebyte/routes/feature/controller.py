@@ -163,7 +163,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             **params,
         )
 
-    async def preview(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
+    async def preview(self, feature_preview: FeaturePreview) -> str:
         """
         Preview a Feature
 
@@ -171,8 +171,6 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         ----------
         feature_preview: FeaturePreview
             FeaturePreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -185,9 +183,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             Invalid request payload
         """
         try:
-            return await self.preview_service.preview_feature(
-                feature_preview=feature_preview, get_credential=get_credential
-            )
+            return await self.preview_service.preview_feature(feature_preview=feature_preview)
         except KeyError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]

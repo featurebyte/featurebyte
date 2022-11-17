@@ -159,9 +159,7 @@ async def get_feature_list_preview(
     controller = request.state.app_container.feature_list_controller
     return cast(
         str,
-        await controller.preview(
-            featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
-        ),
+        await controller.preview(featurelist_preview=featurelist_preview),
     )
 
 
@@ -179,7 +177,6 @@ async def get_historical_features(
     result: StreamingResponse = await controller.get_historical_features(
         training_events=training_events,
         featurelist_get_historical_features=featurelist_get_historical_features,
-        get_credential=request.state.get_credential,
     )
     return result
 

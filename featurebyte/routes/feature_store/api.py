@@ -134,7 +134,6 @@ async def list_databases_in_feature_store(
     controller = request.state.app_container.feature_store_controller
     result: List[str] = await controller.list_databases(
         feature_store=feature_store,
-        get_credential=request.state.get_credential,
     )
     return result
 
@@ -152,7 +151,6 @@ async def list_schemas_in_database(
     result: List[str] = await controller.list_schemas(
         feature_store=feature_store,
         database_name=database_name,
-        get_credential=request.state.get_credential,
     )
     return result
 
@@ -172,7 +170,6 @@ async def list_tables_in_database_schema(
         feature_store=feature_store,
         database_name=database_name,
         schema_name=schema_name,
-        get_credential=request.state.get_credential,
     )
     return result
 
@@ -194,7 +191,6 @@ async def list_columns_in_database_table(
         database_name=database_name,
         schema_name=schema_name,
         table_name=table_name,
-        get_credential=request.state.get_credential,
     )
     return result
 
@@ -211,7 +207,5 @@ async def get_generic_preview(
     controller = request.state.app_container.feature_store_controller
     return cast(
         str,
-        await controller.preview(
-            preview=preview, limit=limit, get_credential=request.state.get_credential
-        ),
+        await controller.preview(preview=preview, limit=limit),
     )

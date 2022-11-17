@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
 from bson.objectid import ObjectId
 
@@ -61,7 +61,6 @@ class FeatureStoreController(
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Any,
     ) -> List[str]:
         """
         List databases accessible by the feature store
@@ -70,23 +69,18 @@ class FeatureStoreController(
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         List[str]
             List of database names
         """
-        return await self.service.list_databases(
-            feature_store=feature_store, get_credential=get_credential
-        )
+        return await self.service.list_databases(feature_store=feature_store)
 
     async def list_schemas(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
-        get_credential: Any,
     ) -> List[str]:
         """
         List schemas in feature store
@@ -97,8 +91,6 @@ class FeatureStoreController(
             FeatureStoreModel object
         database_name: str
             Name of database to use
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -108,7 +100,6 @@ class FeatureStoreController(
         return await self.service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
-            get_credential=get_credential,
         )
 
     async def list_tables(
@@ -116,7 +107,6 @@ class FeatureStoreController(
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
-        get_credential: Any,
     ) -> List[str]:
         """
         List tables in feature store
@@ -129,8 +119,6 @@ class FeatureStoreController(
             Name of database to use
         schema_name: str
             Name of schema to use
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -141,7 +129,6 @@ class FeatureStoreController(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
-            get_credential=get_credential,
         )
 
     async def list_columns(
@@ -150,7 +137,6 @@ class FeatureStoreController(
         database_name: str,
         schema_name: str,
         table_name: str,
-        get_credential: Any,
     ) -> List[ColumnSpec]:
         """
         List columns in database table
@@ -165,8 +151,6 @@ class FeatureStoreController(
             Name of schema to use
         table_name: str
             Name of table to use
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -178,10 +162,9 @@ class FeatureStoreController(
             database_name=database_name,
             schema_name=schema_name,
             table_name=table_name,
-            get_credential=get_credential,
         )
 
-    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
+    async def preview(self, preview: FeatureStorePreview, limit: int) -> str:
         """
         Preview generic graph node
 
@@ -191,17 +174,13 @@ class FeatureStoreController(
             FeatureStorePreview object
         limit: int
             Row limit on preview results
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         str
             Dataframe converted to json string
         """
-        return await self.preview_service.preview(
-            preview=preview, limit=limit, get_credential=get_credential
-        )
+        return await self.preview_service.preview(preview=preview, limit=limit)
 
     async def get_info(
         self,

@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, cast
+from typing import AsyncGenerator, cast
 
 from decimal import Decimal
 
@@ -72,7 +72,7 @@ class PreviewService(BaseService):
                 dataframe[name] = dataframe[name].astype(int)
         return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
 
-    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
+    async def preview(self, preview: FeatureStorePreview, limit: int) -> str:
         """
         Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
 
@@ -82,8 +82,6 @@ class PreviewService(BaseService):
             FeatureStorePreview object
         limit: int
             Row limit on preview results
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -104,7 +102,7 @@ class PreviewService(BaseService):
         result = await db_session.execute_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
-    async def preview_feature(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
+    async def preview_feature(self, feature_preview: FeaturePreview) -> str:
         """
         Preview a Feature
 
@@ -112,8 +110,6 @@ class PreviewService(BaseService):
         ----------
         feature_preview: FeaturePreview
             FeaturePreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -159,9 +155,7 @@ class PreviewService(BaseService):
         result = await db_session.execute_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
-    async def preview_featurelist(
-        self, featurelist_preview: FeatureListPreview, get_credential: Any
-    ) -> str:
+    async def preview_featurelist(self, featurelist_preview: FeatureListPreview) -> str:
         """
         Preview a FeatureList
 
@@ -169,8 +163,6 @@ class PreviewService(BaseService):
         ----------
         featurelist_preview: FeatureListPreview
             FeatureListPreview object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -217,7 +209,6 @@ class PreviewService(BaseService):
         self,
         training_events: pd.DataFrame,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
-        get_credential: Any,
     ) -> AsyncGenerator[bytes, None]:
         """
         Get historical features for Feature List
@@ -228,8 +219,6 @@ class PreviewService(BaseService):
             Training events data
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
