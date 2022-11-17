@@ -682,3 +682,25 @@ class MetadataSchemaInitializer:
         )
         await self.session.execute_query(create_metadata_table_query)
         logger.debug("Creating METADATA_SCHEMA table")
+
+    async def create_metadata_table_with_feature_store_id(self, feature_store_id: str) -> None:
+        """Creates metadata schema table. This will be used to help
+        optimize and validate parts of the session initialization.
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store ID to store in the metadata table
+        """
+        create_metadata_table_query = (
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            "WORKING_SCHEMA_VERSION INT, "
+            "FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
+            ") AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+            f"'{feature_store_id}' AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        )
+        await self.session.execute_query(create_metadata_table_query)
+        logger.debug(f"Creating METADATA_SCHEMA table with feature store id {feature_store_id}")

@@ -18,7 +18,9 @@ from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.session_validator import SessionValidatorService
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import MetadataSchemaInitializer
+from featurebyte.utils.credential import get_credential as get_cred
 
 
 class FeatureStoreController(
@@ -39,7 +41,7 @@ class FeatureStoreController(
         super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
-        self.session_validator_service = SessionValidatorService(service.user, service.persistent)
+        self.session_manager_service = SessionManagerService(service.user, service.persistent)
 
     async def create_feature_store(
         self,
@@ -68,8 +70,20 @@ class FeatureStoreController(
         #                                    | if not, error                |
         #        N            |      Y       | if matches in DWH, no error  | write
         #                                    | if not, error                |
-        _ = self.session_validator_service.validate_details(data.name, data.type, data.details)
-        return await self.service.create_document(data)
+        # Retrieve the session to do validation
+        session = await self.session_manager_service.get_feature_store_session(
+            feature_store=FeatureStoreModel(name=data.name, type=data.type, details=data.details),
+            get_credential=get_cred,
+        )
+        # If no error throw from the validation, try to create the document.
+        document = await self.service.create_document(data)
+
+        # If no error thrown from creating, try to create the metadata table with the feature store ID.
+        metadata_schema_initializer = MetadataSchemaInitializer(session)
+        await metadata_schema_initializer.create_metadata_table_with_feature_store_id(
+            str(document.id)
+        )
+        return document
 
     async def list_databases(
         self,
