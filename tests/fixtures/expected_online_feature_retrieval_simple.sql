@@ -1,0 +1,7 @@
+SELECT
+  "CUSTOMER_ID",
+  T0."a_2h_average",
+  T0."a_48h_average plus 123"
+FROM "MY_REQUEST_TABLE" AS REQ
+LEFT JOIN online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6 AS T0
+  ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"

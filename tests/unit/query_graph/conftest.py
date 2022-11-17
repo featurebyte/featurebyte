@@ -183,6 +183,7 @@ def groupby_node_params_fixture():
         "timestamp": "ts",
         "names": ["a_2h_average", "a_48h_average"],
         "windows": ["2h", "48h"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
     }
     return node_params
 
@@ -206,6 +207,7 @@ def groupby_node_params_max_agg_fixture():
         "timestamp": "ts",
         "names": ["a_2h_max", "a_36h_max"],
         "windows": ["2h", "36h"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
     }
     return node_params
 
@@ -229,6 +231,7 @@ def groupby_node_params_sum_agg_fixture():
         "timestamp": "ts",
         "names": ["a_2h_sum", "a_36h_sum"],
         "windows": ["2h", "36h"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
     }
     return node_params
 
@@ -240,6 +243,36 @@ def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_p
     node_params = groupby_node_params
     add_groupby_operation(graph, node_params, assign_node)
     return graph
+
+
+@pytest.fixture(name="query_graph_with_groupby_and_feature_nodes")
+def query_graph_with_groupby_and_feature_nodes_fixture(query_graph_with_groupby):
+    graph = query_graph_with_groupby
+    feature_proj_1 = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_2h_average"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name("groupby_1")],
+    )
+    feature_proj_2 = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_48h_average"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name("groupby_1")],
+    )
+    feature_post_processed = graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(feature_proj_2.name)],
+    )
+    feature_alias = graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "a_48h_average plus 123"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(feature_post_processed.name)],
+    )
+    return graph, feature_proj_1, feature_alias
 
 
 @pytest.fixture(name="groupby_node_aggregation_id")
@@ -294,6 +327,7 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         "names": ["a_7d_sum_by_business"],
         "windows": ["7d"],
         "serving_names": ["BUSINESS_ID"],
+        "entity_ids": [ObjectId("6375171ac9c18f5a277a78dc")],
     }
     assign_node = graph.get_node_by_name("assign_1")
     groupby_1 = graph.get_node_by_name("groupby_1")
@@ -446,6 +480,26 @@ def mixed_point_in_time_and_item_aggregations_fixture(
     )
     groupby_node = graph.get_node_by_name("groupby_1")
     return graph, groupby_node, item_groupby_node
+
+
+@pytest.fixture(name="mixed_point_in_time_and_item_aggregations_features")
+def mixed_point_in_time_and_item_aggregations_features_fixture(
+    mixed_point_in_time_and_item_aggregations,
+):
+    graph, groupby_node, item_groupby_node = mixed_point_in_time_and_item_aggregations
+    feature_proj_1 = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_48h_average"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(groupby_node.name)],
+    )
+    feature_proj_2 = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_size"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(item_groupby_node.name)],
+    )
+    return graph, feature_proj_1, feature_proj_2
 
 
 @pytest.fixture(name="graph_single_node")
