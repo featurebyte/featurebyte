@@ -83,7 +83,7 @@ def test_complex_features_not_implemented(complex_feature_query_graph):
         _ = get_online_store_feature_compute_sql(graph, node, SourceType.SNOWFLAKE)
 
 
-def test_online_store_feature_retrieval__all_eligible(
+def test_online_store_feature_retrieval_sql_all_eligible(
     query_graph_with_groupby_and_feature_nodes, update_fixtures
 ):
     """
