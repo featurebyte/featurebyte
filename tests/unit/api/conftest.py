@@ -12,6 +12,7 @@ from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.event_data import EventData
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
 
@@ -256,6 +257,15 @@ def snowflake_dimension_view_fixture(snowflake_dimension_data):
     """
     dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
     yield dimension_view
+
+
+@pytest.fixture(name="snowflake_scd_view")
+def snowflake_slowly_changing_view_fixture(snowflake_scd_data):
+    """
+    SlowlyChangingView fixture
+    """
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    yield scd_view
 
 
 @pytest.fixture(name="snowflake_event_view")

@@ -18,6 +18,7 @@ class ViewType(StrEnum):
     ITEM_VIEW = "item_view"
     EVENT_VIEW = "event_view"
     DIMENSION_VIEW = "dimension_view"
+    SLOWLY_CHANGING_VIEW = "slowly_changing_view"
 
 
 class BaseViewTestSuite:
@@ -35,7 +36,11 @@ class BaseViewTestSuite:
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(
-        self, snowflake_event_view, snowflake_item_view, snowflake_dimension_view
+        self,
+        snowflake_event_view,
+        snowflake_item_view,
+        snowflake_dimension_view,
+        snowflake_scd_view,
     ):
         if self.view_type == ViewType.ITEM_VIEW:
             return snowflake_item_view
@@ -43,13 +48,19 @@ class BaseViewTestSuite:
             return snowflake_event_view
         if self.view_type == ViewType.DIMENSION_VIEW:
             return snowflake_dimension_view
+        if self.view_type == ViewType.SLOWLY_CHANGING_VIEW:
+            return snowflake_scd_view
         pytest.fail(
             f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
         )
 
     @pytest.fixture(name="data_under_test")
     def get_data_under_test_fixture(
-        self, snowflake_item_data, snowflake_event_data, snowflake_dimension_data
+        self,
+        snowflake_item_data,
+        snowflake_event_data,
+        snowflake_dimension_data,
+        snowflake_scd_data,
     ):
         if self.view_type == ViewType.ITEM_VIEW:
             return snowflake_item_data
@@ -57,6 +68,8 @@ class BaseViewTestSuite:
             return snowflake_event_data
         if self.view_type == ViewType.DIMENSION_VIEW:
             return snowflake_dimension_data
+        if self.view_type == ViewType.SLOWLY_CHANGING_VIEW:
+            return snowflake_scd_data
         pytest.fail(
             f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
         )
