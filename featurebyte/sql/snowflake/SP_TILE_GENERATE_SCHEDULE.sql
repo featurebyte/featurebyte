@@ -90,7 +90,8 @@ $$
     debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
 
     // update related online feature store
-    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}', '${tile_end_ts_str}')`})
+    job_schedule_ts_str = JOB_SCHEDULE_TS.toISOString()
+    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}', '${job_schedule_ts_str}')`})
 
     return debug
 $$;
