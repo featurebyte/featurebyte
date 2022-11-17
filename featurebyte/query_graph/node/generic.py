@@ -72,10 +72,22 @@ class InputNode(BaseNode):
         )
         id: Optional[PydanticObjectId] = Field(default=None)
 
+    class SCDDataParameters(BaseParameters):
+        """SCDDataParameters"""
+
+        type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+        id: Optional[PydanticObjectId] = Field(default=None)
+
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Annotated[
-        Union[EventDataParameters, ItemDataParameters, GenericParameters, DimensionDataParameters],
+        Union[
+            EventDataParameters,
+            ItemDataParameters,
+            GenericParameters,
+            DimensionDataParameters,
+            SCDDataParameters,
+        ],
         Field(discriminator="type"),
     ]
 

@@ -16,6 +16,7 @@ class DataType(StrEnum):
     ITEM_DATA = "ItemData"
     EVENT_DATA = "EventData"
     DIMENSION_DATA = "DimensionData"
+    SCD_DATA = "SCDData"
 
 
 class BaseDataTestSuite:
