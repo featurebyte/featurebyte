@@ -27,6 +27,17 @@ def user_id():
     return ObjectId()
 
 
+@pytest.fixture(name="mock_get_session", autouse=True)
+def get_mock_get_session_fixture():
+    """
+    Return
+    """
+    with patch(
+        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
+    ) as mocked_get_session:
+        yield mocked_get_session
+
+
 @pytest.fixture(autouse=True, scope="function")
 def mock_process_store(request, persistent, storage, temp_storage):
     """

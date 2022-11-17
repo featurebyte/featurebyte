@@ -408,9 +408,6 @@ async def test_schema_initializer__dont_reinitialize(
         "tables": 1,
     }
 
-    # update mock to have new return value for execute query
-    mocked_execute_query = session.execute_query.side_effect
-
     # update mock to have new return value for get_working_schema_metadata
     def new_mocked_get_working_schema_metadata():
         return {

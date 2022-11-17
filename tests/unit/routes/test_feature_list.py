@@ -4,7 +4,7 @@ Tests for FeatureList route
 import json
 from collections import defaultdict
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -444,19 +444,18 @@ class TestFeatureListApi(BaseApiTestSuite):
             },
         }
 
-    def test_preview_200(self, test_api_client_persistent, featurelist_preview_payload):
+    def test_preview_200(
+        self, test_api_client_persistent, featurelist_preview_payload, mock_get_session
+    ):
         """Test feature list preview"""
         test_api_client, _ = test_api_client_persistent
-        with patch(
-            "featurebyte.service.session_manager.SessionManager.get_session"
-        ) as mock_get_session:
-            expected_df = pd.DataFrame({"a": [0, 1, 2]})
-            mock_session = mock_get_session.return_value
-            mock_session.execute_query.return_value = expected_df
-            mock_session.generate_session_unique_id = Mock(return_value="1")
-            response = test_api_client.post(
-                f"{self.base_route}/preview", json=featurelist_preview_payload
-            )
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        response = test_api_client.post(
+            f"{self.base_route}/preview", json=featurelist_preview_payload
+        )
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
 
@@ -474,6 +473,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         self,
         test_api_client_persistent,
         featurelist_get_historical_features_payload,
+        mock_get_session,
     ):
         """Test feature list get_historical_features"""
         test_api_client, _ = test_api_client_persistent
@@ -484,28 +484,25 @@ class TestFeatureListApi(BaseApiTestSuite):
             _ = query
             yield dataframe_to_arrow_bytes(expected_df)
 
-        with patch(
-            "featurebyte.service.session_manager.SessionManager.get_session"
-        ) as mock_get_session:
-            expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
 
-            mock_session = mock_get_session.return_value
-            mock_session.get_async_query_stream = mock_get_async_query_stream
-            mock_session.source_type = SourceType.SNOWFLAKE
-            mock_session.generate_session_unique_id = Mock(return_value="1")
+        mock_session = mock_get_session.return_value
+        mock_session.get_async_query_stream = mock_get_async_query_stream
+        mock_session.source_type = SourceType.SNOWFLAKE
+        mock_session.generate_session_unique_id = Mock(return_value="1")
 
-            response = test_api_client.post(
-                f"{self.base_route}/historical_features",
-                data={"payload": json.dumps(featurelist_get_historical_features_payload)},
-                files={"training_events": dataframe_to_arrow_bytes(training_events)},
-                stream=True,
-            )
-            assert response.status_code == HTTPStatus.OK, response.json()
+        response = test_api_client.post(
+            f"{self.base_route}/historical_features",
+            data={"payload": json.dumps(featurelist_get_historical_features_payload)},
+            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+            stream=True,
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
 
-            # test streaming download works
-            content = b""
-            for chunk in response.iter_content(chunk_size=8192):
-                content += chunk
+        # test streaming download works
+        content = b""
+        for chunk in response.iter_content(chunk_size=8192):
+            content += chunk
 
         df = dataframe_from_arrow_stream(content)
         assert_frame_equal(df, expected_df)
