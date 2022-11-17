@@ -220,7 +220,7 @@ def get_entities_ids_and_serving_names(
 
 def get_online_store_table_name_from_entity_ids(entity_ids_set: set[ObjectId]) -> str:
     """
-    Get the online store table name given a query graph and node
+    Get the online store table name given the entity ids
 
     Parameters
     ----------
