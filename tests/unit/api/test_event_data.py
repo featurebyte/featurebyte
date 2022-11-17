@@ -22,6 +22,7 @@ from featurebyte.exception import (
     TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import FeatureJobSetting
+from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 from tests.util.helper import patch_import_package
 
 
@@ -169,23 +170,11 @@ def test_deserialization__column_name_not_found(
     assert 'Column "some_timestamp_column" not found in the table!' in str(exc.value)
 
 
-def test_event_data_column__not_exists(snowflake_event_data):
-    """
-    Test non-exist column retrieval
-    """
-    with pytest.raises(KeyError) as exc:
-        _ = snowflake_event_data["non_exist_column"]
-    assert 'Column "non_exist_column" does not exist!' in str(exc.value)
+class TestEventDataTestSuite(BaseDataTestSuite):
 
-    with pytest.raises(AttributeError) as exc:
-        _ = snowflake_event_data.non_exist_column
-    assert "'EventData' object has no attribute 'non_exist_column'" in str(exc.value)
-
-    # check __getattr__ is working properly
-    assert isinstance(snowflake_event_data.col_int, DataColumn)
-
-    # when accessing the `columns` attribute, make sure we retrieve it properly
-    assert set(snowflake_event_data.columns) == {
+    data_type = DataType.EVENT_DATA
+    col = "col_int"
+    expected_columns = {
         "col_char",
         "col_float",
         "col_boolean",
