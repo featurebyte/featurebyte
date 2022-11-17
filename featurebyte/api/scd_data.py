@@ -15,7 +15,7 @@ from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
-class SCDData(SCDDataModel, DataApiObject):
+class SlowlyChangingData(SCDDataModel, DataApiObject):
     """
     SCDData class
     """
@@ -50,7 +50,7 @@ class SCDData(SCDDataModel, DataApiObject):
         current_flag: Optional[str] = None,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
-    ) -> SCDData:
+    ) -> SlowlyChangingData:
         """
         Create SCDData object from tabular source
 
@@ -77,7 +77,7 @@ class SCDData(SCDDataModel, DataApiObject):
 
         Returns
         -------
-        SCDData
+        SlowlyChangingData
         """
         return super().create(
             tabular_source=tabular_source,

@@ -23,7 +23,7 @@ from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.scd_data import SCDData
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
@@ -334,7 +334,7 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
 @pytest.fixture(name="snowflake_scd_data")
 def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
     """DimensionData object fixture"""
-    scd_data = SCDData.from_tabular_source(
+    scd_data = SlowlyChangingData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_scd_data",
         natural_key_column="col_text",

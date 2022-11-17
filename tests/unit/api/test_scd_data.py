@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from featurebyte.api.dimension_data import DimensionData
-from featurebyte.api.scd_data import SCDData
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature_store import DataStatus
@@ -59,7 +59,7 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
     """
     Test SCDData creation using tabular source
     """
-    scd_data = SCDData.from_tabular_source(
+    scd_data = SlowlyChangingData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_scd_data",
         natural_key_column="col_text",
@@ -84,7 +84,7 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        SCDData.from_tabular_source(
+        SlowlyChangingData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
             natural_key_column="col_text",
@@ -103,7 +103,7 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table):
     Test SCDData creation failure due to duplicated dimension data name
     """
     with pytest.raises(DuplicatedRecordException) as exc:
-        SCDData.from_tabular_source(
+        SlowlyChangingData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name="sf_scd_data",
             natural_key_column="col_text",
@@ -122,7 +122,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.data.Configurations"):
-            SCDData.from_tabular_source(
+            SlowlyChangingData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_scd_data",
                 natural_key_column="col_text",
