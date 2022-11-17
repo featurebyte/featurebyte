@@ -104,6 +104,68 @@ jobs:
       - name: Install dependencies
         run: make install
 
+  test-migrate:
+    needs: [flags, cache]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        python-version: ["3.8.0"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
+
+      - name: Install Poetry
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: |
+          pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies & start mongo
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: |
+          make install
+          make test-setup
+
+      - name: Authenticate to Google Cloud
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCR_CLOUD_STORAGE_R }}'
+
+      - name: 'Set up Cloud SDK'
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      - name: Download to staging and restoremongo
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: |
+          gsutil cp gs://featurebyte_staging_bucket/mongodb.tar.gz .
+          docker cp mongodb.tar.gz mongo-testrs:/
+          docker exec mongo-testrs tar xvf /mongodb.tar.gz
+          docker exec mongo-testrs mongorestore --drop --uri 'mongodb://localhost:27021,localhost:27022/?replicaSet=rs0'
+          rm -f mongodb.tar.gz
+
+      - name: Run migration test
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: poetry run python scripts/migration_test.py
+
+      - name: stop mongo
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: |
+          make test-teardown
+
   test:
     needs: [flags, cache]
     runs-on: ubuntu-latest
@@ -178,7 +240,7 @@ jobs:
     - name: Authenticate to Google Cloud
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       id: 'auth'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
 

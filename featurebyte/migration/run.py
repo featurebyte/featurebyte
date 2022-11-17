@@ -8,6 +8,7 @@ from typing import Any, AsyncGenerator, Callable, cast
 import importlib
 import inspect
 
+from featurebyte.app import User
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logger import logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
@@ -15,6 +16,7 @@ from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, 
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.persistent.base import Persistent
+from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 
@@ -177,3 +179,15 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
             document_id=schema_metadata.id,
             data=SchemaMetadataUpdate(version=marker.version, description=marker.description),
         )
+
+
+async def run_mongo_migration(persistent: MongoDB) -> None:
+    """
+    Run Mongo migration script
+
+    Parameters
+    ----------
+    persistent: MongoDB
+        Mongo persistent object
+    """
+    await run_migration(User(), persistent)
