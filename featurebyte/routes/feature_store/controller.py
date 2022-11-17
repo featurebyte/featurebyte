@@ -18,7 +18,9 @@ from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
+from featurebyte.session.base import MetadataSchemaInitializer
 
 
 class FeatureStoreController(
@@ -39,11 +41,13 @@ class FeatureStoreController(
         super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
+        self.session_manager_service = SessionManagerService(service.user, service.persistent)
         self.session_validator_service = SessionValidatorService(service.user, service.persistent)
 
     async def create_feature_store(
         self,
         data: FeatureStoreCreate,
+        get_credential: Any,
     ) -> FeatureStoreModel:
         """
         Create Feature Store at persistent
@@ -52,13 +56,49 @@ class FeatureStoreController(
         ----------
         data: FeatureStoreCreate
             FeatureStore creation payload
+        get_credential: Any
+            credential handler function
 
         Returns
         -------
         FeatureStoreModel
             Newly created feature store document
         """
-        return await self.service.create_document(data)
+        # Validate whether the feature store trying to be created, collides with another feature store
+        #
+        # OUTCOMES
+        # exist in persistent | exist in DWH |           DWH                |     persistent
+        #        Y            |      N       |          create              | error on write
+        #        N            |      N       |          create              | write
+        #        Y            |      Y       | if matches in DWH, no error  | error on write
+        #                                    | if not, error                |
+        #        N            |      Y       | if matches in DWH, no error  | write
+        #                                    | if not, error                |
+        # Create the new feature store. If one already exists, we'll throw an error here.
+        document = await self.service.create_document(data)
+
+        # Validate that feature store ID isn't claimed by the working schema.
+        # If the feature store ID is already in use, this will throw an error.
+        await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
+            feature_store_name=data.name,
+            session_type=data.type,
+            details=data.details,
+            get_credential=get_credential,
+            users_feature_store_id=document.id,
+        )
+
+        # Retrieve a session for initializing
+        session = await self.session_manager_service.get_feature_store_session(
+            feature_store=FeatureStoreModel(name=data.name, type=data.type, details=data.details),
+            get_credential=get_credential,
+        )
+
+        # If no error thrown from creating, try to create the metadata table with the feature store ID.
+        metadata_schema_initializer = MetadataSchemaInitializer(session)
+        await metadata_schema_initializer.create_metadata_table_with_feature_store_id(
+            str(document.id)
+        )
+        return document
 
     async def list_databases(
         self,
