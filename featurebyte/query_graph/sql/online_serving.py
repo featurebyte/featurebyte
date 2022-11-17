@@ -194,7 +194,9 @@ def get_entities_ids_and_serving_names(
     graph: QueryGraph, node: Node
 ) -> Tuple[set[ObjectId], set[str]]:
     """
-    Get the union of all entity ids of the node's input nodes, point in time groupby only
+    Get the union of all entity ids of the node's input nodes. Only point in time groupby nodes are
+    considered, since other nodes that produce features (e.g. ItemGroupyNode) generate features that
+    cannot be pre-computed.
 
     Parameters
     ----------
