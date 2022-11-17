@@ -18,6 +18,7 @@ from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.session_validator import SessionValidatorService
 
 
 class FeatureStoreController(
@@ -38,6 +39,7 @@ class FeatureStoreController(
         super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
+        self.session_validator_service = SessionValidatorService(service.user, service.persistent)
 
     async def create_feature_store(
         self,
@@ -56,6 +58,17 @@ class FeatureStoreController(
         FeatureStoreModel
             Newly created feature store document
         """
+        # Validate whether the feature store trying to be created, collides with another feature store
+        #
+        # OUTCOMES
+        # exist in persistent | exist in DWH |           DWH                |     persistent
+        #        Y            |      N       |          create              | error on write
+        #        N            |      N       |          create              | write
+        #        Y            |      Y       | if matches in DWH, no error  | error on write
+        #                                    | if not, error                |
+        #        N            |      Y       | if matches in DWH, no error  | write
+        #                                    | if not, error                |
+        _ = self.session_validator_service.validate_details(data.name, data.type, data.details)
         return await self.service.create_document(data)
 
     async def list_databases(
