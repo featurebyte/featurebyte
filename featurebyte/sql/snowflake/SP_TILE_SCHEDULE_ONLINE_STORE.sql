@@ -1,5 +1,6 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_SCHEDULE_ONLINE_STORE (
-    TILE_ID varchar
+    TILE_ID varchar,
+    JOB_SCHEDULE_TS_STR varchar
 )
 returns string
 language javascript
@@ -27,6 +28,8 @@ $$
         var f_sql = result.getColumnValue(2)
         var fs_table = result.getColumnValue(3)
         var f_entity_columns = result.getColumnValue(4)
+
+        f_sql = f_sql.replaceAll("__FB_POINT_IN_TIME_SQL_PLACEHOLDER", "''"+JOB_SCHEDULE_TS_STR+"''")
 
         var table_exist = "Y"
         try {

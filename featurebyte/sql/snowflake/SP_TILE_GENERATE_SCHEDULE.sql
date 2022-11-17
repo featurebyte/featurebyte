@@ -13,7 +13,7 @@ CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(
     VALUE_COLUMN_NAMES varchar,
     TYPE varchar,
     MONITOR_PERIODS float,
-    TILE_END_TS timestamp_tz
+    JOB_SCHEDULE_TS timestamp_tz
 )
 returns string
 language javascript
@@ -28,10 +28,10 @@ $$
         4. call generate tile stored procedure to create new or replace already existed tiles
     */
 
-    var debug = "Debug - TILE_END_TS: " + TILE_END_TS
+    var debug = "Debug - JOB_SCHEDULE_TS: " + JOB_SCHEDULE_TS
 
-    // determine tile_end_ts (tile end timestamp) based on tile_type and TILE_END_TS
-    var tile_end_ts = TILE_END_TS
+    // determine tile_end_ts (tile end timestamp) based on tile_type and JOB_SCHEDULE_TS
+    var tile_end_ts = JOB_SCHEDULE_TS
     cron_residue_seconds = TIME_MODULO_FREQUENCY_SECONDS % 60
     tile_end_ts.setSeconds(cron_residue_seconds)
     tile_end_ts.setSeconds(tile_end_ts.getSeconds() - BLIND_SPOT_SECONDS)
@@ -90,7 +90,8 @@ $$
     debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
 
     // update related online feature store
-    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}')`})
+    job_schedule_ts_str = JOB_SCHEDULE_TS.toISOString()
+    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}', '${job_schedule_ts_str}')`})
 
     return debug
 $$;
