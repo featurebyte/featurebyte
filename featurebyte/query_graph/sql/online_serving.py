@@ -10,7 +10,6 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 
-import pandas as pd
 from bson import ObjectId
 from sqlglot import Expression, expressions, parse_one, select
 
@@ -24,7 +23,6 @@ from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identi
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import PointInTimeAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
-from featurebyte.session.base import BaseSession
 
 
 class OnlineStoreUniversePlan:
@@ -386,12 +384,12 @@ class OnlineStoreRetrievePlan:
         # Original columns
         expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
 
-        assert request_table_name is not None or request_table_expr is not None
         if request_table_name is not None:
             expr = expr.from_(
                 expressions.alias_(quoted_identifier(request_table_name), alias="REQ")
             )
         else:
+            assert request_table_expr is not None
             expr = expr.from_(request_table_expr.subquery(alias="REQ"))
 
         # Perform one left join for each unique online store table and retrieve one or more

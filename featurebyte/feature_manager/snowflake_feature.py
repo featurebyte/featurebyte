@@ -50,7 +50,7 @@ class FeatureManagerSnowflake(BaseModel):
         Parameters
         ----------
         feature_spec: OnlineFeatureSpec
-            input feature instance
+            Instance of OnlineFeatureSpec
         """
         tile_mgr = TileManagerSnowflake(session=self._session)
 
@@ -81,6 +81,11 @@ class FeatureManagerSnowflake(BaseModel):
     async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:
         """
         Insert records into tile-feature mapping table
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Instance of OnlineFeatureSpec
         """
         feature_sql = feature_spec.feature_sql.replace("'", "''")
         logger.debug(f"feature_sql: {feature_sql}")
