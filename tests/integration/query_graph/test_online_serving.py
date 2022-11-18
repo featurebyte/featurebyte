@@ -64,3 +64,5 @@ async def test_online_serving_sql(features, snowflake_session, snowflake_feature
     await update_online_store(
         snowflake_session, snowflake_feature_store, features[1], feature_job_time
     )
+
+    # TODO: Run online store retrieval sql and check result is expected
