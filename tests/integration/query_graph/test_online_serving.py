@@ -2,9 +2,12 @@ import pandas as pd
 import pytest
 
 from featurebyte import EventView, FeatureList
+from featurebyte.enum import SourceType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
+from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 
 
 @pytest.fixture(name="features", scope="session")
@@ -46,18 +49,18 @@ async def update_online_store(session, feature_store, feature, feature_job_time_
 async def test_online_serving_sql(features, snowflake_session, snowflake_feature_store):
 
     # Trigger tile compute. After get_historical_features, tiles should be already computed for the
-    # following point in times.
+    # provided point in time
+    feature_job_time = "2001-01-02 12:00:00"
     df_training_events = pd.DataFrame(
         {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
+            "POINT_IN_TIME": pd.to_datetime([feature_job_time] * 10),
             "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
     feature_list = FeatureList(features)
-    feature_list.get_historical_features(df_training_events)
+    df_historical = feature_list.get_historical_features(df_training_events)
 
     # Trigger SP_TILE_SCHEDULE_ONLINE_STORE to compute features and update online store
-    feature_job_time = "2001-01-02 12:00:00"
     await update_online_store(
         snowflake_session, snowflake_feature_store, features[0], feature_job_time
     )
@@ -65,4 +68,21 @@ async def test_online_serving_sql(features, snowflake_session, snowflake_feature
         snowflake_session, snowflake_feature_store, features[1], feature_job_time
     )
 
-    # TODO: Run online store retrieval sql and check result is expected
+    # Run online store retrieval sql
+    df_entities = pd.DataFrame({"user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
+    request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
+    feature_list = FeatureList(features)
+    feature_clusters = feature_list._get_feature_clusters()
+    online_retrieval_sql = get_online_store_retrieval_sql(
+        feature_clusters[0].graph,
+        feature_clusters[0].nodes,
+        source_type=SourceType.SNOWFLAKE,
+        request_table_columns=["user id"],
+        request_table_expr=request_table_expr,
+    )
+    online_features = await snowflake_session.execute_query(online_retrieval_sql)
+
+    # Check result is expected
+    columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"]
+    assert online_features.columns.tolist() == columns
+    pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])

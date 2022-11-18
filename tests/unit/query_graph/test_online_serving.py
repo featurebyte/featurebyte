@@ -4,11 +4,13 @@ Tests for featurebyte.query_graph.sql.online_serving
 import textwrap
 from dataclasses import asdict
 
+import pandas as pd
 import pytest
 from bson import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStoreLookupSpec,
     OnlineStoreUniversePlan,
@@ -157,5 +159,29 @@ def test_online_store_feature_retrieval_sql__mixed(
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_mixed.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_online_store_feature_retrieval_sql__request_subquery(
+    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+):
+    """
+    Test constructing feature retrieval sql for online store when request table is a subquery
+    """
+    df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
+    request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
+
+    graph, *nodes = mixed_point_in_time_and_item_aggregations_features
+    sql = get_online_store_retrieval_sql(
+        request_table_expr=request_table_expr,
+        request_table_columns=["CUSTOMER_ID"],
+        graph=graph,
+        nodes=nodes,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
         update_fixture=update_fixtures,
     )
