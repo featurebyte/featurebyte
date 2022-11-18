@@ -60,6 +60,12 @@ $$
             entity_insert_cols_str = entity_insert_cols.join(",")
             entity_filter_cols_str = entity_filter_cols.join(" AND ")
 
+            // check whether feature value column exists, if not add the new column
+            try {
+                snowflake.execute({sqlText: `SELECT ${f_name} FROM ${fs_table} LIMIT 1`})
+            } catch (err)  {
+                snowflake.execute({sqlText: `ALTER TABLE ${fs_table} ADD ${f_name} FLOAT`})
+            }
 
             // remove feature values for entities that are not in entity universe
             var remove_values_sql = `
