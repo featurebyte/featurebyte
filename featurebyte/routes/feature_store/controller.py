@@ -18,6 +18,7 @@ from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.session_validator import SessionValidatorService
 
 
 class FeatureStoreController(
@@ -38,6 +39,7 @@ class FeatureStoreController(
         super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
+        self.session_validator_service = SessionValidatorService(service.user, service.persistent)
 
     async def create_feature_store(
         self,

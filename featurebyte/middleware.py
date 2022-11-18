@@ -15,6 +15,8 @@ from featurebyte.exception import (
     DocumentConflictError,
     DocumentError,
     DocumentNotFoundError,
+    FeatureStoreSchemaCollisionError,
+    NoFeatureStorePresentError,
 )
 from featurebyte.logger import logger
 
@@ -165,6 +167,18 @@ ExecutionContext.register(
     NotImplementedError,
     handle_status_code=HTTPStatus.NOT_IMPLEMENTED,
     handle_message="Query not supported.",
+)
+
+ExecutionContext.register(
+    FeatureStoreSchemaCollisionError,
+    handle_status_code=HTTPStatus.CONFLICT,
+    handle_message="Feature Store ID is already in use.",
+)
+
+ExecutionContext.register(
+    NoFeatureStorePresentError,
+    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+    handle_message="No feature store found. Please create one before trying to access this functionality.",
 )
 
 

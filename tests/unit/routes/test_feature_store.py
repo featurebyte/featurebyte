@@ -2,7 +2,6 @@
 Test for FeatureStore route
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -80,16 +79,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             }.items()
         )
         assert "created_at" in response_dict
-
-    @pytest.fixture(name="mock_get_session", autouse=True)
-    def get_mock_get_session_fixture(self):
-        """
-        Return
-        """
-        with patch(
-            "featurebyte.service.session_manager.SessionManager.get_session"
-        ) as mocked_get_session:
-            yield mocked_get_session
 
     def test_list_databases__200(
         self, test_api_client_persistent, create_success_response, mock_get_session

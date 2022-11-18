@@ -4,7 +4,7 @@ Tests for Feature route
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -389,19 +389,16 @@ class TestFeatureApi(BaseApiTestSuite):
             },
         }
 
-    def test_preview_200(self, test_api_client_persistent, feature_preview_payload):
+    def test_preview_200(
+        self, test_api_client_persistent, feature_preview_payload, mock_get_session
+    ):
         """Test feature preview (success)"""
         test_api_client, _ = test_api_client_persistent
-        with patch(
-            "featurebyte.service.session_manager.SessionManager.get_session"
-        ) as mock_get_session:
-            expected_df = pd.DataFrame({"a": [0, 1, 2]})
-            mock_session = mock_get_session.return_value
-            mock_session.execute_query.return_value = expected_df
-            mock_session.generate_session_unique_id = Mock(return_value="1")
-            response = test_api_client.post(
-                f"{self.base_route}/preview", json=feature_preview_payload
-            )
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
 

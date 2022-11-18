@@ -181,3 +181,16 @@ class QueryExecutionTimeOut(DocumentError):
     """
     Raise when the SQL query execution times out
     """
+
+
+class FeatureStoreSchemaCollisionError(Exception):
+    """
+    Raise when the feature store ID is already in use by another
+    working schema.
+    """
+
+
+class NoFeatureStorePresentError(Exception):
+    """
+    Raise when we cannot find a feature store, when we expect one to be there.
+    """
