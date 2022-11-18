@@ -62,14 +62,14 @@ $$
 
             // check whether feature value column exists, if not add the new column
             try {
-                snowflake.execute({sqlText: `SELECT ${f_name} FROM ${fs_table} LIMIT 1`})
+                snowflake.execute({sqlText: `SELECT "${f_name}" FROM ${fs_table} LIMIT 1`})
             } catch (err)  {
-                snowflake.execute({sqlText: `ALTER TABLE ${fs_table} ADD ${f_name} FLOAT`})
+                snowflake.execute({sqlText: `ALTER TABLE ${fs_table} ADD "${f_name}" FLOAT`})
             }
 
             // remove feature values for entities that are not in entity universe
             var remove_values_sql = `
-                update ${fs_table} set ${f_name} = NULL
+                update ${fs_table} set "${f_name}" = NULL
                     where (${f_entity_columns}) not in
                     (select ${f_entity_columns} from (${f_sql}))
             `
@@ -81,10 +81,10 @@ $$
                 merge into ${fs_table} a using (${f_sql}) b
                     on ${entity_filter_cols_str}
                     when matched then
-                        update set a.${f_name} = b.${f_name}
+                        update set a."${f_name}" = b."${f_name}"
                     when not matched then
-                        insert (${f_entity_columns}, ${f_name})
-                            values (${entity_insert_cols_str}, ${f_name})
+                        insert (${f_entity_columns}, "${f_name}")
+                            values (${entity_insert_cols_str}, "${f_name}")
             `
             debug = debug + " - merge_sql: " + merge_sql
             snowflake.execute({sqlText: merge_sql})

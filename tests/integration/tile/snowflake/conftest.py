@@ -22,7 +22,7 @@ async def tile_task_online_store_prep(snowflake_session):
             )
             values (
                 '{tile_id}', '{feature_name}', 'feature_1_v1',
-                'select {entity_col_names}, value_2 as {feature_name} from {table_name} limit {number_records}', '{feature_store_table_name}',
+                'select {entity_col_names}, value_2 as "{feature_name}" from {table_name} limit {number_records}', '{feature_store_table_name}',
                 '{entity_col_names}'
             )
     """
