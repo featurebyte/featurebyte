@@ -11,7 +11,6 @@ from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.utils.credential import get_credential
 
 
 class ValidateStatus(StrEnum):
@@ -76,7 +75,11 @@ class SessionValidatorService:
         return ValidateStatus.FEATURE_STORE_ID_MATCHES
 
     async def _get_session(
-        self, feature_store_name: str, session_type: SourceType, details: DatabaseDetails
+        self,
+        feature_store_name: str,
+        session_type: SourceType,
+        details: DatabaseDetails,
+        get_credential: Any,
     ) -> BaseSession:
         """
         Retrieves a session.
@@ -88,7 +91,9 @@ class SessionValidatorService:
         session_type: SourceType
             session type
         details: DatabaseDetails
-            JSON dumps of feature store type & details
+            JSON dumps of feature store type &
+        get_credential: Any
+            credential handler function
 
         Returns
         -------
@@ -102,7 +107,11 @@ class SessionValidatorService:
         )
 
     async def validate_details(
-        self, feature_store_name: str, session_type: SourceType, details: DatabaseDetails
+        self,
+        feature_store_name: str,
+        session_type: SourceType,
+        details: DatabaseDetails,
+        get_credential: Any,
     ) -> ValidateStatus:
         """
         Validate whether the existing details exist in the persistent layer
@@ -116,6 +125,8 @@ class SessionValidatorService:
             session type
         details: DatabaseDetails
             database details
+        get_credential: Any
+            credential handler function
 
         Returns
         -------
@@ -126,7 +137,7 @@ class SessionValidatorService:
         users_feature_store_id = await self.get_feature_store_id_from_details(details)
 
         # Check whether the feature store ID has been used in the data warehouse.
-        session = await self._get_session(feature_store_name, session_type, details)
+        session = await self._get_session(feature_store_name, session_type, details, get_credential)
         return await self.validate_existing_session(session, users_feature_store_id)
 
     async def get_feature_store_id_from_details(

@@ -58,7 +58,7 @@ class SessionManagerService:
             )
             session = await session_manager.get_session(feature_store)
             await self.session_validator_service.validate_details(
-                feature_store.name, feature_store.type, feature_store.details
+                feature_store.name, feature_store.type, feature_store.details, get_credential
             )
             return session
         except ValidationError as exc:

@@ -58,17 +58,6 @@ class FeatureStoreController(
         FeatureStoreModel
             Newly created feature store document
         """
-        # Validate whether the feature store trying to be created, collides with another feature store
-        #
-        # OUTCOMES
-        # exist in persistent | exist in DWH |           DWH                |     persistent
-        #        Y            |      N       |          create              | error on write
-        #        N            |      N       |          create              | write
-        #        Y            |      Y       | if matches in DWH, no error  | error on write
-        #                                    | if not, error                |
-        #        N            |      Y       | if matches in DWH, no error  | write
-        #                                    | if not, error                |
-        _ = self.session_validator_service.validate_details(data.name, data.type, data.details)
         return await self.service.create_document(data)
 
     async def list_databases(
