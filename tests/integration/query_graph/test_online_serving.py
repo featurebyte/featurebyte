@@ -1,3 +1,6 @@
+"""
+Integration test for online store SQL generation
+"""
 import pandas as pd
 import pytest
 
@@ -47,6 +50,9 @@ async def update_online_store(session, feature_store, feature, feature_job_time_
 
 @pytest.mark.asyncio
 async def test_online_serving_sql(features, snowflake_session, snowflake_feature_store):
+    """
+    Test executing feature compute sql and feature retrieval SQL for online store
+    """
 
     # Trigger tile compute. After get_historical_features, tiles should be already computed for the
     # provided point in time
