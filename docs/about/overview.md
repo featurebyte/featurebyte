@@ -32,7 +32,7 @@ Targets are declared in the similar way as features but using forward joins and 
 When a use case has a target with a long horizon such as customer churn the next 6 months, training observation sets are built such that the time interval between 2 observations of the same customer is always larger than the target horizon to avoid target leakage.
 
 ### Feature Leakage
-When a use case is event based such as a transaction fraud detection, historical and online serving of window aggregates is automatically adapted to ensure the window excludes the event that triggered the feature request and avoid leak in features when the current transaction is compared to previous transactions.
+For use cases related to an Event Entity, features are served using windows that exclude the event of the request. For example, in a transaction fraud detection, FeatureByte’s windowed aggregation implementation ensures the feature windows exclude the current transaction and avoids leaks when comparing the current transaction to previous transactions.
 
 When a feature is derived from 2 features, the computation of the 2 features is scheduled at the same time to ensure windows of the 2 features are consistent.
 
