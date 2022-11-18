@@ -30,7 +30,7 @@ def user_id():
 @pytest.fixture(name="mock_get_session", autouse=True)
 def get_mock_get_session_fixture():
     """
-    Return
+    Returns a mocked get_feature_store_session.
     """
     with patch(
         "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
