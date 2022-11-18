@@ -4,7 +4,7 @@ SessionValidator service
 from typing import Any, Optional
 
 from featurebyte.enum import SourceType, StrEnum
-from featurebyte.exception import FeatureStoreSchemaCollisionError
+from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
@@ -105,6 +105,27 @@ class SessionValidatorService:
         return await session_manager.get_session_with_params(
             feature_store_name, session_type, details
         )
+
+    async def validate_feature_store_exists(
+        self,
+        details: DatabaseDetails,
+    ) -> None:
+        """
+        Validate whether a feature store exists.
+
+        Parameters
+        ----------
+        details: DatabaseDetails
+            database details
+
+        Raises
+        ------
+        NoFeatureStorePresentError
+            error thrown when no feature store is present
+        """
+        users_feature_store_id = await self.get_feature_store_id_from_details(details)
+        if users_feature_store_id is None:
+            raise NoFeatureStorePresentError
 
     async def validate_details(
         self,

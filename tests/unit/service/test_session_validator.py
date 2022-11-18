@@ -7,7 +7,7 @@ import pytest
 
 from featurebyte import FeatureStore, SnowflakeDetails, SourceType
 from featurebyte.app import User
-from featurebyte.exception import FeatureStoreSchemaCollisionError
+from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
 
@@ -93,3 +93,30 @@ async def test_validate_existing_session(session_validator_service, mock_session
     }
     with pytest.raises(FeatureStoreSchemaCollisionError):
         _ = await session_validator_service.validate_existing_session(mock_session, object_id)
+
+
+@pytest.fixture(name="noop_session_validator", autouse=True)
+def get_noop_session_validator_fixture():
+    """
+    Override the default noop_session_validator to not patch with an empty validation since we want to actually
+    test the behaviour of the validator here.
+    """
+    return
+
+
+@pytest.mark.asyncio
+async def test_validate_feature_store_exists(session_validator_service, test_snowflake_details):
+    """
+    Test validate_feature_store_exists function
+    """
+    with pytest.raises(NoFeatureStorePresentError):
+        await session_validator_service.validate_feature_store_exists(test_snowflake_details)
+
+    # Write details to persistent layer
+    feature_store = FeatureStore.create(
+        name="test_feature_name", source_type=SourceType.SNOWFLAKE, details=test_snowflake_details
+    )
+    assert isinstance(feature_store, FeatureStore)
+
+    # Calling validate now shouldn't throw an error
+    await session_validator_service.validate_feature_store_exists(test_snowflake_details)
