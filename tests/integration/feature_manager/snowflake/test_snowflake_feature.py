@@ -62,7 +62,7 @@ async def online_enabled_feature_spec_fixture(
             "FEATURE_SQL": [feature_sql],
             "FEATURE_STORE_TABLE_NAME": [feature_store_table_name],
             "FEATURE_ENTITY_COLUMN_NAMES": [
-                ",".join(escape_column_names(online_feature_spec.entity_column_names))
+                ",".join(escape_column_names(online_feature_spec.serving_names))
             ],
             "IS_DELETED": [False],
         }
