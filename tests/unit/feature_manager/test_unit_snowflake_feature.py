@@ -65,7 +65,7 @@ async def test_online_enable(
         feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
         feature_sql=feature_spec.feature_sql.replace("'", "''"),
         feature_store_table_name=feature_spec.feature_store_table_name,
-        entity_column_names_str=",".join(escape_column_names(feature_spec.entity_column_names)),
+        entity_column_names_str=",".join(escape_column_names(feature_spec.serving_names)),
         is_deleted=False,
     )
     assert mock_execute_query.call_args_list[0] == mock.call(upsert_sql)

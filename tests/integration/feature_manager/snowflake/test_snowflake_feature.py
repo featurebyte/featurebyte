@@ -3,6 +3,7 @@ This module contains integration tests for FeatureSnowflake
 """
 import copy
 from datetime import datetime, timedelta
+from unittest.mock import PropertyMock, patch
 
 import pandas as pd
 import pytest
@@ -14,27 +15,67 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
+@pytest.fixture(name="feature_sql")
+def feature_sql_fixture():
+    """
+    Feature sql fixture
+    """
+    return "SELECT *, 'test_quote' FROM TEMP_TABLE"
+
+
+@pytest.fixture(name="feature_store_table_name")
+def feature_store_table_name_fixture():
+    """
+    Feature store table name fixture
+    """
+    feature_store_table_name = "feature_store_table_1"
+    return feature_store_table_name
+
+
 @pytest_asyncio.fixture(name="online_enabled_feature_spec")
 async def online_enabled_feature_spec_fixture(
     snowflake_session,
     snowflake_feature,
+    feature_manager,
+    feature_sql,
+    feature_store_table_name,
+):
+    """
+    Fixture for an OnlineFeatureSpec corresponding to an online enabled feature
+    """
+    with patch.object(OnlineFeatureSpec, "feature_sql", PropertyMock(return_value=feature_sql)):
+        with patch.object(
+            OnlineFeatureSpec,
+            "feature_store_table_name",
+            PropertyMock(return_value=feature_store_table_name),
+        ):
+            online_feature_spec = OnlineFeatureSpec(
+                feature=snowflake_feature,
+            )
+            await feature_manager.online_enable(online_feature_spec)
+
+            yield online_feature_spec
+
+            await snowflake_session.execute_query(
+                f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+            )
+
+
+@pytest.mark.asyncio
+async def test_online_enabled_feature_spec(
+    online_enabled_feature_spec,
+    snowflake_session,
+    snowflake_feature,
     snowflake_feature_expected_tile_spec_dict,
     feature_manager,
+    feature_sql,
+    feature_store_table_name,
 ):
     """
     Test online_enable
     """
-    feature_sql = "SELECT *, 'test_quote' FROM TEMP_TABLE"
-    feature_store_table_name = "feature_store_table_1"
+    online_feature_spec = online_enabled_feature_spec
     expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
-
-    online_feature_spec = OnlineFeatureSpec(
-        feature=snowflake_feature,
-        feature_sql=feature_sql,
-        feature_store_table_name=feature_store_table_name,
-    )
-
-    await feature_manager.online_enable(online_feature_spec)
 
     tasks = await snowflake_session.execute_query(
         f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].tile_id}%'"
@@ -62,7 +103,7 @@ async def online_enabled_feature_spec_fixture(
             "FEATURE_SQL": [feature_sql],
             "FEATURE_STORE_TABLE_NAME": [feature_store_table_name],
             "FEATURE_ENTITY_COLUMN_NAMES": [
-                ",".join(escape_column_names(online_feature_spec.entity_column_names))
+                ",".join(escape_column_names(online_feature_spec.serving_names))
             ],
             "IS_DELETED": [False],
         }
@@ -71,10 +112,6 @@ async def online_enabled_feature_spec_fixture(
     assert_frame_equal(result, expected_df)
 
     yield online_feature_spec
-
-    await snowflake_session.execute_query(
-        f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
-    )
 
 
 @pytest.mark.asyncio
@@ -211,7 +248,7 @@ async def test_online_disable___re_enable(
             "FEATURE_SQL": [online_feature_spec.feature_sql],
             "FEATURE_STORE_TABLE_NAME": [online_feature_spec.feature_store_table_name],
             "FEATURE_ENTITY_COLUMN_NAMES": [
-                ",".join(escape_column_names(online_feature_spec.entity_column_names))
+                ",".join(escape_column_names(online_feature_spec.serving_names))
             ],
             "IS_DELETED": [False],
         }

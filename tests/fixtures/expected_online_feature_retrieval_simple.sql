@@ -1,5 +1,5 @@
 SELECT
-  "CUSTOMER_ID",
+  REQ."CUSTOMER_ID",
   T0."a_2h_average",
   T0."a_48h_average plus 123"
 FROM "MY_REQUEST_TABLE" AS REQ

@@ -50,30 +50,12 @@ class FeatureManagerSnowflake(BaseModel):
         Parameters
         ----------
         feature_spec: OnlineFeatureSpec
-            input feature instance
+            Instance of OnlineFeatureSpec
         """
         tile_mgr = TileManagerSnowflake(session=self._session)
 
         # insert records into tile-feature mapping table
-        feature_sql = feature_spec.feature_sql.replace("'", "''")
-        logger.debug(f"feature_sql: {feature_sql}")
-        for tile_id in feature_spec.tile_ids:
-            upsert_sql = tm_upsert_tile_feature_mapping.render(
-                tile_id=tile_id,
-                feature_name=feature_spec.feature.name,
-                feature_version=feature_spec.feature.version.to_str(),
-                feature_readiness=str(feature_spec.feature.readiness),
-                feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
-                feature_sql=feature_sql,
-                feature_store_table_name=feature_spec.feature_store_table_name,
-                entity_column_names_str=",".join(
-                    escape_column_names(feature_spec.entity_column_names)
-                ),
-                is_deleted=False,
-            )
-            logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
-            await self._session.execute_query(upsert_sql)
-            logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
+        await self._update_tile_feature_mapping_table(feature_spec)
 
         # enable tile generation with scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
@@ -95,6 +77,35 @@ class FeatureManagerSnowflake(BaseModel):
                 # enable offline tiles scheduled job
                 await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+
+    async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:
+        """
+        Insert records into tile-feature mapping table
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            Instance of OnlineFeatureSpec
+        """
+        feature_sql = feature_spec.feature_sql.replace("'", "''")
+        logger.debug(f"feature_sql: {feature_sql}")
+        for tile_id in feature_spec.tile_ids:
+            upsert_sql = tm_upsert_tile_feature_mapping.render(
+                tile_id=tile_id,
+                feature_name=feature_spec.feature.name,
+                feature_version=feature_spec.feature.version.to_str(),
+                feature_readiness=str(feature_spec.feature.readiness),
+                feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
+                feature_sql=feature_sql,
+                feature_store_table_name=feature_spec.feature_store_table_name,
+                entity_column_names_str=",".join(
+                    escape_column_names(feature_spec.serving_names),
+                ),
+                is_deleted=False,
+            )
+            logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
+            await self._session.execute_query(upsert_sql)
+            logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
 
     async def online_disable(self, feature_spec: OnlineFeatureSpec) -> None:
         """

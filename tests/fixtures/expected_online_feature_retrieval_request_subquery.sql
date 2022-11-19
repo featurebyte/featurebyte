@@ -1,23 +1,30 @@
-WITH MY_REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
+WITH REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
     SELECT
       REQ."CUSTOMER_ID",
-      REQ."order_id",
       T0."a_48h_average",
       SYSDATE() AS POINT_IN_TIME
-    FROM "MY_REQUEST_TABLE" AS REQ
+    FROM (
+        SELECT
+          1001 AS "CUSTOMER_ID"
+        UNION ALL
+        SELECT
+          1002 AS "CUSTOMER_ID"
+        UNION ALL
+        SELECT
+          1003 AS "CUSTOMER_ID"
+    ) AS REQ
     LEFT JOIN online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6 AS T0
       ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 ), "REQUEST_TABLE_order_id" AS (
     SELECT DISTINCT
       "order_id"
-    FROM MY_REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP
+    FROM REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP
 ), _FB_AGGREGATED AS (
     SELECT
       REQ."CUSTOMER_ID",
-      REQ."order_id",
       REQ."a_48h_average",
       "T0"."order_size" AS "order_size"
-    FROM MY_REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS REQ
+    FROM REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS REQ
     LEFT JOIN (
         SELECT
           ITEM_AGG."order_size" AS "order_size",
@@ -44,7 +51,6 @@ WITH MY_REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
 )
 SELECT
   AGG."CUSTOMER_ID",
-  AGG."order_id",
   AGG."a_48h_average",
   "order_size" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

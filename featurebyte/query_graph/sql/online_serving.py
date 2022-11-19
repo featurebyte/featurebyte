@@ -3,7 +3,7 @@ SQL generation for online serving
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast
 
 import hashlib
 import json
@@ -220,7 +220,7 @@ def get_entities_ids_and_serving_names(
 
 def get_online_store_table_name_from_entity_ids(entity_ids_set: set[ObjectId]) -> str:
     """
-    Get the online store table name given a query graph and node
+    Get the online store table name given the entity ids
 
     Parameters
     ----------
@@ -236,6 +236,25 @@ def get_online_store_table_name_from_entity_ids(entity_ids_set: set[ObjectId]) -
     identifier = hasher.hexdigest(20)
     online_store_table_name = f"online_store_{identifier}"
     return online_store_table_name
+
+
+def get_online_store_table_name_from_graph(graph: QueryGraph, node: Node) -> str:
+    """
+    Get the online store table given the query graph and node
+
+    Parameters
+    ----------
+    graph : QueryGraph
+        Query graph
+    node : Node
+        Query graph node
+
+    Returns
+    -------
+    str
+    """
+    entity_ids, _ = get_entities_ids_and_serving_names(graph, node)
+    return get_online_store_table_name_from_entity_ids(entity_ids)
 
 
 def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
@@ -342,27 +361,36 @@ class OnlineStoreRetrievePlan:
 
     def construct_retrieval_sql(
         self,
-        request_table_name: str,
         request_table_columns: list[str],
+        request_table_name: Optional[str] = None,
+        request_table_expr: Optional[expressions.Select] = None,
     ) -> expressions.Select:
         """
         Construct SQL expression to lookup feature from online store
 
         Parameters
         ----------
-        request_table_name: str
-            Name of the request table
         request_table_columns: list[str]
             Columns in the request table
+        request_table_name: Optional[str]
+            Name of the request table
+        request_table_expr: Optional[expressions.Select]
+            Select statement that constructs the request table
 
         Returns
         -------
         expressions.Select
         """
         # Original columns
-        expr = select(*[quoted_identifier(col) for col in request_table_columns]).from_(
-            expressions.alias_(quoted_identifier(request_table_name), alias="REQ")
-        )
+        expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
+
+        if request_table_name is not None:
+            expr = expr.from_(
+                expressions.alias_(quoted_identifier(request_table_name), alias="REQ")
+            )
+        else:
+            assert request_table_expr is not None
+            expr = expr.from_(request_table_expr.subquery(alias="REQ"))
 
         # Perform one left join for each unique online store table and retrieve one or more
         # pre-computed features
@@ -444,27 +472,30 @@ def construct_feature_sql_with_enriched_request_table(
 
 
 def get_online_store_retrieval_sql(
-    request_table_name: str,
-    request_table_columns: list[str],
     graph: QueryGraph,
     nodes: list[Node],
     source_type: SourceType,
+    request_table_columns: list[str],
+    request_table_name: Optional[str] = None,
+    request_table_expr: Optional[expressions.Select] = None,
 ) -> str:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
     Parameters
     ----------
-    request_table_name: str
-        Name of the request table
-    request_table_columns: list[str]
-        Request table columns
     graph: QueryGraph
         Query graph
     nodes: list[Node]
         List of query graph nodes
     source_type: SourceType
         Source type information
+    request_table_columns: list[str]
+        Request table columns
+    request_table_name: Optional[str]
+        Name of the request table
+    request_table_expr: Optional[expressions.Select]
+        Select statement for the request table
 
     Returns
     -------
@@ -478,11 +509,15 @@ def get_online_store_retrieval_sql(
             online_excluded_nodes.append(node)
 
     expr = online_store_plan.construct_retrieval_sql(
-        request_table_name=request_table_name, request_table_columns=request_table_columns
+        request_table_columns=request_table_columns,
+        request_table_expr=request_table_expr,
+        request_table_name=request_table_name,
     )
 
     if online_excluded_nodes:
         enriched_request_table_columns = request_table_columns + online_store_plan.feature_names
+        if request_table_name is None:
+            request_table_name = REQUEST_TABLE_NAME
         expr = construct_feature_sql_with_enriched_request_table(
             expr=expr,
             graph=graph,
