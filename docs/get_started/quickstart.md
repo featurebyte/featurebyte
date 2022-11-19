@@ -17,7 +17,7 @@ This should return an empty list if you are using the service for the first time
 If this fails refer to the [installation guide](installation.md#troubleshooting) to troubleshoot your service set-up.
 
 ## Registering feature stores
-Register [feature stores](fundamentals/feature_store.md) to gain access to data sources and store feature metadata
+Register [feature stores](../about/concepts/feature_store.md) to gain access to data sources and store feature metadata
 ```python
 feature_store = FeatureStore(
     name="Snowflake Demo",
@@ -33,7 +33,7 @@ feature_store.save()
 ```
 
 ## Declaring data sources
-Declare and annotate [data sources](fundamentals/data_source.md) that resides in your data platform to facilitate feature engineering.
+Declare and annotate [data sources](../about/concepts/data_sources.md) that resides in your data platform to facilitate feature engineering.
 ```python
 credit_card_transactions = EventData.from_tabular_source(
     name="Credit Card Transactions",
@@ -51,7 +51,7 @@ credit_card_transactions.save()
 ```
 
 ## Defining features
-Define [features](fundamentals/feature.md) using a simple and intuitive Pandas-like interface.
+Define [features](../about/concepts/features.md) using a simple and intuitive Pandas-like interface.
 ```python
 event_view = EventView.from_event_data(
   EventData.get("Credit Card Transactions")
@@ -66,7 +66,7 @@ recent_spending_features = event_view.groupby("ACCOUNTID").aggregate(
 ```
 
 ## Creating feature lists
-Create [feature lists](fundamentals/feature_list.md) from a group of features for training and serving.
+Create [feature lists](../about/concepts/feature_lists.md) from a group of features for training and serving.
 ```python
 feature_list = FeatureList(
     items=[recent_spending_features],
