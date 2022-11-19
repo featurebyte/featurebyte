@@ -2,8 +2,6 @@ Although a Feature List can be seen as a simple list of features, it is a key el
 
 In FeatureByte, users can easily create new FeatureLists, share them with others or reuse existing FeatureLists.
 
-To inform users on the readiness of a Feature List, each FeatureList has a pct Readiness that indicates the percentage of features that are production ready.
-
 ### Feature List Main Entities
 A feature list can be composed of features extracted for multiple entities, which may make its serving more complex. In FeatureByte, the serving of a feature list is simplified by the identification of its main entities.
 

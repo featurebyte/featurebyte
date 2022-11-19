@@ -27,15 +27,15 @@ More sophisticated features include:
 
 * count of customer visits per weekday the past 12 weeks
 * most common weekday in customer visits the past 12 weeks
-* entropy of count of customer visits per weekday the past 12 weeks
-* clumpiness of customer visits the past 12 weeks
-* weekdays similarity of past week customer visits with past 12 weeks visits
+* weekdays entropy of the past 12 weeks customer visits
+* clumpiness of the past 12 weeks customer visits
+* weekdays similarity of the past week customer visits with the past 12 weeks visits
 
 Examples of Features extracted for the event entity of the table, such as an Order, include:
 
 * Order amount
 * Order amount divided by customer amount average the 12 past weeks
-* Order amount z-score based on the past 12 weeks customer orders amount distribution 
+* Order amount z-score based on the past 12 weeks customer orders history
 
 ### Item table
 Data Scientists love Item tables as they provide them with details of business events.

@@ -18,15 +18,15 @@ If a column has not been used by a feature yet, the data quality information ass
 
 Once the column has been used to create a feature, users are required to create a plan and submit this plan for approval. The plan is created from a data source by specifying the desired updates.
 
-From the plan, users can list Feature versions with inappropriate cleaning steps setting and Feature List versions that include affected feature versions.
+From the plan, users can list Feature versions with inappropriate cleaning steps setting and affected Feature List versions.
 
-By default, the creation of a new feature version is recommended. The user can however choose to overwrite the current version. To help users evaluate the impact of the changes, users can materialize the features before and after change by selecting an observation set.
+By default, the creation of new feature versions is recommended. The user can however choose to overwrite current versions. To help users evaluate the impact of the changes, users can materialize the affected features before and after change by selecting an observation set.
 
 Once the new cleaning steps settings are defined for every affected feature version, the plan can be submitted. Once the plan is approved, it is applied to the data source and new feature versions are created accordingly.
 
 If the option of a new feature version creation is chosen, the new version inherits from the current readiness of the older version and the old version is automatically deprecated. If the old version is the default version of the feature, the new version becomes the default version.
 
-### Feature List versioning
+### Feature List Versioning
 FeatureByte supports Feature List Versioning. 3 modes can be used:
 
 * “auto”: a new version of the Feature List is triggered by changes in version of the features in the list. The new default version of the Feature List then uses the current default versions of its features.
@@ -54,7 +54,7 @@ The Quarantine level is triggered automatically if issues are raised to remind u
 
 When Users are calling for a feature without specifying its version, the default version is returned. The default version of a Feature is the version with the highest readiness unless changed by the user.
 
-### Feature List status
+### Feature List Status
 FeatureByte recognizes 5 status for a Feature List:
 
 * “Deployed”: are Feature Lists that have at least one version enabled online
@@ -68,3 +68,5 @@ Before a Feature List is turned into a Template, a description should be associa
 The Deployed status is automatically triggered when at least one version of the FeatureList is deployed. If deployment is disabled for all the Feature List versions, the status of the Feature List is turned into a Public Draft.
 
 Only Draft Feature Lists can be deleted. Feature Lists with other status can be only deprecated.
+
+To inform users on the readiness of a Feature List, each FeatureList has a pct Readiness that indicates the percentage of its features that are production ready.
