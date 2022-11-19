@@ -25,7 +25,7 @@ class EventViewGroupBy(OpsMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = ["GroupBy"]
+    __fbautodoc__: List[str] = ["GroupBy"]
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     @typechecked

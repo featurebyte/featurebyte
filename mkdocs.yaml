@@ -101,14 +101,6 @@ theme:
 
 plugins:
   - search
-  - mkdocs-jupyter:
-      kernel_name: python3
-      theme: default
-      include: ["*.ipynb"]
-      show_input: True
-      include_source: True
-      execute: False
-      allow_errors: False
   - gen-files:
       scripts:
         - docs/gen_ref_pages.py

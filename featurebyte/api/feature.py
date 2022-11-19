@@ -57,7 +57,7 @@ class Feature(
     """
 
     # documentation metadata
-    __fbautodoc__ = []
+    __fbautodoc__: List[str] = []
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)

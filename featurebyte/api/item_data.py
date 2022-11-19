@@ -3,7 +3,7 @@ ItemData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator
@@ -26,7 +26,7 @@ class ItemData(ItemDataModel, DataApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = ["Data"]
+    __fbautodoc__: List[str] = ["Data"]
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     _route = "/item_data"

@@ -132,7 +132,6 @@ toml-sort = "^0.20.0"
 
 [tool.poetry.group.docs.dependencies]
 docstring-parser = "^0.15"
-jupyter-core = "^5.0.0rc0"  # PYSEC-2022-42974
 mkautodoc = "^0.2.0"
 mkdocs = "^1.4.1"
 mkdocs-awesome-pages-plugin = "^2.8.0"
@@ -140,14 +139,12 @@ mkdocs-enumerate-headings-plugin = "^0.5.0"
 mkdocs-gen-files = "^0.4.0"
 mkdocs-git-authors-plugin = "^0.6.5"
 mkdocs-git-revision-date-localized-plugin = "^1.1.0"
-mkdocs-jupyter = "^0.22.0"
 mkdocs-literate-nav = "^0.5.0"
 mkdocs-material = "^8.5.7"
 mkdocs-minify-plugin = "^0.6.1"
 mkdocs-print-site-plugin = "^2.3.4"
 mkdocs-section-index = "^0.3.4"
 mkdocs-table-reader-plugin = "^1.1.1"
-mknotebooks = "^0.7.1"
 
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"

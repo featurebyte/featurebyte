@@ -3,7 +3,7 @@ Entity class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from typeguard import typechecked
 
@@ -19,7 +19,7 @@ class Entity(EntityModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = []
+    __fbautodoc__: List[str] = []
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # class variables
