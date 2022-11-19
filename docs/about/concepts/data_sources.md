@@ -31,7 +31,7 @@ More sophisticated features include:
 * clumpiness of customer visits the past 12 weeks
 * weekdays similarity of past week customer visits with past 12 weeks visits
 
-Examples of Features extracted for the event Order include:
+Examples of Features extracted for the event entity of the table, such as an Order, include:
 
 * Order amount
 * Order amount divided by customer amount average the 12 past weeks
@@ -78,9 +78,9 @@ Dimension tables can be:
 * used directly to derive features
 * joined to Event tables or Item tables
 
-Use of a Dimension table requires special vigilance. If data in a dimension table change slowly, the table should not be used as those changes can lead to severe data leaks during training and poor performance at inference.
+Use of a Dimension table requires special vigilance. If data in a dimension table changes slowly, the table should not be used as those changes can lead to severe data leaks during training and poor performance at inference. In this case, the use of a Slowly Changing Dimension table of type 2 is strongly recommended.
 
-New rows can however be added to a dimension table. In this case, no aggregation is allowed as it may lead to inconsistencies too.
+New rows can however be added to a dimension table.  For this reason, no aggregation is allowed as the addition of new records may lead to Training Serving inconsistencies.
 
 ### Data Source Registration
 When a new data source is registered, users are required to tag:

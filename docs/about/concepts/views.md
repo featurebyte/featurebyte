@@ -30,9 +30,6 @@ A built-in function also allows users to define their own flags independently to
 Flags are applied before data cleaning.
 
 ### Transforms
-The SDK allows users to write their own transforms in a similar way to Pandas or R Data Frame.
-
-They can also use FeatureByte’s built-in functions to easily derive new columns from other columns.
 To be completed by YungSiang
 
 ### Lags
