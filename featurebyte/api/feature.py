@@ -14,6 +14,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -54,6 +55,10 @@ class Feature(
     """
     Feature class
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = []
+    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 

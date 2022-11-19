@@ -103,10 +103,13 @@ stop-service:
 
 #* Docs Generation
 docs:
-	poetry run mkdocs serve
+	PYTHONPATH=$(PWD)/docs/extensions poetry run mkdocs serve
+
+docs-full:
+	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve
 
 docs-build:
-	poetry run mkdocs build
+	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs build
 
 #* Cleaning
 clean:

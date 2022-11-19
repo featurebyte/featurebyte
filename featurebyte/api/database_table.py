@@ -9,7 +9,6 @@ from http import HTTPStatus
 
 from pydantic import Field, root_validator
 
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType, TableDataType
@@ -87,6 +86,10 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         table_details = tabular_source["table_details"]
         if "feature_store" not in values:
             # attempt to set feature_store object if it does not exist
+            from featurebyte.api.feature_store import (  # pylint: disable=import-outside-toplevel,cyclic-import
+                FeatureStore,
+            )
+
             values["feature_store"] = FeatureStore.get_by_id(id=tabular_source["feature_store_id"])
 
         feature_store = values["feature_store"]

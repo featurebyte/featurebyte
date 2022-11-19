@@ -8,3 +8,82 @@
 .highlight .gp, .highlight .go { /* Generic.Prompt, Generic.Output */
     user-select: none;
 }
+div.doc-contents:not(.first) {
+  padding-left: 25px;
+  border-left: .05rem solid var(--md-typeset-table-color);
+}
+
+div.autodoc-summary {
+  display: block;
+  padding: 5px;
+  border-top: 1px solid #333;
+}
+
+div.autodoc-desc {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-left: 30px;
+  border-left: 5px solid rgba(230, 230, 230);
+  font-weight: bold;
+}
+
+div.autodoc-desc p {
+  margin: 0;
+  padding: 0;
+}
+
+div.autodoc-signature code {
+  font-size: 18px;
+  color: var(--md-typeset-a-color);
+}
+
+div.autodoc-classpath {
+  font-size: 30px;
+  display: block;
+  color: var(--md-typeset-a-color);
+  background-color: transparent;
+}
+
+div.autodoc-signature strong {
+  font-size: 20px;
+}
+
+div.autodoc-summary h4 {
+  height: 0;
+  width: 0;
+  font-size: 0;
+  display: inherit;
+  visibility: hidden;
+}
+
+div.autodoc-summary .autodoc-signature code {
+  font-size: 16px;
+}
+
+div.autodoc-param-group {
+  margin-left: 30px;
+}
+
+.autodoc-default {
+  color: red;
+}
+
+.autodoc-param {
+  font-weight: bold;
+}
+
+div.autodoc-docstring {
+  padding-left: 20px;
+  margin-bottom: 30px;
+  border-left: 5px solid rgba(230, 230, 230);
+}
+
+div.autodoc-members {
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+.md-sidebar--secondary li.md-nav__item li {
+  font-size: 13px;
+  color: #777;
+}

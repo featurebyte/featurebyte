@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, List, MutableMapping, Optional, Tuple
 
+from functools import wraps
+
 import numpy as np
 
 from featurebyte.models.persistent import (
@@ -256,6 +258,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             Wrapped function
         """
 
+        @wraps(func)
         async def wrapper(persistent: Any, collection_name: str, *args: Any, **kwargs: Any) -> Any:
             """
             Wrapped function to perform audit logging of the persistent function

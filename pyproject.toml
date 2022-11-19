@@ -131,7 +131,8 @@ pyupgrade = "^2.37.2"
 toml-sort = "^0.20.0"
 
 [tool.poetry.group.docs.dependencies]
-jupyter-core = "^5.0.0rc0"  # PYSEC-2022-42974
+docstring-parser = "^0.15"
+mkautodoc = "^0.2.0"
 mkdocs = "^1.4.1"
 mkdocs-awesome-pages-plugin = "^2.8.0"
 mkdocs-enumerate-headings-plugin = "^0.5.0"
@@ -144,15 +145,12 @@ mkdocs-minify-plugin = "^0.6.1"
 mkdocs-print-site-plugin = "^2.3.4"
 mkdocs-section-index = "^0.3.4"
 mkdocs-table-reader-plugin = "^1.1.1"
-mkdocstrings = "^0.19.0"
-mkdocstrings-python = "^0.7.1"
-mknotebooks = "^0.7.1"
 
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
 black = { version = "^22.3.0", allow-prereleases = true }
 darglint = "^1.8.1"
-isort = {extras = ["colors"], version = "^5.10.1"}
+isort = { extras = ["colors"], version = "^5.10.1" }
 mypy = "^0.971"
 mypy-extensions = "^0.4.3"
 pip-audit = "^2.4.4"

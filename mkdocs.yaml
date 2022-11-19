@@ -1,4 +1,10 @@
 site_name: FeatureByte
+repo_name: featurebyte/featurebyte
+repo_url: https://github.com/featurebyte/featurebyte
+edit_uri: blob/main/docs/
+watch:
+  - featurebyte
+
 nav:
   - What is FeatureByte?:
       - about/overview.md
@@ -62,7 +68,7 @@ nav:
       - Deploy Feature List: user_guide/temp.md
       - Request Online Features: user_guide/temp.md
 
-  - Code Reference: reference/
+  - API Reference: reference/
 
   - Development:
       - Contribution Process: development/
@@ -77,33 +83,47 @@ nav:
 
   - Getting Help: help/
 
-watch:
-  - featurebyte
 theme:
   name: material
+  palette:
+    scheme: default
+    primary: teal
+    accent: teal
   homepage: https://featurebyte.com
   favicon: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
   logo: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
   features:
     - navigation.tabs
     - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.instant
     - instant
+
 plugins:
   - search
-  - mkdocstrings
   - gen-files:
       scripts:
         - docs/gen_ref_pages.py
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index
+
 markdown_extensions:
+  - admonition
+  - codehilite
+  - attr_list
+  - toc:
+      permalink: true
   - pymdownx.highlight:
+      auto_title: false
+      use_pygments: true
+      linenums: false
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - admonition
-  - pymdownx.details
   - pymdownx.superfences
+  - pymdownx.details
+  - fbautodoc
+
 extra_css:
   - css/code_select.css

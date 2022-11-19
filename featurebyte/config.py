@@ -168,6 +168,9 @@ class Configurations:
     FeatureByte SDK settings. Contains general settings, database sources and credentials.
     """
 
+    # documentation metadata
+    __fbautodoc__: List[str] = []
+
     def __init__(self, config_file_path: Optional[str] = None) -> None:
         """
         Load and parse configurations

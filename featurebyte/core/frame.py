@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
-from pydantic import root_validator
+from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
@@ -24,7 +24,7 @@ class BaseFrame(QueryObject):
     BaseFrame class
     """
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -55,7 +55,7 @@ class BaseFrame(QueryObject):
 
         Returns
         -------
-        list of columns
+        list[str]
         """
         return list(self.column_var_type_map)
 
