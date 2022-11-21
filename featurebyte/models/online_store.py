@@ -92,7 +92,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return get_online_store_feature_compute_sql(
             graph=self.feature.graph,
             node=self.feature.node,
-            source_type=self.feature.feature_store.type,
+            source_type=self.feature.feature_store_type,
         )
 
     @property

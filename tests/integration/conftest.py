@@ -514,7 +514,7 @@ async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_fea
             ],
         }
     )
-    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
+    feature = ExtendedFeatureModel(**feature_model_dict)
     tile_id = feature.tile_specs[0].tile_id
 
     yield feature

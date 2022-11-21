@@ -32,12 +32,12 @@ def features_fixture(event_data):
     return features
 
 
-async def update_online_store(session, feature_store, feature, feature_job_time_ts):
+async def update_online_store(session, feature, feature_job_time_ts):
     """
     Trigger the SP_TILE_SCHEDULE_ONLINE_STORE with a fixed feature job time
     """
     # Manually update feature mapping table. Should only be done in test
-    extended_feature_model = ExtendedFeatureModel(**feature.dict(), feature_store=feature_store)
+    extended_feature_model = ExtendedFeatureModel(**feature.dict())
     online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
     feature_manager = FeatureManagerSnowflake(session)
     await feature_manager._update_tile_feature_mapping_table(online_feature_spec)
@@ -49,7 +49,7 @@ async def update_online_store(session, feature_store, feature, feature_job_time_
 
 
 @pytest.mark.asyncio
-async def test_online_serving_sql(features, snowflake_session, snowflake_feature_store):
+async def test_online_serving_sql(features, snowflake_session):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
@@ -67,12 +67,8 @@ async def test_online_serving_sql(features, snowflake_session, snowflake_feature
     df_historical = feature_list.get_historical_features(df_training_events)
 
     # Trigger SP_TILE_SCHEDULE_ONLINE_STORE to compute features and update online store
-    await update_online_store(
-        snowflake_session, snowflake_feature_store, features[0], feature_job_time
-    )
-    await update_online_store(
-        snowflake_session, snowflake_feature_store, features[1], feature_job_time
-    )
+    await update_online_store(snowflake_session, features[0], feature_job_time)
+    await update_online_store(snowflake_session, features[1], feature_job_time)
 
     # Run online store retrieval sql
     df_entities = pd.DataFrame({"user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
