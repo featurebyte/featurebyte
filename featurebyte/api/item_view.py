@@ -56,8 +56,6 @@ class ItemView(View):
         """
         event_data = EventData.get_by_id(item_data.event_data_id)
         event_view = EventView.from_event_data(event_data)
-        if event_view.event_id_column is None:
-            raise ValueError("EventData without event_id_column is not supported")
         item_view = cls.from_data(
             item_data,
             event_id_column=item_data.event_id_column,
