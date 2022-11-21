@@ -35,24 +35,29 @@ def get_test_snowflake_details():
 
 
 @pytest.mark.asyncio
-async def test_get_feature_store_id_from_details(session_validator_service, test_snowflake_details):
+async def test_get_feature_store_id_from_details(
+    session_validator_service, snowflake_feature_store, snowflake_connector, snowflake_execute_query
+):
     """
     Test getting feature store ID from details
     """
+    _ = snowflake_connector, snowflake_execute_query
     feature_store_id = await session_validator_service.get_feature_store_id_from_details(
-        test_snowflake_details
+        snowflake_feature_store.details
     )
     assert feature_store_id is None
 
     # Write details to persistent layer
     feature_store = FeatureStore.create(
-        name="test_feature_name", source_type=SourceType.SNOWFLAKE, details=test_snowflake_details
+        name=snowflake_feature_store.name,
+        source_type=snowflake_feature_store.type,
+        details=snowflake_feature_store.details,
     )
     assert isinstance(feature_store, FeatureStore)
 
     # Check that we can retrieve the feature store ID
     feature_store_id = await session_validator_service.get_feature_store_id_from_details(
-        test_snowflake_details
+        snowflake_feature_store.details
     )
     assert feature_store_id is not None
     assert feature_store_id == feature_store.id

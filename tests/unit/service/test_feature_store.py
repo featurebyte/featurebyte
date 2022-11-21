@@ -2,7 +2,6 @@
 Test feature store class
 """
 import pytest
-from bson import ObjectId
 
 from featurebyte import SnowflakeDetails, SourceType
 from featurebyte.exception import DocumentNotFoundError
@@ -23,14 +22,14 @@ def get_test_snowflake_details():
 
 
 @pytest.mark.asyncio
-async def test_delete_feature_store(feature_store_service, test_snowflake_details, get_credential):
+async def test_delete_feature_store(feature_store_service, snowflake_feature_store, get_credential):
     """
     Tests the delete feature store service endpoint.
     """
     data = FeatureStoreCreate(
         name="test_feature_store",
         type=SourceType.SNOWFLAKE,
-        details=test_snowflake_details,
+        details=snowflake_feature_store.details,
     )
     doc_created = await feature_store_service.create_document(
         data=data, get_credential=get_credential
