@@ -97,10 +97,13 @@ def get_noop_session_validator_fixture():
 
 
 @pytest.mark.asyncio
-async def test_validate_feature_store_exists(session_validator_service, snowflake_feature_store):
+async def test_validate_feature_store_exists(
+    session_validator_service, snowflake_feature_store, snowflake_connector, snowflake_execute_query
+):
     """
     Test validate_feature_store_exists function
     """
+    _ = snowflake_connector, snowflake_execute_query
     with pytest.raises(NoFeatureStorePresentError):
         await session_validator_service.validate_feature_store_exists(
             snowflake_feature_store.details
