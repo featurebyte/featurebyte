@@ -104,6 +104,7 @@ class FeatureStoreController(
         except Exception:  # pylint: disable=broad-except
             # Delete the document if there's an error so that we don't end up in an erroneous state.
             await self.service.delete_feature_store(document.id)
+            raise
         return document
 
     async def list_databases(
