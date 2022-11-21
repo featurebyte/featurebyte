@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from featurebyte import FeatureStore, SnowflakeDetails, SourceType
+from featurebyte import FeatureStore, SourceType
 from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.models.base import PydanticObjectId

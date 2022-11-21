@@ -164,7 +164,6 @@ class FeatureStoreService(
         Returns
         -------
         int
-            the number of items deleted
         """
         return await self.persistent.delete_one(
             self.collection_name, query_filter={"_id": feature_store_id}, user_id=self.user.id
