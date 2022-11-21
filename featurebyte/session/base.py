@@ -297,7 +297,7 @@ class BaseSession(BaseModel):
             return {"version": MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND}
         return {
             "version": int(results["WORKING_SCHEMA_VERSION"][0]),
-            "feature_store_id": str(results["FEATURE_STORE_ID"][0]),
+            "feature_store_id": results["FEATURE_STORE_ID"][0],
         }
 
     async def execute_query(self, query: str, timeout: float = 600) -> pd.DataFrame | None:
