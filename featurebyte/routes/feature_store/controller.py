@@ -79,25 +79,31 @@ class FeatureStoreController(
 
         # Validate that feature store ID isn't claimed by the working schema.
         # If the feature store ID is already in use, this will throw an error.
-        await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
-            feature_store_name=data.name,
-            session_type=data.type,
-            details=data.details,
-            get_credential=get_credential,
-            users_feature_store_id=document.id,
-        )
+        try:
+            await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
+                feature_store_name=data.name,
+                session_type=data.type,
+                details=data.details,
+                get_credential=get_credential,
+                users_feature_store_id=document.id,
+            )
 
-        # Retrieve a session for initializing
-        session = await self.session_manager_service.get_feature_store_session(
-            feature_store=FeatureStoreModel(name=data.name, type=data.type, details=data.details),
-            get_credential=get_credential,
-        )
+            # Retrieve a session for initializing
+            session = await self.session_manager_service.get_feature_store_session(
+                feature_store=FeatureStoreModel(
+                    name=data.name, type=data.type, details=data.details
+                ),
+                get_credential=get_credential,
+            )
 
-        # If no error thrown from creating, try to create the metadata table with the feature store ID.
-        metadata_schema_initializer = MetadataSchemaInitializer(session)
-        await metadata_schema_initializer.create_metadata_table_with_feature_store_id(
-            str(document.id)
-        )
+            # If no error thrown from creating, try to create the metadata table with the feature store ID.
+            metadata_schema_initializer = MetadataSchemaInitializer(session)
+            await metadata_schema_initializer.create_metadata_table_with_feature_store_id(
+                str(document.id)
+            )
+        except Exception:  # pylint: disable=broad-except
+            # Delete the document if there's an error so that we don't end up in an erroneous state.
+            await self.service.delete_feature_store(document.id)
         return document
 
     async def list_databases(
