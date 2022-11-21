@@ -3,22 +3,9 @@ Test feature store class
 """
 import pytest
 
-from featurebyte import SnowflakeDetails, SourceType
+from featurebyte import SourceType
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.schema.feature_store import FeatureStoreCreate
-
-
-@pytest.fixture(name="test_snowflake_details")
-def get_test_snowflake_details():
-    """
-    Get test snowflake details
-    """
-    return SnowflakeDetails(
-        account="sf_details_account",
-        warehouse="sf_details_warehouse",
-        database="sf_details_database",
-        sf_schema="sf_details_schema",
-    )
 
 
 @pytest.mark.asyncio

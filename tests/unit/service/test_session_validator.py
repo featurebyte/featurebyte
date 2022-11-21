@@ -21,19 +21,6 @@ def get_session_validator_service_fixture(persistent):
     return SessionValidatorService(user=user, persistent=persistent)
 
 
-@pytest.fixture(name="test_snowflake_details")
-def get_test_snowflake_details():
-    """
-    Get test snowflake details
-    """
-    return SnowflakeDetails(
-        account="sf_details_account",
-        warehouse="sf_details_warehouse",
-        database="sf_details_database",
-        sf_schema="sf_details_schema",
-    )
-
-
 @pytest.mark.asyncio
 async def test_get_feature_store_id_from_details(
     session_validator_service, snowflake_feature_store, snowflake_connector, snowflake_execute_query
@@ -110,18 +97,22 @@ def get_noop_session_validator_fixture():
 
 
 @pytest.mark.asyncio
-async def test_validate_feature_store_exists(session_validator_service, test_snowflake_details):
+async def test_validate_feature_store_exists(session_validator_service, snowflake_feature_store):
     """
     Test validate_feature_store_exists function
     """
     with pytest.raises(NoFeatureStorePresentError):
-        await session_validator_service.validate_feature_store_exists(test_snowflake_details)
+        await session_validator_service.validate_feature_store_exists(
+            snowflake_feature_store.details
+        )
 
     # Write details to persistent layer
     feature_store = FeatureStore.create(
-        name="test_feature_name", source_type=SourceType.SNOWFLAKE, details=test_snowflake_details
+        name=snowflake_feature_store.name,
+        source_type=SourceType.SNOWFLAKE,
+        details=snowflake_feature_store.details,
     )
     assert isinstance(feature_store, FeatureStore)
 
     # Calling validate now shouldn't throw an error
-    await session_validator_service.validate_feature_store_exists(test_snowflake_details)
+    await session_validator_service.validate_feature_store_exists(snowflake_feature_store.details)
