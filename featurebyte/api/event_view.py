@@ -97,7 +97,7 @@ class EventView(View):
     _series_class = EventViewColumn
 
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
-    event_id_column: str = Field(allow_mutation=False)
+    event_id_column: Optional[str] = Field(allow_mutation=False)
 
     @property
     def timestamp_column(self) -> str:
