@@ -736,6 +736,20 @@ def mocked_tile_cache_fixture():
         yield mocked_tile_cache
 
 
+@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse", autouse=True)
+def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
+    """
+    Set a no-op validator by default.
+
+    Functions that want to test the validation should inject an actual instance of the session validator.
+    """
+    with mock.patch(
+        "featurebyte.service.session_validator.SessionValidatorService.validate_feature_store_id_not_used_in_warehouse"
+    ) as mocked_exists:
+        mocked_exists.return_value = None
+        yield
+
+
 @pytest.fixture(name="noop_session_validator", autouse=True)
 def get_noop_session_validator_fixture():
     """
