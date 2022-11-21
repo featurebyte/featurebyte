@@ -158,7 +158,7 @@ class FeatureStoreService(
 
         Parameters
         ----------
-        feature_store_id: str
+        feature_store_id: PydanticObjectId
             the ID of the feature store that we want to delete
 
         Returns
