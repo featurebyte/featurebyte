@@ -20,7 +20,6 @@ class ExtendedFeatureModel(FeatureModel):
     ExtendedFeatureModel contains tile manager specific methods or properties
     """
 
-    is_default: Optional[bool] = Field(allow_mutation=False)
     feature_store: FeatureStoreModel
 
     @property

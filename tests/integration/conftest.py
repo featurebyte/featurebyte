@@ -507,7 +507,6 @@ async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_fea
             },
             "version": "v1",
             "readiness": FeatureReadiness.DRAFT,
-            "is_default": True,
             "online_enabled": False,
             "tabular_data_ids": [
                 ObjectId("626bccb9697a12204fb22ea3"),
