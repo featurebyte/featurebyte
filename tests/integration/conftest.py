@@ -58,6 +58,12 @@ def config_fixture():
     config_dict = {
         "credential": [
             {
+                "feature_store": "sf_featurestore",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": os.getenv("SNOWFLAKE_USER"),
+                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            },
+            {
                 "feature_store": "snowflake_featurestore",
                 "credential_type": "USERNAME_PASSWORD",
                 "username": os.getenv("SNOWFLAKE_USER"),
@@ -138,6 +144,19 @@ def mock_get_persistent_fixture(persistent):
     """
     with mock.patch("featurebyte.app.get_persistent") as mock_persistent:
         mock_persistent.return_value = persistent
+        yield
+
+
+@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse", autouse=True)
+def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
+    """
+    Set a no-op validator by default.
+    Functions that want to test the validation should inject an actual instance of the session validator.
+    """
+    with mock.patch(
+        "featurebyte.service.session_validator.SessionValidatorService.validate_feature_store_id_not_used_in_warehouse"
+    ) as mocked_exists:
+        mocked_exists.return_value = None
         yield
 
 

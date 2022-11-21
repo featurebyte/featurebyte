@@ -112,14 +112,30 @@ def assert_feature_preview_output_equal(actual, expected):
             assert actual[k] == expected[k]
 
 
+@pytest.fixture(name="mock_session_manager")
+def get_mocked_session_manager(snowflake_session):
+    with mock.patch(
+        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
+    ) as mocked_session:
+        mocked_session.return_value = snowflake_session
+        yield
+
+
 @mock.patch("featurebyte.service.feature_store.FeatureStoreService.list_columns")
 @mock.patch("featurebyte.app.get_persistent")
 def test_feature_list_saving_in_bad_state__feature_id_is_different(
-    mock_persistent, mock_list_columns, mongo_persistent, test_dir
+    mock_persistent,
+    mock_list_columns,
+    mongo_persistent,
+    test_dir,
+    config,
+    snowflake_feature_store,
+    mock_session_manager,
 ):
     """
     Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
     """
+    _ = snowflake_feature_store, mock_session_manager
     mock_persistent.return_value = mongo_persistent[0]
     client = Configurations().get_client()
     route_fixture_path_pairs = [
@@ -132,6 +148,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
         with open(f"{base_path}/{fixture_path}") as fhandle:
             payload = json.loads(fhandle.read())
             response = client.post(route, json=payload)
+            assert response.status_code == 201
 
             if route == "/event_data":
                 column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
