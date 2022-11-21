@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -46,6 +46,7 @@ class DeployService(BaseService):
         self,
         feature_id: ObjectId,
         feature_list: FeatureListModel,
+        get_credential: Any,
         document: Optional[FeatureModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
@@ -77,6 +78,7 @@ class DeployService(BaseService):
             document = await self.online_enable_service.update_feature(
                 feature_id=feature_id,
                 online_enabled=online_enabled,
+                get_credential=get_credential,
                 document=document,
                 return_document=True,
             )
@@ -147,6 +149,7 @@ class DeployService(BaseService):
         self,
         feature_list_id: ObjectId,
         deployed: bool,
+        get_credential: Any,
         document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
@@ -190,6 +193,7 @@ class DeployService(BaseService):
                     await self._update_feature(
                         feature_id=feature_id,
                         feature_list=feature_list,
+                        get_credential=get_credential,
                         return_document=False,
                     )
                 if return_document:

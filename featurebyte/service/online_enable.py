@@ -3,16 +3,21 @@ OnlineEnableService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
 
 
 class OnlineEnableService(BaseService):
@@ -20,6 +25,28 @@ class OnlineEnableService(BaseService):
     OnlineEnableService class is responsible for maintaining the feature & feature list structure
     of feature online enablement.
     """
+
+    @property
+    def session_manager_service(self) -> SessionManagerService:
+        """
+        SessionManagerService object
+
+        Returns
+        -------
+        SessionManagerService
+        """
+        return SessionManagerService(user=self.user, persistent=self.persistent)
+
+    @property
+    def feature_store_service(self) -> FeatureStoreService:
+        """
+        FeatureStoreService object
+
+        Returns
+        -------
+        FeatureStoreService
+        """
+        return FeatureStoreService(user=self.user, persistent=self.persistent)
 
     @classmethod
     def _extract_online_enabled_feature_ids(
@@ -107,10 +134,32 @@ class OnlineEnableService(BaseService):
             return_document=return_document,
         )
 
+    async def _update_data_warehouse(self, feature: FeatureModel, get_credential: Any) -> None:
+        """
+        Update data warehouse registry upon changes to online enable status, such as enabling or
+        disabling scheduled tile and feature jobs
+        """
+        extended_feature_model = ExtendedFeatureModel(**feature.dict())
+
+        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
+        feature_store_model = await self.feature_store_service.get_document(
+            document_id=feature.tabular_source.feature_store_id
+        )
+        session = await self.session_manager_service.get_feature_store_session(
+            feature_store_model, get_credential
+        )
+        feature_manager = FeatureManagerSnowflake(session)
+
+        if feature.online_enabled:
+            await feature_manager.online_enable(online_feature_spec)
+        else:
+            await feature_manager.online_disable(online_feature_spec)
+
     async def update_feature(
         self,
         feature_id: ObjectId,
         online_enabled: bool,
+        get_credential: Any,
         document: Optional[FeatureModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
@@ -153,6 +202,7 @@ class OnlineEnableService(BaseService):
                         feature=feature,
                         return_document=False,
                     )
+                await self._update_data_warehouse(feature=feature, get_credential=get_credential)
                 if return_document:
                     return await self.get_document(DocServiceName.FEATURE, feature_id)
         return self.conditional_return(document=document, condition=return_document)
