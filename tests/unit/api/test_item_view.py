@@ -2,6 +2,7 @@
 Unit test for ItemView class
 """
 import textwrap
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -152,6 +153,19 @@ def test_from_item_data__auto_join_columns(
         """
     ).strip()
     assert preview_sql == expected_sql
+
+
+def test_from_item_data__event_data_without_event_id_column(snowflake_item_data):
+    """
+    Test attempting to create ItemView using an old EventData without event_id_column
+
+    Can probably be removed once DEV-556 is resolved
+    """
+    with patch("featurebyte.api.item_view.EventView") as patched_event_view_cls:
+        patched_event_view_cls.from_event_data.return_value = Mock(event_id_column=None)
+        with pytest.raises(ValueError) as exc:
+            ItemView.from_item_data(snowflake_item_data)
+        assert str(exc.value) == "EventData without event_id_column is not supported"
 
 
 def test_has_event_timestamp_column(snowflake_item_view):
