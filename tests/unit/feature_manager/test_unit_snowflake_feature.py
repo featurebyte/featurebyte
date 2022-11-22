@@ -24,7 +24,6 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     """
     return ExtendedFeatureModel(
         **mock_snowflake_feature.dict(exclude={"version": True}),
-        feature_store=mock_snowflake_feature.feature_store,
         version=get_version(),
     )
 

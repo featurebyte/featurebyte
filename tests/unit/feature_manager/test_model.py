@@ -5,11 +5,10 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel, TileSpec
 from featurebyte.models.base import VersionIdentifier
 
 
-def test_extended_feature_model__float_feature(float_feature, snowflake_feature_store):
+def test_extended_feature_model__float_feature(float_feature):
     """Test ExtendedFeatureModel has correct tile_specs"""
     model = ExtendedFeatureModel(
         **float_feature.dict(exclude={"version": True}),
-        feature_store=snowflake_feature_store,
         version=VersionIdentifier(name=get_version()),
     )
     aggregation_id = "8b878f7930698eb4e97cf8e756044109f968dc7a"
@@ -66,13 +65,10 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
     assert model.tile_specs == expected_tile_specs
 
 
-def test_extended_feature_model__agg_per_category_feature(
-    agg_per_category_feature, snowflake_feature_store
-):
+def test_extended_feature_model__agg_per_category_feature(agg_per_category_feature):
     """Test ExtendedFeatureModel has correct tile_specs for category groupby feature"""
     model = ExtendedFeatureModel(
         **agg_per_category_feature.dict(exclude={"version": True}),
-        feature_store=snowflake_feature_store,
         version=VersionIdentifier(name=get_version()),
     )
     aggregation_id = "152129a9b37bdd83ab6282c0e2118e277b272328"

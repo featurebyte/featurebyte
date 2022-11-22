@@ -7,10 +7,10 @@ from typing import List, Optional
 
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
@@ -20,8 +20,16 @@ class ExtendedFeatureModel(FeatureModel):
     ExtendedFeatureModel contains tile manager specific methods or properties
     """
 
-    is_default: Optional[bool] = Field(allow_mutation=False)
-    feature_store: FeatureStoreModel
+    @property
+    def feature_store_type(self) -> SourceType:
+        """
+        Type of the FeatureStore
+
+        Returns
+        -------
+        SourceType
+        """
+        return self.graph.get_input_node(self.node.name).parameters.feature_store_details.type
 
     @property
     def tile_specs(self) -> list[TileSpec]:
@@ -32,7 +40,7 @@ class ExtendedFeatureModel(FeatureModel):
         -------
         list[TileSpec]
         """
-        interpreter = GraphInterpreter(self.graph, self.feature_store.type)
+        interpreter = GraphInterpreter(self.graph, self.feature_store_type)
         node = self.graph.get_node_by_name(self.node_name)
         tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
         out = []
