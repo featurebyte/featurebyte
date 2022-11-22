@@ -39,7 +39,8 @@ async def check_states_after_online_enabled_change(
 @pytest.fixture(name="data_warehouse_related_mocks")
 def data_warehouse_related_mocks_fixture():
     """
-    Patched SessionManagerService.get_feature_store_session
+    Patches required to bypass actual data warehouse updates and allow inspecting expected calls to
+    FeatureManager
     """
     mocks = {}
     with (
