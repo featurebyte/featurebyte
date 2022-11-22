@@ -188,7 +188,7 @@ def nested_output_graph_fixture(input_node_params):
 @pytest.fixture(name="deep_nested_graph")
 def deep_nested_graph_fixture(input_node_params):
     """
-    Nested graph (graph node located at inner part of the graph)
+    Deep nested graph
     [[[[input]] -> [project]] -> [add]]
     """
     graph = QueryGraph()

@@ -357,7 +357,7 @@ class QueryGraph(FeatureByteBaseModel):
             updated query graph with the node name mapping between input query graph & output query graph
         """
         node_name_map: Dict[str, str] = {}
-        for node in self.iterate_sorted_nodes(graph=graph):
+        for node in graph.iterate_sorted_nodes():
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
                 for input_node_name in graph.backward_edges_map[node.name]
@@ -391,24 +391,18 @@ class QueryGraph(FeatureByteBaseModel):
             if node.type == node_type:
                 yield node
 
-    @classmethod
-    def iterate_sorted_nodes(cls, graph: "QueryGraph") -> Iterator[Node]:
+    def iterate_sorted_nodes(self) -> Iterator[Node]:
         """
         Iterate all nodes in topological sorted order
-
-        Parameters
-        ----------
-        graph: QueryGraph
-            Query graph object
 
         Yields
         ------
         Node
             Topologically sorted query graph nodes
         """
-        sorted_node_names = topological_sort(list(graph.nodes_map), graph.edges_map)
+        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
         for node_name in sorted_node_names:
-            yield graph.nodes_map[node_name]
+            yield self.nodes_map[node_name]
 
     def _prune(
         self,
@@ -605,7 +599,7 @@ class QueryGraph(FeatureByteBaseModel):
         QueryGraph
         """
         output = QueryGraph()
-        for _node in self.iterate_sorted_nodes(graph=self):
+        for _node in self.iterate_sorted_nodes():
             input_node_names = self.backward_edges_map[_node.name]
             node = replace_nodes_map.get(_node.name, self.nodes_map[_node.name])
             input_nodes = [
@@ -699,16 +693,14 @@ class QueryGraph(FeatureByteBaseModel):
         QueryGraph
         """
         flattened_graph = QueryGraph()
-        node_name_map: Dict[
-            str, str
-        ] = {}  # key: this-graph-node-name, value: flattened-graph-node-name
-        for node in self.iterate_sorted_nodes(graph=self):
+        # node_name_map: key(this-graph-node-name) => value(flattened-graph-node-name)
+        node_name_map: Dict[str, str] = {}
+        for node in self.iterate_sorted_nodes():
             if isinstance(node, BaseGraphNode):
                 nested_graph = node.parameters.graph.flatten()
-                nested_node_name_map: Dict[
-                    str, str
-                ] = {}  # key: nested-node-name, value: flattened-graph-node-name
-                for nested_node in self.iterate_sorted_nodes(graph=nested_graph):
+                # nested_node_name_map: key(nested-node-name) => value(flattened-graph-node-name)
+                nested_node_name_map: Dict[str, str] = {}
+                for nested_node in nested_graph.iterate_sorted_nodes():
                     input_nodes = [
                         flattened_graph.nodes_map[nested_node_name_map[nested_input_node_name]]
                         for nested_input_node_name in nested_graph.backward_edges_map[
