@@ -64,10 +64,6 @@ class FeatureStoreController(
         FeatureStoreModel
             Newly created feature store document
 
-        Raises
-        ------
-        Exception
-            re-raises exceptions thrown from functions called
         """
         # Validate whether the feature store trying to be created, collides with another feature store
         #
