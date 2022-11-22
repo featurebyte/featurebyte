@@ -107,6 +107,8 @@ class FeatureListController(
             FeatureList ID
         data: FeatureListUpdate
             FeatureList update payload
+        get_credential: Any
+            Get credential handler function
 
         Returns
         -------

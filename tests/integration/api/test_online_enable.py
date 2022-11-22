@@ -38,7 +38,7 @@ async def test_online_enabled_features_have_scheduled_jobs(
     snowflake_session, online_enabled_feature_list
 ):
     """
-    Test online enabled features have scheduled job
+    Test online enabled features have scheduled jobs
     """
     feature = online_enabled_feature_list[online_enabled_feature_list.feature_names[0]]
     tile_specs = ExtendedFeatureModel(**feature.dict()).tile_specs

@@ -60,6 +60,8 @@ class DeployService(BaseService):
             Target Feature ID
         feature_list: FeatureListModel
             Updated FeatureList object (deployed status)
+        get_credential: Any
+            Get credential handler function
         document: Optional[FeatureListNamespaceModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
@@ -162,6 +164,8 @@ class DeployService(BaseService):
             Target feature list ID
         deployed: bool
             Target deployed status
+        get_credential: Any
+            Get credential handler function
         document: Optional[FeatureListModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool

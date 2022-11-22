@@ -138,6 +138,13 @@ class OnlineEnableService(BaseService):
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
         disabling scheduled tile and feature jobs
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Updated Feature object
+        get_credential: Any
+            Get credential handler function
         """
         extended_feature_model = ExtendedFeatureModel(**feature.dict())
 
@@ -172,6 +179,8 @@ class OnlineEnableService(BaseService):
             Target feature ID
         online_enabled: bool
             Value to update the feature online_enabled status
+        get_credential: Any
+            Get credential handler function
         document: Optional[FeatureModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
