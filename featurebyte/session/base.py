@@ -685,20 +685,12 @@ class MetadataSchemaInitializer:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
         """
-        create_metadata_table_query = (
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
-            "WORKING_SCHEMA_VERSION INT, "
-            "FEATURE_STORE_ID VARCHAR, "
-            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
-            ") AS "
-            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            "NULL AS FEATURE_STORE_ID, "
-            "SYSDATE() AS CREATED_AT;"
-        )
-        await self.session.execute_query(create_metadata_table_query)
+        await self.create_metadata_table_with_feature_store_id()
         logger.debug("Creating METADATA_SCHEMA table")
 
-    async def create_metadata_table_with_feature_store_id(self, feature_store_id: str) -> None:
+    async def create_metadata_table_with_feature_store_id(
+        self, feature_store_id: str = None
+    ) -> None:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
 
@@ -707,6 +699,7 @@ class MetadataSchemaInitializer:
         feature_store_id: str
             feature store ID to store in the metadata table
         """
+        feature_store_id_to_use = f"'{feature_store_id}'" if feature_store_id else "NULL"
         create_metadata_table_query = (
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
             "WORKING_SCHEMA_VERSION INT, "
@@ -714,7 +707,7 @@ class MetadataSchemaInitializer:
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            f"'{feature_store_id}' AS FEATURE_STORE_ID, "
+            f"{feature_store_id_to_use} AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         )
         await self.session.execute_query(create_metadata_table_query)

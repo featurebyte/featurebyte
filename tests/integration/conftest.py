@@ -58,12 +58,6 @@ def config_fixture():
     config_dict = {
         "credential": [
             {
-                "feature_store": "sf_featurestore",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": os.getenv("SNOWFLAKE_USER"),
-                "password": os.getenv("SNOWFLAKE_PASSWORD"),
-            },
-            {
                 "feature_store": "snowflake_featurestore",
                 "credential_type": "USERNAME_PASSWORD",
                 "username": os.getenv("SNOWFLAKE_USER"),
