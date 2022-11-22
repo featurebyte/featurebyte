@@ -46,16 +46,15 @@ Aggregation per category can also be defined. As an example, a feature can be de
 ### Feature Transforms
 Features can be transformed in a similar way as columns in a View.
 
-The following transforms are particularly useful to transform features resulting from an aggregation per category where the feature instance is a dictionary:
+Additional transforms are supported to transform features resulting from an aggregation per category where the feature instance is a dictionary:
 
 * `most_frequent`: Most frequent key
 * `unique_count`: Unique number keys
 * `get`: Value for a given key
-* `keys`: list of keys
 * `entropy`: Entropy over the keys
 * `cosine_similarity`: Cosine similarity between two Feature dictionaries
 
-Examples of features resulting from a Feature transform include:
+Examples of features resulting from those Feature transforms include:
 
 * most common weekday in customer visits the past 12 weeks
 * count of unique items purchased by customer the past 4 weeks
@@ -63,7 +62,7 @@ Examples of features resulting from a Feature transform include:
 * amount spent by customer in icecream the past 4 weeks
 * weekdays entropy of the past 12 weeks customer visits
 
-A Feature can be also easily derived from multiple features when their entities are Child-Parent relationship or when the GroupBy column of the second feature is a categorical attribute of the entity of the first feature. Examples of such features include:
+A Feature can be derived from multiple features when their entities are Child-Parent relationship or when the GroupBy column of the second feature is a categorical attribute of the entity of the first feature. Examples of such features include:
 
 * Similarity of customer past week basket with her past 12 weeks basket
 * Similarity of customer item basket with basket of customers in the same city the past 2 weeks

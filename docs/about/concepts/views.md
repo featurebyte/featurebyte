@@ -80,16 +80,6 @@ The following transforms are available for a datetime column:
   * `second`
 * Addition with a time interval to produce a new datetime column
 
-##### Dictionary
-The following transforms are available for a dictionary column:
-
-* `entropy`: Entropy over the keys
-* `most_frequent`: Most frequent key
-* `unique_count`: Unique number keys
-* `get`: Value for a given key
-* `keys`: list of keys
-* `cosine_similarity`: Cosine similarity between two count columns
-
 ### Lags
 Lags can extract the previous value for a given Entity. This allows the computation of important features such as features based on inter event time and distance from a previous point.
 
