@@ -5,6 +5,7 @@ nav:
       - Concepts:
           - Data Sources: about/concepts/data_sources.md
           - Entities: about/concepts/entities.md
+          - Data Semantics: about/concepts/data_semantics.md
           - Data Cleaning: about/concepts/data_cleaning.md
           - Views: about/concepts/views.md
           - Features: about/concepts/features.md
