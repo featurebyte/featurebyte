@@ -8,9 +8,9 @@ from featurebyte.api.item_view import ItemView
     ["snowflake"],
     indirect=True,
 )
-def test_item_view_operations(item_data, expected_joined_event_item_dataframe):
+def test_expected_rows_and_columns(item_data, expected_joined_event_item_dataframe):
     """
-    Test ItemView operations
+    Test ItemView rows and columns are correct
     """
     item_view = ItemView.from_item_data(item_data)
     df_preview = item_view.preview(limit=50)
@@ -31,3 +31,14 @@ def test_item_view_operations(item_data, expected_joined_event_item_dataframe):
             mask &= expected_joined_event_item_dataframe[col] == row[col]
         matched = expected_joined_event_item_dataframe[mask]
         assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
+
+
+def test_view_operations(item_data):
+    """
+    Test ItemView operations
+    """
+    item_view = ItemView.from_item_data(item_data)
+    item_view["item_type_upper"] = item_view["item_type"].str.upper()
+    item_view_filtered = item_view[item_view["item_type_upper"] == "ITEM_42"]
+    df = item_view_filtered.preview()
+    assert (df["item_type_upper"] == "ITEM_42").all()
