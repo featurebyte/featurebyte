@@ -1,7 +1,6 @@
 """
 Tests functions/methods in api_object.py
 """
-import datetime
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -15,13 +14,13 @@ from featurebyte.schema.task import TaskStatus
 
 
 @pytest.fixture(name="mock_configuration")
-def mock_configuration_fixture(request):
+def mock_configuration_fixture():
     """Mock configuration (page_size is parametrized)"""
 
     def fake_get(url, params):
         _ = url
-        page = params["page"]
-        page_size, total = request.param, 11
+        page = params.get("page", 1)
+        page_size, total = params.get("page_size", 10), 11
         data = [
             {
                 "_id": f"637b87ee8959fd0e36a0bc{i + (page - 1) * page_size:02d}",
@@ -175,3 +174,11 @@ def test_post_async_task__record_retrieval_exception(mock_client, route):
     """Test post async task (success)"""
     with pytest.raises(RecordRetrievalException):
         SavableApiObject.post_async_task(route=route, payload={})
+
+
+def test_api_object_repr(mock_configuration):
+    """Test ApiObject repr returns representation from info()"""
+    with patch.object(ApiObject, "info") as mock_info:
+        mock_info.return_value = "mock_info_result"
+        item = ApiObject.get("item_1")
+        assert repr(item) == repr("mock_info_result")

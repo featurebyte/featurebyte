@@ -589,3 +589,28 @@ def test_get_sql(float_feature):
         'SELECT\n  "agg_w86400_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
+
+
+def test_list_filter(saved_feature):
+    """Test filters in list"""
+    # test filter by data and entity
+    feature_list = Feature.list(data="sf_event_data")
+    assert feature_list.shape[0] == 1
+
+    feature_list = Feature.list(data="other_data")
+    assert feature_list.shape[0] == 0
+
+    feature_list = Feature.list(entity="customer")
+    assert feature_list.shape[0] == 1
+
+    feature_list = Feature.list(entity="other_entity")
+    assert feature_list.shape[0] == 0
+
+    feature_list = Feature.list(data="sf_event_data", entity="customer")
+    assert feature_list.shape[0] == 1
+
+    feature_list = Feature.list(data="sf_event_data", entity="other_entity")
+    assert feature_list.shape[0] == 0
+
+    feature_list = Feature.list(data="other_data", entity="customer")
+    assert feature_list.shape[0] == 0

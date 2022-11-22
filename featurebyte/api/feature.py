@@ -78,7 +78,9 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
                 feature_list.entities.apply(lambda entities: entity in entities)
             ]
         if data:
-            feature_list = feature_list[feature_list.data.apply(lambda data: entity in data)]
+            feature_list = feature_list[
+                feature_list.data.apply(lambda data_list: data in data_list)
+            ]
         return feature_list
 
     @classmethod

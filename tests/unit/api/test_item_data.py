@@ -356,3 +356,13 @@ def test_inherit_default_feature_job_setting(
         event_data_name="sf_event_data",
     )
     assert item_data.default_feature_job_setting == feature_job_setting
+
+
+def test_list_filter(saved_item_data):
+    """Test filters in list"""
+    # test filter by entity
+    feature_list = ItemData.list(entity="item")
+    assert feature_list.shape[0] == 1
+
+    feature_list = ItemData.list(entity="other_entity")
+    assert feature_list.shape[0] == 0
