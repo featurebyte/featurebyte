@@ -30,14 +30,6 @@ def features_fixture(event_data):
     for feature in features:
         feature.save()
 
-    flist1 = FeatureList(features[:1], name="My Feature List 1")  # AMOUNT_SUM_2h
-    flist2 = FeatureList(features[:], name="My Feature List 2")  # AMOUNT_SUM_2h, AMOUNT_SUM_24h
-    flist1.save()
-    flist2.save()
-    flist1.deploy(enable=True, make_production_ready=True)
-    flist2.deploy(enable=True, make_production_ready=True)
-    flist2.deploy(enable=False)
-
     return features
 
 
