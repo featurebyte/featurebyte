@@ -4,7 +4,7 @@ Unit test for ItemData class
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -144,6 +144,27 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table_item_
                 item_id_column="item_id_col",
                 event_data_name="sf_event_data",
             )
+
+
+def test_from_tabular_source__event_data_without_event_id_column(
+    snowflake_database_table_item_data,
+):
+    """
+    Test attempting to create ItemData using old EventData without event_id_column
+
+    Can probably be removed once DEV-556 is resolved
+    """
+    with patch("featurebyte.api.item_data.EventData") as patched_cls:
+        patched_cls.get.return_value = Mock(event_id_column=None)
+        with pytest.raises(ValueError) as exc:
+            _ = ItemData.from_tabular_source(
+                tabular_source=snowflake_database_table_item_data,
+                name="sf_item_data",
+                event_id_column="event_id_col",
+                item_id_column="item_id_col",
+                event_data_name="sf_event_data",
+            )
+        assert str(exc.value) == "EventData without event_id_column is not supported"
 
 
 def test_deserialization(

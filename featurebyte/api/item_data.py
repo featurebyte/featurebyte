@@ -80,8 +80,16 @@ class ItemData(ItemDataModel, DataApiObject):
         Returns
         -------
         EventData
+
+        Raises
+        ------
+        ValueError
+            If the associated EventData does not have event_id_column defined
         """
-        event_data_id = EventData.get(event_data_name).id
+        event_data = EventData.get(event_data_name)
+        if event_data.event_id_column is None:
+            raise ValueError("EventData without event_id_column is not supported")
+        event_data_id = event_data.id
         return super().create(
             tabular_source=tabular_source,
             name=name,
