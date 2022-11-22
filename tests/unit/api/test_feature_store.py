@@ -3,8 +3,10 @@ Unit test for DatabaseSource
 """
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 import pytest_asyncio
+from pandas.testing import assert_frame_equal
 
 from featurebyte import SnowflakeDetails
 from featurebyte.api.database_table import DatabaseTable
@@ -142,7 +144,17 @@ async def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_ge
     )
 
     # test list feature store
-    assert FeatureStore.list() == ["sf_featurestore"] == [snowflake_feature_store.name]
+    feature_stores = FeatureStore.list()
+    assert_frame_equal(
+        feature_stores,
+        pd.DataFrame(
+            {
+                "name": [snowflake_feature_store.name],
+                "type": ["snowflake"],
+                "created_at": [snowflake_feature_store.created_at],
+            }
+        ),
+    )
     yield snowflake_feature_store
 
 

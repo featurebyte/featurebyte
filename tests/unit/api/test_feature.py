@@ -3,12 +3,14 @@ Unit test for Feature & FeatureList classes
 """
 from datetime import datetime
 
+import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from pandas.testing import assert_frame_equal
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import Feature
+from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
@@ -247,7 +249,22 @@ def saved_feature_fixture(
 
     # test list features
     assert float_feature.name == "sum_1d"
-    assert Feature.list() == ["sum_1d"]
+    float_feature_namespace = FeatureNamespace.get(float_feature.name)
+    feature_list = Feature.list()
+    assert_frame_equal(
+        feature_list,
+        pd.DataFrame(
+            {
+                "name": [float_feature_namespace.name],
+                "dtype": [float_feature_namespace.dtype],
+                "readiness": [float_feature_namespace.readiness],
+                "data": [["sf_event_data"]],
+                "entities": [["customer"]],
+                "created_at": [float_feature_namespace.created_at],
+            }
+        ),
+    )
+
     return float_feature
 
 

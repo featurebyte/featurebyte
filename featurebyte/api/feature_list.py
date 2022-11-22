@@ -477,8 +477,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         return self.readiness_distribution.derive_production_ready_fraction()
 
     @classmethod
-    def list(cls) -> List[str]:
-        return FeatureListNamespace.list()
+    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        return FeatureListNamespace.list(*args, **kwargs)
 
     @typechecked
     def get_historical_features_sql(

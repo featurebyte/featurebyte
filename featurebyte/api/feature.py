@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import time
 from http import HTTPStatus
@@ -13,6 +13,8 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.data import DataApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.config import Configurations
@@ -43,6 +45,66 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
     # class variables
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
+    _list_schema = FeatureNamespaceModel
+    _list_fields = ["name", "dtype", "readiness", "data", "entities", "created_at"]
+
+    @classmethod
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List the object name store at the persistent
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of objects
+        """
+        feature_list = super().list(include_id=include_id)
+        if entity:
+            feature_list = feature_list[
+                feature_list.entities.apply(lambda entities: entity in entities)
+            ]
+        if data:
+            feature_list = feature_list[feature_list.data.apply(lambda data: entity in data)]
+        return feature_list
+
+    @classmethod
+    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
+        # populate entity names
+        entity_list = Entity.list(include_id=True)
+        if entity_list.shape[0] > 0:
+            entity_list.index = entity_list.id
+            entity_map = entity_list["name"].to_dict()
+            item_list["entities"] = item_list["entity_ids"].apply(
+                lambda entity_ids: [entity_map.get(i) for i in entity_ids]
+            )
+        else:
+            item_list["entities"] = item_list["entity_ids"].apply(lambda _: [])
+
+        # populate tabular data names
+        data_list = DataApiObject.list(include_id=True)
+        if data_list.shape[0] > 0:
+            data_list.index = data_list.id
+            data_map = data_list["name"].to_dict()
+            item_list["data"] = item_list["tabular_data_ids"].apply(
+                lambda tabular_data_ids: [data_map.get(i) for i in tabular_data_ids]
+            )
+        else:
+            item_list["data"] = item_list["tabular_data_ids"].apply(lambda _: [])
+        return item_list
 
 
 class Feature(
@@ -84,8 +146,8 @@ class Feature(
         return values
 
     @classmethod
-    def list(cls) -> List[str]:
-        return FeatureNamespace.list()
+    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        return FeatureNamespace.list(*args, **kwargs)
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:

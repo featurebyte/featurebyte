@@ -25,6 +25,8 @@ class Entity(EntityModel, SavableApiObject):
     # class variables
     _route = "/entity"
     _update_schema_class = EntityUpdate
+    _list_schema = EntityModel
+    _list_fields = ["name", "serving_names", "created_at"]
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = EntityCreate(serving_name=self.serving_names[0], **self.json_dict())

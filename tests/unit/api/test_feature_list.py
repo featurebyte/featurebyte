@@ -6,9 +6,15 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from freezegun import freeze_time
+from pandas.testing import assert_frame_equal
 
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
+from featurebyte.api.feature_list import (
+    BaseFeatureGroup,
+    FeatureGroup,
+    FeatureList,
+    FeatureListNamespace,
+)
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
@@ -536,7 +542,17 @@ def test_get_feature_list(saved_feature_list):
 
 def test_list(saved_feature_list):
     """Test listing feature list"""
-    assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]
+    feature_lists = FeatureList.list()
+    saved_feature_list_namespace = FeatureListNamespace.get(saved_feature_list.name)
+    assert_frame_equal(
+        feature_lists,
+        pd.DataFrame(
+            {
+                "name": [saved_feature_list_namespace.name],
+                "created_at": [saved_feature_list_namespace.created_at],
+            }
+        ),
+    )
 
 
 def test_get_historical_feature_sql(saved_feature_list):

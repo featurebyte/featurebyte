@@ -1,10 +1,13 @@
 """
 Tests functions/methods in api_object.py
 """
+import datetime
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
+import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
@@ -20,7 +23,11 @@ def mock_configuration_fixture(request):
         page = params["page"]
         page_size, total = request.param, 11
         data = [
-            {"name": f"item_{i + (page - 1) * page_size}"}
+            {
+                "_id": f"637b87ee8959fd0e36a0bc{i + (page - 1) * page_size:02d}",
+                "name": f"item_{i + (page - 1) * page_size}",
+                "created_at": "2022-11-21T14:00:49.255000",
+            }
             for i in range(page_size)
             if (i + (page - 1) * page_size) < total
         ]
@@ -40,7 +47,15 @@ def mock_configuration_fixture(request):
 def test_list(mock_configuration):
     """Test pagination list logic"""
     output = ApiObject.list()
-    assert output == [f"item_{i}" for i in range(11)]
+    assert_frame_equal(
+        output,
+        pd.DataFrame(
+            {
+                "name": [f"item_{i}" for i in range(11)],
+                "created_at": pd.to_datetime(["2022-11-21T14:00:49.255000"] * 11),
+            }
+        ),
+    )
 
 
 @pytest.fixture(name="mock_client")

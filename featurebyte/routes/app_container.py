@@ -18,6 +18,7 @@ from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_data.controller import ItemDataController
 from featurebyte.routes.scd_data.controller import SCDDataController
 from featurebyte.routes.semantic.controller import SemanticController
+from featurebyte.routes.tabular_data.controller import TabularDataController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.data_update import DataUpdateService
@@ -42,6 +43,7 @@ from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
+from featurebyte.service.tabular_data import DataService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
@@ -123,6 +125,10 @@ app_container_config = {
         {
             "name": "semantic_service",
             "clazz": SemanticService,
+        },
+        {
+            "name": "tabular_data_service",
+            "clazz": DataService,
         },
         {
             "name": "version_service",
@@ -251,6 +257,13 @@ app_container_config = {
             "name": "semantic_controller",
             "clazz": SemanticController,
             "depends": ["semantic_service", "semantic_relationship_service"],
+        },
+        {
+            "name": "tabular_data_controller",
+            "clazz": TabularDataController,
+            "depends": [
+                "tabular_data_service",
+            ],
         },
     ],
 }

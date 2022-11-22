@@ -865,3 +865,71 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
+
+    def test_tabular_data_list_200(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test tabular_data list (success, multiple)"""
+        # test with default params
+        test_api_client, _ = test_api_client_persistent
+        _ = create_multiple_success_responses
+        response = test_api_client.get("/tabular_data")
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        expected_paginated_info = {"page": 1, "page_size": 10, "total": 3}
+
+        assert len(response_dict["data"]) == 3
+        assert response_dict.items() >= expected_paginated_info.items()
+        expected_names = [
+            payload["name"]
+            for payload in self.multiple_success_payload_generator(api_client=test_api_client)
+        ]
+        response_data_names = [elem["name"] for elem in response_dict["data"]]
+        expected_names = list(reversed(expected_names))
+        assert response_data_names == expected_names
+
+        # test with pagination parameters (page 1)
+        response_with_params = test_api_client.get(
+            "/tabular_data",
+            params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 1},
+        )
+        assert response_with_params.status_code == HTTPStatus.OK
+        response_with_params_dict = response_with_params.json()
+        expected_paginated_info = {"page": 1, "page_size": 2, "total": 3}
+
+        assert response_with_params_dict.items() >= expected_paginated_info.items()
+        response_with_params_names = [elem["name"] for elem in response_with_params_dict["data"]]
+        expected_sorted_names = sorted(expected_names)
+        assert response_with_params_names == expected_sorted_names[:2]
+
+        # test with pagination parameters (page 2)
+        response_with_params = test_api_client.get(
+            "/tabular_data",
+            params={"sort_dir": "asc", "sort_by": "name", "page_size": 2, "page": 2},
+        )
+        assert response_with_params.status_code == HTTPStatus.OK
+        response_with_params_dict = response_with_params.json()
+        assert response_with_params_dict.items() >= {**expected_paginated_info, "page": 2}.items()
+        response_with_params_names = [elem["name"] for elem in response_with_params_dict["data"]]
+        assert response_with_params_names == expected_sorted_names[-1:]
+
+        # test sort_by with some random unknown column name
+        # should not throw error, just that the sort_by param has no real effect since column not found
+        response_with_params = test_api_client.get(
+            "/tabular_data", params={"sort_by": "random_name"}
+        )
+        assert response_with_params.status_code == HTTPStatus.OK
+
+        # test name parameter
+        response_with_params = test_api_client.get(
+            "/tabular_data", params={"name": expected_names[1]}
+        )
+        assert response_with_params.status_code == HTTPStatus.OK
+        response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
+        assert response_with_params_names == [expected_names[1]]
+
+        # test bench_size_boundary
+        response_page_size_boundary = test_api_client.get(
+            "/tabular_data", params={"page_size": 100}
+        )
+        assert response_page_size_boundary.status_code == HTTPStatus.OK
