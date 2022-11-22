@@ -79,12 +79,12 @@ class FeatureStoreController(
         #                                    | if not, error                |
         #        N            |      Y       | if matches in DWH, no error  | write
         #                                    | if not, error                |
-        # Create the new feature store. If one already exists, we'll throw an error here.
-        document = await self.service.create_document(data)
 
         # Validate that feature store ID isn't claimed by the working schema.
         # If the feature store ID is already in use, this will throw an error.
-        try:
+        async with self.service.persistent.start_transaction():
+            # Create the new feature store. If one already exists, we'll throw an error here.
+            document = await self.service.create_document(data)
             await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
                 feature_store_name=data.name,
                 session_type=data.type,
@@ -92,7 +92,6 @@ class FeatureStoreController(
                 get_credential=get_credential,
                 users_feature_store_id=document.id,
             )
-
             # Retrieve a session for initializing
             session = await self.session_manager_service.get_feature_store_session(
                 feature_store=FeatureStoreModel(
@@ -100,16 +99,12 @@ class FeatureStoreController(
                 ),
                 get_credential=get_credential,
             )
-
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
             await metadata_schema_initializer.create_metadata_table_with_feature_store_id(
                 str(document.id)
             )
-        except Exception:  # pylint: disable=broad-except
-            # Delete the document if there's an error so that we don't end up in an erroneous state.
-            await self.service.delete_feature_store(document.id)
-            raise
+
         return document
 
     async def list_databases(
