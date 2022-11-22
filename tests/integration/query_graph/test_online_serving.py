@@ -29,7 +29,6 @@ def features_fixture(event_data):
     features = [feature_group["AMOUNT_SUM_2h"], feature_group["AMOUNT_SUM_24h"]]
     for feature in features:
         feature.save()
-
     return features
 
 

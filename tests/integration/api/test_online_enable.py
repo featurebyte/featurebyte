@@ -16,7 +16,11 @@ def online_enabled_feature_list_fixture(event_data):
     """
     event_view = EventView.from_event_data(event_data)
     event_view["AMOUNT"] = event_view["AMOUNT"] + 12345
-    feature_group = event_view.groupby("USER ID").aggregate(
+
+    # Aggregate using a different entity than "USER ID". Otherwise, it will be creating a feature
+    # with the same online store table as the feature used in
+    # tests/integration/query_graph/test_online_serving.py. That will cause that test to fail.
+    feature_group = event_view.groupby("PRODUCT_ACTION").aggregate(
         "AMOUNT",
         method="sum",
         windows=["24h"],
@@ -25,6 +29,7 @@ def online_enabled_feature_list_fixture(event_data):
     features = [feature_group["FEATURE_FOR_ONLINE_ENABLE_TESTING"]]
     for feature in features:
         feature.save()
+
     feature_list = FeatureList(
         features, name="My Feature List (tests/integration/api/test_feature.py)"
     )

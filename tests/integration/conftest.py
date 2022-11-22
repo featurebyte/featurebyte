@@ -634,6 +634,16 @@ def user_entity_fixture():
     return entity
 
 
+@pytest.fixture(name="product_action_entity", scope="session")
+def product_action_entity_fixture():
+    """
+    Fixture for an Entity "ProductAction"
+    """
+    entity = Entity(name="ProductAction", serving_names=["PRODUCT_ACTION"])
+    entity.save()
+    return entity
+
+
 def create_transactions_event_data_from_feature_store(
     feature_store, database_name, schema_name, table_name, event_data_name
 ):
@@ -678,15 +688,22 @@ def create_transactions_event_data_from_feature_store(
         )
     )
     event_data["USER ID"].as_entity("User")
+    event_data["PRODUCT_ACTION"].as_entity("ProductAction")
     event_data.save()
     event_data = EventData.get(event_data_name)
     return event_data
 
 
 @pytest.fixture(name="snowflake_event_data", scope="session")
-def snowflake_event_data_fixture(snowflake_session, snowflake_feature_store, user_entity):
+def snowflake_event_data_fixture(
+    snowflake_session,
+    snowflake_feature_store,
+    user_entity,
+    product_action_entity,
+):
     """Fixture for an EventData in integration tests"""
     _ = user_entity
+    _ = product_action_entity
     event_data = create_transactions_event_data_from_feature_store(
         snowflake_feature_store,
         database_name=snowflake_session.database,
@@ -723,9 +740,15 @@ def snowflake_item_data_fixture(
 
 
 @pytest.fixture(name="databricks_event_data", scope="session")
-def databricks_event_data_fixture(databricks_session, databricks_feature_store, user_entity):
+def databricks_event_data_fixture(
+    databricks_session,
+    databricks_feature_store,
+    user_entity,
+    product_action_entity,
+):
     """Fixture for an EventData in integration tests"""
     _ = user_entity
+    _ = product_action_entity
     event_data = create_transactions_event_data_from_feature_store(
         databricks_feature_store,
         database_name=databricks_session.featurebyte_catalog,
