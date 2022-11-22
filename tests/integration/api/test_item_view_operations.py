@@ -33,7 +33,7 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
         assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
 
 
-def test_view_operations(item_data):
+def test_item_view_operations(item_data):
     """
     Test ItemView operations
     """
