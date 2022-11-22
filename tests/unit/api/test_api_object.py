@@ -182,3 +182,15 @@ def test_api_object_repr(mock_configuration):
         mock_info.return_value = "mock_info_result"
         item = ApiObject.get("item_1")
         assert repr(item) == repr("mock_info_result")
+
+
+def test_api_object_list_empty():
+    """Test ApiObject list returns None if list is empty"""
+    with patch("featurebyte.api.api_object.Configurations") as mock_config:
+        mock_client = mock_config.return_value.get_client.return_value
+        response_dict = {"page": 1, "page_size": 10, "total": 0, "data": []}
+        response = Mock()
+        response.json.return_value = response_dict
+        response.status_code = HTTPStatus.OK
+        mock_client.get.return_value = response
+        assert_frame_equal(ApiObject.list(), pd.DataFrame(columns=["name", "created_at"]))

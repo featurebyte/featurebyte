@@ -68,6 +68,9 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
     _list_schema = TabularDataModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
+    _list_foreign_keys = [
+        ("columns_info.entity_id", Entity, "entities"),
+    ]
 
     @classmethod
     def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
@@ -90,22 +93,6 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
         if entity:
             data_list = data_list[data_list.entities.apply(lambda entities: entity in entities)]
         return data_list
-
-    @classmethod
-    def _post_process_list(cls, item_list: DataFrame) -> DataFrame:
-        # populate entity names
-        entity_list = Entity.list(include_id=True)
-        if entity_list.shape[0] > 0:
-            entity_list.index = entity_list.id
-            entity_map = entity_list["name"].to_dict()
-            item_list["entities"] = item_list["columns_info"].apply(
-                lambda columns_info: [
-                    entity_map.get(i["entity_id"]) for i in columns_info if i["entity_id"]
-                ]
-            )
-        else:
-            item_list["entities"] = item_list["columns_info"].apply(lambda _: [])
-        return item_list
 
     @classmethod
     @typechecked

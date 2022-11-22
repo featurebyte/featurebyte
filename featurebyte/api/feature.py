@@ -47,6 +47,10 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
     _update_schema_class = FeatureNamespaceUpdate
     _list_schema = FeatureNamespaceModel
     _list_fields = ["name", "dtype", "readiness", "data", "entities", "created_at"]
+    _list_foreign_keys = [
+        ("entity_ids", Entity, "entities"),
+        ("tabular_data_ids", DataApiObject, "data"),
+    ]
 
     @classmethod
     def list(
@@ -82,31 +86,6 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
                 feature_list.data.apply(lambda data_list: data in data_list)
             ]
         return feature_list
-
-    @classmethod
-    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
-        # populate entity names
-        entity_list = Entity.list(include_id=True)
-        if entity_list.shape[0] > 0:
-            entity_list.index = entity_list.id
-            entity_map = entity_list["name"].to_dict()
-            item_list["entities"] = item_list["entity_ids"].apply(
-                lambda entity_ids: [entity_map.get(i) for i in entity_ids]
-            )
-        else:
-            item_list["entities"] = item_list["entity_ids"].apply(lambda _: [])
-
-        # populate tabular data names
-        data_list = DataApiObject.list(include_id=True)
-        if data_list.shape[0] > 0:
-            data_list.index = data_list.id
-            data_map = data_list["name"].to_dict()
-            item_list["data"] = item_list["tabular_data_ids"].apply(
-                lambda tabular_data_ids: [data_map.get(i) for i in tabular_data_ids]
-            )
-        else:
-            item_list["data"] = item_list["tabular_data_ids"].apply(lambda _: [])
-        return item_list
 
 
 class Feature(

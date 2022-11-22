@@ -3,7 +3,19 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 import time
 from functools import partial
@@ -61,6 +73,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
     _list_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
+    _list_foreign_keys: List[Tuple[str, Any, str]] = []
 
     # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
@@ -250,14 +263,63 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ):
             output.append(cls._list_schema(**item_dict).dict())
 
-        # apply post-processing on object listing
         fields = cls._list_fields
         if include_id:
             fields = ["id"] + fields
-        object_list = cls._post_process_list(DataFrame.from_records(output))
-        if object_list.shape[0] > 0:
-            return object_list[fields]
-        return object_list
+
+        if not output:
+            return DataFrame(columns=fields)
+
+        # apply post-processing on object listing
+        return cls._post_process_list(DataFrame.from_records(output))[fields]
+
+    @staticmethod
+    def map_dict_list_to_name(
+        object_map: Dict[Optional[ObjectId], str],
+        object_id_field: str,
+        object_dicts: List[Dict[str, ObjectId]],
+    ) -> List[Optional[str]]:
+        """
+        Map list of object dict to object names
+
+        Parameters
+        ----------
+        object_map: Dict[Optional[ObjectId], str],
+            Dict that maps ObjectId to name
+        object_id_field: str
+            Name of field in object dict to get object id from
+        object_dicts: List[Dict[str, ObjectId]]
+            List of dict to map
+
+        Returns
+        -------
+        List[Optional[str]]
+        """
+        return [
+            object_map.get(object_dict.get(object_id_field))
+            for object_dict in object_dicts
+            if object_dict.get(object_id_field)
+        ]
+
+    @staticmethod
+    def map_object_id_to_name(
+        object_map: Dict[Optional[ObjectId], str], object_ids: List[ObjectId]
+    ) -> List[Optional[str]]:
+        """
+        Map list of object ids object names
+
+        Parameters
+        ----------
+        object_map: Dict[Optional[ObjectId], str],
+            Dict that maps ObjectId to name
+        object_ids: List[ObjectId]
+            List of object ids to map
+
+        Returns
+        -------
+        List[Optional[str]]
+        """
+        return [object_map.get(object_id) for object_id in object_ids]
 
     @classmethod
     def _post_process_list(cls, item_list: DataFrame) -> DataFrame:
@@ -273,6 +335,26 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         DataFrame
         """
+        # populate object names using foreign keys
+        for foreign_key_field, object_class, new_field_name in cls._list_foreign_keys:
+            object_list = object_class.list(include_id=True)
+            if object_list.shape[0] > 0:
+                object_list.index = object_list.id
+                object_map = object_list["name"].to_dict()
+                if "." in foreign_key_field:
+                    # foreign_key is a dict
+                    foreign_key_field, object_id_field = foreign_key_field.split(".")
+                    mapping_function = partial(
+                        cls.map_dict_list_to_name, object_map, object_id_field
+                    )
+                else:
+                    # foreign_key is an objectid
+                    mapping_function = partial(cls.map_object_id_to_name, object_map)
+                new_field_values = item_list[foreign_key_field].apply(mapping_function)
+            else:
+                new_field_values = [[]] * item_list.shape[0]
+            item_list[new_field_name] = new_field_values
+
         return item_list
 
     @typechecked
