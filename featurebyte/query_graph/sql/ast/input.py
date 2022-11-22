@@ -7,7 +7,7 @@ from typing import Any, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import Expression, Select, expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType
@@ -39,8 +39,7 @@ class InputNode(TableNode):
     feature_store: dict[str, Any]
     query_node_type = NodeType.INPUT
 
-    @property
-    def sql(self) -> Expression:
+    def select_query_impl(self, select_expr: Select) -> Select:
         """Construct a sql expression
 
         Returns
@@ -48,21 +47,6 @@ class InputNode(TableNode):
         Expression
             A sqlglot Expression object
         """
-        # QUALIFY clause
-        if self.qualify_condition is not None:
-            qualify_expr = expressions.Qualify(this=self.qualify_condition)
-            select_expr = expressions.Select(qualify=qualify_expr)
-        else:
-            select_expr = select()
-
-        # SELECT clause
-        select_args = []
-        for col, expr in self.columns_map.items():
-            col = expressions.Identifier(this=col, quoted=True)
-            select_args.append(expressions.alias_(expr, col))
-        select_expr = select_expr.select(*select_args)
-
-        # FROM clause
         if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
@@ -77,11 +61,6 @@ class InputNode(TableNode):
         else:
             dbtable = quoted_identifier(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
-
-        # WHERE clause
-        if self.where_condition is not None:
-            select_expr = select_expr.where(self.where_condition)
-
         return select_expr
 
     @classmethod

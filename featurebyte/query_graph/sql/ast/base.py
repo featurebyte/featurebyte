@@ -9,13 +9,13 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from sqlglot import Expression, expressions, select
+from sqlglot import Expression, Select, expressions, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
@@ -145,6 +145,43 @@ class TableNode(SQLNode, ABC):
             List of column names
         """
         return list(self.columns_map.keys())
+
+    @property
+    def sql(self) -> Expression:
+
+        # QUALIFY clause
+        if self.qualify_condition is not None:
+            qualify_expr = expressions.Qualify(this=self.qualify_condition)
+            select_expr = expressions.Select(qualify=qualify_expr)
+        else:
+            select_expr = select()
+
+        # SELECT clause
+        for column_name, column_expr in self.columns_map.items():
+            select_expr = select_expr.select(
+                expressions.alias_(column_expr, quoted_identifier(column_name))
+            )
+
+        # FROM clause
+        select_expr = self.select_query_impl(select_expr)
+
+        # WHERE clause
+        if self.where_condition is not None:
+            select_expr = select_expr.where(self.where_condition)
+
+        return select_expr
+
+    def select_query_impl(self, select_expr: Select) -> Select:
+        """Construct the final Select expression
+
+        The provided select_expr is a partially constructed Select expression formed using
+        information from attributes such as columns_map and where conditions. In most cases,
+        subclasses will construct the FROM clause using select_expr as the starting point.
+
+        Make this non-abstract with a no-op default to allow subclasses of TableNode to override the
+        sql property directly, in which case this method is irrelevant.
+        """
+        return select_expr
 
     def sql_nested(self) -> Expression:
         """SQL expression that can be used within from_() to form a nested query
