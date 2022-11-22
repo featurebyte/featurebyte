@@ -131,11 +131,16 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     config,
     snowflake_feature_store,
     mock_session_manager,
+    noop_validate_feature_store_id_not_used_in_warehouse,
 ):
     """
     Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
     """
-    _ = snowflake_feature_store, mock_session_manager
+    _ = (
+        snowflake_feature_store,
+        mock_session_manager,
+        noop_validate_feature_store_id_not_used_in_warehouse,
+    )
     mock_persistent.return_value = mongo_persistent[0]
     client = Configurations().get_client()
     route_fixture_path_pairs = [

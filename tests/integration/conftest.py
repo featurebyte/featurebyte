@@ -141,7 +141,7 @@ def mock_get_persistent_fixture(persistent):
         yield
 
 
-@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse", autouse=True)
+@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse")
 def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
     """
     Set a no-op validator by default.
