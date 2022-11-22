@@ -62,7 +62,7 @@ def test_item_data_join_event_data_attributes(global_graph, item_data_join_event
               "order_method" AS "order_method"
             FROM "db"."public"."event_table"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
             SELECT
               "order_id" AS "order_id",
               "item_id" AS "item_id",
@@ -102,7 +102,7 @@ def test_item_data_join_event_data_attributes_with_filter(
               "order_method" AS "order_method"
             FROM "db"."public"."event_table"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
             SELECT
               "order_id" AS "order_id",
               "item_id" AS "item_id",
