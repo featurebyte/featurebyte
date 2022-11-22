@@ -25,6 +25,12 @@ from featurebyte.session.enum import SnowflakeDataType
 class SnowflakeSession(BaseSession):
     """
     Snowflake session class
+
+
+    References
+    ----------
+    Precision & scale:
+    https://docs.snowflake.com/en/sql-reference/data-types-numeric.html#impact-of-precision-and-scale-on-storage-size
     """
 
     account: str
@@ -182,7 +188,6 @@ class SnowflakeSession(BaseSession):
     @staticmethod
     def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:
         to_internal_variable_map = {
-            SnowflakeDataType.FIXED: DBVarType.INT,
             SnowflakeDataType.REAL: DBVarType.FLOAT,
             SnowflakeDataType.BINARY: DBVarType.BINARY,
             SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
@@ -191,6 +196,9 @@ class SnowflakeSession(BaseSession):
         }
         if snowflake_var_info["type"] in to_internal_variable_map:
             return to_internal_variable_map[snowflake_var_info["type"]]
+        if snowflake_var_info["type"] == SnowflakeDataType.FIXED:
+            # scale is defined as number of digits following the decimal point (see link in reference)
+            return DBVarType.INT if snowflake_var_info["scale"] == 0 else DBVarType.FLOAT
         if snowflake_var_info["type"] == SnowflakeDataType.TEXT:
             return DBVarType.CHAR if snowflake_var_info["length"] == 1 else DBVarType.VARCHAR
         if snowflake_var_info["type"] in {
