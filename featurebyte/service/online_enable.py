@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.enum import SourceType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
@@ -155,6 +156,7 @@ class OnlineEnableService(BaseService):
         session = await self.session_manager_service.get_feature_store_session(
             feature_store_model, get_credential
         )
+        assert feature_store_model.type == SourceType.SNOWFLAKE
         feature_manager = FeatureManagerSnowflake(session)
 
         if feature.online_enabled:
