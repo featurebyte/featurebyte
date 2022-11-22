@@ -45,11 +45,11 @@ async def test_trigger_tile_schedule(snowflake_session):
         """
     await snowflake_session.execute_query(sql)
 
-    result = await snowflake_session.execute_query("SHOW TASKS")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == "5 MINUTE"
 
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS {task_name}")
-    result = await snowflake_session.execute_query("SHOW TASKS")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
     assert len(result) == 0

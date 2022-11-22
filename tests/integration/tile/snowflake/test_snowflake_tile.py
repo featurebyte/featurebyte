@@ -34,7 +34,7 @@ async def test_schedule_online_tile(snowflake_tile, snowflake_session, tile_mana
 
     task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_ONLINE".upper()
 
-    result = await snowflake_session.execute_query("SHOW TASKS")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{snowflake_tile.tile_id}%'")
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == "USING CRON 3-59/5 * * * * UTC"
@@ -50,7 +50,7 @@ async def test_schedule_offline_tile(snowflake_tile, snowflake_session, tile_man
 
     task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_OFFLINE".upper()
 
-    result = await snowflake_session.execute_query("SHOW TASKS")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{snowflake_tile.tile_id}%'")
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"
