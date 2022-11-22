@@ -1,18 +1,42 @@
 Features are created in the SDK from Views after data manipulation.
 
 ### Lookup features
-If the entity is the primary key of the View, a column of this view can be directly converted into a feature for this entity.
+If the entity is the primary key of the View, a column of this view can be directly converted into a feature for this entity. Examples of such features are 
 
-If the target entity is the natural key of the Slowly Changing Dimension View, a column of this view can be also directly converted into a feature. In this case, the feature is materialized thanks to point-in-time joins. The value served is by default the row value active as at the point-in-time of the request. Users can specify an offset to retrieve value as at some time prior to the point-in-time of the request (“marital status 6 months ago”). 
+* Customer’s place of birth or birthdate.
+* Transaction’s amount.
+
+If the target entity is the natural key of the Slowly Changing Dimension View, a column of this view can be also directly converted into a feature. In this case, the feature is materialized thanks to point-in-time joins. The value served is by default the row value active as at the point-in-time of the request. An example of such features is
+
+* Customer’s marital status (at the point in time of the request).
+
+Users can specify an offset to retrieve value as at some time (for example: 6 months) prior to the point-in-time of the request. In this case, the feature will be:
+
+* Customer’s marital status 6 months ago (at the point in time of the request).
 
 ### Aggregate features
-If the target entity is not the primary (or natural) key of the view, features are defined via aggregates where the entity column is used as the GroupBy key.
+If the target entity is not the primary (or natural) key of the view, features are defined via aggregates where an entity column is used as the GroupBy key.
 
-For Sensor data, Time Series, Event view and Item view, those aggregates are defined by windows prior to the points in time of the feature request. Windows used in windowed aggregation can be time based or count based. Windows can be offset backwards to allow aggregation of any period of time in the past.
+For Sensor data, Time Series, Event view and Item view, those aggregates are defined by windows prior to the points in time of the feature request. Windows used in windowed aggregation can be time based or count based. Simple examples of such features are:
 
-For the Item view, if the target entity is the event key of the view, simple aggregates are applied.
+* Customer sum of order amounts the past 12 weeks.
+* Customer amounts sum of last 5 orders.
 
-For a Slowly Changing Dimension view and an entity that is not its natural key, the aggregate is applied to records that are active as at the point-in-time of the feature request. Users can specify an offset to retrieve value as at some time prior to the point-in-time of the request (“number of credit cards held by Customer 6 months ago”).
+Windows can be offset backwards to allow aggregation of any period of time in the past. An example of such feature would be:
+
+* Customer sum of order amounts from 12 weeks ago to 4 weeks ago.
+
+For the Item view, if the target entity is the event key of the view, simple aggregates are applied. An example of such features is:
+
+* Count of items in Order.
+
+For a Slowly Changing Dimension view and an entity that is not its natural key, the aggregate is applied to records that are active as at the point-in-time of the feature request. An example of such features is:
+
+* Number of credit cards held by Customer (at the point in time of the request).
+
+Users can specify an offset to retrieve value as at some time (6 months) prior to the point-in-time of the request. In this case, the feature will be:
+
+* Number of credit cards held by Customer 6 months ago (at the point in time of the request).
 
 #### Aggregation functions
 Examples of aggregation functions supported by FeatureByte include last event, count, na_count, sum, mean, max, min and standard deviation.
