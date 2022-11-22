@@ -30,7 +30,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
+    __fbautodoc__: List[str] = ["FeatureStore"]
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # class variables

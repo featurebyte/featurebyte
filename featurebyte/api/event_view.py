@@ -24,7 +24,7 @@ class EventViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Column"]
+    __fbautodoc__: List[str] = ["Series"]
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     @typechecked

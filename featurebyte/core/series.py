@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
+from typing import Any, Callable, List, Literal, Optional, Type, TypeVar, Union
 
 from functools import wraps
 
@@ -54,6 +54,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     """
     Implement operations to manipulate database column
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = ["Series"]
 
     name: Optional[StrictStr] = Field(default=None)
     dtype: DBVarType = Field(allow_mutation=False)

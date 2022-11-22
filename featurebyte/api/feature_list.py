@@ -295,7 +295,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
+    __fbautodoc__: List[str] = ["FeatureList"]
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # override FeatureListModel attributes

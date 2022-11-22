@@ -23,6 +23,7 @@ from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.logger import logger
 
 EMPTY_VALUE = inspect._empty
+NONE_TYPES = [None, "NoneType"]
 
 
 def import_resource(resource_descriptor: str) -> Any:
@@ -68,7 +69,11 @@ def get_params(
     render_pos_only_separator = True
     render_kw_only_separator = True
 
-    for parameter in signature.parameters.values():
+    for i, parameter in enumerate(signature.parameters.values()):
+
+        # skip self and cls in first position
+        if i == 0 and parameter.name in ["self", "cls"]:
+            continue
         value = parameter.name
         default = EMPTY_VALUE
         if parameter.default is not parameter.empty:
@@ -159,7 +164,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         """
         if callable(resource):
             try:
-                type_hints = get_type_hints(resource)
+                if inspect.isclass(resource) and "__init__" in resource.__dict__:
+                    type_hints = get_type_hints(resource.__init__)
+                else:
+                    type_hints = get_type_hints(resource)
             except (NameError, TypeError):
                 type_hints = {}
             try:
@@ -430,13 +438,18 @@ class FBAutoDocProcessor(AutoDocProcessor):
             self.insert_param_type(signature_elem, resource_details.returns.type)
         else:
             bracket_elem = etree.SubElement(signature_elem, "span")
-            bracket_elem.text = "("
+            bracket_elem.text = "( "
             bracket_elem.set("class", "autodoc-punctuation")
 
             if resource_details.parameters:
+                param_group_class = (
+                    "autodoc-param-group-multi"
+                    if len(resource_details.parameters) > 1
+                    else "autodoc-param-group"
+                )
                 for param, is_last in last_iter(resource_details.parameters):
                     param_group_elem = etree.SubElement(signature_elem, "div")
-                    param_group_elem.set("class", "autodoc-param-group")
+                    param_group_elem.set("class", param_group_class)
 
                     param_elem = etree.SubElement(param_group_elem, "em")
                     param_elem.text = param.name
@@ -458,11 +471,11 @@ class FBAutoDocProcessor(AutoDocProcessor):
                         comma_elem.set("class", "autodoc-punctuation")
 
             bracket_elem = etree.SubElement(signature_elem, "span")
-            bracket_elem.text = ")"
+            bracket_elem.text = " )"
             bracket_elem.set("class", "autodoc-punctuation")
             arrow_elem = etree.SubElement(signature_elem, "span")
             if resource_details.type != "class" and resource_details.returns:
-                if resource_details.returns.type:
+                if resource_details.returns.type not in NONE_TYPES:
                     arrow_elem.text = " -> "
                     arrow_elem.set("class", "autodoc-punctuation")
                     return_elem = etree.SubElement(signature_elem, "em")
@@ -515,11 +528,13 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # render autodoc
             self.render_signature(autodoc_div, resource_details)
             for line in block.splitlines():
+                docstring_elem = etree.SubElement(autodoc_div, "div")
+                docstring_elem.set("class", "autodoc-docstring")
                 if line.startswith(":docstring:"):
-                    self.render_docstring(autodoc_div, resource_details)
+                    self.render_docstring(docstring_elem, resource_details)
                 elif line.startswith(":members:"):
                     members = line.split()[1:] or None
-                    self.render_members(autodoc_div, resource_details, members=members)
+                    self.render_members(docstring_elem, resource_details, members=members)
 
         if theRest:
             # This block contained unindented line(s) after the first indented
@@ -551,9 +566,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
             headers_ref = etree.SubElement(elem, "h3")
             headers_ref.set("class", "autodoc-section-header")
             headers_ref.text = title
-            docstring_elem = etree.SubElement(elem, "div")
-            docstring_elem.set("class", "autodoc-docstring")
-            docstring_elem.text = self._md.convert(content)
+            content_elem = etree.SubElement(elem, "div")
+            content_elem.set("class", "autodoc-content")
+            content_elem.text = self._md.convert(content)
 
         # Render base classes
         if resource_details.base_classes:
@@ -582,9 +597,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         # Render returns:
         if resource_details.returns:
             returns = resource_details.returns
-            return_desc = f"\n> {returns.description}" if returns.description else ""
-            content = f"- **{returns.type}**{return_desc}\n"
-            _render("Returns", content)
+            if returns.type not in NONE_TYPES:
+                return_desc = f"\n> {returns.description}" if returns.description else ""
+                content = f"- **{returns.type}**{return_desc}\n"
+                _render("Returns", content)
 
         # Render raises
         if resource_details.raises:

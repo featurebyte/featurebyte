@@ -19,7 +19,7 @@ class Entity(EntityModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
+    __fbautodoc__: List[str] = ["Entity"]
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     # class variables

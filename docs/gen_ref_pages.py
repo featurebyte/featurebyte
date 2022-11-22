@@ -42,7 +42,7 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
             class_path = ".".join([member.__module__, member_name])
             doc_group = getattr(member, "__fbautodoc__", None)
             if doc_group is not None:
-                doc_group = doc_group + [member_name]
+                doc_group = doc_group
             elif GENERATE_FULL_DOCS:
                 doc_group = class_path.split(".")
             else:
@@ -78,7 +78,7 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
                 if callable(attribute):
                     # add documentation page for properties
                     attribute_path = ".".join([class_path, attribute_name])
-                    doc_groups[attribute_path] = (doc_group, member_name, "method")
+                    doc_groups[attribute_path] = (doc_group + [member_name], member_name, "method")
 
     except ModuleNotFoundError:
         continue
@@ -109,10 +109,14 @@ for obj_path, value in doc_groups.items():
     # determine file path for documentation page
     name = parts[-1]
     path = "/".join(parts)
-    if name == doc_group[-1]:
+    if obj_type == "class":
+        if doc_group[-1] != class_name:
+            doc_group = doc_group + [class_name]
         doc_path = str(Path(obj_path)) + ".md"
         nav[doc_group] = doc_path
     else:
+        if doc_group[0] == class_name:
+            doc_group.pop(0)
         doc_path = str(Path(obj_path)) + ".md"
         nav[doc_group + [name]] = doc_path
     full_doc_path = Path("reference", doc_path)
@@ -131,15 +135,15 @@ for obj_path, value in doc_groups.items():
 
 # customized order for navigation
 custom_order = [
-    "Configurations",
-    "FeatureStore",
-    "Entity",
+    "Series",
     "Data",
     "View",
-    "Column",
     "GroupBy",
+    "Entity",
     "Feature",
     "FeatureList",
+    "FeatureStore",
+    "Configurations",
 ]
 
 # update navigation order and include unspecified items at the end

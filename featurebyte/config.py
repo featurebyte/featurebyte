@@ -169,7 +169,7 @@ class Configurations:
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
+    __fbautodoc__: List[str] = ["Configurations"]
 
     def __init__(self, config_file_path: Optional[str] = None) -> None:
         """

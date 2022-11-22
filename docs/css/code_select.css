@@ -45,7 +45,7 @@ div.autodoc-classpath {
 }
 
 div.autodoc-signature strong {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 div.autodoc-summary h4 {
@@ -61,6 +61,10 @@ div.autodoc-summary .autodoc-signature code {
 }
 
 div.autodoc-param-group {
+  display: inline;
+}
+
+div.autodoc-param-group-multi {
   margin-left: 30px;
 }
 
