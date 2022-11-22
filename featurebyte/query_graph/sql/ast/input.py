@@ -40,13 +40,6 @@ class InputNode(TableNode):
     query_node_type = NodeType.INPUT
 
     def select_query_impl(self, select_expr: Select) -> Select:
-        """Construct a sql expression
-
-        Returns
-        -------
-        Expression
-            A sqlglot Expression object
-        """
         if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]

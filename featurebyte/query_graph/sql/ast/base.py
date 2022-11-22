@@ -109,7 +109,7 @@ class SQLNode(ABC):
         return None
 
 
-@dataclass  # type: ignore[misc]
+@dataclass
 class TableNode(SQLNode, ABC):
     """Nodes that produce table-like output that can be used as nested input
 
@@ -180,6 +180,15 @@ class TableNode(SQLNode, ABC):
 
         Make this non-abstract with a no-op default to allow subclasses of TableNode to override the
         sql property directly, in which case this method is irrelevant.
+
+        Parameters
+        ----------
+        select_expr: Select
+            Partially constructed Select expression
+
+        Returns
+        -------
+        Select
         """
         return select_expr
 
