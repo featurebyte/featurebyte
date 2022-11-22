@@ -71,7 +71,7 @@ To fully empower team of data scientists, FeatureByte is providing enterprises w
 * Feature redundancy analysis
 * Training-Serving consistency monitoring
 * Feature usage tracking
-* Resource usage
+* Resource usage reporting
 * Use Case Accuracy monitoring
 
 
