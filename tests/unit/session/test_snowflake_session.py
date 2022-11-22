@@ -726,5 +726,5 @@ async def test_update_feature_store_id(
     initializer = MetadataSchemaInitializer(session)
     await initializer.update_feature_store_id("feature_store_id")
     assert session.execute_query.call_args_list == [
-        call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = feature_store_id"),
+        call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = 'feature_store_id'"),
     ]
