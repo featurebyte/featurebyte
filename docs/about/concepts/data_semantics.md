@@ -91,7 +91,7 @@ The nodes of level 3 determine whether:
 * the `Event Timestamp` is a `Measurement Event Timestamp` or a `Business Event Timestamp`.
 * the other types are a `Start Date` or an `End Date`.
 
-For `Business Event Timestamp`, data scientists are likely to attempt to extract features measures:
+For `Business Event Timestamp`, data scientists are likely to attempt to extract features that measure:
 
 * the recency with time since last event
 * the clumpiness of events (entropy of inter event time)
