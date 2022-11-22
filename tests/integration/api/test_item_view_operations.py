@@ -38,7 +38,17 @@ def test_view_operations(item_data):
     Test ItemView operations
     """
     item_view = ItemView.from_item_data(item_data)
+
+    # Add a new column
     item_view["item_type_upper"] = item_view["item_type"].str.upper()
-    item_view_filtered = item_view[item_view["item_type_upper"] == "ITEM_42"]
-    df = item_view_filtered.preview()
-    assert (df["item_type_upper"] == "ITEM_42").all()
+
+    # Filter on a column
+    item_view_filtered = item_view[item_view["item_type_upper"] == "TYPE_42"]
+    df = item_view_filtered.preview(500)
+    assert (df["item_type_upper"] == "TYPE_42").all()
+
+    # Join additional columns from EventData
+    item_view_filtered.join_event_data_attributes(["SESSION_ID"])
+    df = item_view_filtered.preview(500)
+    assert df["SESSION_ID"].notnull().all()
+    assert (df["item_type_upper"] == "TYPE_42").all()
