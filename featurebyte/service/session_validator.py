@@ -59,11 +59,7 @@ class SessionValidatorService:
         working_schema_metadata = await session.get_working_schema_metadata()
         registered_feature_store_id = working_schema_metadata.get("feature_store_id")
         # Check that a feature store ID has been registered, and whether they're the same.
-        if (
-            registered_feature_store_id == ""
-            or registered_feature_store_id == "None"
-            or registered_feature_store_id is None
-        ):
+        if not registered_feature_store_id:
             return ValidateStatus.NOT_IN_DWH
         if users_feature_store_id != registered_feature_store_id:
             logger.debug(
