@@ -4,7 +4,7 @@ Tests for FeatureList route
 import json
 from collections import defaultdict
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -108,6 +108,14 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload["feature_ids"] = [new_feature_id]
             payload["feature_list_namespace_id"] = str(ObjectId())
             yield payload
+
+    @pytest.fixture(autouse=True)
+    def mock_online_enable_service_update_data_warehouse(self):
+        """
+        Mock _update_data_warehouse method in OnlineEnableService to make it a no-op
+        """
+        with patch("featurebyte.service.deploy.OnlineEnableService._update_data_warehouse"):
+            yield
 
     @pytest.mark.asyncio
     async def test_create_201__with_existing_feature_list_namespace(
