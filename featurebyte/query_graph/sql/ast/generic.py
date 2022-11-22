@@ -11,7 +11,6 @@ from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
-from featurebyte.query_graph.sql.ast.input import InputNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 
@@ -212,11 +211,11 @@ def handle_filter_node(context: SQLNodeContext) -> TableNode | ExpressionNode:
     assert isinstance(mask, ExpressionNode)
     sql_node: TableNode | ExpressionNode
     if context.query_node.output_type == NodeOutputType.FRAME:
-        assert isinstance(item, InputNode)
+        assert isinstance(item, TableNode)
         sql_node = item.subset_rows(mask.sql)
     else:
         assert isinstance(item, ExpressionNode)
-        assert isinstance(item.table_node, InputNode)
+        assert isinstance(item.table_node, TableNode)
         input_table_copy = item.table_node.subset_rows(mask.sql)
         sql_node = ParsedExpressionNode(context, input_table_copy, item.sql)
     return sql_node

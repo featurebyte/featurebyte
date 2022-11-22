@@ -43,6 +43,8 @@ class Join(TableNode):
             join_type=self.join_type,
             join_alias="R",
         )
+        if self.where_condition is not None:
+            expr = expr.where(self.where_condition)
         return expr
 
     @classmethod
