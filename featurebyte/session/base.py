@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict
+from typing import Any, AsyncGenerator, Optional, OrderedDict
 
 import asyncio
 
@@ -689,14 +689,14 @@ class MetadataSchemaInitializer:
         logger.debug("Creating METADATA_SCHEMA table")
 
     async def create_metadata_table_with_feature_store_id(
-        self, feature_store_id: str = None
+        self, feature_store_id: Optional[str] = None
     ) -> None:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
 
         Parameters
         ----------
-        feature_store_id: str
+        feature_store_id: Optional[str]
             feature store ID to store in the metadata table
         """
         feature_store_id_to_use = f"'{feature_store_id}'" if feature_store_id else "NULL"
