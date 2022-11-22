@@ -181,7 +181,7 @@ def mock_snowflake_execute_query():
             'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
             'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
-                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED"})},
+                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
                 {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
                 {"column_name": "col_char", "data_type": json.dumps({"type": "TEXT", "length": 1})},
                 {
@@ -195,7 +195,7 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
                 },
                 {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
-                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED"})},
+                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
             ],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
                 {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
@@ -214,7 +214,10 @@ def mock_snowflake_execute_query():
                 },
             ],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table"': [
-                {"column_name": "event_id_col", "data_type": json.dumps({"type": "FIXED"})},
+                {
+                    "column_name": "event_id_col",
+                    "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                },
                 {
                     "column_name": "item_id_col",
                     "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
@@ -225,6 +228,11 @@ def mock_snowflake_execute_query():
                 },
                 {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
                 {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+            ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."fixed_table"': [
+                {"column_name": "num", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+                {"column_name": "num10", "data_type": json.dumps({"type": "FIXED", "scale": 1})},
+                {"column_name": "dec", "data_type": json.dumps({"type": "FIXED", "scale": 2})},
             ],
             "SHOW SCHEMAS": [
                 {"name": "PUBLIC"},
