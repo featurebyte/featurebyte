@@ -316,7 +316,9 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
     DataFrame fixture with the expected joined event and item data
     """
     df = pd.merge(
-        transaction_data_upper_case[["TRANSACTION_ID", "EVENT_TIMESTAMP", "USER ID"]],
+        transaction_data_upper_case[
+            ["TRANSACTION_ID", "EVENT_TIMESTAMP", "USER ID", "PRODUCT_ACTION"]
+        ],
         items_dataframe,
         left_on="TRANSACTION_ID",
         right_on="order_id",

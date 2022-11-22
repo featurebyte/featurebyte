@@ -17,6 +17,7 @@ def test_item_view_operations(item_data, expected_joined_event_item_dataframe):
     assert df_preview.columns.tolist() == [
         "EVENT_TIMESTAMP",
         "USER ID",
+        "PRODUCT_ACTION",
         "order_id",
         "item_id",
         "item_type",
@@ -27,7 +28,7 @@ def test_item_view_operations(item_data, expected_joined_event_item_dataframe):
     for _, row in df_preview.iterrows():
         # Check if each row in the preview result appears in the expected joined DataFrame
         mask = expected_joined_event_item_dataframe["EVENT_TIMESTAMP"] == row["EVENT_TIMESTAMP"]
-        for col in ["USER ID", "order_id", "item_id", "item_type"]:
+        for col in ["USER ID", "PRODUCT_ACTION", "order_id", "item_id", "item_type"]:
             mask &= expected_joined_event_item_dataframe[col] == row[col]
         matched = expected_joined_event_item_dataframe[mask]
         assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
