@@ -75,6 +75,7 @@ async def update_feature_list(
     feature_list: FeatureListModel = await controller.update_feature_list(
         feature_list_id=feature_list_id,
         data=data,
+        get_credential=request.state.get_credential,
     )
     return feature_list
 

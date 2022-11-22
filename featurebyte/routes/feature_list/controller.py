@@ -96,6 +96,7 @@ class FeatureListController(
         self,
         feature_list_id: ObjectId,
         data: FeatureListUpdate,
+        get_credential: Any,
     ) -> FeatureListModel:
         """
         Update FeatureList at persistent
@@ -106,6 +107,8 @@ class FeatureListController(
             FeatureList ID
         data: FeatureListUpdate
             FeatureList update payload
+        get_credential: Any
+            Get credential handler function
 
         Returns
         -------
@@ -124,6 +127,7 @@ class FeatureListController(
             await self.deploy_service.update_feature_list(
                 feature_list_id=feature_list_id,
                 deployed=data.deployed,
+                get_credential=get_credential,
                 return_document=False,
             )
         return await self.get(document_id=feature_list_id)

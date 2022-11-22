@@ -1,6 +1,8 @@
 """
 Tests for DeployService
 """
+from unittest.mock import Mock, patch
+
 import pytest
 
 from featurebyte.exception import DocumentUpdateError
@@ -11,7 +13,9 @@ from featurebyte.models.feature_list import FeatureListModel
 async def test_update_feature_list__feature_not_online_enabled_error(deploy_service, feature_list):
     """Test update feature list (not all features are online enabled validation error)"""
     with pytest.raises(DocumentUpdateError) as exc:
-        await deploy_service.update_feature_list(feature_list_id=feature_list.id, deployed=True)
+        await deploy_service.update_feature_list(
+            feature_list_id=feature_list.id, deployed=True, get_credential=Mock()
+        )
     expected_msg = "Only FeatureList object of all production ready features can be deployed."
     assert expected_msg in str(exc.value)
 
@@ -20,7 +24,9 @@ async def test_update_feature_list__feature_not_online_enabled_error(deploy_serv
 async def test_update_feature_list__no_update(deploy_service, feature_list):
     """Test update feature list when deployed status is the same"""
     updated_feature_list = await deploy_service.update_feature_list(
-        feature_list_id=feature_list.id, deployed=feature_list.deployed
+        feature_list_id=feature_list.id,
+        deployed=feature_list.deployed,
+        get_credential=Mock(),
     )
     assert updated_feature_list == feature_list
 
@@ -48,6 +54,7 @@ async def test_update_feature__no_update_except_updated_at(
     updated_feature = await deploy_service._update_feature(
         feature_id=feature.id,
         feature_list=feature_list,
+        get_credential=Mock(),
     )
     assert updated_feature.dict(exclude={"updated_at": True}) == feature.dict(
         exclude={"updated_at": True}
@@ -92,9 +99,18 @@ async def test_update_feature_list(
         )
 
     assert feature_list.online_enabled_feature_ids == []
-    deployed_feature_list = await deploy_service.update_feature_list(
-        feature_list_id=feature_list.id, deployed=True, return_document=True
-    )
+    with patch(
+        "featurebyte.service.deploy.OnlineEnableService._update_data_warehouse"
+    ) as mock_update_data_warehouse:
+        deployed_feature_list = await deploy_service.update_feature_list(
+            feature_list_id=feature_list.id,
+            deployed=True,
+            return_document=True,
+            get_credential=Mock(),
+        )
+        mock_update_data_warehouse.assert_called_once()
+        assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is True
+
     assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
@@ -106,9 +122,18 @@ async def test_update_feature_list(
         expected_deployed_feature_list_ids=[feature_list.id],
     )
 
-    deployed_disabled_feature_list = await deploy_service.update_feature_list(
-        feature_list_id=feature_list.id, deployed=False, return_document=True
-    )
+    with patch(
+        "featurebyte.service.deploy.OnlineEnableService._update_data_warehouse"
+    ) as mock_update_data_warehouse:
+        deployed_disabled_feature_list = await deploy_service.update_feature_list(
+            feature_list_id=feature_list.id,
+            deployed=False,
+            return_document=True,
+            get_credential=Mock(),
+        )
+        mock_update_data_warehouse.assert_called_once()
+        assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is False
+
     assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
     await check_states_after_deployed_change(

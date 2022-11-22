@@ -3,7 +3,7 @@ DeployService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -46,6 +46,7 @@ class DeployService(BaseService):
         self,
         feature_id: ObjectId,
         feature_list: FeatureListModel,
+        get_credential: Any,
         document: Optional[FeatureModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
@@ -59,6 +60,8 @@ class DeployService(BaseService):
             Target Feature ID
         feature_list: FeatureListModel
             Updated FeatureList object (deployed status)
+        get_credential: Any
+            Get credential handler function
         document: Optional[FeatureListNamespaceModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
@@ -77,6 +80,7 @@ class DeployService(BaseService):
             document = await self.online_enable_service.update_feature(
                 feature_id=feature_id,
                 online_enabled=online_enabled,
+                get_credential=get_credential,
                 document=document,
                 return_document=True,
             )
@@ -147,6 +151,7 @@ class DeployService(BaseService):
         self,
         feature_list_id: ObjectId,
         deployed: bool,
+        get_credential: Any,
         document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
@@ -159,6 +164,8 @@ class DeployService(BaseService):
             Target feature list ID
         deployed: bool
             Target deployed status
+        get_credential: Any
+            Get credential handler function
         document: Optional[FeatureListModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
@@ -190,6 +197,7 @@ class DeployService(BaseService):
                     await self._update_feature(
                         feature_id=feature_id,
                         feature_list=feature_list,
+                        get_credential=get_credential,
                         return_document=False,
                     )
                 if return_document:
