@@ -101,9 +101,7 @@ class FeatureStoreController(
             )
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
-            await metadata_schema_initializer.create_metadata_table_with_feature_store_id(
-                str(document.id)
-            )
+            await metadata_schema_initializer.update_feature_store_id(str(document.id))
 
         return document
 

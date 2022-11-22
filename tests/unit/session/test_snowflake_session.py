@@ -715,7 +715,7 @@ async def test_update_metadata_schema_version(
 @pytest.mark.parametrize("is_procedures_missing", [False])
 @pytest.mark.parametrize("is_tables_missing", [False])
 @pytest.mark.asyncio
-async def test_create_metadata_table_with_feature_store_id(
+async def test_update_feature_store_id(
     patched_snowflake_session_cls,
     is_schema_missing,
     is_functions_missing,
@@ -724,11 +724,7 @@ async def test_create_metadata_table_with_feature_store_id(
 ):
     session = patched_snowflake_session_cls()
     initializer = MetadataSchemaInitializer(session)
-    await initializer.create_metadata_table_with_feature_store_id("feature_store_id")
+    await initializer.update_feature_store_id("feature_store_id")
     assert session.execute_query.call_args_list == [
-        call(
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
-            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS SELECT 0 AS WORKING_SCHEMA_VERSION, 'feature_store_id' AS "
-            "FEATURE_STORE_ID, SYSDATE() AS CREATED_AT;"
-        ),
+        call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = feature_store_id"),
     ]

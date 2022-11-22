@@ -685,21 +685,6 @@ class MetadataSchemaInitializer:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
         """
-        await self.create_metadata_table_with_feature_store_id()
-        logger.debug("Creating METADATA_SCHEMA table")
-
-    async def create_metadata_table_with_feature_store_id(
-        self, feature_store_id: Optional[str] = None
-    ) -> None:
-        """Creates metadata schema table. This will be used to help
-        optimize and validate parts of the session initialization.
-
-        Parameters
-        ----------
-        feature_store_id: Optional[str]
-            feature store ID to store in the metadata table
-        """
-        feature_store_id_to_use = f"'{feature_store_id}'" if feature_store_id else "NULL"
         create_metadata_table_query = (
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
             "WORKING_SCHEMA_VERSION INT, "
@@ -707,8 +692,22 @@ class MetadataSchemaInitializer:
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            f"{feature_store_id_to_use} AS FEATURE_STORE_ID, "
+            "NULL AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         )
         await self.session.execute_query(create_metadata_table_query)
-        logger.debug(f"Creating METADATA_SCHEMA table with feature store id {feature_store_id}")
+        logger.debug("Creating METADATA_SCHEMA table")
+
+    async def update_feature_store_id(self, new_feature_store_id: str) -> None:
+        """Inserts default information into the metadata schema.
+
+        Parameters
+        ----------
+        new_feature_store_id : str
+            New feature_store_id to update the working schema to
+        """
+        update_feature_store_id_query = (
+            f"""UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = '{new_feature_store_id}'"""
+        )
+        await self.session.execute_query(update_feature_store_id_query)
+        logger.debug(f"Updated feature store ID to {new_feature_store_id}")

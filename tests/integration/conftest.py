@@ -154,23 +154,32 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
+@pytest.fixture(name="snowflake_details")
+def get_snowflake_details_fixture():
+    """
+    Get snowflake details
+    """
+    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    details = SnowflakeDetails(
+        account=os.getenv("SNOWFLAKE_ACCOUNT"),
+        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+        sf_schema=temp_schema_name,
+        database=os.getenv("SNOWFLAKE_DATABASE"),
+    )
+    return details
+
+
 @pytest.fixture(name="snowflake_feature_store", scope="session")
-def snowflake_feature_store_fixture(mock_get_persistent):
+def snowflake_feature_store_fixture(mock_get_persistent, snowflake_details):
     """
     Snowflake feature store fixture
     """
     _ = mock_get_persistent
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     feature_store = FeatureStore(
         name="snowflake_featurestore",
         type="snowflake",
-        details=SnowflakeDetails(
-            account=os.getenv("SNOWFLAKE_ACCOUNT"),
-            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            sf_schema=temp_schema_name,
-            database=os.getenv("SNOWFLAKE_DATABASE"),
-        ),
+        details=snowflake_details,
     )
     feature_store.save()
     return feature_store
@@ -351,17 +360,24 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
+@pytest.fixture(name="session_manager")
+def get_session_manager(config):
+    """
+    Fixture to return a session manager with real login credentials
+    """
+    return SessionManager(credentials=config.credentials)
+
+
 @pytest_asyncio.fixture(name="snowflake_session", scope="session")
 async def snowflake_session_fixture(
     transaction_data_upper_case,
     items_dataframe,
-    config,
+    session_manager,
     snowflake_feature_store,
 ):
     """
     Snowflake session
     """
-    session_manager = SessionManager(credentials=config.credentials)
     session = await session_manager.get_session(snowflake_feature_store)
     assert isinstance(session, SnowflakeSession)
 
