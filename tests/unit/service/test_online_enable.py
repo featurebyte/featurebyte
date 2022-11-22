@@ -43,17 +43,15 @@ def data_warehouse_related_mocks_fixture():
     FeatureManager
     """
     mocks = {}
-    with (
-        patch(
-            "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
-        ) as mock_get_feature_store_session,
-        patch(
+    with patch(
+        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        with patch(
             "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
-        ) as feature_manager_cls,
-    ):
-        mocks["get_feature_store_session"] = mock_get_feature_store_session
-        mocks["feature_manager"] = feature_manager_cls.return_value
-        yield mocks
+        ) as feature_manager_cls:
+            mocks["get_feature_store_session"] = mock_get_feature_store_session
+            mocks["feature_manager"] = feature_manager_cls.return_value
+            yield mocks
 
 
 @pytest.mark.asyncio
