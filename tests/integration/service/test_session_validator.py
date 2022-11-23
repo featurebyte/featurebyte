@@ -22,9 +22,6 @@ def get_session_validator_service_fixture(mongo_persistent):
     return service
 
 
-# @pytest.fixture
-#
-# @pytest.mark.asyncio
 @pytest_asyncio.fixture(name="reset_session")
 async def get_reset_session_fixture(
     session_manager, snowflake_details, snowflake_featurestore_name
