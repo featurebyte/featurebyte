@@ -33,7 +33,6 @@ from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
@@ -823,9 +822,7 @@ def get_get_cred(config):
     Fixture to get a test get_credential
     """
 
-    async def get_credential(
-        user_id: ObjectId | None, feature_store_name: str
-    ) -> Credential | None:
+    async def get_credential(user_id, feature_store_name):
         _ = user_id
         return config.credentials.get(feature_store_name)
 
