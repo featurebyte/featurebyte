@@ -33,6 +33,7 @@ from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
@@ -154,7 +155,7 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="snowflake_details")
+@pytest.fixture(name="snowflake_details", scope="session")
 def get_snowflake_details_fixture():
     """
     Get snowflake details
@@ -360,7 +361,7 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
-@pytest.fixture(name="session_manager")
+@pytest.fixture(name="session_manager", scope="session")
 def get_session_manager(config):
     """
     Fixture to return a session manager with real login credentials
@@ -814,3 +815,18 @@ def item_data_fixture(request):
         # Note: Fixtures for other engines to be added later
         assert request.param == "snowflake"
     return request.getfixturevalue("snowflake_item_data")
+
+
+@pytest.fixture(name="get_cred")
+def get_get_cred(config):
+    """
+    Fixture to get a test get_credential
+    """
+
+    async def get_credential(
+        user_id: ObjectId | None, feature_store_name: str
+    ) -> Credential | None:
+        _ = user_id
+        return config.credentials.get(feature_store_name)
+
+    return get_credential

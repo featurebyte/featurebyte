@@ -6,29 +6,12 @@ from typing import Any, Optional
 from unittest.mock import patch
 
 import pytest
-from bson import ObjectId
 
 from featurebyte import FeatureStore, SourceType
 from featurebyte.exception import DuplicatedRecordException, FeatureStoreSchemaCollisionError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import DatabaseDetails
 from featurebyte.service.session_validator import SessionValidatorService
-
-
-@pytest.fixture(name="get_cred")
-def get_get_cred(config):
-    """
-    Fixture to get a test get_credential
-    """
-
-    async def get_credential(
-        user_id: ObjectId | None, feature_store_name: str
-    ) -> Credential | None:
-        _ = user_id
-        return config.credentials.get(feature_store_name)
-
-    return get_credential
 
 
 @pytest.mark.asyncio

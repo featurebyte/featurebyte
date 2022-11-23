@@ -3,12 +3,10 @@ Session validator integration test class
 """
 
 import pytest
-from bson import ObjectId
 
 from featurebyte import FeatureStore, SourceType
 from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError
-from featurebyte.models.credential import Credential
 from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
 
 
@@ -20,21 +18,6 @@ def get_session_validator_service_fixture(mongo_persistent):
     user = User()
     service = SessionValidatorService(user, mongo_persistent)
     return service
-
-
-@pytest.fixture(name="get_cred")
-def get_get_cred(config):
-    """
-    Fixture to get a test get_credential
-    """
-
-    async def get_credential(
-        user_id: ObjectId | None, feature_store_name: str
-    ) -> Credential | None:
-        _ = user_id
-        return config.credentials.get(feature_store_name)
-
-    return get_credential
 
 
 @pytest.mark.asyncio
