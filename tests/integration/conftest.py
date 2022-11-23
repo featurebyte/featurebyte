@@ -170,14 +170,24 @@ def get_snowflake_details_fixture():
     return details
 
 
+@pytest.fixture(name="snowflake_featurestore_name")
+def get_snowflake_featurestore_name_fixture():
+    """
+    Returns the featurestore name that is used by the default feature store in integration tests.
+    """
+    return "snowflake_featurestore"
+
+
 @pytest.fixture(name="snowflake_feature_store", scope="session")
-def snowflake_feature_store_fixture(mock_get_persistent, snowflake_details):
+def snowflake_feature_store_fixture(
+    mock_get_persistent, snowflake_details, snowflake_featurestore_name
+):
     """
     Snowflake feature store fixture
     """
     _ = mock_get_persistent
     feature_store = FeatureStore(
-        name="snowflake_featurestore",
+        name=snowflake_featurestore_name,
         type="snowflake",
         details=snowflake_details,
     )

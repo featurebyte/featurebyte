@@ -16,7 +16,7 @@ from featurebyte.service.session_validator import SessionValidatorService
 
 @pytest.mark.asyncio
 async def test_feature_store_create__no_writes_on_error(
-    mongo_persistent, snowflake_details, get_cred, session_manager
+    mongo_persistent, snowflake_details, get_cred
 ):
     """
     Test that nothing is written to mongo if we error halfway through
