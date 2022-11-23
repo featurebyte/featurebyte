@@ -29,6 +29,10 @@ class TestItemView(BaseViewTestSuite):
         assert row_subset.item_id_column == view_under_test.item_id_column
         assert row_subset.event_data_id == view_under_test.event_data_id
         assert row_subset.event_view.dict() == view_under_test.event_view.dict()
+        assert (
+            row_subset.default_feature_job_setting.dict()
+            == view_under_test.default_feature_job_setting.dict()
+        )
 
     def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
         return {

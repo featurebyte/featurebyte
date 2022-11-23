@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from featurebyte.api.item_view import ItemView
@@ -53,3 +54,16 @@ def test_item_view_operations(item_data):
     df = item_view_filtered.preview(500)
     assert df["SESSION_ID"].notnull().all()
     assert (df["item_type_upper"] == "TYPE_42").all()
+
+    # Create a feature using point in time aggregation and preview it
+    feature = item_view_filtered.groupby("USER ID", category="item_type_upper").aggregate(
+        method="count",
+        windows=["30d"],
+        feature_names=["count_30d"],
+    )["count_30d"]
+    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "user id": 1})
+    assert df.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+        "user id": 1,
+        "count_30d": '{\n  "TYPE_42": 2\n}',
+    }

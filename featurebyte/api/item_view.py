@@ -189,6 +189,7 @@ class ItemView(View, GroupByMixin):
                 "event_id_column": self.event_id_column,
                 "item_id_column": self.item_id_column,
                 "event_data_id": self.event_data_id,
+                "default_feature_job_setting": self.default_feature_job_setting,
                 "event_view": self.event_view,
             }
         )
