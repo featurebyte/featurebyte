@@ -447,3 +447,20 @@ def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view)
         feature_names=["feature_name"],
         feature_job_setting=feature_job_setting,
     )["feature_name"]
+
+
+def test_item_view_groupby__no_value_column(snowflake_item_view):
+    """
+    Test count aggregation without value_column using EventData entity is allowed
+    """
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+    _ = snowflake_item_view.groupby("cust_id").aggregate(
+        method="count",
+        windows=["24h"],
+        feature_names=["feature_name"],
+        feature_job_setting=feature_job_setting,
+    )["feature_name"]

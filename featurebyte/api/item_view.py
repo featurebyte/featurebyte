@@ -194,14 +194,32 @@ class ItemView(View, GroupByMixin):
         )
         return params
 
-    def validate_aggregation_parameters(self, groupby_obj: GroupBy, value_column: str) -> None:
+    def validate_aggregation_parameters(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
         """
         Validation aggregation parameters are valid for ItemView
 
         Columns imported from the EventData or their derivatives can not be aggregated per an entity
         inherited from the EventData. Those features should be engineered directly from the
         EventData.
+
+        Parameters
+        ----------
+        groupby_obj: GroupBy
+            GroupBy object
+        value_column: Optional[str]
+            Column to be aggregated
+
+        Raises
+        ------
+        ValueError
+            If aggregation is using an EventData derived column and the groupby key is an Entity
+            from EventData
         """
+        if value_column is None:
+            return
+
         keys = groupby_obj.keys
         groupby_keys_from_event_data = all(
             self._is_column_derived_only_from_event_data(key) for key in keys
@@ -236,7 +254,6 @@ class ItemView(View, GroupByMixin):
                 input_column.tabular_data_type == TableDataType.EVENT_DATA
                 for input_column in column_structure.columns
             )
-        elif column_structure.type == ViewDataColumnType.SOURCE:
-            if column_structure.tabular_data_type == TableDataType.EVENT_DATA:
-                return True
+        if column_structure.type == ViewDataColumnType.SOURCE:
+            return column_structure.tabular_data_type == TableDataType.EVENT_DATA
         return False

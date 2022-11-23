@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union
 
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
@@ -81,7 +81,9 @@ class GroupByMixin:  # pylint: disable=too-few-public-methods
 
         return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
 
-    def validate_aggregation_parameters(self, groupby_obj: GroupBy, value_column: str) -> None:
+    def validate_aggregation_parameters(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
         """
         Perform View specific validation on the parameters provided for groupby and aggregate
         functions
@@ -90,10 +92,9 @@ class GroupByMixin:  # pylint: disable=too-few-public-methods
         ----------
         groupby_obj: GroupBy
             GroupBy object
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
         """
-        pass
 
 
 class View(ProtectedColumnsQueryObject, Frame, ABC):
