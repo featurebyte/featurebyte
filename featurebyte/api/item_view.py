@@ -18,7 +18,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.metadata.operation import ViewDataColumnType
+from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -249,11 +249,10 @@ class ItemView(View, GroupByMixin):
         column_structure = next(
             column for column in operation_structure.columns if column.name == column_name
         )
-        if column_structure.type == ViewDataColumnType.DERIVED:
+        if isinstance(column_structure, DerivedDataColumn):
             return all(
                 input_column.tabular_data_type == TableDataType.EVENT_DATA
                 for input_column in column_structure.columns
             )
-        if column_structure.type == ViewDataColumnType.SOURCE:
-            return column_structure.tabular_data_type == TableDataType.EVENT_DATA
-        return False
+        # column_structure is a SourceDataColumn
+        return column_structure.tabular_data_type == TableDataType.EVENT_DATA
