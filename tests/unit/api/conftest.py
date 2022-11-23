@@ -4,8 +4,10 @@ Common test fixtures used across api test directories
 import textwrap
 from datetime import datetime
 
+import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from pandas.testing import assert_frame_equal
 
 from featurebyte import EventView
 from featurebyte.api.dimension_view import DimensionView
@@ -165,7 +167,19 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
     # test list event data
-    assert EventData.list() == ["sf_event_data"]
+    event_data_list = EventData.list()
+    assert_frame_equal(
+        event_data_list,
+        pd.DataFrame(
+            {
+                "name": [snowflake_event_data.name],
+                "type": [snowflake_event_data.type],
+                "status": [snowflake_event_data.status],
+                "entities": [[]],
+                "created_at": [snowflake_event_data.created_at],
+            }
+        ),
+    )
     yield snowflake_event_data
 
 

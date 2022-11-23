@@ -20,6 +20,7 @@ import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.item_data.api as item_data_api
 import featurebyte.routes.scd_data.api as scd_data_api
 import featurebyte.routes.semantic.api as semantic_api
+import featurebyte.routes.tabular_data.api as tabular_data_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.middleware import request_handler
@@ -100,6 +101,7 @@ def get_app() -> FastAPI:
         feature_store_api,
         scd_data_api,
         semantic_api,
+        tabular_data_api,
         task_api,
         temp_data_api,
     ]

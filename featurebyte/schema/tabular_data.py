@@ -11,7 +11,7 @@ from pydantic import Field, StrictStr
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo, DataStatus, TabularSource
 from featurebyte.models.tabular_data import TabularDataModel
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class DataCreate(FeatureByteBaseModel):
@@ -36,7 +36,7 @@ class DataUpdate(BaseDocumentServiceUpdateSchema):
     record_creation_date_column: Optional[StrictStr]
 
 
-class TabularDataList(FeatureByteBaseModel):
+class TabularDataList(PaginationMixin):
     """
     TabularDataList used to deserialize list document output
     """

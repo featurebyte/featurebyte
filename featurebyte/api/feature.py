@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import time
 from http import HTTPStatus
@@ -13,6 +13,8 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.data import DataApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.config import Configurations
@@ -43,6 +45,47 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
     # class variables
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
+    _list_schema = FeatureNamespaceModel
+    _list_fields = ["name", "dtype", "readiness", "data", "entities", "created_at"]
+    _list_foreign_keys = [
+        ("entity_ids", Entity, "entities"),
+        ("tabular_data_ids", DataApiObject, "data"),
+    ]
+
+    @classmethod
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List the object name store at the persistent
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of objects
+        """
+        feature_list = super().list(include_id=include_id)
+        if entity:
+            feature_list = feature_list[
+                feature_list.entities.apply(lambda entities: entity in entities)
+            ]
+        if data:
+            feature_list = feature_list[
+                feature_list.data.apply(lambda data_list: data in data_list)
+            ]
+        return feature_list
 
 
 class Feature(
@@ -84,8 +127,8 @@ class Feature(
         return values
 
     @classmethod
-    def list(cls) -> List[str]:
-        return FeatureNamespace.list()
+    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        return FeatureNamespace.list(*args, **kwargs)
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:

@@ -4,7 +4,9 @@ Unit test for Entity class
 from datetime import datetime
 from unittest import mock
 
+import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
@@ -211,7 +213,25 @@ def test_get_entity():
     assert "Failed to retrieve the specified object." in str(exc.value)
 
     # test list entity names
-    assert Entity.list() == ["region", "product", "customer"]
+    entity_list = Entity.list()
+    assert_frame_equal(
+        entity_list,
+        pd.DataFrame(
+            {
+                "name": [region_entity.name, prod_entity.name, cust_entity.name],
+                "serving_names": [
+                    region_entity.serving_names,
+                    prod_entity.serving_names,
+                    cust_entity.serving_names,
+                ],
+                "created_at": [
+                    region_entity.created_at,
+                    prod_entity.created_at,
+                    cust_entity.created_at,
+                ],
+            }
+        ),
+    )
 
     # test unexpected retrieval exception for Entity.list
     with mock.patch("featurebyte.api.api_object.Configurations"):

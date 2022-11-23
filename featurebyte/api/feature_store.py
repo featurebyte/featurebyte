@@ -35,6 +35,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
 
     # class variables
     _route = "/feature_store"
+    _list_schema = FeatureStoreModel
+    _list_fields = ["name", "type", "created_at"]
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureStoreCreate(**self.json_dict())

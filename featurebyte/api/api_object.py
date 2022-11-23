@@ -3,7 +3,19 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 import time
 from functools import partial
@@ -11,7 +23,9 @@ from http import HTTPStatus
 
 import lazy_object_proxy
 from bson.objectid import ObjectId
+from pandas import DataFrame
 from pydantic import Field
+from rich.pretty import pretty_repr
 from typeguard import typechecked
 
 from featurebyte.config import Configurations
@@ -31,6 +45,24 @@ ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
 
 
+class ApiObjectProxy(lazy_object_proxy.Proxy):  # pylint: disable=too-few-public-methods
+    """
+    Proxy with customized representation
+    """
+
+    def __repr__(self) -> str:
+        return repr(self.info())
+
+
+class PrettyDict(Dict[str, Any]):
+    """
+    Dict with prettified representation
+    """
+
+    def __repr__(self) -> str:
+        return pretty_repr(dict(self), expand_all=True, indent_size=2)
+
+
 class ApiObject(FeatureByteBaseDocumentModel):
     """
     ApiObject contains common methods used to retrieve data
@@ -39,6 +71,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
     # class variables
     _route: ClassVar[str] = ""
     _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+    _list_schema = FeatureByteBaseDocumentModel
+    _list_fields = ["name", "created_at"]
+    _list_foreign_keys: List[Tuple[str, Any, str]] = []
 
     # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
@@ -99,7 +134,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             ApiObject object of the given event data name
         """
-        return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get, name)))
+        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get, name)))
 
     @classmethod
     def from_persistent_object_dict(
@@ -147,7 +182,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             ApiObject object of the given object ID
         """
-        return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get_by_id, id)))
+        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get_by_id, id)))
 
     @staticmethod
     def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
@@ -208,21 +243,119 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 raise RecordRetrievalException(response, "Failed to list object names.")
 
     @classmethod
-    def list(cls) -> list[str]:
+    def list(cls, include_id: Optional[bool] = False) -> DataFrame:
         """
         List the object name store at the persistent
 
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+
         Returns
         -------
-        list[str]
-            List of object name
+        DataFrame
+            Table of objects
         """
         output = []
         for item_dict in cls._iterate_api_object_using_paginated_routes(
             route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE}
         ):
-            output.append(item_dict["name"])
-        return output
+            output.append(cls._list_schema(**item_dict).dict())
+
+        fields = cls._list_fields
+        if include_id:
+            fields = ["id"] + fields
+
+        if not output:
+            return DataFrame(columns=fields)
+
+        # apply post-processing on object listing
+        return cls._post_process_list(DataFrame.from_records(output))[fields]
+
+    @staticmethod
+    def map_dict_list_to_name(
+        object_map: Dict[Optional[ObjectId], str],
+        object_id_field: str,
+        object_dicts: List[Dict[str, ObjectId]],
+    ) -> List[Optional[str]]:
+        """
+        Map list of object dict to object names
+
+        Parameters
+        ----------
+        object_map: Dict[Optional[ObjectId], str],
+            Dict that maps ObjectId to name
+        object_id_field: str
+            Name of field in object dict to get object id from
+        object_dicts: List[Dict[str, ObjectId]]
+            List of dict to map
+
+        Returns
+        -------
+        List[Optional[str]]
+        """
+        return [
+            object_map.get(object_dict.get(object_id_field))
+            for object_dict in object_dicts
+            if object_dict.get(object_id_field)
+        ]
+
+    @staticmethod
+    def map_object_id_to_name(
+        object_map: Dict[Optional[ObjectId], str], object_ids: List[ObjectId]
+    ) -> List[Optional[str]]:
+        """
+        Map list of object ids object names
+
+        Parameters
+        ----------
+        object_map: Dict[Optional[ObjectId], str],
+            Dict that maps ObjectId to name
+        object_ids: List[ObjectId]
+            List of object ids to map
+
+        Returns
+        -------
+        List[Optional[str]]
+        """
+        return [object_map.get(object_id) for object_id in object_ids]
+
+    @classmethod
+    def _post_process_list(cls, item_list: DataFrame) -> DataFrame:
+        """
+        Post process list output
+
+        Parameters
+        ----------
+        item_list: DataFrame
+            List of documents
+
+        Returns
+        -------
+        DataFrame
+        """
+        # populate object names using foreign keys
+        for foreign_key_field, object_class, new_field_name in cls._list_foreign_keys:
+            object_list = object_class.list(include_id=True)
+            if object_list.shape[0] > 0:
+                object_list.index = object_list.id
+                object_map = object_list["name"].to_dict()
+                if "." in foreign_key_field:
+                    # foreign_key is a dict
+                    foreign_key_field, object_id_field = foreign_key_field.split(".")
+                    mapping_function = partial(
+                        cls.map_dict_list_to_name, object_map, object_id_field
+                    )
+                else:
+                    # foreign_key is an objectid
+                    mapping_function = partial(cls.map_object_id_to_name, object_map)
+                new_field_values = item_list[foreign_key_field].apply(mapping_function)
+            else:
+                new_field_values = [[]] * item_list.shape[0]
+            item_list[new_field_name] = new_field_values
+
+        return item_list
 
     @typechecked
     def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
@@ -336,7 +469,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
         if response.status_code == HTTPStatus.OK:
-            return dict(response.json())
+            return PrettyDict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
 
