@@ -44,19 +44,19 @@ The results for a Feature Discovery triggered from an Event Timestamp of a Credi
 
 	Transaction / Credit Card Transaction / Similarity:
 	  based on Hour_of_Day
-		Transaction_Rel_Freq_of_Hour_of_Day_vs_Card_Transaction_Count_History
-		Transaction_Rel_Freq_of_Hour_of_Day_vs_Card_Transaction_Amount_History
-		Transaction_Rel_Freq_of_Hour_of_Day_vs_Customer_Transaction_Count_History
-		Transaction_Rel_Freq_of_Hour_of_Day_vs_Customer_Transaction_Amount_History
-		Transaction_Rel_Freq_of_Hour_of_Day_vs_Merchant_Transaction_Count_History
-		Transaction_Rel_Freq_of_Hour_of_Day_vs_Merchant_Transaction_Amount_History
+		Transaction_Hour_of_Day_Rel_Freq_vs_Card_Transaction_Count_History
+		Transaction_Hour_of_Day_Rel_Freq_vs_Card_Transaction_Amount_History
+		Transaction_Hour_of_Day_Rel_Freq_vs_Customer_Transaction_Count_History
+		Transaction_Hour_of_Day_Rel_Freq_vs_Customer_Transaction_Amount_History
+		Transaction_Hour_of_Day_Rel_Freq_vs_Merchant_Transaction_Count_History
+		Transaction_Hour_of_Day_Rel_Freq_vs_Merchant_Transaction_Amount_History
 	  based on Day_of_Week
-		Transaction_Rel_Freq_of_Day_of_Week_vs_Card_Transaction_Count_History
-		Transaction_Rel_Freq_of_Day_of_Week_vs_Card_Transaction_Amount_History
-		Transaction_Rel_Freq_of_Day_of_Week_vs_Customer_Transaction_Count_History
-		Transaction_Rel_Freq_of_Day_of_Week_vs_Customer_Transaction_Amount_History
-		Transaction_Rel_Freq_of_Day_of_Week_vs_Merchant_Transaction_Count_History
-		Transaction_Rel_Freq_of_Day_of_Week_vs_Merchant_Transaction_Amount_History
+		Transaction_Day_of_Week_Rel_Freq_vs_Card_Transaction_Count_History
+		Transaction_Day_of_Week_Rel_Freq_vs_Card_Transaction_Amount_History
+		Transaction_Day_of_Week_Rel_Freq_vs_Customer_Transaction_Count_History
+		Transaction_Day_of_Week_Rel_Freq_vs_Customer_Transaction_Amount_History
+		Transaction_Day_of_Week_Rel_Freq_vs_Merchant_Transaction_Count_History
+		Transaction_Day_of_Week_Rel_Freq_vs_Merchant_Transaction_Amount_History
 
 If users choose to extend the search to parent entities, the results would also include:
 
@@ -199,7 +199,7 @@ Help is provided to inform on:
 
 ### Human-in-the-loop Mode
 
-Feature Discovery combines multiple steps: Joins, Transforms, Aggregation and Post Aggregation Transforms.
+Feature Discovery combines multiple steps: Joins, Transforms, Subsetting, Aggregation and Post Aggregation Transforms.
 
 Users can choose to decompose those steps and get suggestions at the step level only.
 
