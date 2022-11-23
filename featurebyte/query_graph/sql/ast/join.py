@@ -7,7 +7,7 @@ from typing import Literal, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, select
+from sqlglot import Expression, Select, expressions
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -27,23 +27,19 @@ class Join(TableNode):
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
-    @property
-    def sql(self) -> Expression:
-        expr = select()
-        for column_name, column_expr in self.columns_map.items():
-            expr = expr.select(expressions.alias_(column_expr, quoted_identifier(column_name)))
+    def from_query_impl(self, select_expr: Select) -> Select:
         left_subquery = expressions.Subquery(this=self.left_node.sql, alias="L")
         join_conditions = expressions.EQ(
             this=self._get_qualified_column_identifier(self.left_on, "L"),
             expression=self._get_qualified_column_identifier(self.right_on, "R"),
         )
-        expr = expr.from_(left_subquery).join(
+        select_expr = select_expr.from_(left_subquery).join(
             self.right_node.sql_nested(),
             on=join_conditions,
             join_type=self.join_type,
             join_alias="R",
         )
-        return expr
+        return select_expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> Join:

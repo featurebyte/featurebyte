@@ -87,9 +87,6 @@ class ItemView(View):
             if col not in self.event_view.columns:
                 raise ValueError(f"Column does not exist in EventData: {col}")
 
-        # The EventData table should be the left table and ItemData will be left joined to that
-        # table. This way, when building tiles the join only needs to process data filtered within
-        # the tile range. This is not the case if ItemData is the left table.
         left_on = self.event_view.event_id_column
         left_input_columns = columns
         left_output_columns = columns
@@ -107,7 +104,7 @@ class ItemView(View):
                 "left_output_columns": left_output_columns,
                 "right_input_columns": right_input_columns,
                 "right_output_columns": right_output_columns,
-                "join_type": "left",
+                "join_type": "inner",
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.event_view.node, self.node],

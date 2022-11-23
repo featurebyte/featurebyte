@@ -82,7 +82,7 @@ def test_from_item_data__auto_join_columns(
                 "item_amount",
                 "created_at",
             ],
-            "join_type": "left",
+            "join_type": "inner",
         },
     }
 
@@ -138,7 +138,7 @@ def test_from_item_data__auto_join_columns(
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
             SELECT
               "event_id_col" AS "event_id_col",
               "item_id_col" AS "item_id_col",
@@ -245,7 +245,7 @@ def test_join_event_data_attributes__more_columns(
                 "created_at",
                 "event_timestamp",
             ],
-            "join_type": "left",
+            "join_type": "inner",
         },
     }
 
@@ -306,7 +306,7 @@ def test_join_event_data_attributes__more_columns(
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
         ) AS L
-        LEFT JOIN (
+        INNER JOIN (
             SELECT
               L."event_timestamp" AS "event_timestamp",
               R."event_id_col" AS "event_id_col",
@@ -327,7 +327,7 @@ def test_join_event_data_attributes__more_columns(
                   "cust_id" AS "cust_id"
                 FROM "sf_database"."sf_schema"."sf_table"
             ) AS L
-            LEFT JOIN (
+            INNER JOIN (
                 SELECT
                   "event_id_col" AS "event_id_col",
                   "item_id_col" AS "item_id_col",

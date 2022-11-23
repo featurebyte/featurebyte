@@ -371,7 +371,7 @@ def item_data_join_event_data_node_fixture(
         "left_output_columns": ["order_method"],
         "right_input_columns": ["order_id", "item_id", "item_name", "item_type"],
         "right_output_columns": ["order_id", "item_id", "item_name", "item_type"],
-        "join_type": "left",
+        "join_type": "inner",
     }
     node = global_graph.add_operation(
         node_type=NodeType.JOIN,
