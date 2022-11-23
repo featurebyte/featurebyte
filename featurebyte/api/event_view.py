@@ -17,9 +17,9 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import InputNode
 
 if TYPE_CHECKING:
-    from featurebyte.api.groupby import EventViewGroupBy
+    from featurebyte.api.groupby import GroupBy
 else:
-    EventViewGroupBy = TypeVar("EventViewGroupBy")
+    GroupBy = TypeVar("GroupBy")
 
 
 class EventViewColumn(ViewColumn):
@@ -179,12 +179,10 @@ class EventView(View):
         return params
 
     @typechecked
-    def groupby(
-        self, by_keys: Union[str, List[str]], category: Optional[str] = None
-    ) -> EventViewGroupBy:
+    def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
         """
         Group EventView using a column or list of columns of the EventView object
-        Refer to [EventViewGroupBy](/reference/featurebyte.api.groupby.EventViewGroupBy/)
+        Refer to [GroupBy](/reference/featurebyte.api.groupby.GroupBy/)
 
         Parameters
         ----------
@@ -196,10 +194,10 @@ class EventView(View):
 
         Returns
         -------
-        EventViewGroupBy
+        GroupBy
             a groupby object that contains information about the groups
         """
         # pylint: disable=import-outside-toplevel
-        from featurebyte.api.groupby import EventViewGroupBy
+        from featurebyte.api.groupby import GroupBy
 
-        return EventViewGroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
+        return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore

@@ -21,7 +21,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
@@ -480,7 +480,7 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
     EventViewGroupBy fixture
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id")
-    assert isinstance(grouped, EventViewGroupBy)
+    assert isinstance(grouped, GroupBy)
     assert snowflake_event_view_with_entity.tabular_data_ids == grouped.obj.tabular_data_ids
     yield grouped
 
