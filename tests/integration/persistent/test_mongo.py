@@ -46,7 +46,7 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
             _ = session[0]
 
     # ensure persistent is working after failed transaction
-    await persistent.find(collection_name="data4", query_filter={})
+    await persistent.find(collection_name=col, query_filter={})
 
     # check no record written to the mongodb
     output = list(database[col].find({}, {"_id": False}))

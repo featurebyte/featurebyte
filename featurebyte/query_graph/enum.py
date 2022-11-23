@@ -79,6 +79,10 @@ class NodeType(StrEnum):
     # operations with side effect
     INPUT = "input"
 
+    # graph node to support nested graph
+    GRAPH = "graph"
+    PROXY_INPUT = "proxy_input"
+
 
 class NodeOutputType(StrEnum):
     """

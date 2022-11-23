@@ -29,6 +29,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AssignNode, GroupbyNode, InputNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters, ProxyInputNode
 from featurebyte.query_graph.util import (
     get_aggregation_identifier,
     get_tile_table_identifier,
@@ -355,12 +356,10 @@ class QueryGraph(FeatureByteBaseModel):
             updated query graph with the node name mapping between input query graph & output query graph
         """
         node_name_map: Dict[str, str] = {}
-        sorted_node_names = topological_sort(list(graph.nodes_map), graph.edges_map)
-        for node_name in sorted_node_names:
-            node = graph.get_node_by_name(node_name)
+        for node in graph.iterate_sorted_nodes():
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
-                for input_node_name in graph.backward_edges_map[node_name]
+                for input_node_name in graph.backward_edges_map[node.name]
             ]
             node_global = self.add_operation(
                 node_type=NodeType(node.type),
@@ -368,7 +367,7 @@ class QueryGraph(FeatureByteBaseModel):
                 node_output_type=NodeOutputType(node.output_type),
                 input_nodes=input_nodes,
             )
-            node_name_map[node_name] = node_global.name
+            node_name_map[node.name] = node_global.name
         return self, node_name_map
 
     def iterate_nodes(self, target_node: Node, node_type: NodeType) -> Iterator[Node]:
@@ -390,6 +389,19 @@ class QueryGraph(FeatureByteBaseModel):
         for node in dfs_traversal(self, target_node):
             if node.type == node_type:
                 yield node
+
+    def iterate_sorted_nodes(self) -> Iterator[Node]:
+        """
+        Iterate all nodes in topological sorted order
+
+        Yields
+        ------
+        Node
+            Topologically sorted query graph nodes
+        """
+        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        for node_name in sorted_node_names:
+            yield self.nodes_map[node_name]
 
     def _prune(
         self,
@@ -586,10 +598,9 @@ class QueryGraph(FeatureByteBaseModel):
         QueryGraph
         """
         output = QueryGraph()
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
-        for node_name in sorted_node_names:
-            input_node_names = self.backward_edges_map[node_name]
-            node = replace_nodes_map.get(node_name, self.nodes_map[node_name])
+        for _node in self.iterate_sorted_nodes():
+            input_node_names = self.backward_edges_map[_node.name]
+            node = replace_nodes_map.get(_node.name, self.nodes_map[_node.name])
             input_nodes = [
                 replace_nodes_map.get(input_node_name, self.nodes_map[input_node_name])
                 for input_node_name in input_node_names
@@ -649,6 +660,185 @@ class QueryGraph(FeatureByteBaseModel):
             visited_node_types=set(),
             topological_order_map=self.node_topological_order_map,
         )
+
+    def add_graph_node(self, graph_node: "GraphNode", input_nodes: List[Node]) -> Node:
+        """
+        Add graph node to the graph
+
+        Parameters
+        ----------
+        graph_node: GraphNode
+            Graph node
+        input_nodes: List[Node]
+            Input nodes to the graph node
+
+        Returns
+        -------
+        Node
+        """
+        return self.add_operation(
+            node_type=graph_node.type,
+            node_params=graph_node.parameters.dict(),
+            node_output_type=graph_node.output_node.output_type,
+            input_nodes=input_nodes,
+        )
+
+    def flatten(self) -> "QueryGraph":
+        """
+        Construct a query graph which flattened all the graph nodes of this query graph
+
+        Returns
+        -------
+        QueryGraph
+        """
+        flattened_graph = QueryGraph()
+        # node_name_map: key(this-graph-node-name) => value(flattened-graph-node-name)
+        node_name_map: Dict[str, str] = {}
+        for node in self.iterate_sorted_nodes():
+            if isinstance(node, BaseGraphNode):
+                nested_graph = node.parameters.graph.flatten()
+                # nested_node_name_map: key(nested-node-name) => value(flattened-graph-node-name)
+                nested_node_name_map: Dict[str, str] = {}
+                for nested_node in nested_graph.iterate_sorted_nodes():
+                    input_nodes = []
+                    for input_node_name in nested_graph.backward_edges_map[nested_node.name]:
+                        input_nodes.append(
+                            flattened_graph.get_node_by_name(nested_node_name_map[input_node_name])
+                        )
+
+                    if isinstance(nested_node, ProxyInputNode):
+                        nested_node_name_map[nested_node.name] = node_name_map[
+                            nested_node.parameters.node_name
+                        ]
+                    else:
+                        inserted_node = flattened_graph.add_operation(
+                            node_type=nested_node.type,
+                            node_params=nested_node.parameters.dict(),
+                            node_output_type=nested_node.output_type,
+                            input_nodes=input_nodes,
+                        )
+                        nested_node_name_map[nested_node.name] = inserted_node.name
+
+                    if nested_node.name == node.parameters.output_node_name:
+                        node_name_map[node.name] = nested_node_name_map[nested_node.name]
+            else:
+                inserted_node = flattened_graph.add_operation(
+                    node_type=node.type,
+                    node_params=node.parameters.dict(),
+                    node_output_type=node.output_type,
+                    input_nodes=[
+                        flattened_graph.get_node_by_name(node_name_map[input_node_name])
+                        for input_node_name in self.backward_edges_map[node.name]
+                    ],
+                )
+                node_name_map[node.name] = inserted_node.name
+        return flattened_graph
+
+
+# update forward references after QueryGraph is defined
+GraphNodeParameters.update_forward_refs(QueryGraph=QueryGraph)
+
+
+class GraphNode(BaseGraphNode):
+    """
+    Extend graph node by providing additional graph-node-construction-related methods
+    """
+
+    @classmethod
+    def create(
+        cls,
+        node_type: NodeType,
+        node_params: Dict[str, Any],
+        node_output_type: NodeOutputType,
+        input_nodes: List[Node],
+    ) -> Tuple["GraphNode", List[Node]]:
+        """
+        Construct a graph node
+
+        Parameters
+        ----------
+        node_type: NodeType
+            Type of node (to be inserted in the graph inside the graph node)
+        node_params: Dict[str, Any]
+            Parameters of the node (to be inserted in the graph inside the graph node)
+        node_output_type: NodeOutputType
+            Output type of the node (to be inserted in the graph inside the graph node)
+        input_nodes: List[Nodes]
+            Input nodes of the node (to be inserted in the graph inside the graph node)
+
+        Returns
+        -------
+        Tuple[GraphNode, List[Node]]
+        """
+        graph = QueryGraph()
+        proxy_input_nodes = []
+        for node in input_nodes:
+            proxy_input_node = graph.add_operation(
+                node_type=NodeType.PROXY_INPUT,
+                node_params={"node_name": node.name},
+                node_output_type=node.output_type,
+                input_nodes=[],
+            )
+            proxy_input_nodes.append(proxy_input_node)
+
+        nested_node = graph.add_operation(
+            node_type=node_type,
+            node_params=node_params,
+            node_output_type=node_output_type,
+            input_nodes=proxy_input_nodes,
+        )
+        graph_node = GraphNode(
+            name="graph",
+            output_type=nested_node.output_type,
+            parameters=GraphNodeParameters(graph=graph, output_node_name=nested_node.name),
+        )
+        return graph_node, proxy_input_nodes
+
+    @property
+    def output_node(self) -> Node:
+        """
+        Output node of the graph (in the graph node)
+
+        Returns
+        -------
+        Node
+        """
+        return cast(Node, self.parameters.graph.nodes_map[self.parameters.output_node_name])
+
+    def add_operation(
+        self,
+        node_type: NodeType,
+        node_params: Dict[str, Any],
+        node_output_type: NodeOutputType,
+        input_nodes: List[Node],
+    ) -> Node:
+        """
+        Add operation to the query graph inside the graph node
+
+        Parameters
+        ----------
+        node_type: NodeType
+            node type
+        node_params: dict
+            parameters used for the node operation
+        node_output_type: NodeOutputType
+            node output type
+        input_nodes: list[Node]
+            list of input nodes
+
+        Returns
+        -------
+        Node
+            operation node of the given input (from the graph inside the graph node)
+        """
+        nested_node = self.parameters.graph.add_operation(
+            node_type=node_type,
+            node_params=node_params,
+            node_output_type=node_output_type,
+            input_nodes=input_nodes,
+        )
+        self.parameters.output_node_name = nested_node.name
+        return cast(Node, nested_node)
 
 
 class GraphState(TypedDict):

@@ -314,7 +314,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         ]
 
 
-class Join(BaseNode):
+class JoinNode(BaseNode):
     """Join class"""
 
     class Parameters(BaseModel):
