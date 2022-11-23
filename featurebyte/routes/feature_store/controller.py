@@ -7,7 +7,6 @@ from typing import Any, List
 
 from bson.objectid import ObjectId
 
-from featurebyte.logger import logger
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import (
