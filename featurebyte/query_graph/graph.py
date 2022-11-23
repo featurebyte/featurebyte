@@ -29,8 +29,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AssignNode, GroupbyNode, InputNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
-from featurebyte.query_graph.node.nested import GraphNode as BaseGraphNode
-from featurebyte.query_graph.node.nested import GraphNodeParameters, ProxyInputNode
+from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters, ProxyInputNode
 from featurebyte.query_graph.util import (
     get_aggregation_identifier,
     get_tile_table_identifier,
@@ -701,12 +700,12 @@ class QueryGraph(FeatureByteBaseModel):
                 # nested_node_name_map: key(nested-node-name) => value(flattened-graph-node-name)
                 nested_node_name_map: Dict[str, str] = {}
                 for nested_node in nested_graph.iterate_sorted_nodes():
-                    input_nodes = [
-                        flattened_graph.nodes_map[nested_node_name_map[nested_input_node_name]]
-                        for nested_input_node_name in nested_graph.backward_edges_map[
-                            nested_node.name
-                        ]
-                    ]
+                    input_nodes = []
+                    for input_node_name in nested_graph.backward_edges_map[nested_node.name]:
+                        input_nodes.append(
+                            flattened_graph.get_node_by_name(nested_node_name_map[input_node_name])
+                        )
+
                     if isinstance(nested_node, ProxyInputNode):
                         nested_node_name_map[nested_node.name] = node_name_map[
                             nested_node.parameters.node_name
@@ -728,7 +727,7 @@ class QueryGraph(FeatureByteBaseModel):
                     node_params=node.parameters.dict(),
                     node_output_type=node.output_type,
                     input_nodes=[
-                        flattened_graph.nodes_map[node_name_map[input_node_name]]
+                        flattened_graph.get_node_by_name(node_name_map[input_node_name])
                         for input_node_name in self.backward_edges_map[node.name]
                     ],
                 )

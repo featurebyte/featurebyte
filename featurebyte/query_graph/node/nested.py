@@ -58,7 +58,7 @@ class GraphNodeParameters(BaseModel):
     output_node_name: str
 
 
-class GraphNode(NestedGraphMixin, BaseNode):
+class BaseGraphNode(NestedGraphMixin, BaseNode):
     """Graph node"""
 
     type: Literal[NodeType.GRAPH] = Field(NodeType.GRAPH, const=True)
