@@ -418,7 +418,7 @@ def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
     """
     snowflake_item_view.join_event_data_attributes(["col_float"])
     snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
-    snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float"] * 678) / 90
+    snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float_v2"] * 678) / 90
     with pytest.raises(ValueError) as exc:
         _ = snowflake_item_view.groupby("cust_id").aggregate(
             "col_float_v2",
