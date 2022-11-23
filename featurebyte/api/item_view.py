@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import copy
 
@@ -18,11 +18,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.metadata.operation import (
-    DerivedDataColumn,
-    SourceDataColumn,
-    ViewDataColumnType,
-)
+from featurebyte.query_graph.node.metadata.operation import ViewDataColumnType
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -48,7 +44,6 @@ class ItemView(View, GroupByMixin):
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_view: EventView = Field(allow_mutation=False)
-    joined_event_data_columns: list[str] = Field(default_factory=list, allow_mutation=False)
 
     @classmethod
     @typechecked
@@ -144,9 +139,6 @@ class ItemView(View, GroupByMixin):
             set(self.tabular_data_ids + self.event_view.tabular_data_ids)
         )
 
-        # Update list of columns joined from EventData
-        joined_event_data_columns = self.joined_event_data_columns + columns
-
         self.node_name = node.name
         self.columns_info = joined_columns_info
         self.column_lineage_map = joined_column_lineage_map
@@ -154,7 +146,6 @@ class ItemView(View, GroupByMixin):
         self.__dict__.update(
             {
                 "tabular_data_ids": joined_tabular_data_ids,
-                "joined_event_data_columns": joined_event_data_columns,
             }
         )
 
@@ -193,15 +184,12 @@ class ItemView(View, GroupByMixin):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        # TODO: join_event_data_columns field can be updated if this _getitem_frame_params accept
-        #  the list of columns parameter.
         params.update(
             {
                 "event_id_column": self.event_id_column,
                 "item_id_column": self.item_id_column,
                 "event_data_id": self.event_data_id,
                 "event_view": self.event_view,
-                "joined_event_data_columns": self.joined_event_data_columns,
             }
         )
         return params
@@ -227,6 +215,18 @@ class ItemView(View, GroupByMixin):
             )
 
     def _is_column_derived_only_from_event_data(self, column_name: str) -> bool:
+        """
+        Check if column is derived from using only EventData's columns
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column in ItemView to check
+
+        Returns
+        -------
+        bool
+        """
         operation_structure = self.graph.extract_operation_structure(self.node)
         column_structure = next(
             column for column in operation_structure.columns if column.name == column_name

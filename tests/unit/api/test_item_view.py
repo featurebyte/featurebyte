@@ -66,8 +66,8 @@ def test_from_item_data__auto_join_columns(
         "parameters": {
             "left_on": "col_int",
             "right_on": "event_id_col",
-            "left_input_columns": ["event_timestamp"],
-            "left_output_columns": ["event_timestamp"],
+            "left_input_columns": ["event_timestamp", "cust_id"],
+            "left_output_columns": ["event_timestamp", "cust_id"],
             "right_input_columns": [
                 "event_id_col",
                 "item_id_col",
@@ -95,6 +95,7 @@ def test_from_item_data__auto_join_columns(
         "item_amount",
         "created_at",
         "event_timestamp",
+        "cust_id",
     ]
     assert view.dtypes.to_dict() == {
         "event_id_col": "INT",
@@ -103,6 +104,7 @@ def test_from_item_data__auto_join_columns(
         "item_amount": "FLOAT",
         "created_at": "TIMESTAMP",
         "event_timestamp": "TIMESTAMP",
+        "cust_id": "INT",
     }
     assert view_dict["row_index_lineage"] == ("input_2", "join_1")
     assert view_dict["column_lineage_map"] == {
@@ -112,8 +114,8 @@ def test_from_item_data__auto_join_columns(
         "item_amount": ("input_2", "join_1"),
         "created_at": ("input_2", "join_1"),
         "event_timestamp": ("input_1", "join_1"),
+        "cust_id": ("input_1", "join_1"),
     }
-    assert view_dict["joined_event_data_columns"] == ["event_timestamp"]
 
     # Check preview SQL
     preview_sql = view.preview_sql()
@@ -121,6 +123,7 @@ def test_from_item_data__auto_join_columns(
         """
         SELECT
           L."event_timestamp" AS "event_timestamp",
+          L."cust_id" AS "cust_id",
           R."event_id_col" AS "event_id_col",
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
@@ -198,6 +201,7 @@ def test_setitem__str_key_series_value(
     }
     assert snowflake_item_view.column_lineage_map == {
         "event_timestamp": expected_lineage_event_data_columns,
+        "cust_id": expected_lineage_event_data_columns,
         "event_id_col": expected_lineage_item_data_columns,
         "item_id_col": expected_lineage_item_data_columns,
         "item_type": expected_lineage_item_data_columns,
@@ -237,6 +241,7 @@ def test_join_event_data_attributes__more_columns(
                 "item_amount",
                 "created_at",
                 "event_timestamp",
+                "cust_id",
             ],
             "right_output_columns": [
                 "event_id_col",
@@ -245,6 +250,7 @@ def test_join_event_data_attributes__more_columns(
                 "item_amount",
                 "created_at",
                 "event_timestamp",
+                "cust_id",
             ],
             "join_type": "inner",
         },
@@ -260,6 +266,7 @@ def test_join_event_data_attributes__more_columns(
         "item_amount",
         "created_at",
         "event_timestamp",
+        "cust_id",
         "col_float",
     ]
     assert view.dtypes.to_dict() == {
@@ -269,6 +276,7 @@ def test_join_event_data_attributes__more_columns(
         "item_amount": "FLOAT",
         "created_at": "TIMESTAMP",
         "event_timestamp": "TIMESTAMP",
+        "cust_id": "INT",
         "col_float": "FLOAT",
     }
     assert view_dict["row_index_lineage"] == ("input_2", "join_1", "join_2")
@@ -279,9 +287,9 @@ def test_join_event_data_attributes__more_columns(
         "item_amount": ("input_2", "join_1", "join_2"),
         "created_at": ("input_2", "join_1", "join_2"),
         "event_timestamp": ("input_1", "join_1", "join_2"),
+        "cust_id": ("input_1", "join_1", "join_2"),
         "col_float": ("input_1", "join_2"),
     }
-    assert view_dict["joined_event_data_columns"] == ["event_timestamp", "col_float"]
 
     # Check preview SQL
     preview_sql = snowflake_item_view.preview_sql()
@@ -294,7 +302,8 @@ def test_join_event_data_attributes__more_columns(
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
           R."created_at" AS "created_at",
-          R."event_timestamp" AS "event_timestamp"
+          R."event_timestamp" AS "event_timestamp",
+          R."cust_id" AS "cust_id"
         FROM (
             SELECT
               "col_int" AS "col_int",
@@ -311,6 +320,7 @@ def test_join_event_data_attributes__more_columns(
         INNER JOIN (
             SELECT
               L."event_timestamp" AS "event_timestamp",
+              L."cust_id" AS "cust_id",
               R."event_id_col" AS "event_id_col",
               R."item_id_col" AS "item_id_col",
               R."item_type" AS "item_type",
