@@ -18,19 +18,67 @@ Additional transformations planned in the coming releases include:
 * time series aggregations
 
 ### Cleaning
-The default cleaning specified during the data annotation can be overridden by calling FeatureByte’s pre-built cleaning function with the desired cleaning steps.
+Views are automatically cleaned based on the information collected during the data annotation.
 
-If users don’t explicitly call the cleaning function in their SDK script, the default cleaning steps at the time of the feature declaration are automatically attached to the feature to ensure that data is cleaned before the feature is computed and served.
+Users can override the default cleaning by applying the desired cleaning steps to the raw data.
 
 ### Flags
-FeatureByte automatically suggests flags of data issues based on the critical data info annotated for the selected column.
+Flags are automatically created based on the information collected during the data annotation. 
 
-A built-in function also allows users to define their own flags independently to the critical data info annotated for the columns.
-
-Flags are applied before data cleaning.
+Users can easily create additional flags from the raw data.
 
 ### Transforms
-To be completed by YungSiang
+The following transforms can be applied on columns in a View. That returns a new column that can be assigned back to the View or be used for further transformations. Some transforms are only available to certain data types.
+
+##### Generic
+The following transforms are available for columns of all data types:
+
+* `isnull`: Get a new boolean column indicating whether each row is missing
+* `notnull`: Get a new boolean column indicating whether each row is non-missing
+* `fillna`: Fill missing value in-place
+* `astype`: Convert the data type
+
+##### Numeric
+The following transforms are available for a numeric column and returns a new column:
+
+* built-in arithmetic operators (`+`, `-`, `*`, `/`, etc)
+* `abs`: Absolute value
+* `sqrt`: Square root
+* `pow`: Power
+* `log`: Logarithm with natural base
+* `exp`: Exponential function
+* `floor`: Round down to the nearest integer
+* `ceil`: Round up to the nearest integer
+
+##### String
+The following transforms are available for a string column and returns a new column:
+
+* `len`: Get the length of the string
+* `lower`: Convert all characters to lowercase
+* `upper`: Convert all characters to uppercase
+* `strip`: Trim white space(s) or a specific character on the left & right string boundaries 
+* `lstrip`: Trim white space(s) or a specific character on the left string boundaries
+* `rstrip`: Trim white space(s) or a specific character on the right string boundaries
+* `replace`: Replace substring with a new string
+* `pad`: Pad string up to the specified width size
+* `contains`: Get a boolean flag column indicating whether each string element contains a target string
+* `slice`: Slice substrings for each string element
+
+##### Datetime
+The following transforms are available for a datetime column:
+
+* Difference between two datetime columns
+* Datetime component extraction
+  * `year`
+  * `quarter`
+  * `month`
+  * `week`
+  * `day`
+  * `day_of_week`
+  * `hour`
+  * `minute`
+  * `second`
+* Addition with a time interval to produce a new datetime column
 
 ### Lags
 Lags can extract the previous value for a given Entity. This allows the computation of important features such as features based on inter event time and distance from a previous point.
