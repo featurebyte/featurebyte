@@ -13,7 +13,7 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.view import View, ViewColumn
+from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -25,7 +25,7 @@ class ItemViewColumn(ViewColumn):
     """
 
 
-class ItemView(View):
+class ItemView(View, GroupByMixin):
     """
     ItemView class
     """
@@ -37,6 +37,7 @@ class ItemView(View):
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_view: EventView = Field(allow_mutation=False)
+    joined_event_data_columns: list[str] = Field(default_factory=list, allow_mutation=False)
 
     @classmethod
     @typechecked
@@ -132,11 +133,19 @@ class ItemView(View):
             set(self.tabular_data_ids + self.event_view.tabular_data_ids)
         )
 
+        # Update list of columns joined from EventData
+        joined_event_data_columns = self.joined_event_data_columns + columns
+
         self.node_name = node.name
         self.columns_info = joined_columns_info
         self.column_lineage_map = joined_column_lineage_map
         self.row_index_lineage = joined_row_index_lineage
-        self.__dict__.update({"tabular_data_ids": joined_tabular_data_ids})
+        self.__dict__.update(
+            {
+                "tabular_data_ids": joined_tabular_data_ids,
+                "joined_event_data_columns": joined_event_data_columns,
+            }
+        )
 
     @property
     def timestamp_column(self) -> str:
@@ -179,6 +188,7 @@ class ItemView(View):
                 "item_id_column": self.item_id_column,
                 "event_data_id": self.event_data_id,
                 "event_view": self.event_view,
+                "joined_event_data_columns": self.joined_event_data_columns,
             }
         )
         return params

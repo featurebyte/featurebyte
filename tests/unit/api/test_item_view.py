@@ -113,6 +113,7 @@ def test_from_item_data__auto_join_columns(
         "created_at": ("input_2", "join_1"),
         "event_timestamp": ("input_1", "join_1"),
     }
+    assert view_dict["joined_event_data_columns"] == ["event_timestamp"]
 
     # Check preview SQL
     preview_sql = view.preview_sql()
@@ -280,6 +281,7 @@ def test_join_event_data_attributes__more_columns(
         "event_timestamp": ("input_1", "join_1", "join_2"),
         "col_float": ("input_1", "join_2"),
     }
+    assert view_dict["joined_event_data_columns"] == ["event_timestamp", "col_float"]
 
     # Check preview SQL
     preview_sql = snowflake_item_view.preview_sql()
