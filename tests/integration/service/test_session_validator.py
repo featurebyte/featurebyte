@@ -1,6 +1,7 @@
 """
 Session validator integration test class
 """
+from unittest import mock
 
 import pytest
 import pytest_asyncio
@@ -42,18 +43,22 @@ async def get_reset_session_fixture(
 
 
 @pytest.mark.asyncio
+@mock.patch("featurebyte.app.get_persistent")
 async def test_validate_feature_store_id_not_used_in_warehouse(
+    mock_persistent,
     session_validator_service,
     snowflake_details,
     get_cred,
     snowflake_featurestore_name,
     reset_session,
+    mongo_persistent,
 ):
     """
     Test validate feature store ID not used in warehouse
     """
     # reset
     _ = reset_session
+    mock_persistent.return_value = mongo_persistent[0]
     status = await session_validator_service.validate_feature_store_id_not_used_in_warehouse(
         feature_store_name=snowflake_featurestore_name,
         session_type=SourceType.SNOWFLAKE,
