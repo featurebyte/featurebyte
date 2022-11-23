@@ -136,12 +136,18 @@ class DatabricksSession(BaseSession):
         arrow_table = cursor.fetchall_arrow()
         return arrow_table.to_pandas()
 
-    async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+    async def register_table(
+        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
+    ) -> None:
         date_cols = dataframe.select_dtypes(include=["datetime64"]).columns.tolist()
         table_expr = construct_dataframe_sql_expr(dataframe, date_cols).sql(
             pretty=True, dialect="spark"
         )
-        query = f"CREATE OR REPLACE TEMPORARY VIEW {table_name} AS {table_expr}"
+        if temporary:
+            create_command = "CREATE OR REPLACE TEMPORARY VIEW"
+        else:
+            create_command = "CREATE OR REPLACE VIEW"
+        query = f"{create_command} {table_name} AS {table_expr}"
         await self.execute_query(query)
 
 

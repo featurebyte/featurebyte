@@ -193,7 +193,7 @@ async def get_historical_features(
     )
 
     # Execute feature SQL code
-    await session.register_temp_table(request_table_name, training_events)
+    await session.register_table(request_table_name, training_events)
 
     # Compute tiles on demand if required
     tic = time.time()

@@ -390,7 +390,7 @@ class TileCache(ABC):
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        await self.session.register_temp_table_with_query(tile_cache_working_table_name, table_sql)
+        await self.session.register_table_with_query(tile_cache_working_table_name, table_sql)
         self._materialized_temp_table_names.add(tile_cache_working_table_name)
 
     async def _get_tile_cache_validity_from_working_table(

@@ -353,15 +353,15 @@ async def snowflake_session_fixture(
     assert isinstance(session, SnowflakeSession)
 
     # EventData table
-    await session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
+    await session.register_table("TEST_TABLE", transaction_data_upper_case, temporary=False)
 
     # ItemData table
-    await session.register_temp_table("ITEM_DATA_TABLE", items_dataframe)
+    await session.register_table("ITEM_DATA_TABLE", items_dataframe, temporary=False)
 
     # Tile table for tile manager integration tests
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
     df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
-    await session.register_temp_table("TEMP_TABLE", df_tiles)
+    await session.register_table("TEMP_TABLE", df_tiles, temporary=False)
 
     yield session
 

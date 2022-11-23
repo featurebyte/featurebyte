@@ -72,7 +72,7 @@ async def test_snowflake_tile_cache(
 
     request_id = snowflake_session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-    await snowflake_session.register_temp_table(request_table_name, df_training_events)
+    await snowflake_session.register_table(request_table_name, df_training_events)
 
     # No cache existed before for this feature. Check that one tile table needs to be computed
     requests = await tile_cache.get_required_computation(
@@ -108,7 +108,7 @@ async def test_snowflake_tile_cache(
             "user id": [1, 2, 3, 4, 5],
         }
     )
-    await snowflake_session.register_temp_table(request_table_name, df_training_events)
+    await snowflake_session.register_table(request_table_name, df_training_events)
     requests = await tile_cache.get_required_computation(
         request_id=request_id,
         graph=feature.graph,
@@ -135,7 +135,7 @@ async def test_snowflake_tile_cache(
 
     request_id = snowflake_session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
-    await snowflake_session.register_temp_table(request_table_name, df_training_events)
+    await snowflake_session.register_table(request_table_name, df_training_events)
     requests = await tile_cache.get_required_computation(
         request_id=request_id,
         graph=feature.graph,
