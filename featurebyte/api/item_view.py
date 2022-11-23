@@ -199,7 +199,7 @@ class ItemView(View, GroupByMixin):
         self, groupby_obj: GroupBy, value_column: Optional[str]
     ) -> None:
         """
-        Validation aggregation parameters are valid for ItemView
+        Check whether aggregation parameters are valid for ItemView
 
         Columns imported from the EventData or their derivatives can not be aggregated per an entity
         inherited from the EventData. Those features should be engineered directly from the
@@ -235,7 +235,7 @@ class ItemView(View, GroupByMixin):
 
     def _is_column_derived_only_from_event_data(self, column_name: str) -> bool:
         """
-        Check if column is derived from using only EventData's columns
+        Check if column is derived using only EventData's columns
 
         Parameters
         ----------
