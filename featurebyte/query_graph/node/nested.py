@@ -2,7 +2,7 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Dict, List, Literal, Set
+from typing import List, Literal, Set
 
 from pydantic import BaseModel, Field
 
@@ -55,7 +55,6 @@ class GraphNodeParameters(BaseModel):
     """Graph node parameters"""
 
     graph: "QueryGraph"  # type: ignore[name-defined]
-    node_name_map: Dict[str, str]
     output_node_name: str
 
 

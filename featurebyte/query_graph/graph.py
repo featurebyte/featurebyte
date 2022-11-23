@@ -709,7 +709,7 @@ class QueryGraph(FeatureByteBaseModel):
                     ]
                     if isinstance(nested_node, ProxyInputNode):
                         nested_node_name_map[nested_node.name] = node_name_map[
-                            node.parameters.node_name_map[nested_node.name]
+                            nested_node.parameters.node_name
                         ]
                     else:
                         inserted_node = flattened_graph.add_operation(
@@ -788,18 +788,10 @@ class GraphNode(BaseGraphNode):
             node_output_type=node_output_type,
             input_nodes=proxy_input_nodes,
         )
-        node_name_map = {
-            proxy_node.name: input_node.name
-            for proxy_node, input_node in zip(proxy_input_nodes, input_nodes)
-        }
         graph_node = GraphNode(
             name="graph",
             output_type=nested_node.output_type,
-            parameters=GraphNodeParameters(
-                graph=graph,
-                node_name_map=node_name_map,
-                output_node_name=nested_node.name,
-            ),
+            parameters=GraphNodeParameters(graph=graph, output_node_name=nested_node.name),
         )
         return graph_node, proxy_input_nodes
 

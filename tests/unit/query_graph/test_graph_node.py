@@ -47,7 +47,6 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
     assert nested_input_nodes == []
     assert graph_node.output_node == expected_nested_input_node
     assert graph_node.parameters.graph == {"nodes": [expected_nested_input_node], "edges": []}
-    assert graph_node.parameters.node_name_map == {}
     assert graph_node.parameters.output_node_name == "input_1"
 
     # test further operate on the graph node
@@ -62,7 +61,6 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
         "nodes": [expected_nested_input_node, project_node],
         "edges": [{"source": "input_1", "target": project_node.name}],
     }
-    assert graph_node.parameters.node_name_map == {}
 
 
 def test_graph_node_create__non_empty_input_nodes(input_node_params):
@@ -115,10 +113,6 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
             {"source": "proxy_input_1", "target": "add_1"},
             {"source": "proxy_input_2", "target": "add_1"},
         ],
-    }
-    assert graph_node.parameters.node_name_map == {
-        "proxy_input_1": "project_1",
-        "proxy_input_2": "project_2",
     }
     assert graph_node.parameters.output_node_name == "add_1"
 
