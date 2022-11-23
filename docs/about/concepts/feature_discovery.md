@@ -33,7 +33,7 @@ Feature Discovery can be triggered from:
 * a view and an entity
 * or a view column and an entity
 
-Feature Discovery results are in the form of feature recipe methods organized by theme that encapsultates information on the feature entity, main data and signal type.
+Feature Discovery results are in the form of feature recipe methods organized by theme that encapsulates information on the feature entity, main data and signal type.
 
 The results for a Feature Discovery triggered from an Event Timestamp of a Credit Card transaction table for the Transaction Entity would be as follows:
 
