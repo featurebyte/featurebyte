@@ -16,7 +16,8 @@ def get_session_validator_service_fixture(mongo_persistent):
     Get a real session validator service fixture
     """
     user = User()
-    service = SessionValidatorService(user, mongo_persistent)
+    persistent, _ = mongo_persistent
+    service = SessionValidatorService(user, persistent)
     return service
 
 
@@ -52,6 +53,10 @@ async def test_validate_feature_store_id_not_used_in_warehouse(
     """
     Test validate feature store ID not used in warehouse
     """
+    # reset
+    await session_validator_service.persistent.delete_one(
+        collection_name="feature_store", query_filter={}, user_id=User().id
+    )
     _ = session_refresher
     status = await session_validator_service.validate_feature_store_id_not_used_in_warehouse(
         feature_store_name=snowflake_featurestore_name,
