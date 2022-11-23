@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import copy
 
@@ -14,9 +14,20 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.metadata.operation import (
+    DerivedDataColumn,
+    SourceDataColumn,
+    ViewDataColumnType,
+)
+
+if TYPE_CHECKING:
+    from featurebyte.api.groupby import GroupBy
+else:
+    GroupBy = TypeVar("GroupBy")
 
 
 class ItemViewColumn(ViewColumn):
@@ -182,6 +193,8 @@ class ItemView(View, GroupByMixin):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
+        # TODO: join_event_data_columns field can be updated if this _getitem_frame_params accept
+        #  the list of columns parameter.
         params.update(
             {
                 "event_id_column": self.event_id_column,
@@ -192,3 +205,38 @@ class ItemView(View, GroupByMixin):
             }
         )
         return params
+
+    def validate_aggregation_parameters(self, groupby_obj: GroupBy, value_column: str) -> None:
+        """
+        Validation aggregation parameters are valid for ItemView
+
+        Columns imported from the EventData or their derivatives can not be aggregated per an entity
+        inherited from the EventData. Those features should be engineered directly from the
+        EventData.
+        """
+        keys = groupby_obj.keys
+        groupby_keys_from_event_data = all(
+            self._is_column_derived_only_from_event_data(key) for key in keys
+        )
+        if groupby_keys_from_event_data and self._is_column_derived_only_from_event_data(
+            value_column
+        ):
+            raise ValueError(
+                "Columns imported from EventData and their derivatives should be aggregated in"
+                " EventView"
+            )
+
+    def _is_column_derived_only_from_event_data(self, column_name: str) -> bool:
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        column_structure = next(
+            column for column in operation_structure.columns if column.name == column_name
+        )
+        if column_structure.type == ViewDataColumnType.DERIVED:
+            return all(
+                input_column.tabular_data_type == TableDataType.EVENT_DATA
+                for input_column in column_structure.columns
+            )
+        elif column_structure.type == ViewDataColumnType.SOURCE:
+            if column_structure.tabular_data_type == TableDataType.EVENT_DATA:
+                return True
+        return False

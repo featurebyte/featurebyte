@@ -203,6 +203,9 @@ class GroupBy(OpsMixin):
             When the aggregation method does not support input variable type
         """
         # pylint: disable=too-many-locals
+
+        self.obj.validate_aggregation_parameters(groupby_obj=self, value_column=value_column)
+
         node_params = self._prepare_node_parameters(
             method=method,
             value_column=value_column,

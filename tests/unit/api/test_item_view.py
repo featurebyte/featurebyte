@@ -354,3 +354,86 @@ def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
     with pytest.raises(ValueError) as exc:
         snowflake_item_view.join_event_data_attributes(["non_existing_column"])
     assert str(exc.value) == "Column does not exist in EventData: non_existing_column"
+
+
+def test_item_view_groupby__item_data_column(snowflake_item_view):
+    """
+    Test aggregating a column from ItemData using an EventData entity is allowed
+    """
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+    feature = snowflake_item_view.groupby("cust_id").aggregate(
+        "item_amount",
+        method="sum",
+        windows=["24h"],
+        feature_names=["item_amount_sum_24h"],
+        feature_job_setting=feature_job_setting,
+    )["item_amount_sum_24h"]
+    feature_dict = feature.dict()
+    assert feature_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
+        {"source": "join_1", "target": "groupby_1"},
+        {"source": "groupby_1", "target": "project_1"},
+    ]
+
+
+def test_item_view_groupby__event_data_column(snowflake_item_view):
+    """
+    Test aggregating an EventData column using EventData entity is not allowed
+    """
+    snowflake_item_view.join_event_data_attributes(["col_float"])
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("cust_id").aggregate(
+            "col_float",
+            method="sum",
+            windows=["24h"],
+            feature_names=["item_amount_sum_24h"],
+        )["item_amount_sum_24h"]
+    assert str(exc.value) == (
+        "Columns imported from EventData and their derivatives should be aggregated in EventView"
+    )
+
+
+def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
+    """
+    Test aggregating a column derived from EventData column using EventData entity is not allowed
+    """
+    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
+    snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float"] * 678) / 90
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("cust_id").aggregate(
+            "col_float_v2",
+            method="sum",
+            windows=["24h"],
+            feature_names=["item_amount_sum_24h"],
+        )["item_amount_sum_24h"]
+    assert str(exc.value) == (
+        "Columns imported from EventData and their derivatives should be aggregated in EventView"
+    )
+
+
+def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view):
+    """
+    Test aggregating a column derived from both EventData and ItemData is allowed
+    """
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view["new_col"] = (
+        snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
+    )
+    _ = snowflake_item_view.groupby("cust_id").aggregate(
+        "new_col",
+        method="sum",
+        windows=["24h"],
+        feature_names=["feature_name"],
+        feature_job_setting=feature_job_setting,
+    )["feature_name"]
