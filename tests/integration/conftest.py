@@ -170,7 +170,7 @@ def get_snowflake_details_fixture():
     return details
 
 
-@pytest.fixture(name="snowflake_featurestore_name")
+@pytest.fixture(name="snowflake_featurestore_name", scope="session")
 def get_snowflake_featurestore_name_fixture():
     """
     Returns the featurestore name that is used by the default feature store in integration tests.
