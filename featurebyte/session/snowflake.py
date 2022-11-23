@@ -173,11 +173,17 @@ class SnowflakeSession(BaseSession):
         except NotSupportedError:
             super().fetch_query_stream_impl(cursor, output_pipe)
 
-    async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+    async def register_table(
+        self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
+    ) -> None:
         schema = self.get_columns_schema_from_dataframe(dataframe)
+        if temporary:
+            create_command = "CREATE OR REPLACE TEMP TABLE"
+        else:
+            create_command = "CREATE OR REPLACE TABLE"
         await self.execute_query(
             f"""
-            CREATE OR REPLACE TEMP TABLE {table_name}(
+            {create_command} {table_name}(
                 {schema}
             )
             """

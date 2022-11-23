@@ -57,7 +57,9 @@ def base_session_test_fixture():
         ) -> OrderedDict[str, DBVarType]:
             return collections.OrderedDict()
 
-        async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+        async def register_table(
+            self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
+        ) -> None:
             return None
 
     return BaseSessionTestFixture

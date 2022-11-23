@@ -168,10 +168,11 @@ async def test_databricks_session(databricks_session_dict):
     pd.testing.assert_frame_equal(df_result, df_expected)
 
 
+@pytest.mark.parametrize("temporary", [True, False])
 @pytest.mark.asyncio
-async def test_databricks_register_temp_table(databricks_session_dict, databricks_connection):
+async def test_databricks_register_table(databricks_session_dict, databricks_connection, temporary):
     """
-    Test Databricks session register_temp_table
+    Test Databricks session register_table
     """
     with mock.patch(
         "featurebyte.session.databricks.DatabricksSession.execute_query"
@@ -183,10 +184,14 @@ async def test_databricks_register_temp_table(databricks_session_dict, databrick
                 "cust_id": [1, 2, 3],
             },
         )
-        await session.register_temp_table("my_view", df)
+        if temporary:
+            expected = "CREATE OR REPLACE TEMPORARY VIEW"
+        else:
+            expected = "CREATE OR REPLACE VIEW"
+        await session.register_table("my_view", df, temporary)
         expected_query = textwrap.dedent(
-            """
-            CREATE OR REPLACE TEMPORARY VIEW my_view AS SELECT
+            f"""
+            {expected} my_view AS SELECT
               CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS `point_in_time`,
               1 AS `cust_id`
             UNION ALL
