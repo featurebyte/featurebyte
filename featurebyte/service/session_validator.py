@@ -175,7 +175,7 @@ class SessionValidatorService:
         """
         response, count = await self.persistent.find(
             FeatureStoreModel.collection_name(),
-            query_filter={"details": details},
+            query_filter={"details": details.dict()},
         )
         does_exist = count != 0
         # We expect to see at most one entry. Error if there's more than one.
