@@ -3,6 +3,7 @@ Session validator integration test class
 """
 
 import pytest
+import pytest_asyncio
 
 from featurebyte import FeatureStore, SourceType
 from featurebyte.app import User
@@ -21,10 +22,12 @@ def get_session_validator_service_fixture(mongo_persistent):
     return service
 
 
-@pytest.mark.asyncio
-@pytest.fixture(name="session_refresher")
+# @pytest.fixture
+#
+# @pytest.mark.asyncio
+@pytest_asyncio.fixture(name="reset_session")
 async def get_reset_session_fixture(
-    session_manager, snowflake_details, snowflake_featurestore_name, get_cred
+    session_manager, snowflake_details, snowflake_featurestore_name
 ):
     """
     Resets the session by dropping the working schema table.
@@ -38,8 +41,7 @@ async def get_reset_session_fixture(
         session_type=SourceType.SNOWFLAKE,
         details=snowflake_details,
     )
-    await session.execute_query(f"DROP TABLE IF EXISTS METADATA_SCHEMA")
-    yield
+    await session.execute_query(f"UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = NULL")
 
 
 @pytest.mark.asyncio
@@ -48,16 +50,13 @@ async def test_validate_feature_store_id_not_used_in_warehouse(
     snowflake_details,
     get_cred,
     snowflake_featurestore_name,
-    session_refresher,
+    reset_session,
 ):
     """
     Test validate feature store ID not used in warehouse
     """
     # reset
-    await session_validator_service.persistent.delete_one(
-        collection_name="feature_store", query_filter={}, user_id=User().id
-    )
-    _ = session_refresher
+    _ = reset_session
     status = await session_validator_service.validate_feature_store_id_not_used_in_warehouse(
         feature_store_name=snowflake_featurestore_name,
         session_type=SourceType.SNOWFLAKE,
