@@ -13,7 +13,7 @@ Connection with data sources that reside in cloud data platforms such as Snowfla
 Csv or parquet snapshots can however be used to materialize historical feature values and run modeling experiments, such as feature list tuning to allow collaboration and facilitate prototyping with external contributors.
 
 ### Event table
-Event tables (also known as a Transaction Fact Table in Data Warehouses) are a rich source of behavioral features. Each row represents a discrete business event measured at a point in space and time.
+Event tables (also known as a Transaction Fact Table in Data Warehouses) are a rich source of behavioral features. Each row represents a discrete business event measured at a point in time.
 
 Examples of Event tables include Order table in E-com, Credit Card Transactions in Banking, Doctor Visits in Healthcare and Clickstream in Internet.
 
