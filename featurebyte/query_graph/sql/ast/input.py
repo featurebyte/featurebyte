@@ -39,7 +39,7 @@ class InputNode(TableNode):
     feature_store: dict[str, Any]
     query_node_type = NodeType.INPUT
 
-    def select_query_impl(self, select_expr: Select) -> Select:
+    def from_query_impl(self, select_expr: Select) -> Select:
         if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]

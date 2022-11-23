@@ -27,7 +27,7 @@ class Join(TableNode):
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
-    def select_query_impl(self, select_expr: Select) -> Select:
+    def from_query_impl(self, select_expr: Select) -> Select:
         left_subquery = expressions.Subquery(this=self.left_node.sql, alias="L")
         join_conditions = expressions.EQ(
             this=self._get_qualified_column_identifier(self.left_on, "L"),

@@ -163,7 +163,7 @@ class TableNode(SQLNode, ABC):
             )
 
         # FROM clause
-        select_expr = self.select_query_impl(select_expr)
+        select_expr = self.from_query_impl(select_expr)
 
         # WHERE clause
         if self.where_condition is not None:
@@ -171,15 +171,14 @@ class TableNode(SQLNode, ABC):
 
         return select_expr
 
-    def select_query_impl(self, select_expr: Select) -> Select:
-        """Construct the final Select expression
+    def from_query_impl(self, select_expr: Select) -> Select:
+        """Construct the FROM clause in the Select expression
 
         The provided select_expr is a partially constructed Select expression formed using
         information from attributes such as columns_map and where conditions. In most cases,
         subclasses will construct the FROM clause using select_expr as the starting point.
 
-        Make this non-abstract with a no-op default to allow subclasses of TableNode to override the
-        sql property directly, in which case this method is irrelevant.
+        The default implementation is no-op and most subclasses should override it.
 
         Parameters
         ----------
