@@ -11,5 +11,3 @@ During the annotation, users can define how to handle:
 Users can default to either ignore values with quality issues or impute those values.
 
 Those default cleaning steps are then automatically enforced if no cleaning steps are specified during feature declaration.
-
-

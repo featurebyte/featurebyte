@@ -69,7 +69,7 @@ A Feature can be derived from multiple features when their entities are Child-Pa
 * Order amount z-score based on the past 12 weeks customer orders history
 
 ### Feature on Demand
-Users are able to derive On Demand Features from another feature and request data. An example of a feature on Demand is “Time since Customer’s last order”. In this case, the point-in-time is known only at request time and the “Timestamp of Customer’s last order” is a Customer feature that can be pre-computed.  
+Users are able to derive On Demand Features from another feature and request data. An example of a feature on Demand is “Time since Customer’s last order”. In this case, the point-in-time is known only at request time and the “Timestamp of Customer’s last order” is a Customer feature that can be pre-computed.
 
 ### Adding a Feature as a column to a View
 Features extracted from other data views can be added as a column to an event view if their entity is present in the view. Then their values can be aggregated as any other column.
