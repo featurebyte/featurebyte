@@ -1,4 +1,4 @@
-Data manipulation in FeatureByte is declared in a similar syntax as Pandas, making the learning curve less steep. 
+Data manipulation in FeatureByte is declared in a similar syntax as Pandas, making the learning curve less steep.
 
 Unlike Pandas, FeatureByte's data transformations follow a lazy execution strategy and are translated as a graphical representation of intended operations. The execution graph is then converted into platform-specific SQL (e.g. SnowSQL or SparkSQL). The transformations are executed only when their values are needed: when a preview or a feature request is performed.
 
@@ -23,11 +23,12 @@ Views are automatically cleaned based on the information collected during the da
 Users can override the default cleaning by applying the desired cleaning steps to the raw data.
 
 ### Flags
-Flags are automatically created based on the information collected during the data annotation. 
+Flags are automatically created based on the information collected during the data annotation.
 
 Users can easily create additional flags from the raw data.
 
 ### Transforms
+
 The following transforms can be applied on columns in a View. That returns a new column that can be assigned back to the View or be used for further transformations. Some transforms are only available to certain data types.
 
 ##### Generic
@@ -56,7 +57,7 @@ The following transforms are available for a string column and returns a new col
 * `len`: Get the length of the string
 * `lower`: Convert all characters to lowercase
 * `upper`: Convert all characters to uppercase
-* `strip`: Trim white space(s) or a specific character on the left & right string boundaries 
+* `strip`: Trim white space(s) or a specific character on the left & right string boundaries
 * `lstrip`: Trim white space(s) or a specific character on the left string boundaries
 * `rstrip`: Trim white space(s) or a specific character on the right string boundaries
 * `replace`: Replace substring with a new string
@@ -69,35 +70,35 @@ The following transforms are available for a datetime column:
 
 * Difference between two datetime columns
 * Datetime component extraction
-  * `year`
-  * `quarter`
-  * `month`
-  * `week`
-  * `day`
-  * `day_of_week`
-  * `hour`
-  * `minute`
-  * `second`
+ * `year`
+ * `quarter`
+ * `month`
+ * `week`
+ * `day`
+ * `day_of_week`
+ * `hour`
+ * `minute`
+ * `second`
 * Addition with a time interval to produce a new datetime column
 
 ### Lags
-Lags can extract the previous value for a given Entity. This allows the computation of important features such as features based on inter event time and distance from a previous point.
+Lags can extract the previous value for a given Entity. This allows the computation of important features such as features based on inter- event time and distance from a previous point.
 
 ### Joins
 To facilitate time aware feature engineering, the event timestamp of the related event data is automatically added to the item view by FeatureByte.
 
-Other joins are recommended when an entity in the view is a primary key or a natural key of another view. 
+Other joins are recommended when an entity in the view is a primary key or a natural key of another view.
 
-Joins of Slowly Changing Dimension views are made at the timestamp of the calling view. An offset can be added to the timestamp during the joins. The offset is applied backwards only. 
+Joins of Slowly Changing Dimension views are made at the timestamp of the calling view. An offset can be added to the timestamp during the joins. The offset is applied backwards only.
 
 #### Forward Joins
 Forward join of Slowly Changing Dimension views can also be done. Users have to specify the time horizon of the join. The columns added by a forward join have special metadata attached to prevent time leakage and this metadata automatically offsets the time windows of any features using those columns as column input.
 
 ### Condition-based Subsetting
-Views can be easily filtered in a similar way to Pandas or R Data Frame. Condition based subset can also be used to overwrite the values of a column.
+Views can be easily filtered in a similar way to Pandas or R Data Frame. A cCondition based subset can also be used to overwrite the values of a column.
 
 ### Change Events
-Changes in a Slowly Changing Dimension table may constitute powerful features: how many times has a customer moved in the past 6 months? if he moved in the past 6 months, where did he use to leave? did he get divorced recently? new kids in the family? does he have a new job?
+Changes in a Slowly Changing Dimension table may constitute powerful features: how many times has a customer moved address in the past 6 months? if she moved in the past 6 months, where did she use to live? did she get divorced recently? new kids in the family? does she have a new job?
 
 To support such important features, users can create a Change View from a Slowly Changing Dimension table. This new view tracks changes for a given column. The resulting view has 4 columns:
 
