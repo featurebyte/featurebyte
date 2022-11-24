@@ -13,6 +13,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException, TableSchemaHasBeenChangedError
+from featurebyte.logger import logger
 from featurebyte.models.feature_store import (
     ColumnInfo,
     DatabaseTableModel,
@@ -77,8 +78,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
         Raises
         ------
-        TableSchemaHasBeenChangedError
-            When table schema has been changed
         RecordRetrievalException
             Failed to retrieve table schema
         """
@@ -118,7 +117,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             columns_info = [ColumnInfo(**dict(col)) for col in values["columns_info"]]
             schema = {col.name: col.dtype for col in columns_info}
             if not recent_schema.items() >= schema.items():
-                raise TableSchemaHasBeenChangedError("Table schema has been changed.")
+                logger.warning("Table schema has been changed.")
         else:
             columns_info = [
                 ColumnInfo(name=name, dtype=var_type) for name, var_type in recent_schema.items()

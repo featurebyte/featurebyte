@@ -612,17 +612,17 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert expected_msg in str(exc.value)
 
 
+@patch("featurebyte.api.database_table.logger")
 @patch("featurebyte.service.session_manager.SessionManager.get_session")
-def test_get_event_data__schema_has_been_changed(mock_get_session, saved_event_data):
+def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, saved_event_data):
     """
     Test retrieving event data after table schema has been changed
     """
     recent_schema = {"column": "INT"}
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    with pytest.raises(TableSchemaHasBeenChangedError) as exc:
-        lazy_event_data = EventData.get_by_id(saved_event_data.id)
-        _ = lazy_event_data.id
-    assert "Table schema has been changed." in str(exc.value)
+    lazy_event_data = EventData.get_by_id(saved_event_data.id)
+    _ = lazy_event_data.id
+    assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
 
     # this is ok as additional column should not break backward compatibility
     recent_schema = {
