@@ -5,7 +5,7 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.api.groupby import GroupBy
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import FeatureJobSetting
 
@@ -32,7 +32,7 @@ def test_constructor(snowflake_event_data, keys, expected_keys):
         snowflake_event_data[column].as_entity(column)
 
     snowflake_event_view = EventView.from_event_data(event_data=snowflake_event_data)
-    grouped = EventViewGroupBy(obj=snowflake_event_view, keys=keys)
+    grouped = GroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
     assert grouped.serving_names == expected_serving_names
 
@@ -42,7 +42,7 @@ def test_constructor__non_entity_by_keys(snowflake_event_view):
     Test constructor when invalid group by keys are used
     """
     with pytest.raises(ValueError) as exc:
-        _ = EventViewGroupBy(obj=snowflake_event_view, keys=["cust_id"])
+        _ = GroupBy(obj=snowflake_event_view, keys=["cust_id"])
     assert 'Column "cust_id" is not an entity!' in str(exc.value)
 
 
@@ -51,14 +51,15 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     Test not valid object type passed to the constructor
     """
     with pytest.raises(TypeError) as exc:
-        EventViewGroupBy(obj=True, keys="whatever")
+        GroupBy(obj=True, keys="whatever")
     expected_msg = (
-        'type of argument "obj" must be featurebyte.api.event_view.EventView; got bool instead'
+        'type of argument "obj" must be one of (featurebyte.api.event_view.EventView, '
+        "featurebyte.api.item_view.ItemView); got bool instead"
     )
     assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:
-        EventViewGroupBy(snowflake_event_view, True)
+        GroupBy(snowflake_event_view, True)
     expected_msg = 'type of argument "keys" must be one of (str, List[str]); got bool instead'
     assert expected_msg in str(exc.value)
 
@@ -68,11 +69,11 @@ def test_constructor__keys_column_not_found(snowflake_event_view_with_entity):
     Test case when column of the keys not found in the EventView
     """
     with pytest.raises(KeyError) as exc:
-        EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="random_column")
+        GroupBy(obj=snowflake_event_view_with_entity, keys="random_column")
     assert 'Column "random_column" not found!' in str(exc.value)
 
     with pytest.raises(KeyError) as exc:
-        EventViewGroupBy(obj=snowflake_event_view_with_entity, keys=["cust_id", "random_column"])
+        GroupBy(obj=snowflake_event_view_with_entity, keys=["cust_id", "random_column"])
     assert 'Column "random_column" not found!' in str(exc.value)
 
 
@@ -80,7 +81,7 @@ def test_groupby__value_column_not_found(snowflake_event_view_with_entity):
     """
     Test case when value column not found in the EventView
     """
-    grouped = EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
+    grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(KeyError) as exc:
         grouped.aggregate("non_existing_column", "sum", ["1d"], ["feature_name"])
     expected_msg = 'Column "non_existing_column" not found'
@@ -92,7 +93,7 @@ def test_groupby__category_column_not_found(snowflake_event_view_with_entity):
     Test case when category column not found in the EventView
     """
     with pytest.raises(KeyError) as exc:
-        EventViewGroupBy(
+        GroupBy(
             obj=snowflake_event_view_with_entity, keys="cust_id", category="non_existing_category"
         )
     expected_msg = 'Column "non_existing_category" not found'
@@ -103,7 +104,7 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     """
     Test not valid aggregation method passed to groupby
     """
-    grouped = EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
+    grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(ValueError) as exc:
         grouped.aggregate("a", "unknown_method", ["1d"], ["feature_name"])
     expected_message = "Aggregation method not supported: unknown_method"

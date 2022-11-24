@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import copy
 
@@ -13,10 +13,17 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.view import View, ViewColumn
+from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
+
+if TYPE_CHECKING:
+    from featurebyte.api.groupby import GroupBy
+else:
+    GroupBy = TypeVar("GroupBy")
 
 
 class ItemViewColumn(ViewColumn):
@@ -25,7 +32,7 @@ class ItemViewColumn(ViewColumn):
     """
 
 
-class ItemView(View):
+class ItemView(View, GroupByMixin):
     """
     ItemView class
     """
@@ -136,7 +143,11 @@ class ItemView(View):
         self.columns_info = joined_columns_info
         self.column_lineage_map = joined_column_lineage_map
         self.row_index_lineage = joined_row_index_lineage
-        self.__dict__.update({"tabular_data_ids": joined_tabular_data_ids})
+        self.__dict__.update(
+            {
+                "tabular_data_ids": joined_tabular_data_ids,
+            }
+        )
 
     @property
     def timestamp_column(self) -> str:
@@ -178,7 +189,71 @@ class ItemView(View):
                 "event_id_column": self.event_id_column,
                 "item_id_column": self.item_id_column,
                 "event_data_id": self.event_data_id,
+                "default_feature_job_setting": self.default_feature_job_setting,
                 "event_view": self.event_view,
             }
         )
         return params
+
+    def validate_aggregation_parameters(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
+        """
+        Check whether aggregation parameters are valid for ItemView
+
+        Columns imported from the EventData or their derivatives can not be aggregated per an entity
+        inherited from the EventData. Those features should be engineered directly from the
+        EventData.
+
+        Parameters
+        ----------
+        groupby_obj: GroupBy
+            GroupBy object
+        value_column: Optional[str]
+            Column to be aggregated
+
+        Raises
+        ------
+        ValueError
+            If aggregation is using an EventData derived column and the groupby key is an Entity
+            from EventData
+        """
+        if value_column is None:
+            return
+
+        keys = groupby_obj.keys
+        groupby_keys_from_event_data = all(
+            self._is_column_derived_only_from_event_data(key) for key in keys
+        )
+        if groupby_keys_from_event_data and self._is_column_derived_only_from_event_data(
+            value_column
+        ):
+            raise ValueError(
+                "Columns imported from EventData and their derivatives should be aggregated in"
+                " EventView"
+            )
+
+    def _is_column_derived_only_from_event_data(self, column_name: str) -> bool:
+        """
+        Check if column is derived using only EventData's columns
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column in ItemView to check
+
+        Returns
+        -------
+        bool
+        """
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        column_structure = next(
+            column for column in operation_structure.columns if column.name == column_name
+        )
+        if isinstance(column_structure, DerivedDataColumn):
+            return all(
+                input_column.tabular_data_type == TableDataType.EVENT_DATA
+                for input_column in column_structure.columns
+            )
+        # column_structure is a SourceDataColumn
+        return column_structure.tabular_data_type == TableDataType.EVENT_DATA

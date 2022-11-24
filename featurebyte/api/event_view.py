@@ -3,23 +3,18 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, Union, cast
+from typing import Any, List, Optional, Union, cast
 
 from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
-from featurebyte.api.view import View, ViewColumn
+from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.enum import TableDataType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import InputNode
-
-if TYPE_CHECKING:
-    from featurebyte.api.groupby import EventViewGroupBy
-else:
-    EventViewGroupBy = TypeVar("EventViewGroupBy")
 
 
 class EventViewColumn(ViewColumn):
@@ -85,7 +80,7 @@ class EventViewColumn(ViewColumn):
         )
 
 
-class EventView(View):
+class EventView(View, GroupByMixin):
     """
     EventView class
     """
@@ -177,29 +172,3 @@ class EventView(View):
             }
         )
         return params
-
-    @typechecked
-    def groupby(
-        self, by_keys: Union[str, List[str]], category: Optional[str] = None
-    ) -> EventViewGroupBy:
-        """
-        Group EventView using a column or list of columns of the EventView object
-        Refer to [EventViewGroupBy](/reference/featurebyte.api.groupby.EventViewGroupBy/)
-
-        Parameters
-        ----------
-        by_keys: Union[str, List[str]]
-            Define the key (entity) to for the `groupby` operation
-        category : Optional[str]
-            Optional category parameter to enable aggregation per category. It should be a column
-            name in the EventView.
-
-        Returns
-        -------
-        EventViewGroupBy
-            a groupby object that contains information about the groups
-        """
-        # pylint: disable=import-outside-toplevel
-        from featurebyte.api.groupby import EventViewGroupBy
-
-        return EventViewGroupBy(obj=self, keys=by_keys, category=category)  # type: ignore

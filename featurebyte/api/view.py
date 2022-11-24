@@ -3,7 +3,7 @@ View class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union
 
 from abc import ABC
 
@@ -15,6 +15,11 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.models.base import PydanticObjectId
+
+if TYPE_CHECKING:
+    from featurebyte.api.groupby import GroupBy
+else:
+    GroupBy = TypeVar("GroupBy")
 
 ViewT = TypeVar("ViewT", bound="View")
 
@@ -45,6 +50,51 @@ class ViewColumn(Series):
 
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"tabular_data_ids": self.tabular_data_ids}
+
+
+class GroupByMixin:  # pylint: disable=too-few-public-methods
+    """
+    Mixin that provides groupby functionality to a View object
+    """
+
+    @typechecked
+    def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
+        """
+        Group View using a column or list of columns of the View object
+        Refer to [GroupBy](/reference/featurebyte.api.groupby.GroupBy/)
+
+        Parameters
+        ----------
+        by_keys: Union[str, List[str]]
+            Define the key (entity) to for the `groupby` operation
+        category : Optional[str]
+            Optional category parameter to enable aggregation per category. It should be a column
+            name in the View.
+
+        Returns
+        -------
+        GroupBy
+            a groupby object that contains information about the groups
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.groupby import GroupBy
+
+        return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
+
+    def validate_aggregation_parameters(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
+        """
+        Perform View specific validation on the parameters provided for groupby and aggregate
+        functions
+
+        Parameters
+        ----------
+        groupby_obj: GroupBy
+            GroupBy object
+        value_column: Optional[str]
+            Column to be aggregated
+        """
 
 
 class View(ProtectedColumnsQueryObject, Frame, ABC):

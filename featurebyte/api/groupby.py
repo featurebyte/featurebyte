@@ -12,6 +12,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
+from featurebyte.api.item_view import ItemView
 from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
@@ -19,9 +20,9 @@ from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-class EventViewGroupBy(OpsMixin):
+class GroupBy(OpsMixin):
     """
-    EventViewGroupBy class
+    GroupBy class that is applicable to EventView and ItemView
     """
 
     # documentation metadata
@@ -29,7 +30,12 @@ class EventViewGroupBy(OpsMixin):
     __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     @typechecked
-    def __init__(self, obj: EventView, keys: Union[str, List[str]], category: Optional[str] = None):
+    def __init__(
+        self,
+        obj: Union[EventView, ItemView],
+        keys: Union[str, List[str]],
+        category: Optional[str] = None,
+    ):
         keys_value = []
         if isinstance(keys, str):
             keys_value.append(keys)
@@ -197,6 +203,9 @@ class EventViewGroupBy(OpsMixin):
             When the aggregation method does not support input variable type
         """
         # pylint: disable=too-many-locals
+
+        self.obj.validate_aggregation_parameters(groupby_obj=self, value_column=value_column)
+
         node_params = self._prepare_node_parameters(
             method=method,
             value_column=value_column,

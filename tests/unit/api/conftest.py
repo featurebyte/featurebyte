@@ -240,11 +240,13 @@ def snowflake_item_data_fixture(
     mock_get_persistent,
     snowflake_item_data_id,
     saved_event_data,
+    cust_id_entity,
 ):
     """
     Snowflake ItemData object fixture (using config object)
     """
     _ = mock_get_persistent
+    saved_event_data["cust_id"].as_entity(cust_id_entity.name)
     yield ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",

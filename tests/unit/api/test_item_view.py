@@ -29,6 +29,10 @@ class TestItemView(BaseViewTestSuite):
         assert row_subset.item_id_column == view_under_test.item_id_column
         assert row_subset.event_data_id == view_under_test.event_data_id
         assert row_subset.event_view.dict() == view_under_test.event_view.dict()
+        assert (
+            row_subset.default_feature_job_setting.dict()
+            == view_under_test.default_feature_job_setting.dict()
+        )
 
     def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
         return {
@@ -66,8 +70,8 @@ def test_from_item_data__auto_join_columns(
         "parameters": {
             "left_on": "col_int",
             "right_on": "event_id_col",
-            "left_input_columns": ["event_timestamp"],
-            "left_output_columns": ["event_timestamp"],
+            "left_input_columns": ["event_timestamp", "cust_id"],
+            "left_output_columns": ["event_timestamp", "cust_id"],
             "right_input_columns": [
                 "event_id_col",
                 "item_id_col",
@@ -95,6 +99,7 @@ def test_from_item_data__auto_join_columns(
         "item_amount",
         "created_at",
         "event_timestamp",
+        "cust_id",
     ]
     assert view.dtypes.to_dict() == {
         "event_id_col": "INT",
@@ -103,6 +108,7 @@ def test_from_item_data__auto_join_columns(
         "item_amount": "FLOAT",
         "created_at": "TIMESTAMP",
         "event_timestamp": "TIMESTAMP",
+        "cust_id": "INT",
     }
     assert view_dict["row_index_lineage"] == ("input_2", "join_1")
     assert view_dict["column_lineage_map"] == {
@@ -112,6 +118,7 @@ def test_from_item_data__auto_join_columns(
         "item_amount": ("input_2", "join_1"),
         "created_at": ("input_2", "join_1"),
         "event_timestamp": ("input_1", "join_1"),
+        "cust_id": ("input_1", "join_1"),
     }
 
     # Check preview SQL
@@ -120,6 +127,7 @@ def test_from_item_data__auto_join_columns(
         """
         SELECT
           L."event_timestamp" AS "event_timestamp",
+          L."cust_id" AS "cust_id",
           R."event_id_col" AS "event_id_col",
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
@@ -197,6 +205,7 @@ def test_setitem__str_key_series_value(
     }
     assert snowflake_item_view.column_lineage_map == {
         "event_timestamp": expected_lineage_event_data_columns,
+        "cust_id": expected_lineage_event_data_columns,
         "event_id_col": expected_lineage_item_data_columns,
         "item_id_col": expected_lineage_item_data_columns,
         "item_type": expected_lineage_item_data_columns,
@@ -236,6 +245,7 @@ def test_join_event_data_attributes__more_columns(
                 "item_amount",
                 "created_at",
                 "event_timestamp",
+                "cust_id",
             ],
             "right_output_columns": [
                 "event_id_col",
@@ -244,6 +254,7 @@ def test_join_event_data_attributes__more_columns(
                 "item_amount",
                 "created_at",
                 "event_timestamp",
+                "cust_id",
             ],
             "join_type": "inner",
         },
@@ -259,6 +270,7 @@ def test_join_event_data_attributes__more_columns(
         "item_amount",
         "created_at",
         "event_timestamp",
+        "cust_id",
         "col_float",
     ]
     assert view.dtypes.to_dict() == {
@@ -268,6 +280,7 @@ def test_join_event_data_attributes__more_columns(
         "item_amount": "FLOAT",
         "created_at": "TIMESTAMP",
         "event_timestamp": "TIMESTAMP",
+        "cust_id": "INT",
         "col_float": "FLOAT",
     }
     assert view_dict["row_index_lineage"] == ("input_2", "join_1", "join_2")
@@ -278,6 +291,7 @@ def test_join_event_data_attributes__more_columns(
         "item_amount": ("input_2", "join_1", "join_2"),
         "created_at": ("input_2", "join_1", "join_2"),
         "event_timestamp": ("input_1", "join_1", "join_2"),
+        "cust_id": ("input_1", "join_1", "join_2"),
         "col_float": ("input_1", "join_2"),
     }
 
@@ -292,7 +306,8 @@ def test_join_event_data_attributes__more_columns(
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
           R."created_at" AS "created_at",
-          R."event_timestamp" AS "event_timestamp"
+          R."event_timestamp" AS "event_timestamp",
+          R."cust_id" AS "cust_id"
         FROM (
             SELECT
               "col_int" AS "col_int",
@@ -309,6 +324,7 @@ def test_join_event_data_attributes__more_columns(
         INNER JOIN (
             SELECT
               L."event_timestamp" AS "event_timestamp",
+              L."cust_id" AS "cust_id",
               R."event_id_col" AS "event_id_col",
               R."item_id_col" AS "item_id_col",
               R."item_type" AS "item_type",
@@ -352,3 +368,103 @@ def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
     with pytest.raises(ValueError) as exc:
         snowflake_item_view.join_event_data_attributes(["non_existing_column"])
     assert str(exc.value) == "Column does not exist in EventData: non_existing_column"
+
+
+def test_item_view_groupby__item_data_column(snowflake_item_view):
+    """
+    Test aggregating a column from ItemData using an EventData entity is allowed
+    """
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+    feature = snowflake_item_view.groupby("cust_id").aggregate(
+        "item_amount",
+        method="sum",
+        windows=["24h"],
+        feature_names=["item_amount_sum_24h"],
+        feature_job_setting=feature_job_setting,
+    )["item_amount_sum_24h"]
+    feature_dict = feature.dict()
+    assert feature_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
+        {"source": "join_1", "target": "groupby_1"},
+        {"source": "groupby_1", "target": "project_1"},
+    ]
+
+
+def test_item_view_groupby__event_data_column(snowflake_item_view):
+    """
+    Test aggregating an EventData column using EventData entity is not allowed
+    """
+    snowflake_item_view.join_event_data_attributes(["col_float"])
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("cust_id").aggregate(
+            "col_float",
+            method="sum",
+            windows=["24h"],
+            feature_names=["item_amount_sum_24h"],
+        )["item_amount_sum_24h"]
+    assert str(exc.value) == (
+        "Columns imported from EventData and their derivatives should be aggregated in EventView"
+    )
+
+
+def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
+    """
+    Test aggregating a column derived from EventData column using EventData entity is not allowed
+    """
+    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
+    snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float_v2"] * 678) / 90
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("cust_id").aggregate(
+            "col_float_v2",
+            method="sum",
+            windows=["24h"],
+            feature_names=["item_amount_sum_24h"],
+        )["item_amount_sum_24h"]
+    assert str(exc.value) == (
+        "Columns imported from EventData and their derivatives should be aggregated in EventView"
+    )
+
+
+def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view):
+    """
+    Test aggregating a column derived from both EventData and ItemData is allowed
+    """
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+    snowflake_item_view.join_event_data_attributes(["col_float"])
+    snowflake_item_view["new_col"] = (
+        snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
+    )
+    _ = snowflake_item_view.groupby("cust_id").aggregate(
+        "new_col",
+        method="sum",
+        windows=["24h"],
+        feature_names=["feature_name"],
+        feature_job_setting=feature_job_setting,
+    )["feature_name"]
+
+
+def test_item_view_groupby__no_value_column(snowflake_item_view):
+    """
+    Test count aggregation without value_column using EventData entity is allowed
+    """
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+    _ = snowflake_item_view.groupby("cust_id").aggregate(
+        method="count",
+        windows=["24h"],
+        feature_names=["feature_name"],
+        feature_job_setting=feature_job_setting,
+    )["feature_name"]
