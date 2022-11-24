@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, List, Optional, TypeVar
 
 from pydantic import Field
 from typeguard import typechecked
@@ -35,11 +35,17 @@ class ItemViewColumn(ViewColumn):
     ItemViewColumn class
     """
 
+    # documentation metadata
+    __fbautodoc__: List[str] = ["Column"]
+
 
 class ItemView(View, GroupByMixin):
     """
     ItemView class
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = ["View"]
 
     _series_class = ItemViewColumn
 

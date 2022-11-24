@@ -3,7 +3,7 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 from pydantic import Field
 from typeguard import typechecked
@@ -19,11 +19,17 @@ class DimensionViewColumn(ViewColumn):
     DimensionViewColumn class
     """
 
+    # documentation metadata
+    __fbautodoc__: List[str] = ["Column"]
+
 
 class DimensionView(View):
     """
     DimensionView class
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = ["View"]
 
     _series_class = DimensionViewColumn
 

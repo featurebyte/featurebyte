@@ -3,7 +3,7 @@ DimensionData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
@@ -19,6 +19,9 @@ class DimensionData(DimensionDataModel, DataApiObject):
     """
     DimensionData class
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = ["Data"]
 
     # class variables
     _route = "/dimension_data"

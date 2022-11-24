@@ -124,6 +124,7 @@ class ResourceDetails(BaseModel):
     name: str
     realname: str
     path: str
+    proxy_path: Optional[str]
     type: Literal["class", "property", "method"]
     base_classes: Optional[List[Any]]
     method_type: Optional[Literal["async"]]
@@ -152,6 +153,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
     """
     Customized markdown processing autodoc processor
     """
+
+    RE = re.compile(r"(?:^|\n)::: ?([:a-zA-Z0-9_.#]*) *(?:\n|$)")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -248,6 +251,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         module = getattr(param_type, "__module__", None)
         subtypes = getattr(param_type, "__args__", None)
         if module == "typing" and subtypes:
+            if str(param_type).startswith("typing.Optional"):
+                # __args__ attribute of Optional always includes NoneType as last element
+                # which is redundant for documentation
+                subtypes = subtypes[:-1]
             inner_str = ", ".join([self.format_param_type(subtype) for subtype in subtypes])
             param_type_str = str(param_type)
             return _clean(param_type_str.split("[", maxsplit=1)[0]) + "[" + inner_str + "]"
@@ -278,6 +285,13 @@ class FBAutoDocProcessor(AutoDocProcessor):
         ResourceDetails
         """
         # import resource
+        parts = resource_descriptor.split("#")
+        if len(parts) > 1:
+            proxy_path = parts.pop(-1)
+            resource_descriptor = parts[0]
+        else:
+            proxy_path = None
+
         parts = resource_descriptor.split("::")
         if len(parts) > 1:
             # class member
@@ -366,6 +380,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 snippet = re.sub(r" +# doctest: .*", "", example.snippet)
 
             if example.description:
+                # docstring_parser parses lines without >>> prefix as description.
+                # The following logic extracts lines that follows a snippet but preceding an empty line
+                # as part of the snippet, which will be rendered in a single code block,
+                # consistent with the expected behavior for examples in the numpy docstring format
                 parts = example.description.split("\n\n", maxsplit=1)
                 if snippet and len(parts) > 0:
                     snippet += f"\n{parts.pop(0)}"
@@ -380,6 +398,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             name=resource_name,
             realname=resource_realname,
             path=resource_path,
+            proxy_path=proxy_path,
             type=resource_type,
             base_classes=base_classes,
             method_type=method_type,
@@ -444,7 +463,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             if resource_details.parameters:
                 param_group_class = (
                     "autodoc-param-group-multi"
-                    if len(resource_details.parameters) > 1
+                    if len(resource_details.parameters) > 2
                     else "autodoc-param-group"
                 )
                 for param, is_last in last_iter(resource_details.parameters):
@@ -522,7 +541,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             # extract information about the resource
             resource_details = self.get_resource_details(resource_descriptor)
-            path_elem.text = resource_details.path
+            path_elem.text = resource_details.proxy_path or resource_details.path + "."
             name_elem.text = resource_details.name
 
             # render autodoc

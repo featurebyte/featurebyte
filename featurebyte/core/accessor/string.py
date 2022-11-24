@@ -3,7 +3,7 @@ This module contains string accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, List, Optional, Tuple, TypeVar
 
 from typeguard import typechecked
 
@@ -41,6 +41,10 @@ class StringAccessor:
     """
     StringAccessor class used to manipulate string type Series object
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = ["Series"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.core.series.Series", "str")
 
     def __init__(self, obj: Series):
         if obj.dtype != DBVarType.VARCHAR:

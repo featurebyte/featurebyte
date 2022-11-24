@@ -3,7 +3,7 @@ This module contains count_dict accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, List, Tuple, TypeVar
 
 from typeguard import typechecked
 
@@ -40,6 +40,10 @@ class CountDictAccessor:
     """
     CountDictAccessor used to manipulate dict-like type Feature object
     """
+
+    # documentation metadata
+    __fbautodoc__: List[str] = ["Series"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.core.series.Series", "cd")
 
     def __init__(self, obj: Feature):
         if obj.dtype != DBVarType.OBJECT:
