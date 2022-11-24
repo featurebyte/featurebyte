@@ -18,6 +18,7 @@ from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServic
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_store import FeatureStoreService
 
 
 async def validate_feature_list_version_and_namespace_consistency(
@@ -75,6 +76,8 @@ class FeatureListService(
         feature_namespace_ids = set()
         features = []
         feature_service = FeatureService(user=self.user, persistent=self.persistent)
+        feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
+        feature_store_names = {}
         for feature_id in document.feature_ids:
             # retrieve feature from the persistent
             feature = await feature_service.get_document(document_id=feature_id)
@@ -99,7 +102,16 @@ class FeatureListService(
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
 
-        derived_output = {"feature_store_id": feature_store_id, "features": features}
+            # retrieve feature store name
+            if feature_store_id not in feature_store_names:
+                feature_store = await feature_store_service.get_document(feature_store_id)
+                feature_store_names[feature_store_id] = feature_store.name
+
+        derived_output = {
+            "feature_store_id": feature_store_id,
+            "features": features,
+            "feature_store_names": feature_store_names,
+        }
         return derived_output
 
     async def _update_features(
@@ -148,7 +160,9 @@ class FeatureListService(
 
             # update document with derived output
             document = FeatureListModel(
-                **document.dict(by_alias=True), features=feature_data["features"]
+                **document.dict(by_alias=True),
+                features=feature_data["features"],
+                feature_store_names=feature_data["feature_store_names"],
             )
 
             insert_id = await session.insert_one(

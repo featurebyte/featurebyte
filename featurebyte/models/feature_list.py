@@ -4,13 +4,13 @@ This module contains Feature list related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 import functools
 from collections import defaultdict
 
 from bson.objectid import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.model_util import convert_version_string_to_dict
@@ -24,6 +24,9 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 
 
 class FeatureListStatus(OrderedStrEnum):
@@ -217,6 +220,27 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         )
 
 
+class FeatureCluster(FeatureByteBaseModel):
+    """
+    Schema for a group of features from the same feature store
+    """
+
+    feature_store_name: StrictStr
+    graph: QueryGraph
+    node_names: List[StrictStr]
+
+    @property
+    def nodes(self) -> List[Node]:
+        """
+        Get feature nodes
+
+        Returns
+        -------
+        List[Node]
+        """
+        return [self.graph.get_node_by_name(name) for name in self.node_names]
+
+
 class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     """
     Feature list set with the same feature list name
@@ -407,6 +431,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Feature list namespace id of the object
     created_at: Optional[datetime]
         Datetime when the FeatureList was first saved or published
+    feature_clusters: List[FeatureCluster]
+        List of combined graphs for features from the same feature store
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
@@ -421,6 +447,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
+    feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
 
     @staticmethod
     def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
@@ -446,6 +473,44 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
             ]
         )
 
+    @staticmethod
+    def derive_feature_clusters(
+        features: List[FeatureModel],
+        feature_store_names: Dict[ObjectId, str],
+    ) -> List[FeatureCluster]:
+        """
+        Derive feature_clusters attribute from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+        feature_store_names: Dict[ObjectId, str]
+            Mapping from feature store id to feature store name
+
+        Returns
+        -------
+        List[FeatureCluster]
+        """
+        # split features into groups that share the same feature store
+        groups = defaultdict(list)
+        for feature in features:
+            feature_store_name = feature_store_names[feature.tabular_source.feature_store_id]
+            groups[feature_store_name].append(feature)
+
+        # create a FeatureCluster for each group
+        feature_clusters = []
+        for feature_store_name, features in groups.items():
+            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=features)
+            feature_clusters.append(
+                FeatureCluster(
+                    feature_store_name=feature_store_name,
+                    graph=pruned_graph,
+                    node_names=[node.name for node in mapped_nodes],
+                )
+            )
+        return feature_clusters
+
     @root_validator(pre=True)
     @classmethod
     def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -453,6 +518,11 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
             values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
+            # When "features" is provided, "feature_store_names" is also provided (for
+            # FeatureListModel only)
+            values["feature_clusters"] = cls.derive_feature_clusters(
+                values["features"], values["feature_store_names"]
+            )
         return values
 
     @validator("feature_ids")

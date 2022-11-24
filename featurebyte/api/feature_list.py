@@ -179,25 +179,12 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         List[FeatureCluster]
         """
-        # split features into groups that share the same feature store
-        groups = defaultdict(list)
-        for feature in self._features:
-            groups[feature.feature_store.name].append(feature)
-
-        # create preview group for each group
-        feature_clusters = []
-        for feature_store_name, features in groups.items():
-            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(
-                feature_objects=cast(List[FeatureModel], features)
-            )
-            feature_clusters.append(
-                FeatureCluster(
-                    feature_store_name=feature_store_name,
-                    graph=pruned_graph,
-                    node_names=[node.name for node in mapped_nodes],
-                )
-            )
-        return feature_clusters
+        feature_store_names = {
+            feature.feature_store.id: feature.feature_store.name for feature in self._features
+        }
+        return FeatureList.derive_feature_clusters(
+            cast(List[FeatureModel], self._features), feature_store_names
+        )
 
     @typechecked
     def preview(

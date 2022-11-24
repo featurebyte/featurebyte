@@ -5,10 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.graph import QueryGraph
 
 if TYPE_CHECKING:
+    from featurebyte.models.feature import FeatureModel
     from featurebyte.query_graph.node import Node
 
 
