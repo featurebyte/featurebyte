@@ -42,6 +42,7 @@ async def get_reset_session_fixture(
     await session.execute_query(f"UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = NULL")
 
 
+@pytest.mark.skip(reason="skipping while we rollback the default state")
 @pytest.mark.asyncio
 @mock.patch("featurebyte.app.get_persistent")
 async def test_validate_feature_store_id_not_used_in_warehouse(

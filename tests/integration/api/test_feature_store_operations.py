@@ -14,6 +14,7 @@ from featurebyte.models.feature_store import DatabaseDetails
 from featurebyte.service.session_validator import SessionValidatorService
 
 
+@pytest.mark.skip(reason="skipping while we rollback the default state")
 @pytest.mark.asyncio
 async def test_feature_store_create__no_writes_on_error(
     mongo_persistent, snowflake_details, get_cred
