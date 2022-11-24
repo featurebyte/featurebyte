@@ -121,7 +121,7 @@ def get_mocked_session_manager(snowflake_session):
         yield
 
 
-@mock.patch("featurebyte.service.feature_store.FeatureStoreService.list_columns")
+@mock.patch("featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.list_columns")
 @mock.patch("featurebyte.app.get_persistent")
 def test_feature_list_saving_in_bad_state__feature_id_is_different(
     mock_persistent,
