@@ -38,6 +38,7 @@ from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import (
+    FeatureCluster,
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListNewVersionMode,
@@ -45,7 +46,6 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.schema.feature_list import (
-    FeatureCluster,
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
     FeatureListPreview,
@@ -178,7 +178,8 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         List[FeatureCluster]
         """
         feature_store_names = {
-            feature.feature_store.id: feature.feature_store.name for feature in self._features
+            ObjectId(feature.feature_store.id): feature.feature_store.name
+            for feature in self._features
         }
         return FeatureList.derive_feature_clusters(
             cast(List[FeatureModel], self._features), feature_store_names

@@ -500,8 +500,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
 
         # create a FeatureCluster for each group
         feature_clusters = []
-        for feature_store_name, features in groups.items():
-            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=features)
+        for feature_store_name, group_features in groups.items():
+            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=group_features)
             feature_clusters.append(
                 FeatureCluster(
                     feature_store_name=feature_store_name,
