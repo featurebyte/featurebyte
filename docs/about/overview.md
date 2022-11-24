@@ -1,4 +1,4 @@
-# What is FeatureByte
+# What is FeatureByte?
 
 FeatureByte is a free and open access platform that **radically simplifies the creation and serving of features needed for machine learning**.
 
