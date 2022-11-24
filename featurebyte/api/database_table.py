@@ -12,7 +12,7 @@ from pydantic import Field, root_validator
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType, TableDataType
-from featurebyte.exception import RecordRetrievalException, TableSchemaHasBeenChangedError
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import (
     ColumnInfo,
