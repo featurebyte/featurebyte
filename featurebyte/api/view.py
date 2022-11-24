@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Type, TypeVar, Union
 
+import copy
 from abc import ABC
 
 from pydantic import Field, PrivateAttr
@@ -15,6 +16,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -195,3 +197,109 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if key in self.protected_columns:
             raise ValueError(f"Column '{key}' cannot be modified!")
         super().__setitem__(key, value)
+
+    def _validate_join(self, other_view: View):
+        """
+        Validate join should be implemented by view classes that have extra requirements.
+
+        Parameters
+        ---------
+        other_view: View
+            the other view that we are joining with
+        """
+        pass
+
+    @staticmethod
+    def _append_rsuffix_to_columns(columns: list[str], rsuffix: Optional[str]) -> list[str]:
+        """
+        Appends the rsuffix to columns if a rsuffix is provided.
+
+        Parameters
+        ----------
+        columns: list[str]
+            columns to update
+        rsuffix: Optional[str]
+            the suffix to attach on
+
+        Returns
+        -------
+        list[str]
+            updated columns with rsuffix, or original columns if none were provided
+        """
+        if not rsuffix:
+            return columns
+        return [f"{col}{rsuffix}" for col in columns]
+
+    def get_join_column(self) -> str:
+        """
+        Returns the join column
+
+        Returns
+        -------
+        str
+            the column name for the join key
+        """
+        pass
+
+    @typechecked
+    def join(
+        self,
+        other_view: View,
+        on: Optional[str] = None,
+        how: Optional[str] = "left",  # TODO: update type to be a enum?
+        rsuffix: Optional[str] = "",
+    ) -> None:
+        self._validate_join(other_view)
+
+        left_on = self.get_join_column()
+        left_input_columns = self.columns
+        left_output_columns = self.columns
+
+        right_on = other_view.get_join_column()
+        right_input_columns = other_view.columns
+        right_output_columns = View._append_rsuffix_to_columns(other_view.columns, rsuffix)
+
+        node = self.graph.add_operation(
+            node_type=NodeType.JOIN,
+            node_params={
+                "left_on": left_on,
+                "right_on": right_on,
+                "left_input_columns": left_input_columns,
+                "left_output_columns": left_output_columns,
+                "right_input_columns": right_input_columns,
+                "right_output_columns": right_output_columns,
+                "join_type": how,
+            },
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[self.event_view.node, self.node],
+        )
+
+        # Construct new columns_info
+        columns_set = set(self.columns)
+        joined_columns_info = copy.deepcopy(self.columns_info)
+        for column_info in other_view.columns_info:
+            if column_info.name in columns_set:
+                joined_columns_info.append(column_info)
+
+        # Construct new column_lineage_map
+        joined_column_lineage_map = copy.deepcopy(self.column_lineage_map)
+        for col in self.columns:
+            joined_column_lineage_map[col] = other_view.column_lineage_map[col]
+        for col, lineage in joined_column_lineage_map.items():
+            joined_column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+
+        # Construct new row_index_lineage
+        joined_row_index_lineage = self._append_to_lineage(self.row_index_lineage, node.name)
+
+        # Construct new tabular_data_ids
+        joined_tabular_data_ids = sorted(set(self.tabular_data_ids + other_view.tabular_data_ids))
+
+        self.node_name = node.name
+        self.columns_info = joined_columns_info
+        self.column_lineage_map = joined_column_lineage_map
+        self.row_index_lineage = joined_row_index_lineage
+        self.__dict__.update(
+            {
+                "tabular_data_ids": joined_tabular_data_ids,
+            }
+        )
