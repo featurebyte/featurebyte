@@ -7,8 +7,9 @@ from featurebyte.enum import SourceType, StrEnum
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
+from featurebyte.models.feature_store import DatabaseDetails
 from featurebyte.persistent import Persistent
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 
@@ -31,6 +32,7 @@ class SessionValidatorService:
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
         self.persistent = persistent
+        self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
 
     @classmethod
     async def validate_existing_session(
@@ -207,14 +209,14 @@ class SessionValidatorService:
         Optional[PydanticObjectId]
             Feature store ID if present. If not, returns None.
         """
-        response, count = await self.persistent.find(
-            FeatureStoreModel.collection_name(),
-            query_filter={"details": details.dict()},
+        response = await self.feature_store_service.list_documents(
+            query_filter={"details": details.dict()}
         )
+
+        count = response["total"]
         does_exist = count != 0
         # We expect to see at most one entry. Error if there's more than one.
         assert count < 2
         if does_exist:
-            for store in response:
-                return PydanticObjectId(store["_id"])
+            return PydanticObjectId(response["data"][0]["_id"])
         return None
