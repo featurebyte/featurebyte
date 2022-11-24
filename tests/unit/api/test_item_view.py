@@ -7,6 +7,7 @@ import pytest
 
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
+from featurebyte.enum import JoinType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -86,7 +87,7 @@ def test_from_item_data__auto_join_columns(
                 "item_amount",
                 "created_at",
             ],
-            "join_type": "inner",
+            "join_type": JoinType.INNNER,
         },
     }
 
@@ -256,7 +257,7 @@ def test_join_event_data_attributes__more_columns(
                 "event_timestamp",
                 "cust_id",
             ],
-            "join_type": "inner",
+            "join_type": JoinType.INNNER,
         },
     }
 

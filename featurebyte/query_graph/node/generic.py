@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
 
-from featurebyte.enum import AggFunc, TableDataType
+from featurebyte.enum import AggFunc, JoinType, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -326,7 +326,7 @@ class JoinNode(BaseNode):
         left_output_columns: List[OutColumnStr]
         right_input_columns: List[InColumnStr]
         right_output_columns: List[OutColumnStr]
-        join_type: Literal["left", "inner"]
+        join_type: JoinType
 
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)

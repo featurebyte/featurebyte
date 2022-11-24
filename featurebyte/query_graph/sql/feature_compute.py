@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 
 from sqlglot import expressions, select
 
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, JoinType, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -563,7 +563,7 @@ class FeatureExecutionPlan(ABC):
             .join(
                 tile_table_id,
                 join_alias="TILE",
-                join_type="inner",
+                join_type=JoinType.INNNER,
                 on=join_conditions,
             )
             .where(*range_join_where_conditions)
@@ -654,7 +654,7 @@ class FeatureExecutionPlan(ABC):
             .from_(expressions.alias_(quoted_identifier(request_table_name), alias="REQ"))
             .join(
                 item_agg_expr.subquery(),
-                join_type="inner",
+                join_type=JoinType.INNNER,
                 join_alias="ITEM_AGG",
                 on=expressions.and_(*join_conditions_lst),
             )

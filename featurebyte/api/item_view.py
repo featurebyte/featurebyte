@@ -14,7 +14,7 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
-from featurebyte.enum import TableDataType
+from featurebyte.enum import JoinType, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -111,7 +111,7 @@ class ItemView(View, GroupByMixin):
                 "left_output_columns": left_output_columns,
                 "right_input_columns": right_input_columns,
                 "right_output_columns": right_output_columns,
-                "join_type": "inner",
+                "join_type": JoinType.INNNER,
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.event_view.node, self.node],

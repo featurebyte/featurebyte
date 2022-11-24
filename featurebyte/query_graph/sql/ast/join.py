@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from sqlglot import Expression, Select, expressions
 
+from featurebyte.enum import JoinType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -24,7 +25,7 @@ class Join(TableNode):
     right_node: TableNode
     left_on: str
     right_on: str
-    join_type: Literal["left", "inner"]
+    join_type: JoinType
     query_node_type = NodeType.JOIN
 
     def from_query_impl(self, select_expr: Select) -> Select:

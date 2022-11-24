@@ -231,3 +231,12 @@ class SemanticType(StrEnum):
     DIMENSION_ID = "dimension_id"
     SCD_NATURAL_KEY_ID = "scd_natural_key_id"
     SCD_SURROGATE_KEY_ID = "scd_surrogate_key_id"
+
+
+class JoinType(StrEnum):
+    """
+    JoinType enum
+    """
+
+    INNNER = "inner"
+    LEFT = "left"

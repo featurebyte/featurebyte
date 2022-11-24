@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.core.frame import Frame
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, JoinType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
@@ -371,7 +371,7 @@ def item_data_join_event_data_node_fixture(
         "left_output_columns": ["order_method"],
         "right_input_columns": ["order_id", "item_id", "item_name", "item_type"],
         "right_output_columns": ["order_id", "item_id", "item_name", "item_type"],
-        "join_type": "inner",
+        "join_type": JoinType.INNNER,
     }
     node = global_graph.add_operation(
         node_type=NodeType.JOIN,
