@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any, List, Type
 
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -151,21 +150,3 @@ class FeatureStoreService(
             database_name=database_name, schema_name=schema_name, table_name=table_name
         )
         return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
-
-    async def delete_feature_store(self, feature_store_id: PydanticObjectId) -> int:
-        """
-        Deletes the feature store.
-
-        Parameters
-        ----------
-        feature_store_id: PydanticObjectId
-            the ID of the feature store that we want to delete
-
-        Returns
-        -------
-        int
-        """
-        deleted_count = await self.persistent.delete_one(
-            self.collection_name, query_filter={"_id": feature_store_id}, user_id=self.user.id
-        )
-        return int(deleted_count)
