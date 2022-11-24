@@ -37,12 +37,13 @@ class FeatureStoreController(
         service: FeatureStoreService,
         preview_service: PreviewService,
         info_service: InfoService,
+        session_validator_service: SessionValidatorService,
     ):
         super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
         self.session_manager_service = SessionManagerService(service.user, service.persistent)
-        self.session_validator_service = SessionValidatorService(service.user, service.persistent)
+        self.session_validator_service = session_validator_service
 
     async def create_feature_store(
         self,

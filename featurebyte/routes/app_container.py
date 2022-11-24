@@ -251,6 +251,7 @@ app_container_config = {
                 "feature_store_service",
                 "preview_service",
                 "info_service",
+                "session_validator_service",
             ],
         },
         {
