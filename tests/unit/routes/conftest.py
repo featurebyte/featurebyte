@@ -28,10 +28,11 @@ def user_id():
 
 
 @pytest.fixture(name="mock_get_session", autouse=True)
-def get_mock_get_session_fixture():
+def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
     """
     Returns a mocked get_feature_store_session.
     """
+    _, _ = session_manager, snowflake_execute_query
     with patch(
         "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
     ) as mocked_get_session:

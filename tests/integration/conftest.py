@@ -141,23 +141,55 @@ def mock_get_persistent_fixture(persistent):
         yield
 
 
+@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse")
+def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
+    """
+    Set a no-op validator by default.
+    Functions that want to test the validation should inject an actual instance of the session validator.
+    """
+    with mock.patch(
+        "featurebyte.service.session_validator.SessionValidatorService.validate_feature_store_id_not_used_in_warehouse"
+    ) as mocked_exists:
+        mocked_exists.return_value = None
+        yield
+
+
+@pytest.fixture(name="snowflake_details", scope="session")
+def get_snowflake_details_fixture():
+    """
+    Get snowflake details
+    """
+    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    details = SnowflakeDetails(
+        account=os.getenv("SNOWFLAKE_ACCOUNT"),
+        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+        sf_schema=temp_schema_name,
+        database=os.getenv("SNOWFLAKE_DATABASE"),
+    )
+    return details
+
+
+@pytest.fixture(name="snowflake_featurestore_name", scope="session")
+def get_snowflake_featurestore_name_fixture():
+    """
+    Returns the featurestore name that is used by the default feature store in integration tests.
+    """
+    return "snowflake_featurestore"
+
+
 @pytest.fixture(name="snowflake_feature_store", scope="session")
-def snowflake_feature_store_fixture(mock_get_persistent):
+def snowflake_feature_store_fixture(
+    mock_get_persistent, snowflake_details, snowflake_featurestore_name
+):
     """
     Snowflake feature store fixture
     """
     _ = mock_get_persistent
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     feature_store = FeatureStore(
-        name="snowflake_featurestore",
+        name=snowflake_featurestore_name,
         type="snowflake",
-        details=SnowflakeDetails(
-            account=os.getenv("SNOWFLAKE_ACCOUNT"),
-            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-            sf_schema=temp_schema_name,
-            database=os.getenv("SNOWFLAKE_DATABASE"),
-        ),
+        details=snowflake_details,
     )
     feature_store.save()
     return feature_store
@@ -338,17 +370,24 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
+@pytest.fixture(name="session_manager", scope="session")
+def get_session_manager(config):
+    """
+    Fixture to return a session manager with real login credentials
+    """
+    return SessionManager(credentials=config.credentials)
+
+
 @pytest_asyncio.fixture(name="snowflake_session", scope="session")
 async def snowflake_session_fixture(
     transaction_data_upper_case,
     items_dataframe,
-    config,
+    session_manager,
     snowflake_feature_store,
 ):
     """
     Snowflake session
     """
-    session_manager = SessionManager(credentials=config.credentials)
     session = await session_manager.get_session(snowflake_feature_store)
     assert isinstance(session, SnowflakeSession)
 
@@ -785,3 +824,16 @@ def item_data_fixture(request):
         # Note: Fixtures for other engines to be added later
         assert request.param == "snowflake"
     return request.getfixturevalue("snowflake_item_data")
+
+
+@pytest.fixture(name="get_cred")
+def get_get_cred(config):
+    """
+    Fixture to get a test get_credential
+    """
+
+    async def get_credential(user_id, feature_store_name):
+        _ = user_id
+        return config.credentials.get(feature_store_name)
+
+    return get_credential

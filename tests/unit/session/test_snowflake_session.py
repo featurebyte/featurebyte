@@ -708,3 +708,23 @@ async def test_update_metadata_schema_version(
     assert session.execute_query.call_args_list == [
         call(f"UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {version_number}"),
     ]
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+@pytest.mark.asyncio
+async def test_update_feature_store_id(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    session = patched_snowflake_session_cls()
+    initializer = MetadataSchemaInitializer(session)
+    await initializer.update_feature_store_id("feature_store_id")
+    assert session.execute_query.call_args_list == [
+        call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = 'feature_store_id'"),
+    ]

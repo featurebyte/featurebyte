@@ -697,3 +697,17 @@ class MetadataSchemaInitializer:
         )
         await self.session.execute_query(create_metadata_table_query)
         logger.debug("Creating METADATA_SCHEMA table")
+
+    async def update_feature_store_id(self, new_feature_store_id: str) -> None:
+        """Inserts default information into the metadata schema.
+
+        Parameters
+        ----------
+        new_feature_store_id : str
+            New feature_store_id to update the working schema to
+        """
+        update_feature_store_id_query = (
+            f"""UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = '{new_feature_store_id}'"""
+        )
+        await self.session.execute_query(update_feature_store_id_query)
+        logger.debug(f"Updated feature store ID to {new_feature_store_id}")

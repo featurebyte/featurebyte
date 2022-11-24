@@ -107,10 +107,14 @@ def test_info(saved_snowflake_feature_store):
 
 
 @pytest_asyncio.fixture(name="saved_snowflake_feature_store")
-async def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_persistent):
+async def saved_snowflake_feature_store_fixture(
+    snowflake_feature_store, mock_get_persistent, snowflake_connector, snowflake_execute_query
+):
     """
     Test saving feature store
     """
+    _ = snowflake_connector, snowflake_execute_query
+
     # before save
     assert snowflake_feature_store.created_at is None
     feature_store_id = snowflake_feature_store.id
@@ -232,10 +236,14 @@ def test_get__unexpected_retrieval_exception():
 
 
 @pytest.mark.asyncio
-async def test_feature_store_create(mock_get_persistent):
+async def test_feature_store_create(
+    mock_get_persistent, snowflake_connector, snowflake_execute_query
+):
     """
     Test the create feature store static method.
     """
+    _ = snowflake_connector, snowflake_execute_query
+
     feature_store_name_in_test = "sf_featurestore"
     # We expect to get an error here since we have not stored a feature store yet.
     with pytest.raises(RecordRetrievalException):
