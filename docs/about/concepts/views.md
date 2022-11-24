@@ -95,7 +95,7 @@ Joins of Slowly Changing Dimension views are made at the timestamp of the callin
 Forward join of Slowly Changing Dimension views can also be done. Users have to specify the time horizon of the join. The columns added by a forward join have special metadata attached to prevent time leakage and this metadata automatically offsets the time windows of any features using those columns as column input.
 
 ### Condition-based Subsetting
-Views can be easily filtered in a similar way to Pandas or R Data Frame. A cCondition based subset can also be used to overwrite the values of a column.
+Views can be easily filtered in a similar way to Pandas or R Data Frame. A condition based subset can also be used to overwrite the values of a column.
 
 ### Change Events
 Changes in a Slowly Changing Dimension table may constitute powerful features: how many times has a customer moved address in the past 6 months? if she moved in the past 6 months, where did she use to live? did she get divorced recently? new kids in the family? does she have a new job?
