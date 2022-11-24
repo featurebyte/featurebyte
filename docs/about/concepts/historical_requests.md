@@ -20,4 +20,3 @@ Users have to provide:
 * for Period based context for which entity is not an event entity, the desired minimum time interval between 2 observations of the same entity value. The default value of this parameter is equal to the target horizon.
 
 When the use case has a target recipe defined, the target is automatically added to the observation set.
-
