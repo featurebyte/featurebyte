@@ -49,7 +49,7 @@ Examples of nodes of levels 3 connected to `Non-Additive Numeric` type include:
 
 * `Measurement of Intensity` (such as temperature, sound frequency, item price, …): for which change from prior value may be derived 
 * `Inter-Event Time`: for which clumpiness may be applied
-* `Longitude / Latitude of a stationary object`: for which distance from previous location may be derived
+* `Longitude / Latitude of a stationary object`: for which distance from another location may be derived
 * `Longitude / Latitude of a moving object`: for which moving distance, moving time, speed, acceleration and direction may be derived
 
 Examples of domain specific nodes of level 4 include:
@@ -57,7 +57,7 @@ Examples of domain specific nodes of level 4 include:
 * `Patient temperature`: for which bucketing such as low, normal, fever may be derived
 * `Patient Blood pressure`: for which bucketing such as hypotension, normal, hypertension may be derived
 * `Car location`: for which highway may be detected, high acceleration or high deceleration may be flagged
-* `Amount`: for which stats crossed with other categorical columns may be applied or daily, weekly, monthly time series may be derived.
+* `Amount`: for which stats grouped by categorical columns may be applied, or daily, weekly, monthly time series may be derived.
 
 #### Nodes of the Categorical type
 
@@ -90,15 +90,15 @@ The nodes of level 2 determine whether the timestamp is an `Event Timestamp`.
 The nodes of level 3 determine whether:
 
 * the `Event Timestamp` is a `Measurement Event Timestamp` or a `Business Event Timestamp`.
-    * `Measurement Event Timestamp` is the timestamp of measurement that occurs at predictable intervals such as in sensor data
-    * `Business Event Timestamp` is the timestamp of a discrete business event measured at a point in time. Examples of business event timestamp include Order timestamp in E-com, Credit Card Transactions timestamp in Banking, Doctor Visits timestamp in Healthcare and Click timestamp in Internet
+  * `Measurement Event Timestamp` is the timestamp of measurement that occurs at predictable intervals such as in sensor data
+  * `Business Event Timestamp` is the timestamp of a discrete business event measured at a point in time. Examples of business event timestamp include Order timestamp in E-com, Credit Card Transactions timestamp in Banking, Doctor Visits timestamp in Healthcare and Click timestamp in Internet
 
 * the other types are a `Start Date` or an `End Date`.
 
 For `Business Event Timestamp`, data scientists are likely to attempt to extract features that measure:
 
 * the recency with time since last event
-* the clumpiness of events (entropy of inter-event time)
+* the clumpiness of events (variability of inter-event time)
 * how a customer’s behavior compares with other customers 
 * whether the customer behavior changed overtime
 
@@ -122,3 +122,21 @@ The nodes of level 3 connected to `Long Text` include:
 * `Twitter message`
 * `Diagnosis`
 * `Product Description`
+
+#### Nodes of the Dictionary type
+
+The nodes of level 2 determine whether the Dictionary field is a `Dictionary of Positive Values`.
+
+The nodes of level 3 connected to `Dictionary of Positive Values` include:
+
+* `Bag of Words`
+* `Bag of Words n-grams`
+* `Bag of Sequence n-grams`
+* `Bag of Items Count`
+* `Bag of Items Positive Amount`
+
+The nodes of level 4 include:
+* `Bag of Click type n-grams`
+* `Bag of Product category Count`
+* `Bag of Product category Positive Amount`
+
