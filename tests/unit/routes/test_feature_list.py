@@ -525,13 +525,11 @@ class TestFeatureListApi(BaseApiTestSuite):
             "FROM _FB_AGGREGATED AS AGG"
         )
 
-    def test_feature_clusters_derived_and_stored(self, create_success_response):
+    def test_feature_clusters_derived_and_stored(
+        self, create_success_response, featurelist_feature_clusters
+    ):
         """Test feature_clusters field is derived and stored"""
         feature_clusters = create_success_response.json()["feature_clusters"]
         assert isinstance(feature_clusters, list)
         assert len(feature_clusters) == 1
-        assert feature_clusters[0]["edges"] == [
-            {"source": "input_1", "target": "groupby_1"},
-            {"source": "groupby_1", "target": "project_1"},
-        ]
-        assert feature_clusters[0]["node_names"] == ["project_1"]
+        assert feature_clusters[0] == featurelist_feature_clusters[0]
