@@ -16,6 +16,7 @@ from featurebyte.schema.feature_store import (
 )
 from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
@@ -37,12 +38,14 @@ class FeatureStoreController(
         service: FeatureStoreService,
         preview_service: PreviewService,
         info_service: InfoService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
         self.session_manager_service = SessionManagerService(service.user, service.persistent)
         self.session_validator_service = SessionValidatorService(service.user, service.persistent)
+        self.feature_store_warehouse_service = feature_store_warehouse_service
 
     async def create_feature_store(
         self,
@@ -121,7 +124,7 @@ class FeatureStoreController(
         List[str]
             List of database names
         """
-        return await self.service.list_databases(
+        return await self.feature_store_warehouse_service.list_databases(
             feature_store=feature_store, get_credential=get_credential
         )
 
@@ -148,7 +151,7 @@ class FeatureStoreController(
         List[str]
             List of schema names
         """
-        return await self.service.list_schemas(
+        return await self.feature_store_warehouse_service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
             get_credential=get_credential,
@@ -180,7 +183,7 @@ class FeatureStoreController(
         List[str]
             List of table names
         """
-        return await self.service.list_tables(
+        return await self.feature_store_warehouse_service.list_tables(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
@@ -216,7 +219,7 @@ class FeatureStoreController(
         List[ColumnSpec]
             List of ColumnSpec object
         """
-        return await self.service.list_columns(
+        return await self.feature_store_warehouse_service.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,

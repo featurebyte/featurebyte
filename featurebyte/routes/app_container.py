@@ -34,6 +34,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
@@ -150,6 +151,10 @@ app_container_config = {
             "name": "session_manager_service",
             "clazz": SessionManagerService,
         },
+        {
+            "name": "feature_store_warehouse_service",
+            "clazz": FeatureStoreWarehouseService,
+        },
     ],
     "controllers": [
         {
@@ -251,6 +256,7 @@ app_container_config = {
                 "feature_store_service",
                 "preview_service",
                 "info_service",
+                "feature_store_warehouse_service",
             ],
         },
         {
