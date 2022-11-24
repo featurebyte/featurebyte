@@ -10,6 +10,8 @@ from typeguard import typechecked
 
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import View, ViewColumn
+from featurebyte.exception import JoinViewMismatchError
+from featurebyte.logger import logger
 
 
 class SlowlyChangingViewColumn(ViewColumn):
@@ -95,3 +97,16 @@ class SlowlyChangingView(View):
             }
         )
         return params
+
+    def validate_join(self, other_view: View):
+        """
+        Validate join should be implemented by view classes that have extra requirements.
+
+        Parameters
+        ---------
+        other_view: View
+            the other view that we are joining with
+        """
+        if isinstance(other_view, SlowlyChangingView):
+            logger.error("columns from a SlowlyChangingView can’t be added to a SlowlyChangingView")
+            raise JoinViewMismatchError

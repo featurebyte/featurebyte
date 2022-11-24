@@ -13,6 +13,7 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
+from featurebyte.api.join_utils import combine_column_info_of_views, join_tabular_data_ids
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
@@ -119,11 +120,9 @@ class ItemView(View, GroupByMixin):
         )
 
         # Construct new columns_info
-        columns_set = set(columns)
-        joined_columns_info = copy.deepcopy(self.columns_info)
-        for column_info in self.event_view.columns_info:
-            if column_info.name in columns_set:
-                joined_columns_info.append(column_info)
+        joined_columns_info = combine_column_info_of_views(
+            self.columns_info, self.event_view.columns_info, filter_set=set(columns)
+        )
 
         # Construct new column_lineage_map
         joined_column_lineage_map = copy.deepcopy(self.column_lineage_map)
@@ -132,22 +131,14 @@ class ItemView(View, GroupByMixin):
         for col, lineage in joined_column_lineage_map.items():
             joined_column_lineage_map[col] = append_to_lineage(lineage, node.name)
 
-        # Construct new row_index_lineage
-        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, node.name)
-
         # Construct new tabular_data_ids
-        joined_tabular_data_ids = sorted(
-            set(self.tabular_data_ids + self.event_view.tabular_data_ids)
+        joined_tabular_data_ids = join_tabular_data_ids(
+            self.tabular_data_ids, self.event_view.tabular_data_ids
         )
 
-        self.node_name = node.name
-        self.columns_info = joined_columns_info
-        self.column_lineage_map = joined_column_lineage_map
-        self.row_index_lineage = joined_row_index_lineage
-        self.__dict__.update(
-            {
-                "tabular_data_ids": joined_tabular_data_ids,
-            }
+        # Update metadata
+        self.update_metadata(
+            node.name, joined_columns_info, joined_column_lineage_map, joined_tabular_data_ids
         )
 
     @property
