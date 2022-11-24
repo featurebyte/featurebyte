@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union, cast
 
 import collections
 import time
-from collections import defaultdict
 from http import HTTPStatus
 
 import pandas as pd
@@ -45,7 +44,6 @@ from featurebyte.models.feature_list import (
     FeatureListStatus,
 )
 from featurebyte.models.feature_store import TabularSource
-from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 from featurebyte.schema.feature_list import (
     FeatureCluster,
     FeatureListCreate,
