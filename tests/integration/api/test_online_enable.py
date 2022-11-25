@@ -1,14 +1,17 @@
 """
 Integration test for online enabling features
 """
+import json
+
 import pytest
 
 from featurebyte import EventView, FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="session")
-def online_enabled_feature_list_fixture(event_data):
+def online_enabled_feature_list_fixture(event_data, config):
     """
     Fixture for an online enabled feature
 
@@ -35,6 +38,13 @@ def online_enabled_feature_list_fixture(event_data):
     )
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
+
+    client = config.get_client()
+    payload = FeatureListGetOnlineFeatures(entity_serving_names=[{"PRODUCT_ACTION": "add"}])
+    res = client.post(
+        f"/feature_list/{str(feature_list.id)}/online_features",
+        data={"payload": payload.json()},
+    )
     return feature_list
 
 

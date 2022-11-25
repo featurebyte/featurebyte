@@ -262,7 +262,7 @@ class BaseSession(BaseModel):
                     break
 
                 # asynchronous sleep
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.05)
 
             if thread.exception:
                 raise thread.exception
@@ -270,6 +270,10 @@ class BaseSession(BaseModel):
             cursor.close()
             input_pipe.close()
             thread.join(timeout=0)
+            query_shortened = query[:50].replace("\n", "")
+            logger.debug(
+                f"session get_async_query_stream elapsed ({query_shortened}...): {time.time() - start_time:.6f}s"
+            )
 
     async def get_working_schema_metadata(self) -> dict[str, Any]:
         """Retrieves the working schema version from the table registered in the

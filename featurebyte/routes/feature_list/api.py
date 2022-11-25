@@ -28,11 +28,13 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
+    FeatureListGetOnlineFeatures,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListSQL,
     FeatureListUpdate,
+    OnlineFeaturesResponseModel,
 )
 from featurebyte.schema.info import FeatureListInfo
 
@@ -218,3 +220,19 @@ async def get_historical_features_sql(
             featurelist_get_historical_features=featurelist_get_historical_features,
         ),
     )
+
+
+@router.post("/{feature_list_id}/online_features", response_model=OnlineFeaturesResponseModel)
+async def get_online_features(
+    request: Request,
+    feature_list_id: PydanticObjectId,
+    payload: str = Form(),
+) -> OnlineFeaturesResponseModel:
+    featurelist_get_online_features = FeatureListGetOnlineFeatures(**json.loads(payload))
+    controller = request.state.app_container.feature_list_controller
+    result = await controller.get_online_features(
+        feature_list_id=feature_list_id,
+        payload=featurelist_get_online_features,
+        get_credential=request.state.get_credential,
+    )
+    return result

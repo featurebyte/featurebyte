@@ -5,10 +5,9 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, cast
 
-from decimal import Decimal
-
 import pandas as pd
 
+from featurebyte.common.utils import convert_dataframe_as_json
 from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
@@ -47,31 +46,6 @@ class PreviewService(BaseService):
         """
         return SessionManagerService(user=self.user, persistent=self.persistent)
 
-    def _convert_dataframe_as_json(self, dataframe: pd.DataFrame) -> str:
-        """
-        Comvert pandas dataframe to json
-
-        Parameters
-        ----------
-        dataframe: pd.DataFrame
-            Dataframe object
-
-        Returns
-        -------
-        str
-            JSON string
-        """
-        dataframe.reset_index(drop=True, inplace=True)
-        for name in dataframe.columns:
-            # Decimal with integer values becomes float during conversion to json
-            if (
-                dataframe[name].dtype == object
-                and isinstance(dataframe[name].iloc[0], Decimal)
-                and (dataframe[name] % 1 == 0).all()
-            ):
-                dataframe[name] = dataframe[name].astype(int)
-        return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
-
     async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
         """
         Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
@@ -103,7 +77,7 @@ class PreviewService(BaseService):
             preview.graph, source_type=feature_store.type
         ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
         result = await db_session.execute_query(preview_sql)
-        return self._convert_dataframe_as_json(result)
+        return convert_dataframe_as_json(result)
 
     async def preview_feature(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
         """
@@ -159,7 +133,7 @@ class PreviewService(BaseService):
             source_type=feature_store.type,
         )
         result = await db_session.execute_query(preview_sql)
-        return self._convert_dataframe_as_json(result)
+        return convert_dataframe_as_json(result)
 
     async def preview_featurelist(
         self, featurelist_preview: FeatureListPreview, get_credential: Any
