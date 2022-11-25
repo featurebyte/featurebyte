@@ -3,8 +3,6 @@ Test view class
 """
 from typing import Dict, List, Tuple
 
-from unittest.mock import patch
-
 import pytest
 from bson import ObjectId
 from pydantic import StrictStr
