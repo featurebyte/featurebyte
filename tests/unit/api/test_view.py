@@ -160,12 +160,9 @@ def test_get_join_keys__same_join_keys():
     """
     Test get_join_keys where join keys are the same
     """
-    current_view = SimpleTestView()
-    other_view = SimpleTestView()
-
     col_to_use = "join_col"
-    current_view.join_col = col_to_use
-    other_view.join_col = col_to_use
+    current_view = SimpleTestView(join_col=col_to_use)
+    other_view = SimpleTestView(join_col=col_to_use)
 
     left_join_key, right_join_key = current_view.get_join_keys(other_view)
     assert left_join_key == right_join_key
@@ -205,8 +202,27 @@ def test_get_join_keys__error_if_no_key_found():
         current_view.get_join_keys(other_view)
 
 
-def test_join():
+def test_join__left_join():
     """
-    Test join
+    Test left join.
     """
+    # setup
+    # col_info_a, col_info_b, col_info_c = (
+    #     ColumnInfo(name="colA", dtype=DBVarType.INT),
+    #     ColumnInfo(name="colB", dtype=DBVarType.INT),
+    #     ColumnInfo(name="colC", dtype=DBVarType.INT),
+    # )
+    # current_view = SimpleTestView(
+    #     columns_info=[col_info_a, col_info_b],
+    # )
+    # other_view = SimpleTestView(
+    #     columns_info=[col_info_c]
+    # )
+    # current_view.graph.
+    #
+    # # do the join
+    # current_view.join(other_view, on="join_col")
+    #
+    # # assert
+    # current_view.columns_info = [col_info_a, col_info_b, col_info_c]
     pass
