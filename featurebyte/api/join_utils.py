@@ -1,7 +1,7 @@
 """
 Join utils class
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import copy
 
@@ -33,7 +33,7 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
 
 
 def combine_column_info_of_views(
-    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: set = frozenset()
+    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: Set[str] = frozenset()
 ) -> List[ColumnInfo]:
     """
     Combine two column info views.
@@ -46,7 +46,7 @@ def combine_column_info_of_views(
         one list of columns
     columns_b: List[ColumnInfo]
         another list of columns
-    filter_set: set
+    filter_set: Set[str]
         column names to filter columns_b on
 
     Returns
