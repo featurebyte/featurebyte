@@ -13,7 +13,11 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.join_utils import combine_column_info_of_views, join_tabular_data_ids
+from featurebyte.api.join_utils import (
+    combine_column_info_of_views,
+    join_column_lineage_map,
+    join_tabular_data_ids,
+)
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
@@ -125,11 +129,9 @@ class ItemView(View, GroupByMixin):
         )
 
         # Construct new column_lineage_map
-        joined_column_lineage_map = copy.deepcopy(self.column_lineage_map)
-        for col in columns:
-            joined_column_lineage_map[col] = self.event_view.column_lineage_map[col]
-        for col, lineage in joined_column_lineage_map.items():
-            joined_column_lineage_map[col] = append_to_lineage(lineage, node.name)
+        joined_column_lineage_map = join_column_lineage_map(
+            self.column_lineage_map, self.event_view.column_lineage_map, columns, node.name
+        )
 
         # Construct new tabular_data_ids
         joined_tabular_data_ids = join_tabular_data_ids(

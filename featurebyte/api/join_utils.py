@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 import copy
 
+from featurebyte.core.util import append_to_lineage
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 
@@ -83,5 +84,30 @@ def join_column_lineage_map(
     current_map: Dict[str, Tuple[str, ...]],
     other_map: Dict[str, Tuple[str, ...]],
     column_filter: list[str],
+    node_name: str,
 ) -> Dict[str, Tuple[str, ...]]:
-    return current_map
+    """
+    Joins the column lineage
+
+    Parameters
+    ----------
+    current_map: Dict[str, Tuple[str, ...]]
+        current view's column lineage map
+    other_map: Dict[str, Tuple[str, ...]]
+        other view's column lineage map
+    column_filter: list[str]
+        list of columns we want to filter the other_map on
+    node_name: str
+        name of the node
+
+    Returns
+    -------
+    Dict[str, Tuple[str, ...]]
+        joined column lineage map
+    """
+    joined_column_lineage_map = copy.deepcopy(current_map)
+    for col in column_filter:
+        joined_column_lineage_map[col] = other_map[col]
+    for col, lineage in joined_column_lineage_map.items():
+        joined_column_lineage_map[col] = append_to_lineage(lineage, node_name)
+    return joined_column_lineage_map

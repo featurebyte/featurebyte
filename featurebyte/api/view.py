@@ -15,11 +15,13 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.join_utils import (
     append_rsuffix_to_columns,
     combine_column_info_of_views,
+    join_column_lineage_map,
     join_tabular_data_ids,
 )
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.core.util import append_to_lineage
 from featurebyte.exception import NoJoinKeyFoundError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
@@ -236,7 +238,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         joined_tabular_data_ids: Any,
     ):
         # Construct new row_index_lineage
-        joined_row_index_lineage = self._append_to_lineage(self.row_index_lineage, new_node_name)
+        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, new_node_name)
 
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
@@ -389,11 +391,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Construct new column_lineage_map
-        joined_column_lineage_map = copy.deepcopy(self.column_lineage_map)
-        for col in other_view.column_lineage_map:
-            joined_column_lineage_map[col] = other_view.column_lineage_map[col]
-        for col, lineage in joined_column_lineage_map.items():
-            joined_column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+        columns = list(other_view.column_lineage_map.keys())
+        joined_column_lineage_map = join_column_lineage_map(
+            self.column_lineage_map, other_view.column_lineage_map, columns, node.name
+        )
 
         # Construct new tabular_data_ids
         joined_tabular_data_ids = join_tabular_data_ids(
