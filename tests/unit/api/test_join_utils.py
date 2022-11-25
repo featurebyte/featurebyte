@@ -3,8 +3,15 @@ Test join utils class
 """
 from bson import ObjectId
 
-from featurebyte.api.join_utils import append_rsuffix_to_columns, join_tabular_data_ids
+from featurebyte.api.join_utils import (
+    append_rsuffix_to_columns,
+    combine_column_info_of_views,
+    join_column_lineage_map,
+    join_tabular_data_ids,
+)
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_store import ColumnInfo
 
 
 def test_append_rsuffix_to_columns():
@@ -61,11 +68,68 @@ def test_join_column_lineage_map():
     """
     Test join_column_lineage_map
     """
-    pass
+    lineage_a = {"colA": ("node1", "node2", "node3")}
+    lineage_b = {"colB": ("nodeX", "nodeY", "nodeZ")}
+    column_filter = ["colB"]
+    new_node_name = "nodeNew"
+
+    # assert that filtering and appending works properly
+    response = join_column_lineage_map(lineage_a, lineage_b, column_filter, new_node_name)
+    assert response == {
+        "colA": ("node1", "node2", "node3", "nodeNew"),
+        "colB": ("nodeX", "nodeY", "nodeZ", "nodeNew"),
+    }
+
+    # assert that no filter present will not add on any columns
+    response = join_column_lineage_map(lineage_a, lineage_b, [], new_node_name)
+    assert response == {
+        "colA": ("node1", "node2", "node3", "nodeNew"),
+    }
+
+    # assert that random filter present will not add on any columns
+    response = join_column_lineage_map(lineage_a, lineage_b, ["colRandom"], new_node_name)
+    assert response == {
+        "colA": ("node1", "node2", "node3", "nodeNew"),
+    }
+
+
+def get_column_info(name: str) -> ColumnInfo:
+    """
+    Helper function to get column info for a column name, and an arbitrary dtype.
+    """
+    return ColumnInfo(name=name, dtype=DBVarType.INT)
 
 
 def test_combine_column_info_of_views():
     """
     Test combine_column_info_of_views
     """
-    pass
+    col1, col2, col3, col4, col5, col6 = (
+        get_column_info("col1"),
+        get_column_info("col2"),
+        get_column_info("col3"),
+        get_column_info("col4"),
+        get_column_info("col5"),
+        get_column_info("col6"),
+    )
+    columns_a = [col1, col2, col3]
+    columns_b = [col4, col5, col6]
+    # test that we combine them together
+    result = combine_column_info_of_views(columns_a, columns_b)
+    assert result == [col1, col2, col3, col4, col5, col6]
+
+    # test that swapping the positions changes the ordering
+    result = combine_column_info_of_views(columns_b, columns_a)
+    assert result == [col4, col5, col6, col1, col2, col3]
+
+    # test that filtering for a column works
+    result = combine_column_info_of_views(columns_a, columns_b, filter_set={col5.name})
+    assert result == [col1, col2, col3, col5]
+
+    # test that filtering for a column that isn't in the second column set removes all of it
+    result = combine_column_info_of_views(columns_a, columns_b, filter_set={col1.name})
+    assert result == [col1, col2, col3]
+
+    # test that passing an empty filter set doesn't perform any filtering
+    result = combine_column_info_of_views(columns_a, columns_b, filter_set=set())
+    assert result == [col1, col2, col3, col4, col5, col6]

@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 import copy
 
 from featurebyte.core.util import append_to_lineage
+from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 
@@ -32,10 +33,12 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
 
 
 def combine_column_info_of_views(
-    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set=None
+    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: set[str] = frozenset()
 ) -> List[ColumnInfo]:
     """
-    Combine two column info views
+    Combine two column info views.
+
+    If the filter_set provided is empty / not overridden, we'll not do any filtering.
 
     Parameters
     ----------
@@ -51,11 +54,9 @@ def combine_column_info_of_views(
     List[ColumnInfo]
         combined columns
     """
-    if filter_set is None:
-        filter_set = set()
     joined_columns_info = copy.deepcopy(columns_a)
     for column_info in columns_b:
-        if column_info.name in filter_set:
+        if len(filter_set) == 0 or column_info.name in filter_set:
             joined_columns_info.append(column_info)
     return joined_columns_info
 
@@ -107,7 +108,10 @@ def join_column_lineage_map(
     """
     joined_column_lineage_map = copy.deepcopy(current_map)
     for col in column_filter:
-        joined_column_lineage_map[col] = other_map[col]
+        if col in other_map:
+            joined_column_lineage_map[col] = other_map[col]
+        else:
+            logger.debug(f"col {col} not present in other_map, ignoring this column name.")
     for col, lineage in joined_column_lineage_map.items():
         joined_column_lineage_map[col] = append_to_lineage(lineage, node_name)
     return joined_column_lineage_map

@@ -366,11 +366,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             which indicates a left join.
         rsuffix: str
             Argument is used if the two views have overlapping column names and disambiguates such column names after
-            join. The default rsuffix is ''.
-
-        Returns
-        -------
-        tuple[str, str]
+            join. The default rsuffix is ''.s
         """
         self.validate_join(other_view)
 
