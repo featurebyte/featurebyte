@@ -14,6 +14,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.transformation import GraphReconstructor
 from tests.util.helper import get_node
 
 
@@ -385,8 +386,8 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     graph, node_input = graph_single_node
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
-    groupby_node = graph.add_groupby_operation(
-        node_params=groupby_node_params, input_node=node_input
+    groupby_node = GraphReconstructor.add_groupby_operation(
+        graph=graph, node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "transaction_f3600_m1800_b900_8a2a4064239908696910f175aa0f4b69105997f3"
     aggregation_id = "sum_925a5866dd2cbfe915e070831311f860176d09c7"
@@ -404,7 +405,8 @@ def test_query_graph__add_groupby_operation__error(groupby_node_params):
         input_nodes=[],
     )
     with pytest.raises(ValueError) as exc:
-        query_graph.add_groupby_operation(
+        GraphReconstructor.add_groupby_operation(
+            graph=query_graph,
             node_params=groupby_node_params,
             input_node=input_node,
         )

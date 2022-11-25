@@ -18,6 +18,7 @@ from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.transformation import GraphReconstructor
 
 
 class GroupBy(OpsMixin):
@@ -215,8 +216,8 @@ class GroupBy(OpsMixin):
             value_by_column=self.category,
             feature_job_setting=feature_job_setting,
         )
-        groupby_node = self.obj.graph.add_groupby_operation(
-            node_params=node_params, input_node=self.obj.node
+        groupby_node = GraphReconstructor.add_groupby_operation(
+            graph=self.obj.graph, node_params=node_params, input_node=self.obj.node
         )
         items: list[Feature | BaseFeatureGroup] = []
         assert isinstance(feature_names, list)

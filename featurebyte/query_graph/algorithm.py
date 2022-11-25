@@ -6,16 +6,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List
 
 if TYPE_CHECKING:
-    from featurebyte.query_graph.graph import QueryGraph
+    from featurebyte.query_graph.model import QueryGraphModel
     from featurebyte.query_graph.node import Node
 
 
-def dfs_traversal(query_graph: QueryGraph, node: Node) -> Iterator[Node]:
+def dfs_traversal(query_graph: QueryGraphModel, node: Node) -> Iterator[Node]:
     """Perform a DFS traversal
 
     Parameters
     ----------
-    query_graph : QueryGraph
+    query_graph : QueryGraphModel
         Query graph
     node : Node
         Current node to traverse from
@@ -28,12 +28,12 @@ def dfs_traversal(query_graph: QueryGraph, node: Node) -> Iterator[Node]:
     yield from dfs_inner(query_graph, node, {})
 
 
-def dfs_inner(query_graph: QueryGraph, node: Node, visited: dict[str, bool]) -> Iterator[Node]:
+def dfs_inner(query_graph: QueryGraphModel, node: Node, visited: dict[str, bool]) -> Iterator[Node]:
     """Performs the actual work of a DFS traversal
 
     Parameters
     ----------
-    query_graph : QueryGraph
+    query_graph : QueryGraphModel
         Query graph
     node : Node
         Current node to traverse from
