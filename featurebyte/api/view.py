@@ -277,8 +277,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         bool
         """
-        entity_columns = view.entity_columns
-        return column_name in entity_columns
+        entity_cols = view.entity_columns
+        return column_name in entity_cols
 
     def check_if_key_is_entity_in_both(self, other_view: View, column_name: str) -> bool:
         """
@@ -299,7 +299,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         key_is_entity_of_other_view = View.check_key_is_entity_in_view(other_view, column_name)
         return key_is_entity_of_current_view and key_is_entity_of_other_view
 
-    def get_join_keys(self, other_view: View, on_column: Optional[str]) -> tuple[str, str]:
+    def get_join_keys(self, other_view: View, on_column: Optional[str] = None) -> tuple[str, str]:
         """
         Returns the join keys of the two tables.
 
@@ -326,11 +326,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         current_join_key = self.get_join_column()
         other_join_key = other_view.get_join_column()
         # Return the existing keys if they match
-        if current_join_key == other_join_key:
+        if current_join_key == other_join_key and current_join_key != "":
             return current_join_key, other_join_key
 
         # Check if the keys are entities
-        if self.check_key_is_entity_in_view(other_view, current_join_key):
+        if self.check_if_key_is_entity_in_both(other_view, current_join_key):
             return current_join_key, current_join_key
         if self.check_if_key_is_entity_in_both(other_view, other_join_key):
             return other_join_key, other_join_key
