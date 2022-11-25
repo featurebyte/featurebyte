@@ -13,7 +13,11 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 
 from featurebyte.common.utils import dataframe_from_arrow_stream
-from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
+from featurebyte.exception import (
+    FeatureListNotOnlineEnabledError,
+    MissingPointInTimeColumnError,
+    TooRecentPointInTimeError,
+)
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -357,9 +361,14 @@ class FeatureListController(
             Invalid request payload
         """
         feature_list = await self.service.get_document(feature_list_id)
-        result = await self.online_serving_service.get_online_features_from_feature_list(
-            feature_list=feature_list,
-            entity_serving_names=payload.entity_serving_names,
-            get_credential=get_credential,
-        )
+        try:
+            result = await self.online_serving_service.get_online_features_from_feature_list(
+                feature_list=feature_list,
+                entity_serving_names=payload.entity_serving_names,
+                get_credential=get_credential,
+            )
+        except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
         return result

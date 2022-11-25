@@ -194,3 +194,9 @@ class NoFeatureStorePresentError(Exception):
     """
     Raise when we cannot find a feature store, when we expect one to be there.
     """
+
+
+class FeatureListNotOnlineEnabledError(Exception):
+    """
+    Raise when online features are requested for a FeatureList that is not online enabled
+    """

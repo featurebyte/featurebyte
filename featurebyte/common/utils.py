@@ -102,6 +102,11 @@ def pa_table_to_record_batches(table: pa.Table) -> Any:
 def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
     """
     Process pandas dataframe in-place before converting to json
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe object
     """
     dataframe.reset_index(drop=True, inplace=True)
     for name in dataframe.columns:

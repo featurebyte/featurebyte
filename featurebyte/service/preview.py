@@ -185,7 +185,7 @@ class PreviewService(BaseService):
             else:
                 result = result.merge(_result, on=group_join_keys)
 
-        return self._convert_dataframe_as_json(result)
+        return convert_dataframe_as_json(result)
 
     async def get_historical_features(
         self,

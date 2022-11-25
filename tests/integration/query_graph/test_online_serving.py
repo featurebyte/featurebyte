@@ -92,6 +92,13 @@ async def test_online_serving_sql(features, snowflake_session, config):
     pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
 
     # Check online_features route
+    check_online_features_route(feature_list, config, df_historical, columns)
+
+
+def check_online_features_route(feature_list, config, df_historical, columns):
+    """
+    Online enable a feature and call the online features endpoint
+    """
     feature_list.save()
     feature_list.deploy(make_production_ready=True, enable=True)
     client = config.get_client()
@@ -105,5 +112,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
     df = pd.DataFrame(res.json()["features"])
     elapsed = time.time() - tic
     print(f"online_features elapsed: {elapsed:.6f}s")
+
+    assert df.columns.tolist() == columns
     df_expected = df_historical[df_historical["user id"] == 5][columns].reset_index(drop=True)
     pd.testing.assert_frame_equal(df_expected, df, check_dtype=False)

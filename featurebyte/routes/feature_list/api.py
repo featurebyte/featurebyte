@@ -228,6 +228,9 @@ async def get_online_features(
     feature_list_id: PydanticObjectId,
     payload: str = Form(),
 ) -> OnlineFeaturesResponseModel:
+    """
+    Retrieve online features
+    """
     featurelist_get_online_features = FeatureListGetOnlineFeatures(**json.loads(payload))
     controller = request.state.app_container.feature_list_controller
     result = await controller.get_online_features(
@@ -235,4 +238,4 @@ async def get_online_features(
         payload=featurelist_get_online_features,
         get_credential=request.state.get_credential,
     )
-    return result
+    return cast(OnlineFeaturesResponseModel, result)

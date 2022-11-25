@@ -10,6 +10,7 @@ import time
 import pandas as pd
 
 from featurebyte.common.utils import prepare_dataframe_for_json
+from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.logger import logger
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -27,6 +28,13 @@ class OnlineServingService(BaseService):
 
     @property
     def session_manager_service(self) -> SessionManagerService:
+        """
+        Instance of SessionManagerService
+
+        Returns
+        -------
+        SessionManagerService
+        """
         return SessionManagerService(self.user, self.persistent)
 
     async def get_online_features_from_feature_list(
@@ -35,12 +43,35 @@ class OnlineServingService(BaseService):
         entity_serving_names: List[Dict[str, Any]],
         get_credential: Any,
     ) -> OnlineFeaturesResponseModel:
+        """
+        Get online features for a Feature List given a list of entity serving names
+
+        Parameters
+        ----------
+        feature_list: FeatureListModel
+            Feature List
+        entity_serving_names: List[Dict[str, Any]]
+            Entity serving names
+        get_credential: Any
+            Get credential handler
+
+        Returns
+        -------
+        OnlineFeaturesResponseModel
+
+        Raises
+        ------
+        RuntimeError
+            When the provided FeatureList is not available for online serving
+        FeatureListNotOnlineEnabledError
+            When the provided FeatureList is not online enabled
+        """
 
         if feature_list.feature_clusters is None:
             raise RuntimeError("Online serving not available for this FeatureList")
 
         if not feature_list.deployed:
-            raise RuntimeError("Feature List is not online enabled")
+            raise FeatureListNotOnlineEnabledError()
 
         tic = time.time()
         feature_cluster = feature_list.feature_clusters[0]
@@ -71,6 +102,7 @@ class OnlineServingService(BaseService):
         )
         logger.debug(f"OnlineServingService get session elapsed: {time.time() - tic:.6f}s")
         df_features = await session.execute_query(retrieval_sql)
+        assert df_features is not None
 
         features = []
         prepare_dataframe_for_json(df_features)
