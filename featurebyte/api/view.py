@@ -232,7 +232,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
         joined_column_lineage_map: Dict[str, Tuple[str, ...]],
-        joined_tabular_data_ids: Any,
+        joined_tabular_data_ids: List[PydanticObjectId],
     ):
         """
         Updates the metadata for the new join
@@ -245,7 +245,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined columns info
         joined_column_lineage_map: Dict[str, Tuple[str, ...]]
             joined column lineage map
-        joined_tabular_data_ids: Any
+        joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
         """
         # Construct new row_index_lineage

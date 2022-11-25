@@ -33,7 +33,7 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
 
 
 def combine_column_info_of_views(
-    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: set[str] = frozenset()
+    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: set = frozenset()
 ) -> List[ColumnInfo]:
     """
     Combine two column info views.
@@ -46,8 +46,8 @@ def combine_column_info_of_views(
         one list of columns
     columns_b: List[ColumnInfo]
         another list of columns
-    filter_set: set[str]
-        set of column names to filter columns_b on
+    filter_set: set
+        column names to filter columns_b on
 
     Returns
     -------
