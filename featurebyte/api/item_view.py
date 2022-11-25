@@ -14,6 +14,7 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
@@ -129,10 +130,10 @@ class ItemView(View, GroupByMixin):
         for col in columns:
             joined_column_lineage_map[col] = self.event_view.column_lineage_map[col]
         for col, lineage in joined_column_lineage_map.items():
-            joined_column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+            joined_column_lineage_map[col] = append_to_lineage(lineage, node.name)
 
         # Construct new row_index_lineage
-        joined_row_index_lineage = self._append_to_lineage(self.row_index_lineage, node.name)
+        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, node.name)
 
         # Construct new tabular_data_ids
         joined_tabular_data_ids = sorted(

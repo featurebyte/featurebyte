@@ -126,3 +126,25 @@ def series_binary_operation(
         row_index_lineage=input_series.row_index_lineage,
         **kwargs,
     )
+
+
+def append_to_lineage(lineage: tuple[str, ...], node_name: str) -> tuple[str, ...]:
+    """
+    Add operation node name to the (row-index) lineage (list of node names)
+
+    Parameters
+    ----------
+    lineage: tuple[str, ...]
+        tuple of node names to represent the feature/row-index lineage
+    node_name: str
+        operation node name
+
+    Returns
+    -------
+    updated_lineage: tuple[str, ...]
+        updated lineage after adding the new operation name
+
+    """
+    output = list(lineage)
+    output.append(node_name)
+    return tuple(output)

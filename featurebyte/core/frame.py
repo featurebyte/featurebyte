@@ -12,6 +12,7 @@ from typeguard import typechecked
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin
 from featurebyte.core.series import Series
+from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -183,9 +184,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             )
             column_lineage_map = {}
             for col in item:
-                column_lineage_map[col] = self._append_to_lineage(
-                    self.column_lineage_map[col], node.name
-                )
+                column_lineage_map[col] = append_to_lineage(self.column_lineage_map[col], node.name)
             return type(self)(
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
@@ -201,14 +200,14 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         )
         column_lineage_map = {}
         for col, lineage in self.column_lineage_map.items():
-            column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+            column_lineage_map[col] = append_to_lineage(lineage, node.name)
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             columns_info=self.columns_info,
             node_name=node.name,
             column_lineage_map=column_lineage_map,
-            row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+            row_index_lineage=append_to_lineage(self.row_index_lineage, node.name),
             **self._getitem_frame_params,
         )
 
@@ -239,7 +238,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 input_nodes=[self.node, value.node],
             )
             self.columns_info.append(ColumnInfo(name=key, dtype=value.dtype))
-            self.column_lineage_map[key] = self._append_to_lineage(
+            self.column_lineage_map[key] = append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), node.name
             )
         else:
@@ -252,7 +251,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             self.columns_info.append(
                 ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
             )
-            self.column_lineage_map[key] = self._append_to_lineage(
+            self.column_lineage_map[key] = append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), node.name
             )
 
