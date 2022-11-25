@@ -298,9 +298,13 @@ class InfoService(BaseService):
                 )
             )
 
-        metadata = await self._extract_feature_metadata(
-            op_struct=feature.extract_operation_structure()
-        )
+        op_struct = feature.extract_operation_structure()
+        if op_struct.tabular_data_ids:
+            metadata = await self._extract_feature_metadata(op_struct=op_struct)
+        else:
+            # DEV-556: handle the case before tracking this field in the input node
+            metadata = None
+
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},

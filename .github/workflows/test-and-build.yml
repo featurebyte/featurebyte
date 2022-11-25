@@ -150,12 +150,7 @@ jobs:
 
       - name: Download to staging and restoremongo
         if: ${{ needs.flags.outputs.changes != 0 }}
-        run: |
-          gsutil cp gs://featurebyte_staging_bucket/mongodb.tar.gz .
-          docker cp mongodb.tar.gz mongo-testrs:/
-          docker exec mongo-testrs tar xvf /mongodb.tar.gz
-          docker exec mongo-testrs mongorestore --drop --uri 'mongodb://localhost:27021,localhost:27022/?replicaSet=rs0'
-          rm -f mongodb.tar.gz
+        run: bash scripts/dump_staging_app.sh
 
       - name: Run migration test
         if: ${{ needs.flags.outputs.changes != 0 }}
