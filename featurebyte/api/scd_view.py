@@ -110,3 +110,6 @@ class SlowlyChangingView(View):
         if isinstance(other_view, SlowlyChangingView):
             logger.error("columns from a SlowlyChangingView can’t be added to a SlowlyChangingView")
             raise JoinViewMismatchError
+
+    def get_join_column(self) -> str:
+        return self.natural_key_column

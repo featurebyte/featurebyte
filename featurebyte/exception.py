@@ -203,3 +203,11 @@ class JoinViewMismatchError(Exception):
     Specifically, this should occur when columns from a SCD View are trying to be added to a Dimension or SCD View.
     This operation is not allowed.
     """
+
+
+class NoJoinKeyFoundError(Exception):
+    """
+    Raise when no suitable join key is found.
+
+    This most likely indicates that callers should explicitly specify a join key.
+    """

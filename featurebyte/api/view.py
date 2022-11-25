@@ -20,6 +20,7 @@ from featurebyte.api.join_utils import (
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.exception import NoJoinKeyFoundError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
@@ -247,6 +248,44 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             }
         )
 
+    @staticmethod
+    def check_key_is_entity_in_view(view: View, column_name: str) -> bool:
+        """
+        Checks to see if a column name is an entity.
+
+        Parameters
+        ----------
+        view: View
+            the view we want to check
+        column_name: str
+            the column name we want to check if it's an entity
+
+        Returns
+        -------
+        bool
+        """
+        entity_columns = view.entity_columns
+        return column_name in entity_columns
+
+    def check_if_key_is_entity_in_both(self, other_view: View, column_name: str) -> bool:
+        """
+        Checks if a column name is an entity in both views.
+
+        Parameters
+        ----------
+        other_view: View
+            the other view we want to check for
+        column_name: str
+            the column name we want to check if it's an entity
+
+        Returns
+        -------
+        bool
+        """
+        key_is_entity_of_current_view = View.check_key_is_entity_in_view(self, column_name)
+        key_is_entity_of_other_view = View.check_key_is_entity_in_view(other_view, column_name)
+        return key_is_entity_of_current_view and key_is_entity_of_other_view
+
     def get_join_keys(self, other_view: View, on_column: Optional[str]) -> tuple[str, str]:
         """
         Returns the join keys of the two tables.
@@ -262,19 +301,28 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         tuple[str, str]
             the columns from the left and right tables that we want to join on
+
+        Raises
+        ------
+        NoJoinKeyFoundError
+            raised when no suitable join key has been found
         """
+        if on_column is not None:
+            return on_column, on_column
+
         current_join_key = self.get_join_column()
         other_join_key = other_view.get_join_column()
         # Return the existing keys if they match
         if current_join_key == other_join_key:
-            if on_column is not None and on_column != current_join_key:
-                logger.debug(
-                    f"on_column parameter {on_column} was provided, even though the existing join keys for "
-                    f"each view {current_join_key} already matches. Ignoring on_column."
-                )
             return current_join_key, other_join_key
-        # TODO: finish implementing the primary key / natural key <-> entity logic
-        return current_join_key, other_join_key
+
+        # Check if the keys are entities
+        if self.check_key_is_entity_in_view(other_view, current_join_key):
+            return current_join_key, current_join_key
+        if self.check_if_key_is_entity_in_both(other_view, other_join_key):
+            return other_join_key, other_join_key
+
+        raise NoJoinKeyFoundError
 
     @typechecked
     def join(
@@ -306,6 +354,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str
             Argument is used if the two views have overlapping column names and disambiguates such column names after
             join. The default rsuffix is ''.
+
+        Returns
+        -------
+        tuple[str, str]
         """
         self.validate_join(other_view)
 
