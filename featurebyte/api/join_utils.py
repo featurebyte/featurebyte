@@ -10,7 +10,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 
 
-def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> list[str]:
+def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> List[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.
 

@@ -225,6 +225,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
             the column name for the join key
         """
+        return ""
 
     def update_metadata(
         self,
@@ -340,7 +341,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def join(
         self,
         other_view: View,
-        on: Optional[str] = None,
+        on: Optional[str] = None,  # pylint: disable=invalid-name
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
     ) -> None:
