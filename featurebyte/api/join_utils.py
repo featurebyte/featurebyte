@@ -10,20 +10,20 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 
 
-def append_rsuffix_to_columns(columns: list[str], rsuffix: Optional[str]) -> list[str]:
+def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> list[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.
 
     Parameters
     ----------
-    columns: list[str]
+    columns: List[str]
         columns to update
     rsuffix: Optional[str]
         the suffix to attach on
 
     Returns
     -------
-    list[str]
+    List[str]
         updated columns with rsuffix, or original columns if none were provided
     """
     if not rsuffix:
@@ -32,23 +32,23 @@ def append_rsuffix_to_columns(columns: list[str], rsuffix: Optional[str]) -> lis
 
 
 def combine_column_info_of_views(
-    columns_a: list[ColumnInfo], columns_b: list[ColumnInfo], filter_set=None
-) -> list[ColumnInfo]:
+    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set=None
+) -> List[ColumnInfo]:
     """
     Combine two column info views
 
     Parameters
     ----------
-    columns_a: list[ColumnInfo]
+    columns_a: List[ColumnInfo]
         one list of columns
-    columns_b: list[ColumnInfo]
+    columns_b: List[ColumnInfo]
         another list of columns
     filter_set: set[str]
         set of column names to filter columns_b on
 
     Returns
     -------
-    list[ColumnInfo]
+    List[ColumnInfo]
         combined columns
     """
     if filter_set is None:
@@ -83,7 +83,7 @@ def join_tabular_data_ids(
 def join_column_lineage_map(
     current_map: Dict[str, Tuple[str, ...]],
     other_map: Dict[str, Tuple[str, ...]],
-    column_filter: list[str],
+    column_filter: List[str],
     node_name: str,
 ) -> Dict[str, Tuple[str, ...]]:
     """
@@ -95,7 +95,7 @@ def join_column_lineage_map(
         current view's column lineage map
     other_map: Dict[str, Tuple[str, ...]]
         other view's column lineage map
-    column_filter: list[str]
+    column_filter: List[str]
         list of columns we want to filter the other_map on
     node_name: str
         name of the node

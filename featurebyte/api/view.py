@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar, Union
 
-import copy
 from abc import ABC
 
 from pydantic import Field, PrivateAttr
@@ -23,7 +22,6 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
 from featurebyte.exception import NoJoinKeyFoundError
-from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -217,7 +215,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         other_view: View
             the other view that we are joining with
         """
-        pass
 
     def get_join_column(self) -> str:
         """
@@ -228,15 +225,28 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
             the column name for the join key
         """
-        pass
 
     def update_metadata(
         self,
         new_node_name: str,
-        joined_columns_info: list[ColumnInfo],
+        joined_columns_info: List[ColumnInfo],
         joined_column_lineage_map: Dict[str, Tuple[str, ...]],
         joined_tabular_data_ids: Any,
     ):
+        """
+        Updates the metadata for the new join
+
+        Parameters
+        ----------
+        new_node_name: str
+            new node name
+        joined_columns_info: List[ColumnInfo]
+            joined columns info
+        joined_column_lineage_map: Dict[str, Tuple[str, ...]]
+            joined column lineage map
+        joined_tabular_data_ids: Any
+            joined tabular data IDs
+        """
         # Construct new row_index_lineage
         joined_row_index_lineage = append_to_lineage(self.row_index_lineage, new_node_name)
 

@@ -55,3 +55,17 @@ def test_join_tabular_data_ids__join():
     data_ids_b = [object_3, object_a, object_9]
     output = join_tabular_data_ids(data_ids_a, data_ids_b)
     assert output == [object_0, object_2, object_3, object_5, object_9, object_a]
+
+
+def test_join_column_lineage_map():
+    """
+    Test join_column_lineage_map
+    """
+    pass
+
+
+def test_combine_column_info_of_views():
+    """
+    Test combine_column_info_of_views
+    """
+    pass

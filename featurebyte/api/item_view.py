@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
-import copy
-
 from pydantic import Field
 from typeguard import typechecked
 
@@ -19,7 +17,6 @@ from featurebyte.api.join_utils import (
     join_tabular_data_ids,
 )
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
