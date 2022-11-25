@@ -17,6 +17,7 @@ from featurebyte.models.feature_store import (
     TableDetails,
     TabularSource,
 )
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 class SimpleTestViewColumn(ViewColumn):
@@ -207,22 +208,68 @@ def test_join__left_join():
     Test left join.
     """
     # setup
-    # col_info_a, col_info_b, col_info_c = (
-    #     ColumnInfo(name="colA", dtype=DBVarType.INT),
-    #     ColumnInfo(name="colB", dtype=DBVarType.INT),
-    #     ColumnInfo(name="colC", dtype=DBVarType.INT),
-    # )
-    # current_view = SimpleTestView(
-    #     columns_info=[col_info_a, col_info_b],
-    # )
-    # other_view = SimpleTestView(
-    #     columns_info=[col_info_c]
-    # )
-    # current_view.graph.
-    #
-    # # do the join
-    # current_view.join(other_view, on="join_col")
-    #
-    # # assert
-    # current_view.columns_info = [col_info_a, col_info_b, col_info_c]
-    pass
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    current_view = SimpleTestView(
+        columns_info=[col_info_a, col_info_b],
+    )
+    other_view = SimpleTestView(columns_info=[col_info_c])
+    input_node = current_view.graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "generic",
+            "columns": ["random_column"],
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "transaction",
+            },
+            "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "warehouse": "sf_warehouse",
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    current_view.node_name = input_node.name
+
+    input_node = other_view.graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "generic",
+            "columns": ["random_column"],
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "transaction",
+            },
+            "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "warehouse": "sf_warehouse",
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    other_view.node_name = input_node.name
+
+    # do the join
+    current_view.join(other_view, on="join_col")
+
+    # assert
+    current_view.columns_info = [col_info_a, col_info_b, col_info_c]
+    # TODO: finish asserting more stuff

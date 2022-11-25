@@ -98,7 +98,7 @@ class SlowlyChangingView(View):
         )
         return params
 
-    def validate_join(self, other_view: View):
+    def validate_join(self, other_view: View) -> None:
         """
         Validate join should be implemented by view classes that have extra requirements.
 

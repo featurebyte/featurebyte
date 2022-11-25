@@ -206,7 +206,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             raise ValueError(f"Column '{key}' cannot be modified!")
         super().__setitem__(key, value)
 
-    def validate_join(self, other_view: View):
+    def validate_join(self, other_view: View) -> None:
         """
         Validate join should be implemented by view classes that have extra requirements.
 
@@ -233,7 +233,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         joined_columns_info: List[ColumnInfo],
         joined_column_lineage_map: Dict[str, Tuple[str, ...]],
         joined_tabular_data_ids: List[PydanticObjectId],
-    ):
+    ) -> None:
         """
         Updates the metadata for the new join
 
