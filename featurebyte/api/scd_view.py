@@ -106,6 +106,10 @@ class SlowlyChangingView(View):
         ---------
         other_view: View
             the other view that we are joining with
+
+        Raises
+        ------
+        JoinViewMismatchError
         """
         if isinstance(other_view, SlowlyChangingView):
             logger.error("columns from a SlowlyChangingView can’t be added to a SlowlyChangingView")
