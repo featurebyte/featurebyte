@@ -1,0 +1,14 @@
+/dimension_data
+/entity
+/event_data
+/feature
+/feature_job_setting_analysis
+/feature_list
+/feature_list_namespace
+/feature_namespace
+/feature_store
+/item_data
+/scd_data
+/semantic
+/tabular_data
+/task

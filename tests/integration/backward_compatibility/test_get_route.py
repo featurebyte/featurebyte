@@ -37,7 +37,7 @@ def test_api_client_fixture(mongo_persistent):
 def extract_get_routes():
     """Extract get routes to be tests"""
     routes = []
-    exclude_paths = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/temp_data"}
+    exclude_paths = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/temp_data", "/redoc"}
     for route in app.routes:
         path = getattr(route, "path", None)
         if "{" in path or path in exclude_paths:
@@ -45,6 +45,19 @@ def extract_get_routes():
         if path and "GET" in getattr(route, "methods", {}):
             routes.append(path)
     return routes
+
+
+def test_extract_get_routes(test_dir, update_fixtures):
+    """This test is used to track the list of routes covered by backward compatibility checks"""
+    fixture_path = os.path.join(test_dir, "fixtures/backward_compatibility/get_routes.txt")
+    with open(fixture_path) as fhandle:
+        expected_routes = sorted(line.strip() for line in fhandle.readlines())
+        assert sorted(extract_get_routes()) == expected_routes
+
+    if update_fixtures:
+        routes = extract_get_routes()
+        with open(fixture_path, "w") as fhandle:
+            fhandle.write("\n".join(sorted(routes)))
 
 
 @pytest.mark.parametrize("route", extract_get_routes())

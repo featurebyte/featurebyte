@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# exit on any command failure
+set -e
+
 # download staging data & dump it to the mongo
 gsutil cp gs://featurebyte_staging_bucket/mongodb.tar.gz .
 docker cp mongodb.tar.gz mongo-testrs:/
