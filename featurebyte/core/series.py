@@ -16,7 +16,7 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
-from featurebyte.core.util import series_binary_operation, series_unary_operation
+from featurebyte.core.util import append_to_lineage, series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -75,7 +75,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_name=node.name,
             name=self.name,
             dtype=self.dtype,
-            row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+            row_index_lineage=append_to_lineage(self.row_index_lineage, node.name),
             **self.unary_op_series_params(),
         )
 
