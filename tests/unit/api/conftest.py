@@ -241,7 +241,6 @@ def snowflake_item_data_fixture(
     snowflake_item_data_id,
     saved_event_data,
     cust_id_entity,
-    transaction_entity,
 ):
     """
     Snowflake ItemData object fixture (using config object)
@@ -256,7 +255,6 @@ def snowflake_item_data_fixture(
         event_data_name=saved_event_data.name,
         _id=snowflake_item_data_id,
     )
-    item_data["event_id_col"].as_entity(transaction_entity.name)
     yield item_data
 
 

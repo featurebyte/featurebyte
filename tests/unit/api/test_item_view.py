@@ -471,10 +471,12 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
     )["feature_name"]
 
 
-def test_item_view_groupby__event_id_column(snowflake_item_view, transaction_entity):
+def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_entity):
     """
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
+    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method="count",
         feature_names=["order_size"],
