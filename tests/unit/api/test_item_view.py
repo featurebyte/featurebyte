@@ -5,6 +5,7 @@ import textwrap
 
 import pytest
 
+from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -468,3 +469,33 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
         feature_names=["feature_name"],
         feature_job_setting=feature_job_setting,
     )["feature_name"]
+
+
+def test_item_view_groupby__event_id_column(snowflake_item_view, transaction_entity):
+    """
+    Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
+    """
+    feature = snowflake_item_view.groupby("event_id_col").aggregate(
+        method="count",
+        feature_names=["order_size"],
+    )
+    assert isinstance(feature, Feature)
+    feature_dict = feature.dict()
+    assert feature_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
+        {"source": "join_1", "target": "item_groupby_1"},
+        {"source": "item_groupby_1", "target": "project_1"},
+        {"source": "project_1", "target": "is_null_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "is_null_1", "target": "conditional_1"},
+        {"source": "conditional_1", "target": "alias_1"},
+    ]
+    assert get_node(feature_dict["graph"], "item_groupby_1")["parameters"] == {
+        "keys": ["event_id_col"],
+        "parent": None,
+        "agg_func": "count",
+        "names": ["order_size"],
+        "serving_names": ["transaction_id"],
+        "entity_ids": [transaction_entity.id],
+    }

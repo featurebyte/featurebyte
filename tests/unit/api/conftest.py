@@ -241,13 +241,14 @@ def snowflake_item_data_fixture(
     snowflake_item_data_id,
     saved_event_data,
     cust_id_entity,
+    transaction_entity,
 ):
     """
     Snowflake ItemData object fixture (using config object)
     """
     _ = mock_get_persistent
     saved_event_data["cust_id"].as_entity(cust_id_entity.name)
-    yield ItemData.from_tabular_source(
+    item_data = ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -255,6 +256,8 @@ def snowflake_item_data_fixture(
         event_data_name=saved_event_data.name,
         _id=snowflake_item_data_id,
     )
+    item_data["event_id_col"].as_entity(transaction_entity.name)
+    yield item_data
 
 
 @pytest.fixture(name="snowflake_item_view")

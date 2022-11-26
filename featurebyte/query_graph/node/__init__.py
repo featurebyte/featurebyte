@@ -34,5 +34,8 @@ def construct_node(**kwargs: Any) -> Node:
     -------
     Node
     """
-    node = parse_obj_as(Node, kwargs)  # type: ignore[misc]
+    try:
+        node = parse_obj_as(Node, kwargs)  # type: ignore[misc]
+    except:
+        raise
     return node
