@@ -2,17 +2,21 @@
 This module contains Query graph transformation related classes
 """
 # pylint: disable=too-few-public-methods
-from typing import Any, Dict, Set, Tuple, Type, TypeVar, Union, cast
+from typing import Any, Dict, Set, Tuple, Type, TypeVar, cast
 
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import AssignNode, GroupbyNode, ItemGroupbyNode
+from featurebyte.query_graph.node.generic import (
+    AssignNode,
+    GroupbyNode,
+    ParametersDerivedPostPruneNode,
+)
 from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
 
 QueryGraphT = TypeVar("QueryGraphT", bound=QueryGraphModel)
-NodeT = TypeVar("NodeT", GroupbyNode, ItemGroupbyNode)
+NodeT = TypeVar("NodeT", bound=ParametersDerivedPostPruneNode)
 
 
 class GraphPruner:
@@ -213,7 +217,7 @@ class GraphReconstructor:
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[input_node],
         )
-        return cast(node_cls, node)
+        return cast(NodeT, node)
 
     # @classmethod
     # def add_groupby_operation(

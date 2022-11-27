@@ -3,13 +3,13 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from enum import Enum
 
 from typeguard import typechecked
 
-from featurebyte.api.agg_func import construct_agg_func
+from featurebyte.api.agg_func import AggFuncType, construct_agg_func
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -20,6 +20,7 @@ from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode
 from featurebyte.query_graph.transformation import GraphReconstructor
 
@@ -89,7 +90,9 @@ class GroupBy(OpsMixin):
     def __str__(self) -> str:
         return repr(self)
 
-    def _validate_common_parameters(self, method, value_column):
+    def _validate_common_parameters(
+        self, method: Optional[str], value_column: Optional[str]
+    ) -> None:
         if method is None:
             raise ValueError("method is required")
 
@@ -200,7 +203,7 @@ class GroupBy(OpsMixin):
         method: Optional[str],
         feature_names: Optional[list[str]],
         value_by_column: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         self._validate_parameters_item_aggregation(
             value_column=value_column, method=method, feature_names=feature_names
@@ -260,14 +263,8 @@ class GroupBy(OpsMixin):
 
         self.obj.validate_aggregation_parameters(groupby_obj=self, value_column=value_column)
 
-        if self.aggregation_type == AggregationType.WINDOW_AGGREGATION:
-            prepare_node_params_func = self._prepare_node_parameters_window_aggregation
-            node_cls = GroupbyNode
-        else:
-            prepare_node_params_func = self._prepare_node_parameters_item_aggregation
-            node_cls = ItemGroupbyNode
-
-        node_params = prepare_node_params_func(
+        node_cls: Type[Union[GroupbyNode, ItemGroupbyNode]]
+        prepare_node_params_args = dict(
             method=method,
             value_column=value_column,
             windows=windows,
@@ -276,6 +273,17 @@ class GroupBy(OpsMixin):
             value_by_column=self.category,
             feature_job_setting=feature_job_setting,
         )
+        if self.aggregation_type == AggregationType.WINDOW_AGGREGATION:
+            node_params = self._prepare_node_parameters_window_aggregation(
+                **prepare_node_params_args  # type: ignore
+            )
+            node_cls = GroupbyNode
+        else:
+            node_params = self._prepare_node_parameters_item_aggregation(
+                **prepare_node_params_args  # type: ignore
+            )
+            node_cls = ItemGroupbyNode
+
         groupby_node = GraphReconstructor.add_groupby_operation(
             graph=self.obj.graph,
             node_cls=node_cls,
@@ -311,8 +319,13 @@ class GroupBy(OpsMixin):
         return feature
 
     def _project_feature_from_groupby_node(
-        self, agg_method, feature_name, groupby_node, method, value_column
-    ):
+        self,
+        agg_method: AggFuncType,
+        feature_name: str,
+        groupby_node: Node,
+        method: str,
+        value_column: Optional[str],
+    ) -> Feature:
         feature_node = self.obj.graph.add_operation(
             node_type=NodeType.PROJECT,
             node_params={"columns": [feature_name]},

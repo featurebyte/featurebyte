@@ -1,11 +1,11 @@
 """
 This module contains SQL operation related node classes
 """
-from typing import Any, Dict, List, Literal, Optional, Set, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from pydantic import BaseModel, Field, root_validator
 
@@ -27,6 +27,10 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
+
+if TYPE_CHECKING:
+    from featurebyte.query_graph.model import QueryGraphModel
+    from featurebyte.query_graph.node import Node
 
 
 class InputNode(BaseNode):
@@ -235,18 +239,23 @@ class LagNode(BaseSeriesOutputNode):
     parameters: Parameters
 
 
-class ParametersDerivedPostPruneNode(ABC):
+class ParametersDerivedPostPruneNode(BaseNode):
     """Interface for nodes whose parameters have to be determined post pruning"""
 
     @classmethod
     @abstractmethod
     def derive_parameters_post_prune(
-        cls, graph, input_node, temp_node, pruned_graph, pruned_input_node_name
-    ):
+        cls,
+        graph: "QueryGraphModel",
+        input_node: "Node",
+        temp_node: "ParametersDerivedPostPruneNode",
+        pruned_graph: "QueryGraphModel",
+        pruned_input_node_name: str,
+    ) -> Dict[str, Any]:
         pass
 
 
-class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode, BaseNode):
+class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
     """GroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -293,8 +302,13 @@ class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode, Base
 
     @classmethod
     def derive_parameters_post_prune(
-        cls, graph, input_node, temp_node, pruned_graph, pruned_input_node_name
-    ):
+        cls,
+        graph: "QueryGraphModel",
+        input_node: "Node",
+        temp_node: "ParametersDerivedPostPruneNode",
+        pruned_graph: "QueryGraphModel",
+        pruned_input_node_name: str,
+    ) -> Dict[str, Any]:
         table_details = None
         for node in dfs_traversal(graph, input_node):
             if isinstance(node, InputNode) and node.parameters.type == TableDataType.EVENT_DATA:
@@ -317,7 +331,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode, Base
         }
 
 
-class ItemGroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode, BaseNode):
+class ItemGroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
     """ItemGroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -355,13 +369,13 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode, 
 
     @classmethod
     def derive_parameters_post_prune(
-        cls, graph, input_node, temp_node, pruned_graph, pruned_input_node_name
-    ):
-        _ = graph
-        _ = input_node
-        _ = temp_node
-        _ = pruned_graph
-        _ = pruned_input_node_name
+        cls,
+        graph: "QueryGraphModel",
+        input_node: "Node",
+        temp_node: "ParametersDerivedPostPruneNode",
+        pruned_graph: "QueryGraphModel",
+        pruned_input_node_name: str,
+    ) -> Dict[str, Any]:
         # TODO: derive aggregation id from input node hash and node parameters
         return {}
 
