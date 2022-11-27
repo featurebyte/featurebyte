@@ -167,6 +167,8 @@ class GraphReconstructor:
         ----------
         graph: QueryGraphT
             Query graph
+        node_cls: Type[NodeT]
+            Class of the node to be added
         node_params: Dict[str, Any]
             Node parameters
         input_node: Node

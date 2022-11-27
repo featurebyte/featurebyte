@@ -257,11 +257,6 @@ class GroupBy(OpsMixin):
         Returns
         -------
         FeatureGroup
-
-        Raises
-        ------
-        ValueError
-            When the aggregation method does not support input variable type
         """
         # pylint: disable=too-many-locals
 

@@ -1,11 +1,15 @@
 """
 This module contains SQL operation related node classes
+
+DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model
+nested definition
 """
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
-# DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from abc import abstractmethod
+# Disabling wrong import order because of conflict between custom isort config and pylint. See
+# https://github.com/PyCQA/pylint/issues/3817
+from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field, root_validator
 
