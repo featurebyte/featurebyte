@@ -252,7 +252,22 @@ class ParametersDerivedPostPruneNode(BaseNode):
         pruned_graph: "QueryGraphModel",
         pruned_input_node_name: str,
     ) -> Dict[str, Any]:
-        pass
+        """
+        Derive additional parameters that should be based on pruned graph
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph before pruning
+        input_node: Node
+            Input node of the current node of interest
+        temp_node: ParametersDerivedPostPruneNode
+            A temporary instance of the current node of interest created for pruning purpose
+        pruned_graph: QueryGraphModel
+            Query graph after pruning
+        pruned_input_node_name: str
+            Name of the input node in the pruned graph after pruning
+        """
 
 
 class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
