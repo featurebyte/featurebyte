@@ -92,7 +92,7 @@ class VersionService(BaseService):
         -------
         FeatureModel
         """
-        feature = await self.get_document(DocServiceName.FEATURE, data.source_feature_id)
+        feature = await self.feature_service.get_document(document_id=data.source_feature_id)
         new_feature = self._create_new_feature_version(feature, data.feature_job_setting)
         return await self.feature_service.create_document(
             data=FeatureCreate(**new_feature.dict(by_alias=True)), get_credential=get_credential
@@ -112,7 +112,7 @@ class VersionService(BaseService):
             # for auto mode, use default feature id for all the features within the feature list
             features = []
             for feature_id in feat_name_to_default_id_map.values():
-                features.append(await self.get_document(DocServiceName.FEATURE, feature_id))
+                features.append(await self.feature_service.get_document(document_id=feature_id))
         else:
             if not data.features:
                 raise DocumentError("Feature info is missing.")
@@ -139,7 +139,7 @@ class VersionService(BaseService):
                     # for manual mode, use the original feature id of the feature list for non-specified features
                     if data.mode == FeatureListNewVersionMode.SEMI_AUTO:
                         feat_id = feat_name_to_default_id_map[feat_name]
-                    features.append(await self.get_document(DocServiceName.FEATURE, feat_id))
+                    features.append(await self.feature_service.get_document(document_id=feat_id))
 
             if specified_feature_map:
                 names = [f'"{name}"' for name in specified_feature_map.keys()]
@@ -182,8 +182,7 @@ class VersionService(BaseService):
         feature_list = await self.feature_list_service.get_document(
             document_id=data.source_feature_list_id
         )
-        feature_list_namespace = await self.get_document(
-            DocServiceName.FEATURE_LIST_NAMESPACE,
+        feature_list_namespace = await self.feature_list_namespace_service.get_document(
             document_id=feature_list.feature_list_namespace_id,
         )
         feature_namespaces = await self.feature_namespace_service.list_documents(

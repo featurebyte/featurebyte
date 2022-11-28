@@ -61,7 +61,6 @@ class OnlineEnableService(BaseService):
         self,
         feature_list_id: ObjectId,
         feature: FeatureModel,
-        document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
         """
@@ -73,8 +72,6 @@ class OnlineEnableService(BaseService):
             Target feature list ID
         feature: FeatureModel
             Updated Feature object
-        document: Optional[FeatureListModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -82,9 +79,7 @@ class OnlineEnableService(BaseService):
         -------
         Optional[FeatureListModel]
         """
-        document = await self.get_document(
-            DocServiceName.FEATURE_LIST, feature_list_id, document=document
-        )
+        document = await self.feature_list_service.get_document(document_id=feature_list_id)
         return await self.feature_list_service.update_document(
             document_id=feature_list_id,
             data=FeatureListServiceUpdate(
@@ -121,8 +116,8 @@ class OnlineEnableService(BaseService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        document = await self.get_document(
-            DocServiceName.FEATURE_NAMESPACE, feature_namespace_id, document=document
+        document = await self.feature_namespace_service.get_document(
+            document_id=feature_namespace_id
         )
         return await self.feature_namespace_service.update_document(
             document_id=feature_namespace_id,
@@ -169,7 +164,6 @@ class OnlineEnableService(BaseService):
         feature_id: ObjectId,
         online_enabled: bool,
         get_credential: Any,
-        document: Optional[FeatureModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
         """
@@ -183,8 +177,6 @@ class OnlineEnableService(BaseService):
             Value to update the feature online_enabled status
         get_credential: Any
             Get credential handler function
-        document: Optional[FeatureModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -192,7 +184,7 @@ class OnlineEnableService(BaseService):
         -------
         Optional[FeatureModel]
         """
-        document = await self.get_document(DocServiceName.FEATURE, feature_id, document=document)
+        document = await self.feature_service.get_document(document_id=feature_id)
         if document.online_enabled != online_enabled:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
@@ -215,5 +207,5 @@ class OnlineEnableService(BaseService):
                     )
                 await self._update_data_warehouse(feature=feature, get_credential=get_credential)
                 if return_document:
-                    return await self.get_document(DocServiceName.FEATURE, feature_id)
+                    return await self.feature_service.get_document(document_id=feature_id)
         return self.conditional_return(document=document, condition=return_document)
