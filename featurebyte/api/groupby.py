@@ -236,7 +236,7 @@ class GroupBy(OpsMixin):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
-    ) -> FeatureGroup | Feature:
+    ) -> Union[FeatureGroup, Feature]:
         """
         Aggregate given value_column for each group specified in keys
 
