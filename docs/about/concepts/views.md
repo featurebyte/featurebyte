@@ -1,6 +1,6 @@
 Data manipulation in FeatureByte is declared in a similar syntax as Pandas, making the learning curve less steep.
 
-Unlike Pandas, FeatureByte's data transformations follow a lazy execution strategy and are translated as a graphical representation of intended operations. The execution graph is then converted into platform-specific SQL (e.g. SnowSQL or SparkSQL). The transformations are executed only when their values are needed: when a preview or a feature request is performed.
+Unlike Pandas, FeatureByte's data transformations follow a lazy execution strategy and are translated as a graphical representation of intended operations. The execution graph is then converted into platform-specific SQL (e.g. SnowSQL or SparkSQL). The transformations are executed only when their values are needed: when a preview or a feature materialization request is performed.
 
 In FeatureByte, transformations are applied to a View Object where:
 
@@ -23,7 +23,7 @@ Views are automatically cleaned based on the information collected during the da
 Users can override the default cleaning by applying the desired cleaning steps to the raw data.
 
 ### Flags
-Flags are automatically created based on the information collected during the data annotation.
+Flags are boolean tags for data values (e.g. triggering a data quality rule), that are automatically created based on the information collected during the data annotation.
 
 Users can easily create additional flags from the raw data.
 
@@ -82,7 +82,7 @@ The following transforms are available for a datetime column:
 * Addition with a time interval to produce a new datetime column
 
 ### Lags
-Lags can extract the previous value for a given Entity. This allows the computation of important features such as features based on inter- event time and distance from a previous point.
+Lags can extract the previous value for a given Entity. This allows the computation of important features such as features based on inter-event time and distance from a previous point.
 
 ### Joins
 To facilitate time aware feature engineering, the event timestamp of the related event data is automatically added to the item view by FeatureByte.
