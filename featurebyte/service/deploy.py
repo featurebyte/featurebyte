@@ -13,7 +13,7 @@ from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespa
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.online_enable import OnlineEnableService
 
 
