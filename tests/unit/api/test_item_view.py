@@ -545,5 +545,5 @@ def test_item_view_groupby__no_window_with_multiple_feature_names(
         )
     assert (
         str(exc.value)
-        == "feature_names is required and should be a list of one item;  got ['a', 'b']"
+        == "feature_names is required and should be a list of one item; got ['a', 'b']"
     )
