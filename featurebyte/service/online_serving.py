@@ -13,7 +13,6 @@ from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.logger import logger
 from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 from featurebyte.schema.feature_list import OnlineFeaturesResponseModel
@@ -76,12 +75,8 @@ class OnlineServingService(BaseService):
         tic = time.time()
         feature_cluster = feature_list.feature_clusters[0]
 
-        feature_store_dict = feature_cluster.graph.get_input_node(
-            feature_cluster.node_names[0]
-        ).parameters.feature_store_details.dict()
-        feature_store = FeatureStoreModel(
-            **feature_store_dict,
-            name=feature_cluster.feature_store_name,
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feature_cluster.feature_store_id
         )
 
         df_request_table = pd.DataFrame(entity_serving_names)
