@@ -214,7 +214,7 @@ class GroupBy(OpsMixin):
         )
         for arg_name, arg_value in kwargs.items():
             if arg_value is not None:
-                raise ValueError(f"parameters not supported for item aggregation: {arg_name}")
+                raise ValueError(f"Parameter {arg_name} is not supported for item aggregation")
         return {
             "keys": self.keys,
             "parent": value_column,

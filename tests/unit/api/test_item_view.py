@@ -501,3 +501,30 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
         "serving_names": ["transaction_id"],
         "entity_ids": [transaction_entity.id],
     }
+
+
+@pytest.mark.parametrize(
+    "invalid_param",
+    [
+        ("windows", ["7d"]),
+        (
+            "feature_job_setting",
+            {"frequency": "1d", "time_modulo_frequency": "1h", "blind_spot": "30m"},
+        ),
+    ],
+)
+def test_item_view_groupby__event_id_column_with_unsupported_param(
+    snowflake_item_data, transaction_entity, invalid_param
+):
+    """
+    Test aggregating on event id column with parameters such as window is not allowed
+    """
+    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("event_id_col").aggregate(
+            method="count",
+            feature_names=["order_size"],
+            **{invalid_param[0]: invalid_param[1]},
+        )
+    assert str(exc.value) == f"Parameter {invalid_param[0]} is not supported for item aggregation"
