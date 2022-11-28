@@ -18,7 +18,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 
 
 class VersionService(BaseService):

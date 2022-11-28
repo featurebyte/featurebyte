@@ -22,7 +22,7 @@ from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 
 
 class FeatureReadinessService(BaseService):

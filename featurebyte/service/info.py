@@ -28,7 +28,7 @@ from featurebyte.schema.info import (
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 
 ObjectT = TypeVar("ObjectT")

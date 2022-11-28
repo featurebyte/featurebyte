@@ -16,7 +16,7 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 

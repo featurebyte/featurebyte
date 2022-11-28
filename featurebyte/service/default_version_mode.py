@@ -11,7 +11,7 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
