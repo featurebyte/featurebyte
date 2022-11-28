@@ -348,9 +348,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         Joins the current view with another view.
 
-        If product_table is a Dimension or SCD View and production_category is a SCD View, an error message is
-        raised with the following message "columns from a SCD View can’t be added to a Dimension or SCD View"
-
         Parameters
         ----------
         other_view: View
@@ -366,7 +363,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             which indicates a left join.
         rsuffix: str
             Argument is used if the two views have overlapping column names and disambiguates such column names after
-            join. The default rsuffix is ''.s
+            join. The default rsuffix is an empty string - ''.
         """
         self.validate_join(other_view)
 
