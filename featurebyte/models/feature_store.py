@@ -49,7 +49,11 @@ class DatabricksDetails(BaseDatabaseDetails):
     featurebyte_schema: StrictStr
 
 
-DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails, DatabricksDetails]
+class TestDatabaseDetails(BaseDatabaseDetails):
+    """Model for a no-op mock database details for use in tests"""
+
+
+DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails, DatabricksDetails, TestDatabaseDetails]
 
 
 class FeatureStoreDetails(FeatureByteBaseModel):

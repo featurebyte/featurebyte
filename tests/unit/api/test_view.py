@@ -8,7 +8,7 @@ from bson import ObjectId
 from pydantic import StrictStr
 
 from featurebyte.api.view import View, ViewColumn
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import NoJoinKeyFoundError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import (
@@ -16,8 +16,11 @@ from featurebyte.models.feature_store import (
     FeatureStoreModel,
     TableDetails,
     TabularSource,
+    TestDatabaseDetails,
 )
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalGraphState
+from tests.util.helper import get_node
 
 
 class SimpleTestViewColumn(ViewColumn):
@@ -41,7 +44,9 @@ class SimpleTestView(View):
         feature_store_id=PydanticObjectId(ObjectId("6332f9651050ee7d1234660d")),
         table_details=TableDetails(table_name="table"),
     )
-    feature_store: FeatureStoreModel = None
+    feature_store: FeatureStoreModel = FeatureStoreModel(
+        name="random_featurestore", type=SourceType.TEST, details=TestDatabaseDetails()
+    )
     column_lineage_map: Dict[str, Tuple[str, ...]] = {}
 
     join_col = ""
@@ -203,10 +208,41 @@ def test_get_join_keys__error_if_no_key_found():
         current_view.get_join_keys(other_view)
 
 
-def test_join__left_join():
+@pytest.fixture(name="generic_input_node_params")
+def get_generic_input_node_params_fixture():
+    node_params = {
+        "type": "generic",
+        "columns": ["random_column"],
+        "table_details": {
+            "database_name": "db",
+            "schema_name": "public",
+            "table_name": "transaction",
+        },
+        "feature_store_details": {
+            "type": "snowflake",
+            "details": {
+                "account": "sf_account",
+                "warehouse": "sf_warehouse",
+                "database": "db",
+                "sf_schema": "public",
+            },
+        },
+    }
+    return {
+        "node_type": NodeType.INPUT,
+        "node_params": node_params,
+        "node_output_type": NodeOutputType.FRAME,
+        "input_nodes": [],
+    }
+
+
+@pytest.mark.parametrize("join_type_param", ["left", "inner"])
+def test_join__left_join(generic_input_node_params, join_type_param):
     """
-    Test left join.
+    Test left and inner join.
     """
+    # reset between tests
+    GlobalGraphState.reset()
     # setup
     col_info_a, col_info_b, col_info_c = (
         ColumnInfo(name="colA", dtype=DBVarType.INT),
@@ -218,58 +254,55 @@ def test_join__left_join():
     )
     other_view = SimpleTestView(columns_info=[col_info_c])
     input_node = current_view.graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "generic",
-            "columns": ["random_column"],
-            "table_details": {
-                "database_name": "db",
-                "schema_name": "public",
-                "table_name": "transaction",
-            },
-            "feature_store_details": {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
+        node_type=generic_input_node_params["node_type"],
+        node_params=generic_input_node_params["node_params"],
+        node_output_type=generic_input_node_params["node_output_type"],
+        input_nodes=generic_input_node_params["input_nodes"],
     )
     current_view.node_name = input_node.name
+    assert current_view.node_name == "input_1"
+    assert current_view.columns_info == [col_info_a, col_info_b]
+    assert current_view.column_lineage_map == {}
+    assert current_view.row_index_lineage == ()
+    assert current_view.tabular_data_ids == []
 
     input_node = other_view.graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "generic",
-            "columns": ["random_column"],
-            "table_details": {
-                "database_name": "db",
-                "schema_name": "public",
-                "table_name": "transaction",
-            },
-            "feature_store_details": {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
+        node_type=generic_input_node_params["node_type"],
+        node_params=generic_input_node_params["node_params"],
+        node_output_type=generic_input_node_params["node_output_type"],
+        input_nodes=generic_input_node_params["input_nodes"],
     )
     other_view.node_name = input_node.name
+    assert other_view.node_name == "input_1"
+    assert other_view.columns_info == [col_info_c]
+    assert other_view.column_lineage_map == {}
+    assert other_view.row_index_lineage == ()
+    assert other_view.tabular_data_ids == []
 
     # do the join
-    current_view.join(other_view, on="join_col")
+    current_view.join(other_view, on="join_col", how=join_type_param, rsuffix="suffix")
 
-    # assert
-    current_view.columns_info = [col_info_a, col_info_b, col_info_c]
-    # TODO: finish asserting more stuff
+    # assert updated view params
+    assert current_view.columns_info == [col_info_a, col_info_b, col_info_c]
+    assert current_view.node_name == "join_1"
+    assert current_view.column_lineage_map == {}
+    assert current_view.row_index_lineage == ("join_1",)
+    assert current_view.tabular_data_ids == []
+
+    # assert graph node
+    view_dict = current_view.dict()
+    node_dict = get_node(view_dict["graph"], view_dict["node_name"])
+    assert node_dict == {
+        "name": "join_1",
+        "output_type": "frame",
+        "parameters": {
+            "join_type": join_type_param,
+            "left_input_columns": ["colA", "colB"],
+            "left_on": "join_col",
+            "left_output_columns": ["colA", "colB"],
+            "right_input_columns": ["colC"],
+            "right_on": "join_col",
+            "right_output_columns": ["colCsuffix"],
+        },
+        "type": "join",
+    }
