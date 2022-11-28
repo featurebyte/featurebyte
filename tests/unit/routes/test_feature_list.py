@@ -427,13 +427,10 @@ class TestFeatureListApi(BaseApiTestSuite):
         feature = response.json()
 
         feature_store_id = feature["tabular_source"]["feature_store_id"]
-        response = test_api_client.get(f"/feature_store/{feature_store_id}")
-        assert response.status_code == HTTPStatus.OK
-        feature_store = response.json()
 
         return [
             {
-                "feature_store_name": feature_store["name"],
+                "feature_store_id": feature_store_id,
                 "graph": feature["graph"],
                 "node_names": [feature["node_name"]],
             }
