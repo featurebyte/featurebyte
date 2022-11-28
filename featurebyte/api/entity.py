@@ -3,13 +3,16 @@ Entity class
 """
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Any
 
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.models.entity import EntityModel
+from featurebyte.config import Configurations
+from featurebyte.exception import RecordUpdateException
+from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
@@ -64,3 +67,63 @@ class Entity(EntityModel, SavableApiObject):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="name")
+
+    @typechecked
+    def add_parent(self, other_parent_entity: Entity, relation_dataset_name: str) -> None:
+        """
+        Adds other entity as the parent of this current entity.
+
+        Parameters
+        ----------
+        other_parent_entity: Entity
+            the other entity that will become the parent of this entity.
+        relation_dataset_name: str
+            the name of the dataset that the parent is from
+
+        Raises
+        ------
+        RecordUpdateException
+            error updating record
+        """
+
+        client = Configurations().get_client()
+        response = client.get("/tabular_data", params={"name": relation_dataset_name})
+        assert response.status_code == HTTPStatus.OK
+        json_response = response.json()
+        data_response = json_response["data"]
+        assert len(data_response) == 1
+        data = ParentEntity(
+            data_type=data_response[0]["type"],
+            data_id=data_response[0]["_id"],
+            id=other_parent_entity.id,
+        )
+
+        post_response = client.post(
+            f"{self._route}/{self.id}/parent",
+            json=data.json_dict(),
+        )
+        if post_response.status_code != HTTPStatus.CREATED:
+            raise RecordUpdateException(post_response)
+
+    @typechecked
+    def remove_parent(self, other_parent_entity: Entity) -> None:
+        """
+        Removes other entity as the parent of this current entity.
+
+        Parameters
+        ----------
+        other_parent_entity: Entity
+            the other entity that we want to remove as a parent.
+
+        Raises
+        ------
+        RecordUpdateException
+            error updating record
+        """
+
+        client = Configurations().get_client()
+        post_response = client.delete(
+            f"{self._route}/{self.id}/parent/{other_parent_entity.id}",
+        )
+        if post_response.status_code != HTTPStatus.OK:
+            raise RecordUpdateException(post_response)

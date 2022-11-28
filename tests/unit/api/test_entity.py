@@ -6,16 +6,20 @@ from unittest import mock
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
 
 
 @pytest.fixture(name="entity")
@@ -238,3 +242,98 @@ def test_get_entity():
         with pytest.raises(RecordRetrievalException) as exc:
             Entity.list()
     assert "Failed to list object names." in str(exc.value)
+
+
+@pytest.fixture(name="insert_tabular_data_helper")
+def get_insert_tabular_data_helper_fixture(mongo_persistent):
+    persistent, _ = mongo_persistent
+
+    async def insert(col_name, dataset_name):
+        test_document = {
+            "_id": ObjectId(),
+            "name": dataset_name,
+            "type": TableDataType.DIMENSION_DATA,
+            "tabular_source": TabularSource(
+                feature_store_id=PydanticObjectId(ObjectId()),
+                table_details=TableDetails(table_name="test_table"),
+            ).json_dict(),
+            "columns_info": [ColumnInfo(name=col_name, dtype=DBVarType.INT).json_dict()],
+            "dimension_data_id_column": col_name,
+            "version": {"name": "name_val", "suffix": None},
+        }
+        user_id = ObjectId()
+        _ = await persistent.insert_one(
+            collection_name="tabular_data", document=test_document, user_id=user_id
+        )
+
+    return insert
+
+
+def assert_entity_has_number_of_parents(entity, number_of_parents):
+    """
+    Helper to assert that an entity has no ancestors.
+    """
+    assert len(entity["ancestor_ids"]) == number_of_parents
+    assert len(entity["parents"]) == number_of_parents
+
+
+@pytest.mark.asyncio
+async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helper):
+    """
+    Test add and remove parent
+    """
+    col_name = "col"
+    dataset_name = "dataset_name"
+    await insert_tabular_data_helper(col_name, dataset_name)
+
+    entity_a = Entity(name="entity_a", serving_names=["entity_a"])
+    entity_b = Entity(name="entity_b", serving_names=["entity_b"])
+    entity_a.save()
+
+    # Assert that there's an error if we try to add a parent that doesn't exist
+    with pytest.raises(RecordUpdateException):
+        entity_a.add_parent(entity_b, dataset_name)
+
+    entity_b.save()
+
+    # Assert that there's an error if we try to remove a parent that doesn't exist
+    with pytest.raises(RecordUpdateException):
+        entity_a.remove_parent(entity_b)
+
+    # Try to add parent
+    entity_a.add_parent(entity_b, dataset_name)
+
+    persistent, _ = mongo_persistent
+    response, count = await persistent.find(
+        collection_name="entity",
+        query_filter={},
+    )
+    assert count == 2
+
+    entity_a_response = response[0]
+    assert entity_a_response["name"] == "entity_a"
+    assert_entity_has_number_of_parents(entity_a_response, 1)
+    assert entity_a_response["ancestor_ids"][0] == entity_b.id
+    assert entity_a_response["parents"][0]["id"] == entity_b.id
+
+    entity_b_response = response[1]
+    assert entity_b_response["name"] == "entity_b"
+    assert_entity_has_number_of_parents(entity_b_response, 0)
+
+    # Test remove parent
+    entity_a.remove_parent(entity_b)
+
+    # Retrieve entities
+    response, count = await persistent.find(
+        collection_name="entity",
+        query_filter={},
+    )
+    assert count == 2
+
+    entity_a_response = response[0]
+    assert entity_a_response["name"] == "entity_a"
+    assert_entity_has_number_of_parents(entity_a_response, 0)
+
+    entity_b_response = response[1]
+    assert entity_b_response["name"] == "entity_b"
+    assert_entity_has_number_of_parents(entity_b_response, 0)
