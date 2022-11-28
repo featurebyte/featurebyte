@@ -1,10 +1,10 @@
 A Use Case describes the modeling problem to be solved.
 
-Use cases define the level of analysis (the main Entity), the target and the context how features are served: “Churn next 6 months of active customers” or “Fraud detection of transactions before payment”.
+Use cases define the level of analysis (the main Entity), the target, and the context how features are served: “Churn next 6 months of active customers” or “Fraud detection of transactions before payment”.
 
 Thanks to the Use Case formulation, users are better informed. And when the Use Case is associated with an Event entity, it informs FeatureByte on the need to adapt the serving of features to the context.
 
-In addition to descriptive information, FeatureByte supports the mathematical formulation of Use Cases via the formulation of a Context View and a Target Recipe. Thanks to this mathematical formulation, observation sets specifically designed for the Use Case are easily derived for EDA, training, retraining or test purposes.
+In addition to descriptive information, FeatureByte supports the mathematical formulation of Use Cases via the formulation of a Context View and a Target Recipe. Thanks to this mathematical formulation, observation sets specifically designed for the Use Case are easily derived for EDA, training, retraining, or test purposes.
 
 ### Use Case Main Entities and Parent Entities
 The Use Case Main Entities define the level of analysis of the modeling problem.

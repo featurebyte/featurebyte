@@ -8,6 +8,6 @@ During the annotation, users can define how to handle:
 * out of boundaries numeric values and dates,
 * and string values when numeric values or dates are expected.
 
-Users can default to either ignore values with quality issues or impute those values.
+Users can define data pipeline data cleaning settings to either ignore values with quality issues or impute those values.
 
 Those default cleaning steps are then automatically enforced if no cleaning steps are specified during feature declaration.
