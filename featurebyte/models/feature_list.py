@@ -513,8 +513,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
             values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
-            # When "features" is provided, "feature_store_names" is also provided (for
-            # FeatureListModel only)
             values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
         return values
 
