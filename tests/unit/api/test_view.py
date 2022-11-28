@@ -46,7 +46,7 @@ class SimpleTestView(View):
 
     join_col = ""
 
-    def protected_attributes(self) -> list[str]:
+    def protected_attributes(self) -> List[str]:
         return []
 
     def get_join_column(self) -> str:
