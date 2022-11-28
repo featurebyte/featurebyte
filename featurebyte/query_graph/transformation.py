@@ -8,15 +8,12 @@ from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import (
-    AssignNode,
-    GroupbyNode,
-    ParametersDerivedPostPruneNode,
-)
+from featurebyte.query_graph.node.base import BasePruningSensitiveNode
+from featurebyte.query_graph.node.generic import AssignNode, GroupbyNode
 from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
 
 QueryGraphT = TypeVar("QueryGraphT", bound=QueryGraphModel)
-NodeT = TypeVar("NodeT", bound=ParametersDerivedPostPruneNode)
+PruningSensitiveNodeT = TypeVar("PruningSensitiveNodeT", bound=BasePruningSensitiveNode)
 
 
 class GraphPruner:
@@ -156,10 +153,10 @@ class GraphReconstructor:
     def add_pruning_sensitive_operation(
         cls,
         graph: QueryGraphT,
-        node_cls: Type[NodeT],
+        node_cls: Type[PruningSensitiveNodeT],
         node_params: Dict[str, Any],
         input_node: Node,
-    ) -> NodeT:
+    ) -> PruningSensitiveNodeT:
         """
         Insert a pruning sensitive operation whose parameters can change after the graph is pruned
 
@@ -180,7 +177,7 @@ class GraphReconstructor:
 
         Returns
         -------
-        NodeT
+        PruningSensitiveNodeT
 
         Raises
         ------
@@ -224,7 +221,7 @@ class GraphReconstructor:
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[input_node],
         )
-        return cast(NodeT, node)
+        return cast(PruningSensitiveNodeT, node)
 
     @classmethod
     def reconstruct(

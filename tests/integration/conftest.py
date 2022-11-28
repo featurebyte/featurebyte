@@ -788,7 +788,7 @@ def snowflake_item_data_fixture(
     )
     item_data.save()
     item_data = ItemData.get(item_data_name)
-    item_data["order_id"].as_entity("Order")
+    item_data["order_id"].as_entity(order_entity.name)
     return item_data
 
 

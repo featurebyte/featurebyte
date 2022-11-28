@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Optional, Set, Type, Union
+from typing import Any, Dict, List, Optional, Set, Type, Union
 
 from abc import abstractmethod
 
@@ -135,3 +135,34 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
+
+
+class BasePruningSensitiveNode(BaseNode):
+    """Base class for nodes whose parameters have to be determined post pruning"""
+
+    @classmethod
+    @abstractmethod
+    def derive_parameters_post_prune(
+        cls,
+        graph: "QueryGraphModel",
+        input_node: "Node",
+        temp_node: "BasePruningSensitiveNode",
+        pruned_graph: "QueryGraphModel",
+        pruned_input_node_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Derive additional parameters that should be based on pruned graph
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph before pruning
+        input_node: Node
+            Input node of the current node of interest
+        temp_node: BasePruningSensitiveNode
+            A temporary instance of the current node of interest created for pruning purpose
+        pruned_graph: QueryGraphModel
+            Query graph after pruning
+        pruned_input_node_name: str
+            Name of the input node in the pruned graph after pruning
+        """

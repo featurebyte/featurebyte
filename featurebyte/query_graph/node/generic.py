@@ -7,10 +7,6 @@ nested definition
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
-# Disabling wrong import order because of conflict between custom isort config and pylint. See
-# https://github.com/PyCQA/pylint/issues/3817
-from abc import abstractmethod  # pylint: disable=wrong-import-order
-
 from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.enum import AggFunc, TableDataType
@@ -18,7 +14,11 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode, BaseSeriesOutputNode
+from featurebyte.query_graph.node.base import (
+    BaseNode,
+    BasePruningSensitiveNode,
+    BaseSeriesOutputNode,
+)
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -243,38 +243,7 @@ class LagNode(BaseSeriesOutputNode):
     parameters: Parameters
 
 
-class ParametersDerivedPostPruneNode(BaseNode):
-    """Interface for nodes whose parameters have to be determined post pruning"""
-
-    @classmethod
-    @abstractmethod
-    def derive_parameters_post_prune(
-        cls,
-        graph: "QueryGraphModel",
-        input_node: "Node",
-        temp_node: "ParametersDerivedPostPruneNode",
-        pruned_graph: "QueryGraphModel",
-        pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
-        """
-        Derive additional parameters that should be based on pruned graph
-
-        Parameters
-        ----------
-        graph: QueryGraphModel
-            Query graph before pruning
-        input_node: Node
-            Input node of the current node of interest
-        temp_node: ParametersDerivedPostPruneNode
-            A temporary instance of the current node of interest created for pruning purpose
-        pruned_graph: QueryGraphModel
-            Query graph after pruning
-        pruned_input_node_name: str
-            Name of the input node in the pruned graph after pruning
-        """
-
-
-class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
+class GroupbyNode(GroupbyNodeOpStructMixin, BasePruningSensitiveNode):
     """GroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -324,7 +293,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
         cls,
         graph: "QueryGraphModel",
         input_node: "Node",
-        temp_node: "ParametersDerivedPostPruneNode",
+        temp_node: "BasePruningSensitiveNode",
         pruned_graph: "QueryGraphModel",
         pruned_input_node_name: str,
     ) -> Dict[str, Any]:
@@ -350,7 +319,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
         }
 
 
-class ItemGroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
+class ItemGroupbyNode(GroupbyNodeOpStructMixin, BasePruningSensitiveNode):
     """ItemGroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -391,7 +360,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, ParametersDerivedPostPruneNode):
         cls,
         graph: "QueryGraphModel",
         input_node: "Node",
-        temp_node: "ParametersDerivedPostPruneNode",
+        temp_node: "BasePruningSensitiveNode",
         pruned_graph: "QueryGraphModel",
         pruned_input_node_name: str,
     ) -> Dict[str, Any]:
