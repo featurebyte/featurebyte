@@ -138,6 +138,7 @@ def test_feature_list_creation__success(production_ready_feature, mocked_tile_ca
         }
     )
 
+    production_ready_feature.feature_store.save()
     with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
         with patch("featurebyte.api.feature_list.dataframe_from_arrow_stream"):
             flist.get_historical_features(dataframe)

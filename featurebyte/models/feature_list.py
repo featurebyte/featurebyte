@@ -4,7 +4,7 @@ This module contains Feature list related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import functools
 from collections import defaultdict
@@ -225,7 +225,7 @@ class FeatureCluster(FeatureByteBaseModel):
     Schema for a group of features from the same feature store
     """
 
-    feature_store_name: StrictStr
+    feature_store_id: PydanticObjectId
     graph: QueryGraph
     node_names: List[StrictStr]
 
@@ -474,10 +474,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         )
 
     @staticmethod
-    def derive_feature_clusters(
-        features: List[FeatureModel],
-        feature_store_names: Dict[ObjectId, str],
-    ) -> List[FeatureCluster]:
+    def derive_feature_clusters(features: List[FeatureModel]) -> List[FeatureCluster]:
         """
         Derive feature_clusters attribute from features
 
@@ -485,8 +482,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         ----------
         features: List[FeatureModel]
             List of features
-        feature_store_names: Dict[ObjectId, str]
-            Mapping from feature store id to feature store name
 
         Returns
         -------
@@ -495,16 +490,16 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         # split features into groups that share the same feature store
         groups = defaultdict(list)
         for feature in features:
-            feature_store_name = feature_store_names[feature.tabular_source.feature_store_id]
-            groups[feature_store_name].append(feature)
+            feature_store_id = feature.tabular_source.feature_store_id
+            groups[feature_store_id].append(feature)
 
         # create a FeatureCluster for each group
         feature_clusters = []
-        for feature_store_name, group_features in groups.items():
+        for feature_store_id, group_features in groups.items():
             pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=group_features)
             feature_clusters.append(
                 FeatureCluster(
-                    feature_store_name=feature_store_name,
+                    feature_store_id=feature_store_id,
                     graph=pruned_graph,
                     node_names=[node.name for node in mapped_nodes],
                 )
@@ -520,9 +515,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
             values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
             # When "features" is provided, "feature_store_names" is also provided (for
             # FeatureListModel only)
-            values["feature_clusters"] = cls.derive_feature_clusters(
-                values["features"], values["feature_store_names"]
-            )
+            values["feature_clusters"] = cls.derive_feature_clusters(values["features"])
         return values
 
     @validator("feature_ids")

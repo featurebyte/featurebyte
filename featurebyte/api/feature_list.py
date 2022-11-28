@@ -177,13 +177,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         List[FeatureCluster]
         """
-        feature_store_names = {
-            ObjectId(feature.feature_store.id): feature.feature_store.name
-            for feature in self._features
-        }
-        return FeatureList.derive_feature_clusters(
-            cast(List[FeatureModel], self._features), feature_store_names
-        )
+        return FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features))
 
     @typechecked
     def preview(
