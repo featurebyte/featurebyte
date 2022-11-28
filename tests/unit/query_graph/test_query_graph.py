@@ -387,7 +387,7 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     graph, node_input = graph_single_node
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
-    groupby_node = GraphReconstructor.add_groupby_operation(
+    groupby_node = GraphReconstructor.add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "transaction_f3600_m1800_b900_8a2a4064239908696910f175aa0f4b69105997f3"
@@ -406,7 +406,7 @@ def test_query_graph__add_groupby_operation__error(groupby_node_params):
         input_nodes=[],
     )
     with pytest.raises(ValueError) as exc:
-        GraphReconstructor.add_groupby_operation(
+        GraphReconstructor.add_pruning_sensitive_operation(
             graph=query_graph,
             node_cls=GroupbyNode,
             node_params=groupby_node_params,

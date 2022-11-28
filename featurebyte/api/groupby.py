@@ -283,7 +283,7 @@ class GroupBy(OpsMixin):
             )
             node_cls = ItemGroupbyNode
 
-        groupby_node = GraphReconstructor.add_groupby_operation(
+        groupby_node = GraphReconstructor.add_pruning_sensitive_operation(
             graph=self.obj.graph,
             node_cls=node_cls,
             node_params=node_params,

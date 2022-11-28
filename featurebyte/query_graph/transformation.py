@@ -153,7 +153,7 @@ class GraphReconstructor:
     """GraphReconstructor class"""
 
     @classmethod
-    def add_groupby_operation(
+    def add_pruning_sensitive_operation(
         cls,
         graph: QueryGraphT,
         node_cls: Type[NodeT],
@@ -161,7 +161,11 @@ class GraphReconstructor:
         input_node: Node,
     ) -> NodeT:
         """
-        Insert groupby operation
+        Insert a pruning sensitive operation whose parameters can change after the graph is pruned
+
+        One example is the groupby node whose tile_id and aggregation_id is a hash that includes the
+        input node hash. To have stable tile_id and aggregation_id, always derive them after a
+        pruning "dry run".
 
         Parameters
         ----------
@@ -183,7 +187,8 @@ class GraphReconstructor:
         ValueError
             When the query graph have unexpected structure (groupby node should have at least an InputNode)
         """
-        # create a temporary groupby node & prune the graph to generate tile_id & aggregation_id
+        # create a temporary node & prune the graph before deriving additional parameters based on
+        # the pruned graph
         temp_node = node_cls(name="temp", parameters=node_params)
         pruned_graph, node_name_map = GraphPruner.prune(
             graph=cast(QueryGraphModel, graph),
@@ -255,7 +260,7 @@ class GraphReconstructor:
                 for input_node_name in input_node_names
             ]
             if node.type == NodeType.GROUPBY and regenerate_groupby_hash:
-                cls.add_groupby_operation(
+                cls.add_pruning_sensitive_operation(
                     graph=output_graph,
                     node_cls=GroupbyNode,
                     node_params=node.parameters.dict(),
