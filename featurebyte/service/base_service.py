@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.enum import StrEnum
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
