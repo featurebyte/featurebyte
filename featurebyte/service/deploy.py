@@ -47,7 +47,6 @@ class DeployService(BaseService):
         feature_id: ObjectId,
         feature_list: FeatureListModel,
         get_credential: Any,
-        document: Optional[FeatureModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
         """
@@ -62,8 +61,6 @@ class DeployService(BaseService):
             Updated FeatureList object (deployed status)
         get_credential: Any
             Get credential handler function
-        document: Optional[FeatureListNamespaceModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -71,7 +68,7 @@ class DeployService(BaseService):
         -------
         Optional[FeatureModel]:
         """
-        document = await self.get_document(DocServiceName.FEATURE, feature_id, document=document)
+        document = await self.feature_service.get_document(document_id=feature_id)
         deployed_feature_list_ids = self._extract_deployed_feature_list_ids(
             feature_list=feature_list, document=document
         )
