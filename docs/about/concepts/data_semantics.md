@@ -125,7 +125,7 @@ The nodes of level 3 connected to `Long Text` include:
 
 #### Nodes of the Dictionary type
 
-The nodes of level 2 determine whether the Dictionary field is a `Dictionary of Positive Values`,  `Dictionary of Negative Values` and  `Dictionary of Unbounded Values`.
+The nodes of level 2 determine whether the Dictionary field is a `Dictionary of Positive Values`,  `Dictionary of Negative Values` or  `Dictionary of Unbounded Values`.
 
 The nodes of level 3 connected to `Dictionary of Positive Values` include:
 

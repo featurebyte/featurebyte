@@ -88,8 +88,8 @@ theme:
   name: material
   palette:
     scheme: default
-    primary: teal
-    accent: teal
+    primary: indigo
+    accent: indigo
   homepage: https://featurebyte.com
   favicon: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
   logo: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
