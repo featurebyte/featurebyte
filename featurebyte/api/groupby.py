@@ -199,7 +199,9 @@ class GroupBy(OpsMixin):
         self._validate_common_parameters(method=method, value_column=value_column)
 
         if not (isinstance(feature_names, list) and len(feature_names) == 1):
-            raise ValueError("feature_names is required and should be a list of one item")
+            raise ValueError(
+                f"feature_names is required and should be a list of one item; got {feature_names}"
+            )
 
     def _prepare_node_parameters_item_aggregation(
         self,

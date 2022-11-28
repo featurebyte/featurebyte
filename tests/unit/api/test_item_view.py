@@ -513,7 +513,7 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
         ),
     ],
 )
-def test_item_view_groupby__event_id_column_with_unsupported_param(
+def test_item_view_groupby__no_window_with_unsupported_param(
     snowflake_item_data, transaction_entity, invalid_param
 ):
     """
@@ -528,3 +528,22 @@ def test_item_view_groupby__event_id_column_with_unsupported_param(
             **{invalid_param[0]: invalid_param[1]},
         )
     assert str(exc.value) == f"Parameter {invalid_param[0]} is not supported for item aggregation"
+
+
+def test_item_view_groupby__no_window_with_multiple_feature_names(
+    snowflake_item_data, transaction_entity
+):
+    """
+    Test aggregating on event id column with parameters such as window is not allowed
+    """
+    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("event_id_col").aggregate(
+            method="count",
+            feature_names=["a", "b"],
+        )
+    assert (
+        str(exc.value)
+        == "feature_names is required and should be a list of one item;  got ['a', 'b']"
+    )
