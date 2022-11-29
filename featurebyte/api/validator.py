@@ -19,7 +19,7 @@ def validate_view(other_view: View) -> None:
     Raises
     ------
     JoinViewMismatchError
-       raised when the other view is not a SlowlyChangingView, or a DimensionView
+        raised when the other view is not a SlowlyChangingView, or a DimensionView
     """
     if not isinstance(other_view, SlowlyChangingView) and not isinstance(other_view, DimensionView):
         raise JoinViewMismatchError
