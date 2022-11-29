@@ -2,7 +2,7 @@ When new data quality issues arise, or there are changes in the management of th
 
 Each feature version has a feature lineage. It is then possible to audit features before deploying them, and to derive similar features in the future.
 
-Status is associated with Features and Feature Lists to help inform on their readiness.
+A readiness Status is associated with Features and Feature Lists to help inform on their readiness e.g. to flag whether they are production ready.
 
 ### Feature Versioning
 Feature versioning is supported to handle undesirable changes in the management or the data quality of the data sources.
@@ -16,9 +16,9 @@ Old versions of the feature can be still served to not disrupt the inference of 
 #### Changes in Data Quality annotation
 If a column has not been used by a feature yet, the data quality information associated with this column can be easily updated.
 
-Once the column has been used to create a feature, users are required to create a plan and submit this plan for approval. The plan is created from a data source by specifying the desired updates.
+Once the column has been used to create a feature, users are required to create a plan to define how the change should impact the feature versions and submit this plan for approval. The plan will include any variations to critical data information, and whether to override current feature versions, create new versions or do nothing.
 
-From the plan, users can list Feature versions with inappropriate cleaning steps setting and affected Feature List versions.
+From the plan, users can list feature versions with inappropriate cleaning step settings, and affected Feature List versions.
 
 By default, the creation of new feature versions is recommended. The user can however choose to overwrite current versions. To help users evaluate the impact of the changes, users can materialize the affected features before and after change by selecting an observation set.
 
@@ -40,7 +40,7 @@ Each feature version has a feature lineage. It is then possible to audit feature
 
 The SDK code used to declare the feature and the SQL code used to execute its computation are both provided.
 
-To improve the readability of the SDK code, code is pruned to present only steps related to the feature and is automatically organized in the form of key steps (joins, columns derivations, aggregation and post aggregation transforms).
+To improve the readability of the SDK code, code is pruned to present only steps related to the feature and is automatically organized in the form of key steps (joins, column derivations, aggregation, and post aggregation transforms).
 
 ### Feature Readiness
 4 Feature Readiness levels are recognized by FeatureByte:

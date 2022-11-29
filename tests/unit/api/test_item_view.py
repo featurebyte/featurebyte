@@ -8,6 +8,7 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
+from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -547,3 +548,17 @@ def test_item_view_groupby__no_window_with_multiple_feature_names(
         str(exc.value)
         == "feature_names is required and should be a list of one item; got ['a', 'b']"
     )
+
+
+def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
+    """
+    Test validate join
+    """
+    # No error expected
+    snowflake_event_view.validate_join(snowflake_dimension_view)
+
+    # Error expected
+    with pytest.raises(JoinViewMismatchError):
+        snowflake_event_view.validate_join(snowflake_event_view)
+    with pytest.raises(JoinViewMismatchError):
+        snowflake_event_view.validate_join(snowflake_scd_view)

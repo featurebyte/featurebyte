@@ -3,10 +3,10 @@ Features are created in the SDK from Views after data manipulation.
 ### Lookup features
 If the entity is the primary key of the View, a column of this view can be directly converted into a feature for this entity. Examples of such features are 
 
-* Customer’s place of birth or birthdate.
+* Customer’s place of birth
 * Transaction’s amount.
 
-If the target entity is the natural key of the Slowly Changing Dimension View, a column of this view can be also directly converted into a feature. In this case, the feature is materialized thanks to point-in-time joins. The value served is by default the row value active as at the point-in-time of the request. An example of such features is
+If the target entity is the natural key of a Slowly Changing Dimension View, a column of this view can be also directly converted into a feature. In this case, the feature is materialized thanks to point-in-time joins. The value served is by default the row value active as at the point-in-time of the request. An example of such features is
 
 * Customer’s marital status (at the point in time of the request).
 
@@ -41,7 +41,7 @@ Users can specify an offset to retrieve value as at some time (6 months) prior t
 #### Aggregation functions
 Examples of aggregation functions supported by FeatureByte include last event, count, na_count, sum, mean, max, min and standard deviation.
 
-Aggregation per category can also be defined. As an example, a feature can be defined for Customer as the amount spent by Customer per product category the past 4 weeks. In this case, when the feature is materialized for a Customer, a dictionary is returned with as keys the product categories purchased by the Customer and as values, the sum spent for each product category.
+Aggregation per category can also be defined. As an example, a feature can be defined for Customer as the amount spent by Customer per product category the past 4 weeks. In this case, when the feature is materialized for a Customer, a dictionary is returned with the keys being the product categories purchased by the Customer and the values being the sum spent for each product category.
 
 ### Feature Transforms
 Features can be transformed in a similar way as columns in a View.
@@ -69,7 +69,7 @@ A Feature can be derived from multiple features when their entities are Child-Pa
 * Order amount z-score based on the past 12 weeks customer orders history
 
 ### Feature on Demand
-Users are able to derive On Demand Features from another feature and request data. An example of a feature on Demand is “Time since Customer’s last order”. In this case, the point-in-time is known only at request time and the “Timestamp of Customer’s last order” is a Customer feature that can be pre-computed.
+Users are able to derive On Demand Features from another feature and request data. An example of a Feature on Demand is “Time since Customer’s last order”. In this case, the point-in-time is known only at request time and the “Timestamp of Customer’s last order” is a Customer feature that can be pre-computed. 
 
 ### Adding a Feature as a column to a View
 Features extracted from other data views can be added as a column to an event view if their entity is present in the view. Then their values can be aggregated as any other column.
