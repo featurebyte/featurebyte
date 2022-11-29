@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar, Union
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
@@ -218,6 +218,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             the other view that we are joining with
         """
 
+    @abstractmethod
     def get_join_column(self) -> str:
         """
         Returns the join column
@@ -227,7 +228,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
             the column name for the join key
         """
-        return ""
 
     def update_metadata(
         self,

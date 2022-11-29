@@ -172,3 +172,6 @@ class EventView(View, GroupByMixin):
             }
         )
         return params
+
+    def get_join_column(self) -> str:
+        return self.event_id_column

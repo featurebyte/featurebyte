@@ -248,3 +248,6 @@ class ItemView(View, GroupByMixin):
             )
         # column_structure is a SourceDataColumn
         return column_structure.tabular_data_type == TableDataType.EVENT_DATA
+
+    def get_join_column(self) -> str:
+        return self.item_id_column
