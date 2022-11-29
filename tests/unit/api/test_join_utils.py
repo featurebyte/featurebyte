@@ -9,6 +9,7 @@ from featurebyte.api.join_utils import (
     combine_column_info_of_views,
     join_column_lineage_map,
     join_tabular_data_ids,
+    update_column_lineage_map_with_suffix,
 )
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
@@ -169,3 +170,20 @@ def test_combine_column_info_of_views():
     # test that passing an empty filter set doesn't perform any filtering
     result = combine_column_info_of_views(columns_a, columns_b, filter_set=set())
     assert result == [col1, col2, col3, col4, col5, col6]
+
+
+def test_update_column_lineage_map_with_suffix():
+    """
+    Test update_column_lineage_map_with_suffix
+    """
+    node_a = ("node1", "node2", "node3")
+    node_b = ("nodeX", "nodeY", "nodeZ")
+    input_lineage = {"colA": node_a, "colB": node_b}
+
+    # no update if no suffix passed in
+    output_lineage = update_column_lineage_map_with_suffix(input_lineage, None)
+    assert output_lineage == input_lineage
+
+    # update if no suffix passed in
+    output_lineage = update_column_lineage_map_with_suffix(input_lineage, "right")
+    assert output_lineage == {"colAright": node_a, "colBright": node_b}

@@ -17,6 +17,7 @@ from featurebyte.api.join_utils import (
     combine_column_info_of_views,
     join_column_lineage_map,
     join_tabular_data_ids,
+    update_column_lineage_map_with_suffix,
 )
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -424,9 +425,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Construct new column_lineage_map
-        columns = list(other_view.column_lineage_map.keys())
+        updated_column_lineage_map_with_suffix = update_column_lineage_map_with_suffix(
+            other_view.column_lineage_map, rsuffix
+        )
+        columns = list(updated_column_lineage_map_with_suffix.keys())
         joined_column_lineage_map = join_column_lineage_map(
-            self.column_lineage_map, other_view.column_lineage_map, columns, node.name
+            self.column_lineage_map, updated_column_lineage_map_with_suffix, columns, node.name
         )
 
         # Construct new tabular_data_ids

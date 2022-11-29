@@ -144,3 +144,30 @@ def join_column_lineage_map(
     for col, lineage in joined_column_lineage_map.items():
         joined_column_lineage_map[col] = append_to_lineage(lineage, node_name)
     return joined_column_lineage_map
+
+
+def update_column_lineage_map_with_suffix(
+    lineage_map: Dict[str, Tuple[str, ...]], rsuffix: Optional[str]
+) -> Dict[str, Tuple[str, ...]]:
+    """
+    Helper method to update the keys in a column lineage map with the rsuffix, if a suffix is provided.
+
+    Parameters
+    ----------
+    lineage_map: Dict[str, Tuple[str, ...]]
+        lineage map to be updated
+    rsuffix: Optional[str]
+        suffix to be appended on if provided
+
+    Returns
+    -------
+    Dict[str, Tuple[str, ...]]
+        updated lienage map
+    """
+    if not rsuffix:
+        return lineage_map
+    output = {}
+    for col, lineage in lineage_map.items():
+        new_col = f"{col}{rsuffix}"
+        output[new_col] = lineage
+    return output
