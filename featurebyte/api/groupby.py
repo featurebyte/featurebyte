@@ -3,11 +3,13 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
+
+from enum import Enum
 
 from typeguard import typechecked
 
-from featurebyte.api.agg_func import construct_agg_func
+from featurebyte.api.agg_func import AggFuncType, construct_agg_func
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -18,7 +20,17 @@ from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.transformation import GraphReconstructor
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.transformation import GraphReconstructor, GroupbyNode, ItemGroupbyNode
+
+
+class AggregationType(Enum):
+    """
+    Enum for supported aggregation types
+    """
+
+    WINDOW_AGGREGATION = "WINDOW_AGGREGATION"
+    ITEM_AGGREGATION = "ITEM_AGGREGATION"
 
 
 class GroupBy(OpsMixin):
@@ -63,11 +75,17 @@ class GroupBy(OpsMixin):
         if category is not None and category not in obj.columns:
             raise KeyError(f'Column "{category}" not found!')
 
+        if isinstance(obj, ItemView) and keys_value == [obj.event_id_column]:
+            aggregation_type = AggregationType.ITEM_AGGREGATION
+        else:
+            aggregation_type = AggregationType.WINDOW_AGGREGATION
+
         self.obj = obj
         self.keys = keys_value
         self.category = category
         self.serving_names = serving_names
         self.entity_ids = entity_ids
+        self.aggregation_type = aggregation_type
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.obj}, keys={self.keys})"
@@ -75,12 +93,8 @@ class GroupBy(OpsMixin):
     def __str__(self) -> str:
         return repr(self)
 
-    def _validate_parameters(
-        self,
-        value_column: Optional[str],
-        method: Optional[str],
-        windows: Optional[list[str]],
-        feature_names: Optional[list[str]],
+    def _validate_common_parameters(
+        self, method: Optional[str], value_column: Optional[str]
     ) -> None:
         if method is None:
             raise ValueError("method is required")
@@ -100,6 +114,16 @@ class GroupBy(OpsMixin):
             if value_column not in self.obj.columns:
                 raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
+    def _validate_parameters_window_aggregation(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        windows: Optional[list[str]],
+        feature_names: Optional[list[str]],
+    ) -> None:
+
+        self._validate_common_parameters(method=method, value_column=value_column)
+
         if not isinstance(windows, list):
             raise ValueError(f"windows is required and should be a list; got {windows}")
 
@@ -114,7 +138,7 @@ class GroupBy(OpsMixin):
         if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
             raise ValueError("Window sizes or feature names contains duplicated value(s).")
 
-    def _prepare_node_parameters(
+    def _prepare_node_parameters_window_aggregation(
         self,
         value_column: Optional[str],
         method: Optional[str],
@@ -125,7 +149,7 @@ class GroupBy(OpsMixin):
         feature_job_setting: Optional[dict[str, str]] = None,
     ) -> dict[str, Any]:
         # pylint: disable=too-many-locals
-        self._validate_parameters(
+        self._validate_parameters_window_aggregation(
             value_column=value_column, method=method, windows=windows, feature_names=feature_names
         )
 
@@ -165,6 +189,43 @@ class GroupBy(OpsMixin):
             "entity_ids": self.entity_ids,
         }
 
+    def _validate_parameters_item_aggregation(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        feature_names: Optional[list[str]],
+    ) -> None:
+        self._validate_common_parameters(method=method, value_column=value_column)
+
+        if not (isinstance(feature_names, list) and len(feature_names) == 1):
+            raise ValueError(
+                f"feature_names is required and should be a list of one item; got {feature_names}"
+            )
+
+    def _prepare_node_parameters_item_aggregation(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        feature_names: Optional[list[str]],
+        value_by_column: Optional[str] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        self._validate_parameters_item_aggregation(
+            value_column=value_column, method=method, feature_names=feature_names
+        )
+        for arg_name, arg_value in kwargs.items():
+            if arg_value is not None:
+                raise ValueError(f"Parameter {arg_name} is not supported for item aggregation")
+        return {
+            "keys": self.keys,
+            "parent": value_column,
+            "agg_func": method,
+            "value_by": value_by_column,
+            "names": feature_names,
+            "serving_names": self.serving_names,
+            "entity_ids": self.entity_ids,
+        }
+
     @typechecked
     def aggregate(
         self,
@@ -174,7 +235,7 @@ class GroupBy(OpsMixin):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
-    ) -> FeatureGroup:
+    ) -> Union[FeatureGroup, Feature]:
         """
         Aggregate given value_column for each group specified in keys
 
@@ -197,17 +258,13 @@ class GroupBy(OpsMixin):
         Returns
         -------
         FeatureGroup
-
-        Raises
-        ------
-        ValueError
-            When the aggregation method does not support input variable type
         """
         # pylint: disable=too-many-locals
 
         self.obj.validate_aggregation_parameters(groupby_obj=self, value_column=value_column)
 
-        node_params = self._prepare_node_parameters(
+        node_cls: Type[Union[GroupbyNode, ItemGroupbyNode]]
+        prepare_node_params_args = dict(
             method=method,
             value_column=value_column,
             windows=windows,
@@ -216,45 +273,87 @@ class GroupBy(OpsMixin):
             value_by_column=self.category,
             feature_job_setting=feature_job_setting,
         )
-        groupby_node = GraphReconstructor.add_groupby_operation(
-            graph=self.obj.graph, node_params=node_params, input_node=self.obj.node
+        if self.aggregation_type == AggregationType.WINDOW_AGGREGATION:
+            node_params = self._prepare_node_parameters_window_aggregation(
+                **prepare_node_params_args  # type: ignore
+            )
+            node_cls = GroupbyNode
+        else:
+            node_params = self._prepare_node_parameters_item_aggregation(
+                **prepare_node_params_args  # type: ignore
+            )
+            node_cls = ItemGroupbyNode
+
+        groupby_node = GraphReconstructor.add_pruning_sensitive_operation(
+            graph=self.obj.graph,
+            node_cls=node_cls,
+            node_params=node_params,
+            input_node=self.obj.node,
         )
-        items: list[Feature | BaseFeatureGroup] = []
         assert isinstance(feature_names, list)
         assert method is not None
         agg_method = construct_agg_func(agg_func=method)
-        for feature_name in feature_names:
-            feature_node = self.obj.graph.add_operation(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": [feature_name]},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[groupby_node],
-            )
-            # value_column is None for count-like aggregation method
-            input_var_type = self.obj.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
-            if self.category:
-                var_type = DBVarType.OBJECT
-            else:
-                if input_var_type not in agg_method.input_output_var_type_map:
-                    raise ValueError(
-                        f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
-                    )
-                var_type = agg_method.input_output_var_type_map[input_var_type]
 
-            feature = Feature(
-                name=feature_name,
-                feature_store=self.obj.feature_store,
-                tabular_source=self.obj.tabular_source,
-                node_name=feature_node.name,
-                dtype=var_type,
-                row_index_lineage=(groupby_node.name,),
-                tabular_data_ids=self.obj.tabular_data_ids,
-                entity_ids=self.entity_ids,
-            )
-            # Count features should be 0 instead of NaN when there are no records
-            if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
-                feature.fillna(0)
-                feature.name = feature_name
-            items.append(feature)
-        feature_group = FeatureGroup(items)
-        return feature_group
+        if self.aggregation_type == AggregationType.WINDOW_AGGREGATION:
+            items: list[Feature | BaseFeatureGroup] = []
+            for feature_name in feature_names:
+                feature = self._project_feature_from_groupby_node(
+                    agg_method=agg_method,
+                    feature_name=feature_name,
+                    groupby_node=groupby_node,
+                    method=method,
+                    value_column=value_column,
+                )
+                items.append(feature)
+            feature_group = FeatureGroup(items)
+            return feature_group
+
+        # For ItemGroupby, return Feature directly
+        feature = self._project_feature_from_groupby_node(
+            agg_method=agg_method,
+            feature_name=feature_names[0],
+            groupby_node=groupby_node,
+            method=method,
+            value_column=value_column,
+        )
+        return feature
+
+    def _project_feature_from_groupby_node(
+        self,
+        agg_method: AggFuncType,
+        feature_name: str,
+        groupby_node: Node,
+        method: str,
+        value_column: Optional[str],
+    ) -> Feature:
+        feature_node = self.obj.graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [feature_name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[groupby_node],
+        )
+        # value_column is None for count-like aggregation method
+        input_var_type = self.obj.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
+        if self.category:
+            var_type = DBVarType.OBJECT
+        else:
+            if input_var_type not in agg_method.input_output_var_type_map:
+                raise ValueError(
+                    f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
+                )
+            var_type = agg_method.input_output_var_type_map[input_var_type]
+        feature = Feature(
+            name=feature_name,
+            feature_store=self.obj.feature_store,
+            tabular_source=self.obj.tabular_source,
+            node_name=feature_node.name,
+            dtype=var_type,
+            row_index_lineage=(groupby_node.name,),
+            tabular_data_ids=self.obj.tabular_data_ids,
+            entity_ids=self.entity_ids,
+        )
+        # Count features should be 0 instead of NaN when there are no records
+        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
+            feature.fillna(0)
+            feature.name = feature_name
+        return feature

@@ -5,6 +5,7 @@ import textwrap
 
 import pytest
 
+from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.exception import JoinViewMismatchError
@@ -469,6 +470,84 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
         feature_names=["feature_name"],
         feature_job_setting=feature_job_setting,
     )["feature_name"]
+
+
+def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_entity):
+    """
+    Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
+    """
+    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
+    feature = snowflake_item_view.groupby("event_id_col").aggregate(
+        method="count",
+        feature_names=["order_size"],
+    )
+    assert isinstance(feature, Feature)
+    feature_dict = feature.dict()
+    assert feature_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
+        {"source": "join_1", "target": "item_groupby_1"},
+        {"source": "item_groupby_1", "target": "project_1"},
+        {"source": "project_1", "target": "is_null_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "is_null_1", "target": "conditional_1"},
+        {"source": "conditional_1", "target": "alias_1"},
+    ]
+    assert get_node(feature_dict["graph"], "item_groupby_1")["parameters"] == {
+        "keys": ["event_id_col"],
+        "parent": None,
+        "agg_func": "count",
+        "names": ["order_size"],
+        "serving_names": ["transaction_id"],
+        "entity_ids": [transaction_entity.id],
+    }
+
+
+@pytest.mark.parametrize(
+    "invalid_param",
+    [
+        ("windows", ["7d"]),
+        (
+            "feature_job_setting",
+            {"frequency": "1d", "time_modulo_frequency": "1h", "blind_spot": "30m"},
+        ),
+    ],
+)
+def test_item_view_groupby__no_window_with_unsupported_param(
+    snowflake_item_data, transaction_entity, invalid_param
+):
+    """
+    Test aggregating on event id column with parameters such as window is not allowed
+    """
+    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("event_id_col").aggregate(
+            method="count",
+            feature_names=["order_size"],
+            **{invalid_param[0]: invalid_param[1]},
+        )
+    assert str(exc.value) == f"Parameter {invalid_param[0]} is not supported for item aggregation"
+
+
+def test_item_view_groupby__no_window_with_multiple_feature_names(
+    snowflake_item_data, transaction_entity
+):
+    """
+    Test aggregating on event id column with parameters such as window is not allowed
+    """
+    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_item_view.groupby("event_id_col").aggregate(
+            method="count",
+            feature_names=["a", "b"],
+        )
+    assert (
+        str(exc.value)
+        == "feature_names is required and should be a list of one item; got ['a', 'b']"
+    )
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
