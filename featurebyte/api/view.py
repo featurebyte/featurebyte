@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar, Union
 
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
