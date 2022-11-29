@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union, cast
 
 import collections
 import time
-from collections import defaultdict
 from http import HTTPStatus
 
 import pandas as pd
@@ -39,15 +38,14 @@ from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import (
+    FeatureCluster,
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListNewVersionMode,
     FeatureListStatus,
 )
 from featurebyte.models.feature_store import TabularSource
-from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 from featurebyte.schema.feature_list import (
-    FeatureCluster,
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
     FeatureListPreview,
@@ -179,25 +177,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         List[FeatureCluster]
         """
-        # split features into groups that share the same feature store
-        groups = defaultdict(list)
-        for feature in self._features:
-            groups[feature.feature_store.name].append(feature)
-
-        # create preview group for each group
-        feature_clusters = []
-        for feature_store_name, features in groups.items():
-            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(
-                feature_objects=cast(List[FeatureModel], features)
-            )
-            feature_clusters.append(
-                FeatureCluster(
-                    feature_store_name=feature_store_name,
-                    graph=pruned_graph,
-                    node_names=[node.name for node in mapped_nodes],
-                )
-            )
-        return feature_clusters
+        return FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features))
 
     @typechecked
     def preview(

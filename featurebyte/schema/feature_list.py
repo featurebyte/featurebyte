@@ -11,12 +11,11 @@ from pydantic import Field, StrictStr, validator
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
+    FeatureCluster,
     FeatureListModel,
     FeatureListNewVersionMode,
     FeatureReadinessDistribution,
 )
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -91,27 +90,6 @@ class ProductionReadyFractionComparison(FeatureByteBaseModel):
 
     this: float
     default: float
-
-
-class FeatureCluster(FeatureByteBaseModel):
-    """
-    Schema for a group of features from the same feature store
-    """
-
-    feature_store_name: StrictStr
-    graph: QueryGraph
-    node_names: List[StrictStr]
-
-    @property
-    def nodes(self) -> List[Node]:
-        """
-        Get feature nodes
-
-        Returns
-        -------
-        List[Node]
-        """
-        return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
 class FeatureListSQL(FeatureByteBaseModel):

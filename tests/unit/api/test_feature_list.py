@@ -138,6 +138,7 @@ def test_feature_list_creation__success(production_ready_feature, mocked_tile_ca
         }
     )
 
+    production_ready_feature.feature_store.save()
     with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
         with patch("featurebyte.api.feature_list.dataframe_from_arrow_stream"):
             flist.get_historical_features(dataframe)
@@ -152,6 +153,7 @@ def test_feature_list_creation__success(production_ready_feature, mocked_tile_ca
         "created_at": None,
         "updated_at": None,
         "user_id": None,
+        "feature_clusters": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -189,6 +191,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             {"count": 2, "readiness": "DRAFT"},
         ],
         "name": "my_feature_list",
+        "feature_clusters": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)

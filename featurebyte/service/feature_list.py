@@ -99,7 +99,10 @@ class FeatureListService(
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
 
-        derived_output = {"feature_store_id": feature_store_id, "features": features}
+        derived_output = {
+            "feature_store_id": feature_store_id,
+            "features": features,
+        }
         return derived_output
 
     async def _update_features(
@@ -148,7 +151,8 @@ class FeatureListService(
 
             # update document with derived output
             document = FeatureListModel(
-                **document.dict(by_alias=True), features=feature_data["features"]
+                **document.dict(by_alias=True),
+                features=feature_data["features"],
             )
 
             insert_id = await session.insert_one(

@@ -427,13 +427,10 @@ class TestFeatureListApi(BaseApiTestSuite):
         feature = response.json()
 
         feature_store_id = feature["tabular_source"]["feature_store_id"]
-        response = test_api_client.get(f"/feature_store/{feature_store_id}")
-        assert response.status_code == HTTPStatus.OK
-        feature_store = response.json()
 
         return [
             {
-                "feature_store_name": feature_store["name"],
+                "feature_store_id": feature_store_id,
                 "graph": feature["graph"],
                 "node_names": [feature["node_name"]],
             }
@@ -524,3 +521,12 @@ class TestFeatureListApi(BaseApiTestSuite):
             'SELECT\n  "agg_w1800_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
+
+    def test_feature_clusters_derived_and_stored(
+        self, create_success_response, featurelist_feature_clusters
+    ):
+        """Test feature_clusters field is derived and stored"""
+        feature_clusters = create_success_response.json()["feature_clusters"]
+        assert isinstance(feature_clusters, list)
+        assert len(feature_clusters) == 1
+        assert feature_clusters[0] == featurelist_feature_clusters[0]

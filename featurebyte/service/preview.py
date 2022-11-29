@@ -191,11 +191,8 @@ class PreviewService(BaseService):
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
         for feature_cluster in featurelist_preview.feature_clusters:
-            feature_store_dict = feature_cluster.graph.get_input_node(
-                feature_cluster.node_names[0]
-            ).parameters.feature_store_details.dict()
-            feature_store = FeatureStoreModel(
-                **feature_store_dict, name=feature_cluster.feature_store_name
+            feature_store = await self.feature_store_service.get_document(
+                feature_cluster.feature_store_id
             )
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
@@ -244,11 +241,8 @@ class PreviewService(BaseService):
         assert len(feature_clusters) == 1
 
         feature_cluster = feature_clusters[0]
-        feature_store_dict = feature_cluster.graph.get_input_node(
-            feature_cluster.node_names[0]
-        ).parameters.feature_store_details.dict()
-        feature_store = FeatureStoreModel(
-            **feature_store_dict, name=feature_cluster.feature_store_name
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feature_cluster.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
