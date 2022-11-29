@@ -229,10 +229,10 @@ class GroupBy(OpsMixin):
     @typechecked
     def aggregate(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[str] = None,
-        windows: Optional[List[str]] = None,
-        feature_names: Optional[List[str]] = None,
+        value_column: Optional[str],
+        method: AggFunc,
+        windows: List[str],
+        feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
     ) -> Union[FeatureGroup, Feature]:
@@ -241,9 +241,9 @@ class GroupBy(OpsMixin):
 
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
-        method: Optional[AggFunc]
+        method: AggFunc
             Aggregation method
         windows: List[str]
             List of aggregation window sizes
