@@ -9,6 +9,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
+from featurebyte.api.validator import validate_view
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.enum import TableDataType
@@ -174,4 +175,7 @@ class EventView(View, GroupByMixin):
         return params
 
     def get_join_column(self) -> str:
-        return self.event_id_column
+        return str(self.event_id_column)
+
+    def validate_join(self, other_view: View) -> None:
+        validate_view(other_view)

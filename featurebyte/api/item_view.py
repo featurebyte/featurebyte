@@ -16,6 +16,7 @@ from featurebyte.api.join_utils import (
     join_column_lineage_map,
     join_tabular_data_ids,
 )
+from featurebyte.api.validator import validate_view
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -251,3 +252,6 @@ class ItemView(View, GroupByMixin):
 
     def get_join_column(self) -> str:
         return self.item_id_column
+
+    def validate_join(self, other_view: View) -> None:
+        validate_view(other_view)
