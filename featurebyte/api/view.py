@@ -231,7 +231,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         return ""
 
-    def update_metadata(
+    def _update_metadata(
         self,
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
@@ -265,7 +265,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             }
         )
 
-    def get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
+    def _get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
         """
         Returns a key if there's a match based on entity.
 
@@ -308,7 +308,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         return None
 
-    def get_join_keys(self, other_view: View, on_column: Optional[str] = None) -> tuple[str, str]:
+    def _get_join_keys(self, other_view: View, on_column: Optional[str] = None) -> tuple[str, str]:
         """
         Returns the join keys of the two tables.
 
@@ -333,7 +333,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             return on_column, other_view.get_join_column()
 
         # Check if the keys are entities
-        response = self.get_key_if_entity(other_view)
+        response = self._get_key_if_entity(other_view)
         if response is not None:
             return response[0], response[1]
 
@@ -409,7 +409,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         right_input_columns = other_view.columns
         right_output_columns = append_rsuffix_to_columns(other_view.columns, rsuffix)
-        left_on, right_on = self.get_join_keys(other_view, on)
+        left_on, right_on = self._get_join_keys(other_view, on)
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -446,6 +446,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Update metadata
-        self.update_metadata(
+        self._update_metadata(
             node.name, joined_columns_info, joined_column_lineage_map, joined_tabular_data_ids
         )

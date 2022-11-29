@@ -90,7 +90,7 @@ def test_update_metadata(simple_test_view):
     assert simple_test_view.tabular_data_ids != new_joined_data_ids
 
     # update state
-    simple_test_view.update_metadata(
+    simple_test_view._update_metadata(
         new_node_name, new_cols_info, new_col_lineage_map, new_joined_data_ids
     )
 
@@ -115,7 +115,7 @@ def test_get_key_if_entity__other_view_is_not_entity():
     """
     current_view = SimpleTestView()
     other_view = SimpleTestView(columns_info=[ColumnInfo(name="colA", dtype=DBVarType.INT)])
-    response = current_view.get_key_if_entity(other_view)
+    response = current_view._get_key_if_entity(other_view)
     assert response is None
 
 
@@ -134,7 +134,7 @@ def test_get_key_if_entity__diff_entities_in_both_is_no_match():
         ]
     )
     other_view.set_join_col_override("colB")
-    left, right = current_view.get_key_if_entity(other_view)
+    left, right = current_view._get_key_if_entity(other_view)
     assert left == ""
     assert right == ""
 
@@ -159,7 +159,7 @@ def test_get_key_if_entity__same_entity_in_both_is_match():
         ]
     )
     other_view.set_join_col_override("colE")
-    left, right = current_view.get_key_if_entity(other_view)
+    left, right = current_view._get_key_if_entity(other_view)
     assert left == "colB"
     assert right == "colE"
 
@@ -184,7 +184,7 @@ def test_get_key_if_entity__multiple_entity_is_no_match():
         ]
     )
     other_view.set_join_col_override("colE")
-    response = current_view.get_key_if_entity(other_view)
+    response = current_view._get_key_if_entity(other_view)
     assert response is None
 
 
@@ -197,7 +197,7 @@ def test_get_join_keys__on_col_provided():
     other_view_join_col = "join_col"
     other_view.set_join_col_override(other_view_join_col)
     col_name = "col_to_use"
-    left_join_key, right_join_key = current_view.get_join_keys(other_view, on_column=col_name)
+    left_join_key, right_join_key = current_view._get_join_keys(other_view, on_column=col_name)
     assert right_join_key == other_view_join_col
     assert left_join_key == col_name
 
@@ -215,7 +215,7 @@ def test_get_join_keys__target_join_key_is_column_in_calling_view():
     ]
     other_view = SimpleTestView(join_col=col_to_use)
 
-    left_join_key, right_join_key = current_view.get_join_keys(other_view)
+    left_join_key, right_join_key = current_view._get_join_keys(other_view)
     assert left_join_key == right_join_key
     assert left_join_key == col_to_use
 
@@ -233,7 +233,7 @@ def test_get_join_keys__is_entity():
     # Set the join col on one of them, but not on the other
     other_view.set_join_col_override("colB")
 
-    left_join_key, right_join_key = current_view.get_join_keys(other_view)
+    left_join_key, right_join_key = current_view._get_join_keys(other_view)
     assert left_join_key == "colA"
     assert right_join_key == "colB"
 
@@ -257,7 +257,7 @@ def test_get_join_keys__prefer_entity_over_matching_cols():
     # Set the join col on one of them, but not on the other
     other_view.set_join_col_override("colB")
 
-    left_join_key, right_join_key = current_view.get_join_keys(other_view)
+    left_join_key, right_join_key = current_view._get_join_keys(other_view)
     assert left_join_key == "colA"
     assert right_join_key == "colB"
 
@@ -270,7 +270,7 @@ def test_get_join_keys__error_if_no_key_found():
     other_view = SimpleTestView()
 
     with pytest.raises(NoJoinKeyFoundError):
-        current_view.get_join_keys(other_view)
+        current_view._get_join_keys(other_view)
 
 
 @pytest.fixture(name="generic_input_node_params")
@@ -376,6 +376,10 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         },
         "type": "join",
     }
+    assert view_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "join_1"},
+        {"source": "input_1", "target": "join_1"},
+    ]
 
 
 def test_validate_join():

@@ -137,7 +137,7 @@ class ItemView(View, GroupByMixin):
         )
 
         # Update metadata
-        self.update_metadata(
+        self._update_metadata(
             node.name, joined_columns_info, joined_column_lineage_map, joined_tabular_data_ids
         )
 
