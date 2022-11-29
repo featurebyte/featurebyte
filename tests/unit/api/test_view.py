@@ -9,7 +9,7 @@ from pydantic import StrictStr
 
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.exception import NoJoinKeyFoundError
+from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import (
     ColumnInfo,
@@ -306,3 +306,27 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         },
         "type": "join",
     }
+
+
+def test_validate_join():
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b])
+    view_with_overlap = SimpleTestView(columns_info=[col_info_b, col_info_c])
+    view_without_overlap = SimpleTestView(columns_info=[col_info_c])
+
+    # no overlap should have no error without suffix and no overlap
+    base_view._validate_join(view_without_overlap)
+
+    # no overlap should have no error with suffix and no overlap
+    base_view._validate_join(view_without_overlap, rsuffix="suffix")
+
+    # no overlap should have error without suffix and overlap
+    with pytest.raises(RepeatedColumnNamesError):
+        base_view._validate_join(view_with_overlap)
+
+    # no overlap should have no error with suffix and overlap
+    base_view._validate_join(view_with_overlap, rsuffix="suffix")

@@ -21,7 +21,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
-from featurebyte.exception import NoJoinKeyFoundError
+from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -337,6 +337,29 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         raise NoJoinKeyFoundError
 
+    def _validate_join(self, other_view: View, rsuffix: str = "") -> None:
+        """
+        Main validate call for the join. This checks that
+        - If there are overlapping column names but rsuffix is empty, should there be an error?
+        - Calls the other validate_join function which can be overriden for implementation specific validation
+
+        Parameters
+        ----------
+        other_view: View
+            the other view that we are joining with
+        rsuffix: str
+            a suffix to append on to the right columns
+        """
+        # Validate whether there are overlapping column names
+        if rsuffix == "":
+            current_column_names = set([col.name for col in self.columns_info])
+            for other_col in other_view.columns_info:
+                if other_col.name in current_column_names:
+                    raise RepeatedColumnNamesError
+
+        # Perform other validation
+        self.validate_join(other_view)
+
     @typechecked
     def join(
         self,
@@ -386,7 +409,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 "join_type": how,
             },
             node_output_type=NodeOutputType.FRAME,
-            input_nodes=[other_view.node, self.node],
+            input_nodes=[self.node, other_view.node],
         )
 
         # Construct new columns_info

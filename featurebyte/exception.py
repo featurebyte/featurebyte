@@ -211,3 +211,10 @@ class NoJoinKeyFoundError(Exception):
 
     This most likely indicates that callers should explicitly specify a join key.
     """
+
+
+class RepeatedColumnNamesError(Exception):
+    """
+    Raise when two views have overlapping columns, and a user is trying to perform a Join, without providing
+    a suffix
+    """
