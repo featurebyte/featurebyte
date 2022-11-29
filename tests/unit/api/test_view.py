@@ -109,45 +109,85 @@ def get_random_pydantic_object_id() -> PydanticObjectId:
     return PydanticObjectId(ObjectId())
 
 
-def test_check_key_is_entity_in_view(simple_test_view):
+def test_get_key_if_entity__other_view_is_not_entity():
     """
-    Test check_key_is_entity_in_view
+    Test get_key_if_entity__other_view_is_not_entity
     """
-    in_view = View.check_key_is_entity_in_view(simple_test_view, "random_column")
-    assert not in_view
-
-    col_name = "colA"
-    simple_test_view.columns_info = [
-        ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-    ]
-    in_view = View.check_key_is_entity_in_view(simple_test_view, col_name)
-    assert in_view
+    current_view = SimpleTestView()
+    other_view = SimpleTestView(columns_info=[ColumnInfo(name="colA", dtype=DBVarType.INT)])
+    left, right = current_view.get_key_if_entity(other_view)
+    assert left == ""
+    assert right == ""
 
 
-def test_check_if_key_is_entity_in_both():
+def test_get_key_if_entity__diff_entities_in_both_is_no_match():
     """
-    Test check_if_key_is_entity_in_both
+    Test get_key_if_entity__diff_entities_in_both_is_no_match
     """
-    view_a = SimpleTestView()
-    view_b = SimpleTestView()
-    col_name = "colA"
-    # Verify that views with no entities returns false
-    key_is_entity = view_a.check_if_key_is_entity_in_both(view_b, col_name)
-    assert not key_is_entity
+    current_view = SimpleTestView(
+        columns_info=[
+            ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
+        ]
+    )
+    other_view = SimpleTestView(
+        columns_info=[
+            ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
+        ]
+    )
+    other_view.set_join_col_override("colB")
+    left, right = current_view.get_key_if_entity(other_view)
+    assert left == ""
+    assert right == ""
 
-    # Verify that one view with entity, and other without, returns false
-    view_a.columns_info = [
-        ColumnInfo(name=col_name, dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-    ]
-    key_is_entity = view_a.check_if_key_is_entity_in_both(view_b, col_name)
-    assert not key_is_entity
 
-    # Verify that both views with entities, returns true
-    view_b.columns_info = [
-        ColumnInfo(name=col_name, dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-    ]
-    key_is_entity = view_a.check_if_key_is_entity_in_both(view_b, col_name)
-    assert key_is_entity
+def test_get_key_if_entity__same_entity_in_both_is_match():
+    """
+    Test get_key_if_entity__same_entity_in_both_is_match
+    """
+    entity_id = get_random_pydantic_object_id()
+    current_view = SimpleTestView(
+        columns_info=[
+            ColumnInfo(name="colA", dtype=DBVarType.INT),
+            ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=entity_id),
+            ColumnInfo(name="colC", dtype=DBVarType.INT),
+        ]
+    )
+    other_view = SimpleTestView(
+        columns_info=[
+            ColumnInfo(name="colD", dtype=DBVarType.INT),
+            ColumnInfo(name="colE", dtype=DBVarType.INT, entity_id=entity_id),
+            ColumnInfo(name="colF", dtype=DBVarType.INT),
+        ]
+    )
+    other_view.set_join_col_override("colE")
+    left, right = current_view.get_key_if_entity(other_view)
+    assert left == "colB"
+    assert right == "colE"
+
+
+def test_get_key_if_entity__multiple_entity_is_no_match():
+    """
+    Test get_key_if_entity__multiple_entity_is_no_match
+    """
+    entity_id = get_random_pydantic_object_id()
+    current_view = SimpleTestView(
+        columns_info=[
+            ColumnInfo(name="colA", dtype=DBVarType.INT),
+            ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=entity_id),
+            ColumnInfo(name="colC", dtype=DBVarType.INT, entity_id=entity_id),
+        ]
+    )
+    other_view = SimpleTestView(
+        columns_info=[
+            ColumnInfo(name="colD", dtype=DBVarType.INT),
+            ColumnInfo(name="colE", dtype=DBVarType.INT, entity_id=entity_id),
+            ColumnInfo(name="colF", dtype=DBVarType.INT),
+        ]
+    )
+    other_view.set_join_col_override("colE")
+    left, right = current_view.get_key_if_entity(other_view)
+    assert left == ""
+    assert right == ""
 
 
 def test_get_join_keys__on_col_provided():
@@ -156,9 +196,11 @@ def test_get_join_keys__on_col_provided():
     """
     current_view = SimpleTestView()
     other_view = SimpleTestView()
+    other_view_join_col = "join_col"
+    other_view.set_join_col_override(other_view_join_col)
     col_name = "col_to_use"
     left_join_key, right_join_key = current_view.get_join_keys(other_view, on_column=col_name)
-    assert left_join_key == right_join_key
+    assert right_join_key == other_view_join_col
     assert left_join_key == col_name
 
 
@@ -182,19 +224,15 @@ def test_get_join_keys__is_entity():
     current_view = SimpleTestView()
     other_view = SimpleTestView()
 
-    col_name = "join_col"
-    current_view.columns_info = [
-        ColumnInfo(name=col_name, dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-    ]
-    other_view.columns_info = [
-        ColumnInfo(name=col_name, dtype=DBVarType.INT, entity_id=get_random_pydantic_object_id())
-    ]
+    entity_id = get_random_pydantic_object_id()
+    current_view.columns_info = [ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=entity_id)]
+    other_view.columns_info = [ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=entity_id)]
     # Set the join col on one of them, but not on the other
-    current_view.join_col = col_name
+    current_view.join_col = "colA"
 
     left_join_key, right_join_key = current_view.get_join_keys(other_view)
-    assert left_join_key == right_join_key
-    assert left_join_key == col_name
+    assert left_join_key == "colA"
+    assert right_join_key == "colB"
 
 
 def test_get_join_keys__error_if_no_key_found():
@@ -283,7 +321,11 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     current_view.join(other_view, on="join_col", how=join_type_param, rsuffix="suffix")
 
     # assert updated view params
-    assert current_view.columns_info == [col_info_a, col_info_b, col_info_c]
+    assert current_view.columns_info == [
+        col_info_a,
+        col_info_b,
+        ColumnInfo(name="colCsuffix", dtype=DBVarType.INT),
+    ]
     assert current_view.node_name == "join_1"
     assert current_view.column_lineage_map == {}
     assert current_view.row_index_lineage == ("join_1",)

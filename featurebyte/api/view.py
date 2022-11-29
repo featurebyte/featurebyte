@@ -23,6 +23,7 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
+from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -262,43 +263,48 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             }
         )
 
-    @staticmethod
-    def check_key_is_entity_in_view(view: View, column_name: str) -> bool:
+    def get_key_if_entity(self, other_view: View) -> tuple[str, str]:
         """
-        Checks to see if a column name is an entity.
-
-        Parameters
-        ----------
-        view: View
-            the view we want to check
-        column_name: str
-            the column name we want to check if it's an entity
-
-        Returns
-        -------
-        bool
-        """
-        entity_cols = view.entity_columns
-        return column_name in entity_cols
-
-    def check_if_key_is_entity_in_both(self, other_view: View, column_name: str) -> bool:
-        """
-        Checks if a column name is an entity in both views.
+        Returns a key if there's a match based on entity.
 
         Parameters
         ----------
         other_view: View
-            the other view we want to check for
-        column_name: str
-            the column name we want to check if it's an entity
+            the other view we are joining on
 
         Returns
         -------
-        bool
+        (str, str)
+            the left and right columns to join on
         """
-        key_is_entity_of_current_view = View.check_key_is_entity_in_view(self, column_name)
-        key_is_entity_of_other_view = View.check_key_is_entity_in_view(other_view, column_name)
-        return key_is_entity_of_current_view and key_is_entity_of_other_view
+        other_join_key = other_view.get_join_column()
+        # If the other join key is not an entity, skip this search.
+        entity_id = None
+        for col in other_view.columns_info:
+            if col.entity_id and col.name == other_join_key:
+                entity_id = col.entity_id
+
+        if entity_id is None:
+            return "", ""
+
+        # Find if there's a match. Check to see if there's only exactly one match. If there are multiple, return empty
+        # and log a debug message.
+        num_of_matches = 0
+        calling_col_name = ""
+        for col in self.columns_info:
+            if col.entity_id == entity_id:
+                num_of_matches += 1
+                calling_col_name = col.name
+
+        if num_of_matches == 0:
+            return "", ""
+        if num_of_matches == 1:
+            return calling_col_name, other_join_key
+        logger.debug(
+            f"{num_of_matches} matches found for entity id {entity_id}. "
+            f"Unable to automatically return a join key."
+        )
+        return "", ""
 
     def get_join_keys(self, other_view: View, on_column: Optional[str] = None) -> tuple[str, str]:
         """
@@ -322,7 +328,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             raised when no suitable join key has been found
         """
         if on_column is not None:
-            return on_column, on_column
+            return on_column, other_view.get_join_column()
 
         current_join_key = self.get_join_column()
         other_join_key = other_view.get_join_column()
@@ -331,10 +337,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             return current_join_key, other_join_key
 
         # Check if the keys are entities
-        if self.check_if_key_is_entity_in_both(other_view, current_join_key):
-            return current_join_key, current_join_key
-        if self.check_if_key_is_entity_in_both(other_view, other_join_key):
-            return other_join_key, other_join_key
+        left_key, right_key = self.get_key_if_entity(other_view)
+        if left_key != "" and right_key != "":
+            return left_key, right_key
 
         raise NoJoinKeyFoundError
 
