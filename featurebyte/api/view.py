@@ -356,6 +356,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             the other view that we are joining with
         rsuffix: str
             a suffix to append on to the right columns
+
+        Raises
+        ------
+        RepeatedColumnNamesError
+            raised when there are overlapping columns, but no rsuffix has been provided
         """
         # Validate whether there are overlapping column names
         if rsuffix == "":
