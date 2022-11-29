@@ -4,6 +4,7 @@ Test join utils class
 from bson import ObjectId
 
 from featurebyte.api.join_utils import (
+    append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
     join_column_lineage_map,
@@ -12,6 +13,41 @@ from featurebyte.api.join_utils import (
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
+
+
+def test_append_rsuffix_to_column_info():
+    """
+    Test append_rsuffix_to_column_info
+    """
+    col_a_string = "colA"
+    col_b_string = "colB"
+    col_info_a, col_info_b = (
+        ColumnInfo(name=col_a_string, dtype=DBVarType.INT),
+        ColumnInfo(name=col_b_string, dtype=DBVarType.INT),
+    )
+
+    # Append w/ suffix
+    suffix = "hello"
+    output = append_rsuffix_to_column_info([col_info_a, col_info_b], suffix)
+    assert len(output) == 2
+    assert output[0].name == f"{col_a_string}{suffix}"
+    assert output[1].name == f"{col_b_string}{suffix}"
+    # Assert that original col_info's aren't changed
+    col_info_a.name = col_a_string
+    col_info_b.name = col_b_string
+
+    # Append w/ suffix as empty string
+    suffix = ""
+    output = append_rsuffix_to_column_info([col_info_a, col_info_b], suffix)
+    assert len(output) == 2
+    assert output[0].name == col_a_string
+    assert output[1].name == col_b_string
+
+    # Append w/ suffix as None
+    output = append_rsuffix_to_column_info([col_info_a, col_info_b], None)
+    assert len(output) == 2
+    assert output[0].name == col_a_string
+    assert output[1].name == col_b_string
 
 
 def test_append_rsuffix_to_columns():

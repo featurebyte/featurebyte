@@ -12,6 +12,7 @@ from typeguard import typechecked
 
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.join_utils import (
+    append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
     join_column_lineage_map,
@@ -414,7 +415,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         # Construct new columns_info
         joined_columns_info = combine_column_info_of_views(
-            self.columns_info, other_view.columns_info
+            self.columns_info, append_rsuffix_to_column_info(other_view.columns_info, rsuffix)
         )
 
         # Construct new column_lineage_map

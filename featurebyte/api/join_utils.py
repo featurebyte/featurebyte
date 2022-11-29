@@ -11,6 +11,33 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
 
 
+def append_rsuffix_to_column_info(
+    column_infos: List[ColumnInfo], rsuffix: Optional[str]
+) -> List[ColumnInfo]:
+    """
+    Updates the column infos by appending the rsuffix to the column names.
+
+    Parameters
+    ----------
+    column_infos: List[ColumnInfo]
+        column infos to update
+    rsuffix: Optional[str]
+        the suffix to attach on
+
+    Returns
+    -------
+    List[ColumnInfo]
+    """
+    if not rsuffix:
+        return column_infos
+    updated_column_info = []
+    for col_info in column_infos:
+        new_col_info = col_info.copy()
+        new_col_info.name = f"{col_info.name}{rsuffix}"
+        updated_column_info.append(new_col_info)
+    return updated_column_info
+
+
 def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> List[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.

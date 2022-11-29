@@ -309,6 +309,9 @@ def test_join__left_join(generic_input_node_params, join_type_param):
 
 
 def test_validate_join():
+    """
+    Test validate join helper method
+    """
     col_info_a, col_info_b, col_info_c = (
         ColumnInfo(name="colA", dtype=DBVarType.INT),
         ColumnInfo(name="colB", dtype=DBVarType.INT),
