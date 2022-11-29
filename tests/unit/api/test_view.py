@@ -228,7 +228,7 @@ def test_get_join_keys__is_entity():
     current_view.columns_info = [ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=entity_id)]
     other_view.columns_info = [ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=entity_id)]
     # Set the join col on one of them, but not on the other
-    current_view.join_col = "colA"
+    other_view.set_join_col_override("colB")
 
     left_join_key, right_join_key = current_view.get_join_keys(other_view)
     assert left_join_key == "colA"
@@ -291,6 +291,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         columns_info=[col_info_a, col_info_b],
     )
     other_view = SimpleTestView(columns_info=[col_info_c])
+    other_view.set_join_col_override("colC")
     input_node = current_view.graph.add_operation(
         node_type=generic_input_node_params["node_type"],
         node_params=generic_input_node_params["node_params"],
@@ -343,7 +344,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
             "left_on": "join_col",
             "left_output_columns": ["colA", "colB"],
             "right_input_columns": ["colC"],
-            "right_on": "join_col",
+            "right_on": "colC",
             "right_output_columns": ["colCsuffix"],
         },
         "type": "join",
