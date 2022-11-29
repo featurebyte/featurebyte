@@ -21,8 +21,7 @@ from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode
-from featurebyte.query_graph.transformation import GraphReconstructor
+from featurebyte.query_graph.transformation import GraphReconstructor, GroupbyNode, ItemGroupbyNode
 
 
 class AggregationType(Enum):

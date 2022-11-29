@@ -2,7 +2,7 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
@@ -10,13 +10,8 @@ from pydantic import BaseModel, Field, root_validator
 from featurebyte.enum import AggFunc, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
-from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import (
-    BaseNode,
-    BasePruningSensitiveNode,
-    BaseSeriesOutputNode,
-)
+from featurebyte.query_graph.node.base import BaseNode, BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -28,11 +23,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
-from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
-
-if TYPE_CHECKING:
-    from featurebyte.query_graph.model import QueryGraphModel
-    from featurebyte.query_graph.node import Node
 
 
 class InputNode(BaseNode):
@@ -241,7 +231,7 @@ class LagNode(BaseSeriesOutputNode):
     parameters: Parameters
 
 
-class GroupbyNode(GroupbyNodeOpStructMixin, BasePruningSensitiveNode):
+class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """GroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -286,38 +276,8 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BasePruningSensitiveNode):
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
 
-    @classmethod
-    def derive_parameters_post_prune(
-        cls,
-        graph: "QueryGraphModel",
-        input_node: "Node",
-        temp_node: "BasePruningSensitiveNode",
-        pruned_graph: "QueryGraphModel",
-        pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
-        table_details = None
-        for node in dfs_traversal(graph, input_node):
-            if isinstance(node, InputNode) and node.parameters.type == TableDataType.EVENT_DATA:
-                # get the table details from the input node
-                table_details = node.parameters.table_details.dict()
-                break
-        if table_details is None:
-            raise ValueError("Failed to add groupby operation.")
-        # tile_id & aggregation_id should be based on pruned graph to improve tile reuse
-        tile_id = get_tile_table_identifier(
-            table_details_dict=table_details, parameters=temp_node.parameters.dict()
-        )
-        aggregation_id = get_aggregation_identifier(
-            transformations_hash=pruned_graph.node_name_to_ref[pruned_input_node_name],
-            parameters=temp_node.parameters.dict(),
-        )
-        return {
-            "tile_id": tile_id,
-            "aggregation_id": aggregation_id,
-        }
 
-
-class ItemGroupbyNode(GroupbyNodeOpStructMixin, BasePruningSensitiveNode):
+class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -352,18 +312,6 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BasePruningSensitiveNode):
             )
             for name in self.parameters.names
         ]
-
-    @classmethod
-    def derive_parameters_post_prune(
-        cls,
-        graph: "QueryGraphModel",
-        input_node: "Node",
-        temp_node: "BasePruningSensitiveNode",
-        pruned_graph: "QueryGraphModel",
-        pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
-        # TODO: derive aggregation id from input node hash and node parameters
-        return {}
 
 
 class JoinNode(BaseNode):
