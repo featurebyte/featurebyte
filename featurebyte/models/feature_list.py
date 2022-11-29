@@ -447,6 +447,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
+    # DEV-556: no longer Optional once migrated
     feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
 
     @staticmethod

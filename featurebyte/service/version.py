@@ -151,20 +151,12 @@ class VersionService(BaseService):
         if set(feature_list.feature_ids) == set(feature_ids):
             raise DocumentError("No change detected on the new feature list version.")
 
-        feature_store_names = {}
-        for feature in features:
-            feature_store_id = feature.tabular_source.feature_store_id
-            if feature_store_id not in feature_store_names:
-                feature_store = await self.feature_store_service.get_document(feature_store_id)
-                feature_store_names[feature_store_id] = feature_store.name
-
         return FeatureListModel(
             **{
                 **feature_list.dict(),
                 "_id": ObjectId(),
                 "feature_ids": feature_ids,
                 "features": features,
-                "feature_store_names": feature_store_names,
             }
         )
 
