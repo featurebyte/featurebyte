@@ -13,8 +13,9 @@ def test_validate_view(snowflake_scd_view, snowflake_dimension_view, snowflake_e
     """
     # No error expected
     validate_view(snowflake_dimension_view)
-    validate_view(snowflake_scd_view)
 
     # Error expected
     with pytest.raises(JoinViewMismatchError):
         validate_view(snowflake_event_view)
+    with pytest.raises(JoinViewMismatchError):
+        validate_view(snowflake_scd_view)

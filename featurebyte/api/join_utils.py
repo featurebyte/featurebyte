@@ -176,6 +176,18 @@ def update_column_lineage_map_with_suffix(
 def is_column_name_in_columns(column_name: str, columns_info: List[ColumnInfo]) -> bool:
     """
     Checks to see if a column name is in the list of ColumnInfo's provided.
+
+    Parameters
+    ----------
+    column_name: str
+        the column name to check
+    columns_info: List[ColumnInfo]
+        list of column info's
+
+    Returns
+    -------
+    bool
+        whether the column name is in the list of column info's
     """
     for col in columns_info:
         if column_name == col.name:

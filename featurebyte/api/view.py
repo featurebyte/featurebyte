@@ -306,7 +306,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             f"{num_of_matches} matches found for entity id {entity_id}. "
             f"Unable to automatically return a join key."
         )
-        return "", ""
+        return None
 
     def get_join_keys(self, other_view: View, on_column: Optional[str] = None) -> tuple[str, str]:
         """
@@ -332,17 +332,16 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if on_column is not None:
             return on_column, other_view.get_join_column()
 
-        # The key column in the calling View to join on should be same as the primary key of the Dimension View or
-        # the natural key of the SCD View. If the key column name is different,
-        # the name of the column of the calling view should be specified.
-        other_join_key = other_view.get_join_column()
-        if is_column_name_in_columns(other_join_key, self.columns_info):
-            return other_join_key, other_join_key
-
         # Check if the keys are entities
         response = self.get_key_if_entity(other_view)
         if response is not None:
             return response[0], response[1]
+
+        # Check that the target join column is present in the calling list of columns.
+        # If it is not present, the name of the column of the calling view should be specified.
+        other_join_key = other_view.get_join_column()
+        if is_column_name_in_columns(other_join_key, self.columns_info):
+            return other_join_key, other_join_key
 
         raise NoJoinKeyFoundError
 

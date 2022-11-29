@@ -184,9 +184,8 @@ def test_get_key_if_entity__multiple_entity_is_no_match():
         ]
     )
     other_view.set_join_col_override("colE")
-    left, right = current_view.get_key_if_entity(other_view)
-    assert left == ""
-    assert right == ""
+    response = current_view.get_key_if_entity(other_view)
+    assert response is None
 
 
 def test_get_join_keys__on_col_provided():
@@ -231,6 +230,30 @@ def test_get_join_keys__is_entity():
     entity_id = get_random_pydantic_object_id()
     current_view.columns_info = [ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=entity_id)]
     other_view.columns_info = [ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=entity_id)]
+    # Set the join col on one of them, but not on the other
+    other_view.set_join_col_override("colB")
+
+    left_join_key, right_join_key = current_view.get_join_keys(other_view)
+    assert left_join_key == "colA"
+    assert right_join_key == "colB"
+
+
+def test_get_join_keys__prefer_entity_over_matching_cols():
+    """
+    Test that entity matching is preferred over matching columns
+    """
+    current_view = SimpleTestView()
+    other_view = SimpleTestView()
+
+    entity_id = get_random_pydantic_object_id()
+    current_view.columns_info = [
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+        ColumnInfo(name="colA", dtype=DBVarType.INT, entity_id=entity_id),
+    ]
+    other_view.columns_info = [
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT, entity_id=entity_id),
+    ]
     # Set the join col on one of them, but not on the other
     other_view.set_join_col_override("colB")
 
