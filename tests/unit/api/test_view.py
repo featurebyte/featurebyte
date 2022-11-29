@@ -204,12 +204,17 @@ def test_get_join_keys__on_col_provided():
     assert left_join_key == col_name
 
 
-def test_get_join_keys__same_join_keys():
+def test_get_join_keys__target_join_key_is_column_in_calling_view():
     """
-    Test get_join_keys where join keys are the same
+    Test get_join_keys where join key of target view is a column in the calling view.
     """
-    col_to_use = "join_col"
+    col_to_use = "colB"
     current_view = SimpleTestView(join_col=col_to_use)
+    current_view.columns_info = [
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    ]
     other_view = SimpleTestView(join_col=col_to_use)
 
     left_join_key, right_join_key = current_view.get_join_keys(other_view)

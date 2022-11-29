@@ -15,6 +15,7 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
+    is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
     update_column_lineage_map_with_suffix,
@@ -331,11 +332,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if on_column is not None:
             return on_column, other_view.get_join_column()
 
-        current_join_key = self.get_join_column()
+        # The key column in the calling View to join on should be same as the primary key of the Dimension View or
+        # the natural key of the SCD View. If the key column name is different,
+        # the name of the column of the calling view should be specified.
         other_join_key = other_view.get_join_column()
-        # Return the existing keys if they match
-        if current_join_key == other_join_key and current_join_key != "":
-            return current_join_key, other_join_key
+        if is_column_name_in_columns(other_join_key, self.columns_info):
+            return other_join_key, other_join_key
 
         # Check if the keys are entities
         left_key, right_key = self.get_key_if_entity(other_view)

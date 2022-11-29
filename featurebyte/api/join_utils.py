@@ -171,3 +171,13 @@ def update_column_lineage_map_with_suffix(
         new_col = f"{col}{rsuffix}"
         output[new_col] = lineage
     return output
+
+
+def is_column_name_in_columns(column_name: str, columns_info: List[ColumnInfo]) -> bool:
+    """
+    Checks to see if a column name is in the list of ColumnInfo's provided.
+    """
+    for col in columns_info:
+        if column_name == col.name:
+            return True
+    return False

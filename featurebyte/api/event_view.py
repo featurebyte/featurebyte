@@ -174,8 +174,5 @@ class EventView(View, GroupByMixin):
         )
         return params
 
-    def get_join_column(self) -> str:
-        return str(self.event_id_column)
-
     def validate_join(self, other_view: View) -> None:
         validate_view(other_view)

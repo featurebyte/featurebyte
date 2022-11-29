@@ -7,6 +7,7 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
+    is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
     update_column_lineage_map_with_suffix,
@@ -187,3 +188,17 @@ def test_update_column_lineage_map_with_suffix():
     # update if no suffix passed in
     output_lineage = update_column_lineage_map_with_suffix(input_lineage, "right")
     assert output_lineage == {"colAright": node_a, "colBright": node_b}
+
+
+def test_is_column_name_in_columns():
+    """
+    Test is_column_name_in_columns
+    """
+    col1, col2, col3 = (
+        get_column_info("col1"),
+        get_column_info("col2"),
+        get_column_info("col3"),
+    )
+    assert is_column_name_in_columns("col2", [col1, col2, col3])
+    assert not is_column_name_in_columns("col4", [col1, col2, col3])
+    assert not is_column_name_in_columns("", [col1, col2, col3])
