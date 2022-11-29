@@ -359,7 +359,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         # Validate whether there are overlapping column names
         if rsuffix == "":
-            current_column_names = set([col.name for col in self.columns_info])
+            current_column_names = {col.name for col in self.columns_info}
             for other_col in other_view.columns_info:
                 if other_col.name in current_column_names:
                     raise RepeatedColumnNamesError
@@ -376,12 +376,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         rsuffix: str = "",
     ) -> None:
         """
-        Joins the current view with another view.
+        Joins the current view with another view. Note that this other view should only be a SlowlyChangingView,
+        or a DimensionView.
 
         Parameters
         ----------
         other_view: View
-            the other view that we want to join with
+            the other view that we want to join with. This should only be a SlowlyChangingView, or DimensionView.
         on: Optional[str]
             - ‘on’ argument is optional if:
             - the name of the key column in the calling view is the same name as the natural (primary) key in the
