@@ -115,9 +115,8 @@ def test_get_key_if_entity__other_view_is_not_entity():
     """
     current_view = SimpleTestView()
     other_view = SimpleTestView(columns_info=[ColumnInfo(name="colA", dtype=DBVarType.INT)])
-    left, right = current_view.get_key_if_entity(other_view)
-    assert left == ""
-    assert right == ""
+    response = current_view.get_key_if_entity(other_view)
+    assert response is None
 
 
 def test_get_key_if_entity__diff_entities_in_both_is_no_match():

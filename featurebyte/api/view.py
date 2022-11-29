@@ -265,7 +265,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             }
         )
 
-    def get_key_if_entity(self, other_view: View) -> tuple[str, str]:
+    def get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
         """
         Returns a key if there's a match based on entity.
 
@@ -287,7 +287,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 entity_id = col.entity_id
 
         if entity_id is None:
-            return "", ""
+            return None
 
         # Find if there's a match. Check to see if there's only exactly one match. If there are multiple, return empty
         # and log a debug message.
@@ -340,9 +340,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             return other_join_key, other_join_key
 
         # Check if the keys are entities
-        left_key, right_key = self.get_key_if_entity(other_view)
-        if left_key != "" and right_key != "":
-            return left_key, right_key
+        response = self.get_key_if_entity(other_view)
+        if response is not None:
+            return response[0], response[1]
 
         raise NoJoinKeyFoundError
 
