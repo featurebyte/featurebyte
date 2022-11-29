@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, Tuple, cast
 
 import time
 from http import HTTPStatus
@@ -16,7 +16,6 @@ from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -101,7 +100,7 @@ class Feature(
 
     # documentation metadata
     __fbautodoc__: List[str] = ["Feature"]
-    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.Feature", "")
 
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 

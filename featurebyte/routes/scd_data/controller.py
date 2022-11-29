@@ -27,7 +27,13 @@ class SCDDataController(BaseDataDocumentController[SCDDataModel, SCDDataService,
         scd_surrogate_key_id = await self.semantic_service.get_or_create_document(
             name=SemanticType.SCD_SURROGATE_KEY_ID
         )
-        return {
+        column_semantic_map = {
             document.natural_key_column: scd_natural_key_id,
-            document.surrogate_key_column: scd_surrogate_key_id,
         }
+        if document.surrogate_key_column:
+            column_semantic_map.update(
+                {
+                    document.surrogate_key_column: scd_surrogate_key_id,
+                }
+            )
+        return column_semantic_map

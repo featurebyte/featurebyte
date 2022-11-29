@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from pydantic import Field
 from typeguard import typechecked
@@ -31,6 +31,7 @@ class SlowlyChangingView(View):
 
     # documentation metadata
     __fbautodoc__: List[str] = ["View"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.SlowlyChangingView", "")
 
     _series_class = SlowlyChangingViewColumn
 

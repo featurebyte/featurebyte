@@ -95,19 +95,43 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
                 continue
 
             # check if proxy class should be used
-            proxy_class = getattr(class_obj, "__fbautodoc_proxy_class__", None)
+            if "__fbautodoc_proxy_class__" in class_obj.__dict__:
+                proxy_class = getattr(class_obj, "__fbautodoc_proxy_class__", None)
+            else:
+                proxy_class = None
 
             # identify members to be skipped
             skipped_members = getattr(
                 class_obj, "__fbautodoc_skipped_members__", COMMON_SKIPPED_ATTRIBUTES
             )
 
-            if not proxy_class:
+            # proxy class is used for two purposes:
+            #
+            # 1. document a shorter path to access a class
+            #    e.g. featurebyte.api.event_data.EventData -> featurebyte.EventData
+            #    proxy_class = ("featurebyte.EventData", "")
+            #    EventData is documented with the proxy path
+            #    EventData.{property} is documented with the proxy path
+            #
+            # 2. document a preferred way to access a property
+            #    e.g. featurebyte.core.string.StringAccessor.len -> featurebyte.Series.str.len
+            #    proxy_class = ("featurebyte.Series", "str")
+            #    StringAccessor is not documented
+            #    StringAccessor.{property} is documented with the proxy path
+
+            if not proxy_class or proxy_class[1] == "":
+                if proxy_class:
+                    proxy_path = ".".join(proxy_class[0].split(".")[:-1])
+                else:
+                    proxy_path = None
                 if class_name != doc_group[-1]:
                     class_doc_group = doc_group + [class_name]
                 else:
-                    class_doc_group = doc_group + []
-                doc_groups[(module_path, class_name, None)] = (class_doc_group, "class", None)
+                    class_doc_group = doc_group
+                doc_groups[(module_path, class_name, None)] = (class_doc_group, "class", proxy_path)
+            else:
+                proxy_path = ".".join(proxy_class)
+                class_doc_group = doc_group
 
             # document class members and pydantic fields
             class_members = sorted([attr for attr in dir(class_obj) if not attr.startswith("_")])
@@ -132,14 +156,24 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
 
                 if callable(attribute):
                     # add documentation page for properties
+                    member_proxy_path = None
                     if proxy_class:
-                        member_doc_group = doc_group + [".".join([proxy_class[1], attribute_name])]
+                        if len(proxy_class[1]) > 0:
+                            # proxy class name specified e.g. str, cd
+                            member_proxy_path = proxy_path
+                            member_doc_group = doc_group + [
+                                ".".join([proxy_class[1], attribute_name])
+                            ]
+                        else:
+                            # proxy class name not specified, only proxy path used
+                            member_proxy_path = ".".join([proxy_path, class_name])
+                            member_doc_group = class_doc_group + [attribute_name]
                     else:
                         member_doc_group = class_doc_group + [attribute_name]
                     doc_groups[(module_path, class_name, attribute_name)] = (
                         member_doc_group,
                         "method",
-                        proxy_class,
+                        member_proxy_path,
                     )
 
     except ModuleNotFoundError:
@@ -148,7 +182,7 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
 # create documentation page for each object
 for obj_tuple, value in doc_groups.items():
     (module_path, class_name, attribute_name) = obj_tuple
-    (doc_group, obj_type, proxy_class) = value
+    (doc_group, obj_type, proxy_path) = value
     if not attribute_name:
         obj_tuple = (module_path, class_name)
 
@@ -158,7 +192,7 @@ for obj_tuple, value in doc_groups.items():
         continue
 
     # exclude server-side objects
-    if path_components[1] in {
+    if len(path_components) > 1 and path_components[1] in {
         "routes",
         "service",
         "tile",
@@ -179,9 +213,10 @@ for obj_tuple, value in doc_groups.items():
     obj_path = ".".join(obj_tuple[:2])
     if attribute_name:
         obj_path = "::".join([obj_path, attribute_name])
-    if proxy_class:
-        obj_path = "#".join([obj_path, ".".join(proxy_class)])
+    if proxy_path:
+        obj_path = "#".join([obj_path, proxy_path])
     format_str = f"::: {obj_path}\n    :docstring:\n"
+
     if obj_type == "class":
         format_str += "    :members:\n"
 
@@ -190,8 +225,8 @@ for obj_tuple, value in doc_groups.items():
     with gen_files_open(full_doc_path, "w") as fd:
         fd.write(format_str)
 
-    # path = "/".join(path_components)
-    # set_edit_path(full_doc_path, path)
+    source_path = "/".join(path_components) + ".py"
+    set_edit_path(full_doc_path, source_path)
 
 # write summary page
 logger.info("Writing API Reference SUMMARY")

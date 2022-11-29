@@ -135,6 +135,8 @@ class AggFunc(StrEnum):
     Supported aggregation functions in groupby
     """
 
+    __fbautodoc_proxy_class__: tuple[str, str] = ("featurebyte.AggFunc", "")
+
     SUM = "sum", "Compute sum of values"
     AVG = "avg", "Compute average value"
     MIN = "min", "Compute minimum value"
@@ -158,6 +160,8 @@ class SourceType(StrEnum):
     """
     Database or data warehouse source type
     """
+
+    __fbautodoc_proxy_class__: tuple[str, str] = ("featurebyte.SourceType", "")
 
     SNOWFLAKE = "snowflake", "Snowflake connection details"
     SQLITE = "sqlite", "SQLite connection details"

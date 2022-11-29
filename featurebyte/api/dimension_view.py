@@ -3,7 +3,7 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from pydantic import Field
 from typeguard import typechecked
@@ -30,6 +30,7 @@ class DimensionView(View):
 
     # documentation metadata
     __fbautodoc__: List[str] = ["View"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.DimensionView", "")
 
     _series_class = DimensionViewColumn
 

@@ -15,7 +15,6 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.item_view import ItemView
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
@@ -40,7 +39,6 @@ class GroupBy(OpsMixin):
 
     # documentation metadata
     __fbautodoc__: List[str] = ["GroupBy"]
-    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
 
     @typechecked
     def __init__(
@@ -229,10 +227,10 @@ class GroupBy(OpsMixin):
     @typechecked
     def aggregate(
         self,
-        value_column: Optional[str],
-        method: AggFunc,
-        windows: List[str],
-        feature_names: List[str],
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        windows: Optional[List[str]] = None,
+        feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
     ) -> Union[FeatureGroup, Feature]:
@@ -241,9 +239,9 @@ class GroupBy(OpsMixin):
 
         Parameters
         ----------
-        value_column: Optional[str]
+        value_column: str
             Column to be aggregated
-        method: AggFunc
+        method: Optional[AggFunc]
             Aggregation method
         windows: List[str]
             List of aggregation window sizes

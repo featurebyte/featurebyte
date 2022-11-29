@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypeVar
 
 from pydantic import Field
 from typeguard import typechecked
@@ -46,6 +46,7 @@ class ItemView(View, GroupByMixin):
 
     # documentation metadata
     __fbautodoc__: List[str] = ["View"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.ItemView", "")
 
     _series_class = ItemViewColumn
 

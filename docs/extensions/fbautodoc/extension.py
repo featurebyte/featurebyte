@@ -74,6 +74,11 @@ def get_params(
         # skip self and cls in first position
         if i == 0 and parameter.name in ["self", "cls"]:
             continue
+
+        # skip parameters that starts with underscore
+        if parameter.name.startswith("_"):
+            continue
+
         value = parameter.name
         default = EMPTY_VALUE
         if parameter.default is not parameter.empty:
@@ -171,7 +176,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     type_hints = get_type_hints(resource.__init__)
                 else:
                     type_hints = get_type_hints(resource)
-            except (NameError, TypeError):
+            except (NameError, TypeError, AttributeError):
                 type_hints = {}
             try:
                 signature = inspect.signature(resource)
@@ -444,7 +449,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             qualifier_elem = etree.SubElement(signature_elem, "em")
             qualifier_elem.text = "async "
 
-        name_elem = etree.SubElement(signature_elem, "code")
+        name_elem = etree.SubElement(signature_elem, "span")
         if resource_details.type == "method":
             # add reference link for methods
             name_elem = etree.SubElement(name_elem, "a")
@@ -478,7 +483,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
                     if param.default:
                         equal_elem = etree.SubElement(param_group_elem, "span")
-                        equal_elem.text = " = "
+                        equal_elem.text = "="
                         equal_elem.set("class", "autodoc-punctuation")
                         default_elem = etree.SubElement(param_group_elem, "em")
                         default_elem.text = param.default
@@ -490,7 +495,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
                         comma_elem.set("class", "autodoc-punctuation")
 
             bracket_elem = etree.SubElement(signature_elem, "span")
-            bracket_elem.text = " )"
+            bracket_elem.text = ")"
             bracket_elem.set("class", "autodoc-punctuation")
             arrow_elem = etree.SubElement(signature_elem, "span")
             if resource_details.type != "class" and resource_details.returns:
@@ -531,7 +536,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # populate resource path and name as autodoc title
             parent.clear()
             title_elem = etree.SubElement(parent, "h1")
-            path_elem = etree.SubElement(title_elem, "div")
+            path_elem = etree.SubElement(title_elem, "span")
             path_elem.set("class", "autodoc-classpath")
             name_elem = etree.SubElement(title_elem, "span")
 
@@ -541,7 +546,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             # extract information about the resource
             resource_details = self.get_resource_details(resource_descriptor)
-            path_elem.text = resource_details.proxy_path or resource_details.path + "."
+            path_elem.text = (resource_details.proxy_path or resource_details.path) + "."
             name_elem.text = resource_details.name
 
             # render autodoc

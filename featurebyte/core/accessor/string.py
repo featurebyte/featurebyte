@@ -44,7 +44,7 @@ class StringAccessor:
 
     # documentation metadata
     __fbautodoc__: List[str] = ["Series"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.core.series.Series", "str")
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.Series", "str")
 
     def __init__(self, obj: Series):
         if obj.dtype != DBVarType.VARCHAR:

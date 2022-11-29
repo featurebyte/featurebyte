@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, List, Literal, Optional, Type, TypeVar, Union
+from typing import Any, Callable, List, Literal, Optional, Tuple, Type, TypeVar, Union
 
 from functools import wraps
 
@@ -57,6 +57,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     # documentation metadata
     __fbautodoc__: List[str] = ["Series"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.Series", "")
 
     name: Optional[StrictStr] = Field(default=None)
     dtype: DBVarType = Field(allow_mutation=False)

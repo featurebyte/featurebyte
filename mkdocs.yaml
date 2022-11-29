@@ -1,7 +1,7 @@
 site_name: FeatureByte
 repo_name: featurebyte/featurebyte
 repo_url: https://github.com/featurebyte/featurebyte
-edit_uri: blob/main/docs/
+edit_uri: blob/main/
 watch:
   - featurebyte
 

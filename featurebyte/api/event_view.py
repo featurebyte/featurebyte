@@ -3,7 +3,7 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union, cast
+from typing import Any, List, Optional, Tuple, Union, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -86,6 +86,7 @@ class EventView(View, GroupByMixin):
 
     # documentation metadata
     __fbautodoc__: List[str] = ["View"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.EventView", "")
 
     _series_class = EventViewColumn
 

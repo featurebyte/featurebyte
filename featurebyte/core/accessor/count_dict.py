@@ -43,7 +43,7 @@ class CountDictAccessor:
 
     # documentation metadata
     __fbautodoc__: List[str] = ["Series"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.core.series.Series", "cd")
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.Series", "cd")
 
     def __init__(self, obj: Feature):
         if obj.dtype != DBVarType.OBJECT:

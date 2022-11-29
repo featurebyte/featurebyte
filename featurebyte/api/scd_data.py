@@ -3,7 +3,7 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
@@ -22,6 +22,7 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
 
     # documentation metadata
     __fbautodoc__: List[str] = ["Data"]
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.SlowlyChangingData", "")
 
     # class variables
     _route = "/scd_data"
@@ -47,9 +48,9 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
         tabular_source: DatabaseTable,
         name: str,
         natural_key_column: str,
-        surrogate_key_column: str,
         effective_timestamp_column: str,
         end_timestamp_column: Optional[str] = None,
+        surrogate_key_column: Optional[str] = None,
         current_flag: Optional[str] = None,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
@@ -65,12 +66,12 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             SCD data name
         natural_key_column: str
             Natural key column from the given tabular source
-        surrogate_key_column: str
-            Surrogate key column from the given tabular source
         effective_timestamp_column: str
             Effective timestamp column from the given tabular source
         end_timestamp_column: Optional[str]
             End timestamp column from the given tabular source
+        surrogate_key_column: Optional[str]
+            Surrogate key column from the given tabular source
         current_flag: Optional[str]
             Indicates whether the keys are for the current data point
         record_creation_date_column: str
