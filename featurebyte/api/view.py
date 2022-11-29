@@ -220,7 +220,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             the other view that we are joining with
         """
 
-    @abstractmethod
     def get_join_column(self) -> str:
         """
         Returns the join column
@@ -230,6 +229,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
             the column name for the join key
         """
+        return ""
 
     def update_metadata(
         self,
