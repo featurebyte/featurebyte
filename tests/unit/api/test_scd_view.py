@@ -1,7 +1,10 @@
 """
 Unit tests for SlowlyChangingView class
 """
+import pytest
+
 from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 
 
@@ -23,3 +26,23 @@ class TestSlowlyChangingView(BaseViewTestSuite):
         assert row_subset.effective_timestamp_column == view_under_test.effective_timestamp_column
         assert row_subset.end_timestamp_column == view_under_test.end_timestamp_column
         assert row_subset.current_flag == view_under_test.current_flag
+
+
+def test_validate_join(snowflake_scd_view, snowflake_dimension_view):
+    """
+    Test validate join
+    """
+    with pytest.raises(JoinViewMismatchError):
+        snowflake_scd_view.validate_join(snowflake_scd_view)
+
+    # assert that joining with a dimension view has no issues
+    snowflake_scd_view.validate_join(snowflake_dimension_view)
+
+
+def test_get_join_column(snowflake_scd_view):
+    """
+    Test get join column
+    """
+    column = snowflake_scd_view.get_join_column()
+    # col_text is the natural_key column name used when creating this view fixture
+    assert column == "col_text"

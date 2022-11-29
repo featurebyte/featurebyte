@@ -194,3 +194,28 @@ class NoFeatureStorePresentError(Exception):
     """
     Raise when we cannot find a feature store, when we expect one to be there.
     """
+
+
+class JoinViewMismatchError(Exception):
+    """
+    Raise when the view types in a join are a mismatch.
+
+    This ccould occur when
+    - columns from a SCD View are trying to be added to a Dimension or SCD View. This operation is not allowed.
+    - the target view to be joined with is not a SlowlyChangingView, or a DimensionView.
+    """
+
+
+class NoJoinKeyFoundError(Exception):
+    """
+    Raise when no suitable join key is found.
+
+    This most likely indicates that callers should explicitly specify a join key.
+    """
+
+
+class RepeatedColumnNamesError(Exception):
+    """
+    Raise when two views have overlapping columns, and a user is trying to perform a Join, without providing
+    a suffix
+    """

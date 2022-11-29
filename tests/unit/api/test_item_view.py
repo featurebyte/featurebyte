@@ -7,6 +7,7 @@ import pytest
 
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
+from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -468,3 +469,17 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
         feature_names=["feature_name"],
         feature_job_setting=feature_job_setting,
     )["feature_name"]
+
+
+def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
+    """
+    Test validate join
+    """
+    # No error expected
+    snowflake_event_view.validate_join(snowflake_dimension_view)
+
+    # Error expected
+    with pytest.raises(JoinViewMismatchError):
+        snowflake_event_view.validate_join(snowflake_event_view)
+    with pytest.raises(JoinViewMismatchError):
+        snowflake_event_view.validate_join(snowflake_scd_view)
