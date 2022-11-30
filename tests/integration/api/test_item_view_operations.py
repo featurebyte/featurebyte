@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 
+from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
 
@@ -79,3 +80,40 @@ def test_item_view_operations(item_data):
         "order_id": "T236",
         "order_size": 1,
     }
+
+
+@pytest.mark.parametrize(
+    "item_data",
+    ["snowflake"],
+    indirect=True,
+)
+def test_item_view_joined_with_dimension_view(
+    transaction_data_upper_case, item_data, dimension_data
+):
+    """
+    Test joining an item view with a dimension view.
+    """
+    # create item view
+    item_view = ItemView.from_item_data(item_data)
+    item_columns = [
+        "order_id",
+        "item_id",
+        "item_type",
+        "EVENT_TIMESTAMP",
+        "USER ID",
+        "PRODUCT_ACTION",
+    ]
+    assert item_view.columns == item_columns
+
+    # create dimension view
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    initial_dimension_columns = ["created_at", "item_id", "item_name", "item_type"]
+    assert dimension_view.columns == initial_dimension_columns
+
+    # perform the join
+    suffix = "_dimension"
+    item_view.join(dimension_view, rsuffix=suffix)
+
+    # assert columns are updated after the join
+    item_columns.extend([f"{col}{suffix}" for col in initial_dimension_columns])
+    assert item_view.columns == item_columns
