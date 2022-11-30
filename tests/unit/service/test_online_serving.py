@@ -30,9 +30,9 @@ async def production_ready_feature_list_fixture(production_ready_feature, featur
 
 @pytest_asyncio.fixture(name="deployed_feature_list")
 async def deployed_feature_list_fixture(
-    data_warehouse_related_mocks, deploy_service, production_ready_feature_list
+    online_enable_service_data_warehouse_mocks, deploy_service, production_ready_feature_list
 ):
-    _ = data_warehouse_related_mocks
+    _ = online_enable_service_data_warehouse_mocks
     updated_feature_list = await deploy_service.update_feature_list(
         feature_list_id=production_ready_feature_list.id,
         deployed=True,

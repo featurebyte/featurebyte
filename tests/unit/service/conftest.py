@@ -147,6 +147,24 @@ def online_enable_service_fixture(user, persistent):
     return OnlineEnableService(user=user, persistent=persistent)
 
 
+@pytest.fixture(name="online_enable_service_data_warehouse_mocks")
+def online_enable_service_data_warehouse_mocks_fixture():
+    """
+    Patches required to bypass actual data warehouse updates and allow inspecting expected calls to
+    FeatureManager
+    """
+    mocks = {}
+    with patch(
+        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        with patch(
+            "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
+        ) as feature_manager_cls:
+            mocks["get_feature_store_session"] = mock_get_feature_store_session
+            mocks["feature_manager"] = feature_manager_cls.return_value
+            yield mocks
+
+
 @pytest.fixture(name="online_serving_service")
 def online_serving_service_fixture(user, persistent):
     """OnlineEnableService fixture"""
@@ -371,21 +389,3 @@ async def setup_for_feature_readiness_fixture(
     assert flist_namespace.default_feature_list_id == feature_list.id
     assert flist_namespace.readiness_distribution.__root__ == [{"readiness": "DRAFT", "count": 1}]
     yield new_feature_id, new_flist.id
-
-
-@pytest.fixture(name="data_warehouse_related_mocks")
-def data_warehouse_related_mocks_fixture():
-    """
-    Patches required to bypass actual data warehouse updates and allow inspecting expected calls to
-    FeatureManager
-    """
-    mocks = {}
-    with patch(
-        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        with patch(
-            "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
-        ) as feature_manager_cls:
-            mocks["get_feature_store_session"] = mock_get_feature_store_session
-            mocks["feature_manager"] = feature_manager_cls.return_value
-            yield mocks
