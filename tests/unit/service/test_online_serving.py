@@ -6,40 +6,16 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-import pytest_asyncio
 
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 
 
 @pytest.fixture
 def entity_serving_names():
+    """
+    Fixture for entity serving names for requesting online features
+    """
     return [{"cust_id": 1}]
-
-
-@pytest_asyncio.fixture(name="production_ready_feature_list")
-async def production_ready_feature_list_fixture(production_ready_feature, feature_list_service):
-    from featurebyte.schema.feature_list import FeatureListCreate
-
-    data = FeatureListCreate(
-        name="Production Ready Feature List",
-        feature_ids=[production_ready_feature.id],
-    )
-    result = await feature_list_service.create_document(data)
-    return result
-
-
-@pytest_asyncio.fixture(name="deployed_feature_list")
-async def deployed_feature_list_fixture(
-    online_enable_service_data_warehouse_mocks, deploy_service, production_ready_feature_list
-):
-    _ = online_enable_service_data_warehouse_mocks
-    updated_feature_list = await deploy_service.update_feature_list(
-        feature_list_id=production_ready_feature_list.id,
-        deployed=True,
-        get_credential=Mock(),
-        return_document=True,
-    )
-    return updated_feature_list
 
 
 @pytest.mark.asyncio
@@ -48,6 +24,9 @@ async def test_feature_list_not_deployed(
     feature_list,
     entity_serving_names,
 ):
+    """
+    Test getting online features for not yet deployed feature list is not allowed
+    """
     with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=feature_list,
@@ -63,6 +42,10 @@ async def test_feature_list_deployed(
     deployed_feature_list,
     entity_serving_names,
 ):
+    """
+    Test getting online features request for a valid feature list
+    """
+
     async def mock_execute_query(query):
         _ = query
         return pd.DataFrame({"cust_id": [1], "feature_value": [123.0]})

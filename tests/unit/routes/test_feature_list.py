@@ -17,7 +17,7 @@ from featurebyte.enum import SourceType
 from tests.unit.routes.base import BaseApiTestSuite
 
 
-class TestFeatureListApi(BaseApiTestSuite):
+class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestFeatureListApi class
     """
@@ -571,7 +571,6 @@ class TestFeatureListApi(BaseApiTestSuite):
         self,
         test_api_client_persistent,
         create_success_response,
-        mock_get_session,
     ):
         """Test feature list get_online_features"""
         test_api_client, _ = test_api_client_persistent

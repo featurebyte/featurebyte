@@ -316,6 +316,32 @@ async def feature_list_namespace_fixture(feature_list_namespace_service, feature
     )
 
 
+@pytest_asyncio.fixture(name="production_ready_feature_list")
+async def production_ready_feature_list_fixture(production_ready_feature, feature_list_service):
+    """Fixture for a production ready feature list"""
+    data = FeatureListCreate(
+        name="Production Ready Feature List",
+        feature_ids=[production_ready_feature.id],
+    )
+    result = await feature_list_service.create_document(data)
+    return result
+
+
+@pytest_asyncio.fixture(name="deployed_feature_list")
+async def deployed_feature_list_fixture(
+    online_enable_service_data_warehouse_mocks, deploy_service, production_ready_feature_list
+):
+    """Fixture for a deployed feature list"""
+    _ = online_enable_service_data_warehouse_mocks
+    updated_feature_list = await deploy_service.update_feature_list(
+        feature_list_id=production_ready_feature_list.id,
+        deployed=True,
+        get_credential=Mock(),
+        return_document=True,
+    )
+    return updated_feature_list
+
+
 async def insert_feature_into_persistent(test_dir, user, persistent, readiness, name=None):
     """Insert a feature into persistent"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
