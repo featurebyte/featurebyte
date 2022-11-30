@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import os.path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import pytest_asyncio
@@ -35,6 +35,7 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.version import VersionService
 
@@ -144,6 +145,12 @@ def default_version_mode_service_fixture(user, persistent):
 def online_enable_service_fixture(user, persistent):
     """OnlineEnableService fixture"""
     return OnlineEnableService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="online_serving_service")
+def online_serving_service_fixture(user, persistent):
+    """OnlineEnableService fixture"""
+    return OnlineServingService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="version_service")
@@ -364,3 +371,21 @@ async def setup_for_feature_readiness_fixture(
     assert flist_namespace.default_feature_list_id == feature_list.id
     assert flist_namespace.readiness_distribution.__root__ == [{"readiness": "DRAFT", "count": 1}]
     yield new_feature_id, new_flist.id
+
+
+@pytest.fixture(name="data_warehouse_related_mocks")
+def data_warehouse_related_mocks_fixture():
+    """
+    Patches required to bypass actual data warehouse updates and allow inspecting expected calls to
+    FeatureManager
+    """
+    mocks = {}
+    with patch(
+        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        with patch(
+            "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
+        ) as feature_manager_cls:
+            mocks["get_feature_store_session"] = mock_get_feature_store_session
+            mocks["feature_manager"] = feature_manager_cls.return_value
+            yield mocks

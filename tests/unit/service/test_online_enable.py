@@ -1,7 +1,7 @@
 """
 Tests for OnlineEnableService
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -34,24 +34,6 @@ async def check_states_after_online_enabled_change(
         data_warehouse_related_mocks["feature_manager"].online_enable.assert_called_once()
     else:
         data_warehouse_related_mocks["feature_manager"].online_disable.assert_called_once()
-
-
-@pytest.fixture(name="data_warehouse_related_mocks")
-def data_warehouse_related_mocks_fixture():
-    """
-    Patches required to bypass actual data warehouse updates and allow inspecting expected calls to
-    FeatureManager
-    """
-    mocks = {}
-    with patch(
-        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
-    ) as mock_get_feature_store_session:
-        with patch(
-            "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
-        ) as feature_manager_cls:
-            mocks["get_feature_store_session"] = mock_get_feature_store_session
-            mocks["feature_manager"] = feature_manager_cls.return_value
-            yield mocks
 
 
 @pytest.mark.asyncio
