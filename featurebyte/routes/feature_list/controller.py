@@ -336,7 +336,7 @@ class FeatureListController(
     async def get_online_features(
         self,
         feature_list_id: ObjectId,
-        payload: FeatureListGetOnlineFeatures,
+        data: FeatureListGetOnlineFeatures,
         get_credential: Any,
     ) -> OnlineFeaturesResponseModel:
         """
@@ -346,7 +346,7 @@ class FeatureListController(
         ----------
         feature_list_id: ObjectId
             Id of the Feature List
-        payload: FeatureListGetOnlineFeatures
+        data: FeatureListGetOnlineFeatures
             FeatureListGetHistoricalFeatures object
         get_credential: Any
             Get credential handler function
@@ -364,7 +364,7 @@ class FeatureListController(
         try:
             result = await self.online_serving_service.get_online_features_from_feature_list(
                 feature_list=feature_list,
-                entity_serving_names=payload.entity_serving_names,
+                entity_serving_names=data.entity_serving_names,
                 get_credential=get_credential,
             )
         except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:

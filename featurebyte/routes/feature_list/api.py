@@ -226,16 +226,15 @@ async def get_historical_features_sql(
 async def get_online_features(
     request: Request,
     feature_list_id: PydanticObjectId,
-    payload: str = Form(),
+    data: FeatureListGetOnlineFeatures,
 ) -> OnlineFeaturesResponseModel:
     """
     Retrieve online features
     """
-    featurelist_get_online_features = FeatureListGetOnlineFeatures(**json.loads(payload))
     controller = request.state.app_container.feature_list_controller
     result = await controller.get_online_features(
         feature_list_id=feature_list_id,
-        payload=featurelist_get_online_features,
+        data=data,
         get_credential=request.state.get_credential,
     )
     return cast(OnlineFeaturesResponseModel, result)

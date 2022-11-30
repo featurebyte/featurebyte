@@ -102,13 +102,15 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     feature_list.save()
     feature_list.deploy(make_production_ready=True, enable=True)
     client = config.get_client()
-    payload = FeatureListGetOnlineFeatures(entity_serving_names=[{"user id": 5}])
+    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"user id": 5}])
 
     tic = time.time()
     res = client.post(
         f"/feature_list/{str(feature_list.id)}/online_features",
-        data={"payload": payload.json()},
+        json=data.json_dict(),
     )
+    assert res.status_code == 200
+
     df = pd.DataFrame(res.json()["features"])
     elapsed = time.time() - tic
     print(f"online_features elapsed: {elapsed:.6f}s")
