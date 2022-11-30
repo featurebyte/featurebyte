@@ -116,4 +116,5 @@ def test_item_view_joined_with_dimension_view(
 
     # assert columns are updated after the join
     item_columns.extend([f"{col}{suffix}" for col in initial_dimension_columns])
-    assert item_view.columns == item_columns
+    item_preview = item_view.preview()
+    assert item_preview.columns.tolist() == item_columns
