@@ -1,6 +1,9 @@
 """
 This module contains utility functions related to documentation
 """
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 COMMON_SKIPPED_ATTRIBUTES = [
     "Config",
@@ -40,3 +43,14 @@ COMMON_SKIPPED_ATTRIBUTES = [
     "protected_attributes",
     "protected_columns",
 ]
+
+
+class FBAutoDoc(BaseModel):
+    """
+    FeatureByte Auto Documentation parameters
+    """
+
+    section: Optional[List[str]] = Field(default=None)
+    skipped_members: List[str] = Field(default=COMMON_SKIPPED_ATTRIBUTES)
+    proxy_class: Optional[str] = Field(default=None)
+    accessor_name: Optional[str] = Field(default=None)

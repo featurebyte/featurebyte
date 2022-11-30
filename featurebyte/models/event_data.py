@@ -4,7 +4,7 @@ This module contains EventData related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Tuple
 
 from datetime import datetime
 
@@ -18,6 +18,8 @@ from featurebyte.models.feature_store import DataModel
 
 class FeatureJobSetting(FeatureByteBaseModel):
     """Model for Feature Job Setting"""
+
+    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureJobSetting", "")
 
     blind_spot: str
     frequency: str

@@ -23,7 +23,7 @@ from featurebyte.api.api_object import (
 )
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_arrow_stream, dataframe_to_arrow_bytes
@@ -295,8 +295,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
-    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
+    __fbautodoc__ = FBAutoDoc(
+        section=["FeatureList"],
+        proxy_class="featurebyte.FeatureList",
+    )
 
     # override FeatureListModel attributes
     feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)

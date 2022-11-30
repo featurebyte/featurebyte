@@ -29,8 +29,8 @@ class SCDDataModel(DataModel):
 
     type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
     natural_key_column: StrictStr
-    surrogate_key_column: StrictStr
     effective_timestamp_column: StrictStr
+    surrogate_key_column: Optional[StrictStr]
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
     current_flag: Optional[StrictStr] = Field(default=None)
 

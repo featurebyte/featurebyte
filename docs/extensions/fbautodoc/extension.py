@@ -19,10 +19,11 @@ from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter,
 from pydantic import BaseModel
 from pydantic.fields import ModelField, Undefined
 
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.logger import logger
 
 EMPTY_VALUE = inspect._empty
+NONE_TYPES = [None, "NoneType"]
 
 
 def import_resource(resource_descriptor: str) -> Any:
@@ -68,7 +69,16 @@ def get_params(
     render_pos_only_separator = True
     render_kw_only_separator = True
 
-    for parameter in signature.parameters.values():
+    for i, parameter in enumerate(signature.parameters.values()):
+
+        # skip self and cls in first position
+        if i == 0 and parameter.name in ["self", "cls"]:
+            continue
+
+        # skip parameters that starts with underscore
+        if parameter.name.startswith("_") or parameter.name.startswith("*"):
+            continue
+
         value = parameter.name
         default = EMPTY_VALUE
         if parameter.default is not parameter.empty:
@@ -119,6 +129,7 @@ class ResourceDetails(BaseModel):
     name: str
     realname: str
     path: str
+    proxy_path: Optional[str]
     type: Literal["class", "property", "method"]
     base_classes: Optional[List[Any]]
     method_type: Optional[Literal["async"]]
@@ -148,6 +159,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
     Customized markdown processing autodoc processor
     """
 
+    # fbautodoc markdown pattern:
+    # ::: {full_path_to_class}::{attribute_name}#{proxy_path}
+    RE = re.compile(r"(?:^|\n)::: ?([:a-zA-Z0-9_.#]*) *(?:\n|$)")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._md = Markdown(extensions=self.md.registeredExtensions)
@@ -159,8 +174,11 @@ class FBAutoDocProcessor(AutoDocProcessor):
         """
         if callable(resource):
             try:
-                type_hints = get_type_hints(resource)
-            except (NameError, TypeError):
+                if inspect.isclass(resource) and "__init__" in resource.__dict__:
+                    type_hints = get_type_hints(resource.__init__)
+                else:
+                    type_hints = get_type_hints(resource)
+            except (NameError, TypeError, AttributeError):
                 type_hints = {}
             try:
                 signature = inspect.signature(resource)
@@ -240,6 +258,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         module = getattr(param_type, "__module__", None)
         subtypes = getattr(param_type, "__args__", None)
         if module == "typing" and subtypes:
+            if str(param_type).startswith("typing.Optional"):
+                # __args__ attribute of Optional always includes NoneType as last element
+                # which is redundant for documentation
+                subtypes = subtypes[:-1]
             inner_str = ", ".join([self.format_param_type(subtype) for subtype in subtypes])
             param_type_str = str(param_type)
             return _clean(param_type_str.split("[", maxsplit=1)[0]) + "[" + inner_str + "]"
@@ -270,6 +292,13 @@ class FBAutoDocProcessor(AutoDocProcessor):
         ResourceDetails
         """
         # import resource
+        parts = resource_descriptor.split("#")
+        if len(parts) > 1:
+            proxy_path = parts.pop(-1)
+            resource_descriptor = parts[0]
+        else:
+            proxy_path = None
+
         parts = resource_descriptor.split("::")
         if len(parts) > 1:
             # class member
@@ -318,6 +347,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         docstring = parse(docs)
 
         # get parameter description from docstring
+        short_description = docstring.short_description
+        if getattr(resource, "field_info", None):
+            short_description = resource.field_info.description
+
         parameters_desc = (
             {param.arg_name: param.description for param in docstring.params if param.description}
             if docstring.params
@@ -358,6 +391,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
                 snippet = re.sub(r" +# doctest: .*", "", example.snippet)
 
             if example.description:
+                # docstring_parser parses lines without >>> prefix as description.
+                # The following logic extracts lines that follows a snippet but preceding an empty line
+                # as part of the snippet, which will be rendered in a single code block,
+                # consistent with the expected behavior for examples in the numpy docstring format
                 parts = example.description.split("\n\n", maxsplit=1)
                 if snippet and len(parts) > 0:
                     snippet += f"\n{parts.pop(0)}"
@@ -372,10 +409,11 @@ class FBAutoDocProcessor(AutoDocProcessor):
             name=resource_name,
             realname=resource_realname,
             path=resource_path,
+            proxy_path=proxy_path,
             type=resource_type,
             base_classes=base_classes,
             method_type=method_type,
-            short_description=docstring.short_description,
+            short_description=short_description,
             long_description=docstring.long_description,
             parameters=[
                 ParameterDetails(
@@ -417,7 +455,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             qualifier_elem = etree.SubElement(signature_elem, "em")
             qualifier_elem.text = "async "
 
-        name_elem = etree.SubElement(signature_elem, "code")
+        name_elem = etree.SubElement(signature_elem, "span")
         if resource_details.type == "method":
             # add reference link for methods
             name_elem = etree.SubElement(name_elem, "a")
@@ -430,27 +468,32 @@ class FBAutoDocProcessor(AutoDocProcessor):
             self.insert_param_type(signature_elem, resource_details.returns.type)
         else:
             bracket_elem = etree.SubElement(signature_elem, "span")
-            bracket_elem.text = "("
+            bracket_elem.text = "( "
             bracket_elem.set("class", "autodoc-punctuation")
 
             if resource_details.parameters:
+                param_group_class = (
+                    "autodoc-param-group-multi"
+                    if len(resource_details.parameters) > 2
+                    else "autodoc-param-group"
+                )
                 for param, is_last in last_iter(resource_details.parameters):
                     param_group_elem = etree.SubElement(signature_elem, "div")
-                    param_group_elem.set("class", "autodoc-param-group")
+                    param_group_elem.set("class", param_group_class)
 
                     param_elem = etree.SubElement(param_group_elem, "em")
                     param_elem.text = param.name
                     param_elem.set("class", "autodoc-param")
 
-                    self.insert_param_type(param_group_elem, param.type)
-
-                    if param.default:
-                        equal_elem = etree.SubElement(param_group_elem, "span")
-                        equal_elem.text = " = "
-                        equal_elem.set("class", "autodoc-punctuation")
-                        default_elem = etree.SubElement(param_group_elem, "em")
-                        default_elem.text = param.default
-                        default_elem.set("class", "autodoc-default")
+                    if param.name not in ["/", "*"]:
+                        self.insert_param_type(param_group_elem, param.type)
+                        if param.default:
+                            equal_elem = etree.SubElement(param_group_elem, "span")
+                            equal_elem.text = "="
+                            equal_elem.set("class", "autodoc-punctuation")
+                            default_elem = etree.SubElement(param_group_elem, "em")
+                            default_elem.text = param.default
+                            default_elem.set("class", "autodoc-default")
 
                     if not is_last:
                         comma_elem = etree.SubElement(param_group_elem, "span")
@@ -462,7 +505,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             bracket_elem.set("class", "autodoc-punctuation")
             arrow_elem = etree.SubElement(signature_elem, "span")
             if resource_details.type != "class" and resource_details.returns:
-                if resource_details.returns.type:
+                if resource_details.returns.type not in NONE_TYPES:
                     arrow_elem.text = " -> "
                     arrow_elem.set("class", "autodoc-punctuation")
                     return_elem = etree.SubElement(signature_elem, "em")
@@ -499,7 +542,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # populate resource path and name as autodoc title
             parent.clear()
             title_elem = etree.SubElement(parent, "h1")
-            path_elem = etree.SubElement(title_elem, "div")
+            path_elem = etree.SubElement(title_elem, "span")
             path_elem.set("class", "autodoc-classpath")
             name_elem = etree.SubElement(title_elem, "span")
 
@@ -509,17 +552,19 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
             # extract information about the resource
             resource_details = self.get_resource_details(resource_descriptor)
-            path_elem.text = resource_details.path
+            path_elem.text = (resource_details.proxy_path or resource_details.path) + "."
             name_elem.text = resource_details.name
 
             # render autodoc
             self.render_signature(autodoc_div, resource_details)
             for line in block.splitlines():
+                docstring_elem = etree.SubElement(autodoc_div, "div")
+                docstring_elem.set("class", "autodoc-docstring")
                 if line.startswith(":docstring:"):
-                    self.render_docstring(autodoc_div, resource_details)
+                    self.render_docstring(docstring_elem, resource_details)
                 elif line.startswith(":members:"):
                     members = line.split()[1:] or None
-                    self.render_members(autodoc_div, resource_details, members=members)
+                    self.render_members(docstring_elem, resource_details, members=members)
 
         if theRest:
             # This block contained unindented line(s) after the first indented
@@ -551,9 +596,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
             headers_ref = etree.SubElement(elem, "h3")
             headers_ref.set("class", "autodoc-section-header")
             headers_ref.text = title
-            docstring_elem = etree.SubElement(elem, "div")
-            docstring_elem.set("class", "autodoc-docstring")
-            docstring_elem.text = self._md.convert(content)
+            content_elem = etree.SubElement(elem, "div")
+            content_elem.set("class", "autodoc-content")
+            content_elem.text = self._md.convert(content)
 
         # Render base classes
         if resource_details.base_classes:
@@ -582,9 +627,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         # Render returns:
         if resource_details.returns:
             returns = resource_details.returns
-            return_desc = f"\n> {returns.description}" if returns.description else ""
-            content = f"- **{returns.type}**{return_desc}\n"
-            _render("Returns", content)
+            if returns.type not in NONE_TYPES:
+                return_desc = f"\n> {returns.description}" if returns.description else ""
+                content = f"- **{returns.type}**{return_desc}\n"
+                _render("Returns", content)
 
         # Render raises
         if resource_details.raises:
@@ -622,9 +668,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # defaults to all public members
         members = members or [attr for attr in dir(resource) if not attr.startswith("_")]
-        skipped_members = getattr(
-            resource, "__fbautodoc_skipped_members__", COMMON_SKIPPED_ATTRIBUTES
-        )
+        autodoc_config = resource.__dict__.get("__fbautodoc__", FBAutoDoc())
 
         # include fields for pydantic classes
         fields = getattr(resource, "__fields__", None)
@@ -632,7 +676,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             members.extend(list(fields.keys()))
 
         # sort by alphabetical order
-        members = sorted(set(members) - set(skipped_members))
+        members = sorted(set(members) - set(autodoc_config.skipped_members))
 
         def _render_member(resource_details_list: List[Any], title: str) -> None:
             """

@@ -13,6 +13,7 @@ from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.credential import Credential
@@ -169,7 +170,10 @@ class Configurations:
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
+    __fbautodoc__ = FBAutoDoc(
+        section=["Configurations"],
+        skipped_members=["get_client"],
+    )
 
     def __init__(self, config_file_path: Optional[str] = None) -> None:
         """

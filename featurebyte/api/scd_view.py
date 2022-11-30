@@ -11,6 +11,7 @@ from typeguard import typechecked
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import View, ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
 
@@ -20,11 +21,20 @@ class SlowlyChangingViewColumn(ViewColumn):
     SlowlyChangingViewColumn class
     """
 
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
+
 
 class SlowlyChangingView(View):
     """
     SlowlyChangingView class
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.SlowlyChangingView",
+    )
 
     _series_class = SlowlyChangingViewColumn
 

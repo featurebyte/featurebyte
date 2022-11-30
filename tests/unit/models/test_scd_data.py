@@ -95,7 +95,7 @@ def assert_missing_column(exc_info: ExceptionInfo):
     assert error["type"] == "value_error.missing"
 
 
-@pytest.mark.parametrize("column", ["natural_key_column", "surrogate_key_column"])
+@pytest.mark.parametrize("column", ["natural_key_column"])
 def test_missing_scd_data_id_column_errors(expected_scd_data_model, column):
     """Test missing column validation on SCD data models"""
     # Remove the `column` so that we can test the missing column validation

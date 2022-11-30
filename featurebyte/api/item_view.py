@@ -18,6 +18,7 @@ from featurebyte.api.join_utils import (
 )
 from featurebyte.api.validator import validate_view
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
@@ -35,11 +36,20 @@ class ItemViewColumn(ViewColumn):
     ItemViewColumn class
     """
 
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
+
 
 class ItemView(View, GroupByMixin):
     """
     ItemView class
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.ItemView",
+    )
 
     _series_class = ItemViewColumn
 

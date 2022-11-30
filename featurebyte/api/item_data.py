@@ -3,7 +3,7 @@ ItemData class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator
@@ -12,7 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
@@ -26,8 +26,10 @@ class ItemData(ItemDataModel, DataApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Data"]
-    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
+    __fbautodoc__ = FBAutoDoc(
+        section=["Data"],
+        proxy_class="featurebyte.ItemData",
+    )
 
     _route = "/item_data"
     _update_schema_class = ItemDataUpdate

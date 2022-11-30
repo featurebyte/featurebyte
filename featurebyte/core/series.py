@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
@@ -54,6 +55,12 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     """
     Implement operations to manipulate database column
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["Series"],
+        proxy_class="featurebyte.Series",
+    )
 
     name: Optional[StrictStr] = Field(default=None)
     dtype: DBVarType = Field(allow_mutation=False)

@@ -10,6 +10,7 @@ from typeguard import typechecked
 
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.view import View, ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
 
@@ -19,11 +20,20 @@ class DimensionViewColumn(ViewColumn):
     DimensionViewColumn class
     """
 
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
+
 
 class DimensionView(View):
     """
     DimensionView class
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.DimensionView",
+    )
 
     _series_class = DimensionViewColumn
 

@@ -15,7 +15,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.item_view import ItemView
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
@@ -39,8 +39,7 @@ class GroupBy(OpsMixin):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["GroupBy"]
-    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
+    __fbautodoc__ = FBAutoDoc(section=["GroupBy"])
 
     @typechecked
     def __init__(

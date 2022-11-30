@@ -32,20 +32,26 @@ div.autodoc-desc p {
   padding: 0;
 }
 
-div.autodoc-signature code {
+div.autodoc-signature {
   font-size: 18px;
   color: var(--md-typeset-a-color);
-}
-
-div.autodoc-classpath {
-  font-size: 30px;
-  display: block;
-  color: var(--md-typeset-a-color);
+  padding: 0;
+  margin: 0;
   background-color: transparent;
 }
 
-div.autodoc-signature strong {
-  font-size: 20px;
+span.autodoc-punctuation {
+  padding: 0;
+  margin: 0;
+}
+
+
+span.autodoc-classpath {
+  font-size: 30px;
+  display: inline;
+  color: var(--md-typeset-a-color);
+  background-color: transparent;
+  overflow-wrap: break-word;
 }
 
 div.autodoc-summary h4 {
@@ -56,11 +62,19 @@ div.autodoc-summary h4 {
   visibility: hidden;
 }
 
-div.autodoc-summary .autodoc-signature code {
+div.autodoc-signature {
   font-size: 16px;
 }
 
+div.autodoc-signature strong {
+  font-size: 18px;
+}
+
 div.autodoc-param-group {
+  display: inline;
+}
+
+div.autodoc-param-group-multi {
   margin-left: 30px;
 }
 
@@ -85,5 +99,4 @@ div.autodoc-members {
 
 .md-sidebar--secondary li.md-nav__item li {
   font-size: 13px;
-  color: #777;
 }

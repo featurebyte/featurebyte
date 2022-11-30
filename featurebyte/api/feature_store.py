@@ -11,7 +11,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
@@ -30,8 +30,10 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = []
-    __fbautodoc_skipped_members__ = COMMON_SKIPPED_ATTRIBUTES
+    __fbautodoc__ = FBAutoDoc(
+        section=["FeatureStore"],
+        proxy_class="featurebyte.FeatureStore",
+    )
 
     # class variables
     _route = "/feature_store"
