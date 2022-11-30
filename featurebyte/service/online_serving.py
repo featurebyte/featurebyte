@@ -67,10 +67,10 @@ class OnlineServingService(BaseService):
         """
 
         if feature_list.feature_clusters is None:
-            raise RuntimeError("Online serving not available for this FeatureList")
+            raise RuntimeError("Online serving not available for this Feature List")
 
         if not feature_list.deployed:
-            raise FeatureListNotOnlineEnabledError()
+            raise FeatureListNotOnlineEnabledError("Feature List is not online enabled")
 
         tic = time.time()
         feature_cluster = feature_list.feature_clusters[0]
