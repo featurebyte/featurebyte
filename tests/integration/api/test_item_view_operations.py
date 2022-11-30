@@ -129,5 +129,5 @@ def test_item_view_joined_with_dimension_view(
     assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
     # Verify that the joined item_ids are the same as the original item IDs
     assert_series_equal(
-        item_preview["item_id_dimension"], original_item_preview["item_id"], check_names=False
+        item_preview["item_id_dimension"], item_preview["item_id"], check_names=False
     )
