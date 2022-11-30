@@ -55,13 +55,13 @@ For period based context, the Context View defines the periods during which the 
 For period based context, the expected inference time can be any time or a scheduled time such as every Monday between 12 and 16 pm.
 
 ### Target
-A target object is created by specifying its name and the entities it is related to. Optionally, users can provide a description, a horizon (window size of forward aggregates or joins), a blind spot (the time to retrieve the target in addition to the horizon) and a target recipe.
+A target object is created by specifying its name and the entities it is related to. Optionally, users can provide a description, a horizon (window size of forward aggregates or feature offset), a blind spot (the time to retrieve the target in addition to the horizon) and a target recipe.
 
 The target recipe is defined from the SDK in a similar way as for features.
 
-The target recipe can be defined directly from Slowly Changing Dimension View. In this case, users specify an offset to define how much time in the future the status should be retrieved. An example of such target is “marital status in 6 months”.
+The target recipe can be defined directly from Slowly Changing Dimension View. In this case, users specify an offset to define how much time in the future the status should be retrieved. An example of such a target is “marital status in 6 months”.
 
-The target recipe can be more complex and involve Forward join and Forward Aggregate.
+The target recipe can be more complex and involve Forward Aggregate.
 
 #### Forward Aggregate
 The way to define a forward aggregation is very similar to the way windowed aggregations are created from Event Views and Item Views. Instead of specifying a window parameter, users specify a horizon parameter.

@@ -13,12 +13,12 @@ Feature Discovery helps them uncover features with signals that may not have bee
 The development of the Feature Discovery is governed by the following principles:
 
 * only meaningful features should be suggested. Data Scientists should not be overwhelmed by a large number of noisy features
-* suggestions should well cover feature engineering best practices
+* suggestions should follow feature engineering best practices
 * suggestions should not miss important signals
 
-To achieve this, Feature Discovery is built as a rule based tool that:
+To achieve this, Feature Discovery is built as a rule-based tool that:
 
-* relies on the data semantics. If no data semantics is annotated to the data, no suggestion is raised
+* relies on the data semantics. If no data semantics are annotated to the data, no suggestion is raised
 * codifies the best practices for those semantics
 * automatically joins data
 * searches features for entities related to the main entity
@@ -33,7 +33,7 @@ Feature Discovery can be triggered from:
 * a view and an entity
 * or a view column and an entity
 
-Feature Discovery results are in the form of feature recipe methods organized by theme that encapsulates information on the feature entity, main data and signal type.
+Feature Discovery results are in the form of feature recipe methods organized by theme that encapsulates information on the feature entity, main data, and signal type.
 
 The results for a Feature Discovery triggered from an Event Timestamp of a Credit Card transaction table for the Transaction Entity would be as follows:
 
@@ -197,9 +197,9 @@ Help is provided to inform on:
 * some required parameters such as the feature window
 * the code that could be alternatively used to create the feature in the SDK
 
-### Human-in-the-loop Mode
+### Human-in-the-Loop Mode
 
-Feature Discovery combines multiple steps: Joins, Transforms, Subsetting, Aggregation and Post Aggregation Transforms.
+Feature Discovery combines multiple steps: Joins, Transforms, Subsetting, Aggregations, and Post Aggregation Transforms.
 
 Users can choose to decompose those steps and get suggestions at the step level only.
 
@@ -207,10 +207,9 @@ Users can choose to decompose those steps and get suggestions at the step level 
 
 The search for features is based on the data field semantics, the nature of the data and whether the entity is the primary (or natural) key of the data.
 
-The feature recipes are the results of a series of joins, transforms, subsets, aggregations and post aggregation transforms.
+The feature recipes are the results of a series of joins, transforms, subsets, aggregations, and post aggregation transforms.
 
 * Transform recipes are selected based on the data field semantics and their outputs have new semantics defined by the recipes.
 * Subsetting is triggered by the presence of an `Event Type` field in the data.
 * Aggregation recipes are selected in function of the nature of the data and entity and the semantics of the field and its transforms.
 * Post Aggregation transforms recipes are selected based on the nature of the aggregations
-
