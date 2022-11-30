@@ -42,8 +42,10 @@ async def update_online_store(session, feature, feature_job_time_ts):
     feature_manager = FeatureManagerSnowflake(session)
     await feature_manager._update_tile_feature_mapping_table(online_feature_spec)
 
-    # Trigger SP_TILE_SCHEDULE_ONLINE_STORE which will call the feature sql registered above
-    tile_id = online_feature_spec.tile_ids[0]
+    # Trigger SP_TILE_SCHEDULE_ONLINE_STORE which will call the feature sql registered above. Use
+    # upper() on tile_id to simulate how SP_TILE_GENERATE_SCHEDULE would call
+    # SP_TILE_SCHEDULE_ONLINE_STORE.
+    tile_id = online_feature_spec.tile_ids[0].upper()
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{feature_job_time_ts}')"
     await session.execute_query(sql)
 
