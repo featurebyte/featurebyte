@@ -3,11 +3,12 @@ Entity class
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -18,7 +19,7 @@ class Entity(EntityModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Entity"]
+    __fbautodoc__ = FBAutoDoc(section=["Entity"])
 
     # class variables
     _route = "/entity"

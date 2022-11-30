@@ -11,7 +11,7 @@ from mkdocs_gen_files import Nav
 from mkdocs_gen_files import open as gen_files_open
 from mkdocs_gen_files import set_edit_path
 
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.logger import logger
 
 GENERATE_FULL_DOCS = os.environ.get("FB_GENERATE_FULL_DOCS", False)
@@ -86,42 +86,31 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
 
             # check for customized categorization specified in the class
             module_path = class_obj.__module__
-            doc_group = getattr(class_obj, "__fbautodoc__", None)
-            if doc_group is not None and "__fbautodoc__" in class_obj.__dict__:
-                doc_group = doc_group
+            autodoc_config = class_obj.__dict__.get("__fbautodoc__", FBAutoDoc())
+            if autodoc_config.section is not None:
+                doc_group = autodoc_config.section
             elif GENERATE_FULL_DOCS:
                 doc_group = module_path.split(".") + [class_name]
             else:
                 continue
 
-            # check if proxy class should be used
-            if "__fbautodoc_proxy_class__" in class_obj.__dict__:
-                proxy_class = getattr(class_obj, "__fbautodoc_proxy_class__", None)
-            else:
-                proxy_class = None
-
-            # identify members to be skipped
-            skipped_members = getattr(
-                class_obj, "__fbautodoc_skipped_members__", COMMON_SKIPPED_ATTRIBUTES
-            )
-
             # proxy class is used for two purposes:
             #
             # 1. document a shorter path to access a class
             #    e.g. featurebyte.api.event_data.EventData -> featurebyte.EventData
-            #    proxy_class = ("featurebyte.EventData", "")
+            #    proxy_class="featurebyte.EventData"
             #    EventData is documented with the proxy path
             #    EventData.{property} is documented with the proxy path
             #
             # 2. document a preferred way to access a property
             #    e.g. featurebyte.core.string.StringAccessor.len -> featurebyte.Series.str.len
-            #    proxy_class = ("featurebyte.Series", "str")
+            #    proxy_class="featurebyte.Series", accessor_name="str"
             #    StringAccessor is not documented
             #    StringAccessor.{property} is documented with the proxy path
 
-            if not proxy_class or proxy_class[1] == "":
-                if proxy_class:
-                    proxy_path = ".".join(proxy_class[0].split(".")[:-1])
+            if not autodoc_config.accessor_name:
+                if autodoc_config.proxy_class:
+                    proxy_path = ".".join(autodoc_config.proxy_class.split(".")[:-1])
                 else:
                     proxy_path = None
                 if class_name != doc_group[-1]:
@@ -130,8 +119,13 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
                     class_doc_group = doc_group
                 doc_groups[(module_path, class_name, None)] = (class_doc_group, "class", proxy_path)
             else:
-                proxy_path = ".".join(proxy_class)
+                proxy_path = ".".join([autodoc_config.proxy_class, autodoc_config.accessor_name])
                 class_doc_group = doc_group
+                doc_groups[(module_path, class_name, None)] = (
+                    doc_group + [autodoc_config.accessor_name],
+                    "class",
+                    autodoc_config.proxy_class,
+                )
 
             # document class members and pydantic fields
             class_members = sorted([attr for attr in dir(class_obj) if not attr.startswith("_")])
@@ -143,7 +137,7 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
             for attribute_name in class_members:
 
                 # exclude explicitly skipped members
-                if attribute_name in skipped_members:
+                if attribute_name in autodoc_config.skipped_members:
                     continue
 
                 attribute = getattr(
@@ -157,12 +151,12 @@ for path in sorted(Path("featurebyte").rglob("*.py")):
                 if callable(attribute):
                     # add documentation page for properties
                     member_proxy_path = None
-                    if proxy_class:
-                        if len(proxy_class[1]) > 0:
+                    if autodoc_config.proxy_class:
+                        if autodoc_config.accessor_name:
                             # proxy class name specified e.g. str, cd
                             member_proxy_path = proxy_path
                             member_doc_group = doc_group + [
-                                ".".join([proxy_class[1], attribute_name])
+                                ".".join([autodoc_config.accessor_name, attribute_name])
                             ]
                         else:
                             # proxy class name not specified, only proxy path used

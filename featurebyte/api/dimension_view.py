@@ -3,13 +3,14 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.view import View, ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
 
@@ -20,7 +21,7 @@ class DimensionViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Column"]
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
 class DimensionView(View):
@@ -29,8 +30,10 @@ class DimensionView(View):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["View"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.DimensionView", "")
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.DimensionView",
+    )
 
     _series_class = DimensionViewColumn
 

@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, List, Literal, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
 
 from functools import wraps
 
@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
@@ -56,8 +57,10 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Series"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.Series", "")
+    __fbautodoc__ = FBAutoDoc(
+        section=["Series"],
+        proxy_class="featurebyte.Series",
+    )
 
     name: Optional[StrictStr] = Field(default=None)
     dtype: DBVarType = Field(allow_mutation=False)

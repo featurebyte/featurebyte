@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from pydantic import Field
 from typeguard import typechecked
@@ -18,6 +18,7 @@ from featurebyte.api.join_utils import (
 )
 from featurebyte.api.validator import validate_view
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
@@ -36,7 +37,7 @@ class ItemViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Column"]
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
 class ItemView(View, GroupByMixin):
@@ -45,8 +46,10 @@ class ItemView(View, GroupByMixin):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["View"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.ItemView", "")
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.ItemView",
+    )
 
     _series_class = ItemViewColumn
 

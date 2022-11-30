@@ -3,7 +3,7 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, List, Optional, cast
 
 from http import HTTPStatus
 
@@ -11,6 +11,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import DatabaseTable
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
@@ -29,8 +30,10 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["FeatureStore"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureStore", "")
+    __fbautodoc__ = FBAutoDoc(
+        section=["FeatureStore"],
+        proxy_class="featurebyte.FeatureStore",
+    )
 
     # class variables
     _route = "/feature_store"

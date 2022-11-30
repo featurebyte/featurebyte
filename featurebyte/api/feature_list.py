@@ -3,7 +3,7 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union, cast
 
 import collections
 import time
@@ -23,6 +23,7 @@ from featurebyte.api.api_object import (
 )
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_arrow_stream, dataframe_to_arrow_bytes
@@ -294,8 +295,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["FeatureList"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureList", "")
+    __fbautodoc__ = FBAutoDoc(
+        section=["FeatureList"],
+        proxy_class="featurebyte.FeatureList",
+    )
 
     # override FeatureListModel attributes
     feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)

@@ -3,7 +3,7 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Union, cast
+from typing import Any, List, Optional, Union, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -11,6 +11,7 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.validator import validate_view
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -23,7 +24,7 @@ class EventViewColumn(ViewColumn):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Column"]
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
 
     @typechecked
     def lag(self, entity_columns: Union[str, List[str]], offset: int = 1) -> EventViewColumn:
@@ -85,8 +86,7 @@ class EventView(View, GroupByMixin):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["View"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.EventView", "")
+    __fbautodoc__ = FBAutoDoc(section=["View"], proxy_class="featurebyte.EventView")
 
     _series_class = EventViewColumn
 

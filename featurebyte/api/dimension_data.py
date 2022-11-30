@@ -3,13 +3,14 @@ DimensionData class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionDataUpdate
@@ -21,8 +22,7 @@ class DimensionData(DimensionDataModel, DataApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Data"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.DimensionData", "")
+    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.DimensionData")
 
     # class variables
     _route = "/dimension_data"

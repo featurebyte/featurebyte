@@ -19,7 +19,7 @@ from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter,
 from pydantic import BaseModel
 from pydantic.fields import ModelField, Undefined
 
-from featurebyte.common.doc_util import COMMON_SKIPPED_ATTRIBUTES
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.logger import logger
 
 EMPTY_VALUE = inspect._empty
@@ -76,7 +76,7 @@ def get_params(
             continue
 
         # skip parameters that starts with underscore
-        if parameter.name.startswith("_"):
+        if parameter.name.startswith("_") or parameter.name.startswith("*"):
             continue
 
         value = parameter.name
@@ -159,6 +159,8 @@ class FBAutoDocProcessor(AutoDocProcessor):
     Customized markdown processing autodoc processor
     """
 
+    # fbautodoc markdown pattern:
+    # ::: {full_path_to_class}::{attribute_name}#{proxy_path}
     RE = re.compile(r"(?:^|\n)::: ?([:a-zA-Z0-9_.#]*) *(?:\n|$)")
 
     def __init__(self, *args, **kwargs):
@@ -345,6 +347,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         docstring = parse(docs)
 
         # get parameter description from docstring
+        short_description = docstring.short_description
+        if getattr(resource, "field_info", None):
+            short_description = resource.field_info.description
+
         parameters_desc = (
             {param.arg_name: param.description for param in docstring.params if param.description}
             if docstring.params
@@ -407,7 +413,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             type=resource_type,
             base_classes=base_classes,
             method_type=method_type,
-            short_description=docstring.short_description,
+            short_description=short_description,
             long_description=docstring.long_description,
             parameters=[
                 ParameterDetails(
@@ -479,15 +485,15 @@ class FBAutoDocProcessor(AutoDocProcessor):
                     param_elem.text = param.name
                     param_elem.set("class", "autodoc-param")
 
-                    self.insert_param_type(param_group_elem, param.type)
-
-                    if param.default:
-                        equal_elem = etree.SubElement(param_group_elem, "span")
-                        equal_elem.text = "="
-                        equal_elem.set("class", "autodoc-punctuation")
-                        default_elem = etree.SubElement(param_group_elem, "em")
-                        default_elem.text = param.default
-                        default_elem.set("class", "autodoc-default")
+                    if param.name not in ["/", "*"]:
+                        self.insert_param_type(param_group_elem, param.type)
+                        if param.default:
+                            equal_elem = etree.SubElement(param_group_elem, "span")
+                            equal_elem.text = "="
+                            equal_elem.set("class", "autodoc-punctuation")
+                            default_elem = etree.SubElement(param_group_elem, "em")
+                            default_elem.text = param.default
+                            default_elem.set("class", "autodoc-default")
 
                     if not is_last:
                         comma_elem = etree.SubElement(param_group_elem, "span")
@@ -662,9 +668,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # defaults to all public members
         members = members or [attr for attr in dir(resource) if not attr.startswith("_")]
-        skipped_members = getattr(
-            resource, "__fbautodoc_skipped_members__", COMMON_SKIPPED_ATTRIBUTES
-        )
+        autodoc_config = resource.__dict__.get("__fbautodoc__", FBAutoDoc())
 
         # include fields for pydantic classes
         fields = getattr(resource, "__fields__", None)
@@ -672,7 +676,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             members.extend(list(fields.keys()))
 
         # sort by alphabetical order
-        members = sorted(set(members) - set(skipped_members))
+        members = sorted(set(members) - set(autodoc_config.skipped_members))
 
         def _render_member(resource_details_list: List[Any], title: str) -> None:
             """

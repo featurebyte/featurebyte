@@ -3,10 +3,11 @@ This module contains string accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from typeguard import typechecked
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -43,8 +44,11 @@ class StringAccessor:
     """
 
     # documentation metadata
-    __fbautodoc__: List[str] = ["Series"]
-    __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.Series", "str")
+    __fbautodoc__ = FBAutoDoc(
+        section=["Series"],
+        proxy_class="featurebyte.Series",
+        accessor_name="str",
+    )
 
     def __init__(self, obj: Series):
         if obj.dtype != DBVarType.VARCHAR:
