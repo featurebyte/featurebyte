@@ -10,6 +10,8 @@ from typeguard import typechecked
 
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.view import View, ViewColumn
+from featurebyte.exception import JoinViewMismatchError
+from featurebyte.logger import logger
 
 
 class DimensionViewColumn(ViewColumn):
@@ -77,3 +79,24 @@ class DimensionView(View):
             }
         )
         return params
+
+    def validate_join(self, other_view: View) -> None:
+        """
+        Validate join should be implemented by view classes that have extra requirements.
+
+        Parameters
+        ---------
+        other_view: View
+            the other view that we are joining with
+
+        Raises
+        ------
+        JoinViewMismatchError
+            raised when the other view is a slowly changing view
+        """
+        if not isinstance(other_view, DimensionView):
+            logger.error("columns from a SlowlyChangingView can’t be added to a DimensionView")
+            raise JoinViewMismatchError
+
+    def get_join_column(self) -> str:
+        return self.dimension_data_id_column

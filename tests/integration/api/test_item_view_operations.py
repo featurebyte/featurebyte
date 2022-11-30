@@ -1,6 +1,8 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_series_equal
 
+from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
 
@@ -67,3 +69,65 @@ def test_item_view_operations(item_data):
         "user id": 1,
         "count_30d": '{\n  "TYPE_42": 2\n}',
     }
+
+    # Create a feature using aggregation without time window and preview it
+    feature = item_view_filtered.groupby("order_id").aggregate(
+        method="count",
+        feature_names=["order_size"],
+    )
+    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"})
+    assert df.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+        "order_id": "T236",
+        "order_size": 1,
+    }
+
+
+@pytest.mark.parametrize(
+    "item_data",
+    ["snowflake"],
+    indirect=True,
+)
+def test_item_view_joined_with_dimension_view(
+    transaction_data_upper_case, item_data, dimension_data
+):
+    """
+    Test joining an item view with a dimension view.
+    """
+    # create item view
+    item_view = ItemView.from_item_data(item_data)
+    item_columns = [
+        "order_id",
+        "item_id",
+        "item_type",
+        "EVENT_TIMESTAMP",
+        "USER ID",
+        "PRODUCT_ACTION",
+    ]
+    assert item_view.columns == item_columns
+    original_item_preview = item_view.preview()
+
+    # create dimension view
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    initial_dimension_columns = ["created_at", "item_id", "item_name", "item_type"]
+    assert dimension_view.columns == initial_dimension_columns
+
+    # perform the join
+    suffix = "_dimension"
+    item_view.join(dimension_view, rsuffix=suffix)
+
+    # assert columns are updated after the join
+    item_columns.extend([f"{col}{suffix}" for col in initial_dimension_columns])
+    item_preview = item_view.preview()
+    assert item_preview.columns.tolist() == item_columns
+    number_of_elements = original_item_preview.shape[0]
+    # Verify that we have non-zero number of elements to represent a successful join
+    assert number_of_elements > 0
+    assert item_preview.shape[0] == number_of_elements
+
+    # Verify that the item_id's are the same
+    assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
+    # Verify that the joined item_ids are the same as the original item IDs
+    assert_series_equal(
+        item_preview["item_id_dimension"], item_preview["item_id"], check_names=False
+    )

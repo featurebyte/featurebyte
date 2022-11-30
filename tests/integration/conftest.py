@@ -24,6 +24,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
+from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
@@ -316,14 +317,21 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
+@pytest.fixture(name="item_ids", scope="session")
+def item_ids_fixture():
+    """
+    Fixture to get item IDs used in test data.
+    """
+    return [f"item_{i}" for i in range(100)]
+
+
 @pytest.fixture(name="items_dataframe", scope="session")
-def items_dataframe_fixture(transaction_data_upper_case):
+def items_dataframe_fixture(transaction_data_upper_case, item_ids):
     """
     DataFrame fixture with item based data corresponding to the transaction data
     """
     rng = np.random.RandomState(0)  # pylint: disable=no-member
     data = defaultdict(list)
-    item_ids = [f"item_{i}" for i in range(100)]
     item_types = [f"type_{i}" for i in range(100)]
 
     def generate_items_for_transaction(transaction_row):
@@ -340,6 +348,26 @@ def items_dataframe_fixture(transaction_data_upper_case):
 
     df_items = pd.DataFrame(data)
     return df_items
+
+
+@pytest.fixture(name="dimension_dataframe", scope="session")
+def dimension_dataframe_fixture(item_ids):
+    """
+    DataFrame fixture with dimension data corresponding to items.
+    """
+    num_of_rows = len(item_ids)
+    item_names = [f"name_{i}" for i in range(num_of_rows)]
+    item_types = [f"type_{i}" for i in range(num_of_rows)]
+
+    data = pd.DataFrame(
+        {
+            "created_at": pd.date_range("2001-01-01", freq="1min", periods=num_of_rows),
+            "item_id": item_ids,
+            "item_name": item_names,
+            "item_type": item_types,
+        }
+    )
+    yield data
 
 
 @pytest.fixture(name="expected_joined_event_item_dataframe", scope="session")
@@ -378,10 +406,20 @@ def get_session_manager(config):
     return SessionManager(credentials=config.credentials)
 
 
+@pytest.fixture(name="dimension_data_table_name", scope="session")
+def get_dimension_data_table_name_fixture():
+    """
+    Get the dimension data table name used in integration tests.
+    """
+    return "DIMENSION_DATA_TABLE"
+
+
 @pytest_asyncio.fixture(name="snowflake_session", scope="session")
 async def snowflake_session_fixture(
     transaction_data_upper_case,
     items_dataframe,
+    dimension_dataframe,
+    dimension_data_table_name,
     session_manager,
     snowflake_feature_store,
 ):
@@ -396,6 +434,9 @@ async def snowflake_session_fixture(
 
     # ItemData table
     await session.register_table("ITEM_DATA_TABLE", items_dataframe, temporary=False)
+
+    # DimensionData table
+    await session.register_table(dimension_data_table_name, dimension_dataframe, temporary=False)
 
     # Tile table for tile manager integration tests
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
@@ -685,6 +726,16 @@ def product_action_entity_fixture():
     return entity
 
 
+@pytest.fixture(name="order_entity", scope="session")
+def order_entity_fixture():
+    """
+    Fixture for an Entity "Order"
+    """
+    entity = Entity(name="Order", serving_names=["order_id"])
+    entity.save()
+    return entity
+
+
 def create_transactions_event_data_from_feature_store(
     feature_store, database_name, schema_name, table_name, event_data_name
 ):
@@ -760,6 +811,7 @@ def snowflake_item_data_fixture(
     snowflake_session,
     snowflake_feature_store,
     snowflake_event_data,
+    order_entity,
 ):
     """Fixture for an ItemData in integration tests"""
     database_table = snowflake_feature_store.get_table(
@@ -777,7 +829,33 @@ def snowflake_item_data_fixture(
     )
     item_data.save()
     item_data = ItemData.get(item_data_name)
+    item_data["order_id"].as_entity(order_entity.name)
     return item_data
+
+
+@pytest.fixture(name="snowflake_dimension_data", scope="session")
+def snowflake_dimension_data_fixture(
+    snowflake_session,
+    snowflake_feature_store,
+    dimension_data_table_name,
+):
+    """
+    Fixture for a DimensionData in integration tests
+    """
+    database_table = snowflake_feature_store.get_table(
+        database_name=snowflake_session.database_name,
+        schema_name=snowflake_session.sf_schema,
+        table_name=dimension_data_table_name,
+    )
+    dimension_data_name = "snowflake_dimension_data"
+    dimension_data = DimensionData.from_tabular_source(
+        tabular_source=database_table,
+        name=dimension_data_name,
+        dimension_data_id_column="item_id",
+    )
+    dimension_data.save()
+    dimension_data = DimensionData.get(dimension_data_name)
+    return dimension_data
 
 
 @pytest.fixture(name="databricks_event_data", scope="session")
@@ -798,6 +876,19 @@ def databricks_event_data_fixture(
         event_data_name="databricks_event_data",
     )
     return event_data
+
+
+@pytest.fixture(name="dimension_data", scope="session")
+def dimension_data_fixture(request):
+    """
+    Parametrizable fixture for DimensionData (possible parameters: "snowflake")
+    """
+    if not hasattr(request, "param"):
+        kind = "snowflake"
+    else:
+        kind = request.param
+    assert kind in {"snowflake"}
+    return request.getfixturevalue("snowflake_dimension_data")
 
 
 @pytest.fixture(name="event_data", scope="session")
