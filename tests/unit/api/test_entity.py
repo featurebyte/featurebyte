@@ -291,17 +291,17 @@ async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helpe
     entity_a.save()
 
     # Assert that there's an error if we try to add a parent that doesn't exist
-    with pytest.raises(RecordUpdateException):
-        entity_a.add_parent(entity_b, dataset_name)
+    with pytest.raises(RecordRetrievalException):
+        entity_a.add_parent(entity_b.name, dataset_name)
 
     entity_b.save()
 
     # Assert that there's an error if we try to remove a parent that doesn't exist
     with pytest.raises(RecordUpdateException):
-        entity_a.remove_parent(entity_b)
+        entity_a.remove_parent(entity_b.name)
 
     # Try to add parent
-    entity_a.add_parent(entity_b, dataset_name)
+    entity_a.add_parent(entity_b.name, dataset_name)
 
     persistent, _ = mongo_persistent
     response, count = await persistent.find(
@@ -321,7 +321,7 @@ async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helpe
     assert_entity_has_number_of_parents(entity_b_response, 0)
 
     # Test remove parent
-    entity_a.remove_parent(entity_b)
+    entity_a.remove_parent(entity_b.name)
 
     # Retrieve entities
     response, count = await persistent.find(

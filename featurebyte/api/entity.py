@@ -69,14 +69,14 @@ class Entity(EntityModel, SavableApiObject):
         return self._get_audit_history(field_name="name")
 
     @typechecked
-    def add_parent(self, other_parent_entity: Entity, relation_dataset_name: str) -> None:
+    def add_parent(self, parent_entity_name: str, relation_dataset_name: str) -> None:
         """
         Adds other entity as the parent of this current entity.
 
         Parameters
         ----------
-        other_parent_entity: Entity
-            the other entity that will become the parent of this entity.
+        parent_entity_name: str
+            the entity that will become the parent of this entity.
         relation_dataset_name: str
             the name of the dataset that the parent is from
 
@@ -92,10 +92,12 @@ class Entity(EntityModel, SavableApiObject):
         json_response = response.json()
         data_response = json_response["data"]
         assert len(data_response) == 1
+
+        parent_entity = Entity.get(parent_entity_name)
         data = ParentEntity(
             data_type=data_response[0]["type"],
             data_id=data_response[0]["_id"],
-            id=other_parent_entity.id,
+            id=parent_entity.id,
         )
 
         post_response = client.post(
@@ -106,13 +108,13 @@ class Entity(EntityModel, SavableApiObject):
             raise RecordUpdateException(post_response)
 
     @typechecked
-    def remove_parent(self, other_parent_entity: Entity) -> None:
+    def remove_parent(self, parent_entity_name: str) -> None:
         """
         Removes other entity as the parent of this current entity.
 
         Parameters
         ----------
-        other_parent_entity: Entity
+        parent_entity_name: str
             the other entity that we want to remove as a parent.
 
         Raises
@@ -122,8 +124,9 @@ class Entity(EntityModel, SavableApiObject):
         """
 
         client = Configurations().get_client()
+        parent_entity = Entity.get(parent_entity_name)
         post_response = client.delete(
-            f"{self._route}/{self.id}/parent/{other_parent_entity.id}",
+            f"{self._route}/{self.id}/parent/{parent_entity.id}",
         )
         if post_response.status_code != HTTPStatus.OK:
             raise RecordUpdateException(post_response)
