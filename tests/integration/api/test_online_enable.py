@@ -38,13 +38,6 @@ def online_enabled_feature_list_fixture(event_data, config):
     )
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
-
-    client = config.get_client()
-    payload = FeatureListGetOnlineFeatures(entity_serving_names=[{"PRODUCT_ACTION": "add"}])
-    res = client.post(
-        f"/feature_list/{str(feature_list.id)}/online_features",
-        data={"payload": payload.json()},
-    )
     return feature_list
 
 
