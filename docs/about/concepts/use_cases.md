@@ -55,7 +55,7 @@ For period based context, the Context View defines the periods during which the 
 For period based context, the expected inference time can be any time or a scheduled time such as every Monday between 12 and 16 pm.
 
 ### Target
-A target object is created by specifying its name and the entities it is related to. Optionally, users can provide a description, a horizon (window size of forward aggregates or feature offset), a blind spot (the time to retrieve the target in addition to the horizon) and a target recipe.
+A target object is created by specifying its name and the entities it is related to. Optionally, users can provide a description, a horizon (window size of forward aggregates or offset from Slowly Changing Dimension table), a blind spot (the time to retrieve the target in addition to the horizon) and a target recipe.
 
 The target recipe is defined from the SDK in a similar way as for features.
 
