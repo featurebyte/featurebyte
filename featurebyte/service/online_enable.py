@@ -165,7 +165,7 @@ class OnlineEnableService(BaseService):
         online_enabled: bool,
         get_credential: Any,
         return_document: bool = True,
-    ) -> Optional[FeatureModel]:
+    ) -> FeatureModel:
         """
         Update feature online enabled & trigger list of cascading updates
 
@@ -182,7 +182,7 @@ class OnlineEnableService(BaseService):
 
         Returns
         -------
-        Optional[FeatureModel]
+        FeatureModel
         """
         document = await self.feature_service.get_document(document_id=feature_id)
         if document.online_enabled != online_enabled:

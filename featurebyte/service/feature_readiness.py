@@ -80,13 +80,15 @@ class FeatureReadinessService(BaseService):
             # when feature readiness get updated and feature list namespace in manual default mode
             update_dict["readiness_distribution"] = default_feature_list.readiness_distribution
 
+        updated_document: Optional[FeatureListNamespaceModel] = document
         if update_dict:
-            document = await self.feature_list_namespace_service.update_document(
+            updated_document = await self.feature_list_namespace_service.update_document(
                 document_id=feature_list_namespace_id,
                 data=FeatureListNamespaceServiceUpdate(**update_dict),
                 return_document=return_document,
             )
-        return self.conditional_return(document=document, condition=return_document)
+
+        return self.conditional_return(document=updated_document, condition=return_document)
 
     async def update_feature_list(
         self,
@@ -177,14 +179,15 @@ class FeatureReadinessService(BaseService):
             # when feature readiness get updated and feature namespace in manual default mode
             update_dict["readiness"] = default_feature.readiness
 
+        updated_document: Optional[FeatureNamespaceModel] = document
         if update_dict:
-            document = await self.feature_namespace_service.update_document(
+            updated_document = await self.feature_namespace_service.update_document(
                 document_id=feature_namespace_id,
                 data=FeatureNamespaceServiceUpdate(**update_dict),
                 document=document,
                 return_document=return_document,
             )
-        return self.conditional_return(document=document, condition=return_document)
+        return self.conditional_return(document=updated_document, condition=return_document)
 
     async def update_feature(
         self,
