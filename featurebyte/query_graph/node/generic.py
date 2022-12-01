@@ -100,7 +100,7 @@ class InputNode(BaseNode):
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -110,6 +110,7 @@ class InputNode(BaseNode):
                     name=column,
                     tabular_data_id=self.parameters.id,
                     tabular_data_type=self.parameters.type,
+                    node_names={self.name},
                 )
                 for column in self.parameters.columns
             ],
@@ -129,7 +130,7 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -139,12 +140,16 @@ class ProjectNode(BaseNode):
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                col for col in input_operation_info.columns if col.name in names
+                col.clone(node_names=col.node_names.union([self.name]))
+                for col in input_operation_info.columns
+                if col.name in names
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
-                col for col in input_operation_info.aggregations if col.name in names
+                col.clone(node_names=col.node_names.union([self.name]))
+                for col in input_operation_info.aggregations
+                if col.name in names
             ]
 
         return OperationStructure(
@@ -158,7 +163,7 @@ class FilterNode(BaseNode):
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -167,13 +172,14 @@ class FilterNode(BaseNode):
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                type(col)(**{**col.dict(), "filter": True}) for col in input_operation_info.columns
+                col.clone(filter=True, node_names=col.node_names.union([self.name]))
+                for col in input_operation_info.columns
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
-                    name=col.name, columns=[col], transform=self.transform_info
+                    name=col.name, columns=[col], transform=self.transform_info, node_name=self.name
                 )
                 for col in input_operation_info.aggregations
             ]
@@ -198,19 +204,27 @@ class AssignNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
-        input_operation_info, series_operation_info = inputs
+        input_operation_info = inputs[0]
+        # AssignNode can only take 1 or 2 parameters (1 parameters is frame, 2nd optional parameter is series)
+        if len(inputs) == 2:
+            columns = inputs[1].columns
+        else:
+            columns = []
+
         new_column_name = self.parameters.name
+        input_columns = [col for col in input_operation_info.columns if col.name != new_column_name]
         new_column = DerivedDataColumn.create(
             name=new_column_name,
-            columns=series_operation_info.columns,
+            columns=columns,
             transform=None,
+            node_name=self.name,
         )
         return OperationStructure(
-            columns=input_operation_info.columns + [new_column],
+            columns=input_columns + [new_column],
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
         )
@@ -260,7 +274,9 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         cols = self.parameters.keys + [self.parameters.timestamp]
         return [str(col) for col in cols]
 
-    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+    def _get_aggregations(
+        self, columns: List[ViewDataColumn], node_name: str
+    ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -272,6 +288,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
+                node_names={node_name},
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
@@ -297,7 +314,9 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
 
-    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+    def _get_aggregations(
+        self, columns: List[ViewDataColumn], node_name: str
+    ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -309,6 +328,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
+                node_names={node_name},
             )
             for name in self.parameters.names
         ]
@@ -332,14 +352,22 @@ class JoinNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
         left_output_columns = set(self.parameters.left_output_columns)
         right_output_columns = set(self.parameters.right_output_columns)
-        left_columns = [col for col in inputs[0].columns if col.name in left_output_columns]
-        right_columns = [col for col in inputs[1].columns if col.name in right_output_columns]
+        left_columns = [
+            col.clone(node_names=col.node_names.union([self.name]))
+            for col in inputs[0].columns
+            if col.name in left_output_columns
+        ]
+        right_columns = [
+            col.clone(node_names=col.node_names.union([self.name]))
+            for col in inputs[1].columns
+            if col.name in right_output_columns
+        ]
         return OperationStructure(
             columns=left_columns + right_columns,
             output_type=NodeOutputType.FRAME,
@@ -358,28 +386,27 @@ class AliasNode(BaseNode):
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
 
         node_kwargs: Dict[str, Any] = {}
+        new_name = self.parameters.name
         if output_category == NodeOutputCategory.VIEW:
-            last_column = input_operation_info.columns[-1]
-            new_last_column = type(last_column)(
-                **{**last_column.dict(), "name": self.parameters.name}
-            )
+            last_col = input_operation_info.columns[-1]
             node_kwargs["columns"] = list(input_operation_info.columns)
-            node_kwargs["columns"][-1] = new_last_column
-        else:
-            last_aggregation = input_operation_info.aggregations[-1]
-            new_last_aggregation = type(last_aggregation)(
-                **{**last_aggregation.dict(), "name": self.parameters.name}
+            node_kwargs["columns"][-1] = last_col.clone(
+                name=new_name, node_names=last_col.node_names.union([self.name])
             )
+        else:
+            last_agg = input_operation_info.aggregations[-1]
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = list(input_operation_info.aggregations)
-            node_kwargs["aggregations"][-1] = new_last_aggregation
+            node_kwargs["aggregations"][-1] = last_agg.clone(
+                name=new_name, node_names=last_agg.node_names.union([self.name])
+            )
 
         return OperationStructure(
             **node_kwargs, output_type=self.output_type, output_category=output_category

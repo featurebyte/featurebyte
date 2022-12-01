@@ -35,7 +35,7 @@ def node_fixture():
         type: Literal["type"] = Field("node_type", const=True)
         parameters: NodeParams
 
-        def derive_node_operation_info(self, inputs):
+        def _derive_node_operation_info(self, inputs):
             return OperationStructure(
                 output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
             )

@@ -130,6 +130,7 @@ def test_extract_operation_structure(feature_model_dict):
     common_source_col_params = {
         "tabular_data_id": ObjectId(feature_model_dict["tabular_data_ids"][0]),
         "tabular_data_type": "event_data",
+        "node_names": {"input_1"},
     }
     expected_columns = [SourceDataColumn(name="col_float", **common_source_col_params)]
     assert op_struct.source_columns == expected_columns
@@ -145,5 +146,6 @@ def test_extract_operation_structure(feature_model_dict):
             column=SourceDataColumn(name="col_float", **common_source_col_params),
             filter=False,
             groupby_type="groupby",
+            node_names={"groupby_1", "project_1"},
         )
     ]

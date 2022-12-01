@@ -53,7 +53,10 @@ class BaseNode(BaseModel):
             for key, value in self.parameters.dict().items()
             if value
         )
-        if parameters:
+        if parameters and len(parameters) < 4:
+            # Note: 4 is chosen here so that the info is more readable, with too many
+            # parameters presented here, it is hard to read. This value currently is only
+            # used for the signal type tagging (for feature theme).
             return f"{str(self.type).lower()}({', '.join(parameters)})"
         return str(self.type).lower()
 
@@ -98,12 +101,36 @@ class BaseNode(BaseModel):
         """
         return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
 
-    @abstractmethod
     def derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         """
         Derive node operation info
+
+        Parameters
+        ----------
+        inputs: List[OperationStructure]
+            List of input nodes' operation info
+        visited_node_types: Set[NodeType]
+            Set of visited nodes when doing backward traversal
+
+        Returns
+        -------
+        OperationStructure
+        """
+        operation_info = self._derive_node_operation_info(
+            inputs=inputs, visited_node_types=visited_node_types
+        )
+        # make sure node name should be included in the node operation info
+        assert self.name in operation_info.all_node_names
+        return operation_info
+
+    @abstractmethod
+    def _derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        """
+        Derive node operation info abstract method to be implemented at the concrete node class
 
         Parameters
         ----------

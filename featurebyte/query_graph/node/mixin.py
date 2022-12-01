@@ -20,10 +20,11 @@ from featurebyte.query_graph.node.metadata.operation import (
 class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""
 
+    name: str
     transform_info: str
     output_type: NodeOutputType
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         """
@@ -52,13 +53,18 @@ class SeriesOutputNodeOpStructMixin:
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                DerivedDataColumn.create(name=None, columns=columns, transform=self.transform_info)
+                DerivedDataColumn.create(
+                    name=None, columns=columns, transform=self.transform_info, node_name=self.name
+                )
             ]
         else:
             node_kwargs["columns"] = columns
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
-                    name=None, columns=aggregations, transform=self.transform_info
+                    name=None,
+                    columns=aggregations,
+                    transform=self.transform_info,
+                    node_name=self.name,
                 )
             ]
 
@@ -70,13 +76,16 @@ class SeriesOutputNodeOpStructMixin:
 class GroupbyNodeOpStructMixin:
     """GroupbyNodeOpStructMixin class"""
 
+    name: str
     type: NodeType
     transform_info: str
     output_type: NodeOutputType
     parameters: Any
 
     @abstractmethod
-    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+    def _get_aggregations(
+        self, columns: List[ViewDataColumn], node_name: str
+    ) -> List[AggregationColumn]:
         """
         Construct aggregations based on node parameters
 
@@ -84,6 +93,8 @@ class GroupbyNodeOpStructMixin:
         ----------
         columns: List[ViewDataColumn]
             Input columns
+        node_name: str
+            Node name
 
         Returns
         -------
@@ -100,7 +111,7 @@ class GroupbyNodeOpStructMixin:
         List of excluded column names
         """
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         """
@@ -130,12 +141,14 @@ class GroupbyNodeOpStructMixin:
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                DerivedDataColumn.create(name=name, columns=columns, transform=self.transform_info)
+                DerivedDataColumn.create(
+                    name=name, columns=columns, transform=self.transform_info, node_name=self.name
+                )
                 for name in self.parameters.names
             ]
         else:
             node_kwargs["columns"] = columns
-            node_kwargs["aggregations"] = self._get_aggregations(columns)
+            node_kwargs["aggregations"] = self._get_aggregations(columns, node_name=self.name)
 
         return OperationStructure(
             **node_kwargs,
