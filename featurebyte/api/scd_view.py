@@ -44,6 +44,10 @@ class SlowlyChangingView(View):
     end_timestamp_column: Optional[str] = Field(allow_mutation=False)
     current_flag: Optional[str] = Field(allow_mutation=False)
 
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return self.effective_timestamp_column
+
     @classmethod
     @typechecked
     def from_slowly_changing_data(

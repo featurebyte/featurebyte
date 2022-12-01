@@ -37,6 +37,10 @@ class EventData(EventDataModel, DataApiObject):
         data = EventDataCreate(**self.json_dict())
         return data.json_dict()
 
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return self.event_timestamp_column
+
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         # the key `_id` is used during deserialization, the key `id` is used during setattr

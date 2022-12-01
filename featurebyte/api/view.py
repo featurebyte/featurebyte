@@ -46,6 +46,12 @@ class ViewColumn(Series):
     _parent: Optional[View] = PrivateAttr(default=None)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        if not self._parent:
+            return None
+        return self._parent.timestamp_column
+
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method

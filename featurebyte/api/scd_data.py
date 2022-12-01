@@ -41,6 +41,10 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             "id": values.get("_id", values.get("id")),
         }
 
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        return self.effective_timestamp_column
+
     @classmethod
     @typechecked
     def from_tabular_source(

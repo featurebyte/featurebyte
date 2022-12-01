@@ -1,15 +1,20 @@
 """
 BaseApiTestSuite
 """
+# pylint: disable=too-many-lines
 import json
 from datetime import datetime
 from http import HTTPStatus
 from time import sleep
+from unittest.mock import Mock
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
+from pandas.testing import assert_frame_equal
 
+from featurebyte.schema.feature_store import FeatureStoreSample
 from featurebyte.schema.tabular_data import DataCreate
 
 
@@ -933,3 +938,87 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             "/tabular_data", params={"page_size": 100}
         )
         assert response_page_size_boundary.status_code == HTTPStatus.OK
+
+    @pytest.fixture(name="data_sample_payload")
+    def data_sample_payload_fixture(self, snowflake_feature_store, data_response):
+        """Payload for data sample"""
+
+        data_response_dict = data_response.json()
+        return FeatureStoreSample(
+            feature_store_name=snowflake_feature_store.name,
+            graph={
+                "edges": [],
+                "nodes": [
+                    {
+                        "name": "input_1",
+                        "output_type": "frame",
+                        "parameters": {
+                            "type": data_response_dict["type"],
+                            "id": "6332fdb21e8f0eeccc414512",
+                            "columns": [
+                                "col_int",
+                                "col_float",
+                                "col_char",
+                                "col_text",
+                                "col_binary",
+                                "col_boolean",
+                                "event_timestamp",
+                                "created_at",
+                                "cust_id",
+                            ],
+                            "table_details": {
+                                "database_name": "sf_database",
+                                "schema_name": "sf_schema",
+                                "table_name": "sf_table",
+                            },
+                            "feature_store_details": snowflake_feature_store.json_dict(),
+                        },
+                        "type": "input",
+                    },
+                ],
+            },
+            node_name="input_1",
+            from_timestamp="2012-11-24T11:00:00",
+            to_timestamp="2019-11-24T11:00:00",
+            timestamp_column="timestamp",
+        ).json_dict()
+
+    def test_sample_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
+        """Test data preview (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
+        assert mock_session.execute_query.call_args[0][0].endswith(
+            "WHERE\n  timestamp >= '2012-11-24T11:00:00'\n  "
+            "AND timestamp < '2019-11-24T11:00:00'\n"
+            "ORDER BY\n  RANDOM(1234)\nLIMIT 10"
+        )
+
+    def test_sample_422(self, test_api_client_persistent, data_sample_payload):
+        """Test data preview no timestamp column"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.post(
+            "/feature_store/sample",
+            json={
+                **data_sample_payload,
+                "from_timestamp": "2012-11-24T11:00:00",
+                "to_timestamp": None,
+                "timestamp_column": None,
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {
+            "detail": [
+                {
+                    "loc": ["body", "__root__"],
+                    "msg": "timestamp_column must be specified.",
+                    "type": "value_error",
+                }
+            ]
+        }

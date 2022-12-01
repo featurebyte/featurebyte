@@ -3,11 +3,12 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import cast, Optional
 
 from dataclasses import dataclass
+from datetime import datetime
 
-import sqlglot
+from sqlglot import expressions
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
@@ -15,6 +16,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
@@ -216,7 +218,77 @@ class GraphInterpreter:
         else:
             sql_tree = sql_node.sql_standalone
 
-        assert isinstance(sql_tree, sqlglot.expressions.Select)
+        assert isinstance(sql_tree, expressions.Select)
+        sql_code: str = sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type)
+
+        return sql_code
+
+    def construct_sample_sql(
+        self,
+        node_name: str,
+        num_rows: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
+    ) -> str:
+        """Construct SQL to sample a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+        seed: int
+            Random seed to use for sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+        timestamp_column: Optional[str]
+            Columnn to apply date range filtering on
+
+        Returns
+        -------
+        str
+            SQL code for preview purpose
+        """
+        sql_graph = SQLOperationGraph(
+            self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
+        )
+        sql_node = sql_graph.build(self.query_graph.get_node_by_name(node_name))
+
+        assert isinstance(sql_node, (TableNode, ExpressionNode))
+        if isinstance(sql_node, TableNode):
+            sql_tree = sql_node.sql
+        else:
+            sql_tree = sql_node.sql_standalone
+
+        assert isinstance(sql_tree, expressions.Select)
+
+        # apply random ordering
+        sql_tree = sql_tree.order_by(
+            expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
+        )
+
+        # apply timestamp filtering
+        filter_conditions = []
+        if from_timestamp:
+            filter_conditions.append(
+                expressions.GTE(
+                    this=timestamp_column, expression=make_literal_value(from_timestamp.isoformat())
+                )
+            )
+        if to_timestamp:
+            filter_conditions.append(
+                expressions.LT(
+                    this=timestamp_column, expression=make_literal_value(to_timestamp.isoformat())
+                )
+            )
+        if filter_conditions:
+            sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
+
         sql_code: str = sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type)
 
         return sql_code

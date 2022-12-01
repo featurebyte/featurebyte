@@ -3,16 +3,18 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, TypeVar, Union, cast
 
 import json
 from abc import abstractmethod
+from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
 from pydantic import Field, StrictStr
 from typeguard import typechecked
 
+from featurebyte.common.utils import validate_datetime_input
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
@@ -20,7 +22,7 @@ from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.schema.feature_store import FeatureStorePreview
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
@@ -39,6 +41,17 @@ class QueryObject(FeatureByteBaseModel):
     row_index_lineage: Tuple[StrictStr, ...]
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        """
+        Timestamp column to be used for datetime filtering during sampling
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return None
 
     @property
     def node(self) -> Node:
@@ -114,6 +127,54 @@ class QueryObject(FeatureByteBaseModel):
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/preview?limit={limit}", json=payload.json_dict()
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return pd.read_json(response.json(), orient="table", convert_dates=False)
+
+    @typechecked
+    def sample(
+        self,
+        size: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+    ) -> pd.DataFrame:
+        """
+        Sample transformed table/column
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Preview request failed
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = FeatureStoreSample(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+            from_timestamp=validate_datetime_input(from_timestamp),
+            to_timestamp=validate_datetime_input(to_timestamp),
+            timestamp_column=self.timestamp_column,
+        )
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict()
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)

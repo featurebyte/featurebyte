@@ -3,13 +3,15 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional, Union
 
+from datetime import datetime
 from decimal import Decimal
 from io import BytesIO
 
 import pandas as pd
 import pyarrow as pa
+from dateutil import parser
 
 
 def create_new_arrow_stream_writer(buffer: Any, schema: pa.Schema) -> pa.RecordBatchStreamWriter:
@@ -135,3 +137,29 @@ def convert_dataframe_as_json(dataframe: pd.DataFrame) -> str:
     """
     prepare_dataframe_for_json(dataframe)
     return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
+
+
+def validate_datetime_input(value: Optional[Union[datetime, str]]) -> Optional[str]:
+    """
+    Validate datetime input value
+
+    Parameters
+    ---------
+    value: Optional[Union[datetime, str]]
+        Input datetime value
+
+    Returns
+    -------
+    Optional[str]
+        Validated UTC datetime value in ISO format
+    """
+    if not value:
+        return None
+
+    datetime_value: datetime
+    if isinstance(value, datetime):
+        datetime_value = value
+    else:
+        datetime_value = parser.parse(value)
+
+    return datetime_value.isoformat()

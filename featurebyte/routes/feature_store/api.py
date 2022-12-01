@@ -26,6 +26,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
     FeatureStorePreview,
+    FeatureStoreSample,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 
@@ -215,5 +216,24 @@ async def get_generic_preview(
         str,
         await controller.preview(
             preview=preview, limit=limit, get_credential=request.state.get_credential
+        ),
+    )
+
+
+@router.post("/sample", response_model=str)
+async def get_sample(
+    request: Request,
+    sample: FeatureStoreSample,
+    size: int = Query(default=10, gt=0, le=10000),
+    seed: int = Query(default=1234),
+) -> str:
+    """
+    Retrieve generic preview
+    """
+    controller = request.state.app_container.feature_store_controller
+    return cast(
+        str,
+        await controller.sample(
+            sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
         ),
     )
