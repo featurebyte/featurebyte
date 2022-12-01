@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from bson import ObjectId
 from sqlglot import Expression, expressions, parse_one, select
+from sqlglot.expressions import Identifier, Table
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
@@ -410,7 +411,7 @@ class OnlineStoreRetrievePlan:
                     feature_name
                 ] = f"{join_alias}.{quoted_identifier(feature_name).sql()}"
             expr = expr.join(
-                expressions.Identifier(this=feature_store_table_name),
+                Table(this=Identifier(this=feature_store_table_name)),
                 join_alias=join_alias,
                 on=join_conditions,
                 join_type="left",
