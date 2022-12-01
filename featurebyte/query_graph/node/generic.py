@@ -18,7 +18,6 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
-    PostAggregationColumn,
     SourceDataColumn,
     ViewDataColumn,
 )
@@ -110,6 +109,7 @@ class InputNode(BaseNode):
                     name=column,
                     tabular_data_id=self.parameters.id,
                     tabular_data_type=self.parameters.type,
+                    node_names={self.name},
                 )
                 for column in self.parameters.columns
             ],
@@ -167,13 +167,24 @@ class FilterNode(BaseNode):
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                type(col)(**{**col.dict(), "filter": True}) for col in input_operation_info.columns
+                type(col)(
+                    **{
+                        **col.dict(),
+                        "filter": True,
+                        "node_names": col.node_names.union([self.name]),
+                    }
+                )
+                for col in input_operation_info.columns
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
-                PostAggregationColumn.create(
-                    name=col.name, columns=[col], transform=self.transform_info
+                type(col)(
+                    **{
+                        **col.dict(),
+                        "filter": True,
+                        "node_names": col.node_names.union([self.name]),
+                    }
                 )
                 for col in input_operation_info.aggregations
             ]
@@ -214,6 +225,7 @@ class AssignNode(BaseNode):
             name=new_column_name,
             columns=columns,
             transform=None,
+            node_name=self.name,
         )
         return OperationStructure(
             columns=input_columns + [new_column],
@@ -266,7 +278,9 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         cols = self.parameters.keys + [self.parameters.timestamp]
         return [str(col) for col in cols]
 
-    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+    def _get_aggregations(
+        self, columns: List[ViewDataColumn], node_name: str
+    ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -278,6 +292,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
+                node_names={node_name},
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
@@ -303,7 +318,9 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
 
-    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+    def _get_aggregations(
+        self, columns: List[ViewDataColumn], node_name: str
+    ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -315,6 +332,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
+                node_names={node_name},
             )
             for name in self.parameters.names
         ]

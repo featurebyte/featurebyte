@@ -10,6 +10,7 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Set,
     Tuple,
     TypeVar,
     Union,
@@ -56,8 +57,32 @@ class BaseFrozenModel(BaseModel):
         frozen = True
 
 
-DataColumnT = TypeVar("DataColumnT")
-DerivedColumnT = TypeVar("DerivedColumnT")
+class BaseDataColumn(BaseFrozenModel):
+    """BaseDataColumn class"""
+
+    name: str
+    node_names: Set[str]
+    filter: bool
+
+
+class BaseDerivedColumn(BaseFrozenModel):
+    """BaseDerivedColumn class"""
+
+    name: Optional[str]
+    transforms: List[str]
+    node_names: Set[str]
+    filter: bool
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_filter_flag(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "filter" not in values:
+            values["filter"] = any(col.filter for col in values["columns"])
+        return values
+
+
+DataColumnT = TypeVar("DataColumnT", bound=BaseDataColumn)
+DerivedColumnT = TypeVar("DerivedColumnT", bound=BaseDerivedColumn)
 
 
 class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
@@ -67,31 +92,44 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
 
     columns: List[DataColumnT]
     transforms: List[str]
+    node_names: Set[str]
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
+    @staticmethod
+    def _insert_column(
+        column_map: Dict[str, DataColumnT], column: DataColumnT
+    ) -> Dict[str, DataColumnT]:
+        if column.name not in column_map:
+            column_map[column.name] = column
+        elif len(column.node_names) > len(column_map[column.name].node_names):
+            column_map[column.name] = column
+        return column_map
+
     @classmethod
     def _flatten_columns(
         cls, columns: Sequence[Union[DataColumnT, DerivedColumnT]]
-    ) -> Tuple[Sequence[DataColumnT], List[str]]:
-        col_map: Dict[DataColumnT, None] = {}
+    ) -> Tuple[Sequence[DataColumnT], List[str], Set[str]]:
+        col_map: Dict[str, DataColumnT] = {}
         transforms = []
+        node_names = set()
         for column in columns:
+            node_names.update(column.node_names)  # type: ignore
             if isinstance(column, cls):
                 # traverse to nested derived columns first
-                flat_columns, flat_transforms = cls._flatten_columns(column.columns)
+                flat_columns, flat_transforms, _ = cls._flatten_columns(column.columns)
                 transforms.extend(flat_transforms)
 
+                # when the column's name are the same, keep the one with the most node_names
                 for col in flat_columns:
-                    if col not in col_map:
-                        col_map[col] = None
+                    col_map = cls._insert_column(col_map, col)
 
                 # added current transform to the list of transforms
                 transforms.extend(column.transforms)
             else:
-                col_map[cast(DataColumnT, column)] = None
-        return list(col_map), transforms
+                col_map = cls._insert_column(col_map, column)
+        return list(col_map.values()), transforms, node_names
 
     @classmethod
     def create(
@@ -99,6 +137,7 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
         name: Optional[str],
         columns: Sequence[Union[DataColumnT, DerivedColumnT]],
         transform: Optional[str],
+        node_name: str,
     ) -> DerivedColumnT:
         """
         Create derived column by flattening the derived columns in the given list of columns
@@ -111,61 +150,61 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
             Input column name
         transform: Optional[str]
             Node transformation
+        node_name: str
+            Node name
 
         Returns
         -------
         DerivedColumnT
             Derive column object
         """
-        columns, transforms = cls._flatten_columns(columns)
+        columns, transforms, node_names = cls._flatten_columns(columns)
+        node_names.add(node_name)
         if transform:
             transforms.append(transform)
-        return cast(DerivedColumnT, cls(name=name, columns=columns, transforms=transforms))
+        return cast(
+            DerivedColumnT,
+            cls(name=name, columns=columns, transforms=transforms, node_names=node_names),
+        )
 
 
-class SourceDataColumn(BaseFrozenModel):
+class SourceDataColumn(BaseDataColumn):
     """Source column"""
 
-    name: str
     tabular_data_id: Optional[PydanticObjectId]
     tabular_data_type: TableDataType
     type: Literal[ViewDataColumnType.SOURCE] = Field(ViewDataColumnType.SOURCE, const=True)
     filter: bool = Field(default=False)
 
+    def __hash__(self) -> int:
+        col_dict = self.dict()
+        col_dict["node_names"] = sorted(col_dict["node_names"])
+        return hash(json_util.dumps(col_dict, sort_keys=True))
+
 
 class DerivedDataColumn(
-    DerivedColumnCreationMixin[SourceDataColumn, "DerivedDataColumn"], BaseFrozenModel
+    DerivedColumnCreationMixin[SourceDataColumn, "DerivedDataColumn"], BaseDerivedColumn
 ):
     """Derived column"""
 
-    name: Optional[str]
     columns: List[SourceDataColumn]
-    transforms: List[str]
     type: Literal[ViewDataColumnType.DERIVED] = Field(ViewDataColumnType.DERIVED, const=True)
-    filter: bool
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_filter_flag(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "filter" not in values:
-            values["filter"] = any(col.filter for col in values["columns"])
-        return values
 
     def __hash__(self) -> int:
         col_dict = self.dict()
         col_dict["columns"] = sorted(
             [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
         )
+        col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
 
 ViewDataColumn = Annotated[Union[SourceDataColumn, DerivedDataColumn], Field(discriminator="type")]
 
 
-class AggregationColumn(BaseFrozenModel):
+class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
-    name: str
     method: AggFunc
     groupby: List[str]
     window: Optional[str]
@@ -174,7 +213,6 @@ class AggregationColumn(BaseFrozenModel):
         FeatureDataColumnType.AGGREGATION, const=True
     )
     column: Optional[ViewDataColumn]
-    filter: bool
     groupby_type: Literal[NodeType.GROUPBY, NodeType.ITEM_GROUPBY]
 
     def __hash__(self) -> int:
@@ -183,13 +221,11 @@ class AggregationColumn(BaseFrozenModel):
 
 
 class PostAggregationColumn(
-    DerivedColumnCreationMixin[AggregationColumn, "PostAggregationColumn"], BaseFrozenModel
+    DerivedColumnCreationMixin[AggregationColumn, "PostAggregationColumn"], BaseDerivedColumn
 ):
     """Post aggregation column"""
 
-    name: Optional[str]
     columns: List[AggregationColumn]
-    transforms: List[str]
     type: Literal[FeatureDataColumnType.POST_AGGREGATION] = Field(
         FeatureDataColumnType.POST_AGGREGATION, const=True
     )

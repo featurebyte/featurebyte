@@ -4,13 +4,17 @@ Unit tests for query graph operation structure extraction
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-def extract_common_column_parameters(input_node):
+def extract_common_column_parameters(input_node, other_node_names=None):
     """Extract common column parameters"""
+    node_names = {input_node.name}
+    if other_node_names:
+        node_names.update(other_node_names)
     return {
         "tabular_data_id": input_node.parameters.id,
         "tabular_data_type": input_node.parameters.type,
         "filter": False,
         "type": "source",
+        "node_names": node_names,
     }
 
 
@@ -87,6 +91,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
             "transforms": ["add"],
             "filter": False,
             "type": "derived",
+            "node_names": {"input_1", "add_1"},
         }
     ]
     assert op_struct.columns == expected_derived_columns
@@ -117,6 +122,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
             "transforms": ["add"],
             "filter": False,
             "type": "derived",
+            "node_names": {"input_1", "add_1", "assign_1"},
         },
     ]
     assert op_struct.columns == expected_columns + expected_derived_columns
@@ -134,7 +140,9 @@ def test_extract_operation__filter(graph_four_nodes):
     """Test extract_operation_structure: filter"""
     graph, input_node, _, _, filter_node = graph_four_nodes
     op_struct = graph.extract_operation_structure(node=filter_node)
-    common_column_params = extract_common_column_parameters(input_node)
+    common_column_params = extract_common_column_parameters(
+        input_node, other_node_names={"filter_1"}
+    )
     expected_columns = [{"name": "column", **common_column_params, "filter": True}]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
@@ -185,6 +193,7 @@ def test_extract_operation__lag(global_graph, input_node):
             "transforms": ["lag(entity_columns=['cust_id'], offset=1, timestamp_column='ts')"],
             "filter": False,
             "type": "derived",
+            "node_names": {"input_1", "lag_1"},
         }
     ]
     assert op_struct.columns == expected_derived_columns
@@ -214,6 +223,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "groupby_type": "groupby",
         "filter": False,
         "type": "aggregation",
+        "node_names": {"groupby_1"},
     }
     expected_columns = [
         {"name": "a", **common_column_params},
@@ -262,20 +272,19 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         input_nodes=[project_node, eq_node],
     )
     op_struct = graph.extract_operation_structure(node=filter_node)
-    expected_post_aggregation = {
-        "name": "a_2h_average",
-        "type": "post_aggregation",
-        "transforms": ["filter"],
-        "columns": [expected_aggregations[0]],
+    expected_filtered_aggregation = {
+        **expected_aggregations[0],
+        "filter": True,
+        "node_names": {"groupby_1", "filter_1"},
     }
     assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == [expected_post_aggregation]
+    assert op_struct.aggregations == [expected_filtered_aggregation]
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
     assert grp_op_struct.derived_columns == []
-    assert grp_op_struct.aggregations == [expected_aggregations[0]]
-    assert grp_op_struct.post_aggregation == expected_post_aggregation
+    assert grp_op_struct.aggregations == [expected_filtered_aggregation]
+    assert grp_op_struct.post_aggregation is None
 
 
 def test_extract_operation__item_groupby(
@@ -295,6 +304,7 @@ def test_extract_operation__item_groupby(
             "window": None,
             "filter": False,
             "groupby_type": "item_groupby",
+            "node_names": {"item_groupby_1"},
         }
     ]
     assert op_struct.output_category == "feature"
@@ -320,6 +330,7 @@ def test_extract_operation__join_double_aggregations(
         "transforms": ["item_groupby"],
         "filter": False,
         "type": "derived",
+        "node_names": {"item_groupby_1"},
     }
     assert op_struct.columns == [
         {"name": "ts", **common_event_data_column_params},
@@ -345,6 +356,7 @@ def test_extract_operation__join_double_aggregations(
             "filter": False,
             "groupby_type": "groupby",
             "type": "aggregation",
+            "node_names": {"groupby_1"},
         }
     ]
     assert op_struct.columns == [order_size_column]
@@ -374,18 +386,11 @@ def test_extract_operation__alias(global_graph, input_node):
     op_struct = global_graph.extract_operation_structure(node=add_node)
     expected_derived_columns = {
         "name": None,
-        "columns": [
-            {
-                "name": "a",
-                "tabular_data_id": None,
-                "tabular_data_type": "event_data",
-                "filter": False,
-                "type": "source",
-            }
-        ],
+        "columns": [{"name": "a", **extract_common_column_parameters(input_node)}],
         "transforms": ["add(value=10)"],
         "filter": False,
         "type": "derived",
+        "node_names": {"input_1", "add_1"},
     }
     assert op_struct.columns == [expected_derived_columns]
     alias_node = global_graph.add_operation(
@@ -418,6 +423,7 @@ def test_extract_operation__complicated_assignment(dataframe):
         "transforms": ["date_diff", "date_add"],
         "type": "derived",
         "filter": False,
+        "node_names": {"input_1", "date_diff_1", "assign_1", "date_add_1", "assign_3"},
     }
     assert op_struct.columns == [expected_new_ts]
 
@@ -434,6 +440,7 @@ def test_extract_operation__complicated_assignment(dataframe):
             "transforms": [],
             "type": "derived",
             "filter": False,
+            "node_names": {"assign_2"},
         }
     ]
     assert graph.get_node_by_name("assign_2").parameters == {"name": "diff", "value": 123}
@@ -452,6 +459,7 @@ def test_extract_operation__complicated_assignment(dataframe):
             "transforms": [],
             "type": "derived",
             "filter": False,
+            "node_names": {"assign_2"},
         },
         expected_new_ts,
     ]
