@@ -412,7 +412,7 @@ def test_extract_operation__alias(global_graph, input_node):
     ]
 
 
-def test_extract_operation__complicated_assignment(dataframe):
+def test_extract_operation__complicated_assignment_case_1(dataframe):
     """Test node names value tracks column lineage properly"""
     dataframe["diff"] = dataframe["TIMESTAMP_VALUE"] - dataframe["TIMESTAMP_VALUE"]
     diff = dataframe["diff"]
@@ -472,3 +472,43 @@ def test_extract_operation__complicated_assignment(dataframe):
         },
         expected_new_ts,
     ]
+
+
+def test_extract_operation__complicated_assignment_case_2(dataframe):
+    """Test node names value tracks column lineage properly"""
+    dataframe["diff"] = dataframe["VALUE"] - dataframe["CUST_ID"]
+    dataframe["diff"] = dataframe["diff"] + dataframe["CUST_ID"]
+    dataframe["another_diff"] = dataframe["diff"]
+    dataframe["diff"] = dataframe["another_diff"]
+
+    # check extract operation structure
+    graph = dataframe.graph
+    input_node = graph.get_node_by_name("input_1")
+    common_data_column_params = extract_common_column_parameters(input_node)
+    op_struct = graph.extract_operation_structure(node=dataframe["diff"].node)
+    assert op_struct == {
+        "aggregations": [],
+        "columns": [
+            {
+                "columns": [
+                    {"name": "VALUE", **common_data_column_params},
+                    {"name": "CUST_ID", **common_data_column_params},
+                ],
+                "filter": False,
+                "name": "diff",
+                "node_names": {
+                    "input_1",
+                    "sub_1",
+                    "add_1",
+                    "assign_1",
+                    "assign_2",
+                    "assign_3",
+                    "assign_4",
+                },
+                "transforms": ["sub", "add"],
+                "type": "derived",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
