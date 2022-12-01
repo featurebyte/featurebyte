@@ -52,14 +52,14 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
     node_num = len(graph.nodes)
     node_duplicated = graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
+        node_params={"columns": ["column"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
     assert len(graph.nodes) == node_num
     node_another_duplicated = graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"], "unknown": "whatever"},
+        node_params={"columns": ["column"], "unknown": "whatever"},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
@@ -78,7 +78,7 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
     assert project_node == {
         "name": "project_1",
         "type": "project",
-        "parameters": {"columns": ["a"]},
+        "parameters": {"columns": ["column"]},
         "output_type": "series",
     }
     assert graph_dict["edges"] == [{"source": "input_1", "target": "project_1"}]
@@ -110,11 +110,13 @@ def test_prune__redundant_assign_nodes(dataframe):
     assert dataframe.node == construct_node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
+    target_node = dataframe["target"].node
     pruned_graph, node_name_map = dataframe.graph.prune(
-        target_node=dataframe.node, target_columns={"target"}
+        target_node=target_node, target_columns={"target"}
     )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges_map == {
+        "assign_1": ["project_3"],
         "input_1": ["project_1", "project_2", "assign_1"],
         "project_1": ["mul_1"],
         "project_2": ["mul_1"],
@@ -172,29 +174,32 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     dataframe["requiredA"] = dataframe["CUST_ID"] / 10
     dataframe["requiredB"] = dataframe["VALUE"] + 10
     dataframe["target"] = dataframe["requiredA"] * dataframe["requiredB"]
+    target_node = dataframe["target"].node
     pruned_graph, node_name_map = dataframe.graph.prune(
-        target_node=dataframe.node, target_columns={"target"}
+        target_node=target_node, target_columns={"target"}
     )
-    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges_map == {
-        "input_1": ["project_1", "assign_1", "project_3", "assign_2"],
-        "project_1": ["add_1"],
-        "project_2": ["mul_1"],
-        "project_3": ["div_1"],
+        "input_1": ["project_1", "assign_1", "project_2"],
+        "project_1": ["div_1"],
+        "div_1": ["assign_1"],
+        "project_2": ["add_1"],
+        "add_1": ["assign_2"],
+        "assign_1": ["assign_2", "project_4"],
+        "assign_2": ["project_3", "assign_3"],
+        "project_3": ["mul_1"],
         "project_4": ["mul_1"],
-        "add_1": ["assign_1"],
-        "assign_1": ["project_2", "assign_3"],
-        "assign_2": ["project_4"],
-        "div_1": ["assign_2"],
         "mul_1": ["assign_3"],
+        "assign_3": ["project_5"],
     }
-    assert pruned_graph.nodes_map["assign_1"].parameters.name == "requiredB"
-    assert pruned_graph.nodes_map["assign_2"].parameters.name == "requiredA"
-    assert pruned_graph.nodes_map["project_1"].parameters.columns == ["VALUE"]
-    assert pruned_graph.nodes_map["project_2"].parameters.columns == ["requiredB"]
-    assert pruned_graph.nodes_map["project_3"].parameters.columns == ["CUST_ID"]
+    assert pruned_graph.nodes_map["assign_1"].parameters.name == "requiredA"
+    assert pruned_graph.nodes_map["assign_2"].parameters.name == "requiredB"
+    assert pruned_graph.nodes_map["project_1"].parameters.columns == ["CUST_ID"]
+    assert pruned_graph.nodes_map["project_2"].parameters.columns == ["VALUE"]
+    assert pruned_graph.nodes_map["project_3"].parameters.columns == ["requiredB"]
     assert pruned_graph.nodes_map["project_4"].parameters.columns == ["requiredA"]
-    assert mapped_node.name == "assign_3"
+    assert pruned_graph.nodes_map["project_5"].parameters.columns == ["target"]
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
+    assert mapped_node.name == "project_5"
 
 
 def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe):

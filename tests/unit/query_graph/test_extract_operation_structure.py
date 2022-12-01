@@ -149,19 +149,18 @@ def test_extract_operation__filter(graph_four_nodes):
     """Test extract_operation_structure: filter"""
     graph, input_node, _, _, filter_node = graph_four_nodes
 
-    # FIXME: override column to make sure project a proper column (should fix conftest.py)
-    graph.nodes[0].parameters.columns = ["a"]
-
     op_struct = graph.extract_operation_structure(node=filter_node)
     common_column_params = extract_column_parameters(input_node, other_node_names={"filter_1"})
-    expected_columns = [{"name": "a", **common_column_params, "filter": True}]
+    expected_columns = [{"name": "column", **common_column_params, "filter": True}]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == [{"name": "a", **common_column_params, "filter": True}]
+    assert grp_op_struct.source_columns == [
+        {"name": "column", **common_column_params, "filter": True}
+    ]
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None

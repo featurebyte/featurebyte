@@ -575,7 +575,7 @@ def query_graph_two_nodes(graph_single_node):
     graph, node_input = graph_single_node
     node_proj = graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
+        node_params={"columns": ["column"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
@@ -588,7 +588,7 @@ def query_graph_two_nodes(graph_single_node):
     assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1"}
     assert graph_dict["edges"] == [{"source": "input_1", "target": "project_1"}]
     assert node_proj == construct_node(
-        name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
+        name="project_1", type="project", parameters={"columns": ["column"]}, output_type="series"
     )
     yield graph, node_input, node_proj
 
