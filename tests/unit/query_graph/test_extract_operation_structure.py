@@ -258,15 +258,14 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         input_nodes=[groupby_node],
     )
     op_struct = graph.extract_operation_structure(node=project_node)
+    expected_aggregation = {
+        "name": "a_2h_average",
+        "window": "2h",
+        **common_aggregation_params,
+        "node_names": {"groupby_1", "project_3"},
+    }
     assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == [
-        {
-            "name": "a_2h_average",
-            "window": "2h",
-            **common_aggregation_params,
-            "node_names": {"groupby_1", "project_3"},
-        }
-    ]
+    assert op_struct.aggregations == [expected_aggregation]
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
 
@@ -285,9 +284,12 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     )
     op_struct = graph.extract_operation_structure(node=filter_node)
     expected_filtered_aggregation = {
-        **expected_aggregations[0],
-        "filter": True,
-        "node_names": {"groupby_1", "project_3", "filter_1"},
+        "columns": [expected_aggregation],
+        "filter": False,
+        "name": "a_2h_average",
+        "node_names": {"filter_1", "project_3", "groupby_1"},
+        "transforms": ["filter"],
+        "type": "post_aggregation",
     }
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == [expected_filtered_aggregation]
@@ -295,8 +297,8 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
     assert grp_op_struct.derived_columns == []
-    assert grp_op_struct.aggregations == [expected_filtered_aggregation]
-    assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.aggregations == [expected_aggregation]
+    assert grp_op_struct.post_aggregation == expected_filtered_aggregation
 
 
 def test_extract_operation__item_groupby(

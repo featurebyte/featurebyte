@@ -18,6 +18,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
+    PostAggregationColumn,
     SourceDataColumn,
     ViewDataColumn,
 )
@@ -177,7 +178,9 @@ class FilterNode(BaseNode):
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
-                col.clone(filter=True, node_names=col.node_names.union([self.name]))
+                PostAggregationColumn.create(
+                    name=col.name, columns=[col], transform=self.transform_info, node_name=self.name
+                )
                 for col in input_operation_info.aggregations
             ]
 
