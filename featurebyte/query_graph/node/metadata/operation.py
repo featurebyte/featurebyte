@@ -2,7 +2,20 @@
 This module contains models used to store node output operation info
 """
 # pylint: disable=too-few-public-methods
-from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union, overload
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 from typing_extensions import Annotated
 
 from bson import json_util
@@ -43,21 +56,43 @@ class BaseFrozenModel(BaseModel):
         frozen = True
 
 
-class BaseDataColumn(BaseFrozenModel):
+BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
+BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
+
+
+class BaseColumn(BaseFrozenModel):
+    """BaseColumn class"""
+
+    filter: bool
+    node_names: Set[str]
+
+    def clone(self: BaseColumnT, **kwargs: Any) -> BaseColumnT:
+        """
+        Clone an existing object with certain update
+
+        Parameters
+        ----------
+        kwargs: Any
+            Keyword parameters to overwrite existing object
+
+        Returns
+        -------
+        Self
+        """
+        return type(self)(**{**self.dict(), **kwargs})
+
+
+class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str
-    node_names: Set[str]
-    filter: bool
 
 
-class BaseDerivedColumn(BaseFrozenModel):
+class BaseDerivedColumn(BaseColumn):
     """BaseDerivedColumn class"""
 
     name: Optional[str]
     transforms: List[str]
-    node_names: Set[str]
-    filter: bool
     columns: Sequence[BaseDataColumn]
 
     @root_validator(pre=True)
@@ -68,9 +103,24 @@ class BaseDerivedColumn(BaseFrozenModel):
         return values
 
     @staticmethod
-    def _insert_column(
+    def insert_column(
         column_map: Dict[str, BaseDataColumn], column: BaseDataColumn
     ) -> Dict[str, BaseDataColumn]:
+        """
+        Insert column into dictionary. If the column name already exists, keep the one with the
+        higher number of node names.
+
+        Parameters
+        ----------
+        column_map: Dict[str, BaseDataColumn]
+            Dictionary map
+        column: BaseDataColumn
+            Data column object
+
+        Returns
+        -------
+        Dict[str, BaseDataColumn]
+        """
         if column.name not in column_map:
             column_map[column.name] = column
         elif len(column.node_names) > len(column_map[column.name].node_names):
@@ -93,22 +143,22 @@ class BaseDerivedColumn(BaseFrozenModel):
 
                 # when the column's name are the same, keep the one with the most node_names
                 for col in flat_columns:
-                    col_map = cls._insert_column(col_map, col)
+                    col_map = cls.insert_column(col_map, col)
 
                 # added current transform to the list of transforms
                 transforms.extend(column.transforms)
             else:
-                col_map = cls._insert_column(col_map, column)
+                col_map = cls.insert_column(col_map, column)
         return list(col_map.values()), transforms, node_names
 
     @classmethod
     def create(
-        cls,
+        cls: Type[BaseDerivedColumnT],
         name: Optional[str],
         columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]],
         transform: Optional[str],
         node_name: str,
-    ) -> "BaseDerivedColumn":
+    ) -> BaseDerivedColumnT:
         """
         Create derived column by flattening the derived columns in the given list of columns
 
@@ -267,16 +317,19 @@ class OperationStructure(BaseFrozenModel):
         Tuple[List[AggregationColumn], List[PostAggregationColumn]],
     ]:
         _ = self
-        input_column_map: Dict[Any, None] = {}
+        input_column_map: Dict[str, Any] = {}
         derived_column_map: Dict[Any, None] = {}
         for column in columns:
             if isinstance(column, (DerivedDataColumn, PostAggregationColumn)):
                 derived_column_map[column] = None
                 for inner_column in column.columns:
-                    input_column_map[inner_column] = None
+                    input_column_map = BaseDerivedColumn.insert_column(
+                        input_column_map, inner_column
+                    )
             else:
-                input_column_map[column] = None
-        return list(input_column_map), list(derived_column_map)
+                input_column_map = BaseDerivedColumn.insert_column(input_column_map, column)
+
+        return list(input_column_map.values()), list(derived_column_map)
 
     def to_group_operation_structure(self) -> GroupOperationStructure:
         """

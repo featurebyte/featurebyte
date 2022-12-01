@@ -139,12 +139,16 @@ class ProjectNode(BaseNode):
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                col for col in input_operation_info.columns if col.name in names
+                col.clone(node_names=col.node_names.union([self.name]))
+                for col in input_operation_info.columns
+                if col.name in names
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
-                col for col in input_operation_info.aggregations if col.name in names
+                col.clone(node_names=col.node_names.union([self.name]))
+                for col in input_operation_info.aggregations
+                if col.name in names
             ]
 
         return OperationStructure(
@@ -167,25 +171,13 @@ class FilterNode(BaseNode):
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
-                type(col)(
-                    **{
-                        **col.dict(),
-                        "filter": True,
-                        "node_names": col.node_names.union([self.name]),
-                    }
-                )
+                col.clone(filter=True, node_names=col.node_names.union([self.name]))
                 for col in input_operation_info.columns
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
-                type(col)(
-                    **{
-                        **col.dict(),
-                        "filter": True,
-                        "node_names": col.node_names.union([self.name]),
-                    }
-                )
+                col.clone(filter=True, node_names=col.node_names.union([self.name]))
                 for col in input_operation_info.aggregations
             ]
 
@@ -214,6 +206,7 @@ class AssignNode(BaseNode):
     ) -> OperationStructure:
         _ = visited_node_types
         input_operation_info = inputs[0]
+        # AssignNode can only take 1 or 2 parameters (1 parameters is frame, 2nd optional parameter is series)
         if len(inputs) == 2:
             columns = inputs[1].columns
         else:
@@ -228,7 +221,7 @@ class AssignNode(BaseNode):
             node_name=self.name,
         )
         return OperationStructure(
-            columns=input_columns + [new_column],  # type: ignore
+            columns=input_columns + [new_column],
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
         )
@@ -363,12 +356,12 @@ class JoinNode(BaseNode):
         left_output_columns = set(self.parameters.left_output_columns)
         right_output_columns = set(self.parameters.right_output_columns)
         left_columns = [
-            type(col)(**{**col.dict(), "node_names": col.node_names.union([self.name])})
+            col.clone(node_names=col.node_names.union([self.name]))
             for col in inputs[0].columns
             if col.name in left_output_columns
         ]
         right_columns = [
-            type(col)(**{**col.dict(), "node_names": col.node_names.union([self.name])})
+            col.clone(node_names=col.node_names.union([self.name]))
             for col in inputs[1].columns
             if col.name in right_output_columns
         ]
@@ -397,29 +390,20 @@ class AliasNode(BaseNode):
         output_category = input_operation_info.output_category
 
         node_kwargs: Dict[str, Any] = {}
+        new_name = self.parameters.name
         if output_category == NodeOutputCategory.VIEW:
             last_col = input_operation_info.columns[-1]
-            new_last_column = type(last_col)(
-                **{
-                    **last_col.dict(),
-                    "name": self.parameters.name,
-                    "node_names": last_col.node_names.union([self.name]),
-                }
-            )
             node_kwargs["columns"] = list(input_operation_info.columns)
-            node_kwargs["columns"][-1] = new_last_column
+            node_kwargs["columns"][-1] = last_col.clone(
+                name=new_name, node_names=last_col.node_names.union([self.name])
+            )
         else:
             last_agg = input_operation_info.aggregations[-1]
-            new_last_aggregation = type(last_agg)(
-                **{
-                    **last_agg.dict(),
-                    "name": self.parameters.name,
-                    "node_names": last_agg.node_names.union([self.name]),
-                }
-            )
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = list(input_operation_info.aggregations)
-            node_kwargs["aggregations"][-1] = new_last_aggregation
+            node_kwargs["aggregations"][-1] = last_agg.clone(
+                name=new_name, node_names=last_agg.node_names.union([self.name])
+            )
 
         return OperationStructure(
             **node_kwargs, output_type=self.output_type, output_category=output_category

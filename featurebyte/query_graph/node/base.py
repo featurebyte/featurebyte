@@ -54,6 +54,9 @@ class BaseNode(BaseModel):
             if value
         )
         if parameters and len(parameters) < 4:
+            # Note: 4 is chosen here so that the info is more readable, with too many
+            # parameters presented here, it is hard to read. This value currently is only
+            # used for the signal type tagging (for feature theme).
             return f"{str(self.type).lower()}({', '.join(parameters)})"
         return str(self.type).lower()
 
