@@ -587,3 +587,33 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         # Check error
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {"detail": "Feature List is not online enabled"}
+
+    @pytest.mark.parametrize(
+        "num_rows, expected_msg",
+        [
+            (1000, "ensure this value has at most 50 items"),
+            (0, "ensure this value has at least 1 items"),
+        ],
+    )
+    def test_get_online_features__invalid_number_of_rows(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        num_rows,
+        expected_msg,
+    ):
+        """Test feature list get_online_features with invalid number of rows"""
+        test_api_client, _ = test_api_client_persistent
+        feature_list_doc = create_success_response.json()
+
+        # Request online features before deploying
+        feature_list_id = feature_list_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}] * num_rows}
+        response = test_api_client.post(
+            f"{self.base_route}/{feature_list_id}/online_features",
+            data=json.dumps(data),
+        )
+
+        # Check error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"][0]["msg"] == expected_msg
