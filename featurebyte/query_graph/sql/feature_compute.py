@@ -198,8 +198,8 @@ class RequestTablePlan(ABC):
         # distinct time points
         quoted_serving_names = [quoted_identifier(x) for x in serving_names]
         select_distinct_expr = (
-            expressions.Select(distinct=True)
-            .select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
+            select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
+            .distinct()
             .from_(request_table_name)
         )
         first_tile_index_expr, last_tile_index_expr = calculate_first_and_last_tile_indices(
@@ -314,11 +314,7 @@ class NonTimeAwareRequestTablePlan:
         expressions.Select
         """
         quoted_serving_names = [quoted_identifier(x) for x in agg_spec.serving_names]
-        select_distinct_expr = (
-            expressions.Select(distinct=True)
-            .select(*quoted_serving_names)
-            .from_(request_table_name)
-        )
+        select_distinct_expr = select(*quoted_serving_names).distinct().from_(request_table_name)
         return select_distinct_expr
 
 

@@ -105,8 +105,7 @@ class OnlineStoreUniversePlan:
             expressions.LT(this="INDEX", expression=last_index),
         )
         expr = (
-            expressions.Select(distinct=True)
-            .select(
+            select(
                 expressions.alias_(self._get_point_in_time_expr(), SpecialColumnName.POINT_IN_TIME),
                 *[
                     expressions.alias_(
@@ -115,6 +114,7 @@ class OnlineStoreUniversePlan:
                     for key_col, serving_name_col in zip(keys, serving_names)
                 ],
             )
+            .distinct()
             .from_(tile_id)
             .where(filter_condition)
         )
