@@ -68,7 +68,7 @@ class FeatureStoreCredentials(FeatureByteBaseModel):
     Credentials used when trying to create the feature store
     """
 
-    credentials: Optional[Credential]
+    credentials: Optional[Credential] = None
 
 
 class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails, FeatureStoreCredentials):

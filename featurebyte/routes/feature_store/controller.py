@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -113,7 +113,8 @@ class FeatureStoreController(
         async with self.service.persistent.start_transaction():
             # Override get_credential if credentials are provided
             get_credentials_to_use = get_credential
-            if data.credentials is not None:
+            creds_from_params = data.credentials
+            if creds_from_params is not None:
 
                 def _updated_get_credential(user_id: str, feature_store_name: str) -> Credential:
                     """
@@ -139,8 +140,8 @@ class FeatureStoreController(
                     cred = get_credential(user_id, feature_store_name)
                     if cred is not None:
                         return cred
-                    self.persist_credential(data.credentials, feature_store_name)
-                    return data.credentials
+                    self.persist_credential(creds_from_params, feature_store_name)
+                    return creds_from_params
 
                 get_credentials_to_use = _updated_get_credential
 
