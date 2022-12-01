@@ -323,14 +323,17 @@ def test_extract_operation__join_double_aggregations(
 
     # check join & its output
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_join_node)
-    common_event_data_column_params = extract_common_column_parameters(event_data_input_node)
+    common_event_data_column_params = extract_common_column_parameters(
+        event_data_input_node,
+        other_node_names={"join_1"},
+    )
     order_size_column = {
         "name": "order_size",
         "columns": [],
         "transforms": ["item_groupby"],
         "filter": False,
         "type": "derived",
-        "node_names": {"item_groupby_1"},
+        "node_names": {"item_groupby_1", "join_1"},
     }
     assert op_struct.columns == [
         {"name": "ts", **common_event_data_column_params},
@@ -400,7 +403,13 @@ def test_extract_operation__alias(global_graph, input_node):
         input_nodes=[add_node],
     )
     op_struct = global_graph.extract_operation_structure(node=alias_node)
-    assert op_struct.columns == [{**expected_derived_columns, "name": "some_value"}]
+    assert op_struct.columns == [
+        {
+            **expected_derived_columns,
+            "name": "some_value",
+            "node_names": {"input_1", "add_1", "alias_1"},
+        }
+    ]
 
 
 def test_extract_operation__complicated_assignment(dataframe):

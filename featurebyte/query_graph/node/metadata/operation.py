@@ -2,21 +2,7 @@
 This module contains models used to store node output operation info
 """
 # pylint: disable=too-few-public-methods
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    List,
-    Literal,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
+from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union, overload
 from typing_extensions import Annotated
 
 from bson import json_util
@@ -72,6 +58,7 @@ class BaseDerivedColumn(BaseFrozenModel):
     transforms: List[str]
     node_names: Set[str]
     filter: bool
+    columns: Sequence[BaseDataColumn]
 
     @root_validator(pre=True)
     @classmethod
@@ -80,27 +67,10 @@ class BaseDerivedColumn(BaseFrozenModel):
             values["filter"] = any(col.filter for col in values["columns"])
         return values
 
-
-DataColumnT = TypeVar("DataColumnT", bound=BaseDataColumn)
-DerivedColumnT = TypeVar("DerivedColumnT", bound=BaseDerivedColumn)
-
-
-class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
-    """
-    DerivedColumnCreationMixin class
-    """
-
-    columns: List[DataColumnT]
-    transforms: List[str]
-    node_names: Set[str]
-
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-
     @staticmethod
     def _insert_column(
-        column_map: Dict[str, DataColumnT], column: DataColumnT
-    ) -> Dict[str, DataColumnT]:
+        column_map: Dict[str, BaseDataColumn], column: BaseDataColumn
+    ) -> Dict[str, BaseDataColumn]:
         if column.name not in column_map:
             column_map[column.name] = column
         elif len(column.node_names) > len(column_map[column.name].node_names):
@@ -109,14 +79,14 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
 
     @classmethod
     def _flatten_columns(
-        cls, columns: Sequence[Union[DataColumnT, DerivedColumnT]]
-    ) -> Tuple[Sequence[DataColumnT], List[str], Set[str]]:
-        col_map: Dict[str, DataColumnT] = {}
-        transforms = []
-        node_names = set()
+        cls, columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]]
+    ) -> Tuple[Sequence[BaseDataColumn], List[str], Set[str]]:
+        col_map: Dict[str, BaseDataColumn] = {}
+        transforms: List[str] = []
+        node_names: Set[str] = set()
         for column in columns:
-            node_names.update(column.node_names)  # type: ignore
-            if isinstance(column, cls):
+            node_names.update(column.node_names)
+            if isinstance(column, BaseDerivedColumn):
                 # traverse to nested derived columns first
                 flat_columns, flat_transforms, _ = cls._flatten_columns(column.columns)
                 transforms.extend(flat_transforms)
@@ -135,10 +105,10 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
     def create(
         cls,
         name: Optional[str],
-        columns: Sequence[Union[DataColumnT, DerivedColumnT]],
+        columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]],
         transform: Optional[str],
         node_name: str,
-    ) -> DerivedColumnT:
+    ) -> "BaseDerivedColumn":
         """
         Create derived column by flattening the derived columns in the given list of columns
 
@@ -146,7 +116,7 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
         ----------
         name: Optional[str]
             Output column name
-        columns: Sequence[Union[DataColumnT, DerivedColumnT]]
+        columns: Sequence[Union[BaseDataColumn, BaseDerivedColumn]]
             Input column name
         transform: Optional[str]
             Node transformation
@@ -155,17 +125,14 @@ class DerivedColumnCreationMixin(Generic[DataColumnT, DerivedColumnT]):
 
         Returns
         -------
-        DerivedColumnT
+        BaseDerivedColumn
             Derive column object
         """
         columns, transforms, node_names = cls._flatten_columns(columns)
         node_names.add(node_name)
         if transform:
             transforms.append(transform)
-        return cast(
-            DerivedColumnT,
-            cls(name=name, columns=columns, transforms=transforms, node_names=node_names),
-        )
+        return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)
 
 
 class SourceDataColumn(BaseDataColumn):
@@ -182,9 +149,7 @@ class SourceDataColumn(BaseDataColumn):
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
 
-class DerivedDataColumn(
-    DerivedColumnCreationMixin[SourceDataColumn, "DerivedDataColumn"], BaseDerivedColumn
-):
+class DerivedDataColumn(BaseDerivedColumn):
     """Derived column"""
 
     columns: List[SourceDataColumn]
@@ -220,9 +185,7 @@ class AggregationColumn(BaseDataColumn):
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
 
-class PostAggregationColumn(
-    DerivedColumnCreationMixin[AggregationColumn, "PostAggregationColumn"], BaseDerivedColumn
-):
+class PostAggregationColumn(BaseDerivedColumn):
     """Post aggregation column"""
 
     columns: List[AggregationColumn]

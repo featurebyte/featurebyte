@@ -228,7 +228,7 @@ class AssignNode(BaseNode):
             node_name=self.name,
         )
         return OperationStructure(
-            columns=input_columns + [new_column],
+            columns=input_columns + [new_column],  # type: ignore
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
         )
@@ -362,8 +362,16 @@ class JoinNode(BaseNode):
         _ = visited_node_types
         left_output_columns = set(self.parameters.left_output_columns)
         right_output_columns = set(self.parameters.right_output_columns)
-        left_columns = [col for col in inputs[0].columns if col.name in left_output_columns]
-        right_columns = [col for col in inputs[1].columns if col.name in right_output_columns]
+        left_columns = [
+            type(col)(**{**col.dict(), "node_names": col.node_names.union([self.name])})
+            for col in inputs[0].columns
+            if col.name in left_output_columns
+        ]
+        right_columns = [
+            type(col)(**{**col.dict(), "node_names": col.node_names.union([self.name])})
+            for col in inputs[1].columns
+            if col.name in right_output_columns
+        ]
         return OperationStructure(
             columns=left_columns + right_columns,
             output_type=NodeOutputType.FRAME,
@@ -390,16 +398,24 @@ class AliasNode(BaseNode):
 
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
-            last_column = input_operation_info.columns[-1]
-            new_last_column = type(last_column)(
-                **{**last_column.dict(), "name": self.parameters.name}
+            last_col = input_operation_info.columns[-1]
+            new_last_column = type(last_col)(
+                **{
+                    **last_col.dict(),
+                    "name": self.parameters.name,
+                    "node_names": last_col.node_names.union([self.name]),
+                }
             )
             node_kwargs["columns"] = list(input_operation_info.columns)
             node_kwargs["columns"][-1] = new_last_column
         else:
-            last_aggregation = input_operation_info.aggregations[-1]
-            new_last_aggregation = type(last_aggregation)(
-                **{**last_aggregation.dict(), "name": self.parameters.name}
+            last_agg = input_operation_info.aggregations[-1]
+            new_last_aggregation = type(last_agg)(
+                **{
+                    **last_agg.dict(),
+                    "name": self.parameters.name,
+                    "node_names": last_agg.node_names.union([self.name]),
+                }
             )
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = list(input_operation_info.aggregations)
