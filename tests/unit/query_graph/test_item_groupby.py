@@ -20,7 +20,7 @@ from featurebyte.query_graph.sql.common import SQLType
         ("item_id", AggFunc.MAX, 'MAX("item_id")'),
         ("item_id", AggFunc.AVG, 'AVG("item_id")'),
         ("item_id", AggFunc.STD, 'STDDEV("item_id")'),
-        ("item_id", AggFunc.NA_COUNT, 'SUM(CAST("item_id" IS NULL AS INT))'),
+        ("item_id", AggFunc.NA_COUNT, 'SUM(CAST("item_id" IS NULL AS INTEGER))'),
     ],
 )
 def test_item_groupby_sql_node(global_graph, item_data_input_node, parent, agg_func, expected_expr):
@@ -50,12 +50,12 @@ def test_item_groupby_sql_node(global_graph, item_data_input_node, parent, agg_f
           "order_id",
           {expected_expr} AS "feature_name"
         FROM (
-            SELECT
-              "order_id" AS "order_id",
-              "item_id" AS "item_id",
-              "item_name" AS "item_name",
-              "item_type" AS "item_type"
-            FROM "db"."public"."item_table"
+          SELECT
+            "order_id" AS "order_id",
+            "item_id" AS "item_id",
+            "item_name" AS "item_name",
+            "item_type" AS "item_type"
+          FROM "db"."public"."item_table"
         )
         GROUP BY
           "order_id"

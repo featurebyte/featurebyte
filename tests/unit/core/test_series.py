@@ -1008,14 +1008,22 @@ def test_node_types_lineage(dataframe, float_series):
             NodeType.POWER,
             DBVarType.FLOAT,
             {"value": 2},
-            '(\n    POWER("VALUE", 2)\n  )',
+            """
+            (
+              POWER("VALUE", 2)
+            )
+            """,
         ),
         (
             lambda s: s**2,
             NodeType.POWER,
             DBVarType.FLOAT,
             {"value": 2},
-            '(\n    POWER("VALUE", 2)\n  )',
+            """
+            (
+              POWER("VALUE", 2)
+            )
+            """,
         ),
         (lambda s: s.log(), NodeType.LOG, DBVarType.FLOAT, {}, 'LN("VALUE")'),
         (lambda s: s.exp(), NodeType.EXP, DBVarType.FLOAT, {}, 'EXP("VALUE")'),

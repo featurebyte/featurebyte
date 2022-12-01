@@ -110,13 +110,17 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     SELECT
       POINT_IN_TIME,
       "CID",
-      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
-      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+      ) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+      ) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
-        SELECT DISTINCT
-          POINT_IN_TIME,
-          "CID"
-        FROM REQUEST_TABLE
+      SELECT DISTINCT
+        POINT_IN_TIME,
+        "CID"
+      FROM REQUEST_TABLE
     )
     """
     assert_sql_equal(cte[1].sql(pretty=True), expected_sql)
@@ -147,13 +151,17 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     SELECT
       POINT_IN_TIME,
       "CID",
-      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
-      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+      ) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+      ) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
     FROM (
-        SELECT DISTINCT
-          POINT_IN_TIME,
-          "CID"
-        FROM REQUEST_TABLE
+      SELECT DISTINCT
+        POINT_IN_TIME,
+        "CID"
+      FROM REQUEST_TABLE
     )
     """
     assert_sql_equal(sql.sql(pretty=True), expected_sql)
@@ -165,13 +173,17 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     SELECT
       POINT_IN_TIME,
       "CID",
-      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
-      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+      ) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((
+        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+      ) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
-        SELECT DISTINCT
-          POINT_IN_TIME,
-          "CID"
-        FROM REQUEST_TABLE
+      SELECT DISTINCT
+        POINT_IN_TIME,
+        "CID"
+      FROM REQUEST_TABLE
     )
     """
     assert_sql_equal(sql.sql(pretty=True), expected_sql)
@@ -330,12 +342,12 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
       "order_id",
       COUNT(*) AS "order_size"
     FROM (
-        SELECT
-          "order_id" AS "order_id",
-          "item_id" AS "item_id",
-          "item_name" AS "item_name",
-          "item_type" AS "item_type"
-        FROM "db"."public"."item_table"
+      SELECT
+        "order_id" AS "order_id",
+        "item_id" AS "item_id",
+        "item_name" AS "item_name",
+        "item_type" AS "item_type"
+      FROM "db"."public"."item_table"
     )
     GROUP BY
       "order_id"
