@@ -112,3 +112,27 @@ def test_derived_data_column_create(
         transforms=[transform_add, transform_mul],
         node_names={"input_1", "add_1", "mul_1"},
     )
+
+
+def test_insert_column():
+    """Test insert column"""
+    col1 = SourceDataColumn(
+        name="col1",
+        tabular_data_id=None,
+        tabular_data_type="event_data",
+        node_names={"input_1", "project_1"},
+    )
+    another_col1 = col1.clone(node_names={"input_1", "filter_1"}, filter=True)
+    col_map = DerivedDataColumn.insert_column(
+        DerivedDataColumn.insert_column({}, col1), another_col1
+    )
+    assert col_map == {
+        "col1": {
+            "name": "col1",
+            "node_names": {"input_1", "project_1", "filter_1"},
+            "tabular_data_id": None,
+            "tabular_data_type": "event_data",
+            "type": "source",
+            "filter": True,
+        }
+    }

@@ -24,7 +24,7 @@ class SeriesOutputNodeOpStructMixin:
     transform_info: str
     output_type: NodeOutputType
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         """
@@ -111,7 +111,7 @@ class GroupbyNodeOpStructMixin:
         List of excluded column names
         """
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         """

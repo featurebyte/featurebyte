@@ -100,7 +100,7 @@ class InputNode(BaseNode):
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -130,7 +130,7 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -163,7 +163,7 @@ class FilterNode(BaseNode):
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -204,7 +204,7 @@ class AssignNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -352,7 +352,7 @@ class JoinNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
@@ -386,7 +386,7 @@ class AliasNode(BaseNode):
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         input_operation_info = inputs[0]

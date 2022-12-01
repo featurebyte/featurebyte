@@ -107,8 +107,9 @@ class BaseDerivedColumn(BaseColumn):
         column_map: Dict[str, BaseDataColumn], column: BaseDataColumn
     ) -> Dict[str, BaseDataColumn]:
         """
-        Insert column into dictionary. If the column name already exists, keep the one with the
-        higher number of node names.
+        Insert column into dictionary. If more than more columns with the same name, aggregate the node names
+        (make sure we don't miss any node which is used for pruning) and combine filter flag (take the max
+        value to indicate the filtered column has been used at least in one operation).
 
         Parameters
         ----------
@@ -123,8 +124,12 @@ class BaseDerivedColumn(BaseColumn):
         """
         if column.name not in column_map:
             column_map[column.name] = column
-        elif len(column.node_names) > len(column_map[column.name].node_names):
-            column_map[column.name] = column
+        else:
+            cur_col = column_map[column.name]
+            column_map[column.name] = column.clone(
+                node_names=cur_col.node_names.union(column.node_names),
+                filter=cur_col.filter or column.filter,
+            )
         return column_map
 
     @classmethod
@@ -286,6 +291,22 @@ class OperationStructure(BaseFrozenModel):
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     output_type: NodeOutputType
     output_category: NodeOutputCategory
+
+    @property
+    def all_node_names(self) -> Set[str]:
+        """
+        Retrieve all node names in the operation structure
+
+        Returns
+        -------
+        Set[str]
+        """
+        node_names = set()
+        for column in self.columns:
+            node_names.update(column.node_names)
+        for aggregation in self.aggregations:
+            node_names.update(aggregation.node_names)
+        return node_names
 
     @validator("columns", "aggregations")
     @classmethod

@@ -16,7 +16,7 @@ class NestedGraphMixin:
 
     # pylint: disable=too-few-public-methods
 
-    def derive_node_operation_info(
+    def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         """
