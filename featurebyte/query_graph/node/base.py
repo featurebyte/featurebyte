@@ -53,7 +53,7 @@ class BaseNode(BaseModel):
             for key, value in self.parameters.dict().items()
             if value
         )
-        if parameters:
+        if parameters and len(parameters) < 4:
             return f"{str(self.type).lower()}({', '.join(parameters)})"
         return str(self.type).lower()
 

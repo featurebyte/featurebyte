@@ -4,17 +4,21 @@ Unit tests for query graph operation structure extraction
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
+def extract_common_column_parameters(input_node):
+    """Extract common column parameters"""
+    return {
+        "tabular_data_id": input_node.parameters.id,
+        "tabular_data_type": input_node.parameters.type,
+        "filter": False,
+        "type": "source",
+    }
+
+
 def test_extract_operation__single_input_node(global_graph, input_node):
     """Test extract_operation_structure: single input node"""
     op_struct = global_graph.extract_operation_structure(node=input_node)
     expected_columns = [
-        {
-            "name": col,
-            "tabular_data_id": input_node.parameters.id,
-            "tabular_data_type": "event_data",
-            "filter": False,
-            "type": "source",
-        }
+        {"name": col, **extract_common_column_parameters(input_node)}
         for col in input_node.parameters.columns
     ]
     assert op_struct.columns == expected_columns
@@ -27,16 +31,6 @@ def test_extract_operation__single_input_node(global_graph, input_node):
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
-
-
-def extract_common_column_parameters(input_node):
-    """Extract common column parameters"""
-    return {
-        "tabular_data_id": input_node.parameters.id,
-        "tabular_data_type": input_node.parameters.type,
-        "filter": False,
-        "type": "source",
-    }
 
 
 def test_extract_operation__project_add_assign(query_graph_and_assign_node):
@@ -323,9 +317,7 @@ def test_extract_operation__join_double_aggregations(
     order_size_column = {
         "name": "order_size",
         "columns": [],
-        "transforms": [
-            "item_groupby(agg_func='count', entity_ids=[ObjectId('63748c9244bc4549b25f8200')], keys=['order_id'], names=['order_size'], serving_names=['order_id'])"
-        ],
+        "transforms": ["item_groupby"],
         "filter": False,
         "type": "derived",
     }
@@ -404,3 +396,62 @@ def test_extract_operation__alias(global_graph, input_node):
     )
     op_struct = global_graph.extract_operation_structure(node=alias_node)
     assert op_struct.columns == [{**expected_derived_columns, "name": "some_value"}]
+
+
+def test_extract_operation__complicated_assignment(dataframe):
+    """Test node names value tracks column lineage properly"""
+    dataframe["diff"] = dataframe["TIMESTAMP_VALUE"] - dataframe["TIMESTAMP_VALUE"]
+    diff = dataframe["diff"]
+    dataframe["diff"] = 123
+    dataframe["NEW_TIMESTAMP"] = dataframe["TIMESTAMP_VALUE"] + diff
+    new_ts = dataframe["NEW_TIMESTAMP"]
+
+    # check extract operation structure
+    graph = dataframe.graph
+    input_node = graph.get_node_by_name("input_1")
+    common_data_column_params = extract_common_column_parameters(input_node)
+
+    op_struct = graph.extract_operation_structure(node=new_ts.node)
+    expected_new_ts = {
+        "name": "NEW_TIMESTAMP",
+        "columns": [{"name": "TIMESTAMP_VALUE", **common_data_column_params}],
+        "transforms": ["date_diff", "date_add"],
+        "type": "derived",
+        "filter": False,
+    }
+    assert op_struct.columns == [expected_new_ts]
+
+    # assign_2 is not included in the lineage as `dataframe["diff"] = 123` does not affect
+    # final value of NEW_TIMESTAMP column
+    assert graph.get_node_by_name("assign_1").parameters == {"name": "diff", "value": None}
+    assert graph.get_node_by_name("assign_3").parameters == {"name": "NEW_TIMESTAMP", "value": None}
+    # check on constant value assignment
+    op_struct = graph.extract_operation_structure(node=dataframe["diff"].node)
+    assert op_struct.columns == [
+        {
+            "name": "diff",
+            "columns": [],
+            "transforms": [],
+            "type": "derived",
+            "filter": False,
+        }
+    ]
+    assert graph.get_node_by_name("assign_2").parameters == {"name": "diff", "value": 123}
+
+    # check frame
+    op_struct = graph.extract_operation_structure(node=dataframe.node)
+    assert op_struct.columns == [
+        {"name": "CUST_ID", **common_data_column_params},
+        {"name": "PRODUCT_ACTION", **common_data_column_params},
+        {"name": "VALUE", **common_data_column_params},
+        {"name": "MASK", **common_data_column_params},
+        {"name": "TIMESTAMP_VALUE", **common_data_column_params},
+        {
+            "name": "diff",
+            "columns": [],
+            "transforms": [],
+            "type": "derived",
+            "filter": False,
+        },
+        expected_new_ts,
+    ]

@@ -202,15 +202,21 @@ class AssignNode(BaseNode):
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
-        input_operation_info, series_operation_info = inputs
+        input_operation_info = inputs[0]
+        if len(inputs) == 2:
+            columns = inputs[1].columns
+        else:
+            columns = []
+
         new_column_name = self.parameters.name
+        input_columns = [col for col in input_operation_info.columns if col.name != new_column_name]
         new_column = DerivedDataColumn.create(
             name=new_column_name,
-            columns=series_operation_info.columns,
+            columns=columns,
             transform=None,
         )
         return OperationStructure(
-            columns=input_operation_info.columns + [new_column],
+            columns=input_columns + [new_column],
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
         )
