@@ -8,7 +8,7 @@ from typing import Literal, Union, cast
 from dataclasses import dataclass
 
 import pandas as pd
-from sqlglot import Expression, expressions, parse_one
+from sqlglot import Expression, expressions
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.query_graph.enum import NodeType
@@ -149,7 +149,9 @@ class TimedeltaExtractNode(ExpressionNode):
             quantity = int(pd.Timedelta(1, unit=unit).total_seconds() * 1e6)
             quantity_expr = make_literal_value(quantity)
             # cast to LONG type to avoid overflow in some engines (e.g. databricks)
-            quantity_expr = expressions.Cast(this=quantity_expr, to=parse_one("LONG"))
+            quantity_expr = expressions.Cast(
+                this=quantity_expr, to=expressions.DataType.build("BIGINT")
+            )
             return quantity_expr
 
         input_unit_microsecond = _make_quantity_in_microsecond(input_unit)
