@@ -52,8 +52,7 @@ class FeatureStoreController(
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
 
-    @classmethod
-    def persist_credential(cls, credential: Credential, feature_store_name: str) -> None:
+    def persist_credential(self, credential: Credential, feature_store_name: str) -> None:
         """
         Persists the credentials to the local config file. This will be a no-op if credentials already exist
         in the persistent layer for the feature_store_name provided.
