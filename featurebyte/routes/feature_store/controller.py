@@ -115,7 +115,7 @@ class FeatureStoreController(
             get_credentials_to_use = get_credential
             if data.credentials is not None:
 
-                def updated_get_credential(user_id, feature_store_name):
+                def _updated_get_credential(user_id: str, feature_store_name: str) -> Credential:
                     """
                     Updated get_credential will try to look up the credentials from config.
 
@@ -123,6 +123,18 @@ class FeatureStoreController(
                     and return the credentials provided.
 
                     If there are credentials in the config, we will ignore whatever is passed in here.
+
+                    Parameters
+                    ----------
+                    user_id: str
+                        user id
+                    feature_store_name: str
+                        feature store name
+
+                    Returns
+                    -------
+                    Credential
+                        credentials
                     """
                     cred = get_credential(user_id, feature_store_name)
                     if cred is not None:
@@ -130,7 +142,7 @@ class FeatureStoreController(
                     self.persist_credential(data.credentials, feature_store_name)
                     return data.credentials
 
-                get_credentials_to_use = updated_get_credential
+                get_credentials_to_use = _updated_get_credential
 
             # Create the new feature store. If one already exists, we'll throw an error here.
             document = await self.service.create_document(data)
