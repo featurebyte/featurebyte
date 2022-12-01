@@ -20,6 +20,10 @@ jupyter-lab \
     --NotebookApp.ip='0.0.0.0' \
     --no-browser &
 
+# Start serving docs
+echo "Starting nginx docs server"
+nginx
+
 # start featurebyte service
 echo "Starting featurebyte server"
 uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300

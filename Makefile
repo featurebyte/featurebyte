@@ -96,7 +96,8 @@ test-routes:
 
 #* Docker
 start-service:
-	poetry build   # We are exporting dist/ to the image
+	# ${MAKE} docs-build   # We are exporting site/ to the image
+	# poetry build   # We are exporting dist/ to the image
 	cd docker && docker-compose up --build
 
 stop-service:

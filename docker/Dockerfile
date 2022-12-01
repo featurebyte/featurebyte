@@ -27,13 +27,14 @@ COPY ./docker/migration.py              /scripts/migration.py
 
 # Install requirements
 RUN poetry config virtualenvs.create false && \
-    poetry install --only main --extras "server" --no-interaction --no-ansi && \
+    poetry install --only main --only docs --extras "server" --no-interaction --no-ansi && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 
 # copy featurebyte and featurebyte package
 COPY ./featurebyte /app/featurebyte
 COPY ./dist        /app/dist
+COPY ./site        /app/site
 
 # install databricks-connector via pip (dependency error with pyarrow)
 # downgrade pyarrow - backwards compatibility issue with databricks
@@ -42,6 +43,13 @@ RUN pip install databricks-sql-connector==2.1.0 && \
     pip install jupyterlab && \
     pip install --no-index -f /app/dist featurebyte && \
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
+
+# Install nginx
+RUN apt-get update -y &&\
+    apt-get install nginx -y &&\
+    apt-get clean
+
+RUN sed -i 's|root /var/www/html;|root /app/site;|g' /etc/nginx/sites-available/default
 
 # Add non-root user
 RUN adduser --uid $UID --disabled-password --gecos '' $USER
