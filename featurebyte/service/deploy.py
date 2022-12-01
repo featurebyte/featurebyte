@@ -78,7 +78,6 @@ class DeployService(BaseService):
                 feature_id=feature_id,
                 online_enabled=online_enabled,
                 get_credential=get_credential,
-                return_document=True,
             )
         return await self.feature_service.update_document(
             document_id=feature_id,
