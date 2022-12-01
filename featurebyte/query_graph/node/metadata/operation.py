@@ -175,7 +175,7 @@ class BaseDerivedColumn(BaseColumn):
 
         Returns
         -------
-        BaseDerivedColumn
+        BaseDerivedColumnT
             Derive column object
         """
         columns, transforms, node_names = cls._flatten_columns(columns)
@@ -232,6 +232,7 @@ class AggregationColumn(BaseDataColumn):
 
     def __hash__(self) -> int:
         col_dict = self.dict()
+        col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
 
@@ -248,6 +249,7 @@ class PostAggregationColumn(BaseDerivedColumn):
         col_dict["columns"] = sorted(
             [json_util.dumps(col, sort_keys=True) for col in col_dict["columns"]]
         )
+        col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
 
