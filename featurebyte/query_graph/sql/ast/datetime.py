@@ -8,7 +8,8 @@ from typing import Literal, Union, cast
 from dataclasses import dataclass
 
 import pandas as pd
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.query_graph.enum import NodeType
@@ -159,7 +160,9 @@ class TimedeltaExtractNode(ExpressionNode):
         conversion_factor_expr = expressions.Div(
             this=input_unit_microsecond, expression=output_unit_microsecond
         )
-        converted_expr = expressions.Mul(this=input_expr, expression=conversion_factor_expr)
+        converted_expr = expressions.Mul(
+            this=input_expr, expression=conversion_factor_expr
+        )  # type: Expression
         converted_expr = expressions.Paren(this=converted_expr)
         return converted_expr
 

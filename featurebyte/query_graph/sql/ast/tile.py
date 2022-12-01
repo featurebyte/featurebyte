@@ -3,9 +3,12 @@ Module for tile related sql generation
 """
 from __future__ import annotations
 
+from typing import cast
+
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
@@ -40,7 +43,7 @@ class BuildTileNode(TableNode):
             start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
 
         start_date_epoch = self.context.adapter.to_epoch_seconds(
-            parse_one(f"CAST({start_date_expr} AS TIMESTAMP)")
+            cast(Expression, parse_one(f"CAST({start_date_expr} AS TIMESTAMP)"))
         ).sql()
         timestamp_epoch = self.context.adapter.to_epoch_seconds(
             quoted_identifier(self.timestamp)

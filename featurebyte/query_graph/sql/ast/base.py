@@ -3,14 +3,14 @@ Module containing base classes and functions for building syntax tree
 """
 from __future__ import annotations
 
-from typing import Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar, cast
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from sqlglot import Expression, expressions, select
-from sqlglot.expressions import Select
+from sqlglot import expressions
+from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
@@ -200,9 +200,8 @@ class TableNode(SQLNode, ABC):
         Expression
             Expression that can be used within from_()
         """
-        sql = self.sql
-        assert isinstance(sql, expressions.Subqueryable)
-        return sql.subquery()
+        sql = cast(expressions.Subqueryable, self.sql)
+        return cast(expressions.Expression, sql.subquery())
 
     def assign_column(self, column_name: str, node: ExpressionNode) -> None:
         """Performs an assignment and update column_name's expression

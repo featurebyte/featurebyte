@@ -11,8 +11,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from bson import ObjectId
-from sqlglot import Expression, expressions, parse_one, select
-from sqlglot.expressions import Identifier, Table
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, Identifier, Table, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
@@ -151,7 +151,10 @@ class OnlineStoreUniversePlan:
 
     @classmethod
     def _get_point_in_time_expr(cls) -> Expression:
-        return parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)")
+        return cast(
+            Expression,
+            parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)"),
+        )
 
 
 def get_online_store_feature_compute_sql(

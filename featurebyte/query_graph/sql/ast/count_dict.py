@@ -7,7 +7,8 @@ from typing import Literal
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
@@ -40,7 +41,9 @@ class CountDictTransformNode(ExpressionNode):
                 this="OBJECT_DELETE",
                 expressions=[self.expr.sql, make_literal_value(MISSING_VALUE_REPLACEMENT)],
             )
-        output_expr = expressions.Anonymous(this=function_name, expressions=[counts_expr])
+        output_expr = expressions.Anonymous(
+            this=function_name, expressions=[counts_expr]
+        )  # type: Expression
         if self.transform_type == "most_frequent":
             # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
             # double quoting in the feature output ('remove' vs '"remove"')

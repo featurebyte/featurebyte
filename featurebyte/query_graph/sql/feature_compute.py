@@ -4,11 +4,12 @@ Module with logic related to feature SQL generation
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple, cast
+from typing import Any, Iterable, Optional, Tuple, cast
 
 from abc import ABC, abstractmethod
 
-from sqlglot import expressions, select
+from sqlglot import expressions
+from sqlglot.expressions import select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
@@ -519,7 +520,7 @@ class FeatureExecutionPlan(ABC):
             f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
             f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
         )
-        join_conditions_lst = [range_join_condition]
+        join_conditions_lst: Any = [range_join_condition]
         for serving_name, key in zip(serving_names, keys):
             join_conditions_lst.append(
                 f"REQ.{quoted_identifier(serving_name).sql()} = TILE.{quoted_identifier(key).sql()}"
@@ -1046,6 +1047,6 @@ class FeatureExecutionPlanner:
                 # this could still be previewed as an "unnamed" feature since the expression is
                 # available, but it cannot be published.
                 feature_name = "Unnamed"
-            feature_expr = sql_node.sql.sql()
-            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=feature_expr)
+            feature_expr_str = sql_node.sql.sql()
+            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=feature_expr_str)
             self.plan.add_feature_spec(feature_spec)

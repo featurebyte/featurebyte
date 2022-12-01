@@ -7,7 +7,8 @@ from typing import Literal, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -80,6 +81,7 @@ class CastNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
+        expr: Expression
         if self.from_dtype == DBVarType.FLOAT and self.new_type == "int":
             # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
             # to mimic pandas astype(int)

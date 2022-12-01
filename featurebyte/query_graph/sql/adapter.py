@@ -8,7 +8,8 @@ from typing import Literal, Optional
 
 from abc import abstractmethod
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql import expression as fb_expressions
@@ -117,8 +118,8 @@ class SnowflakeAdapter(BaseAdapter):
             "both": fb_expressions.make_trim_expression,
         }[side]
         if character:
-            return expression_class(this=expr, character=make_literal_value(character))
-        return expression_class(this=expr)
+            return expression_class(this=expr, character=make_literal_value(character))  # type: ignore
+        return expression_class(this=expr)  # type: ignore
 
     @classmethod
     def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:

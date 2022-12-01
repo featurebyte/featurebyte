@@ -4,14 +4,15 @@ Module for sql generation given a DataFrame (typically request data)
 from __future__ import annotations
 
 import pandas as pd
-from sqlglot import expressions, select
+from sqlglot import expressions
+from sqlglot.expressions import Expression, select
 
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
 def construct_dataframe_sql_expr(
     request_dataframe: pd.DataFrame, date_cols: list[str]
-) -> expressions.Select:
+) -> Expression:
     """Construct a SELECT statement that uploads the request data
 
     This does not use write_pandas and should only be used for small request data (e.g. request data
@@ -41,7 +42,7 @@ def construct_dataframe_sql_expr(
     # The Union expression is nested, and has the first row's expression at the outermost
     # layer. So, start from the last row's expression and build from bottom up.
     row_exprs_reversed = row_exprs[::-1]
-    union_expr = row_exprs_reversed[0]
+    union_expr: Expression = row_exprs_reversed[0]
     for row_expr in row_exprs_reversed[1:]:
         union_expr = expressions.Union(this=row_expr, distinct=False, expression=union_expr)
 

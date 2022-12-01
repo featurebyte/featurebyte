@@ -3,9 +3,12 @@ Module for binary operations sql generation
 """
 from __future__ import annotations
 
+from typing import cast
+
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions
@@ -50,7 +53,7 @@ class BinaryOp(ExpressionNode):
         right_expr = self.right_node.sql
         if self.operation in {expressions.Div, expressions.Mod}:
             # Make 0 divisor null to prevent division-by-zero error
-            right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
+            right_expr = cast(Expression, parse_one(f"NULLIF({right_expr.sql()}, 0)"))
         if self.operation == fb_expressions.Concat:
             op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
         elif self.operation == expressions.Pow:

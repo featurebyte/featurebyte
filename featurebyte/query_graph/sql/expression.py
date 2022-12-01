@@ -6,7 +6,7 @@ from typing import Optional
 from sqlglot.expressions import Anonymous, Expression, Func
 
 
-def make_trim_expression(this: Expression, character: Optional[Expression] = None):
+def make_trim_expression(this: Expression, character: Optional[Expression] = None) -> Expression:
     """Helper to create a Trim expression
 
     Defining a Trim class doesn't work because it conflicts with sqlglot's internal TRIM function
@@ -19,6 +19,10 @@ def make_trim_expression(this: Expression, character: Optional[Expression] = Non
         Expression for the input string to be trimmed
     character: Optional[Expression]
         Optional character to be used for trimming. If not provided, a whitespace will be used.
+
+    Returns
+    -------
+    Expression
     """
     expressions = [this]
     if character is not None:

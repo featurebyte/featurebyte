@@ -7,7 +7,8 @@ from typing import Literal, Optional
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions

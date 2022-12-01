@@ -7,7 +7,8 @@ from typing import cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeType
@@ -86,6 +87,7 @@ class ItemGroupby(TableNode):
             AggFunc.MAX: "MAX",
             AggFunc.STD: "STDDEV",
         }
+        expr: Expression
         if agg_func in agg_func_sql_mapping:
             assert input_column is not None
             sql_func = agg_func_sql_mapping[agg_func]
@@ -94,7 +96,7 @@ class ItemGroupby(TableNode):
             )
         else:
             if agg_func == AggFunc.COUNT:
-                expr = parse_one("COUNT(*)")
+                expr = cast(Expression, parse_one("COUNT(*)"))
             else:
                 # Must be NA_COUNT
                 assert agg_func == AggFunc.NA_COUNT
