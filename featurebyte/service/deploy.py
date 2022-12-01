@@ -97,7 +97,6 @@ class DeployService(BaseService):
         self,
         feature_list_namespace_id: ObjectId,
         feature_list: FeatureListModel,
-        document: Optional[FeatureListNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListNamespaceModel]:
         """
@@ -109,8 +108,6 @@ class DeployService(BaseService):
             Target FeatureListNamespace ID
         feature_list: FeatureListModel
             Updated FeatureList object (deployed status)
-        document: Optional[FeatureListNamespaceModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -118,8 +115,8 @@ class DeployService(BaseService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        document = await self.get_document(
-            DocServiceName.FEATURE_LIST_NAMESPACE, feature_list_namespace_id, document=document
+        document = await self.feature_list_namespace_service.get_document(
+            document_id=feature_list_namespace_id
         )
         return await self.feature_list_namespace_service.update_document(
             document_id=feature_list_namespace_id,
@@ -152,7 +149,6 @@ class DeployService(BaseService):
         feature_list_id: ObjectId,
         deployed: bool,
         get_credential: Any,
-        document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
         """
@@ -166,8 +162,6 @@ class DeployService(BaseService):
             Target deployed status
         get_credential: Any
             Get credential handler function
-        document: Optional[FeatureListModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -175,9 +169,7 @@ class DeployService(BaseService):
         -------
         Optional[FeatureListModel]
         """
-        document = await self.get_document(
-            DocServiceName.FEATURE_LIST, feature_list_id, document=document
-        )
+        document = await self.feature_list_service.get_document(document_id=feature_list_id)
         if document.deployed != deployed:
             await self._validate_deployed_operation(document, deployed)
             async with self.persistent.start_transaction():
@@ -201,5 +193,5 @@ class DeployService(BaseService):
                         return_document=False,
                     )
                 if return_document:
-                    return await self.get_document(DocServiceName.FEATURE_LIST, feature_list_id)
+                    return await self.feature_list_service.get_document(document_id=feature_list_id)
         return self.conditional_return(document=document, condition=return_document)
