@@ -1,6 +1,8 @@
 """
 Integration test for online store SQL generation
 """
+import time
+
 import pandas as pd
 import pytest
 
@@ -11,6 +13,7 @@ from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflak
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="features", scope="session")
@@ -51,7 +54,7 @@ async def update_online_store(session, feature, feature_job_time_ts):
 
 
 @pytest.mark.asyncio
-async def test_online_serving_sql(features, snowflake_session):
+async def test_online_serving_sql(features, snowflake_session, config):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
@@ -65,7 +68,7 @@ async def test_online_serving_sql(features, snowflake_session):
             "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
-    feature_list = FeatureList(features)
+    feature_list = FeatureList(features, name="My Online Serving Featurelist")
     df_historical = feature_list.get_historical_features(df_training_events)
 
     # Trigger SP_TILE_SCHEDULE_ONLINE_STORE to compute features and update online store
@@ -75,7 +78,6 @@ async def test_online_serving_sql(features, snowflake_session):
     # Run online store retrieval sql
     df_entities = pd.DataFrame({"user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
     request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
-    feature_list = FeatureList(features)
     feature_clusters = feature_list._get_feature_clusters()
     online_retrieval_sql = get_online_store_retrieval_sql(
         feature_clusters[0].graph,
@@ -90,3 +92,31 @@ async def test_online_serving_sql(features, snowflake_session):
     columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"]
     assert online_features.columns.tolist() == columns
     pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
+
+    # Check online_features route
+    check_online_features_route(feature_list, config, df_historical, columns)
+
+
+def check_online_features_route(feature_list, config, df_historical, columns):
+    """
+    Online enable a feature and call the online features endpoint
+    """
+    feature_list.save()
+    feature_list.deploy(make_production_ready=True, enable=True)
+    client = config.get_client()
+    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"user id": 5}])
+
+    tic = time.time()
+    res = client.post(
+        f"/feature_list/{str(feature_list.id)}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 200
+
+    df = pd.DataFrame(res.json()["features"])
+    elapsed = time.time() - tic
+    print(f"online_features elapsed: {elapsed:.6f}s")
+
+    assert df.columns.tolist() == columns
+    df_expected = df_historical[df_historical["user id"] == 5][columns].reset_index(drop=True)
+    pd.testing.assert_frame_equal(df_expected, df, check_dtype=False)

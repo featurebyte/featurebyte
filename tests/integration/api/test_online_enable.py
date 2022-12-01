@@ -1,14 +1,17 @@
 """
 Integration test for online enabling features
 """
+import json
+
 import pytest
 
 from featurebyte import EventView, FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="session")
-def online_enabled_feature_list_fixture(event_data):
+def online_enabled_feature_list_fixture(event_data, config):
     """
     Fixture for an online enabled feature
 

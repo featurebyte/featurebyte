@@ -196,6 +196,12 @@ class NoFeatureStorePresentError(Exception):
     """
 
 
+class FeatureListNotOnlineEnabledError(Exception):
+    """
+    Raise when online features are requested for a FeatureList that is not online enabled
+    """
+
+
 class JoinViewMismatchError(Exception):
     """
     Raise when the view types in a join are a mismatch.

@@ -115,3 +115,19 @@ class FeatureListGetHistoricalFeatures(FeatureByteBaseModel):
 
     feature_clusters: List[FeatureCluster]
     serving_names_mapping: Optional[Dict[str, str]]
+
+
+class FeatureListGetOnlineFeatures(FeatureByteBaseModel):
+    """
+    FeatureList get online features schema
+    """
+
+    entity_serving_names: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
+
+
+class OnlineFeaturesResponseModel(FeatureByteBaseModel):
+    """
+    Response model for online features
+    """
+
+    features: List[Dict[str, Any]]

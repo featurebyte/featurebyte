@@ -38,6 +38,7 @@ from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseSer
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.scd_data import SCDDataService
@@ -90,6 +91,10 @@ app_container_config = {
         {
             "name": "online_enable_service",
             "clazz": OnlineEnableService,
+        },
+        {
+            "name": "online_serving_service",
+            "clazz": OnlineServingService,
         },
         {
             "name": "deploy_service",
@@ -224,6 +229,7 @@ app_container_config = {
                 "preview_service",
                 "version_service",
                 "info_service",
+                "online_serving_service",
             ],
         },
         {

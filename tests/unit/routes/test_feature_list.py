@@ -17,7 +17,7 @@ from featurebyte.enum import SourceType
 from tests.unit.routes.base import BaseApiTestSuite
 
 
-class TestFeatureListApi(BaseApiTestSuite):
+class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestFeatureListApi class
     """
@@ -332,23 +332,27 @@ class TestFeatureListApi(BaseApiTestSuite):
         )
         assert negative_response.json()["total"] == 0, negative_response.json()
 
+    def _make_production_ready_and_deploy(self, client, feature_list_doc):
+        doc_id = feature_list_doc["_id"]
+        for feature_id in feature_list_doc["feature_ids"]:
+            # upgrade readiness level to production ready first
+            response = client.patch(
+                f"/feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
+            )
+            assert response.status_code == HTTPStatus.OK
+        # deploy the feature list
+        response = client.patch(f"{self.base_route}/{doc_id}", json={"deployed": True})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is True
+
     def test_update_200(self, test_api_client_persistent, create_success_response):
         """Test update (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
 
-        for feature_id in create_response_dict["feature_ids"]:
-            # upgrade readiness level to production ready first
-            response = test_api_client.patch(
-                f"/feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
-            )
-            assert response.status_code == HTTPStatus.OK
-
-        # deploy the feature list
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": True})
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["deployed"] is True
+        # upgrade readiness level to production ready first and then deploy the feature list
+        self._make_production_ready_and_deploy(test_api_client, create_response_dict)
 
         # disable deployment
         response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": False})
@@ -530,3 +534,86 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert isinstance(feature_clusters, list)
         assert len(feature_clusters) == 1
         assert feature_clusters[0] == featurelist_feature_clusters[0]
+
+    def test_get_online_features__200(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+    ):
+        """Test feature list get_online_features"""
+        test_api_client, _ = test_api_client_persistent
+
+        async def mock_execute_query(query):
+            _ = query
+            return pd.DataFrame([{"cust_id": 1, "feature_value": 123.0}])
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query = mock_execute_query
+
+        # Deploy feature list
+        feature_list_doc = create_success_response.json()
+        self._make_production_ready_and_deploy(test_api_client, feature_list_doc)
+
+        # Request online features
+        feature_list_id = feature_list_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}]}
+        response = test_api_client.post(
+            f"{self.base_route}/{feature_list_id}/online_features",
+            data=json.dumps(data),
+        )
+        assert response.status_code == HTTPStatus.OK, response.content
+
+        # Check result
+        assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": 123.0}]}
+
+    def test_get_online_features__not_deployed(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+    ):
+        """Test feature list get_online_features"""
+        test_api_client, _ = test_api_client_persistent
+        feature_list_doc = create_success_response.json()
+
+        # Request online features before deploying
+        feature_list_id = feature_list_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}]}
+        response = test_api_client.post(
+            f"{self.base_route}/{feature_list_id}/online_features",
+            data=json.dumps(data),
+        )
+
+        # Check error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {"detail": "Feature List is not online enabled"}
+
+    @pytest.mark.parametrize(
+        "num_rows, expected_msg",
+        [
+            (1000, "ensure this value has at most 50 items"),
+            (0, "ensure this value has at least 1 items"),
+        ],
+    )
+    def test_get_online_features__invalid_number_of_rows(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        num_rows,
+        expected_msg,
+    ):
+        """Test feature list get_online_features with invalid number of rows"""
+        test_api_client, _ = test_api_client_persistent
+        feature_list_doc = create_success_response.json()
+
+        # Request online features before deploying
+        feature_list_id = feature_list_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}] * num_rows}
+        response = test_api_client.post(
+            f"{self.base_route}/{feature_list_id}/online_features",
+            data=json.dumps(data),
+        )
+
+        # Check error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"][0]["msg"] == expected_msg

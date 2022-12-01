@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from decimal import Decimal
 from io import BytesIO
 
 import pandas as pd
@@ -96,3 +97,41 @@ def pa_table_to_record_batches(table: pa.Table) -> Any:
     # convert to pandas in order to create empty record batch with schema
     # there is no way to get empty record batch from pyarrow table directly
     return [pa.RecordBatch.from_pandas(table.to_pandas())]
+
+
+def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
+    """
+    Process pandas dataframe in-place before converting to json
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe object
+    """
+    dataframe.reset_index(drop=True, inplace=True)
+    for name in dataframe.columns:
+        # Decimal with integer values becomes float during conversion to json
+        if (
+            dataframe[name].dtype == object
+            and isinstance(dataframe[name].iloc[0], Decimal)
+            and (dataframe[name] % 1 == 0).all()
+        ):
+            dataframe[name] = dataframe[name].astype(int)
+
+
+def convert_dataframe_as_json(dataframe: pd.DataFrame) -> str:
+    """
+    Convert pandas dataframe to json
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe object
+
+    Returns
+    -------
+    str
+        JSON string
+    """
+    prepare_dataframe_for_json(dataframe)
+    return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
