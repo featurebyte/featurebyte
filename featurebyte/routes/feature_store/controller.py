@@ -52,7 +52,7 @@ class FeatureStoreController(
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
 
-    def persist_credential(self, credential: Credential, feature_store_name: str) -> None:
+    def persist_credential(self, credential: Credential, feature_store_name: str) -> bool:
         """
         Persists the credentials to the local config file. This will be a no-op if credentials already exist
         in the persistent layer for the feature_store_name provided.
@@ -63,9 +63,14 @@ class FeatureStoreController(
             credential's that we want to persist
         feature_store_name: str
             feature store name associated with the credentials
+
+        Returns
+        -------
+        bool
+            whether the credential was persisted
         """
         config = Configurations()
-        config.write_creds(credential, feature_store_name)
+        return config.write_creds(credential, feature_store_name)
 
     async def create_feature_store(
         self,
@@ -140,7 +145,7 @@ class FeatureStoreController(
                     cred = get_credential(user_id, feature_store_name)
                     if cred is not None:
                         return cred
-                    self.persist_credential(creds_from_params, feature_store_name)
+                    self.persist_credential(creds_from_params, feature_store_name)  # type: ignore
                     return creds_from_params
 
                 get_credentials_to_use = _updated_get_credential
