@@ -183,14 +183,14 @@ def expression_sql_template_fixture():
     SELECT
       {expression}
     FROM (
-        SELECT
-          "CUST_ID" AS "CUST_ID",
-          "PRODUCT_ACTION" AS "PRODUCT_ACTION",
-          "VALUE" AS "VALUE",
-          "MASK" AS "MASK",
-          "TIMESTAMP" AS "TIMESTAMP",
-          "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
-        FROM "db"."public"."transaction"
+      SELECT
+        "CUST_ID" AS "CUST_ID",
+        "PRODUCT_ACTION" AS "PRODUCT_ACTION",
+        "VALUE" AS "VALUE",
+        "MASK" AS "MASK",
+        "TIMESTAMP" AS "TIMESTAMP",
+        "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
+      FROM "db"."public"."transaction"
     )
     LIMIT 10
     """

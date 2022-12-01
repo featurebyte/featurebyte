@@ -1,13 +1,29 @@
 """
 Additional expression used to construct SQL query
 """
-from sqlglot.expressions import Func
+from typing import Optional
+
+from sqlglot.expressions import Anonymous, Expression, Func
 
 
-class Trim(Func):
-    """Trim function"""
+def make_trim_expression(this: Expression, character: Optional[Expression] = None):
+    """Helper to create a Trim expression
 
-    arg_types = {"this": True, "character": False}
+    Defining a Trim class doesn't work because it conflicts with sqlglot's internal TRIM function
+    that doesn't accept a custom character as parameter. Attempting to do so causes the provided
+    character to be ignored.
+
+    Parameters
+    ----------
+    this: Expression
+        Expression for the input string to be trimmed
+    character: Optional[Expression]
+        Optional character to be used for trimming. If not provided, a whitespace will be used.
+    """
+    expressions = [this]
+    if character is not None:
+        expressions.append(character)
+    return Anonymous(this="TRIM", expressions=expressions)
 
 
 class LTrim(Func):

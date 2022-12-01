@@ -114,7 +114,7 @@ class SnowflakeAdapter(BaseAdapter):
         expression_class = {
             "left": fb_expressions.LTrim,
             "right": fb_expressions.RTrim,
-            "both": fb_expressions.Trim,
+            "both": fb_expressions.make_trim_expression,
         }[side]
         if character:
             return expression_class(this=expr, character=make_literal_value(character))

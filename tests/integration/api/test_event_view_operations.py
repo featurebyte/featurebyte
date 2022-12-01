@@ -220,7 +220,7 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     event_view["AMOUNT"].fillna(0)
 
     # check accessor operations
-    # check_string_operations(event_view, "PRODUCT_ACTION")
+    check_string_operations(event_view, "PRODUCT_ACTION")
     check_datetime_operations(event_view, "EVENT_TIMESTAMP")
 
     # check casting operations
