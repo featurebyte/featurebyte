@@ -6,7 +6,8 @@ from __future__ import annotations
 from typing import cast
 
 import pandas as pd
-from sqlglot import Select, expressions, select
+from sqlglot import expressions, select
+from sqlglot.expressions import Select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.graph import QueryGraph

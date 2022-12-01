@@ -160,14 +160,18 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         SELECT
           *
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              ("a" + "b") AS "c",
-              ("a" + "b") AS "c2"
-            FROM "db"."public"."event_table"
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            (
+              "a" + "b"
+            ) AS "c",
+            (
+              "a" + "b"
+            ) AS "c2"
+          FROM "db"."public"."event_table"
         )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -221,13 +225,15 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
         SELECT
           *
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              ({expected_expr}) AS "a2"
-            FROM "db"."public"."event_table"
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            (
+              {expected_expr}
+            ) AS "a2"
+          FROM "db"."public"."event_table"
         )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -313,35 +319,43 @@ def test_graph_interpreter_on_demand_tile_gen(
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
-          COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
+          SUM("a") AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
+          COUNT("a") AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
         FROM (
-            SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
-            FROM (
-                WITH __FB_ENTITY_TABLE_NAME AS (
-                    __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-                )
-                SELECT
-                  R.*,
-                  __FB_ENTITY_TABLE_START_DATE
-                FROM __FB_ENTITY_TABLE_NAME
-                LEFT JOIN (
-                    SELECT
-                      "ts" AS "ts",
-                      "cust_id" AS "cust_id",
-                      "a" AS "a",
-                      "b" AS "b",
-                      ("a" + "b") AS "c"
-                    FROM "db"."public"."event_table"
-                ) AS R
-                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
+            WITH __FB_ENTITY_TABLE_NAME AS (
+              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
             )
+            SELECT
+              R.*,
+              __FB_ENTITY_TABLE_START_DATE
+            FROM __FB_ENTITY_TABLE_NAME
+            LEFT JOIN (
+              SELECT
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "a" AS "a",
+                "b" AS "b",
+                (
+                  "a" + "b"
+                ) AS "c"
+              FROM "db"."public"."event_table"
+            ) AS R
+              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+          )
         )
         GROUP BY
           tile_index,
@@ -393,28 +407,34 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "product_type",
-          SUM("a") AS sum_value_avg_{aggregation_id},
-          COUNT("a") AS count_value_avg_{aggregation_id}
+          SUM("a") AS sum_value_avg_639a7b70cdfe06f5c2270c167e3ebf139dcb1725,
+          COUNT("a") AS count_value_avg_639a7b70cdfe06f5c2270c167e3ebf139dcb1725
         FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
             SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              *
             FROM (
-                SELECT
-                  *
-                FROM (
-                    SELECT
-                      "ts" AS "ts",
-                      "cust_id" AS "cust_id",
-                      "a" AS "a",
-                      "b" AS "b",
-                      ("a" + "b") AS "c"
-                    FROM "db"."public"."event_table"
-                )
-                WHERE
-                  "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                  AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+              SELECT
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "a" AS "a",
+                "b" AS "b",
+                (
+                  "a" + "b"
+                ) AS "c"
+              FROM "db"."public"."event_table"
             )
+            WHERE
+              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+          )
         )
         GROUP BY
           tile_index,
@@ -487,35 +507,43 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
           COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
-            SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
-            FROM (
-                WITH __FB_ENTITY_TABLE_NAME AS (
-                    __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-                )
-                SELECT
-                  R.*,
-                  __FB_ENTITY_TABLE_START_DATE
-                FROM __FB_ENTITY_TABLE_NAME
-                LEFT JOIN (
-                    SELECT
-                      "ts" AS "ts",
-                      "cust_id" AS "cust_id",
-                      "a" AS "a",
-                      "b" AS "b",
-                      ("a" + "b") AS "c"
-                    FROM "db"."public"."event_table"
-                ) AS R
-                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
+            WITH __FB_ENTITY_TABLE_NAME AS (
+              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
             )
+            SELECT
+              R.*,
+              __FB_ENTITY_TABLE_START_DATE
+            FROM __FB_ENTITY_TABLE_NAME
+            LEFT JOIN (
+              SELECT
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "a" AS "a",
+                "b" AS "b",
+                (
+                  "a" + "b"
+                ) AS "c"
+              FROM "db"."public"."event_table"
+            ) AS R
+              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+          )
         )
         GROUP BY
           tile_index,
@@ -553,34 +581,42 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "biz_id",
           SUM("a") AS value_sum_{aggregation_id}
         FROM (
-            SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
-            FROM (
-                WITH __FB_ENTITY_TABLE_NAME AS (
-                    __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-                )
-                SELECT
-                  R.*,
-                  __FB_ENTITY_TABLE_START_DATE
-                FROM __FB_ENTITY_TABLE_NAME
-                LEFT JOIN (
-                    SELECT
-                      "ts" AS "ts",
-                      "cust_id" AS "cust_id",
-                      "a" AS "a",
-                      "b" AS "b",
-                      ("a" + "b") AS "c"
-                    FROM "db"."public"."event_table"
-                ) AS R
-                  ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
-                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
+            WITH __FB_ENTITY_TABLE_NAME AS (
+              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
             )
+            SELECT
+              R.*,
+              __FB_ENTITY_TABLE_START_DATE
+            FROM __FB_ENTITY_TABLE_NAME
+            LEFT JOIN (
+              SELECT
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "a" AS "a",
+                "b" AS "b",
+                (
+                  "a" + "b"
+                ) AS "c"
+              FROM "db"."public"."event_table"
+            ) AS R
+              ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
+              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+          )
         )
         GROUP BY
           tile_index,
@@ -657,22 +693,26 @@ def test_graph_interpreter_snowflake(graph):
           "CUST_ID",
           COUNT(*) AS value_count_b77ab5589880bbe509c57a49d70631deb3aadc7d
         FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
             SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              *
             FROM (
-                SELECT
-                  *
-                FROM (
-                    SELECT
-                      "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
-                      "CUST_ID" AS "CUST_ID"
-                    FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
-                )
-                WHERE
-                  "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                  AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)
+              SELECT
+                "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
+                "CUST_ID" AS "CUST_ID"
+              FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
             )
+            WHERE
+              "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)
+          )
         )
         GROUP BY
           tile_index,
@@ -692,26 +732,32 @@ def test_graph_interpreter_snowflake(graph):
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
           COUNT(*) AS value_count_b77ab5589880bbe509c57a49d70631deb3aadc7d
         FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
             SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP))) / 3600) AS tile_index
+              *
             FROM (
-                SELECT
-                  *
-                FROM (
-                    SELECT
-                      "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
-                      "CUST_ID" AS "CUST_ID"
-                    FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
-                )
-                WHERE
-                  "SERVER_TIMESTAMP" >= CAST('2022-04-18 00:00:00' AS TIMESTAMP)
-                  AND "SERVER_TIMESTAMP" < CAST('2022-04-19 00:00:00' AS TIMESTAMP)
+              SELECT
+                "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
+                "CUST_ID" AS "CUST_ID"
+              FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
             )
+            WHERE
+              "SERVER_TIMESTAMP" >= CAST('2022-04-18 00:00:00' AS TIMESTAMP)
+              AND "SERVER_TIMESTAMP" < CAST('2022-04-19 00:00:00' AS TIMESTAMP)
+          )
         )
         GROUP BY
           tile_index,
@@ -771,8 +817,12 @@ def test_graph_interpreter_preview(graph, node_input):
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          ("a" + "b") AS "c",
-          ("a" + "b") AS "c2"
+          (
+            "a" + "b"
+          ) AS "c",
+          (
+            "a" + "b"
+          ) AS "c2"
         FROM "db"."public"."event_table"
         LIMIT 10
         """
@@ -783,14 +833,16 @@ def test_graph_interpreter_preview(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          ("a" + "b")
+          (
+            "a" + "b"
+          )
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b"
-            FROM "db"."public"."event_table"
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b"
+          FROM "db"."public"."event_table"
         )
         LIMIT 5
         """
@@ -841,7 +893,9 @@ def test_filter_node(graph, node_input):
           "b" AS "b"
         FROM "db"."public"."event_table"
         WHERE
-          ("b" = 123)
+          (
+            "b" = 123
+          )
         LIMIT 10
         """
     ).strip()
@@ -854,14 +908,16 @@ def test_filter_node(graph, node_input):
         SELECT
           "a"
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b"
-            FROM "db"."public"."event_table"
-            WHERE
-              ("b" = 123)
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b"
+          FROM "db"."public"."event_table"
+          WHERE
+            (
+              "b" = 123
+            )
         )
         LIMIT 10
         """
@@ -912,8 +968,11 @@ def test_multiple_filters(graph, node_input):
           "b" AS "b"
         FROM "db"."public"."event_table"
         WHERE
-          ("b" >= 1000)
-          AND ("b" <= 5000)
+          (
+            "b" >= 1000
+          ) AND (
+            "b" <= 5000
+          )
         LIMIT 10
         """
     ).strip()
@@ -958,10 +1017,14 @@ def test_filter_assign_project(graph, node_input):
         """
         SELECT
           "b" AS "b",
-          ("b" = 123) AS "new_col"
+          (
+            "b" = 123
+          ) AS "new_col"
         FROM "db"."public"."event_table"
         WHERE
-          ("b" = 123)
+          (
+            "b" = 123
+          )
         LIMIT 10
         """
     ).strip()
@@ -1043,15 +1106,14 @@ def test_conditional_assign__project_named(graph, node_input):
         SELECT
           "a"
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              CASE
-                WHEN ("a" = -999) THEN 0
-                ELSE "a"
-              END AS "a",
-              "b" AS "b"
-            FROM "db"."public"."event_table"
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            CASE WHEN (
+              "a" = -999
+            ) THEN 0 ELSE "a" END AS "a",
+            "b" AS "b"
+          FROM "db"."public"."event_table"
         )
         LIMIT 10
         """
@@ -1065,10 +1127,9 @@ def test_conditional_assign__project_named(graph, node_input):
         SELECT
           "ts" AS "ts",
           "cust_id" AS "cust_id",
-          CASE
-            WHEN ("a" = -999) THEN 0
-            ELSE "a"
-          END AS "a",
+          CASE WHEN (
+            "a" = -999
+          ) THEN 0 ELSE "a" END AS "a",
           "b" AS "b"
         FROM "db"."public"."event_table"
         LIMIT 10
@@ -1098,12 +1159,12 @@ def test_isnull(graph, node_input):
         SELECT
           "a" IS NULL
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b"
-            FROM "db"."public"."event_table"
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b"
+          FROM "db"."public"."event_table"
         )
         LIMIT 10
         """
@@ -1163,15 +1224,17 @@ def test_window_function(graph, node_input):
         SELECT
           *
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
-            FROM "db"."public"."event_table"
-            WHERE
-              ("a" > 1000)
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
+          FROM "db"."public"."event_table"
+          WHERE
+            (
+              "a" > 1000
+            )
         )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -1230,10 +1293,12 @@ def test_window_function__as_filter(graph, node_input):
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+          LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
         FROM "db"."public"."event_table"
         QUALIFY
-          (LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") > 0)
+          (
+            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
+          )
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -1294,12 +1359,16 @@ def test_window_function__multiple_filters(graph, node_input):
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+          LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
         FROM "db"."public"."event_table"
         WHERE
-          ("a" = 123)
+          (
+            "a" = 123
+          )
         QUALIFY
-          (LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") > 0)
+          (
+            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
+          )
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -1313,17 +1382,21 @@ def test_window_function__multiple_filters(graph, node_input):
         SELECT
           *
         FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
-            FROM "db"."public"."event_table"
-            WHERE
-              ("a" = 123)
-            QUALIFY
-              (LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") > 0)
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "a" AS "a",
+            "b" AS "b",
+            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
+          FROM "db"."public"."event_table"
+          WHERE
+            (
+              "a" = 123
+            )
+          QUALIFY
+            (
+              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
+            )
         )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -1367,25 +1440,31 @@ def test_databricks_source(query_graph_with_groupby):
           SUM(`a`) AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
           COUNT(`a`) AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
         FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                UNIX_TIMESTAMP(`ts`) - UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
             SELECT
-              *,
-              FLOOR((UNIX_TIMESTAMP(`ts`) - UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              *
             FROM (
-                SELECT
-                  *
-                FROM (
-                    SELECT
-                      `ts` AS `ts`,
-                      `cust_id` AS `cust_id`,
-                      `a` AS `a`,
-                      `b` AS `b`,
-                      (`a` + `b`) AS `c`
-                    FROM `db`.`public`.`event_table`
-                )
-                WHERE
-                  `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
-                  AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
+              SELECT
+                `ts` AS `ts`,
+                `cust_id` AS `cust_id`,
+                `a` AS `a`,
+                `b` AS `b`,
+                (
+                  `a` + `b`
+                ) AS `c`
+              FROM `db`.`public`.`event_table`
             )
+            WHERE
+              `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
+          )
         )
         GROUP BY
           tile_index,

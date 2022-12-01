@@ -7,7 +7,8 @@ from typing import Any, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, Select, expressions, parse_one, select
+from sqlglot import Expression, expressions, parse_one, select
+from sqlglot.expressions import Select
 
 from featurebyte.enum import InternalName, SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType

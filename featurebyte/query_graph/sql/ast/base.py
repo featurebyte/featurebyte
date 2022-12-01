@@ -9,7 +9,8 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from sqlglot import Expression, Select, expressions, select
+from sqlglot import Expression, expressions, select
+from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
