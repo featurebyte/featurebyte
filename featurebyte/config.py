@@ -343,8 +343,8 @@ class Configurations:
             return False
 
         # Append text to file
-        with self._config_file_path.open(mode="a") as f:
-            f.write(
+        with self._config_file_path.open(mode="a", encoding="utf-8") as config_file:
+            config_file.write(
                 "\n\n# credentials\n"
                 "credential:\n"
                 f"  - feature_store: {feature_store_name}\n"
