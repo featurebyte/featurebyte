@@ -320,3 +320,36 @@ class Configurations:
             raise InvalidSettingsError("No profile setting specified")
 
         return client
+
+    def write_creds(self, credential: Credential, feature_store_name: str) -> bool:
+        """
+        Write creds will try to write the credentials to the configuration file. This will no-op if the credential's
+        already exist in the config file.
+
+        Parameters
+        ----------
+        credential: Credential
+            credentials to write to the file
+        feature_store_name: str
+            the feature store associated with the credentials being passed in
+
+        Returns
+        -------
+        bool
+            True if we updated the config file, False if otherwise
+        """
+        current_creds = self.credentials.get(feature_store_name)
+        if current_creds is not None:
+            return False
+
+        # Append text to file
+        with self._config_file_path.open(mode="a") as f:
+            f.write(
+                "\n\n# credentials\n"
+                "credential:\n"
+                f"  - feature_store: {feature_store_name}\n"
+                f"    credential_type: {credential.credential_type}\n"
+                f"    username: {credential.credential.username}\n"
+                f"    password: {credential.credential.password}\n"
+            )
+        return True

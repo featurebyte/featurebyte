@@ -2,6 +2,8 @@
 Test config parser
 """
 import os
+import shutil
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,7 +19,7 @@ from featurebyte.config import (
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logger import logger
-from featurebyte.models.credential import CredentialType
+from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
 
 
 def test_configurations():
@@ -134,3 +136,63 @@ def test_use_profile(mock_requests_get):
     config = Configurations(config_path)
     assert config.profile.name == "featurebyte2"
     assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
+
+
+def test_write_creds__no_update_if_creds_exist():
+    """
+    Test write_creds function - no update expected if credentials exist in file
+    """
+    config = Configurations("tests/fixtures/config.yaml")
+    assert len(config.credentials) == 1
+    feature_store_name = "Snowflake FeatureStøre"
+    cred = Credential(
+        name="random",
+        credential_type=CredentialType.USERNAME_PASSWORD,
+        credential=UsernamePasswordCredential(
+            username="random_username",
+            password="random_password",
+        ),
+    )
+    did_update = config.write_creds(cred, feature_store_name)
+    assert not did_update
+
+
+def test_write_creds__update_if_no_creds_exist():
+    """
+    Test write_creds function - no update expected if credentials exist in file
+    """
+    with tempfile.NamedTemporaryFile(mode="w") as file_handle:
+        config_no_profile_file_name = "tests/fixtures/config_no_profile.yaml"
+        config_file_name = file_handle.name
+        shutil.copy2(config_no_profile_file_name, config_file_name)
+        config = Configurations(config_file_name)
+        # Assert no credentials exist
+        assert len(config.credentials) == 0
+        # Assert basic logging config exists
+        initial_logging_settings = LoggingSettings(
+            level="INFO",
+            serialize=True,
+        )
+        assert config.logging == initial_logging_settings
+
+        # Write creds to file
+        feature_store_name = "random_feature_store_name"
+        cred = Credential(
+            name=feature_store_name,
+            credential_type=CredentialType.USERNAME_PASSWORD,
+            credential=UsernamePasswordCredential(
+                username="random_username",
+                password="random_password",
+            ),
+        )
+        did_update = config.write_creds(cred, feature_store_name)
+        assert did_update
+
+        # Reload config
+        new_config = Configurations(config_file_name)
+        # Assert credentials exist
+        assert len(new_config.credentials) == 1
+        loaded_creds = new_config.credentials.get(feature_store_name)
+        assert loaded_creds == cred
+        # Assert existing configs are still there
+        assert new_config.logging == initial_logging_settings

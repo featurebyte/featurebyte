@@ -15,6 +15,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import (
     DatabaseDetails,
     FeatureStoreModel,
@@ -45,7 +46,13 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         return data.json_dict()
 
     @classmethod
-    def create(cls, name: str, source_type: SourceType, details: DatabaseDetails) -> FeatureStore:
+    def create(
+        cls,
+        name: str,
+        source_type: SourceType,
+        details: DatabaseDetails,
+        credentials: Optional[Credential] = None,
+    ) -> FeatureStore:
         """
         Create will return a new instance of a feature store.
         We prefer to use this over the default constructor of `FeatureStore` because
@@ -60,14 +67,18 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
             type of feature store
         details: DatabaseDetails
             details of the database we want to connect to
-
+        credentials: Optional[Credential]
+            Credentials for the data warehouse. If there are already credentials in your configuration file,
+            these will be ignored.
 
         Returns
         -------
         FeatureStore
         """
         # Construct object, and save to persistent layer.
-        feature_store = FeatureStore(name=name, type=source_type, details=details)
+        feature_store = FeatureStore(
+            name=name, type=source_type, details=details, credentials=credentials
+        )
         feature_store.save()
         return feature_store
 
