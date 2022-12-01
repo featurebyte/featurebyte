@@ -492,8 +492,11 @@ class TileCache(ABC):
             .group_by(*serving_names)
         )
 
-        tile_compute_sql = tile_info.sql_template.render(
-            {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
+        tile_compute_sql = cast(
+            str,
+            tile_info.sql_template.render(
+                {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
+            ),
         )
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_id,

@@ -35,7 +35,7 @@ def construct_cte_sql(
     return cte_expr
 
 
-def quoted_identifier(column_name: str) -> expressions.Identifier:
+def quoted_identifier(column_name: str) -> Expression:
     """Construct a quoted Identifier
 
     Parameters

@@ -3,6 +3,8 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
+from typing import cast
+
 from dataclasses import dataclass
 
 import sqlglot
@@ -65,7 +67,7 @@ class TileGenSql:
         -------
         str
         """
-        return self.sql_template.render()
+        return cast(str, self.sql_template.render())
 
 
 class TileSQLGenerator:

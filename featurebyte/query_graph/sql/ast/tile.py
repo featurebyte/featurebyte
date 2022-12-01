@@ -7,7 +7,7 @@ from typing import cast
 
 from dataclasses import dataclass
 
-from sqlglot import expressions, parse_one
+from sqlglot import parse_one
 from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import InternalName
@@ -111,7 +111,7 @@ class BuildTileNode(TableNode):
             + parameters["keys"]
             + [spec.tile_column_name for spec in tile_specs]
         )
-        columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
+        columns_map = {col: quoted_identifier(col) for col in columns}
         sql_node = BuildTileNode(
             context=context,
             columns_map=columns_map,
@@ -151,8 +151,6 @@ class AggregatedTilesNode(TableNode):
             agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(context.query_node)
             columns_map = {}
             for agg_spec in agg_specs:
-                columns_map[agg_spec.feature_name] = expressions.Identifier(
-                    this=agg_spec.agg_result_name, quoted=True
-                )
+                columns_map[agg_spec.feature_name] = quoted_identifier(agg_spec.agg_result_name)
             sql_node = AggregatedTilesNode(context=context, columns_map=columns_map)
         return sql_node
