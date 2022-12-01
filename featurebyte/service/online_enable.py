@@ -164,7 +164,6 @@ class OnlineEnableService(BaseService):
         feature_id: ObjectId,
         online_enabled: bool,
         get_credential: Any,
-        return_document: bool = True,
     ) -> FeatureModel:
         """
         Update feature online enabled & trigger list of cascading updates
@@ -177,8 +176,6 @@ class OnlineEnableService(BaseService):
             Value to update the feature online_enabled status
         get_credential: Any
             Get credential handler function
-        return_document: bool
-            Whether to return updated document
 
         Returns
         -------
@@ -206,6 +203,5 @@ class OnlineEnableService(BaseService):
                         return_document=False,
                     )
                 await self._update_data_warehouse(feature=feature, get_credential=get_credential)
-                if return_document:
-                    return await self.feature_service.get_document(document_id=feature_id)
-        return self.conditional_return(document=document, condition=return_document)
+                return await self.feature_service.get_document(document_id=feature_id)
+        return document

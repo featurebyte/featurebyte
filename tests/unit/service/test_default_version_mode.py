@@ -57,7 +57,7 @@ async def test_update_feature_namespace(
     await feature_readiness_service.update_feature(
         feature_id=new_feature_id,
         readiness="PRODUCTION_READY",
-        return_document=False,
+        # return_document=False,
     )
     namespace = await feature_namespace_service.get_document(
         document_id=feature.feature_namespace_id
@@ -109,7 +109,7 @@ async def test_update_feature_list_namespace(
     await feature_readiness_service.update_feature(
         feature_id=new_feature_id,
         readiness="PRODUCTION_READY",
-        return_document=False,
+        # return_document=False,
     )
     namespace = await feature_list_namespace_service.get_document(
         document_id=feature_list.feature_list_namespace_id
