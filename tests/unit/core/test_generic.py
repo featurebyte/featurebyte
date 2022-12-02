@@ -17,15 +17,6 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 class ConcreteQueryObject(QueryObject):
     """ConcreteQueryObject class"""
 
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
-        """Extract pruned graph & node from the global query graph"""
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node,
-            target_columns=set(),
-        )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-        return pruned_graph, mapped_node
-
 
 def check_graph_state(graph1, graph2):
     """

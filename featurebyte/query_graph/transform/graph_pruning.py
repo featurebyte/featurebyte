@@ -35,6 +35,8 @@ class GraphPruningExtractor(
 ):
     """GraphPruningExtractor class"""
 
+    # pylint: disable=too-few-public-methods
+
     def _pre_compute(
         self,
         branch_state: GraphPruningBranchState,
@@ -96,7 +98,9 @@ class GraphPruningExtractor(
         global_state.node_name_map[node.name] = node_pruned.name
         global_state.processed_node_names.add(node.name)
 
-    def extract(self, node: Node, target_columns: Optional[List[str]] = None) -> GraphPruningOutput:
+    def extract(
+        self, node: Node, target_columns: Optional[List[str]] = None, **kwargs: Any
+    ) -> GraphPruningOutput:
         operation_structure = OperationStructureExtractor(graph=self.graph).extract(node=node)
         if target_columns:
             # subset the operation structure info by keeping only selected columns (using project node)

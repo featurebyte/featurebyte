@@ -129,9 +129,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
 
     # serialize the graph with the last node of the graph
     node_names = set(dataframe.graph.nodes_map)
-    pruned_graph, node_name_map = dataframe.graph.prune(
-        target_node=dataframe.node, target_columns=set(dataframe.columns)
-    )
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     query_before_serialization = GraphInterpreter(
         pruned_graph, SourceType.SNOWFLAKE
@@ -152,7 +150,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     # construct the query of the last node
     node_before_load, columns_before_load = dataframe.node, dataframe.columns
     pruned_graph_before_load, node_name_map_before_load = dataframe.graph.prune(
-        target_node=node_before_load, target_columns=set(columns_before_load)
+        target_node=node_before_load
     )
     mapped_node_before_load = pruned_graph_before_load.get_node_by_name(
         node_name_map_before_load[node_before_load.name]
@@ -176,9 +174,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     assert isinstance(graph.node_type_counter, defaultdict)
 
     # check that loading the deserialized graph back to global won't affect other node
-    pruned_graph_after_load, _ = GlobalQueryGraph().prune(
-        target_node=node_before_load, target_columns=set(columns_before_load)
-    )
+    pruned_graph_after_load, _ = GlobalQueryGraph().prune(target_node=node_before_load)
     query_after_load = GraphInterpreter(
         pruned_graph_after_load, SourceType.SNOWFLAKE
     ).construct_preview_sql(mapped_node_before_load.name)

@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Set, Tuple, TypedDict, cast
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, cast
 
 from collections import defaultdict
 
@@ -23,13 +23,13 @@ class QueryGraph(QueryGraphModel):
     Graph data structure
     """
 
-    def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
+    def load(self, graph: QueryGraphModel) -> Tuple["QueryGraph", Dict[str, str]]:
         """
         Load the query graph into the query graph
 
         Parameters
         ----------
-        graph: QueryGraph
+        graph: QueryGraphModel
             query graph object to be loaded
 
         Returns
@@ -67,9 +67,7 @@ class QueryGraph(QueryGraphModel):
         """
         return OperationStructureExtractor(graph=self).extract(node=node)
 
-    def prune(
-        self, target_node: Node, target_columns: Set[str]
-    ) -> Tuple[QueryGraphModel, Dict[str, str]]:
+    def prune(self, target_node: Node) -> Tuple[QueryGraphModel, Dict[str, str]]:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -81,8 +79,6 @@ class QueryGraph(QueryGraphModel):
         ----------
         target_node: Node
             target end node
-        target_columns: set[str]
-            list of target columns
 
         Returns
         -------
