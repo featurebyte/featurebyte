@@ -81,7 +81,7 @@ lint-safety: generate-requirements-file
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 #* Testing
 test: test-setup
-	poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	poetry run pytest --timeout=240 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 	${MAKE} test-teardown
 
 test-setup:
