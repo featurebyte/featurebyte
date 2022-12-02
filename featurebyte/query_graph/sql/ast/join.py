@@ -215,8 +215,17 @@ class SCDJoin(TableNode):
             distinct=False,
         )
 
+        # Sorting additionally by EFFECTIVE_TS_COL allows exact matching when there are ties between
+        # left timestamp and right timestamp.
+        #
+        # Details: the default behaviour of this sort is NULL LAST, so extra rows from left tables
+        # come after SCD rows in the right table when the dates are identically. This way, LAG
+        # yields the exact matching date, instead of a previous effective date.
         order = expressions.Order(
-            expressions=[expressions.Ordered(this=quoted_identifier(self.TS_COL))]
+            expressions=[
+                expressions.Ordered(this=quoted_identifier(self.TS_COL)),
+                expressions.Ordered(this=quoted_identifier(self.EFFECTIVE_TS_COL)),
+            ]
         )
         matched_effective_timestamp_expr = expressions.Window(
             this=expressions.IgnoreNulls(

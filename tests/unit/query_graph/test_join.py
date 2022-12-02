@@ -282,7 +282,7 @@ def test_scd_join(global_graph, scd_join_node):
               SELECT
                 "TS_COL",
                 "KEY_COL",
-                LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST) AS "LAST_TS",
+                LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST, "EFFECTIVE_TS_COL" NULLS LAST) AS "LAST_TS",
                 "EFFECTIVE_TS_COL"
               FROM (
                 SELECT
