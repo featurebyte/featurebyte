@@ -6,7 +6,6 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import DBVarType
-from featurebyte.exception import JoinViewMismatchError
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
@@ -215,7 +214,3 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_e
     # No error expected
     snowflake_event_view.validate_join(snowflake_dimension_view)
     snowflake_event_view.validate_join(snowflake_event_view)
-
-    # Error expected
-    with pytest.raises(JoinViewMismatchError):
-        snowflake_event_view.validate_join(snowflake_scd_view)

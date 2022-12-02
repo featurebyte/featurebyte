@@ -8,7 +8,6 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.exception import JoinViewMismatchError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -89,6 +88,7 @@ def test_from_item_data__auto_join_columns(
                 "created_at",
             ],
             "join_type": "inner",
+            "scd_parameters": None,
         },
     }
 
@@ -259,6 +259,7 @@ def test_join_event_data_attributes__more_columns(
                 "cust_id",
             ],
             "join_type": "inner",
+            "scd_parameters": None,
         },
     }
 
@@ -557,7 +558,3 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_i
     # No error expected
     snowflake_item_view.validate_join(snowflake_dimension_view)
     snowflake_item_view.validate_join(snowflake_item_view)
-
-    # Error expected
-    with pytest.raises(JoinViewMismatchError):
-        snowflake_item_view.validate_join(snowflake_scd_view)
