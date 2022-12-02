@@ -130,7 +130,6 @@ class GroupbyNodeOpStructMixin:
         """
         input_operation_info = inputs[0]
         wanted_columns = set(self.get_required_input_columns())  # type: ignore
-        wanted_columns.difference_update(self._exclude_source_columns())
         columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
         output_category = NodeOutputCategory.FEATURE
         if self.type == NodeType.ITEM_GROUPBY and NodeType.JOIN in visited_node_types:

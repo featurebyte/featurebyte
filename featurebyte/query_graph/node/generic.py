@@ -167,19 +167,24 @@ class FilterNode(BaseNode):
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
-        input_operation_info = inputs[0]
+        input_operation_info, mask_operation_info = inputs
         output_category = input_operation_info.output_category
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
+            other_node_names = {self.name}.union(mask_operation_info.all_node_names)
             node_kwargs["columns"] = [
-                col.clone(filter=True, node_names=col.node_names.union([self.name]))
+                col.clone(filter=True, node_names=col.node_names.union(other_node_names))
                 for col in input_operation_info.columns
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
-                    name=col.name, columns=[col], transform=self.transform_info, node_name=self.name
+                    name=col.name,
+                    columns=[col],
+                    transform=self.transform_info,
+                    node_name=self.name,
+                    other_node_names=mask_operation_info.all_node_names,
                 )
                 for col in input_operation_info.aggregations
             ]
