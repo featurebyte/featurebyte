@@ -344,6 +344,8 @@ class SCDParameters(BaseModel):
 
     left_timestamp_column: str
     right_timestamp_column: str
+    current_flag: Optional[str]
+    end_timestamp_column: Optional[str]
 
 
 class JoinNode(BaseNode):
