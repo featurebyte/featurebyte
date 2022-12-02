@@ -2,7 +2,7 @@
 This module contains operation structure extraction related classes.
 """
 # pylint: disable=too-few-public-methods
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -65,7 +65,7 @@ class OperationStructureExtractor(
         global_state.operation_structure_map[node.name] = operation_structure
         return operation_structure
 
-    def extract(self, node: Node) -> OperationStructure:
+    def extract(self, node: Node, **kwargs: Any) -> OperationStructure:
         global_state = OperationStructureGlobalState()
         self._extract(
             node=node,

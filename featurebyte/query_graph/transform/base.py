@@ -142,7 +142,7 @@ class BaseGraphExtractor(Generic[ExtractorOutputT, BranchStateT, GlobalStateT]):
         )
 
     @abstractmethod
-    def extract(self, node: Node) -> ExtractorOutputT:
+    def extract(self, node: Node, **kwargs: Any) -> ExtractorOutputT:
         """
         Extract output of the given node from the given query graph
 
@@ -150,6 +150,8 @@ class BaseGraphExtractor(Generic[ExtractorOutputT, BranchStateT, GlobalStateT]):
         ----------
         node: Node
             Target node of the extractor
+        **kwargs: Any
+            Other keywords parameters
 
         Returns
         -------

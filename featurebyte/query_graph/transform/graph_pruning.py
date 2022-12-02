@@ -1,13 +1,14 @@
 """
 This module contains graph pruning related classes.
 """
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from pydantic import BaseModel, Field
 
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import AssignNode
+from featurebyte.query_graph.node.generic import AssignNode, ProjectNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -41,6 +42,7 @@ class GraphPruningExtractor(
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
+        # TODO: Decouple AssignNode from pruning logic
         if isinstance(node, AssignNode) and node.name not in global_state.node_names:
             return input_node_names[:1], True
         return input_node_names, False
@@ -94,8 +96,20 @@ class GraphPruningExtractor(
         global_state.node_name_map[node.name] = node_pruned.name
         global_state.processed_node_names.add(node.name)
 
-    def extract(self, node: Node) -> GraphPruningOutput:
+    def extract(self, node: Node, target_columns: Optional[List[str]] = None) -> GraphPruningOutput:
         operation_structure = OperationStructureExtractor(graph=self.graph).extract(node=node)
+        if target_columns:
+            # subset the operation structure info by keeping only selected columns (using project node)
+            temp_node = ProjectNode(
+                name="temp",
+                parameters={"columns": target_columns},
+                output_type=NodeOutputType.FRAME,
+            )
+            operation_structure = temp_node.derive_node_operation_info(
+                inputs=[operation_structure],
+                visited_node_types=set(),
+            )
+
         global_state = GraphPruningGlobalState(node_names=operation_structure.all_node_names)
         branch_state = GraphPruningBranchState()
         self._extract(
