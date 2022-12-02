@@ -146,6 +146,6 @@ def test_extract_operation_structure(feature_model_dict):
             column=SourceDataColumn(name="col_float", **common_source_col_params),
             filter=False,
             groupby_type="groupby",
-            node_names={"groupby_1", "project_1"},
+            node_names={"input_1", "groupby_1", "project_1"},
         )
     ]

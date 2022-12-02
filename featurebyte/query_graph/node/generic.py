@@ -280,7 +280,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return [str(col) for col in cols]
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str
+        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -293,7 +293,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
-                node_names={node_name},
+                node_names={node_name}.union(other_node_names),
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
@@ -320,7 +320,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return [str(key) for key in self.parameters.keys]
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str
+        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -333,7 +333,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
-                node_names={node_name},
+                node_names={node_name}.union(other_node_names),
             )
             for name in self.parameters.names
         ]

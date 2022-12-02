@@ -84,7 +84,7 @@ class GroupbyNodeOpStructMixin:
 
     @abstractmethod
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str
+        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
     ) -> List[AggregationColumn]:
         """
         Construct aggregations based on node parameters
@@ -95,6 +95,8 @@ class GroupbyNodeOpStructMixin:
             Input columns
         node_name: str
             Node name
+        other_node_names: Set[str]
+            Set of node names (input lineage)
 
         Returns
         -------
@@ -129,7 +131,16 @@ class GroupbyNodeOpStructMixin:
         OperationStructure
         """
         input_operation_info = inputs[0]
-        wanted_columns = set(self.get_required_input_columns())  # type: ignore
+        lineage_columns = set(self.get_required_input_columns())  # type: ignore
+        wanted_columns = lineage_columns.difference(self._exclude_source_columns())
+        other_node_names = set()
+        columns = []
+        for col in input_operation_info.columns:
+            if col.name in lineage_columns:
+                other_node_names.update(col.node_names)
+            if col.name in wanted_columns:
+                columns.append(col)
+
         columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
         output_category = NodeOutputCategory.FEATURE
         if self.type == NodeType.ITEM_GROUPBY and NodeType.JOIN in visited_node_types:
@@ -141,13 +152,21 @@ class GroupbyNodeOpStructMixin:
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
                 DerivedDataColumn.create(
-                    name=name, columns=columns, transform=self.transform_info, node_name=self.name
+                    name=name,
+                    columns=columns,
+                    transform=self.transform_info,
+                    node_name=self.name,
+                    other_node_names=other_node_names,
                 )
                 for name in self.parameters.names
             ]
         else:
             node_kwargs["columns"] = columns
-            node_kwargs["aggregations"] = self._get_aggregations(columns, node_name=self.name)
+            node_kwargs["aggregations"] = self._get_aggregations(
+                columns,
+                node_name=self.name,
+                other_node_names=other_node_names,
+            )
 
         return OperationStructure(
             **node_kwargs,
