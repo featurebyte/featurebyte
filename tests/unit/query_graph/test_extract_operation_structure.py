@@ -149,19 +149,20 @@ def test_extract_operation__filter(graph_four_nodes):
     """Test extract_operation_structure: filter"""
     graph, input_node, _, _, filter_node = graph_four_nodes
 
-    # FIXME: override column to make sure project a proper column (should fix conftest.py)
-    graph.nodes[0].parameters.columns = ["a"]
-
     op_struct = graph.extract_operation_structure(node=filter_node)
-    common_column_params = extract_column_parameters(input_node, other_node_names={"filter_1"})
-    expected_columns = [{"name": "a", **common_column_params, "filter": True}]
+    common_column_params = extract_column_parameters(
+        input_node, other_node_names={"input_1", "project_1", "eq_1", "filter_1"}
+    )
+    expected_columns = [{"name": "column", **common_column_params, "filter": True}]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == [{"name": "a", **common_column_params, "filter": True}]
+    assert grp_op_struct.source_columns == [
+        {"name": "column", **common_column_params, "filter": True}
+    ]
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
@@ -232,7 +233,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "groupby_type": "groupby",
         "filter": False,
         "type": "aggregation",
-        "node_names": {"groupby_1"},
+        "node_names": {"input_1", "groupby_1"},
     }
     expected_columns = [
         {"name": "a", **common_column_params},
@@ -264,7 +265,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "name": "a_2h_average",
         "window": "2h",
         **common_aggregation_params,
-        "node_names": {"groupby_1", "project_3"},
+        "node_names": {"input_1", "groupby_1", "project_3"},
     }
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == [expected_aggregation]
@@ -289,7 +290,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "columns": [expected_aggregation],
         "filter": False,
         "name": "a_2h_average",
-        "node_names": {"filter_1", "project_3", "groupby_1"},
+        "node_names": {"input_1", "eq_1", "filter_1", "project_3", "groupby_1"},
         "transforms": ["filter"],
         "type": "post_aggregation",
     }
@@ -320,7 +321,7 @@ def test_extract_operation__item_groupby(
             "window": None,
             "filter": False,
             "groupby_type": "item_groupby",
-            "node_names": {"item_groupby_1"},
+            "node_names": {"input_1", "item_groupby_1"},
         }
     ]
     assert op_struct.output_category == "feature"
@@ -341,7 +342,7 @@ def test_extract_operation__join_double_aggregations(
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_join_node)
     common_event_data_column_params = extract_column_parameters(
         event_data_input_node,
-        other_node_names={"join_1"},
+        other_node_names={"input_2", "join_1"},
     )
     order_size_column = {
         "name": "order_size",
@@ -349,7 +350,7 @@ def test_extract_operation__join_double_aggregations(
         "transforms": ["item_groupby"],
         "filter": False,
         "type": "derived",
-        "node_names": {"item_groupby_1", "join_1"},
+        "node_names": {"input_1", "item_groupby_1", "join_1"},
     }
     assert op_struct.columns == [
         {"name": "ts", **common_event_data_column_params},
@@ -375,7 +376,7 @@ def test_extract_operation__join_double_aggregations(
             "filter": False,
             "groupby_type": "groupby",
             "type": "aggregation",
-            "node_names": {"groupby_1"},
+            "node_names": {"input_1", "input_2", "join_1", "item_groupby_1", "groupby_1"},
         }
     ]
     assert op_struct.columns == [order_size_column]

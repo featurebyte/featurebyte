@@ -184,14 +184,14 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
-        "add_1": ["assign_1", "add_2"],
-        "add_2": ["assign_2"],
-        "assign_1": ["groupby_1", "assign_2"],
-        "assign_2": ["groupby_2"],
-        "groupby_1": ["project_2"],
-        "groupby_2": ["project_3"],
         "input_1": ["project_1", "assign_1"],
         "project_1": ["add_1"],
+        "add_1": ["assign_1", "add_2"],
+        "add_2": ["assign_2"],
+        "assign_1": ["assign_2"],
+        "assign_2": ["groupby_1", "groupby_2"],
+        "groupby_1": ["project_2"],
+        "groupby_2": ["project_3"],
         "project_2": ["mul_1"],
         "project_3": ["mul_1"],
     }

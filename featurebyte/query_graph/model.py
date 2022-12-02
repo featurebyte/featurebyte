@@ -221,6 +221,19 @@ class QueryGraphModel(FeatureByteBaseModel):
             return input_node
         raise GraphInconsistencyError("Input node not found")
 
+    def get_input_node_names(self, node: Node) -> List[str]:
+        """
+        Get the input node names of the given node
+        Parameters
+        ----------
+        node: Node
+            Node
+        Returns
+        -------
+        List[str]
+        """
+        return self.backward_edges_map.get(node.name, [])
+
     def iterate_nodes(self, target_node: Node, node_type: NodeType) -> Iterator[Node]:
         """
         Iterate all specified nodes in this query graph

@@ -11,7 +11,7 @@ import sqlglot
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
@@ -75,10 +75,10 @@ class TileSQLGenerator:
 
     Parameters
     ----------
-    query_graph : QueryGraph
+    query_graph : QueryGraphModel
     """
 
-    def __init__(self, query_graph: QueryGraph, is_on_demand: bool, source_type: SourceType):
+    def __init__(self, query_graph: QueryGraphModel, is_on_demand: bool, source_type: SourceType):
         self.query_graph = query_graph
         self.is_on_demand = is_on_demand
         self.source_type = source_type
@@ -161,13 +161,13 @@ class GraphInterpreter:
 
     Parameters
     ----------
-    query_graph : QueryGraph
+    query_graph : QueryGraphModel
         Query graph
     source_type : SourceType
         Data source type information
     """
 
-    def __init__(self, query_graph: QueryGraph, source_type: SourceType):
+    def __init__(self, query_graph: QueryGraphModel, source_type: SourceType):
         self.query_graph = query_graph
         self.source_type = source_type
 

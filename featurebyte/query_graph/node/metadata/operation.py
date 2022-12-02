@@ -163,6 +163,7 @@ class BaseDerivedColumn(BaseColumn):
         columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]],
         transform: Optional[str],
         node_name: str,
+        other_node_names: Optional[Set[str]] = None,
     ) -> BaseDerivedColumnT:
         """
         Create derived column by flattening the derived columns in the given list of columns
@@ -177,6 +178,8 @@ class BaseDerivedColumn(BaseColumn):
             Node transformation
         node_name: str
             Node name
+        other_node_names: Optional[Set[str]]
+            Set of node name
 
         Returns
         -------
@@ -185,6 +188,8 @@ class BaseDerivedColumn(BaseColumn):
         """
         columns, transforms, node_names = cls._flatten_columns(columns)
         node_names.add(node_name)
+        if other_node_names:
+            node_names.update(other_node_names)
         if transform:
             transforms.append(transform)
         return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)

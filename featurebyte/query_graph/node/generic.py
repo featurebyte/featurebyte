@@ -167,19 +167,24 @@ class FilterNode(BaseNode):
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
-        input_operation_info = inputs[0]
+        input_operation_info, mask_operation_info = inputs
         output_category = input_operation_info.output_category
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
+            other_node_names = {self.name}.union(mask_operation_info.all_node_names)
             node_kwargs["columns"] = [
-                col.clone(filter=True, node_names=col.node_names.union([self.name]))
+                col.clone(filter=True, node_names=col.node_names.union(other_node_names))
                 for col in input_operation_info.columns
             ]
         else:
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = [
                 PostAggregationColumn.create(
-                    name=col.name, columns=[col], transform=self.transform_info, node_name=self.name
+                    name=col.name,
+                    columns=[col],
+                    transform=self.transform_info,
+                    node_name=self.name,
+                    other_node_names=mask_operation_info.all_node_names,
                 )
                 for col in input_operation_info.aggregations
             ]
@@ -275,7 +280,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return [str(col) for col in cols]
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str
+        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -288,7 +293,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
-                node_names={node_name},
+                node_names={node_name}.union(other_node_names),
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
@@ -315,7 +320,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return [str(key) for key in self.parameters.keys]
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str
+        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -328,7 +333,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
-                node_names={node_name},
+                node_names={node_name}.union(other_node_names),
             )
             for name in self.parameters.names
         ]

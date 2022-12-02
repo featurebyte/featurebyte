@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Set, Tuple, TypedDict, cast
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, cast
 
 from collections import defaultdict
 
@@ -13,7 +13,12 @@ from featurebyte.query_graph.model import Edge, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
-from featurebyte.query_graph.transformation import GraphFlattener, GraphPruner, GraphReconstructor
+from featurebyte.query_graph.transform.graph_pruning import (
+    GraphPruningExtractor,
+    GraphPruningOutput,
+)
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.transformation import GraphFlattener, GraphReconstructor
 
 
 class QueryGraph(QueryGraphModel):
@@ -21,13 +26,13 @@ class QueryGraph(QueryGraphModel):
     Graph data structure
     """
 
-    def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
+    def load(self, graph: QueryGraphModel) -> Tuple["QueryGraph", Dict[str, str]]:
         """
         Load the query graph into the query graph
 
         Parameters
         ----------
-        graph: QueryGraph
+        graph: QueryGraphModel
             query graph object to be loaded
 
         Returns
@@ -50,9 +55,22 @@ class QueryGraph(QueryGraphModel):
             node_name_map[node.name] = node_global.name
         return self, node_name_map
 
-    def prune(
-        self, target_node: Node, target_columns: Set[str]
-    ) -> Tuple["QueryGraph", Dict[str, str]]:
+    def extract_operation_structure(self, node: Node) -> OperationStructure:
+        """
+        Extract operation structure from the graph given target node
+
+        Parameters
+        ----------
+        node: Node
+            Target node used to construct the operation structure
+
+        Returns
+        -------
+        OperationStructure
+        """
+        return OperationStructureExtractor(graph=self).extract(node=node)
+
+    def prune(self, target_node: Node) -> GraphPruningOutput:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -64,19 +82,13 @@ class QueryGraph(QueryGraphModel):
         ----------
         target_node: Node
             target end node
-        target_columns: set[str]
-            list of target columns
 
         Returns
         -------
-        QueryGraph, node_name_map
+        GraphPruningOutput
+            Tuple of pruned graph & its node name mapping
         """
-        return GraphPruner.prune(
-            graph=self,
-            output_graph=QueryGraph(),
-            target_node=target_node,
-            target_columns=target_columns,
-        )
+        return GraphPruningExtractor(graph=self).extract(node=target_node)
 
     def reconstruct(
         self, replace_nodes_map: Dict[str, Node], regenerate_groupby_hash: bool = False
@@ -111,48 +123,6 @@ class QueryGraph(QueryGraphModel):
         QueryGraph
         """
         return GraphFlattener.flatten(graph=self, output_graph=QueryGraph())
-
-    def _extract_operation_structure(
-        self,
-        node: Node,
-        visited_node_types: Set[NodeType],
-        topological_order_map: Dict[str, int],
-    ) -> OperationStructure:
-        input_node_names = self.backward_edges_map.get(node.name, [])
-        input_node_map = {}
-        for input_node_name in sorted(
-            input_node_names, key=lambda x: topological_order_map[x], reverse=True
-        ):
-            input_node = self.nodes_map[input_node_name]
-            input_node_map[input_node_name] = self._extract_operation_structure(
-                node=input_node,
-                visited_node_types=visited_node_types.union([node.type]),
-                topological_order_map=topological_order_map,
-            )
-
-        return node.derive_node_operation_info(
-            inputs=[input_node_map[node_name] for node_name in input_node_names],
-            visited_node_types=visited_node_types,
-        )
-
-    def extract_operation_structure(self, node: Node) -> OperationStructure:
-        """
-        Extract operation structure from the graph given target node
-
-        Parameters
-        ----------
-        node: Node
-            Target node used to construct the operation structure
-
-        Returns
-        -------
-        OperationStructure
-        """
-        return self._extract_operation_structure(
-            node=node,
-            visited_node_types=set(),
-            topological_order_map=self.node_topological_order_map,
-        )
 
     def add_graph_node(self, graph_node: "GraphNode", input_nodes: List[Node]) -> Node:
         """

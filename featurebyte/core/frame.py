@@ -16,8 +16,7 @@ from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 class BaseFrame(QueryObject):
@@ -59,14 +58,6 @@ class BaseFrame(QueryObject):
         list[str]
         """
         return list(self.column_var_type_map)
-
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node,
-            target_columns=set(self.columns),
-        )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-        return pruned_graph, mapped_node
 
 
 class Frame(BaseFrame, OpsMixin, GetAttrMixin):
@@ -276,10 +267,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=self.node,
-                target_columns=set(self.column_var_type_map),
-            )
+            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name

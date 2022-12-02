@@ -22,7 +22,6 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.node import Node
 
 FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
 
@@ -795,12 +794,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
-            target_columns = set()
-            if self.name:
-                target_columns.add(self.name)
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=self.node, target_columns=target_columns
-            )
+            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
@@ -813,14 +807,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)
-
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node,
-            target_columns={self.name} if self.name else set(),
-        )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-        return pruned_graph, mapped_node
 
     def copy(self, *args: Any, **kwargs: Any) -> Series:
         # Copying a Series should prevent it from modifying the parent Frame

@@ -319,6 +319,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     )
     other_view = SimpleTestView(columns_info=[col_info_c])
     other_view.set_join_col_override("colC")
+    generic_input_node_params["node_params"]["columns"] = ["colA", "colB", "colC"]
     input_node = current_view.graph.add_operation(
         node_type=generic_input_node_params["node_type"],
         node_params=generic_input_node_params["node_params"],

@@ -18,6 +18,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature_store import FeatureStorePreview
@@ -57,15 +58,18 @@ class QueryObject(FeatureByteBaseModel):
     def __str__(self) -> str:
         return repr(self)
 
-    @abstractmethod
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
 
         Returns
         -------
-        QueryGraph & mapped Node object (within the pruned graph)
+        tuple[QueryGraphModel, Node]
+            QueryGraph & mapped Node object (within the pruned graph)
         """
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=self.node)
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+        return pruned_graph, mapped_node
 
     @typechecked
     def preview_sql(self, limit: int = 10) -> str:

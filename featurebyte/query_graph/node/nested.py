@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 
 
 class NestedGraphMixin:
@@ -35,7 +35,9 @@ class NestedGraphMixin:
         """
         # TODO: implement this method
         _ = inputs, visited_node_types
-        return OperationStructure()
+        return OperationStructure(
+            output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
+        )
 
 
 class ProxyInputNode(NestedGraphMixin, BaseNode):
