@@ -40,7 +40,7 @@ Each feature version has a feature lineage. It is then possible to audit feature
 
 The SDK code used to declare the feature and the SQL code used to execute its computation are both provided.
 
-To improve the readability of the SDK code, code is pruned to present only steps related to the feature and is automatically organized in the form of key steps (joins, column derivations, aggregation, and post aggregation transforms).
+To improve the readability of the SDK code, code is pruned to present only steps related to the feature and is automatically organized in the form of key steps (cleaning, joins, column derivations, aggregation, and post aggregation transforms).
 
 ### Feature Readiness
 4 Feature Readiness levels are recognized by FeatureByte:

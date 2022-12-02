@@ -16,6 +16,8 @@ Child-parent Relationships are used to simplify feature serving, to recommend fe
 
 The entity is automatically set as the child of other entities when its primary key (or natural key) refers to a table in which columns are tagged as belonging to other entities.
 
+Users can also establish Subtype-supertype Relationships. An entity subtype inherits attributes and relationships of the supertype.
+
 ### Entities of a Feature
 The entity of the feature defined by an aggregate is the entity tagged to the aggregate’s GroupBy key. When more than one key is used in GroupBy, a tuple of entities is associated with a feature.
 

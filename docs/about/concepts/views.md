@@ -89,10 +89,7 @@ To facilitate time aware feature engineering, the event timestamp of the related
 
 Other joins are recommended when an entity in the view is a primary key or a natural key of another view.
 
-Joins of Slowly Changing Dimension views are made at the timestamp of the calling view. An offset can be added to the timestamp during the joins. The offset is applied backwards only.
-
-#### Forward Joins
-Forward join of Slowly Changing Dimension views can also be done. Users have to specify the time horizon of the join. The columns added by a forward join have special metadata attached to prevent time leakage and this metadata automatically offsets the time windows of any features using those columns as column input.
+Joins of Slowly Changing Dimension views are made at the timestamp of the calling view.
 
 ### Condition-based Subsetting
 Views can be easily filtered in a similar way to Pandas or R Data Frame. A condition based subset can also be used to overwrite the values of a column.
