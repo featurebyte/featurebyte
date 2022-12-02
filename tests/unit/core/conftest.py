@@ -179,19 +179,29 @@ def timedelta_series_from_int(int_series):
 @pytest.fixture(name="expression_sql_template")
 def expression_sql_template_fixture():
     """SQL template used to construct the expected sql code"""
-    template_sql = """
-    SELECT
-      {expression}
-    FROM (
+
+    template_sql = textwrap.dedent(
+        """
         SELECT
-          "CUST_ID" AS "CUST_ID",
-          "PRODUCT_ACTION" AS "PRODUCT_ACTION",
-          "VALUE" AS "VALUE",
-          "MASK" AS "MASK",
-          "TIMESTAMP" AS "TIMESTAMP",
-          "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
-        FROM "db"."public"."transaction"
-    )
-    LIMIT 10
-    """
-    return textwrap.dedent(template_sql).strip()
+        {expression}
+        FROM (
+          SELECT
+            "CUST_ID" AS "CUST_ID",
+            "PRODUCT_ACTION" AS "PRODUCT_ACTION",
+            "VALUE" AS "VALUE",
+            "MASK" AS "MASK",
+            "TIMESTAMP" AS "TIMESTAMP",
+            "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
+          FROM "db"."public"."transaction"
+        )
+        LIMIT 10
+        """
+    ).strip()
+
+    class Formatter:
+        def format(self, expression):
+            expression = textwrap.dedent(expression).strip()
+            formatted = template_sql.format(expression=textwrap.indent(expression, " " * 2))
+            return formatted
+
+    return Formatter()

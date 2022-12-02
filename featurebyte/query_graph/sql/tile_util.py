@@ -3,7 +3,7 @@ Module for tiles related utilities
 """
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, cast
 
 from sqlglot import parse_one
 from sqlglot.expressions import Expression
@@ -47,8 +47,13 @@ def calculate_first_and_last_tile_indices(
     """
     num_tiles = window_size // frequency
     point_in_time_epoch_expr = adapter.to_epoch_seconds(point_in_time_expr)
-    last_tile_index_expr = parse_one(
-        f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
+    last_tile_index_expr = cast(
+        Expression,
+        parse_one(
+            f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
+        ),
     )
-    first_tile_index_expr = parse_one(f"{last_tile_index_expr.sql()} - {num_tiles}")
+    first_tile_index_expr = cast(
+        Expression, parse_one(f"{last_tile_index_expr.sql()} - {num_tiles}")
+    )
     return first_tile_index_expr, last_tile_index_expr

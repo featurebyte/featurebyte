@@ -335,7 +335,7 @@ def test_lag(input_node):
             parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         )
     )
-    assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
+    assert node.sql.sql() == 'LAG(val, 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST)'
 
 
 def test_date_difference(input_node):
@@ -438,7 +438,11 @@ def test_datediff_resolves_correctly(dataframe):
           "MASK" AS "MASK",
           "TIMESTAMP_VALUE" AS "TIMESTAMP_VALUE",
           123 AS "diff",
-          DATEADD(microsecond, DATEDIFF(microsecond, "TIMESTAMP_VALUE", "TIMESTAMP_VALUE"), "TIMESTAMP_VALUE") AS "NEW_TIMESTAMP"
+          DATEADD(
+            microsecond,
+            DATEDIFF(microsecond, "TIMESTAMP_VALUE", "TIMESTAMP_VALUE"),
+            "TIMESTAMP_VALUE"
+          ) AS "NEW_TIMESTAMP"
         FROM "db"."public"."transaction"
         LIMIT 10
         """

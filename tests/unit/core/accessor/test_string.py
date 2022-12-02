@@ -93,30 +93,39 @@ def test_replace_expression(
     [
         (
             lambda s: s.str.pad(width=10, side="left", fillchar="-"),
-            (
-                "CASE\n"
-                '    WHEN LENGTH("PRODUCT_ACTION") >= 10 THEN "PRODUCT_ACTION"\n'
-                "    ELSE LPAD(\"PRODUCT_ACTION\", 10, '-')\n"
-                "  END"
-            ),
+            """
+            CASE
+              WHEN LENGTH("PRODUCT_ACTION") >= 10
+              THEN "PRODUCT_ACTION"
+              ELSE LPAD(\"PRODUCT_ACTION\", 10, '-')
+            END
+            """,
         ),
         (
             lambda s: s.str.pad(width=9, side="right", fillchar="-"),
-            (
-                "CASE\n"
-                '    WHEN LENGTH("PRODUCT_ACTION") >= 9 THEN "PRODUCT_ACTION"\n'
-                "    ELSE RPAD(\"PRODUCT_ACTION\", 9, '-')\n"
-                "  END"
-            ),
+            """
+            CASE
+              WHEN LENGTH("PRODUCT_ACTION") >= 9
+              THEN "PRODUCT_ACTION"
+              ELSE RPAD(\"PRODUCT_ACTION\", 9, '-')
+            END
+            """,
         ),
         (
             lambda s: s.str.pad(width=8, side="both", fillchar="-"),
-            (
-                "CASE\n"
-                '    WHEN LENGTH("PRODUCT_ACTION") >= 8 THEN "PRODUCT_ACTION"\n'
-                "    ELSE RPAD(LPAD(\"PRODUCT_ACTION\", 8 - CEIL((8 - LENGTH(\"PRODUCT_ACTION\")) / 2), '-'), 8, '-')\n"
-                "  END"
-            ),
+            """
+            CASE
+              WHEN LENGTH("PRODUCT_ACTION") >= 8
+              THEN "PRODUCT_ACTION"
+              ELSE RPAD(
+                LPAD("PRODUCT_ACTION", 8 - CEIL((
+                  8 - LENGTH("PRODUCT_ACTION")
+                ) / 2), '-'),
+                8,
+                '-'
+              )
+            END
+            """,
         ),
     ],
 )

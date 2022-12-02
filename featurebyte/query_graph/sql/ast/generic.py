@@ -3,11 +3,12 @@ Module for generic operations sql generation
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
@@ -23,7 +24,7 @@ class StrExpressionNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return parse_one(self.expr)
+        return cast(Expression, parse_one(self.expr))
 
 
 @dataclass

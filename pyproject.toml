@@ -109,7 +109,7 @@ python-multipart = "^0.0.5"
 requests = "^2.27.1"
 rich = "^12.6.0"
 snowflake-connector-python = { version = "^2.7.7", optional = true }
-sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax changes
+sqlglot = "^10.1.3,<11.0"
 typeguard = "^2.13.3"
 uvicorn = { version = "^0.18.2", extras = ["standard"], optional = true }
 

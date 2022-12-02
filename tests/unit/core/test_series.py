@@ -896,16 +896,18 @@ def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
         == textwrap.dedent(
             f"""
         SELECT
-          (CONCAT("PRODUCT_ACTION", {expected_literal}))
+          (
+            CONCAT("PRODUCT_ACTION", {expected_literal})
+          )
         FROM (
-            SELECT
-              "CUST_ID" AS "CUST_ID",
-              "PRODUCT_ACTION" AS "PRODUCT_ACTION",
-              "VALUE" AS "VALUE",
-              "MASK" AS "MASK",
-              "TIMESTAMP" AS "TIMESTAMP",
-              "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
-            FROM "db"."public"."transaction"
+          SELECT
+            "CUST_ID" AS "CUST_ID",
+            "PRODUCT_ACTION" AS "PRODUCT_ACTION",
+            "VALUE" AS "VALUE",
+            "MASK" AS "MASK",
+            "TIMESTAMP" AS "TIMESTAMP",
+            "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
+          FROM "db"."public"."transaction"
         )
         LIMIT 10
         """
@@ -1001,8 +1003,28 @@ def test_node_types_lineage(dataframe, float_series):
     [
         (lambda s: s.sqrt(), NodeType.SQRT, DBVarType.FLOAT, {}, 'SQRT("VALUE")'),
         (lambda s: s.abs(), NodeType.ABS, DBVarType.FLOAT, {}, 'ABS("VALUE")'),
-        (lambda s: s.pow(2), NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
-        (lambda s: s**2, NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
+        (
+            lambda s: s.pow(2),
+            NodeType.POWER,
+            DBVarType.FLOAT,
+            {"value": 2},
+            """
+            (
+              POWER("VALUE", 2)
+            )
+            """,
+        ),
+        (
+            lambda s: s**2,
+            NodeType.POWER,
+            DBVarType.FLOAT,
+            {"value": 2},
+            """
+            (
+              POWER("VALUE", 2)
+            )
+            """,
+        ),
         (lambda s: s.log(), NodeType.LOG, DBVarType.FLOAT, {}, 'LN("VALUE")'),
         (lambda s: s.exp(), NodeType.EXP, DBVarType.FLOAT, {}, 'EXP("VALUE")'),
         (lambda s: s.floor(), NodeType.FLOOR, DBVarType.INT, {}, 'FLOOR("VALUE")'),

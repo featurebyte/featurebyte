@@ -3,11 +3,12 @@ Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Sequence
 
 from enum import Enum
 
-from sqlglot import Expression, expressions, select
+from sqlglot import expressions
+from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import SourceType
 
@@ -15,7 +16,7 @@ REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
 
 def construct_cte_sql(
-    cte_statements: list[tuple[str | expressions.Identifier, Expression]]
+    cte_statements: Sequence[tuple[str | expressions.Identifier, Expression]]
 ) -> expressions.Select:
     """Construct CTEs section of a SQL code
 
@@ -34,7 +35,7 @@ def construct_cte_sql(
     return cte_expr
 
 
-def quoted_identifier(column_name: str) -> expressions.Identifier:
+def quoted_identifier(column_name: str) -> Expression:
     """Construct a quoted Identifier
 
     Parameters
@@ -82,7 +83,7 @@ def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
     -------
     str
     """
-    return cast(str, sql_expr.sql(dialect=get_dialect_from_source_type(source_type), pretty=True))
+    return sql_expr.sql(dialect=get_dialect_from_source_type(source_type), pretty=True)
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:

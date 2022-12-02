@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
+from sqlglot.expressions import Expression
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.ast.literal import make_literal_value

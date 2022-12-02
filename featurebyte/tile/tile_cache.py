@@ -3,13 +3,14 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import Type
+from typing import Type, cast
 
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.logger import logger
@@ -363,7 +364,9 @@ class TileCache(ABC):
             join_conditions = []
             for serving_name, key in zip(tile_info.serving_names, tile_info.entity_columns):
                 join_conditions.append(
-                    f"REQ.{quoted_identifier(serving_name).sql()} = {table_alias}.{quoted_identifier(key).sql()}"
+                    parse_one(
+                        f"REQ.{quoted_identifier(serving_name).sql()} = {table_alias}.{quoted_identifier(key).sql()}"
+                    )
                 )
             join_conditions.append(
                 expressions.LTE(
@@ -489,8 +492,11 @@ class TileCache(ABC):
             .group_by(*serving_names)
         )
 
-        tile_compute_sql = tile_info.sql_template.render(
-            {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
+        tile_compute_sql = cast(
+            str,
+            tile_info.sql_template.render(
+                {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
+            ),
         )
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_id,
@@ -642,7 +648,7 @@ class TileCache(ABC):
         )
         start_date_expr = self.adapter.dateadd_microsecond(
             tile_boundaries_offset_microsecond,
-            parse_one("CAST('1970-01-01' AS TIMESTAMP)"),
+            cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
         )
         return start_date_expr, end_date_expr
 

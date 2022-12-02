@@ -11,7 +11,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from bson import ObjectId
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, Identifier, Table, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
@@ -105,8 +106,7 @@ class OnlineStoreUniversePlan:
             expressions.LT(this="INDEX", expression=last_index),
         )
         expr = (
-            expressions.Select(distinct=True)
-            .select(
+            select(
                 expressions.alias_(self._get_point_in_time_expr(), SpecialColumnName.POINT_IN_TIME),
                 *[
                     expressions.alias_(
@@ -115,6 +115,7 @@ class OnlineStoreUniversePlan:
                     for key_col, serving_name_col in zip(keys, serving_names)
                 ],
             )
+            .distinct()
             .from_(tile_id)
             .where(filter_condition)
         )
@@ -150,7 +151,10 @@ class OnlineStoreUniversePlan:
 
     @classmethod
     def _get_point_in_time_expr(cls) -> Expression:
-        return parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)")
+        return cast(
+            Expression,
+            parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)"),
+        )
 
 
 def get_online_store_feature_compute_sql(
@@ -410,7 +414,7 @@ class OnlineStoreRetrievePlan:
                     feature_name
                 ] = f"{join_alias}.{quoted_identifier(feature_name).sql()}"
             expr = expr.join(
-                expressions.Identifier(this=feature_store_table_name),
+                Table(this=Identifier(this=feature_store_table_name)),
                 join_alias=join_alias,
                 on=join_conditions,
                 join_type="left",

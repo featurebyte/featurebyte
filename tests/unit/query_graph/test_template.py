@@ -67,9 +67,9 @@ def test_replace_placeholder__expr(sql_template):
         SELECT
           *
         FROM (
-            SELECT
-              *
-            FROM ANOTHER_TABLE
+          SELECT
+            *
+          FROM ANOTHER_TABLE
         )
         WHERE
           A = 123

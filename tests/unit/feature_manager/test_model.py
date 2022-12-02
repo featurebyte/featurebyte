@@ -19,29 +19,33 @@ def test_extended_feature_model__float_feature(float_feature):
           "cust_id",
           SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+              ) / 1800
+            ) AS tile_index
+          FROM (
             SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 1800) AS tile_index
+              *
             FROM (
-                SELECT
-                  *
-                FROM (
-                    SELECT
-                      "col_int" AS "col_int",
-                      "col_float" AS "col_float",
-                      "col_char" AS "col_char",
-                      "col_text" AS "col_text",
-                      "col_binary" AS "col_binary",
-                      "col_boolean" AS "col_boolean",
-                      "event_timestamp" AS "event_timestamp",
-                      "created_at" AS "created_at",
-                      "cust_id" AS "cust_id"
-                    FROM "sf_database"."sf_schema"."sf_table"
-                )
-                WHERE
-                  "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                  AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "created_at" AS "created_at",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
             )
+            WHERE
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+          )
         )
         GROUP BY
           tile_index,
@@ -80,29 +84,33 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
           "col_int",
           SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+              ) / 1800
+            ) AS tile_index
+          FROM (
             SELECT
-              *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 1800) AS tile_index
+              *
             FROM (
-                SELECT
-                  *
-                FROM (
-                    SELECT
-                      "col_int" AS "col_int",
-                      "col_float" AS "col_float",
-                      "col_char" AS "col_char",
-                      "col_text" AS "col_text",
-                      "col_binary" AS "col_binary",
-                      "col_boolean" AS "col_boolean",
-                      "event_timestamp" AS "event_timestamp",
-                      "created_at" AS "created_at",
-                      "cust_id" AS "cust_id"
-                    FROM "sf_database"."sf_schema"."sf_table"
-                )
-                WHERE
-                  "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                  AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "created_at" AS "created_at",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
             )
+            WHERE
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+          )
         )
         GROUP BY
           tile_index,

@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pandas as pd
-from sqlglot import Select
+from sqlglot.expressions import Select
 
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode

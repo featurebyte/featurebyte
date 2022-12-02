@@ -3,7 +3,7 @@ Module for literal value handling
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from sqlglot import expressions, parse_one
 
@@ -27,7 +27,7 @@ def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressio
     if is_scalar_nan(value):
         return expressions.Null()
     if cast_as_timestamp:
-        return parse_one(f"CAST('{str(value)}' AS TIMESTAMP)")
+        return cast(expressions.Expression, parse_one(f"CAST('{str(value)}' AS TIMESTAMP)"))
     if isinstance(value, str):
         return expressions.Literal.string(value)
     return expressions.Literal.number(value)

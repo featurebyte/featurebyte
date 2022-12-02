@@ -136,26 +136,26 @@ def test_from_item_data__auto_join_columns(
           R."item_amount" AS "item_amount",
           R."created_at" AS "created_at"
         FROM (
-            SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              "col_text" AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "created_at" AS "created_at",
-              "cust_id" AS "cust_id"
-            FROM "sf_database"."sf_schema"."sf_table"
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "created_at" AS "created_at",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
         ) AS L
         INNER JOIN (
-            SELECT
-              "event_id_col" AS "event_id_col",
-              "item_id_col" AS "item_id_col",
-              "item_type" AS "item_type",
-              "item_amount" AS "item_amount",
-              "created_at" AS "created_at"
-            FROM "sf_database"."sf_schema"."items_table"
+          SELECT
+            "event_id_col" AS "event_id_col",
+            "item_id_col" AS "item_id_col",
+            "item_type" AS "item_type",
+            "item_amount" AS "item_amount",
+            "created_at" AS "created_at"
+          FROM "sf_database"."sf_schema"."items_table"
         ) AS R
           ON L."col_int" = R."event_id_col"
         LIMIT 10
@@ -311,6 +311,28 @@ def test_join_event_data_attributes__more_columns(
           R."event_timestamp" AS "event_timestamp",
           R."cust_id" AS "cust_id"
         FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "created_at" AS "created_at",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+        ) AS L
+        INNER JOIN (
+          SELECT
+            L."event_timestamp" AS "event_timestamp",
+            L."cust_id" AS "cust_id",
+            R."event_id_col" AS "event_id_col",
+            R."item_id_col" AS "item_id_col",
+            R."item_type" AS "item_type",
+            R."item_amount" AS "item_amount",
+            R."created_at" AS "created_at"
+          FROM (
             SELECT
               "col_int" AS "col_int",
               "col_float" AS "col_float",
@@ -322,39 +344,17 @@ def test_join_event_data_attributes__more_columns(
               "created_at" AS "created_at",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
-        ) AS L
-        INNER JOIN (
+          ) AS L
+          INNER JOIN (
             SELECT
-              L."event_timestamp" AS "event_timestamp",
-              L."cust_id" AS "cust_id",
-              R."event_id_col" AS "event_id_col",
-              R."item_id_col" AS "item_id_col",
-              R."item_type" AS "item_type",
-              R."item_amount" AS "item_amount",
-              R."created_at" AS "created_at"
-            FROM (
-                SELECT
-                  "col_int" AS "col_int",
-                  "col_float" AS "col_float",
-                  "col_char" AS "col_char",
-                  "col_text" AS "col_text",
-                  "col_binary" AS "col_binary",
-                  "col_boolean" AS "col_boolean",
-                  "event_timestamp" AS "event_timestamp",
-                  "created_at" AS "created_at",
-                  "cust_id" AS "cust_id"
-                FROM "sf_database"."sf_schema"."sf_table"
-            ) AS L
-            INNER JOIN (
-                SELECT
-                  "event_id_col" AS "event_id_col",
-                  "item_id_col" AS "item_id_col",
-                  "item_type" AS "item_type",
-                  "item_amount" AS "item_amount",
-                  "created_at" AS "created_at"
-                FROM "sf_database"."sf_schema"."items_table"
-            ) AS R
-              ON L."col_int" = R."event_id_col"
+              "event_id_col" AS "event_id_col",
+              "item_id_col" AS "item_id_col",
+              "item_type" AS "item_type",
+              "item_amount" AS "item_amount",
+              "created_at" AS "created_at"
+            FROM "sf_database"."sf_schema"."items_table"
+          ) AS R
+            ON L."col_int" = R."event_id_col"
         ) AS R
           ON L."col_int" = R."event_id_col"
         LIMIT 10

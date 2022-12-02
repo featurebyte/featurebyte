@@ -7,7 +7,8 @@ from typing import Any, cast
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, Select, expressions, parse_one, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import InternalName, SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType
@@ -40,6 +41,7 @@ class InputNode(TableNode):
     query_node_type = NodeType.INPUT
 
     def from_query_impl(self, select_expr: Select) -> Select:
+        dbtable: Expression
         if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
@@ -87,7 +89,7 @@ class InputNode(TableNode):
         -------
         dict[str, Expression]
         """
-        columns_map = {}
+        columns_map: dict[str, Expression] = {}
         for colname in context.parameters["columns"]:
             columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
         return columns_map
@@ -186,7 +188,7 @@ class SelectedEntityBuildTileInputNode(InputNode):
                 on=join_conditions_expr,
             )
         )
-        return result
+        return cast(Expression, result)
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> SelectedEntityBuildTileInputNode | None:
