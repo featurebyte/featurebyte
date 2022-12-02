@@ -10,7 +10,7 @@ from collections import defaultdict
 from featurebyte.common.path_util import import_submodules
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
@@ -100,7 +100,7 @@ class SQLOperationGraph:
 
     Parameters
     ----------
-    query_graph : QueryGraph
+    query_graph : QueryGraphModel
         Query Graph representing user's intention
     sql_type : SQLType
         Type of SQL to generate
@@ -108,7 +108,9 @@ class SQLOperationGraph:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, query_graph: QueryGraph, sql_type: SQLType, source_type: SourceType) -> None:
+    def __init__(
+        self, query_graph: QueryGraphModel, sql_type: SQLType, source_type: SourceType
+    ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
