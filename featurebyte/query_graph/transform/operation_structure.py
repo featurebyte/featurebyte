@@ -29,7 +29,7 @@ class OperationStructureExtractor(
         OperationStructure, OperationStructureBranchState, OperationStructureGlobalState
     ],
 ):
-    """OperationStructureExtractorMixin class"""
+    """OperationStructureExtractor class"""
 
     def _pre_compute(
         self,

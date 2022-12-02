@@ -64,7 +64,8 @@ class QueryObject(FeatureByteBaseModel):
 
         Returns
         -------
-        QueryGraph & mapped Node object (within the pruned graph)
+        tuple[QueryGraphModel, Node]
+            QueryGraph & mapped Node object (within the pruned graph)
         """
         pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=self.node)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])

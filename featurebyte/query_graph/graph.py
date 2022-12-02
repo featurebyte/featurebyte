@@ -13,7 +13,10 @@ from featurebyte.query_graph.model import Edge, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
-from featurebyte.query_graph.transform.graph_pruning import GraphPruningExtractor
+from featurebyte.query_graph.transform.graph_pruning import (
+    GraphPruningExtractor,
+    GraphPruningOutput,
+)
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transformation import GraphFlattener, GraphReconstructor
 
@@ -67,7 +70,7 @@ class QueryGraph(QueryGraphModel):
         """
         return OperationStructureExtractor(graph=self).extract(node=node)
 
-    def prune(self, target_node: Node) -> Tuple[QueryGraphModel, Dict[str, str]]:
+    def prune(self, target_node: Node) -> GraphPruningOutput:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -82,7 +85,8 @@ class QueryGraph(QueryGraphModel):
 
         Returns
         -------
-        QueryGraph, node_name_map
+        GraphPruningOutput
+            Tuple of pruned graph & its node name mapping
         """
         return GraphPruningExtractor(graph=self).extract(node=target_node)
 
