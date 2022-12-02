@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService, DocServiceName
@@ -118,3 +119,6 @@ class DefaultVersionModeService(BaseService):
             )
             return feature_list_namespace
         return self.conditional_return(document=document, condition=return_document)
+
+
+register_service_constructor(DefaultVersionModeService)

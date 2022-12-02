@@ -16,6 +16,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService, DocServiceName
@@ -197,3 +198,6 @@ class VersionService(BaseService):
             data=FeatureListCreate(**new_feature_list.dict(by_alias=True)),
             get_credential=get_credential,
         )
+
+
+register_service_constructor(VersionService)

@@ -6,6 +6,7 @@ from __future__ import annotations
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceList,
@@ -96,3 +97,9 @@ class FeatureListNamespaceController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+
+register_controller_constructor(
+    FeatureListNamespaceController,
+    [FeatureListNamespaceService, DefaultVersionModeService, InfoService],
+)

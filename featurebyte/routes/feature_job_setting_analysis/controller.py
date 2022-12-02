@@ -4,6 +4,7 @@ FeatureJobSettingAnalysis API route controller
 from __future__ import annotations
 
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_job_setting_analysis import (
@@ -79,3 +80,8 @@ class FeatureJobSettingAnalysisController(
             data=data, task_manager=self.task_controller.task_manager
         )
         return await self.task_controller.get_task(task_id=str(task_id))
+
+
+register_controller_constructor(
+    FeatureJobSettingAnalysisController, [FeatureJobSettingAnalysisService, TaskController]
+)

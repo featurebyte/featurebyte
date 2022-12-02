@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature import (
     FeatureCreate,
@@ -232,3 +233,16 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             Dataframe converted to json string
         """
         return await self.preview_service.feature_sql(feature_sql=feature_sql)
+
+
+register_controller_constructor(
+    FeatureController,
+    [
+        FeatureService,
+        FeatureListService,
+        FeatureReadinessService,
+        PreviewService,
+        VersionService,
+        InfoService,
+    ],
+)

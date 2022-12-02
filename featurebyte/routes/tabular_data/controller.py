@@ -4,6 +4,7 @@ TabularData API route controller
 from __future__ import annotations
 
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.tabular_data import DataService
@@ -15,3 +16,6 @@ class TabularDataController(BaseDocumentController[TabularDataModel, DataService
     """
 
     paginated_document_class = TabularDataList
+
+
+register_controller_constructor(TabularDataController, [DataService])

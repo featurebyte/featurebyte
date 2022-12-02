@@ -4,6 +4,7 @@ FeatureNamespaceService class
 from __future__ import annotations
 
 from featurebyte.models.feature import FeatureNamespaceModel
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
@@ -21,3 +22,6 @@ class FeatureNamespaceService(
     """
 
     document_class = FeatureNamespaceModel
+
+
+register_service_constructor(FeatureNamespaceService)

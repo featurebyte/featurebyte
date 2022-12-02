@@ -12,6 +12,7 @@ from bson import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.relationship import Parent, Relationship
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
@@ -209,6 +210,9 @@ class EntityRelationshipService(RelationshipService):
         return EntityServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)
 
 
+register_service_constructor(EntityRelationshipService)
+
+
 class SemanticRelationshipService(RelationshipService):
     """
     SemanticRelationshipService is responsible to update relationship between different semantics.
@@ -223,3 +227,6 @@ class SemanticRelationshipService(RelationshipService):
         cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
     ) -> BaseDocumentServiceUpdateSchema:
         return SemanticServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)
+
+
+register_service_constructor(SemanticRelationshipService)

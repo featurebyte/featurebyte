@@ -15,6 +15,7 @@ from featurebyte.logger import logger
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature_list import OnlineFeaturesResponseModel
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.session_manager import SessionManagerService
@@ -106,3 +107,6 @@ class OnlineServingService(BaseService):
         result = OnlineFeaturesResponseModel(features=features)
 
         return result
+
+
+register_service_constructor(OnlineServingService)

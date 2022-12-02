@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataModel, DataStatus
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.dimension_data import DimensionDataUpdate
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
@@ -219,3 +220,6 @@ class DataUpdateService(BaseService):
                 document_id=entity_id,
                 data=EntityServiceUpdate(**update_values),
             )
+
+
+register_service_constructor(DataUpdateService)

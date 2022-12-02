@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -195,3 +196,6 @@ class DeployService(BaseService):
                 if return_document:
                     return await self.feature_list_service.get_document(document_id=feature_list_id)
         return self.conditional_return(document=document, condition=return_document)
+
+
+register_service_constructor(DeployService)

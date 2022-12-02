@@ -7,9 +7,13 @@ from typing import Any
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base_data import BaseDataDocumentController
 from featurebyte.schema.scd_data import SCDDataList, SCDDataUpdate
+from featurebyte.service.data_update import DataUpdateService
+from featurebyte.service.info import InfoService
 from featurebyte.service.scd_data import SCDDataService
+from featurebyte.service.semantic import SemanticService
 
 
 class SCDDataController(BaseDataDocumentController[SCDDataModel, SCDDataService, SCDDataList]):
@@ -37,3 +41,8 @@ class SCDDataController(BaseDataDocumentController[SCDDataModel, SCDDataService,
                 }
             )
         return column_semantic_map
+
+
+register_controller_constructor(
+    SCDDataController, [SCDDataService, DataUpdateService, SemanticService, InfoService]
+)

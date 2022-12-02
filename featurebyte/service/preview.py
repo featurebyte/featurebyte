@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 )
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -327,3 +328,6 @@ class PreviewService(BaseService):
             source_type=source_type,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
+
+
+register_service_constructor(PreviewService)

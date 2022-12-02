@@ -9,10 +9,14 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.event_data import EventDataModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base_data import BaseDataDocumentController
 from featurebyte.schema.event_data import EventDataList, EventDataUpdate
 from featurebyte.schema.info import EventDataInfo
+from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.event_data import EventDataService
+from featurebyte.service.info import InfoService
+from featurebyte.service.semantic import SemanticService
 
 
 class EventDataController(
@@ -59,3 +63,8 @@ class EventDataController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+
+register_controller_constructor(
+    EventDataController, [EventDataService, DataUpdateService, SemanticService, InfoService]
+)

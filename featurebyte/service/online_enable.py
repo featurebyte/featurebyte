@@ -13,6 +13,7 @@ from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflak
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
@@ -217,3 +218,6 @@ class OnlineEnableService(BaseService):
                 if return_document:
                     return await self.get_document(DocServiceName.FEATURE, feature_id)
         return self.conditional_return(document=document, condition=return_document)
+
+
+register_service_constructor(OnlineEnableService)

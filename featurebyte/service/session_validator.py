@@ -9,6 +9,7 @@ from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DatabaseDetails
 from featurebyte.persistent import Persistent
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
@@ -220,3 +221,6 @@ class SessionValidatorService:
         if does_exist:
             return PydanticObjectId(response["data"][0]["_id"])
         return None
+
+
+register_service_constructor(SessionValidatorService)

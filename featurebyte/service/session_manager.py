@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from featurebyte.exception import CredentialsError
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
@@ -65,3 +66,6 @@ class SessionManagerService:
             raise CredentialsError(
                 f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
             ) from exc
+
+
+register_service_constructor(SessionManagerService)

@@ -6,6 +6,7 @@ from __future__ import annotations
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel, ParentEntity
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController, RelationshipMixin
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityServiceUpdate, EntityUpdate
 from featurebyte.schema.info import EntityInfo
@@ -101,3 +102,8 @@ class EntityController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+
+register_controller_constructor(
+    EntityController, [EntityService, EntityRelationshipService, InfoService]
+)

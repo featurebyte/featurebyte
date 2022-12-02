@@ -7,6 +7,7 @@ from typing import Any, List
 
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.persistent import Persistent
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -138,3 +139,6 @@ class FeatureStoreWarehouseService(BaseService):
             database_name=database_name, schema_name=schema_name, table_name=table_name
         )
         return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
+
+
+register_service_constructor(FeatureStoreWarehouseService)

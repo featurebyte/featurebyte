@@ -8,6 +8,7 @@ from typing import Any, List
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
@@ -283,3 +284,16 @@ class FeatureStoreController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+
+register_controller_constructor(
+    FeatureStoreController,
+    [
+        FeatureStoreService,
+        PreviewService,
+        InfoService,
+        SessionManagerService,
+        SessionValidatorService,
+        FeatureStoreWarehouseService,
+    ],
+)

@@ -14,6 +14,7 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
@@ -176,3 +177,6 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             )
             raise DocumentNotFoundError(exception_detail)
         return FeatureModel(**document_dict)
+
+
+register_service_constructor(FeatureService)

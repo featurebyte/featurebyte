@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController, RelationshipMixin
 from featurebyte.schema.semantic import SemanticCreate, SemanticList
 from featurebyte.service.relationship import SemanticRelationshipService
@@ -47,3 +48,6 @@ class SemanticController(
             Newly created semantic object
         """
         return await self.service.create_document(data)
+
+
+register_controller_constructor(SemanticController, [SemanticService, SemanticRelationshipService])

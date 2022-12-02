@@ -9,6 +9,7 @@ from featurebyte.exception import DocumentError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
@@ -114,3 +115,6 @@ class FeatureJobSettingAnalysisService(
 
         # submit a task to run analysis
         return await task_manager.submit(payload=payload)
+
+
+register_service_constructor(FeatureJobSettingAnalysisService)

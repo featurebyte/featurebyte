@@ -12,6 +12,7 @@ from featurebyte.exception import DocumentError, DocumentInconsistencyError, Doc
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -201,3 +202,6 @@ class FeatureListService(
             # update feature's feature_list_ids attribute
             await self._update_features(feature_data["features"], insert_id)
         return await self.get_document(document_id=insert_id)
+
+
+register_service_constructor(FeatureListService)

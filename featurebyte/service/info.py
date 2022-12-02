@@ -11,6 +11,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
+from featurebyte.routes.app_container import register_service_constructor
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
     DataBriefInfoList,
@@ -441,3 +442,6 @@ class InfoService(BaseService):
             feature_count=len(namespace.feature_namespace_ids),
             status=namespace.status,
         )
+
+
+register_service_constructor(InfoService)

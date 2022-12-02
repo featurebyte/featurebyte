@@ -20,6 +20,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.routes.app_container import register_controller_constructor
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -372,3 +373,17 @@ class FeatureListController(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
         return result
+
+
+register_controller_constructor(
+    FeatureListController,
+    [
+        FeatureListService,
+        FeatureReadinessService,
+        DeployService,
+        PreviewService,
+        VersionService,
+        InfoService,
+        OnlineServingService,
+    ],
+)
