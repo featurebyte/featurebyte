@@ -8,7 +8,7 @@ from typing import Literal, Optional, cast
 from dataclasses import dataclass
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -99,12 +99,194 @@ class SCDJoin(TableNode):
     right_on: str
     left_timestamp_column: str
     right_timestamp_column: str
+    right_input_columns: list[str]
+    right_output_columns: list[str]
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
+    # Internally used identifiers when constructing SQL
+    LEFT_VIEW = "LEFT_VIEW"
+    RIGHT_VIEW = "RIGHT_VIEW"
+    TS_COL = "TS_COL"
+    EFFECTIVE_TS_COL = "EFFECTIVE_TS_COL"
+    KEY_COL = "KEY_COL"
+    LAST_TS = "LAST_TS"
+
     def from_query_impl(self, select_expr: Select) -> Select:
-        raise NotImplementedError
+
+        inner_scd_joined_expr = self._construct_inner_scd_joined_view()
+
+        join_conditions = [
+            expressions.EQ(
+                this=get_qualified_column_identifier(self.left_timestamp_column, "L"),
+                expression=get_qualified_column_identifier(self.left_timestamp_column, "R"),
+            ),
+            expressions.EQ(
+                this=get_qualified_column_identifier(self.left_on, "L"),
+                expression=get_qualified_column_identifier(self.left_on, "R"),
+            ),
+        ]
+
+        select_expr = select_expr.from_(self._left_view_as_table(alias="L")).join(
+            inner_scd_joined_expr.subquery(alias="R"),
+            join_type=self.join_type,
+            on=expressions.and_(*join_conditions),
+        )
+
+        return select_expr
+
+    def _construct_inner_scd_joined_view(self) -> Select:
+
+        left_view_with_effective_ts_expr = self._construct_left_view_with_effective_timestamp()
+
+        scd_columns = []
+        for input_col, output_col in zip(self.right_input_columns, self.right_output_columns):
+            scd_columns.append(
+                alias_(
+                    get_qualified_column_identifier(input_col, "INNER_R"),
+                    alias=output_col,
+                    quoted=True,
+                )
+            )
+
+        join_conditions = [
+            expressions.EQ(
+                this=get_qualified_column_identifier(self.LAST_TS, "INNER_L"),
+                expression=get_qualified_column_identifier(self.right_timestamp_column, "INNER_R"),
+            ),
+            expressions.EQ(
+                this=get_qualified_column_identifier(self.KEY_COL, "INNER_L"),
+                expression=get_qualified_column_identifier(self.right_on, "INNER_R"),
+            ),
+        ]
+
+        inner_scd_joined_expr = (
+            select(
+                alias_(
+                    get_qualified_column_identifier(self.TS_COL, "INNER_L"),
+                    alias=self.left_timestamp_column,
+                    quoted=True,
+                ),
+                alias_(
+                    get_qualified_column_identifier(self.KEY_COL, "INNER_L"),
+                    alias=self.left_on,
+                    quoted=True,
+                ),
+                *scd_columns,
+            )
+            .from_(left_view_with_effective_ts_expr.subquery(alias="INNER_L"))
+            .join(
+                self._right_view_as_table(),
+                join_alias="INNER_R",
+                join_type="inner",
+                on=expressions.and_(*join_conditions),
+            )
+        )
+
+        return inner_scd_joined_expr
+
+    def _construct_left_view_with_effective_timestamp(self) -> Select:
+
+        distinct_left_view = (
+            select(quoted_identifier(self.right_timestamp_column), quoted_identifier(self.left_on))
+            .distinct()
+            .from_(self._left_view_as_table())
+        )
+
+        left_ts_and_key = select(
+            alias_(quoted_identifier(self.left_timestamp_column), alias=self.TS_COL, quoted=True),
+            alias_(quoted_identifier(self.left_on), alias=self.KEY_COL, quoted=True),
+            alias_(expressions.NULL, alias=self.EFFECTIVE_TS_COL, quoted=True),
+        ).from_(distinct_left_view)
+
+        right_ts_and_key = select(
+            alias_(quoted_identifier(self.right_timestamp_column), alias=self.TS_COL, quoted=True),
+            alias_(quoted_identifier(self.right_on), alias=self.KEY_COL, quoted=True),
+            alias_(
+                quoted_identifier(self.right_timestamp_column),
+                alias=self.EFFECTIVE_TS_COL,
+                quoted=True,
+            ),
+        ).from_(self._right_view_as_table())
+
+        all_ts_and_key = expressions.Union(
+            this=left_ts_and_key,
+            expression=right_ts_and_key,
+            distinct=False,
+        )
+
+        order = expressions.Order(
+            expressions=[expressions.Ordered(this=quoted_identifier(self.TS_COL))]
+        )
+        matched_effective_timestamp_expr = expressions.Window(
+            this=expressions.IgnoreNulls(
+                this=expressions.Anonymous(
+                    this="LAG", expressions=[quoted_identifier(self.EFFECTIVE_TS_COL)]
+                ),
+            ),
+            partition_by=[quoted_identifier(self.KEY_COL)],
+            order=order,
+        )
+
+        filter_original_left_view_rows = expressions.Not(
+            this=expressions.Is(
+                this=quoted_identifier(self.EFFECTIVE_TS_COL),
+                expression=expressions.NULL,
+            )
+        )
+        left_view_with_effective_timestamp_expr = (
+            select("*")
+            .from_(
+                select(
+                    quoted_identifier(self.TS_COL),
+                    quoted_identifier(self.KEY_COL),
+                    alias_(matched_effective_timestamp_expr, alias=self.LAST_TS, quoted=True),
+                )
+                .from_(all_ts_and_key.subquery())
+                .subquery()
+            )
+            .where(filter_original_left_view_rows)
+        )
+
+        return left_view_with_effective_timestamp_expr
+
+    def _left_view_as_table(self, alias=None) -> Expression:
+        return expressions.Table(this=self.LEFT_VIEW, alias=alias)
+
+    def _right_view_as_table(self, alias=None) -> Expression:
+        return expressions.Table(this=self.RIGHT_VIEW, alias=alias)
+
+    def with_query_impl(self, select_expr: Select) -> Select:
+        select_expr = select_expr.with_(self.LEFT_VIEW, self.left_node.sql).with_(
+            self.RIGHT_VIEW, self.right_node.sql
+        )
+        return select_expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> Optional[SCDJoin]:
-        return None
+        if context.parameters.get("scd_parameters") is None:
+            return None
+        parameters = context.parameters
+        columns_map = {}
+        for input_col, output_col in zip(
+            parameters["left_input_columns"], parameters["left_output_columns"]
+        ):
+            columns_map[output_col] = get_qualified_column_identifier(input_col, "L")
+        for input_col, output_col in zip(
+            parameters["right_input_columns"], parameters["right_output_columns"]
+        ):
+            columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
+        node = SCDJoin(
+            context=context,
+            columns_map=columns_map,
+            left_node=cast(TableNode, context.input_sql_nodes[0]),
+            right_node=cast(TableNode, context.input_sql_nodes[1]),
+            left_on=parameters["left_on"],
+            right_on=parameters["right_on"],
+            join_type=parameters["join_type"],
+            left_timestamp_column=parameters["scd_parameters"]["left_timestamp_column"],
+            right_timestamp_column=parameters["scd_parameters"]["right_timestamp_column"],
+            right_input_columns=parameters["right_input_columns"],
+            right_output_columns=parameters["right_output_columns"],
+        )
+        return node

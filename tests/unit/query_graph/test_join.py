@@ -241,7 +241,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
 
 def test_scd_join(global_graph, scd_join_node):
     """
-    Test SQL generation for ItemData joined with EventData
+    Test SQL generation for SCD join
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
@@ -249,6 +249,63 @@ def test_scd_join(global_graph, scd_join_node):
     sql_tree = sql_graph.build(scd_join_node).sql
     expected = textwrap.dedent(
         """
+        WITH LEFT_VIEW AS (
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "order_id" AS "order_id",
+            "order_method" AS "order_method"
+          FROM "db"."public"."event_table"
+        ), RIGHT_VIEW AS (
+          SELECT
+            "effective_ts" AS "effective_ts",
+            "cust_id" AS "cust_id",
+            "membership_status" AS "membership_status"
+          FROM "db"."public"."customer_profile_table"
+        )
+        SELECT
+          L."event_timestamp" AS "event_timestamp",
+          L."cust_id" AS "cust_id",
+          R."membership_status" AS "membership_status"
+        FROM LEFT_VIEW AS L
+        LEFT JOIN (
+          SELECT
+            INNER_L."TS_COL" AS "event_timestamp",
+            INNER_L."KEY_COL" AS "cust_id",
+            INNER_R."membership_status" AS "membership_status"
+          FROM (
+            SELECT
+              *
+            FROM (
+              SELECT
+                "TS_COL",
+                "KEY_COL",
+                LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST) AS "LAST_TS"
+              FROM (
+                SELECT
+                  "event_timestamp" AS "TS_COL",
+                  "cust_id" AS "KEY_COL",
+                  NULL AS "EFFECTIVE_TS_COL"
+                FROM SELECT DISTINCT
+                  "effective_timestamp",
+                  "cust_id"
+                FROM LEFT_VIEW
+                UNION ALL
+                SELECT
+                  "effective_timestamp" AS "TS_COL",
+                  "cust_id" AS "KEY_COL",
+                  "effective_timestamp" AS "EFFECTIVE_TS_COL"
+                FROM RIGHT_VIEW
+              )
+            )
+            WHERE
+              NOT "EFFECTIVE_TS_COL" IS NULL
+          ) AS INNER_L
+          INNER JOIN RIGHT_VIEW AS INNER_R
+            ON INNER_L."LAST_TS" = INNER_R."effective_timestamp"
+            AND INNER_L."KEY_COL" = INNER_R."cust_id"
+        ) AS R
+          ON L."event_timestamp" = R."event_timestamp" AND L."cust_id" = R."cust_id"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
