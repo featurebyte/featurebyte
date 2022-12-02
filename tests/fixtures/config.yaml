@@ -15,6 +15,10 @@ credential:
     credential_type: USERNAME_PASSWORD
     username: user
     password: password
+  - feature_store: other feature store
+    credential_type: USERNAME_PASSWORD
+    username: random_username
+    password: random_password
 
 storage:
   local_path: ~/.featurebyte_custom/data

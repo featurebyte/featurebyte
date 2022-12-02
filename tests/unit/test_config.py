@@ -157,6 +157,34 @@ def test_write_creds__no_update_if_creds_exist():
     assert not did_update
 
 
+def test_write_creds__creds_for_other_feature_store_exists():
+    """
+    Test write_creds function - updating when creds for another feature store exists.
+    """
+    with tempfile.NamedTemporaryFile(mode="w") as file_handle:
+        config_with_existing_feature_store = "tests/fixtures/config.yaml"
+        config_file_name = config_with_existing_feature_store
+        # shutil.copy2(config_with_existing_feature_store, config_file_name)
+
+        config = Configurations(config_file_name)
+        # Verify that credentials for another feature store exists
+        assert len(config.credentials) == 1
+        other_feature_store_name = "other feature store"
+        cred = Credential(
+            name=other_feature_store_name,
+            credential_type=CredentialType.USERNAME_PASSWORD,
+            credential=UsernamePasswordCredential(
+                username="random_username",
+                password="random_password",
+            ),
+        )
+        did_update = config.write_creds(cred, other_feature_store_name)
+        assert did_update
+
+        new_config = Configurations(config_file_name)
+        assert len(new_config.credentials) == 2
+
+
 def test_write_creds__update_if_no_creds_exist():
     """
     Test write_creds function - no update expected if credentials exist in file
