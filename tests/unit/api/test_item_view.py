@@ -550,15 +550,14 @@ def test_item_view_groupby__no_window_with_multiple_feature_names(
     )
 
 
-def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
+def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_item_view):
     """
     Test validate join
     """
     # No error expected
-    snowflake_event_view.validate_join(snowflake_dimension_view)
+    snowflake_item_view.validate_join(snowflake_dimension_view)
+    snowflake_item_view.validate_join(snowflake_item_view)
 
     # Error expected
     with pytest.raises(JoinViewMismatchError):
-        snowflake_event_view.validate_join(snowflake_event_view)
-    with pytest.raises(JoinViewMismatchError):
-        snowflake_event_view.validate_join(snowflake_scd_view)
+        snowflake_item_view.validate_join(snowflake_scd_view)

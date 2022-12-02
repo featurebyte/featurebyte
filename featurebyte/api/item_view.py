@@ -262,3 +262,6 @@ class ItemView(View, GroupByMixin):
 
     def validate_join(self, other_view: View) -> None:
         validate_view(other_view)
+
+    def get_join_column(self) -> str:
+        return self.item_id_column

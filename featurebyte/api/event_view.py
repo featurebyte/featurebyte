@@ -174,3 +174,9 @@ class EventView(View, GroupByMixin):
 
     def validate_join(self, other_view: View) -> None:
         validate_view(other_view)
+
+    def get_join_column(self) -> str:
+        # This is potentially none for backwards compatibility.
+        # We can remove this once DEV-556 is done.
+        assert self.event_id_column is not None
+        return self.event_id_column
