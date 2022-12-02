@@ -4,14 +4,25 @@ Mixin classes used by core objects
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Protocol
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol, Union
 
+from abc import abstractmethod
+from datetime import datetime
+from http import HTTPStatus
+
+import pandas as pd
 from pydantic import BaseModel, PrivateAttr, StrictStr
+from typeguard import typechecked
 
+from featurebyte.common.utils import validate_datetime_input
+from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
+from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
@@ -142,3 +153,134 @@ class GetAttrMixin:
             if item in self.column_var_type_map:
                 return self.__getitem__(item)
             raise exc
+
+
+class HasExtractPrunedGraphAndNode(Protocol):
+    """
+    Class with extract_pruned_graph_and_node attribute / property
+    """
+
+    feature_store: FeatureStoreModel
+
+    @abstractmethod
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+        """
+        Extract pruned graph & node from the global query graph
+
+        Raises
+        ------
+        NotImplementedError
+            Method not implemented
+        """
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        """
+        Timestamp column to be used for datetime filtering during sampling
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return None
+
+
+class SampleMixin:
+    """
+    Supports preview and sample functions
+    """
+
+    @typechecked
+    def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10) -> pd.DataFrame:
+        """
+        Preview transformed table/column partial output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Preview request failed
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = FeatureStorePreview(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+        )
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/preview?limit={limit}", json=payload.json_dict()
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return pd.read_json(response.json(), orient="table", convert_dates=False)
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        """
+        Timestamp column to be used for datetime filtering during sampling
+
+        Returns
+        -------
+        Optional[str]
+        """
+        return None
+
+    @typechecked
+    def sample(
+        self: HasExtractPrunedGraphAndNode,
+        size: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+    ) -> pd.DataFrame:
+        """
+        Sample transformed table/column
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Preview request failed
+        """
+        from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
+        to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
+
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = FeatureStoreSample(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=self.timestamp_column,
+        )
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict()
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return pd.read_json(response.json(), orient="table", convert_dates=False)

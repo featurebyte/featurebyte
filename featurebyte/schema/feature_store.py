@@ -53,7 +53,7 @@ class FeatureStoreSample(FeatureStorePreview):
     to_timestamp: Optional[datetime] = Field(default=None)
     timestamp_column: Optional[str] = Field(default=None)
 
-    @root_validator(pre=True)
+    @root_validator()
     @classmethod
     def _validate_timestamp_column(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -73,7 +73,26 @@ class FeatureStoreSample(FeatureStorePreview):
         ValueError
             Timestamp column not specified
         """
-        for field in ["from_timestamp", "to_timestamp"]:
-            if values.get(field) and not values.get("timestamp_column"):
+        from_timestamp = values.get("from_timestamp")
+        to_timestamp = values.get("to_timestamp")
+        timestamp_column = values.get("timestamp_column")
+
+        # make sure timestamp_column is available if timestamp range is specified
+        if from_timestamp or to_timestamp:
+            if not timestamp_column:
                 raise ValueError("timestamp_column must be specified.")
+
+            # validate timestamp_column exists in a frame
+            graph = values["graph"]
+            column_names = graph.get_input_node(values["node_name"]).parameters.columns
+            assert (
+                timestamp_column in column_names
+            ), f'timestamp_column: "{timestamp_column}" does not exist'
+
+        # make sure to_timestamp is lt from_timestamp
+        if from_timestamp and to_timestamp:
+            assert (
+                from_timestamp < to_timestamp
+            ), "from_timestamp must be smaller than to_timestamp."
+
         return values

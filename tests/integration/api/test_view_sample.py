@@ -33,6 +33,17 @@ def test_event_view_sample(snowflake_event_data):
     assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 07:57:21.000525")
 
 
+def test_event_view_sample_seed(snowflake_event_data):
+    """
+    Test sample for EventView using a different seed
+    """
+    event_view = EventView.from_event_data(snowflake_event_data)
+    sample_df = event_view.sample(size=10, seed=4321)
+    assert sample_df.shape == (10, 8)
+    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-01 00:23:02.000349")
+    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-05 04:34:01.000068")
+
+
 def test_event_view_sample_with_date_range(snowflake_event_data):
     """
     Test sample for EventView with date range

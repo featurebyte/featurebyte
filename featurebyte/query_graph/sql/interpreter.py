@@ -3,7 +3,7 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import cast, Optional
+from typing import List, Optional, cast
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -273,17 +273,21 @@ class GraphInterpreter:
         )
 
         # apply timestamp filtering
-        filter_conditions = []
+        filter_conditions: List[expressions.Expression] = []
         if from_timestamp:
             filter_conditions.append(
                 expressions.GTE(
-                    this=timestamp_column, expression=make_literal_value(from_timestamp.isoformat())
+                    this=timestamp_column,
+                    expression=make_literal_value(
+                        from_timestamp.isoformat(), cast_as_timestamp=True
+                    ),
                 )
             )
         if to_timestamp:
             filter_conditions.append(
                 expressions.LT(
-                    this=timestamp_column, expression=make_literal_value(to_timestamp.isoformat())
+                    this=timestamp_column,
+                    expression=make_literal_value(to_timestamp.isoformat(), cast_as_timestamp=True),
                 )
             )
         if filter_conditions:

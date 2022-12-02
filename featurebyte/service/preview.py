@@ -83,7 +83,7 @@ class PreviewService(BaseService):
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
     ) -> str:
         """
-        Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
+        Sample a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
 
         Parameters
         ----------

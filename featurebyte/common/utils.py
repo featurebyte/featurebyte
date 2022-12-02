@@ -3,7 +3,7 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from datetime import datetime
 from decimal import Decimal
@@ -139,22 +139,20 @@ def convert_dataframe_as_json(dataframe: pd.DataFrame) -> str:
     return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
 
 
-def validate_datetime_input(value: Optional[Union[datetime, str]]) -> Optional[str]:
+def validate_datetime_input(value: Union[datetime, str]) -> str:
     """
     Validate datetime input value
 
     Parameters
     ---------
-    value: Optional[Union[datetime, str]]
+    value: Union[datetime, str]
         Input datetime value
 
     Returns
     -------
-    Optional[str]
+    str
         Validated UTC datetime value in ISO format
     """
-    if not value:
-        return None
 
     datetime_value: datetime
     if isinstance(value, datetime):
