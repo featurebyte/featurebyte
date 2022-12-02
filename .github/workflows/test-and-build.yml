@@ -53,7 +53,7 @@ env:
 
 jobs:
   flags:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     outputs:
       changes: ${{ steps.workflow_flags.outputs.PYTHON_CHANGES }}
@@ -78,7 +78,7 @@ jobs:
           git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
 
   cache:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
       matrix:
@@ -106,7 +106,7 @@ jobs:
 
   test-migrate:
     needs: [flags, cache]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
       matrix:
@@ -163,7 +163,7 @@ jobs:
 
   test:
     needs: [flags, cache]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
       matrix:
@@ -350,7 +350,7 @@ jobs:
 
   lint:
     needs: [flags, cache]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
       matrix:
