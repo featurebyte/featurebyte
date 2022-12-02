@@ -118,9 +118,34 @@ def item_data_input_node_fixture(global_graph, item_data_input_details):
     return node_input
 
 
+@pytest.fixture(name="scd_data_input_details")
+def scd_data_input_details_fixture(input_details):
+    """Similar to input_details but for an SlowlyChangingDimension table"""
+    input_details = copy.deepcopy(input_details)
+    input_details["table_details"]["table_name"] = "customer_profile_table"
+    return input_details
+
+
+@pytest.fixture(name="scd_data_input_node")
+def scd_data_input_node_fixture(global_graph, scd_data_input_details):
+    """Fixture of an SlowlyChangingDimension input node"""
+    node_params = {
+        "type": "scd_data",
+        "columns": ["effective_ts", "cust_id", "membership_status"],
+    }
+    node_params.update(scd_data_input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
 @pytest.fixture(name="event_data_input_node")
 def event_data_input_node_fixture(global_graph, input_details):
-    """Fixture of a query with some operations ready to run groupby"""
+    """Fixture of an EventData input node"""
     # pylint: disable=duplicate-code
     node_params = {
         "type": "event_data",
@@ -500,6 +525,37 @@ def mixed_point_in_time_and_item_aggregations_features_fixture(
         input_nodes=[graph.get_node_by_name(item_groupby_node.name)],
     )
     return graph, feature_proj_1, feature_proj_2
+
+
+@pytest.fixture(name="scd_join_node")
+def scd_join_node_fixture(
+    global_graph,
+    event_data_input_node,
+    scd_data_input_node,
+):
+    """
+    Fixture of a join node that performs an SCD join between EventData and DimensionData
+    """
+    node_params = {
+        "left_on": "cust_id",
+        "right_on": "cust_id",
+        "left_input_columns": ["event_timestamp", "cust_id"],
+        "left_output_columns": ["event_timestamp", "cust_id"],
+        "right_input_columns": ["membership_status"],
+        "right_output_columns": ["membership_status"],
+        "join_type": "left",
+        "scd_parameters": {
+            "left_timestamp_column": "event_timestamp",
+            "right_timestamp_column": "effective_timestamp",
+        },
+    }
+    node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, scd_data_input_node],
+    )
+    return node
 
 
 @pytest.fixture(name="graph_single_node")

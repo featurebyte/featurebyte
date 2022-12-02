@@ -179,8 +179,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("order_size") AS sum_value_avg_05cfcb50dc74296f7dc96dc68d881404b1105e6e,
-          COUNT("order_size") AS count_value_avg_05cfcb50dc74296f7dc96dc68d881404b1105e6e
+          SUM("order_size") AS sum_value_avg_0b6afc375cc979c5640f345de3d748620310d949,
+          COUNT("order_size") AS count_value_avg_0b6afc375cc979c5640f345de3d748620310d949
         FROM (
           SELECT
             *,
@@ -234,6 +234,21 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
           "cust_id"
         ORDER BY
           tile_index
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
+def test_scd_join(global_graph, scd_join_node):
+    """
+    Test SQL generation for ItemData joined with EventData
+    """
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
+    sql_tree = sql_graph.build(scd_join_node).sql
+    expected = textwrap.dedent(
+        """
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
