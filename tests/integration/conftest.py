@@ -29,6 +29,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_data import ItemData
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
@@ -370,6 +371,40 @@ def dimension_dataframe_fixture(item_ids):
     yield data
 
 
+@pytest.fixture(name="scd_dataframe", scope="session")
+def scd_dataframe_fixture(transaction_data):
+    """
+    DataFrame fixture with slowly changing dimension
+    """
+    rng = np.random.RandomState(0)
+
+    natural_key_values = transaction_data["user id"].unique()
+    dates = transaction_data["event_timestamp"].dt.floor("d")
+    effective_timestamp_values = pd.date_range(dates.min(), dates.max())
+    # Add variations at hour level
+    effective_timestamp_values += pd.to_timedelta(
+        rng.randint(0, 24, len(effective_timestamp_values)), unit="h"
+    )
+    values = [f"STATUS_CODE_{i}" for i in range(50)]
+
+    num_rows = 1000
+    data = pd.DataFrame(
+        {
+            "Effective Timestamp": rng.choice(effective_timestamp_values, num_rows),
+            "User ID": rng.choice(natural_key_values, num_rows),
+            "User Status": rng.choice(values, num_rows),
+            "ID": np.arange(num_rows),
+        }
+    )
+    # Ensure there is only one active record per natural key as at any point in time
+    data = (
+        data.drop_duplicates(["User ID", "Effective Timestamp"])
+        .sort_values(["User ID", "Effective Timestamp"])
+        .reset_index(drop=True)
+    )
+    yield data
+
+
 @pytest.fixture(name="expected_joined_event_item_dataframe", scope="session")
 def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, items_dataframe):
     """
@@ -407,11 +442,19 @@ def get_session_manager(config):
 
 
 @pytest.fixture(name="dimension_data_table_name", scope="session")
-def get_dimension_data_table_name_fixture():
+def dimension_data_table_name_fixture():
     """
     Get the dimension data table name used in integration tests.
     """
     return "DIMENSION_DATA_TABLE"
+
+
+@pytest.fixture(name="scd_data_table_name", scope="session")
+def scd_data_table_name_fixture():
+    """
+    Get the scd data table name used in integration tests.
+    """
+    return "SCD_DATA_TABLE"
 
 
 @pytest_asyncio.fixture(name="snowflake_session", scope="session")
@@ -420,6 +463,8 @@ async def snowflake_session_fixture(
     items_dataframe,
     dimension_dataframe,
     dimension_data_table_name,
+    scd_dataframe,
+    scd_data_table_name,
     session_manager,
     snowflake_feature_store,
 ):
@@ -437,6 +482,9 @@ async def snowflake_session_fixture(
 
     # DimensionData table
     await session.register_table(dimension_data_table_name, dimension_dataframe, temporary=False)
+
+    # SCD table
+    await session.register_table(scd_data_table_name, scd_dataframe, temporary=False)
 
     # Tile table for tile manager integration tests
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
@@ -858,6 +906,33 @@ def snowflake_dimension_data_fixture(
     return dimension_data
 
 
+@pytest.fixture(name="snowflake_scd_data", scope="session")
+def snowflake_scd_data_fixture(
+    snowflake_session,
+    snowflake_feature_store,
+    scd_data_table_name,
+):
+    """
+    Fixture for a SlowlyChangingData in integration tests
+    """
+    database_table = snowflake_feature_store.get_table(
+        database_name=snowflake_session.database_name,
+        schema_name=snowflake_session.sf_schema,
+        table_name=scd_data_table_name,
+    )
+    name = "snowflake_scd_data"
+    data = SlowlyChangingData.from_tabular_source(
+        tabular_source=database_table,
+        name=name,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+        surrogate_key_column="ID",
+    )
+    data.save()
+    data = SlowlyChangingData.get(name)
+    return data
+
+
 @pytest.fixture(name="databricks_event_data", scope="session")
 def databricks_event_data_fixture(
     databricks_session,
@@ -889,6 +964,19 @@ def dimension_data_fixture(request):
         kind = request.param
     assert kind in {"snowflake"}
     return request.getfixturevalue("snowflake_dimension_data")
+
+
+@pytest.fixture(name="scd_data", scope="session")
+def scd_data_fixture(request):
+    """
+    Parametrizable fixture for DimensionData (possible parameters: "snowflake")
+    """
+    if not hasattr(request, "param"):
+        kind = "snowflake"
+    else:
+        kind = request.param
+    assert kind in {"snowflake"}
+    return request.getfixturevalue("snowflake_scd_data")
 
 
 @pytest.fixture(name="event_data", scope="session")

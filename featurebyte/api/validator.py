@@ -21,5 +21,4 @@ def validate_view(other_view: View) -> None:
     JoinViewMismatchError
         raised when the other view is not a SlowlyChangingView
     """
-    if isinstance(other_view, SlowlyChangingView):
-        raise JoinViewMismatchError
+    pass
