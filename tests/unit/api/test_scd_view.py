@@ -46,3 +46,65 @@ def test_get_join_column(snowflake_scd_view):
     column = snowflake_scd_view.get_join_column()
     # col_text is the natural_key column name used when creating this view fixture
     assert column == "col_text"
+
+
+def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
+    """
+    Test additional join parameters are added for SCDView
+    """
+    snowflake_event_view.join(snowflake_scd_view)
+    assert snowflake_event_view.node.parameters.dict() == {
+        "left_on": "col_text",
+        "right_on": "col_text",
+        "left_input_columns": [
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id",
+        ],
+        "left_output_columns": [
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id",
+        ],
+        "right_input_columns": [
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id",
+        ],
+        "right_output_columns": [
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id",
+        ],
+        "join_type": "left",
+        "scd_parameters": {
+            "left_timestamp_column": "event_timestamp",
+            "right_timestamp_column": "event_timestamp",
+            "current_flag": "col_char",
+            "end_timestamp_column": "event_timestamp",
+        },
+    }
