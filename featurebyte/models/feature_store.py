@@ -15,7 +15,6 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.credential import Credential
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -63,15 +62,7 @@ class FeatureStoreDetails(FeatureByteBaseModel):
     details: DatabaseDetails
 
 
-class FeatureStoreCredentials(FeatureByteBaseModel):
-    """
-    Credentials used when trying to create the feature store
-    """
-
-    credentials: Optional[Credential] = None
-
-
-class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails, FeatureStoreCredentials):
+class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
     """Model for a feature store"""
 
     name: StrictStr

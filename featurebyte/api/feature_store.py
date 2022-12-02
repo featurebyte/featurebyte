@@ -41,6 +41,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     _list_schema = FeatureStoreModel
     _list_fields = ["name", "type", "created_at"]
 
+    # optional credential parameters
+    credentials: Optional[Credential] = None
+
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
