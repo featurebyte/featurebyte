@@ -275,21 +275,26 @@ def test_scd_join(global_graph, scd_join_node):
             INNER_R."membership_status" AS "membership_status"
           FROM (
             SELECT
-              *
+              "TS_COL",
+              "KEY_COL",
+              "LAST_TS"
             FROM (
               SELECT
                 "TS_COL",
                 "KEY_COL",
-                LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST) AS "LAST_TS"
+                LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST) AS "LAST_TS",
+                "EFFECTIVE_TS_COL"
               FROM (
                 SELECT
                   "event_timestamp" AS "TS_COL",
                   "cust_id" AS "KEY_COL",
                   NULL AS "EFFECTIVE_TS_COL"
-                FROM SELECT DISTINCT
-                  "effective_timestamp",
-                  "cust_id"
-                FROM LEFT_VIEW
+                FROM (
+                  SELECT DISTINCT
+                    "event_timestamp",
+                    "cust_id"
+                  FROM LEFT_VIEW
+                )
                 UNION ALL
                 SELECT
                   "effective_timestamp" AS "TS_COL",
@@ -299,7 +304,7 @@ def test_scd_join(global_graph, scd_join_node):
               )
             )
             WHERE
-              NOT "EFFECTIVE_TS_COL" IS NULL
+              "EFFECTIVE_TS_COL" IS NULL
           ) AS INNER_L
           INNER JOIN RIGHT_VIEW AS INNER_R
             ON INNER_L."LAST_TS" = INNER_R."effective_timestamp"

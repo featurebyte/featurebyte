@@ -188,7 +188,7 @@ class SCDJoin(TableNode):
     def _construct_left_view_with_effective_timestamp(self) -> Select:
 
         distinct_left_view = (
-            select(quoted_identifier(self.right_timestamp_column), quoted_identifier(self.left_on))
+            select(quoted_identifier(self.left_timestamp_column), quoted_identifier(self.left_on))
             .distinct()
             .from_(self._left_view_as_table())
         )
@@ -197,7 +197,7 @@ class SCDJoin(TableNode):
             alias_(quoted_identifier(self.left_timestamp_column), alias=self.TS_COL, quoted=True),
             alias_(quoted_identifier(self.left_on), alias=self.KEY_COL, quoted=True),
             alias_(expressions.NULL, alias=self.EFFECTIVE_TS_COL, quoted=True),
-        ).from_(distinct_left_view)
+        ).from_(distinct_left_view.subquery())
 
         right_ts_and_key = select(
             alias_(quoted_identifier(self.right_timestamp_column), alias=self.TS_COL, quoted=True),
@@ -228,19 +228,22 @@ class SCDJoin(TableNode):
             order=order,
         )
 
-        filter_original_left_view_rows = expressions.Not(
-            this=expressions.Is(
-                this=quoted_identifier(self.EFFECTIVE_TS_COL),
-                expression=expressions.NULL,
-            )
+        filter_original_left_view_rows = expressions.Is(
+            this=quoted_identifier(self.EFFECTIVE_TS_COL),
+            expression=expressions.NULL,
         )
         left_view_with_effective_timestamp_expr = (
-            select("*")
+            select(
+                quoted_identifier(self.TS_COL),
+                quoted_identifier(self.KEY_COL),
+                quoted_identifier(self.LAST_TS),
+            )
             .from_(
                 select(
                     quoted_identifier(self.TS_COL),
                     quoted_identifier(self.KEY_COL),
                     alias_(matched_effective_timestamp_expr, alias=self.LAST_TS, quoted=True),
+                    quoted_identifier(self.EFFECTIVE_TS_COL),
                 )
                 .from_(all_ts_and_key.subquery())
                 .subquery()
