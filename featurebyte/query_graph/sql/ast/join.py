@@ -122,6 +122,15 @@ class SCDJoin(TableNode):
         timestamps (SCD record effective timestamps) along with join keys into a temporary table.
         Then apply a LAG window function on this temporary table to retrieve the latest effective
         timestamp corresponding to each event timestamp in one go.
+
+        Parameters
+        ----------
+        select_expr: Select
+            Partially constructed select expression
+
+        Returns
+        -------
+        Select
         """
 
         inner_scd_joined_expr = self._construct_inner_scd_joined_view()
@@ -147,7 +156,7 @@ class SCDJoin(TableNode):
 
     def _construct_inner_scd_joined_view(self) -> Select:
         """
-        Constructs a query that joins the intermediate table with the input SCD table (right table)
+        Construct a query that joins the intermediate table with the input SCD table (right table)
 
         Example output of the join:
 
@@ -161,6 +170,10 @@ class SCDJoin(TableNode):
 
         The result can be joined back to the input event table (left table) using EVENT_TS and
         CUST_ID columns.
+
+        Returns
+        -------
+        Select
         """
 
         left_view_with_effective_ts_expr = self._construct_left_view_with_effective_timestamp()
@@ -235,7 +248,7 @@ class SCDJoin(TableNode):
         2022-04-20      1000
         -------------------------------
 
-        Merged temporary table with LAG function applied:
+        Merged temporary table with LAG function applied with IGNORE NULLS option:
 
         --------------------------------------------------------------------
         TS            KEY     EFFECTIVE_TS    LAST_TS       ROW_OF_INTEREST
@@ -249,6 +262,10 @@ class SCDJoin(TableNode):
 
         This query extracts the above table and keeps only the TS, KEY and LAST_TS columns and rows
         of interest (rows that are from the right tables).
+
+        Returns
+        -------
+        Select
         """
 
         distinct_left_view = (
