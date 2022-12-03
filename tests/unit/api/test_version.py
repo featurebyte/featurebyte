@@ -22,7 +22,7 @@ def feature_group_fixture(
     snowflake_event_data_with_entity.save()
 
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
-    feature_group = event_view.groupby("cust_id").aggregate(
+    feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "4h"],

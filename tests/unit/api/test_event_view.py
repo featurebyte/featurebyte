@@ -163,7 +163,7 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     group_by_col = "cust_id"
     a = event_view["a"] = event_view["cust_id"] + 10
     event_view["a_plus_one"] = a + 1
-    b = event_view.groupby(group_by_col).aggregate(
+    b = event_view.groupby(group_by_col).aggregate_over(
         "a",
         method="sum",
         windows=["24h"],
@@ -171,7 +171,7 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
         feature_job_setting=feature_job_setting,
     )["sum_a_24h"]
     feature = (
-        event_view.groupby(group_by_col).aggregate(
+        event_view.groupby(group_by_col).aggregate_over(
             "a_plus_one",
             method="sum",
             windows=["24h"],

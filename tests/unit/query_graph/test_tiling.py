@@ -134,7 +134,7 @@ def run_groupby_and_get_tile_table_identifier(
             event_view = EventView.from_event_data(event_data=event_data_or_event_view)
 
     feature_names = set(aggregate_kwargs["feature_names"])
-    features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
+    features = event_view.groupby(**groupby_kwargs).aggregate_over(**aggregate_kwargs)
     groupby_node = get_parent_nodes(event_view.graph, features[list(feature_names)[0]].node)[0]
     tile_id = groupby_node.parameters.tile_id
     agg_id = groupby_node.parameters.aggregation_id

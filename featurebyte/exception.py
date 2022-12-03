@@ -225,3 +225,9 @@ class RepeatedColumnNamesError(Exception):
     Raise when two views have overlapping columns, and a user is trying to perform a Join, without providing
     a suffix
     """
+
+
+class AggregationNotSupportedForViewError(Exception):
+    """
+    Raise when the requested aggregation does not support the underlying View
+    """

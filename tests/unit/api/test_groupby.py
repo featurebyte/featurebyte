@@ -83,7 +83,7 @@ def test_groupby__value_column_not_found(snowflake_event_view_with_entity):
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(KeyError) as exc:
-        grouped.aggregate("non_existing_column", "sum", ["1d"], ["feature_name"])
+        grouped.aggregate_over("non_existing_column", "sum", ["1d"], ["feature_name"])
     expected_msg = 'Column "non_existing_column" not found'
     assert expected_msg in str(exc.value)
 
@@ -106,7 +106,7 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(ValueError) as exc:
-        grouped.aggregate("a", "unknown_method", ["1d"], ["feature_name"])
+        grouped.aggregate_over("a", "unknown_method", ["1d"], ["feature_name"])
     expected_message = "Aggregation method not supported: unknown_method"
     assert expected_message in str(exc.value)
 
@@ -116,7 +116,7 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view_wit
     Test groupby not able to infer feature job setting
     """
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "2h"],
@@ -132,7 +132,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     Test groupby not able to infer feature job setting
     """
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "2h"],
@@ -141,7 +141,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     assert "Window length must be the same as the number of output feature names." in str(exc.value)
 
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "2h"],
@@ -151,7 +151,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     assert expected_msg in str(exc.value)
 
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "1h"],
@@ -179,7 +179,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
     snowflake_event_data.cust_id.as_entity("customer")
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
 
-    feature_group = event_view.groupby("cust_id").aggregate(
+    feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -215,7 +215,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
     """
     feature_group = snowflake_event_view_with_entity.groupby(
         "cust_id", category="col_int"
-    ).aggregate(
+    ).aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -262,7 +262,7 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
 
     feature_group = snowflake_event_view_with_entity.groupby(
         "cust_id", category=category
-    ).aggregate(**aggregate_kwargs)
+    ).aggregate_over(**aggregate_kwargs)
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
     if category is None:
@@ -280,7 +280,7 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
     Test count aggregation cannot have value_column specified
     """
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
             value_column="col_float",
             method="count",
             windows=["30m", "1h", "2h"],
@@ -291,7 +291,7 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
         )
     assert (
         str(exc.value)
-        == 'Specifying value column is not allowed for COUNT aggregation; try aggregate(method="count", ...)'
+        == "Specifying value column is not allowed for COUNT aggregation; try setting None as the value_column"
     )
 
 
@@ -319,7 +319,7 @@ def test_groupby__required_params_missing(
     )
     aggregate_kwargs.pop(missing_param)
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate(**aggregate_kwargs)
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(**aggregate_kwargs)
     assert str(exc.value) == expected_error
 
 
@@ -335,7 +335,7 @@ def test_groupby__prune(snowflake_event_view_with_entity):
     )
     feature_group = snowflake_event_view_with_entity.groupby(
         "cust_id", category="derived_category"
-    ).aggregate(
+    ).aggregate_over(
         value_column="derived_value_column",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -367,7 +367,7 @@ def test_groupby__aggregation_method_does_not_support_input_var_type(
     Test aggregation method does not support the input var type
     """
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
             value_column="col_text",
             method="sum",
             windows=["30m", "1h", "2h"],

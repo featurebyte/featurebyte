@@ -382,7 +382,7 @@ def test_item_view_groupby__item_data_column(snowflake_item_view):
         "frequency": "1h",
         "time_modulo_frequency": "30m",
     }
-    feature = snowflake_item_view.groupby("cust_id").aggregate(
+    feature = snowflake_item_view.groupby("cust_id").aggregate_over(
         "item_amount",
         method="sum",
         windows=["24h"],
@@ -404,7 +404,7 @@ def test_item_view_groupby__event_data_column(snowflake_item_view):
     """
     snowflake_item_view.join_event_data_attributes(["col_float"])
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("cust_id").aggregate(
+        _ = snowflake_item_view.groupby("cust_id").aggregate_over(
             "col_float",
             method="sum",
             windows=["24h"],
@@ -423,7 +423,7 @@ def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
     snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
     snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float_v2"] * 678) / 90
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("cust_id").aggregate(
+        _ = snowflake_item_view.groupby("cust_id").aggregate_over(
             "col_float_v2",
             method="sum",
             windows=["24h"],
@@ -447,7 +447,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view)
     snowflake_item_view["new_col"] = (
         snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
     )
-    _ = snowflake_item_view.groupby("cust_id").aggregate(
+    _ = snowflake_item_view.groupby("cust_id").aggregate_over(
         "new_col",
         method="sum",
         windows=["24h"],
@@ -465,7 +465,7 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
         "frequency": "1h",
         "time_modulo_frequency": "30m",
     }
-    _ = snowflake_item_view.groupby("cust_id").aggregate(
+    _ = snowflake_item_view.groupby("cust_id").aggregate_over(
         method="count",
         windows=["24h"],
         feature_names=["feature_name"],
@@ -481,7 +481,7 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
     snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method="count",
-        feature_names=["order_size"],
+        feature_name="order_size",
     )
     assert isinstance(feature, Feature)
     feature_dict = feature.dict()
@@ -503,52 +503,6 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
         "serving_names": ["transaction_id"],
         "entity_ids": [transaction_entity.id],
     }
-
-
-@pytest.mark.parametrize(
-    "invalid_param",
-    [
-        ("windows", ["7d"]),
-        (
-            "feature_job_setting",
-            {"frequency": "1d", "time_modulo_frequency": "1h", "blind_spot": "30m"},
-        ),
-    ],
-)
-def test_item_view_groupby__no_window_with_unsupported_param(
-    snowflake_item_data, transaction_entity, invalid_param
-):
-    """
-    Test aggregating on event id column with parameters such as window is not allowed
-    """
-    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
-    with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("event_id_col").aggregate(
-            method="count",
-            feature_names=["order_size"],
-            **{invalid_param[0]: invalid_param[1]},
-        )
-    assert str(exc.value) == f"Parameter {invalid_param[0]} is not supported for item aggregation"
-
-
-def test_item_view_groupby__no_window_with_multiple_feature_names(
-    snowflake_item_data, transaction_entity
-):
-    """
-    Test aggregating on event id column with parameters such as window is not allowed
-    """
-    snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
-    with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("event_id_col").aggregate(
-            method="count",
-            feature_names=["a", "b"],
-        )
-    assert (
-        str(exc.value)
-        == "feature_names is required and should be a list of one item; got ['a', 'b']"
-    )
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_item_view):
