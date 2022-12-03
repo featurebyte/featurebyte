@@ -29,8 +29,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
     DatabaseTable class to preview table
     """
 
-    # pylint: disable=too-few-public-methods
-
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
     class Config:

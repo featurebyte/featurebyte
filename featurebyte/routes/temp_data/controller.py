@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 from featurebyte.storage.base import Storage
 
 
-class TempDataController:  # pylint: disable=too-few-public-methods
+class TempDataController:
     """
     TempDataController
     """

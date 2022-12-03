@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Union
 import os
 from pathlib import Path
 
-# pylint: disable=too-few-public-methods
 import requests
 import yaml
 from pydantic import AnyHttpUrl, BaseModel, Field, validator

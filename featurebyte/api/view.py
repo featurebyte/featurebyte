@@ -73,7 +73,7 @@ class ViewColumn(Series, SampleMixin):
         return {"tabular_data_ids": self.tabular_data_ids}
 
 
-class GroupByMixin:  # pylint: disable=too-few-public-methods
+class GroupByMixin:
     """
     Mixin that provides groupby functionality to a View object
     """

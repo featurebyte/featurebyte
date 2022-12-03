@@ -18,8 +18,6 @@ class SessionManagerService:
     SessionManagerService class is responsible for retrieving a session manager.
     """
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
         self.persistent = persistent

@@ -13,7 +13,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import sql_to_string
 
 
-class SqlExpressionTemplate:  # pylint: disable=too-few-public-methods
+class SqlExpressionTemplate:
     """
     Representation of a SQL template with placeholders
 

@@ -19,8 +19,6 @@ class BaseTask:
     Base class for Task
     """
 
-    # pylint: disable=too-few-public-methods
-
     payload_class: type[BaseTaskPayload] = BaseTaskPayload
 
     def __init__(

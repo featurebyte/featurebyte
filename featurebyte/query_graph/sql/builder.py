@@ -106,8 +106,6 @@ class SQLOperationGraph:
         Type of SQL to generate
     """
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(
         self, query_graph: QueryGraphModel, sql_type: SQLType, source_type: SourceType
     ) -> None:

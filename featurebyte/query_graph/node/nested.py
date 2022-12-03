@@ -14,8 +14,6 @@ from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, 
 class NestedGraphMixin:
     """Mixin shared by nested graph related node"""
 
-    # pylint: disable=too-few-public-methods
-
     def _derive_node_operation_info(
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:

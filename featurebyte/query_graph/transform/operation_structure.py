@@ -1,7 +1,6 @@
 """
 This module contains operation structure extraction related classes.
 """
-# pylint: disable=too-few-public-methods
 from typing import Any, Dict, List, Set, Tuple
 
 from pydantic import BaseModel, Field

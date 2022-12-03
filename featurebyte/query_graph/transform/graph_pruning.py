@@ -35,8 +35,6 @@ class GraphPruningExtractor(
 ):
     """GraphPruningExtractor class"""
 
-    # pylint: disable=too-few-public-methods
-
     def _pre_compute(
         self,
         branch_state: GraphPruningBranchState,

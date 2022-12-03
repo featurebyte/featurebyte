@@ -1,7 +1,6 @@
 """
 Entity API payload schema
 """
-# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import List, Optional

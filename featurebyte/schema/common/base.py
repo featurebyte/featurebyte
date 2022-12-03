@@ -1,7 +1,6 @@
 """
 Base info related schema
 """
-# pylint: disable=too-few-public-methods
 from typing import Any, List, Optional
 
 from datetime import datetime

@@ -1,7 +1,6 @@
 """
 This module contains Query graph transformation related classes
 """
-# pylint: disable=too-few-public-methods
 from typing import Any, Dict, Type, TypeVar, cast
 
 from abc import abstractmethod
