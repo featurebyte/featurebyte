@@ -242,7 +242,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         Returns additional query node parameters for join operation
 
-        Note that self is the other view, not the calling view.
+        Note that self is the other view in the join, not the calling view.
 
         Parameters
         ----------
@@ -252,6 +252,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns
         -------
         """
+        _ = calling_view
         return {}
 
     def _update_metadata(

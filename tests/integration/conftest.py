@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
+# pylint: disable=too-many-lines
 from typing import AsyncIterator
 
 import asyncio
@@ -376,7 +377,7 @@ def scd_dataframe_fixture(transaction_data):
     """
     DataFrame fixture with slowly changing dimension
     """
-    rng = np.random.RandomState(0)
+    rng = np.random.RandomState(0)  # pylint: disable=no-member
 
     natural_key_values = transaction_data["user id"].unique()
     dates = transaction_data["event_timestamp"].dt.floor("d")

@@ -26,8 +26,8 @@ def get_qualified_column_identifier(column_name: str, table: str) -> Expression:
     table: str
         Table prefix to add to the column name
 
-    Parameters
-    ----------
+    Returns
+    -------
     Expression
     """
     expr = expressions.Column(this=quoted_identifier(column_name), table=table)
@@ -92,6 +92,8 @@ class SCDJoin(TableNode):
     """
     SCDJoin joins the latest record per natural key from the right table to the left table
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     left_node: TableNode
     right_node: TableNode
@@ -218,9 +220,10 @@ class SCDJoin(TableNode):
         # Sorting additionally by EFFECTIVE_TS_COL allows exact matching when there are ties between
         # left timestamp and right timestamp.
         #
-        # Details: the default behaviour of this sort is NULL LAST, so extra rows from left tables
-        # come after SCD rows in the right table when the dates are identically. This way, LAG
-        # yields the exact matching date, instead of a previous effective date.
+        # The default behaviour of this sort is NULL LAST, so extra rows from the left table (which
+        # have NULL as the EFFECTIVE_TS_COL) come after SCD rows in the right table when there are
+        # ties between dates. This way, LAG yields the exact matching date, instead of a previous
+        # effective date.
         order = expressions.Order(
             expressions=[
                 expressions.Ordered(this=quoted_identifier(self.TS_COL)),
@@ -262,10 +265,10 @@ class SCDJoin(TableNode):
 
         return left_view_with_effective_timestamp_expr
 
-    def _left_view_as_table(self, alias=None) -> Expression:
+    def _left_view_as_table(self, alias: Optional[str] = None) -> Expression:
         return expressions.Table(this=self.LEFT_VIEW, alias=alias)
 
-    def _right_view_as_table(self, alias=None) -> Expression:
+    def _right_view_as_table(self, alias: Optional[str] = None) -> Expression:
         return expressions.Table(this=self.RIGHT_VIEW, alias=alias)
 
     def with_query_impl(self, select_expr: Select) -> Select:
