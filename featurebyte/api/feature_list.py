@@ -21,6 +21,8 @@ from featurebyte.api.api_object import (
     ConflictResolution,
     SavableApiObject,
 )
+from featurebyte.api.data import DataApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
@@ -43,6 +45,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListNewVersionMode,
     FeatureListStatus,
+    FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.schema.feature_list import (
@@ -283,6 +286,77 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
     _route = "/feature_list_namespace"
     _update_schema_class = FeatureListNamespaceUpdate
 
+    _list_schema = FeatureListNamespaceModel
+    _list_fields = [
+        "name",
+        "num_features",
+        "status",
+        "readiness_frac",
+        "online_frac",
+        "data",
+        "entities",
+        "created_at",
+    ]
+    _list_foreign_keys = [
+        ("entity_ids", Entity, "entities"),
+        ("tabular_data_ids", DataApiObject, "data"),
+    ]
+
+    @classmethod
+    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
+        feature_lists = super()._post_process_list(item_list)
+
+        # add information about default feature list version
+        feature_list_versions = FeatureList.list_versions(include_id=True)
+        feature_lists = feature_lists.merge(
+            feature_list_versions[["id", "online_frac"]],
+            left_on="default_feature_list_id",
+            right_on="id",
+        )
+
+        feature_lists["num_features"] = feature_lists.feature_namespace_ids.apply(len)
+        feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
+            lambda readiness_distribution: FeatureReadinessDistribution(
+                __root__=readiness_distribution
+            ).derive_production_ready_fraction()
+        )
+        return feature_lists
+
+    @classmethod
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List saved feature lists
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of feature lists
+        """
+        feature_lists = super().list(include_id=include_id)
+        if entity:
+            feature_lists = feature_lists[
+                feature_lists.entities.apply(lambda entities: entity in entities)
+            ]
+        if data:
+            feature_lists = feature_lists[
+                feature_lists.data.apply(lambda data_list: data in data_list)
+            ]
+        return feature_lists
+
 
 class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     """
@@ -307,6 +381,14 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     # class variables
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
+    _list_schema = FeatureListModel
+    _list_fields = [
+        "name",
+        "feature_list_namespace_id",
+        "num_features",
+        "online_frac",
+        "created_at",
+    ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
@@ -457,6 +539,32 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Fraction of production ready feature
         """
         return self.readiness_distribution.derive_production_ready_fraction()
+
+    @classmethod
+    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
+        feature_lists = super()._post_process_list(item_list)
+        feature_lists["num_features"] = feature_lists.feature_ids.apply(len)
+        feature_lists["online_frac"] = (
+            feature_lists.online_enabled_feature_ids.apply(len) / feature_lists["num_features"]
+        )
+        return feature_lists
+
+    @classmethod
+    def list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
+        """
+        List saved feature list versions
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of feature lists
+        """
+        return super().list(include_id=include_id)
 
     @classmethod
     def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:

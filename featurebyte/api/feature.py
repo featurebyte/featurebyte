@@ -60,7 +60,7 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
         data: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        List the object name store at the persistent
+        List saved features
 
         Parameters
         ----------
@@ -74,7 +74,7 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
         Returns
         -------
         pd.DataFrame
-            Table of objects
+            Table of features
         """
         feature_list = super().list(include_id=include_id)
         if entity:

@@ -553,7 +553,30 @@ def test_list(saved_feature_list):
         pd.DataFrame(
             {
                 "name": [saved_feature_list_namespace.name],
+                "num_features": 1,
+                "status": [saved_feature_list_namespace.status],
+                "readiness_frac": 0.0,
+                "online_frac": 0.0,
+                "data": [["sf_event_data"]],
+                "entities": [["customer"]],
                 "created_at": [saved_feature_list_namespace.created_at],
+            }
+        ),
+    )
+
+
+def test_list_versions(saved_feature_list):
+    """Test listing feature list versions"""
+    feature_lists = FeatureList.list_versions()
+    assert_frame_equal(
+        feature_lists,
+        pd.DataFrame(
+            {
+                "name": [saved_feature_list.name],
+                "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
+                "num_features": 1,
+                "online_frac": 0.0,
+                "created_at": [saved_feature_list.created_at],
             }
         ),
     )
@@ -817,3 +840,28 @@ def test_get_sql(feature_list):
         """
     ).strip()
     assert feature_list.sql.endswith(expected)
+
+
+def test_list_filter(saved_feature_list):
+    """Test filters in list"""
+    # test filter by data and entity
+    feature_lists = FeatureList.list(data="sf_event_data")
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(data="other_data")
+    assert feature_lists.shape[0] == 0
+
+    feature_lists = FeatureList.list(entity="customer")
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(entity="other_entity")
+    assert feature_lists.shape[0] == 0
+
+    feature_lists = FeatureList.list(data="sf_event_data", entity="customer")
+    assert feature_lists.shape[0] == 1
+
+    feature_lists = FeatureList.list(data="sf_event_data", entity="other_entity")
+    assert feature_lists.shape[0] == 0
+
+    feature_lists = FeatureList.list(data="other_data", entity="customer")
+    assert feature_lists.shape[0] == 0
