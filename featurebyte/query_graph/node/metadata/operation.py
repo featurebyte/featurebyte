@@ -1,7 +1,6 @@
 """
 This module contains models used to store node output operation info
 """
-# pylint: disable=too-few-public-methods
 from typing import (
     Any,
     Dict,

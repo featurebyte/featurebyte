@@ -1,7 +1,6 @@
 """
 Document model for stored credentials
 """
-# pylint: disable=too-few-public-methods
 from typing import Union
 
 from pydantic import StrictStr

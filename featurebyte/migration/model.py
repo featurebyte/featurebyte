@@ -1,7 +1,6 @@
 """
 This module contains schema related model
 """
-# pylint: disable=too-few-public-methods
 from typing import List
 
 from pydantic import Field

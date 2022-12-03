@@ -23,8 +23,6 @@ class CdAccessorMixin:
     CdAccessorMixin class
     """
 
-    # pylint: disable=too-few-public-methods
-
     @property
     def cd(self: Feature) -> CountDictAccessor:  # type: ignore # pylint: disable=invalid-name
         """

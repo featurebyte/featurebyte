@@ -17,8 +17,6 @@ QueryGraphT = TypeVar("QueryGraphT", bound=QueryGraphModel)
 class BaseGraphExtractor(Generic[ExtractorOutputT, BranchStateT, GlobalStateT]):
     """BaseGraphExtractor class"""
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(self, graph: QueryGraphT):
         self.graph = graph
 

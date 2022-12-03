@@ -45,7 +45,7 @@ ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
 
 
-class ApiObjectProxy(lazy_object_proxy.Proxy):  # pylint: disable=too-few-public-methods
+class ApiObjectProxy(lazy_object_proxy.Proxy):
     """
     Proxy with customized representation
     """

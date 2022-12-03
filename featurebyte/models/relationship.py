@@ -1,7 +1,6 @@
 """
 This module contains Relation mixin model
 """
-# pylint: disable=too-few-public-methods
 from typing import List
 
 from bson import ObjectId

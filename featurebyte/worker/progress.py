@@ -1,7 +1,6 @@
 """
 This module contains Progress class which is used for tracking progress update
 """
-# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import Any, Optional

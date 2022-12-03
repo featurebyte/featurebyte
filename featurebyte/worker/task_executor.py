@@ -23,8 +23,6 @@ class TaskExecutor:
     TaskExecutor class
     """
 
-    # pylint: disable=too-few-public-methods
-
     command_type = WorkerCommand
 
     def __init__(self, payload: dict[str, Any], queue: Any, progress: Any = None) -> None:

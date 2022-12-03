@@ -24,8 +24,6 @@ class StrAccessorMixin:
     StrAccessorMixin class
     """
 
-    # pylint: disable=too-few-public-methods
-
     @property
     def str(self: Series) -> StringAccessor:  # type: ignore
         """

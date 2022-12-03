@@ -18,8 +18,6 @@ class DtAccessorMixin:
     DtAccessorMixin class
     """
 
-    # pylint: disable=too-few-public-methods
-
     @property
     def dt(self: Series) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
         """
@@ -36,8 +34,6 @@ class DatetimeAccessor:
     """
     DatetimeAccessor class used to manipulate datetime-like type Series object
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, obj: Series):
         if obj.is_datetime:

@@ -1,6 +1,7 @@
 #* Variables
 MAKE := make
 EXECUTABLES = poetry git docker docker-compose
+PYLINT_DISABLE := too-few-public-methods
 PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
 POETRY_ENV_PIP := $(shell poetry env info --path)/bin/pip
 PERMISSIVE_LICENSES := "\
@@ -66,7 +67,7 @@ lint-style:
 	poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
 	poetry run isort --diff --check-only --settings-path pyproject.toml .
 	poetry run black --diff --check .
-	poetry run pylint --rcfile pyproject.toml featurebyte
+	poetry run pylint --disable=${PYLINT_DISABLE} --rcfile pyproject.toml featurebyte
 	poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
 
 	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2

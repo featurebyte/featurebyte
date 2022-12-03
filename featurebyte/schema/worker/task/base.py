@@ -29,8 +29,6 @@ class BaseTaskPayload(FeatureByteBaseModel):
         Configurations for BaseTaskPayload
         """
 
-        # pylint: disable=too-few-public-methods
-
         # With `frozen` flag enable, all the object attributes are immutable.
         frozen = True
 
