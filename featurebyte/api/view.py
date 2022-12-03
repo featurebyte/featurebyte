@@ -22,6 +22,7 @@ from featurebyte.api.join_utils import (
 )
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
+from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
@@ -38,13 +39,19 @@ else:
 ViewT = TypeVar("ViewT", bound="View")
 
 
-class ViewColumn(Series):
+class ViewColumn(Series, SampleMixin):
     """
     ViewColumn class that is the base class of columns returned from any View (e.g. EventView)
     """
 
     _parent: Optional[View] = PrivateAttr(default=None)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+
+    @property
+    def timestamp_column(self) -> Optional[str]:
+        if not self._parent:
+            return None
+        return self._parent.timestamp_column
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """

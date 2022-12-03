@@ -13,6 +13,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
     FeatureStorePreview,
+    FeatureStoreSample,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.service.feature_store import FeatureStoreService
@@ -258,6 +259,32 @@ class FeatureStoreController(
         """
         return await self.preview_service.preview(
             preview=preview, limit=limit, get_credential=get_credential
+        )
+
+    async def sample(
+        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+    ) -> str:
+        """
+        Preview generic graph node
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+        """
+        return await self.preview_service.sample(
+            sample=sample, size=size, seed=seed, get_credential=get_credential
         )
 
     async def get_info(

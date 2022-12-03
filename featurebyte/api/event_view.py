@@ -54,6 +54,7 @@ class EventViewColumn(ViewColumn):
         assert self._parent is not None
 
         timestamp_column = self._parent.timestamp_column
+        assert timestamp_column
         required_columns = entity_columns + [timestamp_column]
         input_nodes = [self.node]
         for col in required_columns:

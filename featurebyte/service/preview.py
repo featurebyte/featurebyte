@@ -25,7 +25,7 @@ from featurebyte.schema.feature_list import (
     FeatureListPreview,
     FeatureListSQL,
 )
-from featurebyte.schema.feature_store import FeatureStorePreview
+from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -76,6 +76,50 @@ class PreviewService(BaseService):
         preview_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type
         ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
+        result = await db_session.execute_query(preview_sql)
+        return convert_dataframe_as_json(result)
+
+    async def sample(
+        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+    ) -> str:
+        """
+        Sample a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+        """
+        feature_store_dict = sample.graph.get_input_node(
+            sample.node_name
+        ).parameters.feature_store_details.dict()
+        feature_store = FeatureStoreModel(**feature_store_dict, name=sample.feature_store_name)
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+            get_credential=get_credential,
+        )
+
+        preview_sql = GraphInterpreter(
+            sample.graph, source_type=feature_store.type
+        ).construct_sample_sql(
+            node_name=sample.node_name,
+            num_rows=size,
+            seed=seed,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+        )
         result = await db_session.execute_query(preview_sql)
         return convert_dataframe_as_json(result)
 

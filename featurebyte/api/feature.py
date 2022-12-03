@@ -302,7 +302,7 @@ class Feature(
         return FeatureModel(**feature_dict)
 
     @typechecked
-    def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
+    def preview(
         self,
         point_in_time_and_serving_name: Dict[str, Any],
     ) -> pd.DataFrame:

@@ -10,7 +10,7 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import GetAttrMixin, OpsMixin
+from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
@@ -19,7 +19,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
-class BaseFrame(QueryObject):
+class BaseFrame(QueryObject, SampleMixin):
     """
     BaseFrame class
     """
