@@ -115,6 +115,14 @@ class SCDJoin(TableNode):
     LAST_TS = "LAST_TS"
 
     def from_query_impl(self, select_expr: Select) -> Select:
+        """
+        Construct a query to perform SCD join
+
+        The general idea is to first merge the left timestamps (event timestamps) and right
+        timestamps (SCD record effective timestamps) along with join keys into a temporary table.
+        Then apply a LAG window function on this temporary table to retrieve the latest effective
+        timestamp corresponding to each event timestamp in one go.
+        """
 
         inner_scd_joined_expr = self._construct_inner_scd_joined_view()
 
@@ -138,6 +146,22 @@ class SCDJoin(TableNode):
         return select_expr
 
     def _construct_inner_scd_joined_view(self) -> Select:
+        """
+        Constructs a query that joins the intermediate table with the input SCD table (right table)
+
+        Example output of the join:
+
+        ------------------------------------------------------------------
+        EVENT_TS      CUST_ID    SCD_TS        SCD_COL1    SCD_COL2    ...
+        ------------------------------------------------------------------
+        2022-04-10    1000       NULL          NULL        NULL
+        2022-04-15    1000       2022-04-12    a           x
+        2022-04-20    1000       2022-04-20    b           y
+        ------------------------------------------------------------------
+
+        The result can be joined back to the input event table (left table) using EVENT_TS and
+        CUST_ID columns.
+        """
 
         left_view_with_effective_ts_expr = self._construct_left_view_with_effective_timestamp()
 
@@ -188,6 +212,44 @@ class SCDJoin(TableNode):
         return inner_scd_joined_expr
 
     def _construct_left_view_with_effective_timestamp(self) -> Select:
+        """
+        This constructs a query that calculates the corresponding SCD effective date for each event
+        timestamp. See an example below.
+
+        Left table:
+
+        ------------------------------
+        EVENT_TS      CUST_ID    ....
+        ------------------------------
+        2022-04-10    1000
+        2022-04-15    1000
+        2022-04-20    1000
+        ------------------------------
+
+        Right table:
+
+        -------------------------------
+        SCD_TS          CUST_ID    ....
+        -------------------------------
+        2022-04-12      1000
+        2022-04-20      1000
+        -------------------------------
+
+        Merged temporary table with LAG function applied:
+
+        --------------------------------------------------------------------
+        TS            KEY     EFFECTIVE_TS    LAST_TS       ROW_OF_INTEREST
+        --------------------------------------------------------------------
+        2022-04-10    1000    NULL            NULL          *
+        2022-04-12    1000    2022-04-12      NULL
+        2022-04-15    1000    NULL            2022-04-12    *
+        2022-04-20    1000    2022-04-20      2022-04-12
+        2022-04-20    1000    NULL            2022-04-20    *
+        --------------------------------------------------------------------
+
+        This query extracts the above table and keeps only the TS, KEY and LAST_TS columns and rows
+        of interest (rows that are from the right tables).
+        """
 
         distinct_left_view = (
             select(quoted_identifier(self.left_timestamp_column), quoted_identifier(self.left_on))

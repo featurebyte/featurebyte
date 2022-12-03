@@ -135,10 +135,9 @@ class SlowlyChangingView(View):
 
     def get_join_parameters(self, calling_view: View) -> dict[str, Any]:
 
-        # When calling_view doesn't have the timestamp_column attribute, it means that it is either
-        # a DimensionView or an SlowlyChangingView. In either case, it is invalid to be used as the
-        # calling view of a join with a SlowlyChangingView on the right side. A validation error
-        # would have been raised before reaching here.
+        # When calling_view doesn't have the timestamp_column attribute, it means that it is a
+        # DimensionView. It is invalid to join DimensionView with SlowlyChangingView on the right
+        # side. A validation error would have been raised before reaching here.
         assert hasattr(calling_view, "timestamp_column")
 
         right_timestamp_column = self.effective_timestamp_column
