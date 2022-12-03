@@ -23,7 +23,7 @@ def features_fixture(event_data):
     """
     event_view = EventView.from_event_data(event_data)
     event_view["AMOUNT"].fillna(0)
-    feature_group = event_view.groupby("USER ID").aggregate(
+    feature_group = event_view.groupby("USER ID").aggregate_over(
         "AMOUNT",
         method="sum",
         windows=["2h", "24h"],

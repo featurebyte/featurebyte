@@ -301,7 +301,7 @@ def test_aggregation(
         category,
     ) in feature_parameters:
 
-        feature_group = event_view.groupby(entity_column_name, category=category).aggregate(
+        feature_group = event_view.groupby(entity_column_name, category=category).aggregate_over(
             method=agg_name,
             value_column=variable_column_name,
             windows=[window],

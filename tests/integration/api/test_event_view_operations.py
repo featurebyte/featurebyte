@@ -22,7 +22,7 @@ def iet_entropy(view, group_by_col, window, name):
     ts_col = view[view.timestamp_column]
     a = view["a"] = (ts_col - ts_col.lag(group_by_col)).dt.day
     view["a * log(a)"] = a * (a + 0.1).log()  # add 0.1 to avoid log(0.0)
-    b = view.groupby(group_by_col).aggregate(
+    b = view.groupby(group_by_col).aggregate_over(
         "a",
         method=AggFunc.SUM,
         windows=[window],
@@ -30,7 +30,7 @@ def iet_entropy(view, group_by_col, window, name):
     )[f"sum(a) ({window})"]
 
     feature = (
-        view.groupby(group_by_col).aggregate(
+        view.groupby(group_by_col).aggregate_over(
             "a * log(a)",
             method=AggFunc.SUM,
             windows=[window],
@@ -72,7 +72,7 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
     output = None
     for idx in range(column_num):
         col_idx = idx + 1
-        feat = event_view.groupby(group_by_col).aggregate(
+        feat = event_view.groupby(group_by_col).aggregate_over(
             f"column_{col_idx}", method="sum", windows=[window], feature_names=[f"column_{col_idx}"]
         )[f"column_{col_idx}"]
         if output is None:
@@ -167,7 +167,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     )
     event_data.cust_id.as_entity("customer")
     event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("cust_id").aggregate(
+    feature_group = event_view.groupby("cust_id").aggregate_over(
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
@@ -247,12 +247,14 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
 
     # create some features
     event_view["derived_value_column"] = 1.0 * event_view["USER ID"]
-    feature_group = event_view.groupby("USER ID").aggregate(
+    feature_group = event_view.groupby("USER ID").aggregate_over(
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
     )
-    feature_group_per_category = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate(
+    feature_group_per_category = event_view.groupby(
+        "USER ID", category="PRODUCT_ACTION"
+    ).aggregate_over(
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
@@ -369,7 +371,7 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     feature_group["pyramid_sum_24h"] = pyramid_sum(
         event_view, "USER ID", window="24h", numeric_column="AMOUNT", name="pyramid_sum_24h"
     )
-    feature_group["amount_sum_24h"] = event_view.groupby("USER ID").aggregate(
+    feature_group["amount_sum_24h"] = event_view.groupby("USER ID").aggregate_over(
         "AMOUNT", method="sum", windows=["24h"], feature_names=["amount_sum_24h"]
     )["amount_sum_24h"]
 
@@ -419,7 +421,7 @@ def create_feature_with_filtered_event_view(event_view):
     Create a feature with filtered event view using string literal
     """
     event_view = event_view[event_view["PRODUCT_ACTION"] == "purchase"]
-    feature_group = event_view.groupby("USER ID").aggregate(
+    feature_group = event_view.groupby("USER ID").aggregate_over(
         method="count",
         windows=["7d"],
         feature_names=["NUM_PURCHASE_7d"],
@@ -833,7 +835,7 @@ def check_numeric_operations(event_view, limit=100):
 def check_day_of_week_counts(event_view, preview_param):
     """Check using derived numeric column as category"""
     event_view["event_day_of_week"] = event_view["EVENT_TIMESTAMP"].dt.day_of_week
-    day_of_week_counts = event_view.groupby("USER ID", category="event_day_of_week").aggregate(
+    day_of_week_counts = event_view.groupby("USER ID", category="event_day_of_week").aggregate_over(
         method="count",
         windows=["24h"],
         feature_names=["DAY_OF_WEEK_COUNTS_24h"],

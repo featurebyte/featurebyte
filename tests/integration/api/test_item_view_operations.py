@@ -57,8 +57,8 @@ def test_item_view_operations(item_data):
     assert df["SESSION_ID"].notnull().all()
     assert (df["item_type_upper"] == "TYPE_42").all()
 
-    # Create a feature using point in time aggregation and preview it
-    feature = item_view_filtered.groupby("USER ID", category="item_type_upper").aggregate(
+    # Create a feature using aggregation with time windows and preview it
+    feature = item_view_filtered.groupby("USER ID", category="item_type_upper").aggregate_over(
         method="count",
         windows=["30d"],
         feature_names=["count_30d"],
@@ -73,7 +73,7 @@ def test_item_view_operations(item_data):
     # Create a feature using aggregation without time window and preview it
     feature = item_view_filtered.groupby("order_id").aggregate(
         method="count",
-        feature_names=["order_size"],
+        feature_name="order_size",
     )
     df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"})
     assert df.iloc[0].to_dict() == {

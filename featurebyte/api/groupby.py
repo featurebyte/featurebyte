@@ -13,7 +13,7 @@ from featurebyte.api.agg_func import AggFuncType, construct_agg_func
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
@@ -27,6 +27,10 @@ from featurebyte.query_graph.transformation import GraphReconstructor, GroupbyNo
 
 
 class BaseAggregator(ABC):
+    """
+    BaseAggregator is the base class for aggregators in groupby
+    """
+
     def __init__(self, groupby_obj: "GroupBy"):
         self.groupby_obj = groupby_obj
         if not isinstance(self.view, tuple(self.supported_views)):
@@ -35,10 +39,24 @@ class BaseAggregator(ABC):
 
     @property
     def view(self) -> View:
+        """
+        Returns the underlying View object that the groupby operates on
+
+        Returns
+        -------
+        View
+        """
         return self.groupby_obj.obj
 
     @property
     def groupby(self) -> "GroupBy":
+        """
+        Returns the associated GroupBy object
+
+        Returns
+        -------
+        GroupBy
+        """
         return self.groupby_obj
 
     @property
@@ -46,9 +64,15 @@ class BaseAggregator(ABC):
     def supported_views(self) -> List[Type[View]]:
         """
         Views that support this type of aggregation
+
+        Returns
+        -------
+        List[Type[View]]
         """
 
-    def _validate_method_and_value_column(self, method: Optional[str], value_column: Optional[str]):
+    def _validate_method_and_value_column(
+        self, method: Optional[str], value_column: Optional[str]
+    ) -> None:
         if method is None:
             raise ValueError("method is required")
 
@@ -126,6 +150,31 @@ class WindowAggregator(BaseAggregator):
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
     ) -> FeatureGroup:
+        """
+        Aggregate given value_column for each group specified in keys over a list of time windows
+
+        This aggregation is available to EventView and ItemView.
+
+        Parameters
+        ----------
+        value_column: str
+            Column to be aggregated
+        method: Optional[AggFunc]
+            Aggregation method
+        windows: List[str]
+            List of aggregation window sizes
+        feature_names: List[str]
+            Output feature names
+        timestamp_column: Optional[str]
+            Timestamp column used to specify the window (if not specified, event data timestamp is used)
+        feature_job_setting: Optional[Dict[str, str]]
+            Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
+            feature job setting parameters
+
+        Returns
+        -------
+        FeatureGroup
+        """
 
         self._validate_parameters(
             value_column=value_column, method=method, windows=windows, feature_names=feature_names
@@ -154,7 +203,7 @@ class WindowAggregator(BaseAggregator):
         assert method is not None
         agg_method = construct_agg_func(agg_func=method)
 
-        items = []
+        items: List[Union[Feature, BaseFeatureGroup]] = []
         for feature_name in feature_names:
             feature = self._project_feature_from_groupby_node(
                 agg_method=agg_method,
@@ -254,7 +303,24 @@ class SimpleAggregator(BaseAggregator):
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
     ) -> Feature:
+        """
+        Aggregate given value_column for each group specified in keys, without time windows
 
+        This aggregation is available to ItemView.
+
+        Parameters
+        ----------
+        value_column: str
+            Column to be aggregated
+        method: Optional[AggFunc]
+            Aggregation method
+        feature_name: List[str]
+            Output feature name
+
+        Returns
+        -------
+        Feature
+        """
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self.view.validate_aggregation_parameters(
             groupby_obj=self.groupby,
@@ -278,6 +344,7 @@ class SimpleAggregator(BaseAggregator):
         )
 
         assert method is not None
+        assert feature_name is not None
         agg_method = construct_agg_func(agg_func=method)
         feature = self._project_feature_from_groupby_node(
             agg_method=agg_method,
@@ -409,7 +476,7 @@ class GroupBy(OpsMixin):
 
         Returns
         -------
-        FeatureGroup
+        Feature
         """
         return SimpleAggregator(self).aggregate(
             value_column=value_column,
