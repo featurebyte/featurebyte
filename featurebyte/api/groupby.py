@@ -34,8 +34,12 @@ class BaseAggregator(ABC):
     def __init__(self, groupby_obj: "GroupBy"):
         self.groupby_obj = groupby_obj
         if not isinstance(self.view, tuple(self.supported_views)):
-            # TODO: add tests
-            raise AggregationNotSupportedForViewError()
+            supported_views_formatted = ", ".join(
+                [view_cls.__name__ for view_cls in self.supported_views]
+            )
+            raise AggregationNotSupportedForViewError(
+                f"{self.aggregation_method_name}() is only available for {supported_views_formatted}"
+            )
 
     @property
     def view(self) -> View:
@@ -68,6 +72,17 @@ class BaseAggregator(ABC):
         Returns
         -------
         List[Type[View]]
+        """
+
+    @property
+    @abstractmethod
+    def aggregation_method_name(self) -> str:
+        """
+        Aggregation method name for readable error message
+
+        Returns
+        -------
+        str
         """
 
     def _validate_method_and_value_column(
@@ -140,6 +155,10 @@ class WindowAggregator(BaseAggregator):
     @property
     def supported_views(self) -> List[Type[View]]:
         return [EventView, ItemView]
+
+    @property
+    def aggregation_method_name(self) -> str:
+        return "aggregate_over"
 
     def aggregate_over(
         self,
@@ -296,6 +315,10 @@ class SimpleAggregator(BaseAggregator):
     @property
     def supported_views(self) -> List[Type[View]]:
         return [ItemView]
+
+    @property
+    def aggregation_method_name(self) -> str:
+        return "aggregate"
 
     def aggregate(
         self,

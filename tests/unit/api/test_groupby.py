@@ -7,6 +7,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import GroupBy
 from featurebyte.enum import DBVarType
+from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.event_data import FeatureJobSetting
 
 
@@ -377,3 +378,14 @@ def test_groupby__aggregation_method_does_not_support_input_var_type(
             ),
         )
     assert 'Aggregation method "sum" does not support "VARCHAR" input variable' in str(exc.value)
+
+
+def test_supported_views__aggregate(snowflake_event_view_with_entity):
+    """
+    Test calling aggregate without time window on EventView is not allowed
+    """
+    with pytest.raises(AggregationNotSupportedForViewError) as exc:
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+            value_column="col_float", method="sum", feature_name="my_feature"
+        )
+    assert str(exc.value) == "aggregate() is only available for ItemView"
