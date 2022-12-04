@@ -162,7 +162,7 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     event_view.join(scd_data, on="USER ID")
 
     # Create a feature and preview it
-    feature = event_view.groupby("USER ID", category="User Status").aggregate(
+    feature = event_view.groupby("USER ID", category="User Status").aggregate_over(
         method="count",
         windows=["7d"],
         feature_names=["count_7d"],
