@@ -157,6 +157,9 @@ class TableNode(SQLNode, ABC):
         else:
             select_expr = select()
 
+        # WITH clause
+        select_expr = self.with_query_impl(select_expr)
+
         # SELECT clause
         for column_name, column_expr in self.columns_map.items():
             select_expr = select_expr.select(
@@ -180,6 +183,20 @@ class TableNode(SQLNode, ABC):
         subclasses will construct the FROM clause using select_expr as the starting point.
 
         The default implementation is no-op and most subclasses should override it.
+
+        Parameters
+        ----------
+        select_expr: Select
+            Partially constructed Select expression
+
+        Returns
+        -------
+        Select
+        """
+        return select_expr
+
+    def with_query_impl(self, select_expr: Select) -> Select:
+        """Construct any CTE clause(s) preceding the Select expression
 
         Parameters
         ----------

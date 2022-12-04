@@ -339,6 +339,15 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         ]
 
 
+class SCDParameters(BaseModel):
+    """Parameters specific to SCD joins"""
+
+    left_timestamp_column: str
+    right_timestamp_column: str
+    current_flag: Optional[str]
+    end_timestamp_column: Optional[str]
+
+
 class JoinNode(BaseNode):
     """Join class"""
 
@@ -352,6 +361,7 @@ class JoinNode(BaseNode):
         right_input_columns: List[InColumnStr]
         right_output_columns: List[OutColumnStr]
         join_type: Literal["left", "inner"]
+        scd_parameters: Optional[SCDParameters]
 
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)

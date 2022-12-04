@@ -179,8 +179,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("order_size") AS sum_value_avg_05cfcb50dc74296f7dc96dc68d881404b1105e6e,
-          COUNT("order_size") AS count_value_avg_05cfcb50dc74296f7dc96dc68d881404b1105e6e
+          SUM("order_size") AS sum_value_avg_0b6afc375cc979c5640f345de3d748620310d949,
+          COUNT("order_size") AS count_value_avg_0b6afc375cc979c5640f345de3d748620310d949
         FROM (
           SELECT
             *,
@@ -234,6 +234,83 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
           "cust_id"
         ORDER BY
           tile_index
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
+def test_scd_join(global_graph, scd_join_node):
+    """
+    Test SQL generation for SCD join
+    """
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
+    sql_tree = sql_graph.build(scd_join_node).sql
+    expected = textwrap.dedent(
+        """
+        WITH LEFT_VIEW AS (
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "order_id" AS "order_id",
+            "order_method" AS "order_method"
+          FROM "db"."public"."event_table"
+        ), RIGHT_VIEW AS (
+          SELECT
+            "effective_ts" AS "effective_ts",
+            "cust_id" AS "cust_id",
+            "membership_status" AS "membership_status"
+          FROM "db"."public"."customer_profile_table"
+        )
+        SELECT
+          L."event_timestamp" AS "event_timestamp",
+          L."cust_id" AS "cust_id",
+          R."membership_status" AS "membership_status"
+        FROM LEFT_VIEW AS L
+        LEFT JOIN (
+          SELECT
+            INNER_L."TS_COL" AS "event_timestamp",
+            INNER_L."KEY_COL" AS "cust_id",
+            INNER_R."membership_status" AS "membership_status"
+          FROM (
+            SELECT
+              "TS_COL",
+              "KEY_COL",
+              "LAST_TS"
+            FROM (
+              SELECT
+                "TS_COL",
+                "KEY_COL",
+                LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST, "EFFECTIVE_TS_COL" NULLS LAST) AS "LAST_TS",
+                "EFFECTIVE_TS_COL"
+              FROM (
+                SELECT
+                  "event_timestamp" AS "TS_COL",
+                  "cust_id" AS "KEY_COL",
+                  NULL AS "EFFECTIVE_TS_COL"
+                FROM (
+                  SELECT DISTINCT
+                    "event_timestamp",
+                    "cust_id"
+                  FROM LEFT_VIEW
+                )
+                UNION ALL
+                SELECT
+                  "effective_timestamp" AS "TS_COL",
+                  "cust_id" AS "KEY_COL",
+                  "effective_timestamp" AS "EFFECTIVE_TS_COL"
+                FROM RIGHT_VIEW
+              )
+            )
+            WHERE
+              "EFFECTIVE_TS_COL" IS NULL
+          ) AS INNER_L
+          INNER JOIN RIGHT_VIEW AS INNER_R
+            ON INNER_L."LAST_TS" = INNER_R."effective_timestamp"
+            AND INNER_L."KEY_COL" = INNER_R."cust_id"
+        ) AS R
+          ON L."event_timestamp" = R."event_timestamp" AND L."cust_id" = R."cust_id"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected

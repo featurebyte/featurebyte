@@ -16,7 +16,6 @@ from featurebyte.api.join_utils import (
     join_column_lineage_map,
     join_tabular_data_ids,
 )
-from featurebyte.api.validator import validate_view
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -259,9 +258,6 @@ class ItemView(View, GroupByMixin):
             )
         # column_structure is a SourceDataColumn
         return column_structure.tabular_data_type == TableDataType.EVENT_DATA
-
-    def validate_join(self, other_view: View) -> None:
-        validate_view(other_view)
 
     def get_join_column(self) -> str:
         return self.item_id_column

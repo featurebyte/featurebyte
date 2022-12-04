@@ -222,7 +222,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Validate join should be implemented by view classes that have extra requirements.
 
         Parameters
-        ---------
+        ----------
         other_view: View
             the other view that we are joining with
         """
@@ -237,6 +237,23 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         str
             the column name for the join key
         """
+
+    def get_join_parameters(self, calling_view: View) -> dict[str, Any]:
+        """
+        Returns additional query node parameters for join operation
+
+        Note that self is the other view in the join, not the calling view.
+
+        Parameters
+        ----------
+        calling_view: View
+            Calling view of the join
+
+        Returns
+        -------
+        """
+        _ = calling_view
+        return {}
 
     def _update_metadata(
         self,
@@ -418,17 +435,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         right_output_columns = append_rsuffix_to_columns(other_view.columns, rsuffix)
         left_on, right_on = self._get_join_keys(other_view, on)
 
+        node_params = {
+            "left_on": left_on,
+            "right_on": right_on,
+            "left_input_columns": left_input_columns,
+            "left_output_columns": left_output_columns,
+            "right_input_columns": right_input_columns,
+            "right_output_columns": right_output_columns,
+            "join_type": how,
+        }
+        node_params.update(other_view.get_join_parameters(self))
+
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
-            node_params={
-                "left_on": left_on,
-                "right_on": right_on,
-                "left_input_columns": left_input_columns,
-                "left_output_columns": left_output_columns,
-                "right_input_columns": right_input_columns,
-                "right_output_columns": right_output_columns,
-                "join_type": how,
-            },
+            node_params=node_params,
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.node, other_view.node],
         )
