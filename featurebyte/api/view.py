@@ -222,7 +222,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Validate join should be implemented by view classes that have extra requirements.
 
         Parameters
-        ---------
+        ----------
         other_view: View
             the other view that we are joining with
         """
