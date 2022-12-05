@@ -64,28 +64,6 @@ class BaseService(OpsServiceMixin):
         return SemanticService(user=self.user, persistent=self.persistent)
 
     @property
-    def dimension_data_service(self) -> DimensionDataService:
-        """
-        DimensionDataService object
-
-        Returns
-        -------
-        DimensionDataService
-        """
-        return DimensionDataService(user=self.user, persistent=self.persistent)
-
-    @property
-    def scd_data_service(self) -> SCDDataService:
-        """
-        SCDDataService object
-
-        Returns
-        -------
-        SCDDataService
-        """
-        return SCDDataService(user=self.user, persistent=self.persistent)
-
-    @property
     def event_data_service(self) -> EventDataService:
         """
         EventDataService object
@@ -95,17 +73,6 @@ class BaseService(OpsServiceMixin):
         EventDataService
         """
         return EventDataService(user=self.user, persistent=self.persistent)
-
-    @property
-    def item_data_service(self) -> ItemDataService:
-        """
-        ItemDataService object
-
-        Returns
-        -------
-        ItemDataService
-        """
-        return ItemDataService(user=self.user, persistent=self.persistent)
 
     @property
     def feature_service(self) -> FeatureService:
@@ -150,14 +117,3 @@ class BaseService(OpsServiceMixin):
         FeatureListNamespaceService
         """
         return FeatureListNamespaceService(user=self.user, persistent=self.persistent)
-
-    @property
-    def feature_job_setting_analysis_service(self) -> FeatureJobSettingAnalysisService:
-        """
-        FeatureJobSettingAnalysisService object
-
-        Returns
-        -------
-        FeatureJobSettingAnalysisService
-        """
-        return FeatureJobSettingAnalysisService(user=self.user, persistent=self.persistent)
