@@ -39,10 +39,8 @@ class PreviewService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
-        self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
-        self.session_manager_service = SessionManagerService(
-            user=self.user, persistent=self.persistent
-        )
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        self.session_manager_service = SessionManagerService(user=user, persistent=persistent)
 
     async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
         """

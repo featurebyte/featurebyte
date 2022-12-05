@@ -54,9 +54,9 @@ class InfoService(BaseService):
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.data_service = DataService(user=user, persistent=persistent)
-        self.semantic_service = SemanticService(user=self.user, persistent=self.persistent)
-        self.event_data_service = EventDataService(user=self.user, persistent=self.persistent)
-        self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
+        self.semantic_service = SemanticService(user=user, persistent=persistent)
+        self.event_data_service = EventDataService(user=user, persistent=persistent)
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.entity_service = EntityService(user=user, persistent=persistent)
         self.feature_service = FeatureService(user=user, persistent=persistent)
         self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
