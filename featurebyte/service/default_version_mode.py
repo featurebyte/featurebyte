@@ -11,7 +11,7 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_service import BaseService, DocServiceName
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
@@ -37,7 +37,6 @@ class DefaultVersionModeService(BaseService):
         self,
         feature_namespace_id: ObjectId,
         default_version_mode: DefaultVersionMode,
-        document: Optional[FeatureNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureNamespaceModel]:
         """
@@ -49,8 +48,6 @@ class DefaultVersionModeService(BaseService):
             Target FeatureNamespace ID
         default_version_mode: DefaultVersionMode
             Target default version mode
-        document: Optional[FeatureNamespaceModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -58,8 +55,8 @@ class DefaultVersionModeService(BaseService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        document = await self.get_document(
-            DocServiceName.FEATURE_NAMESPACE, feature_namespace_id, document=document
+        document = await self.feature_namespace_service.get_document(
+            document_id=feature_namespace_id
         )
         if document.default_version_mode != default_version_mode:
             await self.feature_namespace_service.update_document(
@@ -79,7 +76,6 @@ class DefaultVersionModeService(BaseService):
         self,
         feature_list_namespace_id: ObjectId,
         default_version_mode: DefaultVersionMode,
-        document: Optional[FeatureListNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListNamespaceModel]:
         """
@@ -91,8 +87,6 @@ class DefaultVersionModeService(BaseService):
             Target FeatureListNamespace ID
         default_version_mode: DefaultVersionMode
             Target default version mode
-        document: Optional[FeatureListNamespaceModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -100,8 +94,8 @@ class DefaultVersionModeService(BaseService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        document = await self.get_document(
-            DocServiceName.FEATURE_LIST_NAMESPACE, feature_list_namespace_id, document=document
+        document = await self.feature_list_namespace_service.get_document(
+            document_id=feature_list_namespace_id
         )
         if document.default_version_mode != default_version_mode:
             await self.feature_list_namespace_service.update_document(

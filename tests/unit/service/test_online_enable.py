@@ -53,7 +53,6 @@ async def test_update_feature(
     online_enabled_feat = await online_enable_service.update_feature(
         feature_id=production_ready_feature.id,
         online_enabled=True,
-        return_document=True,
         get_credential=Mock(),
     )
     assert isinstance(online_enabled_feat, FeatureModel)
@@ -70,7 +69,6 @@ async def test_update_feature(
     online_disabled_feat = await online_enable_service.update_feature(
         feature_id=online_enabled_feat.id,
         online_enabled=False,
-        return_document=True,
         get_credential=Mock(),
     )
     assert isinstance(online_disabled_feat, FeatureModel)

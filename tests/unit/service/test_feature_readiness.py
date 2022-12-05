@@ -72,7 +72,7 @@ async def check_states_after_readiness_change(
     """Check states after feature readiness get changed"""
     # pylint: disable=too-many-arguments,too-many-locals
     new_feat = await feature_readiness_service.update_feature(
-        feature_id=new_feature_id, readiness=new_feature_next_readiness, return_document=True
+        feature_id=new_feature_id, readiness=new_feature_next_readiness
     )
     assert new_feat.feature_list_ids == [new_feature_list.id]
 
@@ -229,7 +229,7 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
     new_feature_list = await feature_list_service.get_document(document_id=new_feature_list_id)
     await feature_readiness_service.update_feature(
-        feature_id=new_feature_id, readiness="PRODUCTION_READY", return_document=False
+        feature_id=new_feature_id, readiness="PRODUCTION_READY"
     )
 
     # change default version mode to manual first
