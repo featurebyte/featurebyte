@@ -17,7 +17,7 @@ $$
 
 
     var select_sql = `
-        SELECT FEATURE_NAME, FEATURE_SQL, FEATURE_STORE_TABLE_NAME, FEATURE_ENTITY_COLUMN_NAMES
+        SELECT FEATURE_NAME, FEATURE_SQL, FEATURE_STORE_TABLE_NAME, FEATURE_ENTITY_COLUMN_NAMES, FEATURE_TYPE
         FROM TILE_FEATURE_MAPPING WHERE TILE_ID ILIKE '${TILE_ID}' AND IS_DELETED = FALSE
     `
     var result = snowflake.execute({sqlText: select_sql})
@@ -28,6 +28,7 @@ $$
         var f_sql = result.getColumnValue(2)
         var fs_table = result.getColumnValue(3)
         var f_entity_columns = result.getColumnValue(4)
+        var f_value_type = result.getColumnValue(5)
 
         f_sql = f_sql.replaceAll("__FB_POINT_IN_TIME_SQL_PLACEHOLDER", "'" + JOB_SCHEDULE_TS_STR + "'")
 
@@ -64,7 +65,7 @@ $$
             try {
                 snowflake.execute({sqlText: `SELECT "${f_name}" FROM ${fs_table} LIMIT 1`})
             } catch (err)  {
-                snowflake.execute({sqlText: `ALTER TABLE ${fs_table} ADD "${f_name}" FLOAT`})
+                snowflake.execute({sqlText: `ALTER TABLE ${fs_table} ADD "${f_name}" ${f_value_type}`})
             }
 
             // remove feature values for entities that are not in entity universe
