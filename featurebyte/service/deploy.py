@@ -10,10 +10,14 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.online_enable import OnlineEnableService
 
 
@@ -23,16 +27,14 @@ class DeployService(BaseService):
     of feature list deployment.
     """
 
-    @property
-    def online_enable_service(self) -> OnlineEnableService:
-        """
-        OnlineEnableService object
-
-        Returns
-        -------
-        OnlineEnableService
-        """
-        return OnlineEnableService(user=self.user, persistent=self.persistent)
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.feature_service = FeatureService(user=user, persistent=persistent)
+        self.online_enable_service = OnlineEnableService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+        self.feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
 
     @classmethod
     def _extract_deployed_feature_list_ids(

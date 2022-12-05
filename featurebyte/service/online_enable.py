@@ -13,10 +13,14 @@ from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflak
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
@@ -27,27 +31,13 @@ class OnlineEnableService(BaseService):
     of feature online enablement.
     """
 
-    @property
-    def session_manager_service(self) -> SessionManagerService:
-        """
-        SessionManagerService object
-
-        Returns
-        -------
-        SessionManagerService
-        """
-        return SessionManagerService(user=self.user, persistent=self.persistent)
-
-    @property
-    def feature_store_service(self) -> FeatureStoreService:
-        """
-        FeatureStoreService object
-
-        Returns
-        -------
-        FeatureStoreService
-        """
-        return FeatureStoreService(user=self.user, persistent=self.persistent)
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.feature_service = FeatureService(user=user, persistent=persistent)
+        self.session_manager_service = SessionManagerService(user=user, persistent=persistent)
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
 
     @classmethod
     def _extract_online_enabled_feature_ids(

@@ -3,7 +3,7 @@ DataStatusService
 """
 from __future__ import annotations
 
-from typing import List, Union, cast
+from typing import Any, List, Union, cast
 
 from collections import defaultdict
 
@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataModel, DataStatus
+from featurebyte.persistent import Persistent
 from featurebyte.schema.dimension_data import DimensionDataUpdate
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
@@ -33,6 +34,11 @@ class DataUpdateService(BaseService):
     """
     DataStatusService is responsible to update the data status.
     """
+
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.semantic_service = SemanticService(user=user, persistent=persistent)
+        self.entity_service = EntityService(user=user, persistent=persistent)
 
     @staticmethod
     async def update_data_status(

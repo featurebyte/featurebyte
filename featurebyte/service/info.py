@@ -30,7 +30,15 @@ from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.entity import EntityService
+from featurebyte.service.event_data import EventDataService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
 
 ObjectT = TypeVar("ObjectT")
@@ -41,9 +49,21 @@ class InfoService(BaseService):
     InfoService class is responsible for rendering the info of a specific api object.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.data_service = DataService(user=user, persistent=persistent)
+        self.semantic_service = SemanticService(user=user, persistent=persistent)
+        self.event_data_service = EventDataService(user=user, persistent=persistent)
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        self.entity_service = EntityService(user=user, persistent=persistent)
+        self.feature_service = FeatureService(user=user, persistent=persistent)
+        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+        self.feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
 
     @staticmethod
     async def _get_list_object(

@@ -13,10 +13,12 @@ from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.exception import FeatureListNotOnlineEnabledError
 from featurebyte.logger import logger
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.persistent import Persistent
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 from featurebyte.schema.feature_list import OnlineFeaturesResponseModel
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
 
@@ -25,16 +27,10 @@ class OnlineServingService(BaseService):
     OnlineServingService is responsible for retrieving features from online store
     """
 
-    @property
-    def session_manager_service(self) -> SessionManagerService:
-        """
-        Instance of SessionManagerService
-
-        Returns
-        -------
-        SessionManagerService
-        """
-        return SessionManagerService(self.user, self.persistent)
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        self.session_manager_service = SessionManagerService(user=user, persistent=persistent)
 
     async def get_online_features_from_feature_list(
         self,
