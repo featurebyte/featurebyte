@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
@@ -30,6 +31,7 @@ from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.tabular_data import DataService
 
 ObjectT = TypeVar("ObjectT")
 
@@ -38,6 +40,10 @@ class InfoService(BaseService):
     """
     InfoService class is responsible for rendering the info of a specific api object.
     """
+
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.data_service = DataService(user=user, persistent=persistent)
 
     @staticmethod
     async def _get_list_object(

@@ -19,7 +19,6 @@ from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
-from featurebyte.service.tabular_data import DataService
 
 
 class BaseService(OpsServiceMixin):
@@ -30,17 +29,6 @@ class BaseService(OpsServiceMixin):
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
         self.persistent = persistent
-
-    @property
-    def data_service(self) -> DataService:
-        """
-        DataService object
-
-        Returns
-        -------
-        DataService
-        """
-        return DataService(user=self.user, persistent=self.persistent)
 
     @property
     def feature_store_service(self) -> FeatureStoreService:
