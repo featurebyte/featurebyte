@@ -323,8 +323,8 @@ class Configurations:
 
     def write_creds(self, credential: Credential, feature_store_name: str) -> bool:
         """
-        Write creds will try to write the credentials to the configuration file. This will no-op if the credential's
-        already exist in the config file.
+        Write creds will try to write the credentials to the configuration file. This will no-op if any other
+        credential's already exist in the config file.
 
         Parameters
         ----------
@@ -338,8 +338,7 @@ class Configurations:
         bool
             True if we updated the config file, False if otherwise
         """
-        current_creds = self.credentials.get(feature_store_name)
-        if current_creds is not None:
+        if len(self.credentials) > 0:
             return False
 
         # Append text to file
