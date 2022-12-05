@@ -258,6 +258,12 @@ jobs:
         poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
         poetry publish --build -r featurebyte_np
 
+        # Tagging dev version
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git tag "${PUBLISH_VERSION}"
+        git push origin --tags
+
         # Slack outputs
         export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
         export GITHUB_HEAD_REF=main
@@ -275,6 +281,23 @@ jobs:
           -H 'Content-type: application/json; charset=utf-8' \
           --data-binary @- https://slack.com/api/chat.postMessage
 
+    - name: 'Delete old tags'
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Delete old tags more than a month old
+        export ONE_MONTH_AGO=$(date --date="-30days" +%Y-%m-%d)
+
+        # For each tags
+        # => filter by 1 month ago
+        # => Convert ref/tags/ABC = :ref/tags/ABC
+        # RUN: git push origin :ref/tags/ABC :ref/tags/BCD
+        git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags |\
+            awk "{ if (\$1 < $ONE_MONTH_AGO) print \$2; }" |\
+            sed -nE 's/refs\//:refs\//p' |\
+            xargs git push origin
 
     - name: Slack Message Pull Request
       if: ${{ github.event_name == 'pull_request' }}
