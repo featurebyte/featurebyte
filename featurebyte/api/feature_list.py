@@ -62,7 +62,10 @@ from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 class BaseFeatureGroup(FeatureByteBaseModel):
     """
     BaseFeatureGroup class
-    items : list[Union[Feature, BaseFeatureGroup]]
+
+    Parameters
+    ----------
+    items: Sequence[Union[Feature, BaseFeatureGroup]]
         List of feature like objects to be used to create the FeatureList
     feature_objects: OrderedDict[str, Feature]
         Dictionary of feature name to feature object
