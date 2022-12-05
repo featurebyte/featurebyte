@@ -30,17 +30,9 @@ class OnlineServingService(BaseService):
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
-
-    @property
-    def session_manager_service(self) -> SessionManagerService:
-        """
-        Instance of SessionManagerService
-
-        Returns
-        -------
-        SessionManagerService
-        """
-        return SessionManagerService(self.user, self.persistent)
+        self.session_manager_service = SessionManagerService(
+            user=self.user, persistent=self.persistent
+        )
 
     async def get_online_features_from_feature_list(
         self,
