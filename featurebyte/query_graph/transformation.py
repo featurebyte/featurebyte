@@ -143,11 +143,6 @@ class GraphReconstructor:
         Returns
         -------
         PruningSensitiveNodeT
-
-        Raises
-        ------
-        ValueError
-            When the query graph have unexpected structure (groupby node should have at least an InputNode)
         """
         # create a temporary node & prune the graph before deriving additional parameters based on
         # the pruned graph
@@ -162,9 +157,7 @@ class GraphReconstructor:
                 # as the input node could be pruned in the pruned graph, traverse the graph to find a valid input
                 pruned_input_node_name = node_name_map[node.name]
 
-        if pruned_input_node_name is None:
-            raise ValueError("Failed to add groupby operation.")
-
+        assert isinstance(pruned_input_node_name, str)
         additional_parameters = node_cls.derive_parameters_post_prune(
             graph=graph,
             input_node=input_node,

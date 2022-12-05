@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Optional, Type, Union
+from typing import Any, List, Optional, Type, TypeVar, Union
 
 from abc import abstractmethod
 
@@ -18,6 +18,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.mixin import SeriesOutputNodeOpStructMixin
 
 NODE_TYPES = []
+NodeT = TypeVar("NodeT", bound="BaseNode")
 
 
 class BaseNode(BaseModel):

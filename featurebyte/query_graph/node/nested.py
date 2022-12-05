@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.operation import (
-    NodeOutputCategory,
     OperationStructure,
     OperationStructureBranchState,
     OperationStructureInfo,
@@ -34,9 +33,10 @@ class ProxyInputNode(BaseNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        return OperationStructure(
-            output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
-        )
+        # lookup the operature structure using the proxy node reference node name
+        assert len(inputs) == 1
+        ref_node_name = self.parameters.node_name
+        return global_state.operation_structure_map[ref_node_name]
 
 
 class GraphNodeParameters(BaseModel):
@@ -59,6 +59,5 @@ class BaseGraphNode(BaseNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        return OperationStructure(
-            output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
-        )
+        # this should not be called as it should be handled at operation structure extractor level
+        raise RuntimeError("BaseGroupNode._derive_node_operation_info should not be called!")
