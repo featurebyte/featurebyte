@@ -17,6 +17,7 @@ from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServic
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.online_enable import OnlineEnableService
 
 
@@ -31,6 +32,9 @@ class DeployService(BaseService):
         self.feature_service = FeatureService(user=user, persistent=persistent)
         self.online_enable_service = OnlineEnableService(user=user, persistent=persistent)
         self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+        self.feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
 
     @classmethod
     def _extract_deployed_feature_list_ids(

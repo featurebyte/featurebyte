@@ -13,6 +13,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 
@@ -28,6 +29,9 @@ class DefaultVersionModeService(BaseService):
         super().__init__(user, persistent)
         self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
         self.feature_readiness_service = FeatureReadinessService(user=user, persistent=persistent)
+        self.feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
 
     async def update_feature_namespace(
         self,
