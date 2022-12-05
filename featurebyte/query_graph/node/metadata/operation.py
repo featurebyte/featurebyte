@@ -376,3 +376,15 @@ class OperationStructure(BaseFrozenModel):
             aggregations=aggregations,
             post_aggregation=next(iter(post_aggregations), None),
         )
+
+
+class OperationStructureBranchState(BaseModel):
+    """OperationStructureBranchState class"""
+
+    visited_node_types: Set[NodeType] = Field(default_factory=set)
+
+
+class OperationStructureInfo(BaseModel):
+    """OperationStructureGlobalState class"""
+
+    operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)

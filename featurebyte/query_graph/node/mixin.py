@@ -11,6 +11,8 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
+    OperationStructureBranchState,
+    OperationStructureInfo,
     PostAggregationColumn,
     ViewDataColumn,
 )
@@ -24,7 +26,10 @@ class SeriesOutputNodeOpStructMixin:
     output_type: NodeOutputType
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
         Derive node operation info
@@ -33,14 +38,16 @@ class SeriesOutputNodeOpStructMixin:
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        visited_node_types: Set[NodeType]
-            Set of visited nodes when doing backward traversal
+        branch_state: OperationStructureBranchState
+            State captures the graph branching state info
+        global_state: OperationStructureInfo
+            State captures the global graph info (used during operation structure derivation)
 
         Returns
         -------
         OperationStructure
         """
-        _ = visited_node_types
+        _ = branch_state, global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         columns = []
@@ -113,7 +120,10 @@ class GroupbyNodeOpStructMixin:
         """
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
         Derive node operation info
@@ -122,13 +132,16 @@ class GroupbyNodeOpStructMixin:
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        visited_node_types: Set[NodeType]
-            Set of visited nodes when doing backward traversal
+        branch_state: OperationStructureBranchState
+            State captures the graph branching state info
+        global_state: OperationStructureInfo
+            State captures the global graph info (used during operation structure derivation)
 
         Returns
         -------
         OperationStructure
         """
+        _ = global_state
         input_operation_info = inputs[0]
         lineage_columns = set(self.get_required_input_columns())  # type: ignore
         wanted_columns = lineage_columns.difference(self._exclude_source_columns())
@@ -142,7 +155,7 @@ class GroupbyNodeOpStructMixin:
 
         columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
         output_category = NodeOutputCategory.FEATURE
-        if self.type == NodeType.ITEM_GROUPBY and NodeType.JOIN in visited_node_types:
+        if self.type == NodeType.ITEM_GROUPBY and NodeType.JOIN in branch_state.visited_node_types:
             # if the output of the item_groupby will be used to join with other table,
             # this mean the output of this item_groupby is view but not feature.
             output_category = NodeOutputCategory.VIEW

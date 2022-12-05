@@ -2,43 +2,21 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Set
+from typing import List, Literal
 
 from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    NodeOutputCategory,
+    OperationStructure,
+    OperationStructureBranchState,
+    OperationStructureInfo,
+)
 
 
-class NestedGraphMixin:
-    """Mixin shared by nested graph related node"""
-
-    def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
-    ) -> OperationStructure:
-        """
-        Derive node operation info
-
-        Parameters
-        ----------
-        inputs: List[OperationStructure]
-            List of input nodes' operation info
-        visited_node_types: Set[NodeType]
-            Set of visited nodes when doing backward traversal
-
-        Returns
-        -------
-        OperationStructure
-        """
-        # TODO: implement this method
-        _ = inputs, visited_node_types
-        return OperationStructure(
-            output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
-        )
-
-
-class ProxyInputNode(NestedGraphMixin, BaseNode):
+class ProxyInputNode(BaseNode):
     """Proxy input node used by nested graph"""
 
     class ProxyInputNodeParameters(BaseModel):
@@ -50,6 +28,16 @@ class ProxyInputNode(NestedGraphMixin, BaseNode):
     output_type: NodeOutputType
     parameters: ProxyInputNodeParameters
 
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+        return OperationStructure(
+            output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
+        )
+
 
 class GraphNodeParameters(BaseModel):
     """Graph node parameters"""
@@ -58,9 +46,19 @@ class GraphNodeParameters(BaseModel):
     output_node_name: str
 
 
-class BaseGraphNode(NestedGraphMixin, BaseNode):
+class BaseGraphNode(BaseNode):
     """Graph node"""
 
     type: Literal[NodeType.GRAPH] = Field(NodeType.GRAPH, const=True)
     output_type: NodeOutputType
     parameters: GraphNodeParameters
+
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+        return OperationStructure(
+            output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
+        )

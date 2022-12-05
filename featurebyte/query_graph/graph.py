@@ -68,7 +68,8 @@ class QueryGraph(QueryGraphModel):
         -------
         OperationStructure
         """
-        return OperationStructureExtractor(graph=self).extract(node=node)
+        op_struct_info = OperationStructureExtractor(graph=self).extract(node=node)
+        return op_struct_info.operation_structure_map[node.name]
 
     def prune(self, target_node: Node) -> GraphPruningOutput:
         """

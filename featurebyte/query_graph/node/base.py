@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Optional, Set, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 from abc import abstractmethod
 
@@ -10,7 +10,11 @@ from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    OperationStructure,
+    OperationStructureBranchState,
+    OperationStructureInfo,
+)
 from featurebyte.query_graph.node.mixin import SeriesOutputNodeOpStructMixin
 
 NODE_TYPES = []
@@ -102,7 +106,10 @@ class BaseNode(BaseModel):
         return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
 
     def derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
         Derive node operation info
@@ -111,15 +118,17 @@ class BaseNode(BaseModel):
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        visited_node_types: Set[NodeType]
-            Set of visited nodes when doing backward traversal
+        branch_state: OperationStructureBranchState
+            State captures the graph branching state info
+        global_state: OperationStructureInfo
+            State captures the global graph info (used during operation structure derivation)
 
         Returns
         -------
         OperationStructure
         """
         operation_info = self._derive_node_operation_info(
-            inputs=inputs, visited_node_types=visited_node_types
+            inputs=inputs, branch_state=branch_state, global_state=global_state
         )
         if operation_info.columns or operation_info.aggregations:
             # make sure node name should be included in the node operation info
@@ -128,7 +137,10 @@ class BaseNode(BaseModel):
 
     @abstractmethod
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
         Derive node operation info abstract method to be implemented at the concrete node class
@@ -137,8 +149,10 @@ class BaseNode(BaseModel):
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
-        visited_node_types: Set[NodeType]
-            Set of visited nodes when doing backward traversal
+        branch_state: OperationStructureBranchState
+            State captures the graph branching state info
+        global_state: OperationStructureInfo
+            State captures the global graph info (used during operation structure derivation)
 
         Returns
         -------
