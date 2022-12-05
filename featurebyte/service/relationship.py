@@ -3,7 +3,7 @@ RelationshipService class
 """
 from __future__ import annotations
 
-from typing import TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from abc import abstractmethod
 
@@ -12,11 +12,13 @@ from bson import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.relationship import Parent, Relationship
+from featurebyte.persistent import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.semantic import SemanticService
 
 ParentT = TypeVar("ParentT", bound=Parent)
 BaseDocumentServiceT = BaseDocumentService[
@@ -213,6 +215,10 @@ class SemanticRelationshipService(RelationshipService):
     """
     SemanticRelationshipService is responsible to update relationship between different semantics.
     """
+
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.semantic_service = SemanticService(user=self.user, persistent=self.persistent)
 
     @property
     def document_service(self) -> BaseDocumentServiceT:

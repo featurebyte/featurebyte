@@ -53,17 +53,6 @@ class BaseService(OpsServiceMixin):
         return EntityService(user=self.user, persistent=self.persistent)
 
     @property
-    def semantic_service(self) -> SemanticService:
-        """
-        SemanticService object
-
-        Returns
-        -------
-        SemanticService
-        """
-        return SemanticService(user=self.user, persistent=self.persistent)
-
-    @property
     def event_data_service(self) -> EventDataService:
         """
         EventDataService object
