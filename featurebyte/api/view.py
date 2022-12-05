@@ -377,7 +377,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     ) -> None:
         """
         Main validate call for the join. This checks that
-        - If there are overlapping column names but rsuffix is empty, should there be an error?
+        - If there are overlapping column names but rsuffix is empty, throw an error
+        - the join column provided via `on` is present in the columns of the calling view
         - Calls the other validate_join function which can be overriden for implementation specific validation
 
         Parameters
