@@ -426,7 +426,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Argument is used if the two views have overlapping column names and disambiguates such column names after
             join. The default rsuffix is an empty string - ''.
         """
-        self.validate_join(other_view)
+        self._validate_join(other_view)
 
         left_input_columns = self.columns
         left_output_columns = self.columns
