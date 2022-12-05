@@ -1,9 +1,6 @@
 # Need to route to different cpu arch
 FROM python:3.8-slim
 
-ARG USER=fb_user
-ARG UID=1000
-
 ARG FEATUREBYTE_NP_PASSWORD
 ARG FEATUREBYTE_REPOSITORY=us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi
 ARG FEATUREBYTE_NP_USERNAME=_json_key_base64
@@ -50,10 +47,5 @@ RUN apt-get update -y &&\
     apt-get clean
 
 RUN sed -i 's|root /var/www/html;|root /app/site;|g' /etc/nginx/sites-available/default
-
-# Add non-root user
-RUN adduser --uid $UID --disabled-password --gecos '' $USER
-RUN chown -R $USER:$USER /app
-USER $USER
 
 ENTRYPOINT ["/bin/bash", "/scripts/entrypoint.sh"]

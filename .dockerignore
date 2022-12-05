@@ -12,3 +12,4 @@ docs
 htmlcov
 requirements.txt
 .venv
+docker/data
