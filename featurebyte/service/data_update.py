@@ -38,6 +38,7 @@ class DataUpdateService(BaseService):
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.semantic_service = SemanticService(user=self.user, persistent=self.persistent)
+        self.entity_service = EntityService(user=user, persistent=persistent)
 
     @staticmethod
     async def update_data_status(

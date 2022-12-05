@@ -24,17 +24,6 @@ class BaseService(OpsServiceMixin):
         self.persistent = persistent
 
     @property
-    def entity_service(self) -> EntityService:
-        """
-        EntityService object
-
-        Returns
-        -------
-        EntityService
-        """
-        return EntityService(user=self.user, persistent=self.persistent)
-
-    @property
     def feature_service(self) -> FeatureService:
         """
         FeatureService object

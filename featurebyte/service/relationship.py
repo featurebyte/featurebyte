@@ -18,6 +18,7 @@ from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.semantic import SemanticService
 
 ParentT = TypeVar("ParentT", bound=Parent)
@@ -199,6 +200,10 @@ class EntityRelationshipService(RelationshipService):
     """
     EntityRelationshipService is responsible to update relationship between different entities.
     """
+
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.entity_service = EntityService(user=user, persistent=persistent)
 
     @property
     def document_service(self) -> BaseDocumentServiceT:
