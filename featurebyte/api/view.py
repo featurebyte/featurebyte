@@ -369,7 +369,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         raise NoJoinKeyFoundError
 
-    def _validate_join(self, other_view: View, rsuffix: str = "") -> None:
+    def _validate_join(
+        self,
+        other_view: View,
+        rsuffix: str = "",
+        on: Optional[str] = None,  # pylint: disable=invalid-name
+    ) -> None:
         """
         Main validate call for the join. This checks that
         - If there are overlapping column names but rsuffix is empty, should there be an error?
@@ -381,11 +386,15 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             the other view that we are joining with
         rsuffix: str
             a suffix to append on to the right columns
+        on: Optional[str]
+            the column to join on
 
         Raises
         ------
         RepeatedColumnNamesError
             raised when there are overlapping columns, but no rsuffix has been provided
+        NoJoinKeyFoundError
+            raised when the on column provided, is not present in the columns
         """
         # Validate whether there are overlapping column names
         if rsuffix == "":
@@ -393,6 +402,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             for other_col in other_view.columns_info:
                 if other_col.name in current_column_names:
                     raise RepeatedColumnNamesError
+
+        # Validate whether the join column provided is present in the columns
+        if on is not None:
+            current_column_names = {col.name for col in self.columns_info}
+            if on not in current_column_names:
+                raise NoJoinKeyFoundError
 
         # Perform other validation
         self.validate_join(other_view)
@@ -426,7 +441,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Argument is used if the two views have overlapping column names and disambiguates such column names after
             join. The default rsuffix is an empty string - ''.
         """
-        self._validate_join(other_view)
+        self._validate_join(other_view, rsuffix, on=on)
 
         left_input_columns = self.columns
         left_output_columns = self.columns
