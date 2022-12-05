@@ -53,17 +53,6 @@ class BaseService(OpsServiceMixin):
         return EntityService(user=self.user, persistent=self.persistent)
 
     @property
-    def event_data_service(self) -> EventDataService:
-        """
-        EventDataService object
-
-        Returns
-        -------
-        EventDataService
-        """
-        return EventDataService(user=self.user, persistent=self.persistent)
-
-    @property
     def feature_service(self) -> FeatureService:
         """
         FeatureService object

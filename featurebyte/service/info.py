@@ -30,6 +30,7 @@ from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.event_data import EventDataService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
@@ -46,6 +47,7 @@ class InfoService(BaseService):
         super().__init__(user, persistent)
         self.data_service = DataService(user=user, persistent=persistent)
         self.semantic_service = SemanticService(user=self.user, persistent=self.persistent)
+        self.event_data_service = EventDataService(user=self.user, persistent=self.persistent)
 
     @staticmethod
     async def _get_list_object(
