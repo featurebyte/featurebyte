@@ -15,7 +15,7 @@ from requests import Response
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.credential import Credential
+from featurebyte.models.credential import Credential, UsernamePasswordCredential
 
 # data source to credential mapping
 Credentials = Dict[str, Optional[Credential]]
@@ -320,3 +320,37 @@ class Configurations:
             raise InvalidSettingsError("No profile setting specified")
 
         return client
+
+    def write_creds(self, credential: Credential, feature_store_name: str) -> bool:
+        """
+        Write creds will try to write the credentials to the configuration file. This will no-op if any other
+        credential's already exist in the config file.
+
+        Parameters
+        ----------
+        credential: Credential
+            credentials to write to the file
+        feature_store_name: str
+            the feature store associated with the credentials being passed in
+
+        Returns
+        -------
+        bool
+            True if we updated the config file, False if otherwise
+        """
+        if len(self.credentials) > 0:
+            return False
+
+        # Append text to file
+        with self._config_file_path.open(mode="a", encoding="utf-8") as config_file:
+            username_pw_cred = credential.credential
+            assert isinstance(username_pw_cred, UsernamePasswordCredential)
+            config_file.write(
+                "\n\n# credentials\n"
+                "credential:\n"
+                f"  - feature_store: {feature_store_name}\n"
+                f"    credential_type: {credential.credential_type}\n"
+                f"    username: {username_pw_cred.username}\n"
+                f"    password: {username_pw_cred.password}\n"
+            )
+        return True

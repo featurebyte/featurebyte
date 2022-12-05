@@ -24,7 +24,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
-from featurebyte.app import app
+from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType, InternalName
@@ -38,9 +38,12 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
+from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager, session_cache
+from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -870,3 +873,19 @@ def test_save_payload_fixtures(
         raise AssertionError(
             f"Fixtures {output_filenames} updated, please set update_fixture to False"
         )
+
+
+@pytest.fixture(name="app_container")
+def app_container_fixture(persistent):
+    """
+    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
+    """
+    user = User()
+    task_manager = TaskManager(user_id=user.id)
+    return AppContainer.get_instance(
+        user=user,
+        persistent=persistent,
+        temp_storage=LocalTempStorage(),
+        task_manager=task_manager,
+        storage=LocalTempStorage(),
+    )

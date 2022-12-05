@@ -7,6 +7,8 @@ from typing import Any, List
 
 from bson.objectid import ObjectId
 
+from featurebyte.config import Configurations
+from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import (
@@ -49,6 +51,26 @@ class FeatureStoreController(
         self.session_manager_service = session_manager_service
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
+
+    def persist_credential(self, credential: Credential, feature_store_name: str) -> bool:
+        """
+        Persists the credentials to the local config file. This will be a no-op if credentials already exist
+        in the persistent layer for the feature_store_name provided.
+
+        Parameters
+        ----------
+        credential: Credential
+            credential's that we want to persist
+        feature_store_name: str
+            feature store name associated with the credentials
+
+        Returns
+        -------
+        bool
+            whether the credential was persisted
+        """
+        config = Configurations()
+        return config.write_creds(credential, feature_store_name)
 
     async def create_feature_store(
         self,
@@ -94,13 +116,47 @@ class FeatureStoreController(
         # Validate that feature store ID isn't claimed by the working schema.
         # If the feature store ID is already in use, this will throw an error.
         async with self.service.persistent.start_transaction():
+            # Override get_credential if credentials are provided
+            get_credentials_to_use = get_credential
+            creds_from_params = data.credentials
+            if creds_from_params is not None:
+
+                def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
+                    """
+                    Updated get_credential will try to look up the credentials from config.
+
+                    If there's nothing in the config, we will write the current credentials to the config,
+                    and return the credentials provided.
+
+                    If there are credentials in the config, we will ignore whatever is passed in here.
+
+                    Parameters
+                    ----------
+                    user_id: str
+                        user id
+                    feature_store_name: str
+                        feature store name
+
+                    Returns
+                    -------
+                    Any
+                        credentials
+                    """
+                    cred = get_credential(user_id, feature_store_name)
+                    if cred is not None:
+                        return cred
+                    self.persist_credential(creds_from_params, feature_store_name)  # type: ignore
+                    return creds_from_params
+
+                get_credentials_to_use = _updated_get_credential
+
             # Create the new feature store. If one already exists, we'll throw an error here.
             document = await self.service.create_document(data)
             await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
                 feature_store_name=data.name,
                 session_type=data.type,
                 details=data.details,
-                get_credential=get_credential,
+                get_credential=get_credentials_to_use,
                 users_feature_store_id=document.id,
             )
             # Retrieve a session for initializing
@@ -108,7 +164,7 @@ class FeatureStoreController(
                 feature_store=FeatureStoreModel(
                     name=data.name, type=data.type, details=data.details
                 ),
-                get_credential=get_credential,
+                get_credential=get_credentials_to_use,
             )
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
