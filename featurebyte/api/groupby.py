@@ -172,13 +172,11 @@ class WindowAggregator(BaseAggregator):
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
 
-        This aggregation is available to EventView and ItemView.
-
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
-        method: Optional[AggFunc]
+        method: str
             Aggregation method
         windows: List[str]
             List of aggregation window sizes
@@ -329,15 +327,13 @@ class SimpleAggregator(BaseAggregator):
         """
         Aggregate given value_column for each group specified in keys, without time windows
 
-        This aggregation is available to ItemView.
-
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
-        method: Optional[AggFunc]
+        method: str
             Aggregation method
-        feature_name: List[str]
+        feature_name: str
             Output feature name
 
         Returns
@@ -449,9 +445,9 @@ class GroupBy(OpsMixin):
 
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
-        method: Optional[AggFunc]
+        method: str
             Aggregation method
         windows: List[str]
             List of aggregation window sizes
@@ -490,11 +486,11 @@ class GroupBy(OpsMixin):
 
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
-        method: Optional[AggFunc]
+        method: Optional[str]
             Aggregation method
-        feature_name: List[str]
+        feature_name: Optional[str]
             Output feature name
 
         Returns
