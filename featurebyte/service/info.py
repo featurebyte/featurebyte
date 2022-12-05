@@ -49,6 +49,8 @@ class InfoService(BaseService):
     InfoService class is responsible for rendering the info of a specific api object.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.data_service = DataService(user=user, persistent=persistent)
