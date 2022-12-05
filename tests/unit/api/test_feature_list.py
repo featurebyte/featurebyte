@@ -202,7 +202,18 @@ def test_feature_list_creation__not_a_list():
     """Test FeatureList must be created from a list"""
     with pytest.raises(TypeError) as exc_info:
         FeatureList("my_feature", name="my_feature_list")
-    assert 'type of argument "items" must be a list; got str instead' in str(exc_info.value)
+    expected_error = (
+        'type of argument "items"[0] must be one of (featurebyte.api.feature.Feature,'
+        " featurebyte.api.feature_list.BaseFeatureGroup); got str instead"
+    )
+    assert expected_error in str(exc_info.value)
+
+
+def test_feature_list_creation__not_a_sequence():
+    """Test FeatureList must be created from a list"""
+    with pytest.raises(TypeError) as exc_info:
+        FeatureList(123, name="my_feature_list")
+    assert 'type of argument "items" must be a sequence; got int instead' == str(exc_info.value)
 
 
 def test_feature_list_creation__invalid_item():

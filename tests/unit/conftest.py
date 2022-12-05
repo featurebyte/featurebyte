@@ -505,7 +505,7 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
     """
     global_graph = GlobalQueryGraph()
     assert id(global_graph.nodes) == id(grouped_event_view.obj.graph.nodes)
-    feature_group = grouped_event_view.aggregate(
+    feature_group = grouped_event_view.aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
@@ -559,7 +559,7 @@ def agg_per_category_feature_fixture(snowflake_event_view_with_entity):
     Aggregation per category feature fixture
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
-    features = grouped.aggregate(
+    features = grouped.aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
@@ -579,7 +579,7 @@ def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
     Aggregation per category FeatureGroup fixture
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
-    features = grouped.aggregate(
+    features = grouped.aggregate_over(
         method="count",
         windows=["30m", "2h", "1d"],
         feature_job_setting={
@@ -663,7 +663,7 @@ def mock_snowflake_feature(
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
@@ -700,7 +700,7 @@ def mock_snowflake_feature_list_model(
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],

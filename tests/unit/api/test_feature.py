@@ -184,7 +184,7 @@ def test_feature_deserialization(
         10.0 * snowflake_event_view_with_entity["cust_id"]
     )
     grouped = snowflake_event_view_with_entity.groupby("cust_id")
-    feature_group = grouped.aggregate(
+    feature_group = grouped.aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
@@ -520,14 +520,14 @@ def test_composite_features(snowflake_event_data_with_entity):
         "frequency": "30m",
         "time_modulo_frequency": "5m",
     }
-    feature_group_by_cust_id = event_view.groupby("cust_id").aggregate(
+    feature_group_by_cust_id = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
         feature_job_setting=feature_job_setting,
         feature_names=["sum_30m_by_cust_id"],
     )
-    feature_group_by_binary = event_view.groupby("col_binary").aggregate(
+    feature_group_by_binary = event_view.groupby("col_binary").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m"],
