@@ -10,6 +10,7 @@ import pandas as pd
 from featurebyte.common.utils import convert_dataframe_as_json
 from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
@@ -27,6 +28,7 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 
 
@@ -34,6 +36,10 @@ class PreviewService(BaseService):
     """
     PreviewService class
     """
+
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
 
     @property
     def session_manager_service(self) -> SessionManagerService:

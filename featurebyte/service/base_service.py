@@ -6,19 +6,12 @@ from __future__ import annotations
 from typing import Any
 
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
-from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
-from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import OpsServiceMixin
-from featurebyte.service.scd_data import SCDDataService
-from featurebyte.service.semantic import SemanticService
 
 
 class BaseService(OpsServiceMixin):
@@ -29,17 +22,6 @@ class BaseService(OpsServiceMixin):
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
         self.persistent = persistent
-
-    @property
-    def feature_store_service(self) -> FeatureStoreService:
-        """
-        FeatureStoreService object
-
-        Returns
-        -------
-        FeatureStoreService
-        """
-        return FeatureStoreService(user=self.user, persistent=self.persistent)
 
     @property
     def entity_service(self) -> EntityService:
