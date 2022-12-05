@@ -59,7 +59,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
     FROM (
       SELECT
         TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP)) + tile_index * 3600
+          DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600
         ) AS __FB_TILE_START_DATE_COLUMN,
         "cust_id",
         MAX("a") AS value_max_72bdd0d6b670f49458a2a62631b7c2a68c93c7a9
@@ -68,7 +68,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
           *,
           FLOOR(
             (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP))
+              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP))
             ) / 3600
           ) AS tile_index
         FROM (
@@ -86,7 +86,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
             FROM "db"."public"."event_table"
           )
           WHERE
-            "ts" >= CAST('2022-04-18 21:15:00' AS TIMESTAMP)
+            "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
             AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
         )
       )
@@ -106,7 +106,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
     FROM (
       SELECT
         TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP)) + tile_index * 3600
+          DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600
         ) AS __FB_TILE_START_DATE_COLUMN,
         "cust_id",
         SUM("a") AS value_sum_f1c515c70536e382072d63f56b7dfbbddf0fa018
@@ -115,7 +115,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
           *,
           FLOOR(
             (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP))
+              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP))
             ) / 3600
           ) AS tile_index
         FROM (
@@ -133,7 +133,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
             FROM "db"."public"."event_table"
           )
           WHERE
-            "ts" >= CAST('2022-04-18 21:15:00' AS TIMESTAMP)
+            "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
             AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
         )
       )
