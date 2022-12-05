@@ -3,15 +3,17 @@ DefaultVersionModeService class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
@@ -22,16 +24,10 @@ class DefaultVersionModeService(BaseService):
     through FeatureReadinessService.
     """
 
-    @property
-    def feature_readiness_service(self) -> FeatureReadinessService:
-        """
-        FeatureReadinessService object
-
-        Returns
-        -------
-        FeatureReadinessService
-        """
-        return FeatureReadinessService(user=self.user, persistent=self.persistent)
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        self.feature_readiness_service = FeatureReadinessService(user=user, persistent=persistent)
 
     async def update_feature_namespace(
         self,

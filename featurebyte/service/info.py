@@ -32,6 +32,9 @@ from featurebyte.service.base_document import BaseDocumentService, DocumentUpdat
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.semantic import SemanticService
@@ -52,6 +55,9 @@ class InfoService(BaseService):
         self.event_data_service = EventDataService(user=self.user, persistent=self.persistent)
         self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
         self.entity_service = EntityService(user=user, persistent=persistent)
+        self.feature_service = FeatureService(user=user, persistent=persistent)
+        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
 
     @staticmethod
     async def _get_list_object(

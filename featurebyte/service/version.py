@@ -12,6 +12,7 @@ from featurebyte.exception import DocumentError
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
+from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -19,12 +20,21 @@ from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
 class VersionService(BaseService):
     """
     VersionService class is responsible for creating new feature version
     """
+
+    def __init__(self, user: Any, persistent: Persistent):
+        super().__init__(user, persistent)
+        self.feature_service = FeatureService(user=user, persistent=persistent)
+        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
 
     @staticmethod
     def _iterate_groupby_and_event_data_input_node_pairs(
