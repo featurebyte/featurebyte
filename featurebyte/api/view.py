@@ -398,9 +398,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         # Validate whether there are overlapping column names
         if rsuffix == "":
+            left_join_key, _ = self._get_join_keys(other_view, on)
             current_column_names = {col.name for col in self.columns_info}
             for other_col in other_view.columns_info:
-                if other_col.name in current_column_names:
+                # Raise an error if the name is repeated, but it is not a join key
+                if other_col.name in current_column_names and other_col.name != left_join_key:
                     raise RepeatedColumnNamesError
 
         # Validate whether the join column provided is present in the columns
