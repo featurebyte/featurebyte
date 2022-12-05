@@ -13,7 +13,7 @@ from featurebyte.api.agg_func import AggFuncType, construct_agg_func
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
+from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
@@ -220,7 +220,7 @@ class WindowAggregator(BaseAggregator):
         assert method is not None
         agg_method = construct_agg_func(agg_func=method)
 
-        items: List[Union[Feature, BaseFeatureGroup]] = []
+        items = []
         for feature_name in feature_names:
             feature = self._project_feature_from_groupby_node(
                 agg_method=agg_method,

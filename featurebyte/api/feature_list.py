@@ -3,7 +3,7 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union, cast
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Union, cast
 
 import collections
 import time
@@ -68,7 +68,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         Dictionary of feature name to feature object
     """
 
-    items: List[Union[Feature, BaseFeatureGroup]] = Field(exclude=True)
+    items: Sequence[Union[Feature, BaseFeatureGroup]] = Field(exclude=True)
     feature_objects: OrderedDict[str, Feature] = Field(
         exclude=True, default_factory=collections.OrderedDict
     )
@@ -133,7 +133,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         return values
 
     @typechecked
-    def __init__(self, items: List[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
+    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
         super().__init__(items=items, **kwargs)
         # sanity check: make sure we don't make a copy on global query graph
         for item_origin, item in zip(items, self.items):
