@@ -353,7 +353,6 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert current_view.columns_info == [
         col_info_a,
         col_info_b,
-        ColumnInfo(name="colCsuffix", dtype=DBVarType.INT),
     ]
     assert current_view.node_name == "join_1"
     assert current_view.column_lineage_map == {}
@@ -371,9 +370,9 @@ def test_join__left_join(generic_input_node_params, join_type_param):
             "left_input_columns": ["colA", "colB"],
             "left_on": "colA",
             "left_output_columns": ["colA", "colB"],
-            "right_input_columns": ["colC"],
+            "right_input_columns": [],
             "right_on": "colC",
-            "right_output_columns": ["colCsuffix"],
+            "right_output_columns": [],
             "scd_parameters": None,
         },
         "type": "join",
