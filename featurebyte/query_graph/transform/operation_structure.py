@@ -47,6 +47,8 @@ class OperationStructureExtractor(
         operation_structure: OperationStructure,
         operation_structure_map: Dict[str, OperationStructure],
     ) -> OperationStructure:
+        # find the proxy input nodes from the nested graph to create proxy node name to outer node names mapping
+        # (to remap the proxy node name in the nested graph back to outer graph)
         nested_graph = node.parameters.graph
         nested_target_node = nested_graph.get_node_by_name(node.parameters.output_node_name)
         proxy_input_node_name_map = {}
@@ -58,6 +60,8 @@ class OperationStructureExtractor(
                 ref_node_name
             ].all_node_names
 
+        # update node_names of the nested operation structure so that the internal node names (node names only
+        # appears in the nested graph are removed)
         clone_kwargs = {
             "replace_node_name_map": proxy_input_node_name_map,
             "transforms": [node.transform_info],
