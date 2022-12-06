@@ -17,6 +17,7 @@ from featurebyte.api.join_utils import (
     combine_column_info_of_views,
     filter_join_key_from_column,
     filter_join_key_from_column_info,
+    filter_join_key_from_column_lineage_map,
     is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
@@ -481,9 +482,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Construct new column_lineage_map
-        # TODO: update
+        filtered_lineage_map = filter_join_key_from_column_lineage_map(
+            other_view.column_lineage_map
+        )
         updated_column_lineage_map_with_suffix = update_column_lineage_map_with_suffix(
-            other_view.column_lineage_map, rsuffix
+            filtered_lineage_map, rsuffix
         )
         columns = list(updated_column_lineage_map_with_suffix.keys())
         joined_column_lineage_map = join_column_lineage_map(

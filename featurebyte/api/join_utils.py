@@ -185,6 +185,31 @@ def join_column_lineage_map(
     return joined_column_lineage_map
 
 
+def filter_join_key_from_column_lineage_map(
+    lineage_map: Dict[str, Tuple[str, ...]], join_key: str
+) -> Dict[str, Tuple[str, ...]]:
+    """
+    Filters out the join key from the column lineage map.
+
+    Parameters
+    ----------
+    lineage_map: Dict[str, Tuple[str, ...]]
+        lineage map to be filtered
+    join_key: str
+        join key
+
+    Returns
+    -------
+    Dict[str, Tuple[str, ...]]
+        filtered lineage map
+    """
+    if join_key not in lineage_map:
+        return lineage_map
+    copied_map = lineage_map.copy()
+    del copied_map[join_key]
+    return copied_map
+
+
 def update_column_lineage_map_with_suffix(
     lineage_map: Dict[str, Tuple[str, ...]], rsuffix: Optional[str]
 ) -> Dict[str, Tuple[str, ...]]:

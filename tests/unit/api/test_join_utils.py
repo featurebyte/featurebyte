@@ -9,6 +9,7 @@ from featurebyte.api.join_utils import (
     combine_column_info_of_views,
     filter_join_key_from_column,
     filter_join_key_from_column_info,
+    filter_join_key_from_column_lineage_map,
     is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
@@ -136,6 +137,22 @@ def test_join_tabular_data_ids__join():
     data_ids_b = [object_3, object_a, object_9]
     output = join_tabular_data_ids(data_ids_a, data_ids_b)
     assert output == [object_0, object_2, object_3, object_5, object_9, object_a]
+
+
+def test_filter_join_key_from_column_lineage_map():
+    """
+    Test filter_join_key_from_column_lineage_map
+    """
+    col_a = "colA"
+    lineage = {col_a: ("node1", "node2", "node3")}
+    filtered_map = filter_join_key_from_column_lineage_map(lineage, "")
+    assert filtered_map == lineage
+
+    filtered_map = filter_join_key_from_column_lineage_map(lineage, col_a)
+    assert filtered_map == {}
+
+    filtered_map = filter_join_key_from_column_lineage_map(lineage, "randomCol")
+    assert filtered_map == lineage
 
 
 def test_join_column_lineage_map():
