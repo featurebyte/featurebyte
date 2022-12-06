@@ -191,7 +191,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
         ],
         "filter": False,
         "name": "derived_col1",
-        "node_names": {"add_2", "input_2", "graph_1"},
+        "node_names": {"add_2", "input_2"},  # note that graph_1 is not included here
         "transforms": ["add"],
         "type": "derived",
     }

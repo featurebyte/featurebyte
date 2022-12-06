@@ -261,7 +261,7 @@ def nested_output_graph_fixture(input_node_params):
                     {
                         "filter": False,
                         "name": "col_int",
-                        "node_names": {"input_1"},
+                        "node_names": {"input_1", "graph_1"},
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",

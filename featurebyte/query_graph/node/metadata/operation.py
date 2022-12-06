@@ -18,7 +18,6 @@ from typing import (
 )
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
-from abc import abstractmethod
 from collections import defaultdict
 
 from bson import json_util
@@ -84,17 +83,26 @@ class BaseColumn(BaseFrozenModel):
         """
         return type(self)(**{**self.dict(), **kwargs})
 
-    @abstractmethod
     def clone_with_replacement(
         self: BaseColumnT, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
     ) -> BaseColumnT:
         """
-        Clone an existing object by replacing node names attributes
+        Clone an existing object by removing internal node names. This method is mainly used in
+        the nested graph pruning to remove those node names appear only in the nested graph. For example,
+        we have the following graph (each square bracket pair represents a node):
+
+            [input] -> [[proxy_input] -> [project] -> [add]] -> [multiply]
+
+        Here, `[[proxy_input] -> [project] -> [add]]` is a graph node and the `[proxy_input]` node is a
+        reference node that points to `input` node. `[proxy_input]`, `[project]` and `[add]` nodes are
+        all internal nodes to the nested graph. After calling this method, the output of this column
+        should not contain any internal node names.
 
         Parameters
         ----------
         replace_node_name_map: Dict[str, Set[str]]
-            Dictionary to replace the node name with the node name set
+            Dictionary to replace the node name with the node name set. The key of this dictionary
+            is the proxy input node name.
         node_name: str
             Node name to replace if there are other node name not specified in replace_node_name_map
         kwargs: Any
@@ -104,6 +112,17 @@ class BaseColumn(BaseFrozenModel):
         -------
         BaseColumnT
         """
+        # find match proxy input node names & replace them with the external node names
+        proxy_input_names = self.node_names.intersection(replace_node_name_map)
+        node_names = set()
+        for name in proxy_input_names:
+            node_names.update(replace_node_name_map[name])
+
+        # if any of the node name are not from the proxy input names, that means the nested graph's node
+        # must change the column in some way, we must include the node name
+        if self.node_names.difference(replace_node_name_map):
+            node_names.add(node_name)
+        return self.clone(node_names=node_names, **kwargs)
 
 
 class BaseDataColumn(BaseColumn):  # pylint: disable=abstract-method
@@ -221,22 +240,15 @@ class BaseDerivedColumn(BaseColumn):
     def clone_with_replacement(
         self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
     ) -> "BaseDerivedColumn":
-        # rename the node name appears in replace_node_name_map
-        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
-        node_names = set()
-        for name in node_names_to_keep:
-            node_names.update(replace_node_name_map[name])
-
-        # if there are other node name(s) that does not exist in replace_node_name_map,
-        # include the node_name value
-        replace_node_names = set().union(*(val for val in replace_node_name_map.values()))
-        if self.node_names.difference(replace_node_names):
-            node_names.add(node_name)
         columns = [
-            col.clone_with_replacement(replace_node_name_map, node_name=node_name)
-            for col in self.columns
+            col.clone_with_replacement(replace_node_name_map, node_name) for col in self.columns
         ]
-        return self.clone(node_names=node_names, columns=columns, **kwargs)
+        return super().clone_with_replacement(
+            replace_node_name_map=replace_node_name_map,
+            node_name=node_name,
+            columns=columns,
+            **kwargs,
+        )
 
 
 class SourceDataColumn(BaseDataColumn):
@@ -251,19 +263,6 @@ class SourceDataColumn(BaseDataColumn):
         col_dict = self.dict()
         col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
-
-    def clone_with_replacement(
-        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
-    ) -> "SourceDataColumn":
-        # rename the node name appears in replace_node_name_map
-        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
-        node_names = set()
-        for name in node_names_to_keep:
-            node_names.update(replace_node_name_map[name])
-        # if no replacement found, it means the column is introduced by node_name
-        if not node_names:
-            node_names.add(node_name)
-        return self.clone(node_names=node_names, **kwargs)
 
 
 class DerivedDataColumn(BaseDerivedColumn):
@@ -305,18 +304,16 @@ class AggregationColumn(BaseDataColumn):
     def clone_with_replacement(
         self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
     ) -> "AggregationColumn":
-        # rename the node name appears in replace_node_name_map
-        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
-        node_names = set()
-        for name in node_names_to_keep:
-            node_names.update(replace_node_name_map[name])
-        node_names.add(node_name)
-
-        # handle column parameter
-        column = self.column
-        if column is not None:
-            column = column.clone_with_replacement(replace_node_name_map, node_name)  # type: ignore
-        return self.clone(node_names=node_names, column=column, **kwargs)
+        return super().clone_with_replacement(
+            replace_node_name_map=replace_node_name_map,
+            node_name=node_name,
+            column=self.column.clone_with_replacement(
+                replace_node_name_map=replace_node_name_map,
+                node_name=node_name,
+                **kwargs,
+            ),
+            **kwargs,
+        )
 
 
 class PostAggregationColumn(BaseDerivedColumn):
