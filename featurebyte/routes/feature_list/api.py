@@ -10,7 +10,7 @@ import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import ORJSONResponse, StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
@@ -222,7 +222,11 @@ async def get_historical_features_sql(
     )
 
 
-@router.post("/{feature_list_id}/online_features", response_model=OnlineFeaturesResponseModel)
+@router.post(
+    "/{feature_list_id}/online_features",
+    response_model=OnlineFeaturesResponseModel,
+    response_class=ORJSONResponse,
+)
 async def get_online_features(
     request: Request,
     feature_list_id: PydanticObjectId,

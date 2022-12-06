@@ -71,12 +71,13 @@ async def test_online_serving_sql(features, snowflake_session, config):
     """
 
     # Trigger tile compute. After get_historical_features, tiles should be already computed for the
-    # provided point in time
+    # provided point in time. -999 is a dummy entity id not seen in the EventData.
     feature_job_time = "2001-01-02 12:00:00"
+    user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
         {
-            "POINT_IN_TIME": pd.to_datetime([feature_job_time] * 10),
-            "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "POINT_IN_TIME": pd.to_datetime([feature_job_time] * len(user_ids)),
+            "user id": user_ids,
         }
     )
     feature_list = FeatureList(features, name="My Online Serving Featurelist")
@@ -94,7 +95,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
     )
 
     # Run online store retrieval sql
-    df_entities = pd.DataFrame({"user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
+    df_entities = pd.DataFrame({"user id": user_ids})
     request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
     feature_clusters = feature_list._get_feature_clusters()
     online_retrieval_sql = get_online_store_retrieval_sql(
@@ -122,7 +123,10 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     feature_list.save()
     feature_list.deploy(make_production_ready=True, enable=True)
     client = config.get_client()
-    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"user id": 5}])
+
+    user_ids = [5, -999]
+    entity_serving_names = [{"user id": user_id} for user_id in user_ids]
+    data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
 
     tic = time.time()
     res = client.post(
@@ -136,5 +140,7 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     print(f"online_features elapsed: {elapsed:.6f}s")
 
     assert df.columns.tolist() == columns
-    df_expected = df_historical[df_historical["user id"] == 5][columns].reset_index(drop=True)
+    df_expected = df_historical[df_historical["user id"].isin(user_ids)][columns].reset_index(
+        drop=True
+    )
     pd.testing.assert_frame_equal(df_expected, df, check_dtype=False)

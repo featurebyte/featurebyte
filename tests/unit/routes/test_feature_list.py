@@ -6,6 +6,7 @@ from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
@@ -617,3 +618,40 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         # Check error
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"][0]["msg"] == expected_msg
+
+    @pytest.mark.parametrize(
+        "missing_value",
+        [np.nan, float("nan"), float("inf")],
+    )
+    def test_get_online_features__nan(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+        missing_value,
+    ):
+        """Test feature list get_online_features"""
+        test_api_client, _ = test_api_client_persistent
+
+        async def mock_execute_query(query):
+            _ = query
+            return pd.DataFrame([{"cust_id": 1, "feature_value": missing_value}])
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query = mock_execute_query
+
+        # Deploy feature list
+        feature_list_doc = create_success_response.json()
+        self._make_production_ready_and_deploy(test_api_client, feature_list_doc)
+
+        # Request online features
+        feature_list_id = feature_list_doc["_id"]
+        data = {"entity_serving_names": [{"cust_id": 1}]}
+        response = test_api_client.post(
+            f"{self.base_route}/{feature_list_id}/online_features",
+            data=json.dumps(data),
+        )
+        assert response.status_code == HTTPStatus.OK, response.content
+
+        # Check result
+        assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": None}]}
