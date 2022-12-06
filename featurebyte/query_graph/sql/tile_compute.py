@@ -36,7 +36,7 @@ class OnDemandTileComputePlan:
     def __init__(self, point_in_time: str, source_type: SourceType):
         self.point_in_time = point_in_time
         self.processed_agg_ids: set[str] = set()
-        self.max_window_size_by_agg_id: dict[str, int] = {}
+        self.max_window_size_by_tile_id: dict[str, int] = {}
         self.tile_infos: list[TileGenSql] = []
         self.source_type = source_type
 
@@ -86,7 +86,7 @@ class OnDemandTileComputePlan:
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
                 blind_spot=tile_info.blind_spot,
-                window=self.get_max_window_size(tile_info.aggregation_id),
+                window=self.get_max_window_size(tile_info.tile_table_id),
             )
             # Include global tile index that would have been computed by F_TIMESTAMP_TO_INDEX UDF
             # during scheduled tile jobs
@@ -148,28 +148,28 @@ class OnDemandTileComputePlan:
         tile_info : TileGenSql
             Tile table information
         """
-        agg_id = tile_info.aggregation_id
+        tile_id = tile_info.tile_table_id
         max_window = max(int(pd.Timedelta(x).total_seconds()) for x in tile_info.windows)
         assert max_window % tile_info.frequency == 0
         if (
-            agg_id not in self.max_window_size_by_agg_id
-            or max_window > self.max_window_size_by_agg_id[agg_id]
+            tile_id not in self.max_window_size_by_tile_id
+            or max_window > self.max_window_size_by_tile_id[tile_id]
         ):
-            self.max_window_size_by_agg_id[agg_id] = max_window
+            self.max_window_size_by_tile_id[tile_id] = max_window
 
-    def get_max_window_size(self, aggregation_id: str) -> int:
-        """Get the maximum feature window size for a given aggregation_id
+    def get_max_window_size(self, tile_id: str) -> int:
+        """Get the maximum feature window size for a given tile table id
 
         Parameters
         ----------
-        aggregation_id : str
-            Aggregation identifier
+        tile_id : str
+            Tile table identifier
 
         Returns
         -------
         int
         """
-        return self.max_window_size_by_agg_id[aggregation_id]
+        return self.max_window_size_by_tile_id[tile_id]
 
     def construct_on_demand_tile_ctes(self) -> list[tuple[str, Select]]:
         """Construct the CTE statements that would compute all the required tiles

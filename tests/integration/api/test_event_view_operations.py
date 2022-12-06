@@ -398,7 +398,7 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
         "user id": 1,
         "COUNT_2h": 2,
         "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
-        "NUM_PURCHASE_7d": 4,
+        "NUM_PURCHASE_7d": 6,
         "iet_entropy_24h": 0.6971221346393941,
         "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
         "amount_sum_24h": expected_amount_sum_24h,
