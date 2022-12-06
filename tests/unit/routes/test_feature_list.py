@@ -6,6 +6,7 @@ from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
@@ -618,18 +619,23 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"][0]["msg"] == expected_msg
 
+    @pytest.mark.parametrize(
+        "missing_value",
+        [np.nan, float("nan"), float("inf")],
+    )
     def test_get_online_features__nan(
         self,
         test_api_client_persistent,
         create_success_response,
         mock_get_session,
+        missing_value,
     ):
         """Test feature list get_online_features"""
         test_api_client, _ = test_api_client_persistent
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame([{"cust_id": 1, "feature_value": float("nan")}])
+            return pd.DataFrame([{"cust_id": 1, "feature_value": missing_value}])
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query = mock_execute_query
