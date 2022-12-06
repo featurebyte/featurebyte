@@ -347,7 +347,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert other_view.tabular_data_ids == []
 
     # do the join
-    current_view.join(other_view, on="join_col", how=join_type_param, rsuffix="suffix")
+    current_view.join(other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix")
 
     # assert updated view params
     assert current_view.columns_info == [
@@ -369,7 +369,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         "parameters": {
             "join_type": join_type_param,
             "left_input_columns": ["colA", "colB"],
-            "left_on": "join_col",
+            "left_on": "colA",
             "left_output_columns": ["colA", "colB"],
             "right_input_columns": ["colC"],
             "right_on": "colC",
@@ -384,7 +384,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     ]
 
 
-def test_validate_join():
+def test_validate_join__no_overlapping_columns():
     """
     Test validate join helper method
     """
@@ -393,19 +393,86 @@ def test_validate_join():
         ColumnInfo(name="colB", dtype=DBVarType.INT),
         ColumnInfo(name="colC", dtype=DBVarType.INT),
     )
-    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b])
-    view_with_overlap = SimpleTestView(columns_info=[col_info_b, col_info_c])
-    view_without_overlap = SimpleTestView(columns_info=[col_info_c])
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_b.name)
+    view_without_overlap = SimpleTestView(columns_info=[col_info_c], join_col=col_info_c.name)
 
-    # no overlap should have no error without suffix and no overlap
-    base_view._validate_join(view_without_overlap)
+    # joining two views with no overlapping columns should have an error
+    with pytest.raises(NoJoinKeyFoundError):
+        base_view._validate_join(view_without_overlap)
 
-    # no overlap should have no error with suffix and no overlap
+    # no overlap should have no error with suffix, since we'll use primary keys to join
     base_view._validate_join(view_without_overlap, rsuffix="suffix")
 
-    # no overlap should have error without suffix and overlap
-    with pytest.raises(RepeatedColumnNamesError):
-        base_view._validate_join(view_with_overlap)
+
+def test_validate_join__one_overlapping_column():
+    """
+    Test validate join helper method
+    """
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_b.name)
+    view_with_overlap = SimpleTestView(
+        columns_info=[col_info_b, col_info_c], join_col=col_info_b.name
+    )
+    view_with_overlap_not_join_key = SimpleTestView(
+        columns_info=[col_info_a, col_info_c], join_col=col_info_c.name
+    )
+
+    # overlapping column names here should have error since the overlapping name is not the join key
+    with pytest.raises(NoJoinKeyFoundError):
+        base_view._validate_join(view_with_overlap_not_join_key)
+
+    # overlapping column names here should have no error since the overlapping names are the join keys
+    base_view._validate_join(view_with_overlap)
 
     # no overlap should have no error with suffix and overlap
     base_view._validate_join(view_with_overlap, rsuffix="suffix")
+
+
+def test_validate_join__multiple_overlapping_columns():
+    """
+    Test validate join helper method
+    """
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_b.name)
+    view_with_multiple_overlapping = SimpleTestView(
+        columns_info=[col_info_a, col_info_b, col_info_c], join_col=col_info_b.name
+    )
+
+    # multiple overlapping column names should throw an error if no suffix is provided
+    with pytest.raises(RepeatedColumnNamesError):
+        base_view._validate_join(view_with_multiple_overlapping)
+
+    # multiple overlapping column names should not throw an error if suffix is provided
+    base_view._validate_join(view_with_multiple_overlapping, rsuffix="suffix")
+
+
+def test_validate_join__check_on_column():
+    """
+    Test validate join method for on column.
+    """
+    col_info_a, col_info_b, col_info_c = (
+        ColumnInfo(name="colA", dtype=DBVarType.INT),
+        ColumnInfo(name="colB", dtype=DBVarType.INT),
+        ColumnInfo(name="colC", dtype=DBVarType.INT),
+    )
+    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_a.name)
+    other_view = SimpleTestView(columns_info=[col_info_c], join_col=col_info_c.name)
+
+    # no `on` provided, should have no error in this method. However, this will still throw an error down the line
+    # when we try to get_join_keys since the other join key column is not present in the calling view.
+    base_view._validate_join(other_view, rsuffix="_suffix")
+
+    # `on` provided for column in calling view should have no error
+    base_view._validate_join(other_view, on=col_info_a.name, rsuffix="_suffix")
+
+    # `on` provided for column not in calling view should have an error
+    with pytest.raises(NoJoinKeyFoundError):
+        base_view._validate_join(other_view, on=col_info_c.name, rsuffix="_suffix")

@@ -52,7 +52,7 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
     """
     Test additional join parameters are added for SCDView
     """
-    snowflake_event_view.join(snowflake_scd_view)
+    snowflake_event_view.join(snowflake_scd_view, rsuffix="_scd")
     assert snowflake_event_view.node.parameters.dict() == {
         "left_on": "col_text",
         "right_on": "col_text",
@@ -90,15 +90,15 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "cust_id",
         ],
         "right_output_columns": [
-            "col_int",
-            "col_float",
-            "col_char",
-            "col_text",
-            "col_binary",
-            "col_boolean",
-            "event_timestamp",
-            "created_at",
-            "cust_id",
+            "col_int_scd",
+            "col_float_scd",
+            "col_char_scd",
+            "col_text_scd",
+            "col_binary_scd",
+            "col_boolean_scd",
+            "event_timestamp_scd",
+            "created_at_scd",
+            "cust_id_scd",
         ],
         "join_type": "left",
         "scd_parameters": {
