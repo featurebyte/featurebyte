@@ -372,21 +372,15 @@ class JoinNode(BaseNode):
     ) -> OperationStructure:
         _ = visited_node_types
         params = self.parameters
-        left_col_map = {
-            in_col: out_col
-            for in_col, out_col in zip(params.left_input_columns, params.left_output_columns)
-        }
-        right_col_map = {
-            in_col: out_col
-            for in_col, out_col in zip(params.right_input_columns, params.right_output_columns)
-        }
+        left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
+        right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
         left_columns = [
-            col.clone(name=left_col_map[col.name], node_names=col.node_names.union([self.name]))
+            col.clone(name=left_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
             for col in inputs[0].columns
             if col.name in left_col_map
         ]
         right_columns = [
-            col.clone(name=right_col_map[col.name], node_names=col.node_names.union([self.name]))
+            col.clone(name=right_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
             for col in inputs[1].columns
             if col.name in right_col_map
         ]
