@@ -79,6 +79,25 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
     return [f"{col}{rsuffix}" for col in columns]
 
 
+def filter_join_key_from_column_info(col_info: List[ColumnInfo], join_key: str) -> List[ColumnInfo]:
+    """
+    Filters out column info that matches the join key.
+
+    Parameters
+    ----------
+    col_info: List[ColumnInfo]
+        colum info's
+    join_key: str
+        join key
+
+    Returns
+    -------
+    List[ColumnInfo]
+        filtered column info's
+    """
+    return [col_info for col_info in col_info if col_info.name != join_key]
+
+
 def combine_column_info_of_views(
     columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: Optional[Set[str]] = None
 ) -> List[ColumnInfo]:

@@ -8,6 +8,7 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_columns,
     combine_column_info_of_views,
     filter_join_key_from_column,
+    filter_join_key_from_column_info,
     is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
@@ -31,6 +32,25 @@ def test_filter_join_key_from_column():
 
     filtered_columns = filter_join_key_from_column(columns, "")
     assert filtered_columns == columns
+
+
+def test_filter_join_key_from_column_info():
+    """
+    Test filter_join_key_from_column_info
+    """
+    column_infos = [
+        get_column_info("colA"),
+        get_column_info("colB"),
+        get_column_info("colC"),
+    ]
+    filtered_columns = filter_join_key_from_column_info(column_infos, "randomCol")
+    assert filtered_columns == column_infos
+
+    filtered_columns = filter_join_key_from_column_info(column_infos, "colA")
+    assert filtered_columns == [get_column_info("colB"), get_column_info("colC")]
+
+    filtered_columns = filter_join_key_from_column_info(column_infos, "")
+    assert filtered_columns == column_infos
 
 
 def test_append_rsuffix_to_column_info():
