@@ -105,10 +105,11 @@ class GraphPruningExtractor(
     ) -> GraphPruningOutput:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         operation_structure = op_struct_info.operation_structure_map[node.name]
+        temp_node_name = "temp"
         if target_columns:
             # subset the operation structure info by keeping only selected columns (using project node)
             temp_node = ProjectNode(
-                name="temp",
+                name=temp_node_name,
                 parameters={"columns": target_columns},
                 output_type=NodeOutputType.FRAME,
             )
@@ -118,7 +119,9 @@ class GraphPruningExtractor(
                 global_state=OperationStructureInfo(),
             )
 
-        global_state = GraphPruningGlobalState(node_names=operation_structure.all_node_names)
+        global_state = GraphPruningGlobalState(
+            node_names=operation_structure.all_node_names.difference([temp_node_name])
+        )
         branch_state = GraphPruningBranchState()
         self._extract(
             node=node,

@@ -441,6 +441,6 @@ class OperationStructureBranchState(BaseModel):
 
 
 class OperationStructureInfo(BaseModel):
-    """OperationStructureGlobalState class"""
+    """OperationStructureInfo class"""
 
     operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
