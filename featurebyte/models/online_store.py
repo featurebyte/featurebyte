@@ -3,25 +3,17 @@ This module contains Tile related models
 """
 from typing import List, cast
 
-from pydantic.fields import Field
-
-from featurebyte.enum import OrderedStrEnum, TableDataType
+from featurebyte.enum import TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.online_serving import (
     get_entities_ids_and_serving_names,
     get_online_store_feature_compute_sql,
     get_online_store_table_name_from_graph,
 )
-
-
-class FeatureValueType(OrderedStrEnum):
-    """Feature Value Type"""
-
-    FLOAT = "FLOAT"
-    VARCHAR = "VARCHAR"
 
 
 class OnlineFeatureSpec(FeatureByteBaseModel):
@@ -41,15 +33,27 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    value_type: FeatureValueType = Field(default=FeatureValueType.FLOAT)
+
+    @property
+    def value_type(self) -> str:
+        """
+        Feature value's data type (e.g. VARCHAR)
+
+        Returns
+        -------
+        str
+        """
+        adapter = get_sql_adapter(self.feature.feature_store_type)
+        return adapter.get_physical_type_from_dtype(self.feature.dtype)
 
     @property
     def tile_ids(self) -> List[str]:
         """
-        derived tile_ids property from tile_specs
+        Derived tile_ids property from tile_specs
 
         Returns
         -------
+        List[str]
             derived tile_ids
         """
         tile_ids_set = set()

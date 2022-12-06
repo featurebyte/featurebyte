@@ -29,7 +29,16 @@ def features_fixture(event_data):
         windows=["2h", "24h"],
         feature_names=["AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
     )
-    features = [feature_group["AMOUNT_SUM_2h"], feature_group["AMOUNT_SUM_24h"]]
+    feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
+        method="count",
+        windows=["24h"],
+        feature_names=["EVENT_COUNT_BY_ACTION_24h"],
+    )
+    features = [
+        feature_group["AMOUNT_SUM_2h"],
+        feature_group["AMOUNT_SUM_24h"],
+        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+    ]
     for feature in features:
         feature.save()
     return features
@@ -93,6 +102,12 @@ async def test_online_serving_sql(features, snowflake_session, config):
         feature_job_time,
         ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
     )
+    await update_online_store(
+        snowflake_session,
+        features[2],
+        feature_job_time,
+        ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"],
+    )
 
     # Run online store retrieval sql
     df_entities = pd.DataFrame({"user id": user_ids})
@@ -108,7 +123,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
     online_features = await snowflake_session.execute_query(online_retrieval_sql)
 
     # Check result is expected
-    columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"]
+    columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"]
     assert online_features.columns.tolist() == columns
     pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
 
