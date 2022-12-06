@@ -116,6 +116,45 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
     }
     assert graph_node.parameters.output_node_name == "add_1"
 
+    # insert graph node into the graph & check operation structure output
+    inserted_graph_node = graph.add_graph_node(
+        graph_node=graph_node, input_nodes=[proj_int_node, proj_float_node]
+    )
+    operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
+    # internal node names should not be included (node_names: add_1)
+    assert operation_structure.dict() == {
+        "aggregations": [],
+        "columns": [
+            {
+                "columns": [
+                    {
+                        "filter": False,
+                        "name": "col_int",
+                        "node_names": {"project_1", "input_1"},
+                        "tabular_data_id": None,
+                        "tabular_data_type": "generic",
+                        "type": "source",
+                    },
+                    {
+                        "filter": False,
+                        "name": "col_float",
+                        "node_names": {"input_1", "project_2"},
+                        "tabular_data_id": None,
+                        "tabular_data_type": "generic",
+                        "type": "source",
+                    },
+                ],
+                "filter": False,
+                "name": None,
+                "node_names": {"project_1", "graph_1", "input_1", "project_2"},
+                "transforms": ["graph"],
+                "type": "derived",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
+
 
 @pytest.fixture(name="nested_input_graph")
 def nested_input_graph_fixture(input_node_params):
@@ -139,13 +178,40 @@ def nested_input_graph_fixture(input_node_params):
     )
     assert graph_node.output_node == project_node
     inserted_graph_node = graph.add_graph_node(graph_node=graph_node, input_nodes=[])
-    graph.add_operation(
+    add_node = graph.add_operation(
         node_type=NodeType.ADD,
         node_params={"value": 10},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[inserted_graph_node],
     )
     assert graph.edges == [{"source": "graph_1", "target": "add_1"}]
+
+    # internal node names should not be included (node_names: input_1, project_1)
+    operation_structure = graph.extract_operation_structure(node=add_node)
+    assert operation_structure.dict() == {
+        "aggregations": [],
+        "columns": [
+            {
+                "columns": [
+                    {
+                        "filter": False,
+                        "name": "col_int",
+                        "node_names": {"graph_1"},
+                        "tabular_data_id": None,
+                        "tabular_data_type": "generic",
+                        "type": "source",
+                    }
+                ],
+                "filter": False,
+                "name": None,
+                "node_names": {"add_1", "graph_1"},
+                "transforms": ["add(value=10)"],
+                "type": "derived",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
     return graph
 
 
@@ -174,8 +240,35 @@ def nested_output_graph_fixture(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node.output_node],  # graph_node.output_node: nested project node
     )
-    graph.add_graph_node(graph_node=graph_node, input_nodes=[input_node])
+    inserted_graph_node = graph.add_graph_node(graph_node=graph_node, input_nodes=[input_node])
     assert graph.edges == [{"source": "input_1", "target": "graph_1"}]
+
+    # internal node names should not be included (node_names: project_1, add_1)
+    operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
+    assert operation_structure.dict() == {
+        "aggregations": [],
+        "columns": [
+            {
+                "columns": [
+                    {
+                        "filter": False,
+                        "name": "col_int",
+                        "node_names": {"input_1"},
+                        "tabular_data_id": None,
+                        "tabular_data_type": "generic",
+                        "type": "source",
+                    }
+                ],
+                "filter": False,
+                "name": None,
+                "node_names": {"graph_1", "input_1"},
+                "transforms": ["graph"],
+                "type": "derived",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
     return graph
 
 
@@ -218,7 +311,7 @@ def deep_nested_graph_fixture(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node.output_node],  # graph_node.output_node: nested project node
     )
-    graph.add_graph_node(graph_node, input_nodes=[])
+    inserted_graph_node = graph.add_graph_node(graph_node, input_nodes=[])
     assert graph.edges == []
     inserted_inner_graph = graph.nodes[0].parameters.graph
     inserted_deeper_graph = inserted_inner_graph.nodes[0].parameters.graph
@@ -226,6 +319,33 @@ def deep_nested_graph_fixture(input_node_params):
     assert inserted_inner_graph.edges == [{"source": "graph_1", "target": "add_1"}]
     assert inserted_deeper_graph.edges == [{"source": "graph_1", "target": "project_1"}]
     assert inserted_deepest_graph.edges == []
+
+    # internal node names should not be included (node_names: project_1, add_1)
+    operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
+    assert operation_structure == {
+        "aggregations": [],
+        "columns": [
+            {
+                "columns": [
+                    {
+                        "filter": False,
+                        "name": "col_int",
+                        "node_names": {"graph_1"},
+                        "tabular_data_id": None,
+                        "tabular_data_type": "generic",
+                        "type": "source",
+                    }
+                ],
+                "filter": False,
+                "name": None,
+                "node_names": {"graph_1"},
+                "transforms": ["graph"],
+                "type": "derived",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
     return graph
 
 

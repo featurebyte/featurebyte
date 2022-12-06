@@ -10,6 +10,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
 )
+from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 
 
@@ -40,20 +41,65 @@ class OperationStructureExtractor(
             visited_node_types=branch_state.visited_node_types.union([node.type])
         )
 
-    def _derive_nested_graph_operation_structure(
-        self, node: Node, input_operation_structures: List[OperationStructure]
+    @staticmethod
+    def _prepare_operation_structure(
+        node: BaseGraphNode,
+        operation_structure: OperationStructure,
+        operation_structure_map: Dict[str, OperationStructure],
     ) -> OperationStructure:
+        nested_graph = node.parameters.graph
+        nested_target_node = nested_graph.get_node_by_name(node.parameters.output_node_name)
+        proxy_input_node_name_map = {}
+        for proxy_input_node in nested_graph.iterate_nodes(
+            target_node=nested_target_node, node_type=NodeType.PROXY_INPUT
+        ):
+            ref_node_name = proxy_input_node.parameters.node_name
+            proxy_input_node_name_map[proxy_input_node.name] = operation_structure_map[
+                ref_node_name
+            ].all_node_names
+
+        clone_kwargs = {
+            "replace_node_name_map": proxy_input_node_name_map,
+            "transforms": [node.transform_info],
+            "node_name": node.name,
+        }
+        return OperationStructure(
+            columns=[
+                col.clone_with_replacement(**clone_kwargs)  # type: ignore
+                for col in operation_structure.columns
+            ],
+            aggregations=[
+                agg.clone_with_replacement(**clone_kwargs)  # type: ignore
+                for agg in operation_structure.aggregations
+            ],
+            output_type=operation_structure.output_type,
+            output_category=operation_structure.output_category,
+        )
+
+    def _derive_nested_graph_operation_structure(
+        self, node: BaseGraphNode, input_operation_structures: List[OperationStructure]
+    ) -> OperationStructure:
+        # extract operation_structure of the nested graph
         node_params = node.parameters
-        nested_graph = node_params.graph  # type: ignore
-        nested_output_node_name = node_params.output_node_name  # type: ignore
+        nested_graph = node_params.graph
+        nested_output_node_name = node_params.output_node_name
         nested_output_node = nested_graph.get_node_by_name(nested_output_node_name)
+        # operation structure map contains inputs to the graph node
+        # so that proxy input node can refer to them
         input_node_names = self.graph.get_input_node_names(node=node)
         operation_structure_map = dict(zip(input_node_names, input_operation_structures))
-        op_structure_info = OperationStructureExtractor(graph=nested_graph).extract(
+        nested_op_structure_info = OperationStructureExtractor(graph=nested_graph).extract(
             node=nested_output_node,
             operation_structure_map=operation_structure_map,
         )
-        return op_structure_info.operation_structure_map[nested_output_node_name]
+        nested_operation_structure = nested_op_structure_info.operation_structure_map[
+            nested_output_node_name
+        ]
+        return self._prepare_operation_structure(
+            node=node,
+            operation_structure=nested_operation_structure,
+            operation_structure_map=operation_structure_map,
+        )
 
     def _post_compute(
         self,
@@ -63,7 +109,7 @@ class OperationStructureExtractor(
         inputs: List[OperationStructure],
         skip_post: bool,
     ) -> OperationStructure:
-        if node.type == NodeType.GRAPH:
+        if isinstance(node, BaseGraphNode):
             operation_structure = self._derive_nested_graph_operation_structure(
                 node=node,
                 input_operation_structures=inputs,
