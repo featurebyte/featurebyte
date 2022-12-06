@@ -131,9 +131,7 @@ class BaseNode(BaseModel):
         operation_info = self._derive_node_operation_info(
             inputs=inputs, branch_state=branch_state, global_state=global_state
         )
-        if self.type != NodeType.PROXY_INPUT and (
-            operation_info.columns or operation_info.aggregations
-        ):
+        if operation_info.columns or operation_info.aggregations:
             # make sure node name should be included in the node operation info
             assert self.name in operation_info.all_node_names
         return operation_info
