@@ -476,14 +476,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Construct new columns_info
-        filtered_column_infos = filter_join_key_from_column_info(other_view.columns_info)
+        filtered_column_infos = filter_join_key_from_column_info(other_view.columns_info, right_on)
         joined_columns_info = combine_column_info_of_views(
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
         # Construct new column_lineage_map
         filtered_lineage_map = filter_join_key_from_column_lineage_map(
-            other_view.column_lineage_map
+            other_view.column_lineage_map, right_on
         )
         updated_column_lineage_map_with_suffix = update_column_lineage_map_with_suffix(
             filtered_lineage_map, rsuffix
