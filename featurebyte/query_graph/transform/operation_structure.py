@@ -37,6 +37,7 @@ class OperationStructureExtractor(
         node: Node,
         input_node: Node,
     ) -> OperationStructureBranchState:
+        global_state.edges_map[input_node.name].add(node.name)
         return OperationStructureBranchState(
             visited_node_types=branch_state.visited_node_types.union([node.type])
         )

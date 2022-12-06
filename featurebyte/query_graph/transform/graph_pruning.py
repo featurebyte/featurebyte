@@ -1,9 +1,11 @@
 """
 This module contains graph pruning related classes.
 """
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple
 
-from pydantic import BaseModel, Field
+from collections import defaultdict
+
+from pydantic import BaseModel, Field, validator
 
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model import QueryGraphModel
@@ -27,11 +29,19 @@ class GraphPruningBranchState(BaseModel):
 class GraphPruningGlobalState(BaseModel):
     """ "GraphPruningGlobalState class"""
 
+    # variables to store some internal pruning info
+    processed_node_names: Set[str] = Field(default_factory=set)
     node_names: Set[str]
+    edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
 
+    # variables for extractor output
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: NodeNameMap = Field(default_factory=dict)
-    processed_node_names: Set[str] = Field(default_factory=set)
+
+    @validator("edges_map")
+    @classmethod
+    def _construct_defaultdict(cls, value: Dict[str, Any]) -> DefaultDict[str, Set[str]]:
+        return defaultdict(set, value)
 
 
 class GraphPruningExtractor(
@@ -88,10 +98,12 @@ class GraphPruningExtractor(
             mapped_input_node_name = global_state.node_name_map[input_node_name]
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
-        # add the node back to the prune
+        # add the node back to the pruned graph
+        target_node_names = global_state.edges_map[node.name]
+        target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         node_pruned = global_state.graph.add_operation(
             node_type=node.type,
-            node_params=node.parameters.dict(),
+            node_params=node.prune(target_nodes=target_nodes).parameters.dict(),
             node_output_type=node.output_type,
             input_nodes=mapped_input_nodes,
         )
@@ -120,7 +132,8 @@ class GraphPruningExtractor(
             )
 
         global_state = GraphPruningGlobalState(
-            node_names=operation_structure.all_node_names.difference([temp_node_name])
+            node_names=operation_structure.all_node_names.difference([temp_node_name]),
+            edges_map=op_struct_info.edges_map,
         )
         branch_state = GraphPruningBranchState()
         self._extract(

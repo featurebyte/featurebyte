@@ -164,7 +164,6 @@ def test_feature_deserialization(
     Test feature deserialization
     """
     global_graph = GlobalQueryGraph()
-    global_graph_dict = global_graph.dict()
     float_feature_dict["_id"] = float_feature_dict.pop("id")
     float_feature_dict["feature_store"] = snowflake_feature_store
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
@@ -172,9 +171,6 @@ def test_feature_deserialization(
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
     assert deserialized_float_feature.dtype == float_feature.dtype
-    assert deserialized_float_feature.node == float_feature.node
-    assert deserialized_float_feature.graph.dict() == global_graph_dict
-    assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
     assert deserialized_float_feature.graph == global_graph
     assert id(deserialized_float_feature.graph.nodes) == id(global_graph.nodes)

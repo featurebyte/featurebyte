@@ -3,6 +3,7 @@ This module contains models used to store node output operation info
 """
 from typing import (
     Any,
+    DefaultDict,
     Dict,
     List,
     Literal,
@@ -15,9 +16,10 @@ from typing import (
     Union,
     overload,
 )
-from typing_extensions import Annotated
+from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from abc import abstractmethod
+from collections import defaultdict
 
 from bson import json_util
 from pydantic import BaseModel, Field, root_validator, validator
@@ -444,3 +446,9 @@ class OperationStructureInfo(BaseModel):
     """OperationStructureInfo class"""
 
     operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
+    edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
+
+    @validator("edges_map")
+    @classmethod
+    def _construct_defaultdict(cls, value: Dict[str, Any]) -> DefaultDict[str, Set[str]]:
+        return defaultdict(set, value)

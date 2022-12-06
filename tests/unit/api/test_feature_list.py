@@ -600,7 +600,7 @@ def test_get_historical_feature_sql(saved_feature_list):
         {"POINT_IN_TIME": point_in_time, "cust_id": [1234] * len(point_in_time)}
     )
     sql = saved_feature_list.get_historical_features_sql(training_events=training_events)
-    assert 'WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS' in sql
+    assert 'WITH "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS' in sql
 
 
 def test_feature_list__feature_list_saving_in_bad_state(
