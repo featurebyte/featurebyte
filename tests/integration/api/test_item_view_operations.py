@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-from pandas._testing import assert_frame_equal
 from pandas.testing import assert_series_equal
 
 from featurebyte.api.dimension_view import DimensionView
