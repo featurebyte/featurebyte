@@ -95,7 +95,7 @@ async def test_online_features_with_nans(
     entity_serving_names,
 ):
     """
-    Test getting online features request for a valid feature list
+    Test getting online features when feature value is nan
     """
 
     async def mock_execute_query(query):
