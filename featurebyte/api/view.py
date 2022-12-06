@@ -419,7 +419,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         self.validate_join(other_view)
 
     @typechecked
-    def join(
+    def join(  # pylint: disable=too-many-locals
         self,
         other_view: View,
         on: Optional[str] = None,  # pylint: disable=invalid-name
