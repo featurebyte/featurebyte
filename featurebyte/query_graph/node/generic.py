@@ -322,6 +322,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         keys: List[InColumnStr]
         parent: Optional[InColumnStr]
         agg_func: AggFunc
+        value_by: Optional[InColumnStr]
         names: List[str]
         serving_names: List[str]
         entity_ids: Optional[List[PydanticObjectId]]
