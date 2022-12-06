@@ -3,7 +3,9 @@ This module contains Tile related models
 """
 from typing import List, cast
 
-from featurebyte.enum import TableDataType
+from pydantic.fields import Field
+
+from featurebyte.enum import OrderedStrEnum, TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
@@ -13,6 +15,14 @@ from featurebyte.query_graph.sql.online_serving import (
     get_online_store_feature_compute_sql,
     get_online_store_table_name_from_graph,
 )
+
+
+class FeatureValueType(OrderedStrEnum):
+    """Feature Value Type"""
+
+    FLOAT = "FLOAT"
+    VARCHAR = "VARCHAR"
+    DATE = "DATE"
 
 
 class OnlineFeatureSpec(FeatureByteBaseModel):
@@ -32,6 +42,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
+    value_type: FeatureValueType = Field(default=FeatureValueType.FLOAT)
 
     @property
     def tile_ids(self) -> List[str]:
