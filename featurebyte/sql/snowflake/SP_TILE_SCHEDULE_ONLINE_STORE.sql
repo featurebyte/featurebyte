@@ -43,7 +43,10 @@ $$
         if (table_exist === "N") {
 
             //feature store table does not exist, create table with the input feature sql
-            var create_sql = `create table ${fs_table} as ${f_sql}`
+            columns = f_entity_columns.split(",")
+            columns.push(`"${f_name}"`)
+            columns_str = columns.join(", ")
+            var create_sql = `create table ${fs_table} as (select ${columns_str} from (${f_sql}))`
             snowflake.execute({sqlText: create_sql})
             debug = debug + " - create_sql: " + create_sql
 

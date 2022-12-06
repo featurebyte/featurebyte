@@ -35,7 +35,12 @@ def features_fixture(event_data):
     return features
 
 
-async def update_online_store(session, feature, feature_job_time_ts):
+async def update_online_store(
+    session,
+    feature,
+    feature_job_time_ts,
+    expected_columns_after_update,
+):
     """
     Trigger the SP_TILE_SCHEDULE_ONLINE_STORE with a fixed feature job time
     """
@@ -51,6 +56,12 @@ async def update_online_store(session, feature, feature_job_time_ts):
     tile_id = online_feature_spec.tile_ids[0].upper()
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{feature_job_time_ts}')"
     await session.execute_query(sql)
+
+    # Check that online store table excludes the point in time column
+    df_online_store = await session.execute_query(
+        f"SELECT * FROM {online_feature_spec.feature_store_table_name}"
+    )
+    assert df_online_store.columns.tolist() == expected_columns_after_update
 
 
 @pytest.mark.asyncio
@@ -72,8 +83,15 @@ async def test_online_serving_sql(features, snowflake_session, config):
     df_historical = feature_list.get_historical_features(df_training_events)
 
     # Trigger SP_TILE_SCHEDULE_ONLINE_STORE to compute features and update online store
-    await update_online_store(snowflake_session, features[0], feature_job_time)
-    await update_online_store(snowflake_session, features[1], feature_job_time)
+    await update_online_store(
+        snowflake_session, features[0], feature_job_time, ["user id", "AMOUNT_SUM_2h"]
+    )
+    await update_online_store(
+        snowflake_session,
+        features[1],
+        feature_job_time,
+        ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
+    )
 
     # Run online store retrieval sql
     df_entities = pd.DataFrame({"user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]})
