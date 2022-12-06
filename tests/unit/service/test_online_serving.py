@@ -4,6 +4,7 @@ Tests for OnlineServingService
 import textwrap
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -85,3 +86,34 @@ async def test_feature_list_deployed(
             """
         ).strip()
     )
+
+
+@pytest.mark.asyncio
+async def test_online_features_with_nans(
+    online_serving_service,
+    deployed_feature_list,
+    entity_serving_names,
+):
+    """
+    Test getting online features request for a valid feature list
+    """
+
+    async def mock_execute_query(query):
+        _ = query
+        return pd.DataFrame({"cust_id": [1], "feature_value": [np.nan]})
+
+    mock_session = Mock(
+        name="mock_session_for_online_serving", execute_query=Mock(side_effect=mock_execute_query)
+    )
+    with patch(
+        "featurebyte.service.online_serving.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        mock_get_feature_store_session.return_value = mock_session
+        result = await online_serving_service.get_online_features_from_feature_list(
+            feature_list=deployed_feature_list,
+            entity_serving_names=entity_serving_names,
+            get_credential=Mock(),
+        )
+
+    # Check result
+    assert result.dict() == {"features": [{"cust_id": 1.0, "feature_value": np.nan}]}
