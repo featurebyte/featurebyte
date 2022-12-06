@@ -499,7 +499,8 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
         "keys": ["event_id_col"],
         "parent": None,
         "agg_func": "count",
-        "names": ["order_size"],
+        "value_by": None,
+        "name": "order_size",
         "serving_names": ["transaction_id"],
         "entity_ids": [transaction_entity.id],
     }
