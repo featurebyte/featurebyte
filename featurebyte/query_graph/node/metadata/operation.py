@@ -304,14 +304,17 @@ class AggregationColumn(BaseDataColumn):
     def clone_with_replacement(
         self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
     ) -> "AggregationColumn":
-        return super().clone_with_replacement(
-            replace_node_name_map=replace_node_name_map,
-            node_name=node_name,
-            column=self.column.clone_with_replacement(
+        column: Optional[ViewDataColumn] = None
+        if self.column is not None:
+            column = self.column.clone_with_replacement(  # type: ignore[assignment]
                 replace_node_name_map=replace_node_name_map,
                 node_name=node_name,
                 **kwargs,
-            ),
+            )
+        return super().clone_with_replacement(
+            replace_node_name_map=replace_node_name_map,
+            node_name=node_name,
+            column=column,
             **kwargs,
         )
 
