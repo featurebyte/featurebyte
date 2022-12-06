@@ -106,23 +106,10 @@ class BaseColumn(BaseFrozenModel):
         """
 
 
-class BaseDataColumn(BaseColumn):
+class BaseDataColumn(BaseColumn):  # pylint: disable=abstract-method
     """BaseDataColumn class"""
 
     name: str
-
-    def clone_with_replacement(
-        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
-    ) -> "BaseDataColumn":
-        # rename the node name appears in replace_node_name_map
-        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
-        node_names = set()
-        for name in node_names_to_keep:
-            node_names.update(replace_node_name_map[name])
-        # if no replacement found, it means the column is introduced by node_name
-        if not node_names:
-            node_names.add(node_name)
-        return self.clone(node_names=node_names, **kwargs)
 
 
 class BaseDerivedColumn(BaseColumn):
@@ -265,6 +252,19 @@ class SourceDataColumn(BaseDataColumn):
         col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
+    def clone_with_replacement(
+        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    ) -> "SourceDataColumn":
+        # rename the node name appears in replace_node_name_map
+        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
+        node_names = set()
+        for name in node_names_to_keep:
+            node_names.update(replace_node_name_map[name])
+        # if no replacement found, it means the column is introduced by node_name
+        if not node_names:
+            node_names.add(node_name)
+        return self.clone(node_names=node_names, **kwargs)
+
 
 class DerivedDataColumn(BaseDerivedColumn):
     """Derived column"""
@@ -301,6 +301,22 @@ class AggregationColumn(BaseDataColumn):
         col_dict = self.dict()
         col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
+
+    def clone_with_replacement(
+        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    ) -> "AggregationColumn":
+        # rename the node name appears in replace_node_name_map
+        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
+        node_names = set()
+        for name in node_names_to_keep:
+            node_names.update(replace_node_name_map[name])
+        node_names.add(node_name)
+
+        # handle column parameter
+        column = self.column
+        if column is not None:
+            column = column.clone_with_replacement(replace_node_name_map, node_name)  # type: ignore
+        return self.clone(node_names=node_names, column=column, **kwargs)
 
 
 class PostAggregationColumn(BaseDerivedColumn):

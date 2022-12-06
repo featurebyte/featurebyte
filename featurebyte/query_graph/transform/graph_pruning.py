@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import AssignNode, ProjectNode
@@ -66,13 +66,23 @@ class GraphPruningExtractor(
 
     @staticmethod
     def _prune_nested_graph(
-        node: BaseGraphNode, operation_structure_map: Dict[str, OperationStructure]
+        node: BaseGraphNode,
+        target_nodes: List[Node],
+        operation_structure_map: Dict[str, OperationStructure],
     ) -> Node:
         nested_graph = node.parameters.graph
         output_node_name = node.parameters.output_node_name
         nested_target_node = nested_graph.get_node_by_name(output_node_name)
+        target_columns: Optional[List[str]] = None
+        if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
+            required_columns = set().union(
+                *(node.get_required_input_columns() for node in target_nodes)
+            )
+            target_columns = list(required_columns)
+
         pruned_graph, node_name_map = GraphPruningExtractor(graph=nested_graph).extract(
             node=nested_target_node,
+            target_columns=target_columns,
             operation_structure_map=operation_structure_map,
         )
         return node.clone(
@@ -108,19 +118,19 @@ class GraphPruningExtractor(
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
         # add the node back to the pruned graph
+        target_node_names = global_state.edges_map[node.name]
+        target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         if isinstance(node, BaseGraphNode):
             operation_structure_map = {
                 node_name: global_state.operation_structure_map[node_name]
                 for node_name in self.graph.get_input_node_names(node=node)
             }
             pruned_node = self._prune_nested_graph(
-                node=node, operation_structure_map=operation_structure_map
+                node=node,
+                target_nodes=target_nodes,
+                operation_structure_map=operation_structure_map,
             )
         else:
-            target_node_names = global_state.edges_map[node.name]
-            target_nodes = [
-                self.graph.get_node_by_name(node_name) for node_name in target_node_names
-            ]
             pruned_node = node.prune(target_nodes=target_nodes)
 
         node_pruned = global_state.graph.add_operation(
@@ -153,6 +163,7 @@ class GraphPruningExtractor(
                 parameters={"columns": target_columns},
                 output_type=NodeOutputType.FRAME,
             )
+            node = node.prune([temp_node])
             operation_structure = temp_node.derive_node_operation_info(
                 inputs=[operation_structure],
                 branch_state=OperationStructureBranchState(),
