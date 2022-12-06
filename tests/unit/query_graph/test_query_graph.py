@@ -264,25 +264,6 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
 
-def test_query_graph__add_groupby_operation__error(groupby_node_params):
-    """Test add_groupby_operation method (value error)"""
-    query_graph = QueryGraph()
-    input_node = query_graph.add_operation(
-        node_type=NodeType.PROXY_INPUT,
-        node_params={"node_name": "random"},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    with pytest.raises(ValueError) as exc:
-        GraphReconstructor.add_pruning_sensitive_operation(
-            graph=query_graph,
-            node_cls=GroupbyNode,
-            node_params=groupby_node_params,
-            input_node=input_node,
-        )
-    assert "Failed to add groupby operation." in str(exc)
-
-
 def test_query_graph__representation():
     """Test the graph can be represented properly without throwing exceptions"""
     graph = QueryGraph()

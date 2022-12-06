@@ -9,6 +9,10 @@ from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import AssignNode, ProjectNode
+from featurebyte.query_graph.node.metadata.operation import (
+    OperationStructureBranchState,
+    OperationStructureInfo,
+)
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -99,20 +103,25 @@ class GraphPruningExtractor(
     def extract(
         self, node: Node, target_columns: Optional[List[str]] = None, **kwargs: Any
     ) -> GraphPruningOutput:
-        operation_structure = OperationStructureExtractor(graph=self.graph).extract(node=node)
+        op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
+        operation_structure = op_struct_info.operation_structure_map[node.name]
+        temp_node_name = "temp"
         if target_columns:
             # subset the operation structure info by keeping only selected columns (using project node)
             temp_node = ProjectNode(
-                name="temp",
+                name=temp_node_name,
                 parameters={"columns": target_columns},
                 output_type=NodeOutputType.FRAME,
             )
             operation_structure = temp_node.derive_node_operation_info(
                 inputs=[operation_structure],
-                visited_node_types=set(),
+                branch_state=OperationStructureBranchState(),
+                global_state=OperationStructureInfo(),
             )
 
-        global_state = GraphPruningGlobalState(node_names=operation_structure.all_node_names)
+        global_state = GraphPruningGlobalState(
+            node_names=operation_structure.all_node_names.difference([temp_node_name])
+        )
         branch_state = GraphPruningBranchState()
         self._extract(
             node=node,

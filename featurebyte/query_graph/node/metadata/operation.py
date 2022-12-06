@@ -17,6 +17,8 @@ from typing import (
 )
 from typing_extensions import Annotated
 
+from abc import abstractmethod  # pylint: disable=wrong-import-order
+
 from bson import json_util
 from pydantic import BaseModel, Field, root_validator, validator
 
@@ -67,7 +69,7 @@ class BaseColumn(BaseFrozenModel):
 
     def clone(self: BaseColumnT, **kwargs: Any) -> BaseColumnT:
         """
-        Clone an existing object with certain update
+        Clone an existing object by overriding certain attribute(s)
 
         Parameters
         ----------
@@ -80,11 +82,45 @@ class BaseColumn(BaseFrozenModel):
         """
         return type(self)(**{**self.dict(), **kwargs})
 
+    @abstractmethod
+    def clone_with_replacement(
+        self: BaseColumnT, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    ) -> BaseColumnT:
+        """
+        Clone an existing object by replacing node names attributes
+
+        Parameters
+        ----------
+        replace_node_name_map: Dict[str, Set[str]]
+            Dictionary to replace the node name with the node name set
+        node_name: str
+            Node name to replace if there are other node name not specified in replace_node_name_map
+        kwargs: Any
+            Other keywords parameters
+
+        Returns
+        -------
+        BaseColumnT
+        """
+
 
 class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str
+
+    def clone_with_replacement(
+        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    ) -> "BaseDataColumn":
+        # rename the node name appears in replace_node_name_map
+        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
+        node_names = set()
+        for name in node_names_to_keep:
+            node_names.update(replace_node_name_map[name])
+        # if no replacement found, it means the column is introduced by node_name
+        if not node_names:
+            node_names.add(node_name)
+        return self.clone(node_names=node_names, **kwargs)
 
 
 class BaseDerivedColumn(BaseColumn):
@@ -192,6 +228,26 @@ class BaseDerivedColumn(BaseColumn):
         if transform:
             transforms.append(transform)
         return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)
+
+    def clone_with_replacement(
+        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    ) -> "BaseDerivedColumn":
+        # rename the node name appears in replace_node_name_map
+        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
+        node_names = set()
+        for name in node_names_to_keep:
+            node_names.update(replace_node_name_map[name])
+
+        # if there are other node name(s) that does not exist in replace_node_name_map,
+        # include the node_name value
+        replace_node_names = set().union(*(val for val in replace_node_name_map.values()))
+        if self.node_names.difference(replace_node_names):
+            node_names.add(node_name)
+        columns = [
+            col.clone_with_replacement(replace_node_name_map, node_name=node_name)
+            for col in self.columns
+        ]
+        return self.clone(node_names=node_names, columns=columns, **kwargs)
 
 
 class SourceDataColumn(BaseDataColumn):
@@ -376,3 +432,15 @@ class OperationStructure(BaseFrozenModel):
             aggregations=aggregations,
             post_aggregation=next(iter(post_aggregations), None),
         )
+
+
+class OperationStructureBranchState(BaseModel):
+    """OperationStructureBranchState class"""
+
+    visited_node_types: Set[NodeType] = Field(default_factory=set)
+
+
+class OperationStructureInfo(BaseModel):
+    """OperationStructureInfo class"""
+
+    operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)

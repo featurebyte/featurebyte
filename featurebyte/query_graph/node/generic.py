@@ -18,6 +18,8 @@ from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
     OperationStructure,
+    OperationStructureBranchState,
+    OperationStructureInfo,
     PostAggregationColumn,
     SourceDataColumn,
     ViewDataColumn,
@@ -101,9 +103,12 @@ class InputNode(BaseNode):
         return values
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = visited_node_types
+        _ = branch_state, global_state
         return OperationStructure(
             columns=[
                 SourceDataColumn(
@@ -131,9 +136,12 @@ class ProjectNode(BaseNode):
     parameters: Parameters
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = visited_node_types
+        _ = branch_state, global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         names = set(self.get_required_input_columns())
@@ -164,9 +172,12 @@ class FilterNode(BaseNode):
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = visited_node_types
+        _ = branch_state, global_state
         input_operation_info, mask_operation_info = inputs
         output_category = input_operation_info.output_category
         node_kwargs: Dict[str, Any] = {}
@@ -210,9 +221,12 @@ class AssignNode(BaseNode):
     parameters: Parameters
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = visited_node_types
+        _ = branch_state, global_state
         input_operation_info = inputs[0]
         # AssignNode can only take 1 or 2 parameters (1 parameters is frame, 2nd optional parameter is series)
         if len(inputs) == 2:
@@ -368,9 +382,11 @@ class JoinNode(BaseNode):
     parameters: Parameters
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = visited_node_types
         params = self.parameters
         left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
         right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
@@ -403,8 +419,12 @@ class AliasNode(BaseNode):
     parameters: Parameters
 
     def _derive_node_operation_info(
-        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
     ) -> OperationStructure:
+        _ = branch_state, global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
 
