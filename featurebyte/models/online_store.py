@@ -22,7 +22,6 @@ class FeatureValueType(OrderedStrEnum):
 
     FLOAT = "FLOAT"
     VARCHAR = "VARCHAR"
-    DATE = "DATE"
 
 
 class OnlineFeatureSpec(FeatureByteBaseModel):
