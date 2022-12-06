@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Sequence, Tuple, TypedDict, cast
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, cast
 
 from collections import defaultdict
 
@@ -11,7 +11,6 @@ from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model import Edge, QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
 from featurebyte.query_graph.transform.graph_flattening import GraphFlatteningTransformer
@@ -243,18 +242,6 @@ class GraphNode(BaseGraphNode):
         )
         self.parameters.output_node_name = nested_node.name
         return cast(Node, nested_node)
-
-    def prune(self, target_nodes: Sequence[NodeT]) -> "GraphNode":
-        nested_graph = self.parameters.graph
-        output_node_name = self.parameters.output_node_name
-        assert isinstance(nested_graph, QueryGraphModel)
-        nested_target_node = nested_graph.get_node_by_name(output_node_name)
-        pruned_graph, node_name_map = GraphPruningExtractor(graph=nested_graph).extract(
-            node=nested_target_node
-        )
-        return self.clone(
-            parameters={"graph": pruned_graph, "output_node_name": node_name_map[output_node_name]}
-        )
 
 
 class GraphState(TypedDict):

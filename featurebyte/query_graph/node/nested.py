@@ -2,7 +2,7 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, cast
+from typing import List, Literal, Sequence, cast
 
 from pydantic import BaseModel, Field
 
@@ -83,3 +83,6 @@ class BaseGraphNode(BaseNode):
     ) -> OperationStructure:
         # this should not be called as it should be handled at operation structure extractor level
         raise RuntimeError("BaseGroupNode._derive_node_operation_info should not be called!")
+
+    def prune(self: NodeT, target_nodes: Sequence[NodeT]) -> NodeT:
+        raise RuntimeError("BaseGroupNode.prune should not be called!")

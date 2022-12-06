@@ -154,6 +154,10 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
 
 
 @pytest.fixture(name="nested_input_graph")
@@ -212,6 +216,10 @@ def nested_input_graph_fixture(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=add_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
 
@@ -269,6 +277,10 @@ def nested_output_graph_fixture(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
 
@@ -346,6 +358,10 @@ def deep_nested_graph_fixture(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
 
