@@ -46,6 +46,7 @@ tm_upsert_tile_feature_mapping = Template(
         SELECT
             '{{tile_id}}' AS TILE_ID,
             '{{feature_name}}' as FEATURE_NAME,
+            '{{feature_type}}' as FEATURE_TYPE,
             '{{feature_version}}' as FEATURE_VERSION,
             '{{feature_readiness}}' as FEATURE_READINESS,
             '{{feature_event_data_ids}}' as FEATURE_EVENT_DATA_IDS,
@@ -64,6 +65,7 @@ tm_upsert_tile_feature_mapping = Template(
         INSERT (
             TILE_ID,
             FEATURE_NAME,
+            FEATURE_TYPE,
             FEATURE_VERSION,
             FEATURE_READINESS,
             FEATURE_EVENT_DATA_IDS,
@@ -74,6 +76,7 @@ tm_upsert_tile_feature_mapping = Template(
         ) VALUES (
             b.TILE_ID,
             b.FEATURE_NAME,
+            b.FEATURE_TYPE,
             b.FEATURE_VERSION,
             b.FEATURE_READINESS,
             b.FEATURE_EVENT_DATA_IDS,

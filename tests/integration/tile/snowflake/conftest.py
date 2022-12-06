@@ -18,11 +18,21 @@ async def tile_task_online_store_prep(snowflake_session):
     number_records = 2
     insert_mapping_sql = f"""
             insert into TILE_FEATURE_MAPPING(
-                TILE_ID, FEATURE_NAME, FEATURE_VERSION, FEATURE_SQL, FEATURE_STORE_TABLE_NAME, FEATURE_ENTITY_COLUMN_NAMES
+                TILE_ID,
+                FEATURE_NAME,
+                FEATURE_TYPE,
+                FEATURE_VERSION,
+                FEATURE_SQL,
+                FEATURE_STORE_TABLE_NAME,
+                FEATURE_ENTITY_COLUMN_NAMES
             )
             values (
-                '{tile_id}', '{feature_name}', 'feature_1_v1',
-                'select {entity_col_names}, value_2 as "{feature_name}" from {table_name} limit {number_records}', '{feature_store_table_name}',
+                '{tile_id}',
+                '{feature_name}',
+                'FLOAT',
+                'feature_1_v1',
+                'select {entity_col_names}, cast(value_2 as float) as "{feature_name}" from {table_name} limit {number_records}',
+                '{feature_store_table_name}',
                 '{entity_col_names}'
             )
     """
@@ -37,4 +47,4 @@ async def tile_task_online_store_prep(snowflake_session):
     yield tile_id, feature_store_table_name, feature_name, entity_col_names
 
     await snowflake_session.execute_query("DELETE FROM TILE_FEATURE_MAPPING")
-    await snowflake_session.execute_query(f"DELETE FROM {feature_store_table_name}")
+    await snowflake_session.execute_query(f"DROP TABLE {feature_store_table_name}")

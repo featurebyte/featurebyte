@@ -59,6 +59,7 @@ async def test_online_enable(
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
         feature_name=feature_spec.feature.name,
+        feature_type=feature_spec.value_type,
         feature_version=feature_spec.feature.version.to_str(),
         feature_readiness=str(mock_snowflake_feature.readiness),
         feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
