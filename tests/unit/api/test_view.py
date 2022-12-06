@@ -309,16 +309,17 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     # reset between tests
     GlobalGraphState.reset()
     # setup
-    col_info_a, col_info_b, col_info_c = (
+    col_info_a, col_info_b, col_info_c, col_info_d, col_info_e = (
         ColumnInfo(name="colA", dtype=DBVarType.INT),
         ColumnInfo(name="colB", dtype=DBVarType.INT),
         ColumnInfo(name="colC", dtype=DBVarType.INT),
+        ColumnInfo(name="colD", dtype=DBVarType.INT),
+        ColumnInfo(name="colE", dtype=DBVarType.INT),
     )
     current_view = SimpleTestView(
         columns_info=[col_info_a, col_info_b],
     )
-    other_view = SimpleTestView(columns_info=[col_info_c])
-    other_view.set_join_col_override("colC")
+    other_view = SimpleTestView(columns_info=[col_info_c, col_info_d, col_info_e], join_col="colC")
     generic_input_node_params["node_params"]["columns"] = ["colA", "colB", "colC"]
     input_node = current_view.graph.add_operation(
         node_type=generic_input_node_params["node_type"],
@@ -341,7 +342,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     )
     other_view.node_name = input_node.name
     assert other_view.node_name == "input_1"
-    assert other_view.columns_info == [col_info_c]
+    assert other_view.columns_info == [col_info_c, col_info_d, col_info_e]
     assert other_view.column_lineage_map == {}
     assert other_view.row_index_lineage == ()
     assert other_view.tabular_data_ids == []
@@ -353,6 +354,8 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert current_view.columns_info == [
         col_info_a,
         col_info_b,
+        ColumnInfo(name="colDsuffix", dtype=DBVarType.INT),
+        ColumnInfo(name="colEsuffix", dtype=DBVarType.INT),
     ]
     assert current_view.node_name == "join_1"
     assert current_view.column_lineage_map == {}
@@ -370,9 +373,9 @@ def test_join__left_join(generic_input_node_params, join_type_param):
             "left_input_columns": ["colA", "colB"],
             "left_on": "colA",
             "left_output_columns": ["colA", "colB"],
-            "right_input_columns": [],
+            "right_input_columns": ["colD", "colE"],
             "right_on": "colC",
-            "right_output_columns": [],
+            "right_output_columns": ["colDsuffix", "colEsuffix"],
             "scd_parameters": None,
         },
         "type": "join",

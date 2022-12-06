@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas._testing import assert_frame_equal
 from pandas.testing import assert_series_equal
 
 from featurebyte.api.dimension_view import DimensionView
@@ -132,3 +133,10 @@ def test_item_view_joined_with_dimension_view(
 
     # Verify that the item_id's are the same
     assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
+    # Verify that the item_type in the joined view, is the same as the original item_type in the dimension view
+    dimension_preview = dimension_view.preview()
+
+    # compare the result of our join, against a pandas join
+    joined_frame = item_preview.join(dimension_preview, rsuffix=suffix)
+    assert_series_equal(item_preview["item_id"], joined_frame["item_id"])
+    assert_series_equal(item_preview["item_name_dimension"], joined_frame["item_name_dimension"])
