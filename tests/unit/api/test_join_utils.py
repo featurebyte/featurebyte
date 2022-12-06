@@ -7,6 +7,7 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
+    filter_join_key_from_column,
     is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
@@ -15,6 +16,21 @@ from featurebyte.api.join_utils import (
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
+
+
+def test_filter_join_key_from_column():
+    """
+    Test filter_join_key_from_column
+    """
+    columns = ["colA", "colB", "colC"]
+    filtered_columns = filter_join_key_from_column(columns, "randomCol")
+    assert filtered_columns == columns
+
+    filtered_columns = filter_join_key_from_column(columns, "colA")
+    assert filtered_columns == ["colB", "colC"]
+
+    filtered_columns = filter_join_key_from_column(columns, "")
+    assert filtered_columns == columns
 
 
 def test_append_rsuffix_to_column_info():

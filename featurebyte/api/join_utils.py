@@ -38,6 +38,26 @@ def append_rsuffix_to_column_info(
     return updated_column_info
 
 
+def filter_join_key_from_column(columns: List[str], join_key: str) -> List[str]:
+    """
+    Filters the join key from a list of columns. This is used to remove the join key from the other view's columns
+    so that we don't duplicate information in the resulting view.
+
+    Parameters
+    ----------
+    columns: List[str]
+        columns for a view
+    join_key: str
+        join key column
+
+    Returns
+    -------
+    List[str]
+        filtered list of columns
+    """
+    return [col for col in columns if col != join_key]
+
+
 def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> List[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.

@@ -15,6 +15,7 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
+    filter_join_key_from_column,
     is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
@@ -449,9 +450,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         left_input_columns = self.columns
         left_output_columns = self.columns
 
-        right_input_columns = other_view.columns
-        right_output_columns = append_rsuffix_to_columns(other_view.columns, rsuffix)
         left_on, right_on = self._get_join_keys(other_view, on)
+        filtered_other_columns = filter_join_key_from_column(other_view.columns, right_on)
+        right_input_columns = filtered_other_columns
+        right_output_columns = append_rsuffix_to_columns(filtered_other_columns, rsuffix)
 
         node_params = {
             "left_on": left_on,
@@ -472,11 +474,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Construct new columns_info
+        # TODO: update
         joined_columns_info = combine_column_info_of_views(
             self.columns_info, append_rsuffix_to_column_info(other_view.columns_info, rsuffix)
         )
 
         # Construct new column_lineage_map
+        # TODO: update
         updated_column_lineage_map_with_suffix = update_column_lineage_map_with_suffix(
             other_view.column_lineage_map, rsuffix
         )
