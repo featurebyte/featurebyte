@@ -117,7 +117,12 @@ def test_item_view_joined_with_dimension_view(
     item_view.join(dimension_view, rsuffix=suffix)
 
     # assert columns are updated after the join
-    item_columns.extend([f"{col}{suffix}" for col in initial_dimension_columns])
+    filtered_dimension_columns = [
+        "created_at",
+        "item_name",
+        "item_type",
+    ]  # no item_id since join key is removed
+    item_columns.extend([f"{col}{suffix}" for col in filtered_dimension_columns])
     item_preview = item_view.preview()
     assert item_preview.columns.tolist() == item_columns
     number_of_elements = original_item_preview.shape[0]
@@ -127,7 +132,3 @@ def test_item_view_joined_with_dimension_view(
 
     # Verify that the item_id's are the same
     assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
-    # Verify that the joined item_ids are the same as the original item IDs
-    assert_series_equal(
-        item_preview["item_id_dimension"], item_preview["item_id"], check_names=False
-    )
