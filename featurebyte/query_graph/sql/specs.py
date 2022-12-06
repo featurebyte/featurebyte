@@ -153,7 +153,7 @@ class ItemAggregationSpec:
         out = ItemAggregationSpec(
             keys=params["keys"],
             serving_names=serving_names,
-            feature_name=params["names"][0],
+            feature_name=params["name"],
             agg_expr=agg_expr,
         )
         return out

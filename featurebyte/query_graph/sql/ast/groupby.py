@@ -52,7 +52,7 @@ class ItemGroupby(TableNode):
         columns_map = {}
         for key in parameters["keys"]:
             columns_map[key] = quoted_identifier(key)
-        output_name = parameters["names"][0]
+        output_name = parameters["name"]
         columns_map[output_name] = quoted_identifier(output_name)
         node = ItemGroupby(
             context=context,

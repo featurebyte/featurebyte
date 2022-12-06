@@ -351,7 +351,7 @@ class SimpleAggregator(BaseAggregator):
             "parent": value_column,
             "agg_func": method,
             "value_by": self.groupby.category,
-            "names": [feature_name],
+            "name": feature_name,
             "serving_names": self.groupby.serving_names,
             "entity_ids": self.groupby.entity_ids,
         }

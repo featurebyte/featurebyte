@@ -323,7 +323,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         parent: Optional[InColumnStr]
         agg_func: AggFunc
         value_by: Optional[InColumnStr]
-        names: List[str]
+        name: str
         serving_names: List[str]
         entity_ids: Optional[List[PydanticObjectId]]
 
@@ -340,7 +340,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
-                name=name,
+                name=self.parameters.name,
                 method=self.parameters.agg_func,
                 groupby=self.parameters.keys,
                 window=None,
@@ -350,7 +350,6 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
             )
-            for name in self.parameters.names
         ]
 
 

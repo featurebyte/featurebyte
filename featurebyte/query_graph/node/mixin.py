@@ -164,13 +164,12 @@ class GroupbyNodeOpStructMixin:
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
                 DerivedDataColumn.create(
-                    name=name,
+                    name=self.parameters.name,
                     columns=columns,
                     transform=self.transform_info,
                     node_name=self.name,
                     other_node_names=other_node_names,
                 )
-                for name in self.parameters.names
             ]
         else:
             node_kwargs["columns"] = columns

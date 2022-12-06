@@ -32,7 +32,7 @@ def test_item_groupby_sql_node(global_graph, item_data_input_node, parent, agg_f
         "serving_names": ["order_id"],
         "parent": parent,
         "agg_func": agg_func,
-        "names": ["feature_name"],
+        "name": "feature_name",
     }
     groupby_node = global_graph.add_operation(
         node_type=NodeType.ITEM_GROUPBY,

@@ -419,7 +419,7 @@ def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
         "serving_names": ["order_id"],
         "parent": None,
         "agg_func": "count",
-        "names": ["order_size"],
+        "name": "order_size",
         "entity_ids": [ObjectId("63748c9244bc4549b25f8200")],
     }
     groupby_node = global_graph.add_operation(
@@ -495,7 +495,7 @@ def mixed_point_in_time_and_item_aggregations_fixture(
         "serving_names": ["order_id"],
         "parent": None,
         "agg_func": "count",
-        "names": ["order_size"],
+        "name": "order_size",
     }
     item_groupby_node = graph.add_operation(
         node_type=NodeType.ITEM_GROUPBY,
