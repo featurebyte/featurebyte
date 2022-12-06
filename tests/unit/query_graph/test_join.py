@@ -133,9 +133,9 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
         SELECT
           L."ts" AS "ts",
           L."cust_id" AS "cust_id",
-          L."order_id" AS "order_id",
-          L."order_method" AS "order_method",
-          R."order_size" AS "order_size"
+          L."order_id" AS "ord_id",
+          L."order_method" AS "ord_method",
+          R."order_size" AS "ord_size"
         FROM (
           SELECT
             "ts" AS "ts",
@@ -179,8 +179,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("order_size") AS sum_value_avg_0b6afc375cc979c5640f345de3d748620310d949,
-          COUNT("order_size") AS count_value_avg_0b6afc375cc979c5640f345de3d748620310d949
+          SUM("ord_size") AS sum_value_avg_ae9ac89273798041e15c182afae0ccdde53be64d,
+          COUNT("ord_size") AS count_value_avg_ae9ac89273798041e15c182afae0ccdde53be64d
         FROM (
           SELECT
             *,
@@ -193,9 +193,9 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
             SELECT
               L."ts" AS "ts",
               L."cust_id" AS "cust_id",
-              L."order_id" AS "order_id",
-              L."order_method" AS "order_method",
-              R."order_size" AS "order_size"
+              L."order_id" AS "ord_id",
+              L."order_method" AS "ord_method",
+              R."order_size" AS "ord_size"
             FROM (
               SELECT
                 *

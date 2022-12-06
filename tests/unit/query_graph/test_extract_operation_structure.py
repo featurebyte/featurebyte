@@ -345,7 +345,7 @@ def test_extract_operation__join_double_aggregations(
         other_node_names={"input_2", "join_1"},
     )
     order_size_column = {
-        "name": "order_size",
+        "name": "ord_size",
         "columns": [],
         "transforms": ["item_groupby"],
         "filter": False,
@@ -355,8 +355,8 @@ def test_extract_operation__join_double_aggregations(
     assert op_struct.columns == [
         {"name": "ts", **common_event_data_column_params},
         {"name": "cust_id", **common_event_data_column_params},
-        {"name": "order_id", **common_event_data_column_params},
-        {"name": "order_method", **common_event_data_column_params},
+        {"name": "ord_id", **common_event_data_column_params},
+        {"name": "ord_method", **common_event_data_column_params},
         order_size_column,
     ]
     assert op_struct.aggregations == []

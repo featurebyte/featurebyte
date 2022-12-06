@@ -371,17 +371,24 @@ class JoinNode(BaseNode):
         self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
     ) -> OperationStructure:
         _ = visited_node_types
-        left_output_columns = set(self.parameters.left_output_columns)
-        right_output_columns = set(self.parameters.right_output_columns)
+        params = self.parameters
+        left_col_map = {
+            in_col: out_col
+            for in_col, out_col in zip(params.left_input_columns, params.left_output_columns)
+        }
+        right_col_map = {
+            in_col: out_col
+            for in_col, out_col in zip(params.right_input_columns, params.right_output_columns)
+        }
         left_columns = [
-            col.clone(node_names=col.node_names.union([self.name]))
+            col.clone(name=left_col_map[col.name], node_names=col.node_names.union([self.name]))
             for col in inputs[0].columns
-            if col.name in left_output_columns
+            if col.name in left_col_map
         ]
         right_columns = [
-            col.clone(node_names=col.node_names.union([self.name]))
+            col.clone(name=right_col_map[col.name], node_names=col.node_names.union([self.name]))
             for col in inputs[1].columns
-            if col.name in right_output_columns
+            if col.name in right_col_map
         ]
         return OperationStructure(
             columns=left_columns + right_columns,

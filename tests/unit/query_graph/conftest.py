@@ -446,9 +446,9 @@ def order_size_feature_join_node_fixture(
         "left_on": "order_id",
         "right_on": "order_id",
         "left_input_columns": ["ts", "cust_id", "order_id", "order_method"],
-        "left_output_columns": ["ts", "cust_id", "order_id", "order_method"],
+        "left_output_columns": ["ts", "cust_id", "ord_id", "ord_method"],
         "right_input_columns": ["order_size"],
-        "right_output_columns": ["order_size"],
+        "right_output_columns": ["ord_size"],
         "join_type": "left",
     }
     node = global_graph.add_operation(
@@ -469,7 +469,7 @@ def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_joi
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by": None,
-        "parent": "order_size",
+        "parent": "ord_size",
         "agg_func": "avg",
         "time_modulo_frequency": 1800,  # 30m
         "frequency": 3600,  # 1h
