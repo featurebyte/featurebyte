@@ -84,7 +84,11 @@ class BaseColumn(BaseFrozenModel):
         return type(self)(**{**self.dict(), **kwargs})
 
     def clone_with_replacement(
-        self: BaseColumnT, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+        self: BaseColumnT,
+        replace_node_name_map: Dict[str, Set[str]],
+        node_name: str,
+        node_transform: str,
+        **kwargs: Any,
     ) -> BaseColumnT:
         """
         Clone an existing object by removing internal node names. This method is mainly used in
@@ -105,6 +109,8 @@ class BaseColumn(BaseFrozenModel):
             is the proxy input node name.
         node_name: str
             Node name to replace if there are other node name not specified in replace_node_name_map
+        node_transform: str
+            Node transform string of node_name
         kwargs: Any
             Other keywords parameters
 
@@ -120,9 +126,12 @@ class BaseColumn(BaseFrozenModel):
 
         # if any of the node name are not from the proxy input names, that means the nested graph's node
         # must change the column in some way, we must include the node name
+        node_kwargs: Dict[str, Any] = {"node_names": node_names}
         if self.node_names.difference(replace_node_name_map):
-            node_names.add(node_name)
-        return self.clone(node_names=node_names, **kwargs)
+            node_kwargs["node_names"].add(node_name)
+            if hasattr(self, "transforms"):
+                node_kwargs["transforms"] = [node_transform]
+        return self.clone(**node_kwargs, **kwargs)
 
 
 class BaseDataColumn(BaseColumn):  # pylint: disable=abstract-method
@@ -238,14 +247,20 @@ class BaseDerivedColumn(BaseColumn):
         return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)
 
     def clone_with_replacement(
-        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+        self,
+        replace_node_name_map: Dict[str, Set[str]],
+        node_name: str,
+        node_transform: str,
+        **kwargs: Any,
     ) -> "BaseDerivedColumn":
         columns = [
-            col.clone_with_replacement(replace_node_name_map, node_name) for col in self.columns
+            col.clone_with_replacement(replace_node_name_map, node_name, node_transform, **kwargs)
+            for col in self.columns
         ]
         return super().clone_with_replacement(
             replace_node_name_map=replace_node_name_map,
             node_name=node_name,
+            node_transform=node_transform,
             columns=columns,
             **kwargs,
         )
@@ -302,18 +317,24 @@ class AggregationColumn(BaseDataColumn):
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
     def clone_with_replacement(
-        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+        self,
+        replace_node_name_map: Dict[str, Set[str]],
+        node_name: str,
+        node_transform: str,
+        **kwargs: Any,
     ) -> "AggregationColumn":
         column: Optional[ViewDataColumn] = None
         if self.column is not None:
             column = self.column.clone_with_replacement(  # type: ignore[assignment]
                 replace_node_name_map=replace_node_name_map,
                 node_name=node_name,
+                node_transform=node_transform,
                 **kwargs,
             )
         return super().clone_with_replacement(
             replace_node_name_map=replace_node_name_map,
             node_name=node_name,
+            node_transform=node_transform,
             column=column,
             **kwargs,
         )
