@@ -179,18 +179,3 @@ class BaseGraphTransformer(Generic[OutputT, GlobalStateT]):
     def _transform(self, global_state: GlobalStateT) -> Any:
         for node in self.graph.iterate_sorted_nodes():
             self._compute(global_state=global_state, node=node)
-
-    @abstractmethod
-    def transform(self, **kwargs: Any) -> OutputT:
-        """
-        Transform the query graph
-
-        Parameters
-        ----------
-        **kwargs: Any
-            Other keywords parameters
-
-        Returns
-        -------
-        OutputT
-        """

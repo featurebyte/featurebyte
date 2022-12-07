@@ -222,7 +222,7 @@ class GraphReconstructionTransformer(
         # update node name mapping between original graph & reconstructed graph
         global_state.node_name_map[node.name] = inserted_node.name
 
-    def transform(  # pylint: disable=arguments-differ
+    def transform(
         self, node_replacement_map: Dict[str, NodeT], regenerate_groupby_hash: bool, **kwargs: Any
     ) -> QueryGraphModel:
         global_state = GraphReconstructionGlobalState(
