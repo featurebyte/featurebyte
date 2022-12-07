@@ -3,8 +3,6 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any
-
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
@@ -79,9 +77,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def create_document(
-        self, data: FeatureCreate, get_credential: Any = None
-    ) -> FeatureModel:
+    async def create_document(self, data: FeatureCreate) -> FeatureModel:
         document = FeatureModel(
             **{
                 **data.json_dict(),

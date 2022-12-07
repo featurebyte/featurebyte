@@ -49,10 +49,7 @@ async def create_feature_list(
     Create FeatureList
     """
     controller = request.state.app_container.feature_list_controller
-    feature_list: FeatureListModel = await controller.create_feature_list(
-        get_credential=request.state.get_credential,
-        data=data,
-    )
+    feature_list: FeatureListModel = await controller.create_feature_list(data=data)
     return feature_list
 
 

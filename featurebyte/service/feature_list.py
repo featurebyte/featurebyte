@@ -129,9 +129,7 @@ class FeatureListService(
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def create_document(
-        self, data: FeatureListCreate, get_credential: Any = None
-    ) -> FeatureListModel:
+    async def create_document(self, data: FeatureListCreate) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{

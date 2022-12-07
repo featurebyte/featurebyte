@@ -3,7 +3,7 @@ DataService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from bson import ObjectId
 
@@ -21,9 +21,7 @@ class DataService(BaseDocumentService[BaseDataModel, DataCreate, DataUpdate]):
 
     document_class = TabularDataModel
 
-    async def create_document(
-        self, data: DocumentCreateSchema, get_credential: Any = None
-    ) -> Document:
+    async def create_document(self, data: DocumentCreateSchema) -> Document:
         raise NotImplementedError
 
     async def update_document(

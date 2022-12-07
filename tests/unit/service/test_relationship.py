@@ -26,7 +26,7 @@ class FamilyDocumentService(BaseDocumentService):
 
     document_class = FamilyModel
 
-    async def create_document(self, data, get_credential=None):
+    async def create_document(self, data):
         insert_id = await self.persistent.insert_one(
             collection_name=self.collection_name,
             document=data.dict(by_alias=True),

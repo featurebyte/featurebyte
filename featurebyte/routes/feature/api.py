@@ -43,10 +43,7 @@ async def create_feature(
     Create Feature
     """
     controller = request.state.app_container.feature_controller
-    feature: FeatureModel = await controller.create_feature(
-        get_credential=request.state.get_credential,
-        data=data,
-    )
+    feature: FeatureModel = await controller.create_feature(data=data)
     return feature
 
 

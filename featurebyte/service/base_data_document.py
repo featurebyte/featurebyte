@@ -105,8 +105,7 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
                 )
         return message
 
-    async def create_document(self, data: DocumentCreate, get_credential: Any = None) -> Document:
-        _ = get_credential
+    async def create_document(self, data: DocumentCreate) -> Document:
         _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
             document_id=data.tabular_source.feature_store_id
         )
