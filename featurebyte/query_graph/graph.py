@@ -13,12 +13,9 @@ from featurebyte.query_graph.model import Edge, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
-from featurebyte.query_graph.transform.graph_flattening import GraphFlatteningTransformer
-from featurebyte.query_graph.transform.graph_pruning import (
-    GraphPruningExtractor,
-    GraphPruningOutput,
-)
+from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.transform.pruning import GraphPruningExtractor, GraphPruningOutput
 from featurebyte.query_graph.transformation import GraphReconstructor
 
 
