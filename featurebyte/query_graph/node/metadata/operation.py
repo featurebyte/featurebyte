@@ -3,6 +3,7 @@ This module contains models used to store node output operation info
 """
 from typing import (
     Any,
+    DefaultDict,
     Dict,
     List,
     Literal,
@@ -15,9 +16,9 @@ from typing import (
     Union,
     overload,
 )
-from typing_extensions import Annotated
+from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from collections import defaultdict
 
 from bson import json_util
 from pydantic import BaseModel, Field, root_validator, validator
@@ -82,19 +83,34 @@ class BaseColumn(BaseFrozenModel):
         """
         return type(self)(**{**self.dict(), **kwargs})
 
-    @abstractmethod
-    def clone_with_replacement(
-        self: BaseColumnT, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    def clone_without_internal_nodes(
+        self: BaseColumnT,
+        proxy_node_name_map: Dict[str, Set[str]],
+        graph_node_name: str,
+        graph_node_transform: str,
+        **kwargs: Any,
     ) -> BaseColumnT:
         """
-        Clone an existing object by replacing node names attributes
+        Clone an existing object by removing internal node names. This method is mainly used in
+        the nested graph pruning to remove those node names appear only in the nested graph. For example,
+        we have the following graph (each square bracket pair represents a node):
+
+            [input] -> [[proxy_input] -> [project] -> [add]] -> [multiply]
+
+        Here, `[[proxy_input] -> [project] -> [add]]` is a graph node and the `[proxy_input]` node is a
+        reference node that points to `input` node. `[proxy_input]`, `[project]` and `[add]` nodes are
+        all internal nodes to the nested graph. After calling this method, the output of this column
+        should not contain any internal node names.
 
         Parameters
         ----------
-        replace_node_name_map: Dict[str, Set[str]]
-            Dictionary to replace the node name with the node name set
-        node_name: str
-            Node name to replace if there are other node name not specified in replace_node_name_map
+        proxy_node_name_map: Dict[str, Set[str]]
+            Dictionary to replace the node name with the node name set. The key of this dictionary
+            is the proxy input node name.
+        graph_node_name: str
+            Node name to replace if any internal node is used
+        graph_node_transform: str
+            Node transform string of node_name
         kwargs: Any
             Other keywords parameters
 
@@ -102,25 +118,26 @@ class BaseColumn(BaseFrozenModel):
         -------
         BaseColumnT
         """
+        # find match proxy input node names & replace them with the external node names
+        proxy_input_names = self.node_names.intersection(proxy_node_name_map)
+        node_names = set()
+        for name in proxy_input_names:
+            node_names.update(proxy_node_name_map[name])
+
+        # if any of the node name are not from the proxy input names, that means the nested graph's node
+        # must change the column in some way, we must include the node name
+        node_kwargs: Dict[str, Any] = {"node_names": node_names}
+        if self.node_names.difference(proxy_node_name_map):
+            node_kwargs["node_names"].add(graph_node_name)
+            if hasattr(self, "transforms"):
+                node_kwargs["transforms"] = [graph_node_transform]
+        return self.clone(**node_kwargs, **kwargs)
 
 
 class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str
-
-    def clone_with_replacement(
-        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
-    ) -> "BaseDataColumn":
-        # rename the node name appears in replace_node_name_map
-        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
-        node_names = set()
-        for name in node_names_to_keep:
-            node_names.update(replace_node_name_map[name])
-        # if no replacement found, it means the column is introduced by node_name
-        if not node_names:
-            node_names.add(node_name)
-        return self.clone(node_names=node_names, **kwargs)
 
 
 class BaseDerivedColumn(BaseColumn):
@@ -229,25 +246,26 @@ class BaseDerivedColumn(BaseColumn):
             transforms.append(transform)
         return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)
 
-    def clone_with_replacement(
-        self, replace_node_name_map: Dict[str, Set[str]], node_name: str, **kwargs: Any
+    def clone_without_internal_nodes(
+        self,
+        proxy_node_name_map: Dict[str, Set[str]],
+        graph_node_name: str,
+        graph_node_transform: str,
+        **kwargs: Any,
     ) -> "BaseDerivedColumn":
-        # rename the node name appears in replace_node_name_map
-        node_names_to_keep = self.node_names.intersection(replace_node_name_map)
-        node_names = set()
-        for name in node_names_to_keep:
-            node_names.update(replace_node_name_map[name])
-
-        # if there are other node name(s) that does not exist in replace_node_name_map,
-        # include the node_name value
-        replace_node_names = set().union(*(val for val in replace_node_name_map.values()))
-        if self.node_names.difference(replace_node_names):
-            node_names.add(node_name)
         columns = [
-            col.clone_with_replacement(replace_node_name_map, node_name=node_name)
+            col.clone_without_internal_nodes(
+                proxy_node_name_map, graph_node_name, graph_node_transform, **kwargs
+            )
             for col in self.columns
         ]
-        return self.clone(node_names=node_names, columns=columns, **kwargs)
+        return super().clone_without_internal_nodes(
+            proxy_node_name_map=proxy_node_name_map,
+            graph_node_name=graph_node_name,
+            graph_node_transform=graph_node_transform,
+            columns=columns,
+            **kwargs,
+        )
 
 
 class SourceDataColumn(BaseDataColumn):
@@ -299,6 +317,29 @@ class AggregationColumn(BaseDataColumn):
         col_dict = self.dict()
         col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
+
+    def clone_without_internal_nodes(
+        self,
+        proxy_node_name_map: Dict[str, Set[str]],
+        graph_node_name: str,
+        graph_node_transform: str,
+        **kwargs: Any,
+    ) -> "AggregationColumn":
+        column: Optional[ViewDataColumn] = None
+        if self.column is not None:
+            column = self.column.clone_without_internal_nodes(  # type: ignore[assignment]
+                proxy_node_name_map=proxy_node_name_map,
+                graph_node_name=graph_node_name,
+                graph_node_transform=graph_node_transform,
+                **kwargs,
+            )
+        return super().clone_without_internal_nodes(
+            proxy_node_name_map=proxy_node_name_map,
+            graph_node_name=graph_node_name,
+            graph_node_transform=graph_node_transform,
+            column=column,
+            **kwargs,
+        )
 
 
 class PostAggregationColumn(BaseDerivedColumn):
@@ -444,3 +485,9 @@ class OperationStructureInfo(BaseModel):
     """OperationStructureInfo class"""
 
     operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
+    edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
+
+    @validator("edges_map")
+    @classmethod
+    def _construct_defaultdict(cls, value: Dict[str, Any]) -> DefaultDict[str, Set[str]]:
+        return defaultdict(set, value)

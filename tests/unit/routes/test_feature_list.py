@@ -534,7 +534,11 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         feature_clusters = create_success_response.json()["feature_clusters"]
         assert isinstance(feature_clusters, list)
         assert len(feature_clusters) == 1
-        assert feature_clusters[0] == featurelist_feature_clusters[0]
+        expected_feature_cluster = featurelist_feature_clusters[0]
+        groupby_node = expected_feature_cluster["graph"]["nodes"][1]["parameters"]
+        groupby_node["names"] = ["sum_30m"]
+        groupby_node["windows"] = ["30m"]
+        assert feature_clusters[0] == expected_feature_cluster
 
     def test_get_online_features__200(
         self,

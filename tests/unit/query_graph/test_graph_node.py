@@ -154,6 +154,10 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
 
 
 @pytest.fixture(name="nested_input_graph")
@@ -212,6 +216,10 @@ def nested_input_graph_fixture(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=add_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
 
@@ -253,7 +261,7 @@ def nested_output_graph_fixture(input_node_params):
                     {
                         "filter": False,
                         "name": "col_int",
-                        "node_names": {"input_1"},
+                        "node_names": {"input_1", "graph_1"},
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",
@@ -269,6 +277,10 @@ def nested_output_graph_fixture(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
 
@@ -346,6 +358,10 @@ def deep_nested_graph_fixture(input_node_params):
         "output_category": "view",
         "output_type": "series",
     }
+    # check graph pruning
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    assert pruned_graph == graph
+    assert all(from_name == to_name for from_name, to_name in node_name_map.items())
     return graph
 
 
@@ -382,3 +398,215 @@ def test_flatten_nested_graph(
     assert nested_input_graph.flatten() == expected_flattened_graph
     assert nested_output_graph.flatten() == expected_flattened_graph
     assert deep_nested_graph.flatten() == expected_flattened_graph
+
+
+def test_nested_graph_pruning(input_details, groupby_node_params):
+    """
+    Test graph pruning on nested graph
+    """
+
+    def add_graph_node(query_graph, input_nodes):
+        # construct a graph node that add a "a_plus_b" column (redundant column) to the input table
+        # and generate a feature group
+        graph_node, proxy_inputs = GraphNode.create(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": ["a"]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=input_nodes,
+        )
+        node_proj_a = graph_node.output_node
+        node_proj_b = graph_node.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": ["col_b"]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=proxy_inputs,
+        )
+        node_add = graph_node.add_operation(
+            node_type=NodeType.ADD,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node_proj_a, node_proj_b],  # graph_node.output_node: nested project node
+        )
+        node_assign = graph_node.add_operation(
+            node_type=NodeType.ASSIGN,
+            node_params={"name": "a_plus_b"},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[proxy_inputs[0], node_add],
+        )
+        graph_node.add_operation(
+            node_type=NodeType.GROUPBY,
+            node_params=groupby_node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[node_assign],
+        )
+        return query_graph.add_graph_node(graph_node, input_nodes)
+
+    # construct a graph with a nested graph
+    # [input] -> [graph] -> [project]
+    graph = QueryGraph()
+    input_node = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "event_data",
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            **input_details,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    node_graph = add_graph_node(query_graph=graph, input_nodes=[input_node])
+    node_proj_2h_avg = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_2h_average"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_graph],
+    )
+
+    # check operation structure
+    operation_structure = graph.extract_operation_structure(node=node_proj_2h_avg)
+    assert operation_structure.dict() == {
+        "aggregations": [
+            {
+                "category": None,
+                "column": {
+                    "filter": False,
+                    "name": "a",
+                    "node_names": {"input_1"},
+                    "tabular_data_id": None,
+                    "tabular_data_type": "event_data",
+                    "type": "source",
+                },
+                "filter": False,
+                "groupby": ["cust_id"],
+                "groupby_type": "groupby",
+                "method": "avg",
+                "name": "a_2h_average",
+                "node_names": {"input_1", "graph_1", "project_1"},
+                "type": "aggregation",
+                "window": "2h",
+            }
+        ],
+        "columns": [
+            {
+                "filter": False,
+                "name": "a",
+                "node_names": {"input_1"},
+                "tabular_data_id": None,
+                "tabular_data_type": "event_data",
+                "type": "source",
+            }
+        ],
+        "output_category": "feature",
+        "output_type": "series",
+    }
+
+    # check pruned graph
+    pruned_graph, node_name_map = graph.prune(target_node=node_proj_2h_avg)
+    assert node_name_map == {"input_1": "input_1", "graph_1": "graph_1", "project_1": "project_1"}
+    assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
+
+    # check nested graph edges (note that assign node is pruned)
+    nested_graph = pruned_graph.nodes_map["graph_1"].parameters.graph
+    assert nested_graph.edges_map == {"proxy_input_1": ["groupby_1"]}
+    assert nested_graph.get_node_by_name("groupby_1").dict() == {
+        "name": "groupby_1",
+        "output_type": "frame",
+        "parameters": {
+            "agg_func": "avg",
+            "aggregation_id": None,
+            "blind_spot": 900,
+            "entity_ids": groupby_node_params["entity_ids"],
+            "frequency": 3600,
+            "keys": ["cust_id"],
+            "names": ["a_2h_average"],  # before pruned: ["a_2h_average", "a_48h_average"]
+            "parent": "a",
+            "serving_names": ["CUSTOMER_ID"],
+            "tile_id": None,
+            "time_modulo_frequency": 1800,
+            "timestamp": "ts",
+            "value_by": None,
+            "windows": ["2h"],
+        },
+        "type": "groupby",
+    }
+
+
+def test_graph_node__redundant_graph_node(input_node_params):
+    """Test graph node (redundant graph node)"""
+
+    def add_graph_node(query_graph, input_nodes):
+        # construct a graph node which contains a single node (ASSIGN node)
+        node_graph, proxy_inputs = GraphNode.create(
+            node_type=NodeType.ASSIGN,
+            node_params={"name": "col_int_plus_one"},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=input_nodes,
+        )
+        return query_graph.add_graph_node(
+            graph_node=node_graph,
+            input_nodes=input_nodes,
+        )
+
+    graph = QueryGraph()
+    input_node = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_col_int_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["col_int"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    add_node = graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_col_int_node],  # graph_node.output_node: nested project node
+    )
+    graph_node = add_graph_node(query_graph=graph, input_nodes=[input_node, add_node])
+    proj_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["col_int"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph_node],
+    )
+    operation_structure = graph.extract_operation_structure(node=proj_node)
+    assert operation_structure.dict() == {
+        "aggregations": [],
+        "columns": [
+            {
+                "filter": False,
+                "name": "col_int",
+                "node_names": {"project_2", "input_1"},
+                "tabular_data_id": None,
+                "tabular_data_type": "generic",
+                "type": "source",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
+    # TODO: [DEV-868] Decouple AssignNode from pruning logic
+    # current behaviour is not correct as we currently only support pruning ASSIGN node.
+    # if we check the graph inside the graph node, the ASSIGN node is pruned.
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
+    assert pruned_graph.edges_map == {
+        "input_1": ["project_1", "graph_1"],
+        "project_1": ["add_1"],
+        "add_1": ["graph_1"],
+        "graph_1": ["project_2"],
+    }
+    nested_graph_nodes = pruned_graph.get_node_by_name("graph_1").parameters.graph.nodes
+    assert nested_graph_nodes == [
+        # note that second proxy input node is pruned
+        {
+            "name": "proxy_input_1",
+            "type": "proxy_input",
+            "output_type": "frame",
+            "parameters": {"node_name": "input_1"},
+        }
+    ]

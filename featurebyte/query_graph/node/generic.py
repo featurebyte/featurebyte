@@ -2,7 +2,7 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Set, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Union
 from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
@@ -11,7 +11,7 @@ from featurebyte.enum import AggFunc, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode, BaseSeriesOutputNode
+from featurebyte.query_graph.node.base import BaseNode, BaseSeriesOutputNode, NodeT
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -279,7 +279,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         blind_spot: int
         time_modulo_frequency: int
         frequency: int
-        names: List[str]  # do not use `OutColumnStr` here as the output is feature but not view
+        names: List[OutColumnStr]
         serving_names: List[str]
         tile_id: Optional[str]
         aggregation_id: Optional[str]
@@ -312,6 +312,23 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
 
+    def prune(self: NodeT, target_nodes: Sequence[NodeT]) -> NodeT:
+        # Only prune the groupby node if all the target output are the project node, this is to prevent
+        # unexpected parameters pruning if groupby node output is used by other node like graph node.
+        if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
+            required_columns = set().union(
+                *(node.get_required_input_columns() for node in target_nodes)
+            )
+            params = self.parameters
+            pruned_params_dict = self.parameters.dict()
+            pruned_params_dict.update(names=[], windows=[])
+            for name, window in zip(params.names, params.windows):  # type: ignore
+                if name in required_columns:
+                    pruned_params_dict["names"].append(name)
+                    pruned_params_dict["windows"].append(window)
+            return self.clone(parameters=pruned_params_dict)
+        return self
+
 
 class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
@@ -323,7 +340,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         parent: Optional[InColumnStr]
         agg_func: AggFunc
         value_by: Optional[InColumnStr]
-        name: str
+        name: OutColumnStr
         serving_names: List[str]
         entity_ids: Optional[List[PydanticObjectId]]
 

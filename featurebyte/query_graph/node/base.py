@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Optional, Type, TypeVar, Union
+from typing import Any, List, Optional, Sequence, Type, TypeVar, Union
 
 from abc import abstractmethod
 
@@ -135,6 +135,35 @@ class BaseNode(BaseModel):
             # make sure node name should be included in the node operation info
             assert self.name in operation_info.all_node_names
         return operation_info
+
+    def clone(self: NodeT, **kwargs: Any) -> NodeT:
+        """
+        Clone an existing object with certain update
+
+        Parameters
+        ----------
+        kwargs: Any
+            Keyword parameters to overwrite existing object
+
+        Returns
+        -------
+        NodeT
+        """
+        return type(self)(**{**self.dict(), **kwargs})
+
+    def prune(self: NodeT, target_nodes: Sequence[NodeT]) -> NodeT:
+        """
+        Prune this node parameters based on target nodes
+        Parameters
+        ----------
+        target_nodes: Sequence[BaseNode]
+            List of target nodes
+        Returns
+        -------
+        NodeT
+        """
+        _ = target_nodes
+        return self
 
     @abstractmethod
     def _derive_node_operation_info(

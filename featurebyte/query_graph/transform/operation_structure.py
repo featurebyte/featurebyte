@@ -37,6 +37,7 @@ class OperationStructureExtractor(
         node: Node,
         input_node: Node,
     ) -> OperationStructureBranchState:
+        global_state.edges_map[input_node.name].add(node.name)
         return OperationStructureBranchState(
             visited_node_types=branch_state.visited_node_types.union([node.type])
         )
@@ -63,17 +64,17 @@ class OperationStructureExtractor(
         # update node_names of the nested operation structure so that the internal node names (node names only
         # appears in the nested graph are removed)
         clone_kwargs = {
-            "replace_node_name_map": proxy_input_node_name_map,
-            "transforms": [node.transform_info],
-            "node_name": node.name,
+            "proxy_node_name_map": proxy_input_node_name_map,
+            "graph_node_name": node.name,
+            "graph_node_transform": node.transform_info,
         }
         return OperationStructure(
             columns=[
-                col.clone_with_replacement(**clone_kwargs)  # type: ignore
+                col.clone_without_internal_nodes(**clone_kwargs)  # type: ignore
                 for col in operation_structure.columns
             ],
             aggregations=[
-                agg.clone_with_replacement(**clone_kwargs)  # type: ignore
+                agg.clone_without_internal_nodes(**clone_kwargs)  # type: ignore
                 for agg in operation_structure.aggregations
             ],
             output_type=operation_structure.output_type,
