@@ -410,9 +410,7 @@ def item_data_join_event_data_node_fixture(
 @pytest.fixture(name="order_size_feature_group_node")
 def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
     """
-    Fixture of a non-time aware groupby node. Result of:
-
-    item_view.groupby("order_id").aggregate(method="count")
+    Fixture of a non-time aware groupby node
     """
     node_params = {
         "keys": ["order_id"],
@@ -431,10 +429,33 @@ def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
     return groupby_node
 
 
+@pytest.fixture(name="order_size_feature_node")
+def order_size_feature_node_fixture(global_graph, order_size_feature_group_node):
+    """
+    Fixture of a non-time aware Feature from ItemView. Result of:
+
+    item_view.groupby("order_id").aggregate(method="count") + 123
+    """
+    graph = global_graph
+    feature_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_size"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(order_size_feature_group_node.name)],
+    )
+    add_node = global_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_node],
+    )
+    return add_node
+
+
 @pytest.fixture(name="order_size_feature_join_node")
 def order_size_feature_join_node_fixture(
     global_graph,
-    order_size_feature_group_node,
+    order_size_feature_node,
     event_data_input_node,
 ):
     """
@@ -455,7 +476,7 @@ def order_size_feature_join_node_fixture(
         node_type=NodeType.JOIN,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, order_size_feature_group_node],
+        input_nodes=[event_data_input_node, order_size_feature_node],
     )
     return node
 
