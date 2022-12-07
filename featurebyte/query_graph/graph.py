@@ -13,12 +13,13 @@ from featurebyte.query_graph.model import Edge, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
+from featurebyte.query_graph.transform.graph_flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.graph_pruning import (
     GraphPruningExtractor,
     GraphPruningOutput,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.query_graph.transformation import GraphFlattener, GraphReconstructor
+from featurebyte.query_graph.transformation import GraphReconstructor
 
 
 class QueryGraph(QueryGraphModel):
@@ -115,7 +116,7 @@ class QueryGraph(QueryGraphModel):
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 
-    def flatten(self) -> "QueryGraph":
+    def flatten(self) -> QueryGraphModel:
         """
         Construct a query graph which flattened all the graph nodes of this query graph
 
@@ -123,7 +124,7 @@ class QueryGraph(QueryGraphModel):
         -------
         QueryGraph
         """
-        return GraphFlattener.flatten(graph=self, output_graph=QueryGraph())
+        return GraphFlatteningTransformer(graph=self).transform()
 
     def add_graph_node(self, graph_node: "GraphNode", input_nodes: List[Node]) -> Node:
         """
@@ -206,17 +207,6 @@ class GraphNode(BaseGraphNode):
             parameters=GraphNodeParameters(graph=graph, output_node_name=nested_node.name),
         )
         return graph_node, proxy_input_nodes
-
-    @property
-    def output_node(self) -> Node:
-        """
-        Output node of the graph (in the graph node)
-
-        Returns
-        -------
-        Node
-        """
-        return cast(Node, self.parameters.graph.nodes_map[self.parameters.output_node_name])
 
     def add_operation(
         self,
