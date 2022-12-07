@@ -434,7 +434,7 @@ def order_size_feature_node_fixture(global_graph, order_size_feature_group_node)
     """
     Fixture of a non-time aware Feature from ItemView. Result of:
 
-    item_view.groupby("order_id").aggregate(method="count") + 123
+    order_size_feature = item_view.groupby("order_id").aggregate(method="count") + 123
     """
     graph = global_graph
     feature_node = graph.add_operation(
@@ -461,10 +461,9 @@ def order_size_feature_join_node_fixture(
     """
     Fixture of a non-time aware feature joined to EventView. Result of:
 
-    event_view["ord_size"] = order_size_feature.get_value(entity="order_id")
+    event_view.add_feature("ord_size", order_size_feature, entity="order_id")
     """
     node_params = {
-        "view_columns": ["ts", "cust_id", "order_id", "order_method"],
         "view_entity_column": "order_id",
         "feature_entity_column": "order_id",
         "name": "ord_size",

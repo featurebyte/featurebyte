@@ -413,7 +413,6 @@ class JoinFeatureNode(BaseNode):
     class Parameters(BaseModel):
         """Parameters"""
 
-        view_columns: List[InColumnStr]
         view_entity_column: str
         view_point_in_time_column: Optional[str]
         feature_entity_column: str
@@ -437,16 +436,15 @@ class JoinFeatureNode(BaseNode):
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
 
-        input_operation_info = inputs[0]
-
-        # Second input node is the feature
+        # Second input node is the Feature
         columns = inputs[1].columns
+        new_column_name = self.parameters.name
 
-        input_columns = [
-            col for col in input_operation_info.columns if col.name in self.parameters.view_columns
-        ]
+        # First input is the View
+        input_operation_info = inputs[0]
+        input_columns = [col for col in input_operation_info.columns if col.name != new_column_name]
         new_column = DerivedDataColumn.create(
-            name=self.parameters.name,
+            name=new_column_name,
             columns=columns,
             transform=None,
             node_name=self.name,

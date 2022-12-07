@@ -123,8 +123,9 @@ class JoinFeature(TableNode):
     def build(cls, context: SQLNodeContext) -> JoinFeature:
         parameters = context.parameters
 
+        view_node = cast(TableNode, context.input_sql_nodes[0])
         columns_map = {}
-        for col in parameters["view_columns"]:
+        for col in view_node.columns:
             columns_map[col] = get_qualified_column_identifier(col, "L")
 
         feature_name = parameters["name"]
@@ -140,7 +141,7 @@ class JoinFeature(TableNode):
         node = JoinFeature(
             context=context,
             columns_map=columns_map,
-            view_node=cast(TableNode, context.input_sql_nodes[0]),
+            view_node=view_node,
             view_entity_column=parameters["view_entity_column"],
             feature_sql=feature_sql,
             feature_entity_column=feature_entity_column,
