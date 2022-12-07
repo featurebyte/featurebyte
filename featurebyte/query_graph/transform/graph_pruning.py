@@ -50,7 +50,7 @@ class GraphPruningExtractor(
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
-        # TODO: Decouple AssignNode from pruning logic
+        # TODO: [DEV-868] Decouple AssignNode from pruning logic
         if isinstance(node, AssignNode) and node.name not in global_state.node_names:
             return input_node_names[:1], True
         return input_node_names, False
@@ -85,6 +85,9 @@ class GraphPruningExtractor(
             target_columns=target_columns,
             operation_structure_map=operation_structure_map,
         )
+        # TODO: [DEV-868] Decouple AssignNode from pruning logic
+        while output_node_name not in node_name_map:
+            output_node_name = nested_graph.backward_edges_map[output_node_name][0]
         return node.clone(
             parameters={"graph": pruned_graph, "output_node_name": node_name_map[output_node_name]}
         )
@@ -107,6 +110,7 @@ class GraphPruningExtractor(
             # in this case, keep finding the first parent node exists in the processed_node_names.
             # currently only ASSIGN node could get pruned, the first input node is the frame node.
             # it is used to replace the pruned assigned node
+            # TODO: [DEV-868] Decouple AssignNode from pruning logic
             while input_node_name not in global_state.processed_node_names:
                 input_node_name = self.graph.backward_edges_map[input_node_name][0]
             input_node_names.append(input_node_name)

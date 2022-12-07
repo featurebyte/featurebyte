@@ -523,3 +523,78 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         },
         "type": "groupby",
     }
+
+
+def test_graph_node__redundant_graph_node(input_node_params):
+    """Test graph node (redundant graph node)"""
+    graph = QueryGraph()
+    input_node = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_a_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["col_int"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    add_node = graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a_node],  # graph_node.output_node: nested project node
+    )
+    node_graph, proxy_inputs = GraphNode.create(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "col_int_plus_one"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node, add_node],
+    )
+    graph_node = graph.add_graph_node(
+        graph_node=node_graph,
+        input_nodes=[input_node, add_node],
+    )
+    proj_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["col_int"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph_node],
+    )
+    operation_structure = graph.extract_operation_structure(node=proj_node)
+    assert operation_structure.dict() == {
+        "aggregations": [],
+        "columns": [
+            {
+                "filter": False,
+                "name": "col_int",
+                "node_names": {"project_2", "input_1"},
+                "tabular_data_id": None,
+                "tabular_data_type": "generic",
+                "type": "source",
+            }
+        ],
+        "output_category": "view",
+        "output_type": "series",
+    }
+    # TODO: [DEV-868] Decouple AssignNode from pruning logic
+    # current behaviour is not correct as we currently only support pruning ASSIGN node.
+    # if we check the graph inside the graph node, the ASSIGN node is pruned.
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
+    assert pruned_graph.edges_map == {
+        "input_1": ["project_1", "graph_1"],
+        "project_1": ["add_1"],
+        "add_1": ["graph_1"],
+        "graph_1": ["project_2"],
+    }
+    nested_graph_nodes = pruned_graph.get_node_by_name("graph_1").parameters.graph.nodes
+    assert nested_graph_nodes == [
+        # note that second proxy input node is pruned
+        {
+            "name": "proxy_input_1",
+            "type": "proxy_input",
+            "output_type": "frame",
+            "parameters": {"node_name": "input_1"},
+        }
+    ]
