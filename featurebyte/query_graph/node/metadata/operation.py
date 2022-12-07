@@ -134,7 +134,7 @@ class BaseColumn(BaseFrozenModel):
         return self.clone(**node_kwargs, **kwargs)
 
 
-class BaseDataColumn(BaseColumn):  # pylint: disable=abstract-method
+class BaseDataColumn(BaseColumn):
     """BaseDataColumn class"""
 
     name: str

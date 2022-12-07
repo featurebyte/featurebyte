@@ -534,7 +534,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    proj_a_node = graph.add_operation(
+    proj_col_int_node = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["col_int"]},
         node_output_type=NodeOutputType.SERIES,
@@ -544,7 +544,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         node_type=NodeType.ADD,
         node_params={"value": 1},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a_node],  # graph_node.output_node: nested project node
+        input_nodes=[proj_col_int_node],  # graph_node.output_node: nested project node
     )
     node_graph, proxy_inputs = GraphNode.create(
         node_type=NodeType.ASSIGN,
