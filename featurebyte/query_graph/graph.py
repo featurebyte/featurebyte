@@ -16,7 +16,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParamete
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import GraphPruningExtractor, GraphPruningOutput
-from featurebyte.query_graph.transformation import GraphReconstructor
+from featurebyte.query_graph.transform.reconstruction import GraphReconstructionTransformer
 
 
 class QueryGraph(QueryGraphModel):
@@ -90,26 +90,24 @@ class QueryGraph(QueryGraphModel):
         return GraphPruningExtractor(graph=self).extract(node=target_node)
 
     def reconstruct(
-        self, replace_nodes_map: Dict[str, Node], regenerate_groupby_hash: bool = False
-    ) -> "QueryGraph":
+        self, node_replacement_map: Dict[str, Node], regenerate_groupby_hash: bool
+    ) -> QueryGraphModel:
         """
         Reconstruct the query graph using the replacement node mapping
 
         Parameters
         ----------
-        replace_nodes_map: Dict[str, Node]
+        node_replacement_map: Dict[str, Node]
             Node name (of the input query graph) to replacement node mapping
         regenerate_groupby_hash: bool
             Whether to regenerate tile ID & aggregation ID in groupby node
 
         Returns
         -------
-        QueryGraph
+        QueryGraphModel
         """
-        return GraphReconstructor.reconstruct(
-            graph=self,
-            output_graph=QueryGraph(),
-            replace_nodes_map=replace_nodes_map,
+        return GraphReconstructionTransformer(graph=self).transform(
+            node_replacement_map=node_replacement_map,
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 
@@ -119,7 +117,7 @@ class QueryGraph(QueryGraphModel):
 
         Returns
         -------
-        QueryGraph
+        QueryGraphModel
         """
         return GraphFlatteningTransformer(graph=self).transform()
 

@@ -15,6 +15,7 @@ from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVers
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
@@ -64,7 +65,7 @@ class VersionService(BaseService):
         cls, feature: FeatureModel, feature_job_setting: Optional[FeatureJobSetting]
     ) -> FeatureModel:
         has_change: bool = False
-        graph = feature.graph
+        graph: QueryGraphModel = feature.graph
         if feature_job_setting:
             replace_nodes_map: dict[str, Node] = {}
             for groupby_node, _ in cls._iterate_groupby_and_event_data_input_node_pairs(
@@ -80,7 +81,7 @@ class VersionService(BaseService):
             if replace_nodes_map:
                 has_change = True
                 graph = feature.graph.reconstruct(
-                    replace_nodes_map=replace_nodes_map, regenerate_groupby_hash=True
+                    node_replacement_map=replace_nodes_map, regenerate_groupby_hash=True
                 )
 
         if has_change:
