@@ -184,21 +184,8 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     assert feature_list[feature_2h.name].id == feature_2h.id
 
 
-@pytest.mark.parametrize(
-    "event_data",
-    [
-        # "databricks",
-        "snowflake"
-    ],
-    indirect=True,
-)
-def test_query_object_operation(transaction_data_upper_case, event_data, feature_manager):
-    """
-    Test EventView operations for an EventData
-    """
-    source_type = event_data.feature_store.type
-    count_dict_supported = source_type == SourceType.SNOWFLAKE
-
+@pytest.fixture(name="event_view")
+def event_view_fixture(event_data):
     # create event view
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
@@ -211,47 +198,29 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
         "AMOUNT",
         "TRANSACTION_ID",
     ]
+    return event_view
 
-    # need to specify the constant as float, otherwise results will get truncated
-    event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
-    event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
 
-    # apply more event view operations
-    event_view["AMOUNT"].fillna(0)
-
-    # check accessor operations
-    check_string_operations(event_view, "PRODUCT_ACTION")
-    check_datetime_operations(event_view, "EVENT_TIMESTAMP")
-
-    # check casting operations
-    check_cast_operations(event_view, source_type=source_type)
-
-    # check numeric operations
-    check_numeric_operations(event_view)
-
-    # construct expected results
-    expected = transaction_data_upper_case.copy()
-    expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
-    expected["LUCKY_CUSTOMER"] = (expected["CUST_ID_X_SESSION_ID"] > 140.0).astype(int)
-    expected["AMOUNT"] = expected["AMOUNT"].fillna(0)
-
-    # check agreement
-    output = event_view.preview(limit=expected.shape[0])
-    output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
-        float
-    )  # type is not correct here
-    columns = [
-        col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
-    ]
-    pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
-
-    # create some features
+@pytest.fixture(name="feature_group")
+def feature_group_fixture(event_view):
+    """
+    Fixture for a simple FeatureGroup with count features
+    """
     event_view["derived_value_column"] = 1.0 * event_view["USER ID"]
     feature_group = event_view.groupby("USER ID").aggregate_over(
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
     )
+    return feature_group
+
+
+@pytest.fixture(name="feature_group_per_category")
+def feature_group_per_category_fixture(event_view):
+    """
+    Fixture for a FeatureGroup with dictionary features
+    """
+
     feature_group_per_category = event_view.groupby(
         "USER ID", category="PRODUCT_ACTION"
     ).aggregate_over(
@@ -273,7 +242,54 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
         "ACTION_SIMILARITY_2h_to_24h"
     ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
 
-    # preview the features
+    return feature_group_per_category
+
+
+def test_event_view_operations(event_view, transaction_data_upper_case):
+    """
+    Test operations that can be performed on an EventView before creating features
+    """
+    # need to specify the constant as float, otherwise results will get truncated
+    event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
+    event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
+
+    # apply more event view operations
+    event_view["AMOUNT"].fillna(0)
+
+    # check accessor operations
+    check_string_operations(event_view, "PRODUCT_ACTION")
+    check_datetime_operations(event_view, "EVENT_TIMESTAMP")
+
+    # check casting operations
+    check_cast_operations(event_view, source_type=event_view.feature_store.type)
+
+    # check numeric operations
+    check_numeric_operations(event_view)
+
+    # construct expected results
+    expected = transaction_data_upper_case.copy()
+    expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
+    expected["LUCKY_CUSTOMER"] = (expected["CUST_ID_X_SESSION_ID"] > 140.0).astype(int)
+    expected["AMOUNT"] = expected["AMOUNT"].fillna(0)
+
+    # check agreement
+    output = event_view.preview(limit=expected.shape[0])
+    output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
+        float
+    )  # type is not correct here
+    columns = [
+        col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
+    ]
+    pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
+
+
+def test_feature_operations(event_view, feature_group, feature_group_per_category):
+    """
+    Test operations on Feature objects
+    """
+    source_type = event_view.feature_store.type
+    count_dict_supported = source_type == SourceType.SNOWFLAKE
+
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
         "user id": 1,
@@ -413,8 +429,6 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     # Check using a derived numeric column as category
     check_day_of_week_counts(event_view, preview_param)
 
-    run_and_test_get_historical_features(feature_group, feature_group_per_category)
-
 
 def create_feature_with_filtered_event_view(event_view):
     """
@@ -476,8 +490,11 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
-def run_and_test_get_historical_features(feature_group, feature_group_per_category):
-    """Test getting historical features from FeatureList"""
+def test_get_historical_features(feature_group, feature_group_per_category):
+    """
+    Test getting historical features from FeatureList
+    """
+    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
