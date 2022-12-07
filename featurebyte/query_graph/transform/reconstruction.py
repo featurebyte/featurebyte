@@ -223,8 +223,23 @@ class GraphReconstructionTransformer(
         global_state.node_name_map[node.name] = inserted_node.name
 
     def transform(
-        self, node_replacement_map: Dict[str, NodeT], regenerate_groupby_hash: bool, **kwargs: Any
+        self, node_replacement_map: Dict[str, NodeT], regenerate_groupby_hash: bool
     ) -> QueryGraphModel:
+        """
+        Transform the graph by replacing all the nodes specified in the node replacement dictionary
+        with an option whether to regenerate the groupby hash value.
+
+        Parameters
+        ----------
+        node_replacement_map: Dict[str, NodeT]
+            Node replacement dictionary
+        regenerate_groupby_hash: bool
+            Flag to control whether to regenerate the groupby hash
+
+        Returns
+        -------
+        QueryGraphModel
+        """
         global_state = GraphReconstructionGlobalState(
             node_replacement_map=node_replacement_map,
             regenerate_groupby_hash=regenerate_groupby_hash,
