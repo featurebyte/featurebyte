@@ -10,7 +10,7 @@ from abc import abstractmethod
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
@@ -116,6 +116,16 @@ class SnowflakeAdapter(BaseAdapter):
     Helper class to generate Snowflake specific SQL expressions
     """
 
+    class SnowflakeOnlineStoreColumnType(StrEnum):
+        """
+        Possible column types in Snowflake online store tables
+        """
+
+        FLOAT = "FLOAT"
+        VARCHAR = "VARCHAR"
+        OBJECT = "OBJECT"
+        VARIANT = "VARIANT"
+
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         return expressions.Anonymous(
@@ -159,14 +169,14 @@ class SnowflakeAdapter(BaseAdapter):
     @classmethod
     def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
         if dtype in {DBVarType.INT, DBVarType.FLOAT}:
-            return "FLOAT"
+            return cls.SnowflakeOnlineStoreColumnType.FLOAT
         if dtype == DBVarType.VARCHAR:
-            return "VARCHAR"
+            return cls.SnowflakeOnlineStoreColumnType.VARCHAR
         if dtype == DBVarType.OBJECT:
-            return "OBJECT"
+            return cls.SnowflakeOnlineStoreColumnType.OBJECT
         # Currently we don't expect features to be of any other types than above. Otherwise, default
         # to VARIANT since it can hold any data types
-        return "VARIANT"
+        return cls.SnowflakeOnlineStoreColumnType.VARIANT
 
 
 class DatabricksAdapter(BaseAdapter):
