@@ -1,0 +1,26 @@
+name: "Weekly Cleanup"
+
+# SECRETS NAME                   | Description                     | PERMISSIONS
+# ------------------------------ | ------------------------------- | ----------------------------------------------------
+## WORKFLOW_GH_TOKEN__CHESTER    | Github Classic Token            | [Github Cache                   ] delete
+
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 0 * * 6'  # On 00:00 Every Saturday
+
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "delete all cache"
+        run: |
+          # Get all Caches
+          export CACHE_IDS=$(curl -s \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.WORKFLOW_GH_TOKEN__CHESTER }}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches")
+
+          # Delete Cache
+          printenv CACHE_IDS | xargs -I {} curl -X DELETE -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ secrets.WORKFLOW_GH_TOKEN__CHESTER }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches/{}"
