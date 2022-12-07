@@ -109,7 +109,7 @@ class VersionService(BaseService):
         feature = await self.feature_service.get_document(document_id=data.source_feature_id)
         new_feature = self._create_new_feature_version(feature, data.feature_job_setting)
         return await self.feature_service.create_document(
-            data=FeatureCreate(**new_feature.dict(by_alias=True)), get_credential=get_credential
+            data=FeatureCreate(**new_feature.dict(by_alias=True))
         )
 
     async def _create_new_feature_list_version(

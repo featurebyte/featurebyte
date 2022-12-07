@@ -3,8 +3,6 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any
-
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
