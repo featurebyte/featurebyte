@@ -520,28 +520,28 @@ def mixed_point_in_time_and_item_aggregations_fixture(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[item_data_input_node],
     )
+    item_groupby_feature_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_size"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(item_groupby_node.name)],
+    )
     groupby_node = graph.get_node_by_name("groupby_1")
-    return graph, groupby_node, item_groupby_node
+    return graph, groupby_node, item_groupby_feature_node
 
 
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations_features")
 def mixed_point_in_time_and_item_aggregations_features_fixture(
     mixed_point_in_time_and_item_aggregations,
 ):
-    graph, groupby_node, item_groupby_node = mixed_point_in_time_and_item_aggregations
+    graph, groupby_node, item_groupby_feature_node = mixed_point_in_time_and_item_aggregations
     feature_proj_1 = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_48h_average"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph.get_node_by_name(groupby_node.name)],
     )
-    feature_proj_2 = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["order_size"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[graph.get_node_by_name(item_groupby_node.name)],
-    )
-    return graph, feature_proj_1, feature_proj_2
+    return graph, feature_proj_1, item_groupby_feature_node
 
 
 @pytest.fixture(name="scd_join_node")
