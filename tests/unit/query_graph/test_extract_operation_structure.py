@@ -342,21 +342,21 @@ def test_extract_operation__join_double_aggregations(
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_join_node)
     common_event_data_column_params = extract_column_parameters(
         event_data_input_node,
-        other_node_names={"input_2", "join_1"},
+        other_node_names={"input_2", "join_feature_1"},
     )
     order_size_column = {
         "name": "ord_size",
         "columns": [],
-        "transforms": ["item_groupby"],
+        "transforms": ["item_groupby", "add(value=123)"],
         "filter": False,
         "type": "derived",
-        "node_names": {"input_1", "item_groupby_1", "join_1"},
+        "node_names": {"project_1", "item_groupby_1", "join_feature_1", "add_1", "input_1"},
     }
     assert op_struct.columns == [
         {"name": "ts", **common_event_data_column_params},
         {"name": "cust_id", **common_event_data_column_params},
-        {"name": "ord_id", **common_event_data_column_params},
-        {"name": "ord_method", **common_event_data_column_params},
+        {"name": "order_id", **common_event_data_column_params},
+        {"name": "order_method", **common_event_data_column_params},
         order_size_column,
     ]
     assert op_struct.aggregations == []
@@ -376,10 +376,19 @@ def test_extract_operation__join_double_aggregations(
             "filter": False,
             "groupby_type": "groupby",
             "type": "aggregation",
-            "node_names": {"input_1", "input_2", "join_1", "item_groupby_1", "groupby_1"},
+            "node_names": {
+                "input_1",
+                "input_2",
+                "join_feature_1",
+                "item_groupby_1",
+                "add_1",
+                "project_1",
+                "groupby_1",
+            },
         }
     ]
     assert op_struct.columns == [order_size_column]
+    assert op_struct.aggregations[0].dict() == expected_aggregations[0]
     assert op_struct.aggregations == expected_aggregations
 
     grp_op_struct = op_struct.to_group_operation_structure()

@@ -422,13 +422,6 @@ class JoinFeatureNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    @root_validator(pre=True)
-    @classmethod
-    def _validate_view_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if "view_columns" in values and "name" in values:
-            assert values["name"] not in values["view_columns"]
-        return values
-
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -442,7 +435,11 @@ class JoinFeatureNode(BaseNode):
 
         # First input is the View
         input_operation_info = inputs[0]
-        input_columns = [col for col in input_operation_info.columns if col.name != new_column_name]
+        input_columns = [
+            col.clone(name=col.name, node_names=col.node_names.union([self.name]))
+            for col in input_operation_info.columns
+            if col.name != new_column_name
+        ]
         new_column = DerivedDataColumn.create(
             name=new_column_name,
             columns=columns,
