@@ -7,6 +7,9 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
+    filter_join_key_from_column,
+    filter_join_key_from_column_info,
+    filter_join_key_from_column_lineage_map,
     is_column_name_in_columns,
     join_column_lineage_map,
     join_tabular_data_ids,
@@ -15,6 +18,40 @@ from featurebyte.api.join_utils import (
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo
+
+
+def test_filter_join_key_from_column():
+    """
+    Test filter_join_key_from_column
+    """
+    columns = ["colA", "colB", "colC"]
+    filtered_columns = filter_join_key_from_column(columns, "randomCol")
+    assert filtered_columns == columns
+
+    filtered_columns = filter_join_key_from_column(columns, "colA")
+    assert filtered_columns == ["colB", "colC"]
+
+    filtered_columns = filter_join_key_from_column(columns, "")
+    assert filtered_columns == columns
+
+
+def test_filter_join_key_from_column_info():
+    """
+    Test filter_join_key_from_column_info
+    """
+    column_infos = [
+        get_column_info("colA"),
+        get_column_info("colB"),
+        get_column_info("colC"),
+    ]
+    filtered_columns = filter_join_key_from_column_info(column_infos, "randomCol")
+    assert filtered_columns == column_infos
+
+    filtered_columns = filter_join_key_from_column_info(column_infos, "colA")
+    assert filtered_columns == [get_column_info("colB"), get_column_info("colC")]
+
+    filtered_columns = filter_join_key_from_column_info(column_infos, "")
+    assert filtered_columns == column_infos
 
 
 def test_append_rsuffix_to_column_info():
@@ -100,6 +137,22 @@ def test_join_tabular_data_ids__join():
     data_ids_b = [object_3, object_a, object_9]
     output = join_tabular_data_ids(data_ids_a, data_ids_b)
     assert output == [object_0, object_2, object_3, object_5, object_9, object_a]
+
+
+def test_filter_join_key_from_column_lineage_map():
+    """
+    Test filter_join_key_from_column_lineage_map
+    """
+    col_a = "colA"
+    lineage = {col_a: ("node1", "node2", "node3")}
+    filtered_map = filter_join_key_from_column_lineage_map(lineage, "")
+    assert filtered_map == lineage
+
+    filtered_map = filter_join_key_from_column_lineage_map(lineage, col_a)
+    assert filtered_map == {}
+
+    filtered_map = filter_join_key_from_column_lineage_map(lineage, "randomCol")
+    assert filtered_map == lineage
 
 
 def test_join_column_lineage_map():

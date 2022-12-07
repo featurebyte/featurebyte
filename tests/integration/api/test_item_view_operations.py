@@ -83,6 +83,18 @@ def test_item_view_operations(item_data):
     }
 
 
+def assert_match(item_id: str, item_name: str, item_type: str):
+    """
+    Helper method to assert values in the joined table.
+    """
+    id_str = item_id.lstrip("item")
+    # The format of these expected values are defined in the fixture setup of the dimension view dataframe.
+    expected_name = f"name{id_str}"
+    expected_type = f"type{id_str}"
+    assert item_name == expected_name
+    assert item_type == expected_type
+
+
 @pytest.mark.parametrize(
     "item_data",
     ["snowflake"],
@@ -117,7 +129,12 @@ def test_item_view_joined_with_dimension_view(
     item_view.join(dimension_view, rsuffix=suffix)
 
     # assert columns are updated after the join
-    item_columns.extend([f"{col}{suffix}" for col in initial_dimension_columns])
+    filtered_dimension_columns = [
+        "created_at",
+        "item_name",
+        "item_type",
+    ]  # no item_id since join key is removed
+    item_columns.extend([f"{col}{suffix}" for col in filtered_dimension_columns])
     item_preview = item_view.preview()
     assert item_preview.columns.tolist() == item_columns
     number_of_elements = original_item_preview.shape[0]
@@ -127,7 +144,10 @@ def test_item_view_joined_with_dimension_view(
 
     # Verify that the item_id's are the same
     assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
-    # Verify that the joined item_ids are the same as the original item IDs
-    assert_series_equal(
-        item_preview["item_id_dimension"], item_preview["item_id"], check_names=False
-    )
+
+    # verify that the values in the joined columns are as we expect
+    for _, row in item_preview.iterrows():
+        curr_item_id = row["item_id"]
+        joined_item_name = row["item_name_dimension"]
+        joined_item_type = row["item_type_dimension"]
+        assert_match(curr_item_id, joined_item_name, joined_item_type)

@@ -38,6 +38,26 @@ def append_rsuffix_to_column_info(
     return updated_column_info
 
 
+def filter_join_key_from_column(columns: List[str], join_key: str) -> List[str]:
+    """
+    Filters the join key from a list of columns. This is used to remove the join key from the other view's columns
+    so that we don't duplicate information in the resulting view.
+
+    Parameters
+    ----------
+    columns: List[str]
+        columns for a view
+    join_key: str
+        join key column
+
+    Returns
+    -------
+    List[str]
+        filtered list of columns
+    """
+    return [col for col in columns if col != join_key]
+
+
 def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> List[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.
@@ -57,6 +77,25 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
     if not rsuffix:
         return columns
     return [f"{col}{rsuffix}" for col in columns]
+
+
+def filter_join_key_from_column_info(col_info: List[ColumnInfo], join_key: str) -> List[ColumnInfo]:
+    """
+    Filters out column info that matches the join key.
+
+    Parameters
+    ----------
+    col_info: List[ColumnInfo]
+        colum info's
+    join_key: str
+        join key
+
+    Returns
+    -------
+    List[ColumnInfo]
+        filtered column info's
+    """
+    return [col_info for col_info in col_info if col_info.name != join_key]
 
 
 def combine_column_info_of_views(
@@ -144,6 +183,31 @@ def join_column_lineage_map(
     for col, lineage in joined_column_lineage_map.items():
         joined_column_lineage_map[col] = append_to_lineage(lineage, node_name)
     return joined_column_lineage_map
+
+
+def filter_join_key_from_column_lineage_map(
+    lineage_map: Dict[str, Tuple[str, ...]], join_key: str
+) -> Dict[str, Tuple[str, ...]]:
+    """
+    Filters out the join key from the column lineage map.
+
+    Parameters
+    ----------
+    lineage_map: Dict[str, Tuple[str, ...]]
+        lineage map to be filtered
+    join_key: str
+        join key
+
+    Returns
+    -------
+    Dict[str, Tuple[str, ...]]
+        filtered lineage map
+    """
+    if join_key not in lineage_map:
+        return lineage_map
+    copied_map = lineage_map.copy()
+    del copied_map[join_key]
+    return copied_map
 
 
 def update_column_lineage_map_with_suffix(

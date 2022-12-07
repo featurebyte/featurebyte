@@ -93,7 +93,6 @@ async def test_scd_join_small(snowflake_session, snowflake_feature_store):
                     "2022-04-20 10:00:00",
                 ]
             ),
-            "scd_cust_id": [np.nan, 1000, 1000],
             "scd_value": [np.nan, 1, 2],
         }
     )
