@@ -83,9 +83,9 @@ class BaseColumn(BaseFrozenModel):
         """
         return type(self)(**{**self.dict(), **kwargs})
 
-    def clone_with_replacement(
+    def clone_without_internal_nodes(
         self: BaseColumnT,
-        replace_node_name_map: Dict[str, Set[str]],
+        proxy_node_name_map: Dict[str, Set[str]],
         node_name: str,
         node_transform: str,
         **kwargs: Any,
@@ -104,11 +104,11 @@ class BaseColumn(BaseFrozenModel):
 
         Parameters
         ----------
-        replace_node_name_map: Dict[str, Set[str]]
+        proxy_node_name_map: Dict[str, Set[str]]
             Dictionary to replace the node name with the node name set. The key of this dictionary
             is the proxy input node name.
         node_name: str
-            Node name to replace if there are other node name not specified in replace_node_name_map
+            Node name to replace if any internal node is used
         node_transform: str
             Node transform string of node_name
         kwargs: Any
@@ -119,15 +119,15 @@ class BaseColumn(BaseFrozenModel):
         BaseColumnT
         """
         # find match proxy input node names & replace them with the external node names
-        proxy_input_names = self.node_names.intersection(replace_node_name_map)
+        proxy_input_names = self.node_names.intersection(proxy_node_name_map)
         node_names = set()
         for name in proxy_input_names:
-            node_names.update(replace_node_name_map[name])
+            node_names.update(proxy_node_name_map[name])
 
         # if any of the node name are not from the proxy input names, that means the nested graph's node
         # must change the column in some way, we must include the node name
         node_kwargs: Dict[str, Any] = {"node_names": node_names}
-        if self.node_names.difference(replace_node_name_map):
+        if self.node_names.difference(proxy_node_name_map):
             node_kwargs["node_names"].add(node_name)
             if hasattr(self, "transforms"):
                 node_kwargs["transforms"] = [node_transform]
@@ -246,19 +246,21 @@ class BaseDerivedColumn(BaseColumn):
             transforms.append(transform)
         return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)
 
-    def clone_with_replacement(
+    def clone_without_internal_nodes(
         self,
-        replace_node_name_map: Dict[str, Set[str]],
+        proxy_node_name_map: Dict[str, Set[str]],
         node_name: str,
         node_transform: str,
         **kwargs: Any,
     ) -> "BaseDerivedColumn":
         columns = [
-            col.clone_with_replacement(replace_node_name_map, node_name, node_transform, **kwargs)
+            col.clone_without_internal_nodes(
+                proxy_node_name_map, node_name, node_transform, **kwargs
+            )
             for col in self.columns
         ]
-        return super().clone_with_replacement(
-            replace_node_name_map=replace_node_name_map,
+        return super().clone_without_internal_nodes(
+            proxy_node_name_map=proxy_node_name_map,
             node_name=node_name,
             node_transform=node_transform,
             columns=columns,
@@ -316,23 +318,23 @@ class AggregationColumn(BaseDataColumn):
         col_dict["node_names"] = sorted(col_dict["node_names"])
         return hash(json_util.dumps(col_dict, sort_keys=True))
 
-    def clone_with_replacement(
+    def clone_without_internal_nodes(
         self,
-        replace_node_name_map: Dict[str, Set[str]],
+        proxy_node_name_map: Dict[str, Set[str]],
         node_name: str,
         node_transform: str,
         **kwargs: Any,
     ) -> "AggregationColumn":
         column: Optional[ViewDataColumn] = None
         if self.column is not None:
-            column = self.column.clone_with_replacement(  # type: ignore[assignment]
-                replace_node_name_map=replace_node_name_map,
+            column = self.column.clone_without_internal_nodes(  # type: ignore[assignment]
+                proxy_node_name_map=proxy_node_name_map,
                 node_name=node_name,
                 node_transform=node_transform,
                 **kwargs,
             )
-        return super().clone_with_replacement(
-            replace_node_name_map=replace_node_name_map,
+        return super().clone_without_internal_nodes(
+            proxy_node_name_map=proxy_node_name_map,
             node_name=node_name,
             node_transform=node_transform,
             column=column,
