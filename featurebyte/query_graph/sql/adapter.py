@@ -10,7 +10,7 @@ from abc import abstractmethod
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
@@ -94,11 +94,37 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    @abstractmethod
+    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+        """
+        Get the database specific type name given a Feature's DBVarType for online store purpose
+
+        Parameters
+        ----------
+        dtype : DBVarType
+            Data type
+
+        Returns
+        -------
+        str
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
     Helper class to generate Snowflake specific SQL expressions
     """
+
+    class SnowflakeOnlineStoreColumnType(StrEnum):
+        """
+        Possible column types in Snowflake online store tables
+        """
+
+        FLOAT = "FLOAT"
+        VARCHAR = "VARCHAR"
+        OBJECT = "OBJECT"
+        VARIANT = "VARIANT"
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
@@ -139,6 +165,18 @@ class SnowflakeAdapter(BaseAdapter):
             this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr]
         )
         return output_expr
+
+    @classmethod
+    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+        if dtype in {DBVarType.INT, DBVarType.FLOAT}:
+            return cls.SnowflakeOnlineStoreColumnType.FLOAT
+        if dtype == DBVarType.VARCHAR:
+            return cls.SnowflakeOnlineStoreColumnType.VARCHAR
+        if dtype == DBVarType.OBJECT:
+            return cls.SnowflakeOnlineStoreColumnType.OBJECT
+        # Currently we don't expect features to be of any other types than above. Otherwise, default
+        # to VARIANT since it can hold any data types
+        return cls.SnowflakeOnlineStoreColumnType.VARIANT
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -206,6 +244,10 @@ class DatabricksAdapter(BaseAdapter):
             this="DATEADD", expressions=["microsecond", microsecond_quantity, output_expr]
         )
         return output_expr
+
+    @classmethod
+    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+        raise NotImplementedError()
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
