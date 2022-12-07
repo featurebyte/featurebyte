@@ -3,16 +3,27 @@ name: "Weekly Cleanup"
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
 ## WORKFLOW_GH_TOKEN__CHESTER    | Github Classic Token            | [Github Cache                   ] delete
-
+## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
 
 on:
   workflow_dispatch: {}
   schedule:
     - cron: '0 0 * * 6'  # On 00:00 Every Saturday
 
+env:
+  # Python
+  GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
+  GCR_PYPI_REPO: featurebyte-pypi
+  GCR_PYPI_LOCATION: us-central1
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+
 jobs:
   cache:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.8.0" ]
     steps:
       - name: "delete all cache"
         run: |
@@ -24,3 +35,29 @@ jobs:
 
           # Delete Cache
           printenv CACHE_IDS | xargs -I {} curl -X DELETE -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ secrets.WORKFLOW_GH_TOKEN__CHESTER }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches/{}"
+
+      # Recreates the cache
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup cache
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
+
+      - name: Install Poetry
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: |
+          pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        if: ${{ needs.flags.outputs.changes != 0 }}
+        run: make install
