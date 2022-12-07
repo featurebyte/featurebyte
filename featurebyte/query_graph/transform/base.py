@@ -8,14 +8,14 @@ from abc import abstractmethod
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 
-ExtractorOutputT = TypeVar("ExtractorOutputT")
+OutputT = TypeVar("OutputT")
 BranchStateT = TypeVar("BranchStateT")
 GlobalStateT = TypeVar("GlobalStateT")
 QueryGraphT = TypeVar("QueryGraphT", bound=QueryGraphModel)
 
 
-class BaseGraphExtractor(Generic[ExtractorOutputT, BranchStateT, GlobalStateT]):
-    """BaseGraphExtractor class"""
+class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
+    """BaseGraphExtractor encapsulates the logic to perform backtracking from a target node."""
 
     def __init__(self, graph: QueryGraphT):
         self.graph = graph
@@ -140,7 +140,7 @@ class BaseGraphExtractor(Generic[ExtractorOutputT, BranchStateT, GlobalStateT]):
         )
 
     @abstractmethod
-    def extract(self, node: Node, **kwargs: Any) -> ExtractorOutputT:
+    def extract(self, node: Node, **kwargs: Any) -> OutputT:
         """
         Extract output of the given node from the given query graph
 
@@ -153,5 +153,44 @@ class BaseGraphExtractor(Generic[ExtractorOutputT, BranchStateT, GlobalStateT]):
 
         Returns
         -------
-        ExtractorOutputT
+        OutputT
+        """
+
+
+class BaseGraphTransformer(Generic[OutputT, GlobalStateT]):
+    """BaseGraphTransformer encapsulates the logic to perform graph traversal in a topological order."""
+
+    def __init__(self, graph: QueryGraphT):
+        self.graph = graph
+
+    @abstractmethod
+    def _compute(self, global_state: GlobalStateT, node: Node) -> None:
+        """
+        Computation done for each node of the connected graph
+
+        Parameters
+        ----------
+        global_state: GlobalStateT
+            Global state
+        node: Node
+            Target node of the computation
+        """
+
+    def _transform(self, global_state: GlobalStateT) -> Any:
+        for node in self.graph.iterate_sorted_nodes():
+            self._compute(global_state=global_state, node=node)
+
+    @abstractmethod
+    def transform(self, **kwargs: Any) -> OutputT:
+        """
+        Transform the query graph
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Other keywords parameters
+
+        Returns
+        -------
+        OutputT
         """

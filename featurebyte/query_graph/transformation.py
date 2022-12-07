@@ -14,7 +14,6 @@ from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
-from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
 from featurebyte.query_graph.transform.graph_pruning import GraphPruningExtractor
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
@@ -225,66 +224,4 @@ class GraphReconstructor:
                     node_output_type=node.output_type,
                     input_nodes=input_nodes,
                 )
-        return output_graph
-
-
-class GraphFlattener:
-    """GraphFlattener class"""
-
-    @classmethod
-    def flatten(cls, graph: QueryGraphT, output_graph: QueryGraphT) -> QueryGraphT:
-        """
-        Flatten the query graph by removing graph node
-
-        Parameters
-        ----------
-        graph: QueryGraphT
-            QueryGraph to be flattened
-        output_graph: QueryGraphT
-            Output QueryGraph
-
-        Returns
-        -------
-        QueryGraphT
-        """
-        # node_name_map: key(this-graph-node-name) => value(flattened-graph-node-name)
-        node_name_map: Dict[str, str] = {}
-        for node in graph.iterate_sorted_nodes():
-            if isinstance(node, BaseGraphNode):
-                nested_graph = node.parameters.graph.flatten()
-                # nested_node_name_map: key(nested-node-name) => value(flattened-graph-node-name)
-                nested_node_name_map: Dict[str, str] = {}
-                for nested_node in nested_graph.iterate_sorted_nodes():
-                    input_nodes = []
-                    for input_node_name in nested_graph.backward_edges_map[nested_node.name]:
-                        input_nodes.append(
-                            output_graph.get_node_by_name(nested_node_name_map[input_node_name])
-                        )
-
-                    if isinstance(nested_node, ProxyInputNode):
-                        nested_node_name_map[nested_node.name] = node_name_map[
-                            nested_node.parameters.node_name
-                        ]
-                    else:
-                        inserted_node = output_graph.add_operation(
-                            node_type=nested_node.type,
-                            node_params=nested_node.parameters.dict(),
-                            node_output_type=nested_node.output_type,
-                            input_nodes=input_nodes,
-                        )
-                        nested_node_name_map[nested_node.name] = inserted_node.name
-
-                    if nested_node.name == node.parameters.output_node_name:
-                        node_name_map[node.name] = nested_node_name_map[nested_node.name]
-            else:
-                inserted_node = output_graph.add_operation(
-                    node_type=node.type,
-                    node_params=node.parameters.dict(),
-                    node_output_type=node.output_type,
-                    input_nodes=[
-                        output_graph.get_node_by_name(node_name_map[input_node_name])
-                        for input_node_name in graph.backward_edges_map[node.name]
-                    ],
-                )
-                node_name_map[node.name] = inserted_node.name
         return output_graph

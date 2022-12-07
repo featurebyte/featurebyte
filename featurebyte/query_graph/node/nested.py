@@ -2,12 +2,12 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal
+from typing import List, Literal, cast
 
 from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
@@ -63,6 +63,17 @@ class BaseGraphNode(BaseNode):
     @property
     def transform_info(self) -> str:
         return self.type
+
+    @property
+    def output_node(self) -> NodeT:
+        """
+        Output node of the graph (in the graph node)
+
+        Returns
+        -------
+        NodeT
+        """
+        return cast(NodeT, self.parameters.graph.nodes_map[self.parameters.output_node_name])
 
     def _derive_node_operation_info(
         self,
