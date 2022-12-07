@@ -65,8 +65,8 @@ class OperationStructureExtractor(
         # appears in the nested graph are removed)
         clone_kwargs = {
             "proxy_node_name_map": proxy_input_node_name_map,
-            "node_name": node.name,
-            "node_transform": node.transform_info,
+            "graph_node_name": node.name,
+            "graph_node_transform": node.transform_info,
         }
         return OperationStructure(
             columns=[

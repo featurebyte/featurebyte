@@ -86,8 +86,8 @@ class BaseColumn(BaseFrozenModel):
     def clone_without_internal_nodes(
         self: BaseColumnT,
         proxy_node_name_map: Dict[str, Set[str]],
-        node_name: str,
-        node_transform: str,
+        graph_node_name: str,
+        graph_node_transform: str,
         **kwargs: Any,
     ) -> BaseColumnT:
         """
@@ -107,9 +107,9 @@ class BaseColumn(BaseFrozenModel):
         proxy_node_name_map: Dict[str, Set[str]]
             Dictionary to replace the node name with the node name set. The key of this dictionary
             is the proxy input node name.
-        node_name: str
+        graph_node_name: str
             Node name to replace if any internal node is used
-        node_transform: str
+        graph_node_transform: str
             Node transform string of node_name
         kwargs: Any
             Other keywords parameters
@@ -128,9 +128,9 @@ class BaseColumn(BaseFrozenModel):
         # must change the column in some way, we must include the node name
         node_kwargs: Dict[str, Any] = {"node_names": node_names}
         if self.node_names.difference(proxy_node_name_map):
-            node_kwargs["node_names"].add(node_name)
+            node_kwargs["node_names"].add(graph_node_name)
             if hasattr(self, "transforms"):
-                node_kwargs["transforms"] = [node_transform]
+                node_kwargs["transforms"] = [graph_node_transform]
         return self.clone(**node_kwargs, **kwargs)
 
 
@@ -249,20 +249,20 @@ class BaseDerivedColumn(BaseColumn):
     def clone_without_internal_nodes(
         self,
         proxy_node_name_map: Dict[str, Set[str]],
-        node_name: str,
-        node_transform: str,
+        graph_node_name: str,
+        graph_node_transform: str,
         **kwargs: Any,
     ) -> "BaseDerivedColumn":
         columns = [
             col.clone_without_internal_nodes(
-                proxy_node_name_map, node_name, node_transform, **kwargs
+                proxy_node_name_map, graph_node_name, graph_node_transform, **kwargs
             )
             for col in self.columns
         ]
         return super().clone_without_internal_nodes(
             proxy_node_name_map=proxy_node_name_map,
-            node_name=node_name,
-            node_transform=node_transform,
+            graph_node_name=graph_node_name,
+            graph_node_transform=graph_node_transform,
             columns=columns,
             **kwargs,
         )
@@ -321,22 +321,22 @@ class AggregationColumn(BaseDataColumn):
     def clone_without_internal_nodes(
         self,
         proxy_node_name_map: Dict[str, Set[str]],
-        node_name: str,
-        node_transform: str,
+        graph_node_name: str,
+        graph_node_transform: str,
         **kwargs: Any,
     ) -> "AggregationColumn":
         column: Optional[ViewDataColumn] = None
         if self.column is not None:
             column = self.column.clone_without_internal_nodes(  # type: ignore[assignment]
                 proxy_node_name_map=proxy_node_name_map,
-                node_name=node_name,
-                node_transform=node_transform,
+                graph_node_name=graph_node_name,
+                graph_node_transform=graph_node_transform,
                 **kwargs,
             )
         return super().clone_without_internal_nodes(
             proxy_node_name_map=proxy_node_name_map,
-            node_name=node_name,
-            node_transform=node_transform,
+            graph_node_name=graph_node_name,
+            graph_node_transform=graph_node_transform,
             column=column,
             **kwargs,
         )

@@ -404,6 +404,45 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     """
     Test graph pruning on nested graph
     """
+
+    def add_graph_node(query_graph, input_nodes):
+        # construct a graph node that add a "a_plus_b" column (redundant column) to the input table
+        # and generate a feature group
+        graph_node, proxy_inputs = GraphNode.create(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": ["a"]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=input_nodes,
+        )
+        node_proj_a = graph_node.output_node
+        node_proj_b = graph_node.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": ["col_b"]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=proxy_inputs,
+        )
+        node_add = graph_node.add_operation(
+            node_type=NodeType.ADD,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node_proj_a, node_proj_b],  # graph_node.output_node: nested project node
+        )
+        node_assign = graph_node.add_operation(
+            node_type=NodeType.ASSIGN,
+            node_params={"name": "a_plus_b"},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[proxy_inputs[0], node_add],
+        )
+        graph_node.add_operation(
+            node_type=NodeType.GROUPBY,
+            node_params=groupby_node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[node_assign],
+        )
+        return query_graph.add_graph_node(graph_node, input_nodes)
+
+    # construct a graph with a nested graph
+    # [input] -> [graph] -> [project]
     graph = QueryGraph()
     input_node = graph.add_operation(
         node_type=NodeType.INPUT,
@@ -416,39 +455,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    # construct a graph node
-    graph_node, proxy_inputs = GraphNode.create(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[input_node],
-    )
-    node_proj_a = graph_node.output_node
-    node_proj_b = graph_node.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["col_b"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=proxy_inputs,
-    )
-    node_add = graph_node.add_operation(
-        node_type=NodeType.ADD,
-        node_params={},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_proj_a, node_proj_b],  # graph_node.output_node: nested project node
-    )
-    node_assign = graph_node.add_operation(
-        node_type=NodeType.ASSIGN,
-        node_params={"name": "a_plus_b"},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[proxy_inputs[0], node_add],
-    )
-    graph_node.add_operation(
-        node_type=NodeType.GROUPBY,
-        node_params=groupby_node_params,
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_assign],
-    )
-    node_graph = graph.add_graph_node(graph_node, [input_node])
+    node_graph = add_graph_node(query_graph=graph, input_nodes=[input_node])
     node_proj_2h_avg = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_2h_average"]},
@@ -527,6 +534,20 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
 
 def test_graph_node__redundant_graph_node(input_node_params):
     """Test graph node (redundant graph node)"""
+
+    def add_graph_node(query_graph, input_nodes):
+        # construct a graph node which contains a single node (ASSIGN node)
+        node_graph, proxy_inputs = GraphNode.create(
+            node_type=NodeType.ASSIGN,
+            node_params={"name": "col_int_plus_one"},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=input_nodes,
+        )
+        return query_graph.add_graph_node(
+            graph_node=node_graph,
+            input_nodes=input_nodes,
+        )
+
     graph = QueryGraph()
     input_node = graph.add_operation(
         node_type=NodeType.INPUT,
@@ -546,16 +567,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_col_int_node],  # graph_node.output_node: nested project node
     )
-    node_graph, proxy_inputs = GraphNode.create(
-        node_type=NodeType.ASSIGN,
-        node_params={"name": "col_int_plus_one"},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[input_node, add_node],
-    )
-    graph_node = graph.add_graph_node(
-        graph_node=node_graph,
-        input_nodes=[input_node, add_node],
-    )
+    graph_node = add_graph_node(query_graph=graph, input_nodes=[input_node, add_node])
     proj_node = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["col_int"]},
