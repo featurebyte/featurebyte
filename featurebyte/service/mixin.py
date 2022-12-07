@@ -98,9 +98,7 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
     document_create_class: Type[DocumentCreateSchema]
 
     @abstractmethod
-    async def create_document(
-        self, data: DocumentCreateSchema, get_credential: Any = None
-    ) -> Document:
+    async def create_document(self, data: DocumentCreateSchema) -> Document:
         """
         Create document at persistent
 
@@ -108,8 +106,6 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
         ----------
         data: DocumentCreateSchema
             Document creation payload object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
