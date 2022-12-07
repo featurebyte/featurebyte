@@ -461,19 +461,16 @@ def order_size_feature_join_node_fixture(
     """
     Fixture of a non-time aware feature joined to EventView. Result of:
 
-    event_view["order_size"] = order_size_feature.get_value(entity="order_id")
+    event_view["ord_size"] = order_size_feature.get_value(entity="order_id")
     """
     node_params = {
-        "left_on": "order_id",
-        "right_on": "order_id",
-        "left_input_columns": ["ts", "cust_id", "order_id", "order_method"],
-        "left_output_columns": ["ts", "cust_id", "ord_id", "ord_method"],
-        "right_input_columns": ["order_size"],
-        "right_output_columns": ["ord_size"],
-        "join_type": "left",
+        "view_columns": ["ts", "cust_id", "order_id", "order_method"],
+        "view_entity_column": "order_id",
+        "feature_entity_column": "order_id",
+        "name": "ord_size",
     }
     node = global_graph.add_operation(
-        node_type=NodeType.JOIN,
+        node_type=NodeType.JOIN_FEATURE,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[event_data_input_node, order_size_feature_node],

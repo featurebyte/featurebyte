@@ -44,6 +44,7 @@ class NodeType(StrEnum):
     GROUPBY = "groupby"
     ITEM_GROUPBY = "item_groupby"
     JOIN = "join"
+    JOIN_FEATURE = "join_feature"
 
     # other operations
     ASSIGN = "assign"

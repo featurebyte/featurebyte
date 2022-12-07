@@ -407,6 +407,57 @@ class JoinNode(BaseNode):
         )
 
 
+class JoinFeatureNode(BaseNode):
+    """JoinFeatureNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        view_columns: List[InColumnStr]
+        view_entity_column: str
+        view_point_in_time_column: Optional[str]
+        feature_entity_column: str
+        name: OutColumnStr
+
+    type: Literal[NodeType.JOIN_FEATURE] = Field(NodeType.JOIN_FEATURE, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    parameters: Parameters
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_view_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "view_columns" in values and "name" in values:
+            assert values["name"] not in values["view_columns"]
+        return values
+
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+
+        input_operation_info = inputs[0]
+
+        # Second input node is the feature
+        columns = inputs[1].columns
+
+        input_columns = [
+            col for col in input_operation_info.columns if col.name in self.parameters.view_columns
+        ]
+        new_column = DerivedDataColumn.create(
+            name=self.parameters.name,
+            columns=columns,
+            transform=None,
+            node_name=self.name,
+        )
+        return OperationStructure(
+            columns=input_columns + [new_column],
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+        )
+
+
 class AliasNode(BaseNode):
     """AliasNode class"""
 
