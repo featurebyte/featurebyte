@@ -20,6 +20,8 @@ from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGr
 from featurebyte.query_graph.transform.pruning import GraphPruningExtractor
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
+PRUNING_SENSITIVE_NODE_MAP: Dict[NodeType, Type[BaseNode]] = {}
+
 
 class BasePruningSensitiveNode(BaseNode):
     """
@@ -28,6 +30,11 @@ class BasePruningSensitiveNode(BaseNode):
     Nodes with this characteristic (e.g. those that derive some unique id based on its input node)
     should implement this interface.
     """
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        node_type = cls.__fields__["type"].default
+        PRUNING_SENSITIVE_NODE_MAP[node_type] = cls
 
     @classmethod
     @abstractmethod
@@ -42,7 +49,7 @@ class BasePruningSensitiveNode(BaseNode):
         """
         Derive additional parameters that should be based on pruned graph
 
-        This method will be called by GraphReconstructor's add_pruning_sensitive_operation method.
+        This method will be called by GraphReconstructionTransformer's add_pruning_sensitive_operation method.
 
         Parameters
         ----------
@@ -202,12 +209,11 @@ class GraphReconstructionTransformer(
         ]
 
         assert node.type == node_to_insert.type
-        node_cls_map = {NodeType.GROUPBY: GroupbyNode, NodeType.ITEM_GROUPBY: ItemGroupbyNode}
         inserted_node: BaseNode
-        if node.type in node_cls_map and global_state.regenerate_groupby_hash:
+        if node.type in PRUNING_SENSITIVE_NODE_MAP and global_state.regenerate_groupby_hash:
             inserted_node = add_pruning_sensitive_operation(
                 graph=global_state.graph,
-                node_cls=node_cls_map[node.type],  # type: ignore
+                node_cls=PRUNING_SENSITIVE_NODE_MAP[node.type],  # type: ignore
                 node_params=node_to_insert.parameters.dict(),
                 input_node=input_nodes[0],
             )
