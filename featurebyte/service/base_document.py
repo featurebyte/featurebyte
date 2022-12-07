@@ -81,9 +81,7 @@ class BaseDocumentService(
         _ = data
         return {}
 
-    async def create_document(
-        self, data: DocumentCreateSchema, get_credential: Any = None
-    ) -> Document:
+    async def create_document(self, data: DocumentCreateSchema) -> Document:
         """
         Create document at persistent
 
@@ -91,14 +89,11 @@ class BaseDocumentService(
         ----------
         data: DocumentCreateSchema
             Document creation payload object
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
         Document
         """
-        _ = get_credential
         document = self.document_class(
             **{
                 **data.json_dict(),

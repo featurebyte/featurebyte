@@ -88,7 +88,7 @@ class FeatureListController(
             Newly created feature list object
         """
         if isinstance(data, FeatureListCreate):
-            document = await self.service.create_document(data=data, get_credential=get_credential)
+            document = await self.service.create_document(data=data)
         else:
             document = await self.version_service.create_new_feature_list_version(
                 data=data, get_credential=get_credential

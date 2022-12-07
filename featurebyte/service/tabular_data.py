@@ -21,9 +21,7 @@ class DataService(BaseDocumentService[BaseDataModel, DataCreate, DataUpdate]):
 
     document_class = TabularDataModel
 
-    async def create_document(
-        self, data: DocumentCreateSchema, get_credential: Any = None
-    ) -> Document:
+    async def create_document(self, data: DocumentCreateSchema) -> Document:
         raise NotImplementedError
 
     async def update_document(

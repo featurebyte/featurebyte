@@ -79,9 +79,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def create_document(
-        self, data: FeatureCreate, get_credential: Any = None
-    ) -> FeatureModel:
+    async def create_document(self, data: FeatureCreate) -> FeatureModel:
         document = FeatureModel(
             **{
                 **data.json_dict(),
