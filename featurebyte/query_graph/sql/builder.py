@@ -159,13 +159,7 @@ class SQLOperationGraph:
         assert cur_node_id not in self.sql_nodes
 
         # Recursively build input sql nodes first
-        if self.sql_type == SQLType.POST_AGGREGATION and cur_node.type == NodeType.GROUPBY:
-            # For windowed aggregation, the input nodes are irrelevant when generating post
-            # aggregation feature expressions, since such expressions would be based on pre-computed
-            # tile values (e.g. "agg_w2592000_avg_589e8c8c370668879429257bff88f31d49121300" + 123)
-            inputs = []
-        else:
-            inputs = self.query_graph.backward_edges_map[cur_node_id]
+        inputs = self.query_graph.backward_edges_map[cur_node_id]
         input_sql_nodes = []
         for input_node_id in inputs:
             if input_node_id not in self.sql_nodes:
