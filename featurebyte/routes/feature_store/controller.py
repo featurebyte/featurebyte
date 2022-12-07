@@ -52,7 +52,9 @@ class FeatureStoreController(
         self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
 
-    def persist_credential(self, credential: Credential, feature_store_name: str) -> bool:
+    async def persist_credentials_if_needed(
+        self, credential: Credential, feature_store_name: str
+    ) -> bool:
         """
         Persists the credentials to the local config file. This will be a no-op if credentials already exist
         in the persistent layer for the feature_store_name provided.
@@ -125,10 +127,8 @@ class FeatureStoreController(
                     """
                     Updated get_credential will try to look up the credentials from config.
 
-                    If there's nothing in the config, we will write the current credentials to the config,
-                    and return the credentials provided.
-
                     If there are credentials in the config, we will ignore whatever is passed in here.
+                    If not, we will use the params that are passed in.
 
                     Parameters
                     ----------
@@ -145,7 +145,6 @@ class FeatureStoreController(
                     cred = get_credential(user_id, feature_store_name)
                     if cred is not None:
                         return cred
-                    self.persist_credential(creds_from_params, feature_store_name)  # type: ignore
                     return creds_from_params
 
                 get_credentials_to_use = _updated_get_credential
@@ -169,6 +168,11 @@ class FeatureStoreController(
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
             metadata_schema_initializer = MetadataSchemaInitializer(session)
             await metadata_schema_initializer.update_feature_store_id(str(document.id))
+
+            # Try to persist params.
+            # If there's nothing in the config, we will write the current credentials to the config,
+            if creds_from_params is not None:
+                await self.persist_credentials_if_needed(creds_from_params, data.name)
 
         return document
 

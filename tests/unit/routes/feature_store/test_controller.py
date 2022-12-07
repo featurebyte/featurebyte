@@ -5,11 +5,14 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
+import pytest
+
 from featurebyte.config import Configurations, LoggingSettings
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
 
 
-def test_persist_credential(app_container):
+@pytest.mark.asyncio
+async def test_persist_credential(app_container):
     """
     Test persist credential has an update as expected
     """
@@ -40,7 +43,7 @@ def test_persist_credential(app_container):
         with patch("featurebyte.routes.feature_store.controller.Configurations") as mock_config:
             mock_config.return_value = config
             controller = app_container.feature_store_controller
-            did_update = controller.persist_credential(cred, feature_store_name)
+            did_update = await controller.persist_credentials_if_needed(cred, feature_store_name)
             assert did_update
 
         # Reload config
