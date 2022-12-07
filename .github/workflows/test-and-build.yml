@@ -262,7 +262,7 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git tag "${PUBLISH_VERSION}"
-        git push origin --tags
+        git push origin "${PUBLISH_VERSION}"
 
         # Slack outputs
         export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
@@ -294,10 +294,14 @@ jobs:
         # => filter by 1 month ago
         # => Convert ref/tags/ABC = :ref/tags/ABC
         # RUN: git push origin :ref/tags/ABC :ref/tags/BCD
-        git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags |\
+        export ONE_MONTH_AGO_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags |\
             awk "{ if (\$1 < $ONE_MONTH_AGO) print \$2; }" |\
-            sed -nE 's/refs\//:refs\//p' |\
-            xargs git push origin
+            sed -nE 's/refs\//:refs\//p')
+
+        # Only push if there are tags to remove
+        if [[ "${ONE_MONTH_AGO_TAGS}" != "" ]]; then
+            git push origin ${ONE_MONTH_AGO_TAGS}
+        fi
 
     - name: Slack Message Pull Request
       if: ${{ github.event_name == 'pull_request' }}
