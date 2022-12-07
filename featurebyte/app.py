@@ -25,7 +25,7 @@ import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.middleware import request_handler
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.utils.credential import get_credential
+from featurebyte.utils.credential import ConfigCredentialProvider
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
@@ -60,7 +60,7 @@ def _get_api_deps() -> Callable[[Request], None]:
 
         request.state.persistent = get_persistent()
         request.state.user = User()
-        request.state.get_credential = get_credential
+        request.state.get_credential = ConfigCredentialProvider().get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
 
