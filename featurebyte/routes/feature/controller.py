@@ -53,15 +53,13 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         self.info_service = info_service
 
     async def create_feature(
-        self, get_credential: Any, data: Union[FeatureCreate, FeatureNewVersionCreate]
+        self, data: Union[FeatureCreate, FeatureNewVersionCreate]
     ) -> FeatureModel:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
         Parameters
         ----------
-        get_credential: Any
-            Get credential handler function
         data: FeatureCreate | FeatureNewVersionCreate
             Feature creation payload
 
@@ -71,11 +69,9 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             Newly created feature object
         """
         if isinstance(data, FeatureCreate):
-            document = await self.service.create_document(data=data, get_credential=get_credential)
+            document = await self.service.create_document(data=data)
         else:
-            document = await self.version_service.create_new_feature_version(
-                data=data, get_credential=get_credential
-            )
+            document = await self.version_service.create_new_feature_version(data=data)
 
         # update feature namespace readiness due to introduction of new feature
         await self.feature_readiness_service.update_feature_namespace(

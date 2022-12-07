@@ -90,7 +90,6 @@ class VersionService(BaseService):
     async def create_new_feature_version(
         self,
         data: FeatureNewVersionCreate,
-        get_credential: Any,
     ) -> FeatureModel:
         """
         Create new feature version based on given source feature
@@ -99,8 +98,6 @@ class VersionService(BaseService):
         ----------
         data: FeatureNewVersionCreate
             Version creation payload
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -177,7 +174,6 @@ class VersionService(BaseService):
     async def create_new_feature_list_version(
         self,
         data: FeatureListNewVersionCreate,
-        get_credential: Any,
     ) -> FeatureListModel:
         """
         Create new feature list version based on given source feature list & new version mode
@@ -186,8 +182,6 @@ class VersionService(BaseService):
         ----------
         data: FeatureListNewVersionCreate
             Version creation payload
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -208,5 +202,4 @@ class VersionService(BaseService):
         )
         return await self.feature_list_service.create_document(
             data=FeatureListCreate(**new_feature_list.dict(by_alias=True)),
-            get_credential=get_credential,
         )

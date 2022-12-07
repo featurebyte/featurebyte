@@ -70,15 +70,13 @@ class FeatureListController(
         self.online_serving_service = online_serving_service
 
     async def create_feature_list(
-        self, get_credential: Any, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
+        self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
     ) -> FeatureListModel:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
 
         Parameters
         ----------
-        get_credential: Any
-            Get credential handler function
         data: FeatureListCreate | FeatureListNewVersionCreate
             Feature list creation payload
 
@@ -90,9 +88,7 @@ class FeatureListController(
         if isinstance(data, FeatureListCreate):
             document = await self.service.create_document(data=data)
         else:
-            document = await self.version_service.create_new_feature_list_version(
-                data=data, get_credential=get_credential
-            )
+            document = await self.version_service.create_new_feature_list_version(data=data)
 
         # update feature namespace readiness due to introduction of new feature list
         await self.feature_readiness_service.update_feature_list_namespace(
