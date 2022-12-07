@@ -83,6 +83,18 @@ def test_item_view_operations(item_data):
     }
 
 
+def assert_match(item_id: str, item_name: str, item_type: str):
+    """
+    Helper method to assert values in the joined table.
+    """
+    id_str = item_id.lstrip("item")
+    # The format of these expected values are defined in the fixture setup of the dimension view dataframe.
+    expected_name = f"name{id_str}"
+    expected_type = f"type{id_str}"
+    assert item_name == expected_name
+    assert item_type == expected_type
+
+
 @pytest.mark.parametrize(
     "item_data",
     ["snowflake"],
@@ -132,10 +144,10 @@ def test_item_view_joined_with_dimension_view(
 
     # Verify that the item_id's are the same
     assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
-    # Verify that the item_type in the joined view, is the same as the original item_type in the dimension view
-    dimension_preview = dimension_view.preview()
 
-    # compare the result of our join, against a pandas join
-    joined_frame = item_preview.join(dimension_preview, rsuffix=suffix)
-    assert_series_equal(item_preview["item_id"], joined_frame["item_id"])
-    assert_series_equal(item_preview["item_name_dimension"], joined_frame["item_name_dimension"])
+    # verify that the values in the joined columns are as we expect
+    for _, row in item_preview.iterrows():
+        curr_item_id = row["item_id"]
+        joined_item_name = row["item_name_dimension"]
+        joined_item_type = row["item_type_dimension"]
+        assert_match(curr_item_id, joined_item_name, joined_item_type)
