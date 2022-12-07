@@ -96,7 +96,7 @@ class BaseAdapter:
 
     @classmethod
     @abstractmethod
-    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
         """
         Get the database specific type name given a Feature's DBVarType for online store purpose
 
@@ -157,7 +157,7 @@ class SnowflakeAdapter(BaseAdapter):
         return output_expr
 
     @classmethod
-    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
         if dtype in {DBVarType.INT, DBVarType.FLOAT}:
             return "FLOAT"
         if dtype == DBVarType.OBJECT:
@@ -234,7 +234,7 @@ class DatabricksAdapter(BaseAdapter):
         return output_expr
 
     @classmethod
-    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
         raise NotImplementedError()
 
 

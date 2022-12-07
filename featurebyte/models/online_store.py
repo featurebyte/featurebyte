@@ -44,7 +44,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         str
         """
         adapter = get_sql_adapter(self.feature.feature_store_type)
-        return adapter.get_physical_type_from_dtype(self.feature.dtype)
+        return adapter.get_online_store_type_from_dtype(self.feature.dtype)
 
     @property
     def tile_ids(self) -> List[str]:
