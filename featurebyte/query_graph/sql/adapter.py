@@ -160,10 +160,12 @@ class SnowflakeAdapter(BaseAdapter):
     def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
         if dtype in {DBVarType.INT, DBVarType.FLOAT}:
             return "FLOAT"
-        if dtype == DBVarType.OBJECT:
-            return "OBJECT"
         if dtype == DBVarType.VARCHAR:
             return "VARCHAR"
+        if dtype == DBVarType.OBJECT:
+            return "OBJECT"
+        # Currently we don't expect features to be of any other types than above. Otherwise, default
+        # to VARIANT since it can hold any data types
         return "VARIANT"
 
 
