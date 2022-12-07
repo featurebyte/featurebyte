@@ -388,7 +388,6 @@ def test_extract_operation__join_double_aggregations(
         }
     ]
     assert op_struct.columns == [order_size_column]
-    assert op_struct.aggregations[0].dict() == expected_aggregations[0]
     assert op_struct.aggregations == expected_aggregations
 
     grp_op_struct = op_struct.to_group_operation_structure()

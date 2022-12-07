@@ -408,10 +408,29 @@ class JoinNode(BaseNode):
 
 
 class JoinFeatureNode(BaseNode):
-    """JoinFeatureNode class"""
+    """JoinFeatureNode class
+
+    This node should have two input nodes. The first input node is the View's node, and the second
+    input node is the Feature's node.
+    """
 
     class Parameters(BaseModel):
-        """Parameters"""
+        """
+        Parameters for JoinFeatureNode
+
+        Parameters
+        ----------
+        view_entity_column: str
+            Column name in the View to be used as join key
+        view_point_in_time_column: Optional[str]
+            Column name in the View to be used as point in time column when joining with a time
+            based feature
+        feature_entity_column: str
+            Join key for the feature. For non-time based features, this should be the key parameter
+            of the ItemGroupbyNode that generated the feature
+        name: str
+            Name of the column when the feature is added to the EventView
+        """
 
         view_entity_column: str
         view_point_in_time_column: Optional[str]
