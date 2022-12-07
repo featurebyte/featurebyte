@@ -51,7 +51,6 @@ class GraphFlatteningTransformer(BaseGraphTransformer[QueryGraphModel, GraphFlat
 
     def _compute(self, global_state: GraphFlatteningGlobalState, node: Node) -> None:
         if isinstance(node, BaseGraphNode):
-            # flatten the nested graph first before inserting those nested graph nodes back to global one
             self._flatten_nested_graph(global_state=global_state, node=node)
         else:
             input_nodes = [
