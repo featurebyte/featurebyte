@@ -542,7 +542,7 @@ def scd_join_node_fixture(
         "left_input_columns": ["event_timestamp", "cust_id"],
         "left_output_columns": ["event_timestamp", "cust_id"],
         "right_input_columns": ["membership_status"],
-        "right_output_columns": ["membership_status"],
+        "right_output_columns": ["latest_membership_status"],
         "join_type": "left",
         "scd_parameters": {
             "left_timestamp_column": "event_timestamp",

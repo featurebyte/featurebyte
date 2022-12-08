@@ -361,15 +361,19 @@ class SCDJoin(TableNode):
         if context.parameters.get("scd_parameters") is None:
             return None
         parameters = context.parameters
+
         columns_map = {}
         for input_col, output_col in zip(
             parameters["left_input_columns"], parameters["left_output_columns"]
         ):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "L")
-        for input_col, output_col in zip(
-            parameters["right_input_columns"], parameters["right_output_columns"]
-        ):
-            columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
+
+        # It is intended to consider only "right_output_columns" here. In the R aliased subquery
+        # that will be constructed in from_query_impl(), the right side columns would have already
+        # been renamed, so here they should be referred to using output column names.
+        for output_col in parameters["right_output_columns"]:
+            columns_map[output_col] = get_qualified_column_identifier(output_col, "R")
+
         node = SCDJoin(
             context=context,
             columns_map=columns_map,
