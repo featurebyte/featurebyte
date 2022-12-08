@@ -266,13 +266,13 @@ def test_scd_join(global_graph, scd_join_node):
         SELECT
           L."event_timestamp" AS "event_timestamp",
           L."cust_id" AS "cust_id",
-          R."membership_status" AS "membership_status"
+          R."latest_membership_status" AS "latest_membership_status"
         FROM LEFT_VIEW AS L
         LEFT JOIN (
           SELECT
             INNER_L."TS_COL" AS "event_timestamp",
             INNER_L."KEY_COL" AS "cust_id",
-            INNER_R."membership_status" AS "membership_status"
+            INNER_R."membership_status" AS "latest_membership_status"
           FROM (
             SELECT
               "TS_COL",
