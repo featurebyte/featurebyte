@@ -77,33 +77,6 @@ jobs:
           echo "### Changelog" >> $GITHUB_STEP_SUMMARY
           git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
 
-  cache:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        python-version: ["3.8.0"]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Setup cache
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
-
-      - name: Install Poetry
-        run: |
-          pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
-          poetry config virtualenvs.in-project true
-
-      - name: Install dependencies
-        run: make install
-
   test-migrate:
     needs: [flags, cache]
     runs-on: ubuntu-20.04
