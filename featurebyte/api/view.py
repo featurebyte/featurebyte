@@ -303,8 +303,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Returns
         -------
-        (str, str)
-            the left and right columns to join on
+        Optional[tuple[str, str]]
+            the left and right columns to join on, or None if there isn't exactly one match.
         """
         other_join_key = other_view.get_join_column()
         # If the other join key is not an entity, skip this search.
@@ -326,7 +326,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 calling_col_name = col.name
 
         if num_of_matches == 0:
-            return "", ""
+            return None
         if num_of_matches == 1:
             return calling_col_name, other_join_key
         logger.debug(
@@ -355,8 +355,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ------
         NoJoinKeyFoundError
             raised when no suitable join key has been found
+        ValueError
+            raised if the `on_column` passed in is an empty string
         """
         if on_column is not None:
+            if on_column == "":
+                raise ValueError(
+                    "The `on` column should not be empty. Please provide a value for this parameter."
+                )
             return on_column, other_view.get_join_column()
 
         # Check if the keys are entities

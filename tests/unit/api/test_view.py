@@ -134,9 +134,8 @@ def test_get_key_if_entity__diff_entities_in_both_is_no_match():
         ]
     )
     other_view.set_join_col_override("colB")
-    left, right = current_view._get_key_if_entity(other_view)
-    assert left == ""
-    assert right == ""
+    response = current_view._get_key_if_entity(other_view)
+    assert response is None
 
 
 def test_get_key_if_entity__same_entity_in_both_is_match():
@@ -186,6 +185,19 @@ def test_get_key_if_entity__multiple_entity_is_no_match():
     other_view.set_join_col_override("colE")
     response = current_view._get_key_if_entity(other_view)
     assert response is None
+
+
+def test_get_join_keys__empty_string_on_should_not_be_used():
+    """
+    Test get_join_keys - empty `on` string should raise an error
+    """
+    col_info_a = ColumnInfo(name="colA", dtype=DBVarType.INT)
+    current_view = SimpleTestView(columns_info=[col_info_a])
+    other_view = SimpleTestView(join_col=col_info_a.name)
+    on_col = ""
+    with pytest.raises(ValueError) as exc_info:
+        current_view._get_join_keys(other_view, on_column=on_col)
+    assert "The `on` column should not be empty." in str(exc_info)
 
 
 def test_get_join_keys__on_col_provided():
