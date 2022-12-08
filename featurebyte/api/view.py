@@ -356,7 +356,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         NoJoinKeyFoundError
             raised when no suitable join key has been found
         """
-        if on_column is not None:
+        if on_column:
             return on_column, other_view.get_join_column()
 
         # Check if the keys are entities

@@ -187,6 +187,19 @@ def test_get_key_if_entity__multiple_entity_is_no_match():
     assert response is None
 
 
+def test_get_join_keys__empty_string_on_should_not_be_used():
+    """
+    Test get_join_keys - empty `on` string should use the join key instead, and not the `on` string
+    """
+    col_info_a = ColumnInfo(name="colA", dtype=DBVarType.INT)
+    current_view = SimpleTestView(columns_info=[col_info_a])
+    other_view = SimpleTestView(join_col=col_info_a.name)
+    on_col = ""
+    left_join_key, right_join_key = current_view._get_join_keys(other_view, on_column=on_col)
+    assert right_join_key == left_join_key
+    assert left_join_key == col_info_a.name
+
+
 def test_get_join_keys__on_col_provided():
     """
     Test get_join_keys where on override is provided
