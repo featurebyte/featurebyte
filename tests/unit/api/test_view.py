@@ -134,9 +134,8 @@ def test_get_key_if_entity__diff_entities_in_both_is_no_match():
         ]
     )
     other_view.set_join_col_override("colB")
-    left, right = current_view._get_key_if_entity(other_view)
-    assert left == ""
-    assert right == ""
+    response = current_view._get_key_if_entity(other_view)
+    assert response is None
 
 
 def test_get_key_if_entity__same_entity_in_both_is_match():
