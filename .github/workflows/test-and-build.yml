@@ -78,7 +78,7 @@ jobs:
           git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
 
   test-migrate:
-    needs: [flags, cache]
+    needs: [flags]
     runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
@@ -135,7 +135,7 @@ jobs:
           make test-teardown
 
   test:
-    needs: [flags, cache]
+    needs: [flags]
     runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
@@ -349,7 +349,7 @@ jobs:
 
 
   lint:
-    needs: [flags, cache]
+    needs: [flags]
     runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
