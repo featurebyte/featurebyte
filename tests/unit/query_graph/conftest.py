@@ -410,9 +410,7 @@ def item_data_join_event_data_node_fixture(
 @pytest.fixture(name="order_size_feature_group_node")
 def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
     """
-    Fixture of a non-time aware groupby node. Result of:
-
-    item_view.groupby("order_id").aggregate(method="count")
+    Fixture of a non-time aware groupby node
     """
     node_params = {
         "keys": ["order_id"],
@@ -431,31 +429,50 @@ def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
     return groupby_node
 
 
+@pytest.fixture(name="order_size_feature_node")
+def order_size_feature_node_fixture(global_graph, order_size_feature_group_node):
+    """
+    Fixture of a non-time aware Feature from ItemView. Result of:
+
+    order_size_feature = item_view.groupby("order_id").aggregate(method="count") + 123
+    """
+    graph = global_graph
+    feature_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_size"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(order_size_feature_group_node.name)],
+    )
+    add_node = global_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_node],
+    )
+    return add_node
+
+
 @pytest.fixture(name="order_size_feature_join_node")
 def order_size_feature_join_node_fixture(
     global_graph,
-    order_size_feature_group_node,
+    order_size_feature_node,
     event_data_input_node,
 ):
     """
     Fixture of a non-time aware feature joined to EventView. Result of:
 
-    event_view["order_size"] = order_size_feature.get_value(entity="order_id")
+    event_view.add_feature("ord_size", order_size_feature, entity="order_id")
     """
     node_params = {
-        "left_on": "order_id",
-        "right_on": "order_id",
-        "left_input_columns": ["ts", "cust_id", "order_id", "order_method"],
-        "left_output_columns": ["ts", "cust_id", "ord_id", "ord_method"],
-        "right_input_columns": ["order_size"],
-        "right_output_columns": ["ord_size"],
-        "join_type": "left",
+        "view_entity_column": "order_id",
+        "feature_entity_column": "order_id",
+        "name": "ord_size",
     }
     node = global_graph.add_operation(
-        node_type=NodeType.JOIN,
+        node_type=NodeType.JOIN_FEATURE,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_data_input_node, order_size_feature_group_node],
+        input_nodes=[event_data_input_node, order_size_feature_node],
     )
     return node
 
@@ -482,6 +499,33 @@ def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_joi
     return global_graph, node
 
 
+@pytest.fixture(name="item_data_join_event_data_with_renames_node")
+def item_data_join_event_data_with_renames_node_fixture(
+    global_graph,
+    item_data_input_node,
+    event_data_input_node,
+):
+    """
+    Fixture of a join node with column renames
+    """
+    node_params = {
+        "left_on": "order_id",
+        "right_on": "order_id",
+        "left_input_columns": ["order_id", "order_method"],
+        "left_output_columns": ["order_id", "order_method_left"],
+        "right_input_columns": ["item_type", "item_name"],
+        "right_output_columns": ["item_type_right", "item_name_right"],
+        "join_type": "inner",
+    }
+    node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, item_data_input_node],
+    )
+    return node
+
+
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations")
 def mixed_point_in_time_and_item_aggregations_fixture(
     query_graph_with_groupby, item_data_input_node
@@ -503,28 +547,28 @@ def mixed_point_in_time_and_item_aggregations_fixture(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[item_data_input_node],
     )
+    item_groupby_feature_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_size"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[graph.get_node_by_name(item_groupby_node.name)],
+    )
     groupby_node = graph.get_node_by_name("groupby_1")
-    return graph, groupby_node, item_groupby_node
+    return graph, groupby_node, item_groupby_feature_node
 
 
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations_features")
 def mixed_point_in_time_and_item_aggregations_features_fixture(
     mixed_point_in_time_and_item_aggregations,
 ):
-    graph, groupby_node, item_groupby_node = mixed_point_in_time_and_item_aggregations
+    graph, groupby_node, item_groupby_feature_node = mixed_point_in_time_and_item_aggregations
     feature_proj_1 = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_48h_average"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph.get_node_by_name(groupby_node.name)],
     )
-    feature_proj_2 = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["order_size"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[graph.get_node_by_name(item_groupby_node.name)],
-    )
-    return graph, feature_proj_1, feature_proj_2
+    return graph, feature_proj_1, item_groupby_feature_node
 
 
 @pytest.fixture(name="scd_join_node")

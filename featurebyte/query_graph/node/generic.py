@@ -424,6 +424,89 @@ class JoinNode(BaseNode):
         )
 
 
+class JoinFeatureNode(BaseNode):
+    """JoinFeatureNode class
+
+    This node should have two input nodes. The first input node is the View's node, and the second
+    input node is the Feature's node.
+    """
+
+    class Parameters(BaseModel):
+        """
+        Parameters for JoinFeatureNode
+
+        Parameters
+        ----------
+        view_entity_column: str
+            Column name in the View to be used as join key
+        view_point_in_time_column: Optional[str]
+            Column name in the View to be used as point in time column when joining with a time
+            based feature
+        feature_entity_column: str
+            Join key for the feature. For non-time based features, this should be the key parameter
+            of the ItemGroupbyNode that generated the feature
+        name: str
+            Name of the column when the feature is added to the EventView
+        """
+
+        view_entity_column: str
+        view_point_in_time_column: Optional[str]
+        feature_entity_column: str
+        name: OutColumnStr
+
+    type: Literal[NodeType.JOIN_FEATURE] = Field(NodeType.JOIN_FEATURE, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    parameters: Parameters
+
+    @staticmethod
+    def _validate_feature(feature_op_structure: OperationStructure) -> None:
+        columns = feature_op_structure.columns
+        assert len(columns) == 1
+        # For now, the supported feature should have an item_groupby node in its lineage
+        assert any(node_name.startswith("item_groupby") for node_name in columns[0].node_names)
+        assert feature_op_structure.output_type == NodeOutputType.SERIES
+
+    @staticmethod
+    def _validate_view(view_op_structure: OperationStructure) -> None:
+        assert view_op_structure.output_category == NodeOutputCategory.VIEW
+        assert view_op_structure.output_type == NodeOutputType.FRAME
+
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+
+        # First input is the View
+        input_operation_info = inputs[0]
+        self._validate_view(input_operation_info)
+
+        # Second input node is the Feature
+        feature_operation_info = inputs[1]
+        self._validate_feature(feature_operation_info)
+
+        # If this View has a column that has the same name as the feature to be added, it will be
+        # omitted. This is because the added feature will replace that existing column.
+        new_column_name = self.parameters.name
+        input_columns = [
+            col.clone(name=col.name, node_names=col.node_names.union([self.name]))
+            for col in input_operation_info.columns
+            if col.name != new_column_name
+        ]
+        new_column = DerivedDataColumn.create(
+            name=new_column_name,
+            columns=feature_operation_info.columns,
+            transform=None,
+            node_name=self.name,
+        )
+        return OperationStructure(
+            columns=input_columns + [new_column],
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+        )
+
+
 class AliasNode(BaseNode):
     """AliasNode class"""
 

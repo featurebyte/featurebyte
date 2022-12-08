@@ -131,11 +131,11 @@ def test_get_feature_preview_sql__item_groupby(
         "POINT_IN_TIME": "2022-04-20 10:00:00",
         "CUSTOMER_ID": "C1",
     }
-    graph, groupby_node, item_groupby_node = mixed_point_in_time_and_item_aggregations
+    graph, groupby_node, item_groupby_feature_node = mixed_point_in_time_and_item_aggregations
     preview_sql = get_feature_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
-        nodes=[groupby_node, item_groupby_node],
+        nodes=[groupby_node, item_groupby_feature_node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
         source_type=SourceType.SNOWFLAKE,
     )

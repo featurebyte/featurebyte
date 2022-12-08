@@ -133,9 +133,9 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
         SELECT
           L."ts" AS "ts",
           L."cust_id" AS "cust_id",
-          L."order_id" AS "ord_id",
-          L."order_method" AS "ord_method",
-          R."order_size" AS "ord_size"
+          L."order_id" AS "order_id",
+          L."order_method" AS "order_method",
+          R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
         FROM (
           SELECT
             "ts" AS "ts",
@@ -146,18 +146,25 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
         ) AS L
         LEFT JOIN (
           SELECT
-            "order_id",
-            COUNT(*) AS "order_size"
+            (
+              "order_size" + 123
+            ) AS "__FB_TEMP_FEATURE_NAME",
+            "order_id"
           FROM (
             SELECT
-              "order_id" AS "order_id",
-              "item_id" AS "item_id",
-              "item_name" AS "item_name",
-              "item_type" AS "item_type"
-            FROM "db"."public"."item_table"
+              "order_id",
+              COUNT(*) AS "order_size"
+            FROM (
+              SELECT
+                "order_id" AS "order_id",
+                "item_id" AS "item_id",
+                "item_name" AS "item_name",
+                "item_type" AS "item_type"
+              FROM "db"."public"."item_table"
+            )
+            GROUP BY
+              "order_id"
           )
-          GROUP BY
-            "order_id"
         ) AS R
           ON L."order_id" = R."order_id"
         """
@@ -179,8 +186,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("ord_size") AS sum_value_avg_805573b971a57ea0c4f819c3786c29b50cf18746,
-          COUNT("ord_size") AS count_value_avg_805573b971a57ea0c4f819c3786c29b50cf18746
+          SUM("ord_size") AS sum_value_avg_589e8c8c370668879429257bff88f31d49121300,
+          COUNT("ord_size") AS count_value_avg_589e8c8c370668879429257bff88f31d49121300
         FROM (
           SELECT
             *,
@@ -193,9 +200,9 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
             SELECT
               L."ts" AS "ts",
               L."cust_id" AS "cust_id",
-              L."order_id" AS "ord_id",
-              L."order_method" AS "ord_method",
-              R."order_size" AS "ord_size"
+              L."order_id" AS "order_id",
+              L."order_method" AS "order_method",
+              R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
             FROM (
               SELECT
                 *
@@ -213,18 +220,25 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
             ) AS L
             LEFT JOIN (
               SELECT
-                "order_id",
-                COUNT(*) AS "order_size"
+                (
+                  "order_size" + 123
+                ) AS "__FB_TEMP_FEATURE_NAME",
+                "order_id"
               FROM (
                 SELECT
-                  "order_id" AS "order_id",
-                  "item_id" AS "item_id",
-                  "item_name" AS "item_name",
-                  "item_type" AS "item_type"
-                FROM "db"."public"."item_table"
+                  "order_id",
+                  COUNT(*) AS "order_size"
+                FROM (
+                  SELECT
+                    "order_id" AS "order_id",
+                    "item_id" AS "item_id",
+                    "item_name" AS "item_name",
+                    "item_type" AS "item_type"
+                  FROM "db"."public"."item_table"
+                )
+                GROUP BY
+                  "order_id"
               )
-              GROUP BY
-                "order_id"
             ) AS R
               ON L."order_id" = R."order_id"
           )

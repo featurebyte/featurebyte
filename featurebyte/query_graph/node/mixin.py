@@ -155,7 +155,10 @@ class GroupbyNodeOpStructMixin:
 
         columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
         output_category = NodeOutputCategory.FEATURE
-        if self.type == NodeType.ITEM_GROUPBY and NodeType.JOIN in branch_state.visited_node_types:
+        if (
+            self.type == NodeType.ITEM_GROUPBY
+            and NodeType.JOIN_FEATURE in branch_state.visited_node_types
+        ):
             # if the output of the item_groupby will be used to join with other table,
             # this mean the output of this item_groupby is view but not feature.
             output_category = NodeOutputCategory.VIEW
