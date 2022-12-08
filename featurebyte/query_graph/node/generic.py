@@ -441,6 +441,19 @@ class JoinFeatureNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @staticmethod
+    def _validate_feature(feature_op_structure: OperationStructure) -> None:
+        columns = feature_op_structure.columns
+        assert len(columns) == 1
+        # For now, the supported feature should have an item_groupby node in its lineage
+        assert any(node_name.startswith("item_groupby") for node_name in columns[0].node_names)
+        assert feature_op_structure.output_type == NodeOutputType.SERIES
+
+    @staticmethod
+    def _validate_view(view_op_structure: OperationStructure) -> None:
+        assert view_op_structure.output_category == NodeOutputCategory.VIEW
+        assert view_op_structure.output_type == NodeOutputType.FRAME
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -448,14 +461,17 @@ class JoinFeatureNode(BaseNode):
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
 
-        # Second input node is the Feature
-        columns = inputs[1].columns
-        new_column_name = self.parameters.name
-
-        # First input is the View. If this View has a column that has the same name as the feature
-        # to be added, it will be omitted. This is because the added feature will replace that
-        # existing column.
+        # First input is the View
         input_operation_info = inputs[0]
+        self._validate_view(input_operation_info)
+
+        # Second input node is the Feature
+        feature_operation_info = inputs[1]
+        self._validate_feature(feature_operation_info)
+
+        # If this View has a column that has the same name as the feature to be added, it will be
+        # omitted. This is because the added feature will replace that existing column.
+        new_column_name = self.parameters.name
         input_columns = [
             col.clone(name=col.name, node_names=col.node_names.union([self.name]))
             for col in input_operation_info.columns
@@ -463,7 +479,7 @@ class JoinFeatureNode(BaseNode):
         ]
         new_column = DerivedDataColumn.create(
             name=new_column_name,
-            columns=columns,
+            columns=feature_operation_info.columns,
             transform=None,
             node_name=self.name,
         )
