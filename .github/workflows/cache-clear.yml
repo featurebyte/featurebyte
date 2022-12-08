@@ -19,6 +19,8 @@ env:
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
 
 jobs:
+  # Github caches do not update themselves on a successful run
+  # This workflow will delete them and rebuild them to the most updated dependencies / requirements
   cache:
     runs-on: ubuntu-20.04
     strategy:
