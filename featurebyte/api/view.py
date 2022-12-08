@@ -430,7 +430,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             if on not in current_column_names:
                 raise NoJoinKeyFoundError(
                     f"The `on` column name provided '{on}' is not found in the calling view. "
-                    f"Please pick a valid column name from {current_column_names} to join on."
+                    f"Please pick a valid column name from {sorted(current_column_names)} to join on."
                 )
 
         # Perform other validation
