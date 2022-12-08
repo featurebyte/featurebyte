@@ -14,7 +14,7 @@ from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
-from featurebyte.query_graph.sql.specs import PointInTimeAggregationSpec
+from featurebyte.query_graph.sql.specs import WindowAggregationSpec
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
 
@@ -148,7 +148,7 @@ class AggregatedTilesNode(TableNode):
     def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
         sql_node = None
         if context.sql_type == SQLType.POST_AGGREGATION:
-            agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(context.query_node)
+            agg_specs = WindowAggregationSpec.from_groupby_query_node(context.query_node)
             columns_map = {}
             for agg_spec in agg_specs:
                 columns_map[agg_spec.feature_name] = quoted_identifier(agg_spec.agg_result_name)

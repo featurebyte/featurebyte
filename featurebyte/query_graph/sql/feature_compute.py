@@ -20,7 +20,7 @@ from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quote
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
-    PointInTimeAggregationSpec,
+    WindowAggregationSpec,
 )
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
@@ -34,7 +34,7 @@ TileIdType = str
 AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 
 
-class RequestTablePlan:
+class TileBasedRequestTablePlan:
     """SQL generation for expanded request tables
 
     An expanded request table has the same number of rows as the original request table but with new
@@ -68,7 +68,7 @@ class RequestTablePlan:
         self.expanded_request_table_names: dict[TileIndicesIdType, str] = {}
         self.adapter = get_sql_adapter(source_type)
 
-    def add_aggregation_spec(self, agg_spec: PointInTimeAggregationSpec) -> None:
+    def add_aggregation_spec(self, agg_spec: WindowAggregationSpec) -> None:
         """Process a new AggregationSpec
 
         Depending on the feature job setting of the provided aggregation, a new expanded request
@@ -76,7 +76,7 @@ class RequestTablePlan:
 
         Parameters
         ----------
-        agg_spec : PointInTimeAggregationSpec
+        agg_spec : WindowAggregationSpec
             Aggregation specification
         """
         unique_tile_indices_id = self.get_unique_tile_indices_id(agg_spec)
@@ -91,12 +91,12 @@ class RequestTablePlan:
             )
             self.expanded_request_table_names[unique_tile_indices_id] = output_table_name
 
-    def get_expanded_request_table_name(self, agg_spec: PointInTimeAggregationSpec) -> str:
+    def get_expanded_request_table_name(self, agg_spec: WindowAggregationSpec) -> str:
         """Get the name of the expanded request table given and AggregationSpec
 
         Parameters
         ----------
-        agg_spec : PointInTimeAggregationSpec
+        agg_spec : WindowAggregationSpec
             Aggregation specification
 
         Returns
@@ -108,12 +108,12 @@ class RequestTablePlan:
         return self.expanded_request_table_names[key]
 
     @staticmethod
-    def get_unique_tile_indices_id(agg_spec: PointInTimeAggregationSpec) -> TileIndicesIdType:
+    def get_unique_tile_indices_id(agg_spec: WindowAggregationSpec) -> TileIndicesIdType:
         """Get a key for an AggregationSpec that controls reuse of expanded request table
 
         Parameters
         ----------
-        agg_spec : PointInTimeAggregationSpec
+        agg_spec : WindowAggregationSpec
             Aggregation specification
 
         Returns
@@ -315,16 +315,16 @@ class NonTimeAwareRequestTablePlan:
         return select_distinct_expr
 
 
-class PointInTimeAggregationSpecSet:
+class WindowAggregationSpecSet:
     """
-    Responsible for keeping track of PointInTimeAggregationSpec that arises from query graph nodes
+    Responsible for keeping track of WindowAggregationSpec that arises from query graph nodes
     """
 
     def __init__(self) -> None:
-        self.aggregation_specs: dict[AggregationSpecIdType, list[PointInTimeAggregationSpec]] = {}
+        self.aggregation_specs: dict[AggregationSpecIdType, list[WindowAggregationSpec]] = {}
         self.processed_agg_specs: dict[AggregationSpecIdType, set[str]] = {}
 
-    def add_aggregation_spec(self, aggregation_spec: PointInTimeAggregationSpec) -> None:
+    def add_aggregation_spec(self, aggregation_spec: WindowAggregationSpec) -> None:
         """Update state given an PointInTimeAggregationSpec
 
         Some aggregations can be shared by different features, e.g. "transaction_type (7 day
@@ -336,7 +336,7 @@ class PointInTimeAggregationSpecSet:
 
         Parameters
         ----------
-        aggregation_spec : PointInTimeAggregationSpec
+        aggregation_spec : WindowAggregationSpec
             Aggregation_specification
         """
         # AggregationSpec is window size specific. Two AggregationSpec with different window sizes
@@ -363,7 +363,7 @@ class PointInTimeAggregationSpecSet:
         self.aggregation_specs[key].append(aggregation_spec)
         self.processed_agg_specs[key].add(agg_id)
 
-    def get_grouped_aggregation_specs(self) -> Iterable[list[PointInTimeAggregationSpec]]:
+    def get_grouped_aggregation_specs(self) -> Iterable[list[WindowAggregationSpec]]:
         """Yields groups of PointInTimeAggregationSpec
 
         Each group of PointInTimeAggregationSpec has the same tile_table_id. Their tile values can
@@ -384,10 +384,12 @@ class FeatureExecutionPlan:
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
     def __init__(self, source_type: SourceType) -> None:
-        self.point_in_time_aggregation_spec_set = PointInTimeAggregationSpecSet()
+        self.window_aggregation_spec_set = WindowAggregationSpecSet()
         self.item_aggregation_specs: list[ItemAggregationSpec] = []
         self.feature_specs: dict[str, FeatureSpec] = {}
-        self.request_table_plan: RequestTablePlan = RequestTablePlan(source_type=source_type)
+        self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
+            source_type=source_type
+        )
         self.non_time_aware_request_table_plan: NonTimeAwareRequestTablePlan = (
             NonTimeAwareRequestTablePlan()
         )
@@ -403,23 +405,23 @@ class FeatureExecutionPlan:
         set[str]
         """
         out = set()
-        for agg_specs in self.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs():
+        for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
             for agg_spec in agg_specs:
                 out.update(agg_spec.serving_names)
         return out
 
     def add_aggregation_spec(
-        self, aggregation_spec: PointInTimeAggregationSpec | ItemAggregationSpec
+        self, aggregation_spec: WindowAggregationSpec | ItemAggregationSpec
     ) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
         Parameters
         ----------
-        aggregation_spec : PointInTimeAggregationSpec
+        aggregation_spec : WindowAggregationSpec
             Aggregation specification
         """
-        if isinstance(aggregation_spec, PointInTimeAggregationSpec):
-            self.point_in_time_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
+        if isinstance(aggregation_spec, WindowAggregationSpec):
+            self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
             self.request_table_plan.add_aggregation_spec(aggregation_spec)
         else:
             self.item_aggregation_specs.append(aggregation_spec)
@@ -697,7 +699,7 @@ class FeatureExecutionPlan:
         qualified_aggregation_names = []
         agg_table_index = 0
 
-        for agg_specs in self.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs():
+        for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
             # All PointInTimeAggregationSpec in agg_specs share common attributes such as
             # tile_table_id, keys, etc. Get the first one to access them.
             agg_spec = agg_specs[0]
@@ -888,7 +890,7 @@ class FeatureExecutionPlanner:
         """
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
         if groupby_nodes:
-            # Feature involves point-in-time aggregations. In this case, tiling applies. Even if
+            # Feature involves window aggregations. In this case, tiling applies. Even if
             # ITEM_GROUPBY nodes are involved, their results would have already been incorporated in
             # tiles, so we only need to handle GROUPBY node type here.
             for groupby_node in groupby_nodes:
@@ -908,7 +910,7 @@ class FeatureExecutionPlanner:
         groupby_node : Node
             Groupby query node
         """
-        agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(
+        agg_specs = WindowAggregationSpec.from_groupby_query_node(
             groupby_node, serving_names_mapping=self.serving_names_mapping
         )
         for agg_spec in agg_specs:
