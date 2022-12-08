@@ -370,7 +370,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if is_column_name_in_columns(other_join_key, self.columns_info):
             return other_join_key, other_join_key
 
-        raise NoJoinKeyFoundError
+        raise NoJoinKeyFoundError(
+            "Unable to automatically find a default join column key based on:\n"
+            "- matching entities, or\n"
+            f"- the join column '{other_join_key}' in the target view as it is not present in the"
+            f" calling view\n"
+            f"Please consider adding the `on` parameter in `join()` to explicitly specify a "
+            f"column to join on."
+        )
 
     def _validate_join(
         self,
@@ -404,16 +411,27 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if rsuffix == "":
             left_join_key, _ = self._get_join_keys(other_view, on)
             current_column_names = {col.name for col in self.columns_info}
+            repeated_column_names = []
             for other_col in other_view.columns_info:
                 # Raise an error if the name is repeated, but it is not a join key
                 if other_col.name in current_column_names and other_col.name != left_join_key:
-                    raise RepeatedColumnNamesError
+                    repeated_column_names.append(other_col.name)
+            if len(repeated_column_names) > 0:
+                raise RepeatedColumnNamesError(
+                    f"Duplicate column names {repeated_column_names} found between the "
+                    "calling view, and the target view.\nTo resolve this error, do consider "
+                    "setting the rsuffix parameter in `join()` to disambiguate the "
+                    "resulting columns in the joined view."
+                )
 
         # Validate whether the join column provided is present in the columns
         if on is not None:
             current_column_names = {col.name for col in self.columns_info}
             if on not in current_column_names:
-                raise NoJoinKeyFoundError
+                raise NoJoinKeyFoundError(
+                    f"The `on` column name provided '{on}' is not found in the calling view. "
+                    f"Please pick a valid column name from {current_column_names} to join on."
+                )
 
         # Perform other validation
         self.validate_join(other_view)
