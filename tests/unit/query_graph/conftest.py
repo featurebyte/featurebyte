@@ -499,6 +499,33 @@ def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_joi
     return global_graph, node
 
 
+@pytest.fixture(name="item_data_join_event_data_with_renames_node")
+def item_data_join_event_data_with_renames_node_fixture(
+    global_graph,
+    item_data_input_node,
+    event_data_input_node,
+):
+    """
+    Fixture of a join node with column renames
+    """
+    node_params = {
+        "left_on": "order_id",
+        "right_on": "order_id",
+        "left_input_columns": ["order_id", "order_method"],
+        "left_output_columns": ["order_id", "order_method_left"],
+        "right_input_columns": ["item_type", "item_name"],
+        "right_output_columns": ["item_type_right", "item_name_right"],
+        "join_type": "inner",
+    }
+    node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, item_data_input_node],
+    )
+    return node
+
+
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations")
 def mixed_point_in_time_and_item_aggregations_fixture(
     query_graph_with_groupby, item_data_input_node
