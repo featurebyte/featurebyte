@@ -44,13 +44,11 @@ jobs:
       # Recreates the cache
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        if: ${{ needs.flags.outputs.changes != 0 }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Setup cache
-        if: ${{ needs.flags.outputs.changes != 0 }}
         uses: actions/cache@v3
         with:
           path: .venv
@@ -58,11 +56,9 @@ jobs:
           restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
 
       - name: Install Poetry
-        if: ${{ needs.flags.outputs.changes != 0 }}
         run: |
           pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
           poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        if: ${{ needs.flags.outputs.changes != 0 }}
         run: make install
