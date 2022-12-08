@@ -90,14 +90,14 @@ class QueryGraph(QueryGraphModel):
         return GraphPruningExtractor(graph=self).extract(node=target_node)
 
     def reconstruct(
-        self, node_replacement_map: Dict[str, Node], regenerate_groupby_hash: bool
+        self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool
     ) -> QueryGraphModel:
         """
         Reconstruct the query graph using the replacement node mapping
 
         Parameters
         ----------
-        node_replacement_map: Dict[str, Node]
+        node_name_to_replacement_node: Dict[str, Node]
             Node name (of the input query graph) to replacement node mapping
         regenerate_groupby_hash: bool
             Whether to regenerate tile ID & aggregation ID in groupby node
@@ -107,7 +107,7 @@ class QueryGraph(QueryGraphModel):
         QueryGraphModel
         """
         return GraphReconstructionTransformer(graph=self).transform(
-            node_replacement_map=node_replacement_map,
+            node_name_to_replacement_node=node_name_to_replacement_node,
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 

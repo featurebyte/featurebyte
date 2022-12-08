@@ -198,7 +198,7 @@ def test_global_graph_attributes():
 def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     """Test reconstruct class method (edge case)"""
     output = query_graph_with_groupby.reconstruct(
-        node_replacement_map={}, regenerate_groupby_hash=False
+        node_name_to_replacement_node={}, regenerate_groupby_hash=False
     )
     expected_tile_id = (
         "fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848027e3c"
@@ -210,7 +210,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     # check that tile id is different if regenerate_groupby_hash=True
     expected_tile_id = "event_table_f3600_m1800_b900_e160139b63fd351da7cccddf1d18db6a5f6f9d9a"
     output = query_graph_with_groupby.reconstruct(
-        node_replacement_map={}, regenerate_groupby_hash=True
+        node_name_to_replacement_node={}, regenerate_groupby_hash=True
     )
     assert output.edges_map == query_graph_with_groupby.edges_map
     assert output.nodes_map["groupby_1"] != query_graph_with_groupby.nodes_map["groupby_1"]
@@ -237,7 +237,7 @@ def test_query_graph__reconstruct(query_graph_with_groupby, replacement_map):
 
     assert len(replacement_map) > 0
     output = query_graph_with_groupby.reconstruct(
-        node_replacement_map=replace_nodes_map, regenerate_groupby_hash=False
+        node_name_to_replacement_node=replace_nodes_map, regenerate_groupby_hash=False
     )
 
     # check replace_node found in the output query graph

@@ -207,3 +207,24 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
+
+
+class BasePrunableNode(BaseNode):
+    """Base class for node that can be pruned during query graph pruning"""
+
+    @abstractmethod
+    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+        """
+        Method used to resolve the situation when the node get pruned. As all the nodes only produce single
+        output, we should only choose one node from the input nodes.
+
+        Parameters
+        ----------
+        input_node_names: List[str]
+            List of input node names
+
+        Returns
+        -------
+        str
+            Node name selected to replace this (pruned) node
+        """

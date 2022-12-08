@@ -183,9 +183,9 @@ def add_pruning_sensitive_operation(
 
 
 class GraphReconstructionGlobalState(BaseModel):
-    """GraphFlatteningGlobalState class"""
+    """GraphReconstructionGlobalState class"""
 
-    node_replacement_map: Dict[str, Node]  # node_name => replacement node
+    node_name_to_replacement_node: Dict[str, Node]
     regenerate_groupby_hash: bool
 
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
@@ -201,7 +201,7 @@ class GraphReconstructionTransformer(
 
     def _compute(self, global_state: GraphReconstructionGlobalState, node: NodeT) -> None:
         # prepare operation insertion inputs
-        node_to_insert = global_state.node_replacement_map.get(node.name, node)
+        node_to_insert = global_state.node_name_to_replacement_node.get(node.name, node)
         input_node_names = self.graph.get_input_node_names(node=node)
         input_nodes = [
             global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
@@ -229,7 +229,7 @@ class GraphReconstructionTransformer(
         global_state.node_name_map[node.name] = inserted_node.name
 
     def transform(
-        self, node_replacement_map: Dict[str, NodeT], regenerate_groupby_hash: bool
+        self, node_name_to_replacement_node: Dict[str, NodeT], regenerate_groupby_hash: bool
     ) -> QueryGraphModel:
         """
         Transform the graph by replacing all the nodes specified in the node replacement dictionary
@@ -237,7 +237,7 @@ class GraphReconstructionTransformer(
 
         Parameters
         ----------
-        node_replacement_map: Dict[str, NodeT]
+        node_name_to_replacement_node: Dict[str, NodeT]
             Node replacement dictionary
         regenerate_groupby_hash: bool
             Flag to control whether to regenerate the groupby hash
@@ -247,7 +247,7 @@ class GraphReconstructionTransformer(
         QueryGraphModel
         """
         global_state = GraphReconstructionGlobalState(
-            node_replacement_map=node_replacement_map,
+            node_name_to_replacement_node=node_name_to_replacement_node,
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
         self._transform(global_state=global_state)

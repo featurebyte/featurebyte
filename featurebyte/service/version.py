@@ -67,21 +67,22 @@ class VersionService(BaseService):
         has_change: bool = False
         graph: QueryGraphModel = feature.graph
         if feature_job_setting:
-            replace_nodes_map: dict[str, Node] = {}
+            node_name_to_replacement_node: dict[str, Node] = {}
             for groupby_node, _ in cls._iterate_groupby_and_event_data_input_node_pairs(
                 feature.graph, feature.node
             ):
                 # input node will be used when we need to support updating specific groupby node given event data ID
                 parameters = {**groupby_node.parameters.dict(), **feature_job_setting.to_seconds()}
                 if groupby_node.parameters.dict() != parameters:
-                    replace_nodes_map[groupby_node.name] = GroupbyNode(
+                    node_name_to_replacement_node[groupby_node.name] = GroupbyNode(
                         **{**groupby_node.dict(), "parameters": parameters}
                     )
 
-            if replace_nodes_map:
+            if node_name_to_replacement_node:
                 has_change = True
                 graph = feature.graph.reconstruct(
-                    node_replacement_map=replace_nodes_map, regenerate_groupby_hash=True
+                    node_name_to_replacement_node=node_name_to_replacement_node,
+                    regenerate_groupby_hash=True,
                 )
 
         if has_change:
