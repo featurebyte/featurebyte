@@ -8,7 +8,7 @@ name: "Daily Cleanup"
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '0 0 * * *'  # On 00:00 Every Saturday
+    - cron: '0 0 * * *'  # On 00:00 Everyday
 
 env:
   # Python
