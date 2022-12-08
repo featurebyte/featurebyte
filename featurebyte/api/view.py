@@ -370,7 +370,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if is_column_name_in_columns(other_join_key, self.columns_info):
             return other_join_key, other_join_key
 
-        raise NoJoinKeyFoundError
+        raise NoJoinKeyFoundError(
+            "Unable to automatically find a default join column key based on:\n"
+            "- matching entities, or\n"
+            f"- the join column '{other_join_key}' in the target view as it is not present in the"
+            f" calling view\n"
+            f"Please consider adding the `on` parameter in `join()` to explicitly specify a "
+            f"column to join on."
+        )
 
     def _validate_join(
         self,
@@ -421,7 +428,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if on is not None:
             current_column_names = {col.name for col in self.columns_info}
             if on not in current_column_names:
-                raise NoJoinKeyFoundError
+                raise NoJoinKeyFoundError(
+                    f"The `on` column name provided '{on}' is not found in the calling view. "
+                    f"Please pick a valid column name from {current_column_names} to join on."
+                )
 
         # Perform other validation
         self.validate_join(other_view)

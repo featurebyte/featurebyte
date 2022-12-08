@@ -399,8 +399,9 @@ def test_validate_join__no_overlapping_columns():
     view_without_overlap = SimpleTestView(columns_info=[col_info_c], join_col=col_info_c.name)
 
     # joining two views with no overlapping columns should have an error
-    with pytest.raises(NoJoinKeyFoundError):
+    with pytest.raises(NoJoinKeyFoundError) as exc_info:
         base_view._validate_join(view_without_overlap)
+    assert "Unable to automatically find a default join column key" in str(exc_info)
 
     # no overlap should have no error with suffix, since we'll use primary keys to join
     base_view._validate_join(view_without_overlap, rsuffix="suffix")
@@ -480,5 +481,6 @@ def test_validate_join__check_on_column():
     base_view._validate_join(other_view, on=col_info_a.name, rsuffix="_suffix")
 
     # `on` provided for column not in calling view should have an error
-    with pytest.raises(NoJoinKeyFoundError):
+    with pytest.raises(NoJoinKeyFoundError) as exc_info:
         base_view._validate_join(other_view, on=col_info_c.name, rsuffix="_suffix")
+    assert "The `on` column name provided 'colC' is not found in the calling view" in str(exc_info)
