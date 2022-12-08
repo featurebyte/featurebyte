@@ -183,7 +183,7 @@ def add_pruning_sensitive_operation(
 
 
 class GraphReconstructionGlobalState(BaseModel):
-    """GraphFlatteningGlobalState class"""
+    """GraphReconstructionGlobalState class"""
 
     node_replacement_map: Dict[str, Node]  # node_name => replacement node
     regenerate_groupby_hash: bool
