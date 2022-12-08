@@ -355,6 +355,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ------
         NoJoinKeyFoundError
             raised when no suitable join key has been found
+        ValueError
+            raised if the `on_column` passed in is an empty string
         """
         if on_column is not None:
             if on_column == "":
