@@ -14,8 +14,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_unary_input_nodes
-
-MISSING_VALUE_REPLACEMENT = "__MISSING__"
+from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT
 
 
 @dataclass

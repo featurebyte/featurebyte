@@ -1,12 +1,9 @@
 """
 Module with logic related to feature SQL generation
 """
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, Iterable, Optional, Tuple, cast
-
-from abc import ABC, abstractmethod
 
 from sqlglot import expressions
 from sqlglot.expressions import select
@@ -17,7 +14,6 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.base import TableNode
-from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
@@ -38,7 +34,7 @@ TileIdType = str
 AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 
 
-class RequestTablePlan(ABC):
+class RequestTablePlan:
     """SQL generation for expanded request tables
 
     An expanded request table has the same number of rows as the original request table but with new
@@ -382,7 +378,7 @@ class PointInTimeAggregationSpecSet:
             yield agg_specs
 
 
-class FeatureExecutionPlan(ABC):
+class FeatureExecutionPlan:
     """Responsible for constructing the SQL to compute features by aggregating tiles"""
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
@@ -395,6 +391,7 @@ class FeatureExecutionPlan(ABC):
         self.non_time_aware_request_table_plan: NonTimeAwareRequestTablePlan = (
             NonTimeAwareRequestTablePlan()
         )
+        self.adapter = get_sql_adapter(source_type)
         self.source_type = source_type
 
     @property
@@ -446,9 +443,8 @@ class FeatureExecutionPlan(ABC):
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
 
-    @classmethod
     def construct_aggregation_sql(
-        cls,
+        self,
         expanded_request_table_name: str,
         tile_table_id: str,
         point_in_time_column: str,
@@ -570,7 +566,7 @@ class FeatureExecutionPlan(ABC):
         if value_by is None:
             agg_expr = inner_agg_expr
         else:
-            agg_expr = cls.construct_key_value_aggregation_sql(
+            agg_expr = self.adapter.construct_key_value_aggregation_sql(
                 point_in_time_column=point_in_time_column,
                 serving_names=serving_names,
                 value_by=value_by,
@@ -580,42 +576,6 @@ class FeatureExecutionPlan(ABC):
             )
 
         return agg_expr
-
-    @classmethod
-    @abstractmethod
-    def construct_key_value_aggregation_sql(
-        cls,
-        point_in_time_column: str,
-        serving_names: list[str],
-        value_by: str,
-        agg_result_names: list[str],
-        inner_agg_result_names: list[str],
-        inner_agg_expr: expressions.Select,
-    ) -> expressions.Select:
-        """Aggregate per category values into key value pairs
-
-        # noqa: DAR103
-
-        Parameters
-        ----------
-        point_in_time_column : str
-            Point in time column name
-        serving_names : list[str]
-            List of serving name columns
-        value_by : str | None
-            Optional category parameter for the groupby operation
-        agg_result_names : list[str]
-            Column names of the aggregated results
-        inner_agg_result_names : list[str]
-            Column names of the intermediate aggregation result names (one value per category - this
-            is to be used as the values in the aggregated key-value pairs)
-        inner_agg_expr : expressions.Subqueryable:
-            Query that produces the intermediate aggregation result
-
-        Returns
-        -------
-        str
-        """
 
     def construct_item_aggregation_sql(self, agg_spec: ItemAggregationSpec) -> expressions.Select:
         """Construct SQL for non-time aware item aggregation
@@ -882,50 +842,6 @@ class FeatureExecutionPlan(ABC):
         return post_aggregation_sql
 
 
-class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
-    """Snowflake specific implementation of FeatureExecutionPlan"""
-
-    @classmethod
-    def construct_key_value_aggregation_sql(
-        cls,
-        point_in_time_column: str,
-        serving_names: list[str],
-        value_by: str,
-        agg_result_names: list[str],
-        inner_agg_result_names: list[str],
-        inner_agg_expr: expressions.Select,
-    ) -> expressions.Select:
-
-        inner_alias = "INNER_"
-
-        outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
-        for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
-
-        category_col = f"{inner_alias}.{quoted_identifier(value_by).sql()}"
-        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
-        # '{"0.00000": 7}')
-        category_col_casted = f"CAST({category_col} AS VARCHAR)"
-        # Replace missing category values since OBJECT_AGG ignores keys that are null
-        category_filled_null = (
-            f"CASE WHEN {category_col} IS NULL THEN '{MISSING_VALUE_REPLACEMENT}' ELSE "
-            f"{category_col_casted} END"
-        )
-        object_agg_exprs = [
-            f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
-            f' AS "{agg_result_name}"'
-            for inner_agg_result_name, agg_result_name in zip(
-                inner_agg_result_names, agg_result_names
-            )
-        ]
-        agg_expr = (
-            select(*outer_group_by_keys, *object_agg_exprs)
-            .from_(inner_agg_expr.subquery(alias=inner_alias))
-            .group_by(*outer_group_by_keys)
-        )
-        return agg_expr
-
-
 class FeatureExecutionPlanner:
     """Responsible for constructing a FeatureExecutionPlan given QueryGraph and Node
 
@@ -942,7 +858,7 @@ class FeatureExecutionPlanner:
         serving_names_mapping: dict[str, str] | None = None,
     ):
         self.graph = graph
-        self.plan = SnowflakeFeatureExecutionPlan(source_type)
+        self.plan = FeatureExecutionPlan(source_type)
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
 
