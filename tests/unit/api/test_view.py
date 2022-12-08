@@ -438,19 +438,23 @@ def test_validate_join__multiple_overlapping_columns():
     """
     Test validate join helper method
     """
-    col_info_a, col_info_b, col_info_c = (
+    col_info_a, col_info_b, col_info_c, col_info_d = (
         ColumnInfo(name="colA", dtype=DBVarType.INT),
         ColumnInfo(name="colB", dtype=DBVarType.INT),
         ColumnInfo(name="colC", dtype=DBVarType.INT),
+        ColumnInfo(name="colD", dtype=DBVarType.INT),
     )
-    base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_b.name)
+    base_view = SimpleTestView(
+        columns_info=[col_info_a, col_info_b, col_info_d], join_col=col_info_b.name
+    )
     view_with_multiple_overlapping = SimpleTestView(
-        columns_info=[col_info_a, col_info_b, col_info_c], join_col=col_info_b.name
+        columns_info=[col_info_a, col_info_b, col_info_c, col_info_d], join_col=col_info_b.name
     )
 
     # multiple overlapping column names should throw an error if no suffix is provided
-    with pytest.raises(RepeatedColumnNamesError):
+    with pytest.raises(RepeatedColumnNamesError) as exc_info:
         base_view._validate_join(view_with_multiple_overlapping)
+    assert "Duplicate column names ['colA', 'colD'] found" in str(exc_info.value)
 
     # multiple overlapping column names should not throw an error if suffix is provided
     base_view._validate_join(view_with_multiple_overlapping, rsuffix="suffix")
