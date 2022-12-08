@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import AssignNode, ProjectNode
+from featurebyte.query_graph.node.base import BasePrunableNode
+from featurebyte.query_graph.node.generic import ProjectNode
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
@@ -50,9 +51,9 @@ class GraphPruningExtractor(
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
-        # TODO: [DEV-868] Decouple AssignNode from pruning logic
-        if isinstance(node, AssignNode) and node.name not in global_state.node_names:
-            return input_node_names[:1], True
+        if isinstance(node, BasePrunableNode) and node.name not in global_state.node_names:
+            selected_node_name = node.resolve_node_pruned(input_node_names)
+            return [selected_node_name], True
         return input_node_names, False
 
     def _in_compute(
@@ -85,9 +86,11 @@ class GraphPruningExtractor(
             target_columns=target_columns,
             operation_structure_map=operation_structure_map,
         )
-        # TODO: [DEV-868] Decouple AssignNode from pruning logic
         while output_node_name not in node_name_map:
-            output_node_name = nested_graph.backward_edges_map[output_node_name][0]
+            output_node = nested_graph.get_node_by_name(output_node_name)
+            assert isinstance(output_node, BasePrunableNode)
+            input_node_names = nested_graph.get_input_node_names(output_node)
+            output_node_name = output_node.resolve_node_pruned(input_node_names)
         return node.clone(
             parameters={"graph": pruned_graph, "output_node_name": node_name_map[output_node_name]}
         )
@@ -107,12 +110,12 @@ class GraphPruningExtractor(
         input_node_names = []
         for input_node_name in self.graph.get_input_node_names(node):
             # if the input node get pruned, it will not exist in the processed_node_names.
-            # in this case, keep finding the first parent node exists in the processed_node_names.
-            # currently only ASSIGN node could get pruned, the first input node is the frame node.
-            # it is used to replace the pruned assigned node
-            # TODO: [DEV-868] Decouple AssignNode from pruning logic
+            # in this case, keep finding the first replaced node that exists in the processed_node_names.
             while input_node_name not in global_state.processed_node_names:
-                input_node_name = self.graph.backward_edges_map[input_node_name][0]
+                input_node = self.graph.get_node_by_name(input_node_name)
+                assert isinstance(input_node, BasePrunableNode)
+                temp_input_node_names = self.graph.get_input_node_names(input_node)
+                input_node_name = input_node.resolve_node_pruned(temp_input_node_names)
             input_node_names.append(input_node_name)
 
         # construct mapped input_node_names (from original graph to pruned graph)

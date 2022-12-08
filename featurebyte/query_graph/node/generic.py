@@ -11,7 +11,12 @@ from featurebyte.enum import AggFunc, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode, BaseSeriesOutputNode, NodeT
+from featurebyte.query_graph.node.base import (
+    BaseNode,
+    BasePrunableNode,
+    BaseSeriesOutputNode,
+    NodeT,
+)
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -207,7 +212,7 @@ class FilterNode(BaseNode):
         )
 
 
-class AssignNode(BaseNode):
+class AssignNode(BasePrunableNode):
     """AssignNode class"""
 
     class Parameters(BaseModel):
@@ -219,6 +224,12 @@ class AssignNode(BaseNode):
     type: Literal[NodeType.ASSIGN] = Field(NodeType.ASSIGN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+        # assign node consume 1 frame input and 1 optional series input
+        # if the node is pruned (mean that the new series column is not required),
+        # we should use the frame input to resolve the situation.
+        return input_node_names[0]
 
     def _derive_node_operation_info(
         self,
