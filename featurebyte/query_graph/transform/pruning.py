@@ -31,7 +31,6 @@ class GraphPruningGlobalState(OperationStructureInfo):
     """ "GraphPruningGlobalState class"""
 
     # variables to store some internal pruning info
-    processed_node_names: Set[str] = Field(default_factory=set)
     node_names: Set[str]
 
     # variables for extractor output
@@ -66,7 +65,21 @@ class GraphPruningExtractor(
         return GraphPruningBranchState()
 
     @staticmethod
+    def _resolve_pruned_node_name(
+        graph: QueryGraphModel, node_name_map: NodeNameMap, node_name: str
+    ) -> str:
+        while node_name not in node_name_map:
+            # if the node_name get pruned, it will not exist in the node_name_map
+            # in this case, keep finding the replacement node by looking back into the input node names
+            node = graph.get_node_by_name(node_name)
+            assert isinstance(node, BasePrunableNode)
+            input_node_names = graph.get_input_node_names(node)
+            node_name = node.resolve_node_pruned(input_node_names)
+        return node_name
+
+    @classmethod
     def _prune_nested_graph(
+        cls,
         node: BaseGraphNode,
         target_nodes: List[Node],
         operation_structure_map: Dict[str, OperationStructure],
@@ -86,11 +99,9 @@ class GraphPruningExtractor(
             target_columns=target_columns,
             operation_structure_map=operation_structure_map,
         )
-        while output_node_name not in node_name_map:
-            output_node = nested_graph.get_node_by_name(output_node_name)
-            assert isinstance(output_node, BasePrunableNode)
-            input_node_names = nested_graph.get_input_node_names(output_node)
-            output_node_name = output_node.resolve_node_pruned(input_node_names)
+        output_node_name = cls._resolve_pruned_node_name(
+            graph=nested_graph, node_name_map=node_name_map, node_name=output_node_name
+        )
         return node.clone(
             parameters={"graph": pruned_graph, "output_node_name": node_name_map[output_node_name]}
         )
@@ -109,13 +120,11 @@ class GraphPruningExtractor(
         # construction of the pruned graph
         input_node_names = []
         for input_node_name in self.graph.get_input_node_names(node):
-            # if the input node get pruned, it will not exist in the processed_node_names.
-            # in this case, keep finding the first replaced node that exists in the processed_node_names.
-            while input_node_name not in global_state.processed_node_names:
-                input_node = self.graph.get_node_by_name(input_node_name)
-                assert isinstance(input_node, BasePrunableNode)
-                temp_input_node_names = self.graph.get_input_node_names(input_node)
-                input_node_name = input_node.resolve_node_pruned(temp_input_node_names)
+            input_node_name = self._resolve_pruned_node_name(
+                graph=self.graph,
+                node_name_map=global_state.node_name_map,
+                node_name=input_node_name,
+            )
             input_node_names.append(input_node_name)
 
         # construct mapped input_node_names (from original graph to pruned graph)
@@ -149,7 +158,6 @@ class GraphPruningExtractor(
 
         # update the containers to store the mapped node name & processed nodes information
         global_state.node_name_map[node.name] = node_pruned.name
-        global_state.processed_node_names.add(node.name)
 
     def extract(
         self,
