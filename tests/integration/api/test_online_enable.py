@@ -7,7 +7,7 @@ from featurebyte import EventView, FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 
 
-@pytest.fixture(name="online_enabled_feature_list", scope="session")
+@pytest.fixture(name="online_enabled_feature_list", scope="module")
 def online_enabled_feature_list_fixture(event_data, config):
     """
     Fixture for an online enabled feature
@@ -25,6 +25,11 @@ def online_enabled_feature_list_fixture(event_data, config):
         method="sum",
         windows=["24h"],
         feature_names=["FEATURE_FOR_ONLINE_ENABLE_TESTING"],
+        feature_job_setting={
+            "frequency": "7d",
+            "time_modulo_frequency": "0s",
+            "blind_spot": "1h",
+        },
     )
     features = [feature_group["FEATURE_FOR_ONLINE_ENABLE_TESTING"]]
     for feature in features:
@@ -35,7 +40,10 @@ def online_enabled_feature_list_fixture(event_data, config):
     )
     feature_list.save()
     feature_list.deploy(enable=True, make_production_ready=True)
-    return feature_list
+
+    yield feature_list
+
+    feature_list.deploy(enable=False, make_production_ready=True)
 
 
 @pytest.mark.asyncio

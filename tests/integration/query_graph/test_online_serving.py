@@ -28,11 +28,21 @@ def features_fixture(event_data):
         method="sum",
         windows=["2h", "24h"],
         feature_names=["AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
+        feature_job_setting={
+            "frequency": "7d",
+            "time_modulo_frequency": "0s",
+            "blind_spot": "1h",
+        },
     )
     feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
         method="count",
         windows=["24h"],
         feature_names=["EVENT_COUNT_BY_ACTION_24h"],
+        feature_job_setting={
+            "frequency": "7d",
+            "time_modulo_frequency": "0s",
+            "blind_spot": "1h",
+        },
     )
     features = [
         feature_group["AMOUNT_SUM_2h"],
@@ -128,15 +138,18 @@ async def test_online_serving_sql(features, snowflake_session, config):
     pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
 
     # Check online_features route
-    check_online_features_route(feature_list, config, df_historical, columns)
+    feature_list.save()
+    feature_list.deploy(make_production_ready=True, enable=True)
+    try:
+        check_online_features_route(feature_list, config, df_historical, columns)
+    finally:
+        feature_list.deploy(make_production_ready=True, enable=False)
 
 
 def check_online_features_route(feature_list, config, df_historical, columns):
     """
     Online enable a feature and call the online features endpoint
     """
-    feature_list.save()
-    feature_list.deploy(make_production_ready=True, enable=True)
     client = config.get_client()
 
     user_ids = [5, -999]
