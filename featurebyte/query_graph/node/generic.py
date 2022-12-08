@@ -452,7 +452,9 @@ class JoinFeatureNode(BaseNode):
         columns = inputs[1].columns
         new_column_name = self.parameters.name
 
-        # First input is the View
+        # First input is the View. If this View has a column that has the same name as the feature
+        # to be added, it will be omitted. This is because the added feature will replace that
+        # existing column.
         input_operation_info = inputs[0]
         input_columns = [
             col.clone(name=col.name, node_names=col.node_names.union([self.name]))
