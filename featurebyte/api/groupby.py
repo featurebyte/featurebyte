@@ -23,7 +23,11 @@ from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.transformation import GraphReconstructor, GroupbyNode, ItemGroupbyNode
+from featurebyte.query_graph.transform.reconstruction import (
+    GroupbyNode,
+    ItemGroupbyNode,
+    add_pruning_sensitive_operation,
+)
 
 
 class BaseAggregator(ABC):
@@ -210,7 +214,7 @@ class WindowAggregator(BaseAggregator):
             value_by_column=self.groupby.category,
             feature_job_setting=feature_job_setting,
         )
-        groupby_node = GraphReconstructor.add_pruning_sensitive_operation(
+        groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
             node_cls=GroupbyNode,
             node_params=node_params,
@@ -355,7 +359,7 @@ class SimpleAggregator(BaseAggregator):
             "serving_names": self.groupby.serving_names,
             "entity_ids": self.groupby.entity_ids,
         }
-        groupby_node = GraphReconstructor.add_pruning_sensitive_operation(
+        groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
             node_cls=ItemGroupbyNode,
             node_params=node_params,

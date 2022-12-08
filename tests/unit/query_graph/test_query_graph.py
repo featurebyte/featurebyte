@@ -1,12 +1,10 @@
 """
 Unit test for query graph
 """
-import os.path
 import textwrap
 from collections import defaultdict
 
 import pytest
-from bson import json_util
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SourceType
@@ -14,7 +12,10 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.transformation import GraphReconstructor, GroupbyNode
+from featurebyte.query_graph.transform.reconstruction import (
+    GroupbyNode,
+    add_pruning_sensitive_operation,
+)
 from tests.util.helper import get_node
 
 
@@ -196,9 +197,24 @@ def test_global_graph_attributes():
 
 def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     """Test reconstruct class method (edge case)"""
-    output = query_graph_with_groupby.reconstruct(replace_nodes_map={})
-    assert output.dict()["edges"] == query_graph_with_groupby.dict()["edges"]
+    output = query_graph_with_groupby.reconstruct(
+        node_replacement_map={}, regenerate_groupby_hash=False
+    )
+    expected_tile_id = (
+        "fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848027e3c"
+    )
+    assert output.edges_map == query_graph_with_groupby.edges_map
     assert output.nodes_map["groupby_1"] == query_graph_with_groupby.nodes_map["groupby_1"]
+    assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
+
+    # check that tile id is different if regenerate_groupby_hash=True
+    expected_tile_id = "event_table_f3600_m1800_b900_e160139b63fd351da7cccddf1d18db6a5f6f9d9a"
+    output = query_graph_with_groupby.reconstruct(
+        node_replacement_map={}, regenerate_groupby_hash=True
+    )
+    assert output.edges_map == query_graph_with_groupby.edges_map
+    assert output.nodes_map["groupby_1"] != query_graph_with_groupby.nodes_map["groupby_1"]
+    assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
 
 
 @pytest.mark.parametrize(
@@ -220,7 +236,9 @@ def test_query_graph__reconstruct(query_graph_with_groupby, replacement_map):
         replace_nodes_map[node_name] = replace_node
 
     assert len(replacement_map) > 0
-    output = query_graph_with_groupby.reconstruct(replace_nodes_map=replace_nodes_map)
+    output = query_graph_with_groupby.reconstruct(
+        node_replacement_map=replace_nodes_map, regenerate_groupby_hash=False
+    )
 
     # check replace_node found in the output query graph
     for node_name, replace_node in replace_nodes_map.items():
@@ -255,7 +273,7 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     graph, node_input = graph_single_node
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
-    groupby_node = GraphReconstructor.add_pruning_sensitive_operation(
+    groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "transaction_f3600_m1800_b900_8a2a4064239908696910f175aa0f4b69105997f3"

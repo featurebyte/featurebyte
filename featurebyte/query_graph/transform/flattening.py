@@ -1,7 +1,7 @@
 """
 This module contains graph flattening related classes.
 """
-from typing import Any, Dict
+from typing import Dict
 
 from pydantic import BaseModel, Field
 
@@ -65,7 +65,14 @@ class GraphFlatteningTransformer(BaseGraphTransformer[QueryGraphModel, GraphFlat
             )
             global_state.node_name_map[node.name] = inserted_node.name
 
-    def transform(self, **kwargs: Any) -> QueryGraphModel:
+    def transform(self) -> QueryGraphModel:
+        """
+        Transform the graph by flattening all the nested graph.
+
+        Returns
+        -------
+        QueryGraphModel
+        """
         global_state = GraphFlatteningGlobalState()
         self._transform(global_state=global_state)
         return global_state.graph
