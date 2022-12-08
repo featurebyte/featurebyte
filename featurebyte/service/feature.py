@@ -87,6 +87,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             }
         )
 
+        # prepare the raw graph (without getting aggressively pruned) & aggressively pruned graph
+        raw_graph = document.graph
+        graph, node_name = document.graph.prepare_to_store(target_node=document.node)
+
         async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
@@ -98,7 +102,12 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
-                document=document.dict(by_alias=True),
+                document={
+                    **document.dict(by_alias=True),
+                    "graph": graph.dict(),
+                    "node_name": node_name,
+                    "raw_graph": raw_graph.dict(),
+                },
                 user_id=self.user.id,
             )
             assert insert_id == document.id

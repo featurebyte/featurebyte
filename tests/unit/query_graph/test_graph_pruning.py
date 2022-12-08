@@ -20,7 +20,7 @@ def test_prune__redundant_assign_nodes(dataframe):
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
     target_node = dataframe["target"].node
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges_map == {
         "assign_1": ["project_3"],
@@ -44,15 +44,14 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     """
     dataframe["VALUE"] = 1
     dataframe["VALUE"] = dataframe["CUST_ID"] * 10
-    # convert the dataframe into dictionary & compare some attribute values
-    dataframe_dict = dataframe.dict()
-    assert dataframe_dict["graph"]["edges"] == [
+    # convert the dataframe into dictionary & compare some attribute values (non-aggressive pruning)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node, aggressive=True)
+    assert pruned_graph.edges == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "mul_1"},
         {"source": "input_1", "target": "assign_1"},
         {"source": "mul_1", "target": "assign_1"},
     ]
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.nodes_map["assign_1"].parameters.dict() == {"name": "VALUE", "value": None}
     assert mapped_node.name == "assign_1"

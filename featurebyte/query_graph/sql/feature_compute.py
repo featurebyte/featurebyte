@@ -13,7 +13,7 @@ from sqlglot.expressions import select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.base import TableNode
@@ -927,17 +927,17 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
 
 
 class FeatureExecutionPlanner:
-    """Responsible for constructing a FeatureExecutionPlan given QueryGraph and Node
+    """Responsible for constructing a FeatureExecutionPlan given QueryGraphModel and Node
 
     Parameters
     ----------
-    graph : QueryGraph
+    graph : QueryGraphModel
         Query graph
     """
 
     def __init__(
         self,
-        graph: QueryGraph,
+        graph: QueryGraphModel,
         source_type: SourceType,
         serving_names_mapping: dict[str, str] | None = None,
     ):

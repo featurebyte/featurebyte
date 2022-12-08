@@ -1,7 +1,7 @@
 """
 This model contains query graph internal model structures
 """
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import json
 from collections import defaultdict
@@ -367,3 +367,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         else:
             node = self.nodes_map[self.ref_to_node_name[node_ref]]
         return node
+
+
+NodeNameMap = Dict[str, str]
+GraphNodeNameMap = Tuple[QueryGraphModel, NodeNameMap]

@@ -40,9 +40,9 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "parent": "col_float",
         "agg_func": "sum",
         "value_by": None,
-        "windows": ["30m", "2h", "1d"],
+        "windows": ["30m"],
         "timestamp": "event_timestamp",
-        "names": ["sum_30m", "sum_2h", "sum_1d"],
+        "names": ["sum_30m"],
         "serving_names": ["cust_id"],
         "entity_ids": [ObjectId("637449b96d6e838b025328e2")],
     }
@@ -53,7 +53,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "time_modulo_frequency": 300,
         "frequency": 1800,
         "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "aggregation_id": "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+        "aggregation_id": "sum_397b7898e867241e3238cced04423af283a862da",
     }
 
     new_parameters = version.graph.get_node_by_name("groupby_1").parameters

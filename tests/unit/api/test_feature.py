@@ -21,6 +21,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from tests.util.helper import get_node
 
 
@@ -238,10 +239,28 @@ def saved_feature_fixture(
     feature_id_before = float_feature.id
     assert float_feature.readiness is FeatureReadiness.DRAFT
     assert float_feature.saved is False
+
+    # check the groupby node before feature is saved
+    graph = QueryGraphModel(**float_feature.dict()["graph"])
+    groupby_node = graph.nodes_map["groupby_1"]
+    assert groupby_node.parameters.names == ["sum_30m", "sum_2h", "sum_1d"]
+    assert groupby_node.parameters.windows == ["30m", "2h", "1d"]
+
     float_feature.save()
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
     assert float_feature.saved is True
+
+    # check the groupby node after feature is saved (node parameters should get pruned)
+    graph = QueryGraphModel(**float_feature.dict()["graph"])
+    groupby_node = graph.nodes_map["groupby_1"]
+    assert groupby_node.parameters.names == ["sum_1d"]
+    assert groupby_node.parameters.windows == ["1d"]
+    assert (
+        groupby_node.parameters.tile_id
+        == "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd"
+    )
+    assert groupby_node.parameters.aggregation_id == "sum_8b878f7930698eb4e97cf8e756044109f968dc7a"
 
     # test list features
     assert float_feature.name == "sum_1d"

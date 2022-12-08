@@ -12,7 +12,7 @@ import pandas as pd
 
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.logger import logger
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
@@ -22,7 +22,7 @@ from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
 
 def get_feature_preview_sql(
     request_table_name: str,
-    graph: QueryGraph,
+    graph: QueryGraphModel,
     nodes: list[Node],
     source_type: SourceType,
     point_in_time_and_serving_name: Optional[dict[str, Any]] = None,
@@ -33,8 +33,8 @@ def get_feature_preview_sql(
     ----------
     request_table_name : str
         Name of request table to use
-    graph : QueryGraph
-        Query graph
+    graph : QueryGraphModel
+        Query graph model
     nodes : list[Node]
         List of query graph node
     source_type : SourceType

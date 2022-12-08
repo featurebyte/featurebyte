@@ -8,7 +8,7 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
 
 
@@ -138,7 +138,9 @@ def run_groupby_and_get_tile_table_identifier(
     groupby_node = get_parent_nodes(event_view.graph, features[list(feature_names)[0]].node)[0]
     tile_id = groupby_node.parameters.tile_id
     agg_id = groupby_node.parameters.aggregation_id
-    pruned_graph, node_name_map = GlobalQueryGraph().prune(groupby_node)
+    pruned_graph, node_name_map = GlobalQueryGraph().prune(
+        target_node=groupby_node, aggressive=True
+    )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
     tile_id_pruned = mapped_node.parameters.tile_id
     agg_id_pruned = mapped_node.parameters.aggregation_id

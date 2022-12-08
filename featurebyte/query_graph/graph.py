@@ -9,13 +9,13 @@ from pydantic import Field
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model import Edge, QueryGraphModel
+from featurebyte.query_graph.model import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.query_graph.transform.pruning import GraphPruningExtractor, GraphPruningOutput
+from featurebyte.query_graph.transform.pruning import GraphPruningExtractor
 from featurebyte.query_graph.transform.reconstruction import GraphReconstructionTransformer
 
 
@@ -69,7 +69,7 @@ class QueryGraph(QueryGraphModel):
         op_struct_info = OperationStructureExtractor(graph=self).extract(node=node)
         return op_struct_info.operation_structure_map[node.name]
 
-    def prune(self, target_node: Node) -> GraphPruningOutput:
+    def prune(self, target_node: Node, aggressive: bool = False) -> GraphNodeNameMap:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -80,18 +80,20 @@ class QueryGraph(QueryGraphModel):
         Parameters
         ----------
         target_node: Node
-            target end node
+            Target end node
+        aggressive: bool
+            Flag to enable aggressive mode
 
         Returns
         -------
-        GraphPruningOutput
+        GraphNodeNameMap
             Tuple of pruned graph & its node name mapping
         """
-        return GraphPruningExtractor(graph=self).extract(node=target_node)
+        return GraphPruningExtractor(graph=self).extract(node=target_node, aggressive=aggressive)
 
     def reconstruct(
         self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool
-    ) -> QueryGraphModel:
+    ) -> GraphNodeNameMap:
         """
         Reconstruct the query graph using the replacement node mapping
 
@@ -104,7 +106,7 @@ class QueryGraph(QueryGraphModel):
 
         Returns
         -------
-        QueryGraphModel
+        GraphNodeNameMap
         """
         return GraphReconstructionTransformer(graph=self).transform(
             node_name_to_replacement_node=node_name_to_replacement_node,
@@ -142,6 +144,27 @@ class QueryGraph(QueryGraphModel):
             node_output_type=graph_node.output_node.output_type,
             input_nodes=input_nodes,
         )
+
+    def prepare_to_store(self, target_node: Node) -> Tuple[QueryGraphModel, str]:
+        """
+        Prepare the graph before getting stored at persistent
+
+        Parameters
+        ----------
+        target_node: Node
+            Target node
+
+        Returns
+        -------
+        Tuple[QueryGraphModel, str]
+            Aggressively pruned graph (with regenerated hash) & node name
+        """
+        pruned_graph, pruned_node_name_map = self.prune(target_node=target_node, aggressive=True)
+        reconstructed_graph, recon_node_name_map = QueryGraph(**pruned_graph.dict()).reconstruct(
+            node_name_to_replacement_node={},
+            regenerate_groupby_hash=True,
+        )
+        return reconstructed_graph, recon_node_name_map[pruned_node_name_map[target_node.name]]
 
 
 # update forward references after QueryGraph is defined

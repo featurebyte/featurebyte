@@ -66,6 +66,7 @@ class VersionService(BaseService):
     ) -> FeatureModel:
         has_change: bool = False
         graph: QueryGraphModel = feature.graph
+        node_name = feature.node_name
         if feature_job_setting:
             node_name_to_replacement_node: dict[str, Node] = {}
             for groupby_node, _ in cls._iterate_groupby_and_event_data_input_node_pairs(
@@ -80,13 +81,16 @@ class VersionService(BaseService):
 
             if node_name_to_replacement_node:
                 has_change = True
-                graph = feature.graph.reconstruct(
+                graph, node_name_map = feature.graph.reconstruct(
                     node_name_to_replacement_node=node_name_to_replacement_node,
                     regenerate_groupby_hash=True,
                 )
+                node_name = node_name_map[feature.node_name]
 
         if has_change:
-            return FeatureModel(**{**feature.dict(), "graph": graph, "_id": ObjectId()})
+            return FeatureModel(
+                **{**feature.dict(), "graph": graph, "node_name": node_name, "_id": ObjectId()}
+            )
         raise DocumentError("No change detected on the new feature version.")
 
     async def create_new_feature_version(
