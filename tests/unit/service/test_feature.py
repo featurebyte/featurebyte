@@ -80,3 +80,38 @@ async def test_get_document_by_name_and_version(feature_service, feature):
         f"Please save the Feature object first."
     )
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_feature_document_contains_raw_graph(feature_service, feature):
+    """Test raw graph is stored"""
+    expected_groupby_node = {
+        "name": "groupby_1",
+        "output_type": "frame",
+        "parameters": {
+            "agg_func": "sum",
+            "aggregation_id": "sum_397b7898e867241e3238cced04423af283a862da",
+            "blind_spot": 600,
+            "entity_ids": [ObjectId("637449b96d6e838b025328e2")],
+            "frequency": 1800,
+            "keys": ["cust_id"],
+            "names": ["sum_30m"],
+            "parent": "col_float",
+            "serving_names": ["cust_id"],
+            "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+            "time_modulo_frequency": 300,
+            "timestamp": "event_timestamp",
+            "value_by": None,
+            "windows": ["30m"],
+        },
+        "type": "groupby",
+    }
+    # note: raw graph's node parameters is not pruned
+    expected_raw_groupby_params = expected_groupby_node["parameters"].copy()
+    expected_raw_groupby_params["names"] = ["sum_30m", "sum_2h", "sum_1d"]
+    expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
+    expected_raw_groupby_params["aggregation_id"] = "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512"
+    expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
+    async for doc in feature_service.list_documents_iterator(query_filter={"_id": feature.id}):
+        assert doc["graph"]["nodes"][1] == expected_groupby_node
+        assert doc["raw_graph"]["nodes"][1] == expected_raw_groupby_node
