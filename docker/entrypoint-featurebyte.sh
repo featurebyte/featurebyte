@@ -22,8 +22,11 @@ jupyter-lab \
     --no-browser > /dev/null 2>&1 &
 
 # Start serving docs
-echo "Starting nginx docs server"
-nginx
+echo "Starting mkdocs server"
+PYTHONPATH=/app/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --no-livereload --dev-addr 0.0.0.0:8089 > /dev/null 2>&1 &
+
+while ! nc -zvw10 localhost 8089 1>/dev/null 2>&1; do echo "Waiting for local mkdocs server to start"; sleep 2; done; echo "mkdocs server is running"
+
 
 echo "Featurebyte Beta Server is Running"
 echo "┌────────────────────────┬──────────────────────────┐"

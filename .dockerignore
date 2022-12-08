@@ -8,7 +8,6 @@ setup.cfg
 scripts
 pytest.xml
 pytest-coverage.txt
-docs
 htmlcov
 requirements.txt
 .venv

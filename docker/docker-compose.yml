@@ -33,5 +33,5 @@ services:
       WORKERS: 3
     ports:
       - "127.0.0.1:8088:8088"  # featurebyte-server
-      - "127.0.0.1:8089:80"  # documentation
+      - "127.0.0.1:8089:8089"  # documentation
       - "127.0.0.1:8090:8090"  # jupyter-notebook

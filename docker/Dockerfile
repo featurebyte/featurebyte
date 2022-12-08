@@ -1,6 +1,9 @@
 # Need to route to different cpu arch
 FROM python:3.8-slim
 
+ARG USER=fb_user
+ARG UID=1000
+
 ARG FEATUREBYTE_NP_PASSWORD
 ARG FEATUREBYTE_REPOSITORY=us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi
 ARG FEATUREBYTE_NP_USERNAME=_json_key_base64
@@ -30,8 +33,9 @@ RUN poetry config virtualenvs.create false && \
 
 # copy featurebyte and featurebyte package
 COPY ./featurebyte /app/featurebyte
+COPY ./docs        /app/docs
 COPY ./dist        /app/dist
-COPY ./site        /app/site
+COPY ./mkdocs.yaml /app/mkdocs.yaml
 
 # install databricks-connector via pip (dependency error with pyarrow)
 # downgrade pyarrow - backwards compatibility issue with databricks
@@ -41,11 +45,9 @@ RUN pip install databricks-sql-connector==2.1.0 && \
     pip install --no-index -f /app/dist featurebyte && \
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
 
-# Install nginx
-RUN apt-get update -y &&\
-    apt-get install nginx -y &&\
-    apt-get clean
+RUN adduser --uid $UID --disabled-password --gecos '' $USER
+RUN chown -R $USER:$USER /app
 
-RUN sed -i 's|root /var/www/html;|root /app/site;|g' /etc/nginx/sites-available/default
+USER $USER
 
 ENTRYPOINT ["/bin/bash", "/scripts/entrypoint.sh"]
