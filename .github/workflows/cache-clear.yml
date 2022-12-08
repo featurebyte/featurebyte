@@ -33,7 +33,7 @@ jobs:
           export CACHE_IDS=$(curl -s \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.WORKFLOW_GH_TOKEN__CHESTER }}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches" | jq '.actions_caches[].id'))
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/caches" | jq '.actions_caches[].id')
 
           # Delete Cache
           printenv CACHE_IDS | xargs -I {} curl -X DELETE \
