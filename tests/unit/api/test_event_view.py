@@ -7,6 +7,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 
@@ -214,3 +215,65 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_e
     # No error expected
     snowflake_event_view.validate_join(snowflake_dimension_view)
     snowflake_event_view.validate_join(snowflake_event_view)
+
+
+@pytest.fixture(name="production_ready_feature")
+def production_ready_feature_fixture(feature_group):
+    """Fixture for a production ready feature"""
+    feature = feature_group["sum_30m"] + 123
+    feature.name = "production_ready_feature"
+    assert feature.parent is None
+    feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
+    feature.__dict__["version"] = "V220401"
+    feature_group["production_ready_feature"] = feature
+    return feature
+
+
+def test_validate_entity_col_override__invalid_columns(snowflake_event_view):
+    """
+    Test _validate_entity_col_override
+    """
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_event_view._validate_entity_col_override("")
+    assert "is an empty string" in str(exc_info)
+
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_event_view._validate_entity_col_override("random_col")
+    assert "not a column in the event view" in str(exc_info)
+
+
+def test_validate_entity_col_override__valid_col_passed_in(snowflake_event_view):
+    """
+    Test _validate_entity_col_override
+    """
+    col_to_use = snowflake_event_view.columns_info[0].name
+    # No error raised
+    snowflake_event_view._validate_entity_col_override(col_to_use)
+
+
+def test_is_time_based(production_ready_feature):
+    """
+    Test is time based feature
+    """
+    is_time_based = EventView._is_time_based(production_ready_feature)
+    assert is_time_based
+
+    # TODO: assert non-time-based features
+
+
+def test_validate_feature_addition():
+    """
+    Test _validate_feature_addition
+    """
+    pass
+
+
+def test_get_feature_entity_col(production_ready_feature):
+    """
+    Test get_feature_entity_col
+    """
+    # verify we can retrieve the entity
+    col = EventView._get_feature_entity_col(production_ready_feature)
+    assert col == "cust_id"
+
+    # TODO: be able to test for 0, or multiple entity_identifiers

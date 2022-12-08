@@ -9,6 +9,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
+from featurebyte.api.feature import Feature
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -177,3 +178,136 @@ class EventView(View, GroupByMixin):
         # We can remove this once DEV-556 is done.
         assert self.event_id_column is not None
         return self.event_id_column
+
+    def _validate_entity_col_override(self, entity_col: str) -> None:
+        """
+        Validates the entity_col override
+
+        Parameters
+        ----------
+        entity_col: str
+            entity column override to use
+
+        Raises
+        ------
+        ValueError
+            raised when the entity_col provided is an empty string, or if it's not a column on the event view
+        """
+        if entity_col is "":
+            raise ValueError(
+                "Entity column override provided is an empty string. Please provide a specific column."
+            )
+
+        # Check that the column is a column in the view.
+        current_columns = {col.name for col in self.columns_info}
+        if entity_col not in current_columns:
+            raise ValueError(
+                f"Entity column {entity_col} provided is not a column in the event view. Please pick one"
+                f"of the following columns as an override: {sorted(current_columns)}"
+            )
+
+    @staticmethod
+    def _is_time_based(feature: Feature) -> bool:
+        """
+        Checks to see if a feature is time based.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature to check
+
+        Returns
+        -------
+        bool
+            returns True if the feature is time based, False if otherwise.
+        """
+        operation_structure = feature.extract_operation_structure()
+        for aggregation in operation_structure.aggregations:
+            if aggregation.window is not None:
+                return True
+        return False
+
+    def _validate_feature_addition(
+        self, feature: Feature, entity_col_override: Optional[str]
+    ) -> None:
+        """
+        Validates feature addition
+        - Checks that the feature is non-time based
+        - Checks that entity is present in one of the columns
+
+        Parameters
+        ----------
+        feature: Feature
+            the feature we want to add on to the EventView
+        entity_col_override: Optional[str]
+            The entity column to use in the EventView. The type of this entity should match the entity of the feature.
+
+        Raises
+        ------
+        ValueError
+            raised when a time-based feature is passed in, or the entity_col_override validation fails
+        """
+        # Validate whether feature is time based
+        if EventView._is_time_based(feature):
+            raise ValueError("We currently only support the addition of non-time based features.")
+
+        # Validate entity_col_override
+        if entity_col_override is not None:
+            self._validate_entity_col_override(entity_col_override)
+
+    @staticmethod
+    def _get_feature_entity_col(feature: Feature) -> str:
+        """
+        Get the entity column of the feature.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature to get entity column for
+
+        Returns
+        -------
+        str
+            entity column name
+        """
+        entity_columns = feature.entity_identifiers
+        assert len(entity_columns) == 1, "expect to have exactly one entity column"
+        return entity_columns[0]
+
+    @typechecked
+    def add_feature(
+        self, new_column_name: str, feature: Feature, entity: Optional[str] = None
+    ) -> None:
+        """
+        Features that are non-time based and are extracted from other data views can be added as a column to an event
+        view if one of its columns has been tagged with the same entity as the entity of the features.
+
+        Time-based features will be support in the future once we have support for offline stores.
+
+        Parameters
+        ----------
+        new_column_name: str
+            the new column name to be added to the EventView
+        feature: Feature
+            the feature we want to add to the EventView
+        entity: Optional[str]
+            The entity column to use in the EventView. The type of this entity should match the entity of the feature.
+        """
+        # Validation
+        self._validate_feature_addition(feature, entity)
+
+        # Add join node
+        node_params = {
+            "view_entity_column": entity,  # TODO
+            "feature_entity_column": EventView._get_feature_entity_col(feature),
+            "name": new_column_name,
+        }
+        node = self.graph.add_operation(
+            node_type=NodeType.JOIN_FEATURE,
+            node_params=node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[self.node, feature.node],
+        )
+
+        # Update metadata
+        # TODO: Update metadata
