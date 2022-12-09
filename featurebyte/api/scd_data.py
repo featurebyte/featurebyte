@@ -3,7 +3,7 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
@@ -98,3 +98,30 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             end_timestamp_column=end_timestamp_column,
             current_flag=current_flag,
         )
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Provide basic info for SCD data.
+
+        Parameters
+        ----------
+        verbose: bool
+            This is a no-op for now. This will be used when we add more functionality to this funciton.
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        return {
+            "name": self.name,
+            "record_creation_date_column": self.record_creation_date_column,
+            "updated_at": self.updated_at,
+            "status": self.status,
+            "entities": self.entity_ids,
+            "natural_key_column": self.natural_key_column,
+            "surrogate_key_column": self.surrogate_key_column,
+            "effective_timestamp_column": self.effective_timestamp_column,
+            "end_timestamp_column": self.end_timestamp_column,
+            "current_flag": self.current_flag,
+            "tabular_source": self.tabular_source,
+        }

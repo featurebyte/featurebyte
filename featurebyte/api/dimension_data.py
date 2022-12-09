@@ -3,7 +3,7 @@ DimensionData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
@@ -78,3 +78,26 @@ class DimensionData(DimensionDataModel, DataApiObject):
             _id=_id,
             dimension_data_id_column=dimension_data_id_column,
         )
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Provide baisc info for the dimension data.
+
+        Parameters
+        ----------
+        verbose: bool
+            This is a no-op for now. This will be used when we add more functionality to this funciton.
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        return {
+            "name": self.name,
+            "record_creation_date_column": self.record_creation_date_column,
+            "updated_at": self.updated_at,
+            "status": self.status,
+            "entities": self.entity_ids,
+            "tabular_source": self.tabular_source,
+            "dimension_data_id_column": self.dimension_data_id_column,
+        }

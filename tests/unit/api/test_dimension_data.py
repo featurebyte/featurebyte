@@ -1,14 +1,16 @@
 """
 Test dimension data API object
 """
+import datetime
 from unittest.mock import patch
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.feature_store import DataStatus, TableDetails, TabularSource
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 
@@ -132,3 +134,26 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
                 dimension_data_id_column="col_int",
                 record_creation_date_column="created_at",
             )
+
+
+def assert_info_helper(dimension_data_info):
+    """
+    Helper function to assert info from dimension data.
+    """
+    assert dimension_data_info["dimension_data_id_column"] == "col_int"
+    assert dimension_data_info["entities"] == []
+    assert dimension_data_info["name"] == "sf_dimension_data"
+    assert dimension_data_info["record_creation_date_column"] == "created_at"
+    assert dimension_data_info["status"] == "DRAFT"
+
+
+def test_info(saved_dimension_data):
+    """
+    Test info
+    """
+    info = saved_dimension_data.info()
+    assert_info_helper(info)
+
+    # setting verbose = true is a no-op for now
+    info = saved_dimension_data.info(verbose=True)
+    assert_info_helper(info)

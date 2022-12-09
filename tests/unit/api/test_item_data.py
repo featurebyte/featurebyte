@@ -366,3 +366,26 @@ def test_list_filter(saved_item_data):
 
     feature_list = ItemData.list(entity="other_entity")
     assert feature_list.shape[0] == 0
+
+
+def assert_info_helper(item_data_info):
+    """
+    Helper function to assert info from item data.
+    """
+    assert item_data_info["event_id_column"] == "event_id_col"
+    assert item_data_info["item_id_column"] == "item_id_col"
+    assert len(item_data_info["entities"]) == 1
+    assert item_data_info["name"] == "sf_item_data"
+    assert item_data_info["status"] == "DRAFT"
+
+
+def test_info(saved_item_data):
+    """
+    Test info
+    """
+    info = saved_item_data.info()
+    assert_info_helper(info)
+
+    # setting verbose = true is a no-op for now
+    info = saved_item_data.info(verbose=True)
+    assert_info_helper(info)
