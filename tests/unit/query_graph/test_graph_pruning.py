@@ -156,7 +156,7 @@ def test_join_feature_node_is_prunable(global_graph, order_size_feature_join_nod
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[order_size_feature_join_node],
     )
-    pruned_graph, _ = global_graph.prune(target_node=project_ts)
+    pruned_graph, _ = global_graph.prune(target_node=project_ts, aggressive=True)
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
     assert pruned_graph.get_node_by_name("project_1") == {
         "name": "project_1",
