@@ -101,12 +101,12 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
-        Override info temporarily until we implement the info route properly.
+        Provide basic info for SCD data.
 
         Parameters
         ----------
         verbose: bool
-            Control verbose level of the summary
+            This is a no-op for now. This will be used when we add more functionality to this funciton.
 
         Returns
         -------
