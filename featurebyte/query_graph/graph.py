@@ -82,7 +82,9 @@ class QueryGraph(QueryGraphModel):
         target_node: Node
             Target end node
         aggressive: bool
-            Flag to enable aggressive mode
+            Flag to enable aggressive mode. When the aggressive mode is on, those prunable nodes
+            may get removed if they do not contribute to the target node output. In addition,
+            all the node parameters will get pruned based on the output of the node.
 
         Returns
         -------
