@@ -8,11 +8,12 @@ from typing import Literal, Optional
 from abc import abstractmethod
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression
+from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT, quoted_identifier
 
 
 class BaseAdapter:
@@ -96,6 +97,66 @@ class BaseAdapter:
 
     @classmethod
     @abstractmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
+        inner_agg_expr: expressions.Select,
+    ) -> expressions.Select:
+        """
+        Aggregate per category values into key value pairs
+
+        # noqa: DAR103
+
+        Input:
+
+        --------------------------------------
+        POINT_IN_TIME  ENTITY  CATEGORY  VALUE
+        --------------------------------------
+        2022-01-01     C1      K1        1
+        2022-01-01     C1      K2        2
+        2022-01-01     C2      K3        3
+        2022-01-01     C3      K1        4
+        ...
+        --------------------------------------
+
+        Output:
+
+        -----------------------------------------
+        POINT_IN_TIME  ENTITY  VALUE_AGG
+        -----------------------------------------
+        2022-01-01     C1      {"K1": 1, "K2": 2}
+        2022-01-01     C2      {"K2": 3}
+        2022-01-01     C3      {"K1": 4}
+        ...
+        -----------------------------------------
+
+        Parameters
+        ----------
+        point_in_time_column : str
+            Point in time column name
+        serving_names : list[str]
+            List of serving name columns
+        value_by : str | None
+            Optional category parameter for the groupby operation
+        agg_result_names : list[str]
+            Column names of the aggregated results
+        inner_agg_result_names : list[str]
+            Column names of the intermediate aggregation result names (one value per category - this
+            is to be used as the values in the aggregated key-value pairs)
+        inner_agg_expr : expressions.Subqueryable:
+            Query that produces the intermediate aggregation result
+
+        Returns
+        -------
+        str
+        """
+
+    @classmethod
+    @abstractmethod
     def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
         """
         Get the database specific type name given a Feature's DBVarType for online store purpose
@@ -165,6 +226,46 @@ class SnowflakeAdapter(BaseAdapter):
             this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr]
         )
         return output_expr
+
+    @classmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
+        inner_agg_expr: expressions.Select,
+    ) -> expressions.Select:
+
+        inner_alias = "INNER_"
+
+        outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
+        for serving_name in serving_names:
+            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
+
+        category_col = f"{inner_alias}.{quoted_identifier(value_by).sql()}"
+        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
+        # '{"0.00000": 7}')
+        category_col_casted = f"CAST({category_col} AS VARCHAR)"
+        # Replace missing category values since OBJECT_AGG ignores keys that are null
+        category_filled_null = (
+            f"CASE WHEN {category_col} IS NULL THEN '{MISSING_VALUE_REPLACEMENT}' ELSE "
+            f"{category_col_casted} END"
+        )
+        object_agg_exprs = [
+            f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
+            f' AS "{agg_result_name}"'
+            for inner_agg_result_name, agg_result_name in zip(
+                inner_agg_result_names, agg_result_names
+            )
+        ]
+        agg_expr = (
+            select(*outer_group_by_keys, *object_agg_exprs)
+            .from_(inner_agg_expr.subquery(alias=inner_alias))
+            .group_by(*outer_group_by_keys)
+        )
+        return agg_expr
 
     @classmethod
     def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
@@ -265,5 +366,5 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
         Instance of BaseAdapter
     """
     if source_type == SourceType.DATABRICKS:
-        return DatabricksAdapter()
+        return DatabricksAdapter()  # type: ignore[abstract]
     return SnowflakeAdapter()

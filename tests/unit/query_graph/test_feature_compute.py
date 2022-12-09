@@ -13,19 +13,19 @@ from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import (
     FeatureExecutionPlanner,
     NonTimeAwareRequestTablePlan,
-    RequestTablePlan,
+    TileBasedRequestTablePlan,
 )
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
-    PointInTimeAggregationSpec,
+    WindowAggregationSpec,
 )
 
 
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
-    agg_spec = PointInTimeAggregationSpec(
+    agg_spec = WindowAggregationSpec(
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -88,7 +88,7 @@ def assert_sql_equal(sql, expected):
 
 def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_1d):
     """Test that two compatible AggregationSpec shares the same expanded request table"""
-    plan = RequestTablePlan(source_type=SourceType.SNOWFLAKE)
+    plan = TileBasedRequestTablePlan(source_type=SourceType.SNOWFLAKE)
     plan.add_aggregation_spec(agg_spec_sum_1d)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
@@ -128,7 +128,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
 
 def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     """Test that two incompatible AggregationSpec does not share expanded request tables"""
-    plan = RequestTablePlan(source_type=SourceType.SNOWFLAKE)
+    plan = TileBasedRequestTablePlan(source_type=SourceType.SNOWFLAKE)
     plan.add_aggregation_spec(agg_spec_max_2h)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
@@ -212,9 +212,9 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(query_graph_with_groupby, source_type=SourceType.SNOWFLAKE)
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(plan.window_aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
-            PointInTimeAggregationSpec(
+            WindowAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -232,7 +232,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
             )
         ],
         [
-            PointInTimeAggregationSpec(
+            WindowAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -272,9 +272,9 @@ def test_feature_execution_planner__serving_names_mapping(
         query_graph_with_groupby, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(plan.window_aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
-            PointInTimeAggregationSpec(
+            WindowAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -292,7 +292,7 @@ def test_feature_execution_planner__serving_names_mapping(
             )
         ],
         [
-            PointInTimeAggregationSpec(
+            WindowAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,

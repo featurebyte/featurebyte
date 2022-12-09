@@ -14,6 +14,10 @@ from featurebyte.enum import SourceType
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
+# Replacement value for missing values where they should be preserved. Use typically in dictionary
+# related operations which discard missing keys by default.
+MISSING_VALUE_REPLACEMENT = "__MISSING__"
+
 
 def construct_cte_sql(
     cte_statements: Sequence[tuple[str | expressions.Identifier, Expression]]

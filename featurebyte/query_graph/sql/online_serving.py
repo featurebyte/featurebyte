@@ -22,7 +22,7 @@ from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.specs import PointInTimeAggregationSpec
+from featurebyte.query_graph.sql.specs import WindowAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
 
@@ -136,7 +136,7 @@ class OnlineStoreUniversePlan:
         """
         groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
         for groupby_node in groupby_nodes:
-            agg_specs = PointInTimeAggregationSpec.from_groupby_query_node(groupby_node)
+            agg_specs = WindowAggregationSpec.from_groupby_query_node(groupby_node)
             for agg_spec in agg_specs:
                 tile_id = agg_spec.tile_table_id
                 self.max_window_size_by_tile_id[tile_id] = max(

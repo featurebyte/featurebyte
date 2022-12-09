@@ -15,9 +15,9 @@ from featurebyte.query_graph.sql.tiling import get_aggregator
 
 
 @dataclass
-class PointInTimeAggregationSpec:
+class WindowAggregationSpec:
     """
-    Point-in-time aggregation specification
+    Window aggregation specification
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -50,7 +50,7 @@ class PointInTimeAggregationSpec:
         cls,
         groupby_node: Node,
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> list[PointInTimeAggregationSpec]:
+    ) -> list[WindowAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
         Parameters
@@ -62,7 +62,7 @@ class PointInTimeAggregationSpec:
 
         Returns
         -------
-        list[PointInTimeAggregationSpec]
+        list[WindowAggregationSpec]
             List of AggregationSpec
         """
         assert isinstance(groupby_node, GroupbyNode)
