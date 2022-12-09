@@ -12,7 +12,7 @@ from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature import Feature
-from featurebyte.api.join_utils import join_column_lineage_map, join_tabular_data_ids
+from featurebyte.api.join_utils import join_tabular_data_ids
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.util import append_to_lineage
@@ -199,7 +199,7 @@ class EventView(View, GroupByMixin):
         ValueError
             raised when the entity_col provided is an empty string, or if it's not a column on the event view
         """
-        if entity_col is "":
+        if entity_col == "":
             raise ValueError(
                 "Entity column override provided is an empty string. Please provide a specific column."
             )
@@ -346,7 +346,7 @@ class EventView(View, GroupByMixin):
         self._validate_feature_addition(feature, entity_column)
 
         # Add join node
-        view_entity_column = EventView._get_view_entity_column(feature, entity_column)
+        view_entity_column = self._get_view_entity_column(feature, entity_column)
         node_params = {
             "view_entity_column": view_entity_column,
             "feature_entity_column": EventView._get_feature_entity_col(feature),
