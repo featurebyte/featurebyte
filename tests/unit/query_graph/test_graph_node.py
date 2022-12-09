@@ -502,7 +502,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     }
 
     # check pruned graph
-    pruned_graph, node_name_map = graph.prune(target_node=node_proj_2h_avg)
+    pruned_graph, node_name_map = graph.prune(target_node=node_proj_2h_avg, aggressive=True)
     assert node_name_map == {"input_1": "input_1", "graph_1": "graph_1", "project_1": "project_1"}
     assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
 
@@ -593,7 +593,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
     # TODO: [DEV-868] Decouple AssignNode from pruning logic
     # current behaviour is not correct as we currently only support pruning ASSIGN node.
     # if we check the graph inside the graph node, the ASSIGN node is pruned.
-    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node, aggressive=True)
     assert pruned_graph.edges_map == {
         "input_1": ["project_1", "graph_1"],
         "project_1": ["add_1"],

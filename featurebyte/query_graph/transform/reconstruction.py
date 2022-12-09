@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import TableDataType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
@@ -153,6 +153,7 @@ def add_pruning_sensitive_operation(
     pruned_graph, node_name_map = GraphPruningExtractor(graph=graph).extract(
         node=input_node,
         target_columns=temp_node.get_required_input_columns(),
+        aggressive=True,
     )
     pruned_input_node_name = None
     for node in dfs_traversal(graph, input_node):
@@ -195,7 +196,7 @@ class GraphReconstructionGlobalState(BaseModel):
 
 
 class GraphReconstructionTransformer(
-    BaseGraphTransformer[QueryGraphModel, GraphReconstructionGlobalState]
+    BaseGraphTransformer[GraphNodeNameMap, GraphReconstructionGlobalState]
 ):
     """GraphReconstructionTransformer class"""
 
@@ -230,7 +231,7 @@ class GraphReconstructionTransformer(
 
     def transform(
         self, node_name_to_replacement_node: Dict[str, NodeT], regenerate_groupby_hash: bool
-    ) -> QueryGraphModel:
+    ) -> GraphNodeNameMap:
         """
         Transform the graph by replacing all the nodes specified in the node replacement dictionary
         with an option whether to regenerate the groupby hash value.
@@ -244,11 +245,11 @@ class GraphReconstructionTransformer(
 
         Returns
         -------
-        QueryGraphModel
+        Tuple[QueryGraphModel, NodeNameMap]
         """
         global_state = GraphReconstructionGlobalState(
             node_name_to_replacement_node=node_name_to_replacement_node,
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
         self._transform(global_state=global_state)
-        return global_state.graph
+        return global_state.graph, global_state.node_name_map

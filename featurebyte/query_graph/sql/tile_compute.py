@@ -10,7 +10,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
 from featurebyte.enum import InternalName, SourceType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -40,12 +40,12 @@ class OnDemandTileComputePlan:
         self.tile_infos: list[TileGenSql] = []
         self.source_type = source_type
 
-    def process_node(self, graph: QueryGraph, node: Node) -> None:
+    def process_node(self, graph: QueryGraphModel, node: Node) -> None:
         """Update state given a query graph node
 
         Parameters
         ----------
-        graph : QueryGraph
+        graph : QueryGraphModel
             Query graph
         node : Node
             Query graph node
@@ -185,12 +185,14 @@ class OnDemandTileComputePlan:
         return cte_statements
 
 
-def get_tile_gen_info(graph: QueryGraph, node: Node, source_type: SourceType) -> list[TileGenSql]:
+def get_tile_gen_info(
+    graph: QueryGraphModel, node: Node, source_type: SourceType
+) -> list[TileGenSql]:
     """Construct TileGenSql that contains recipe of building tiles
 
     Parameters
     ----------
-    graph : QueryGraph
+    graph : QueryGraphModel
         Query graph
     node : Node
         Query graph node
