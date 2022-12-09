@@ -151,3 +151,29 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
                 current_flag="col_char",
                 record_creation_date_column="created_at",
             )
+
+
+def assert_info_helper(scd_data_info):
+    """
+    Helper function to assert info from SCD data.
+    """
+    assert scd_data_info["entities"] == []
+    assert scd_data_info["name"] == "sf_scd_data"
+    assert scd_data_info["status"] == "DRAFT"
+    assert scd_data_info["natural_key_column"] == "col_text"
+    assert scd_data_info["surrogate_key_column"] == "col_int"
+    assert scd_data_info["effective_timestamp_column"] == "event_timestamp"
+    assert scd_data_info["end_timestamp_column"] == "event_timestamp"
+    assert scd_data_info["current_flag"] == "col_char"
+
+
+def test_info(saved_scd_data):
+    """
+    Test info
+    """
+    info = saved_scd_data.info()
+    assert_info_helper(info)
+
+    # setting verbose = true is a no-op for now
+    info = saved_scd_data.info(verbose=True)
+    assert_info_helper(info)
