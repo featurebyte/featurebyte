@@ -3,7 +3,7 @@ ItemData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator
@@ -117,3 +117,16 @@ class ItemData(ItemDataModel, DataApiObject):
                 return values
             values["default_feature_job_setting"] = default_feature_job_setting
         return values
+
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Override info temporarily until we implement the info route properly.
+        """
+        return {
+            "name": self.name,
+            "record_creation_date_column": self.record_creation_date_column,
+            "tabular_source": self.tabular_source,
+            "event_id_column": self.event_id_column,
+            "item_id_column": self.item_id_column,
+            "warning": "The full info route is not implemented yet. Expect some changes shortly.",
+        }
