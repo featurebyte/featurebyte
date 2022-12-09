@@ -27,13 +27,15 @@ COPY ./docker/migration.py              /scripts/migration.py
 
 # Install requirements
 RUN poetry config virtualenvs.create false && \
-    poetry install --only main --extras "server" --no-interaction --no-ansi && \
+    poetry install --only main --only docs --extras "server" --no-interaction --no-ansi && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 
 # copy featurebyte and featurebyte package
 COPY ./featurebyte /app/featurebyte
+COPY ./docs        /app/docs
 COPY ./dist        /app/dist
+COPY ./mkdocs.yaml /app/mkdocs.yaml
 
 # install databricks-connector via pip (dependency error with pyarrow)
 # downgrade pyarrow - backwards compatibility issue with databricks
@@ -43,9 +45,9 @@ RUN pip install databricks-sql-connector==2.1.0 && \
     pip install --no-index -f /app/dist featurebyte && \
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
 
-# Add non-root user
 RUN adduser --uid $UID --disabled-password --gecos '' $USER
 RUN chown -R $USER:$USER /app
+
 USER $USER
 
 ENTRYPOINT ["/bin/bash", "/scripts/entrypoint.sh"]
