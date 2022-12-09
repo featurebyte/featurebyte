@@ -25,11 +25,6 @@ def online_enabled_feature_list_fixture(event_data, config):
         method="sum",
         windows=["24h"],
         feature_names=["FEATURE_FOR_ONLINE_ENABLE_TESTING"],
-        feature_job_setting={
-            "frequency": "7d",
-            "time_modulo_frequency": "0s",
-            "blind_spot": "1h",
-        },
     )
     features = [feature_group["FEATURE_FOR_ONLINE_ENABLE_TESTING"]]
     for feature in features:
