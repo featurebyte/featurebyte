@@ -266,29 +266,37 @@ def test_scd_join(global_graph, scd_join_node):
         SELECT
           L."event_timestamp" AS "event_timestamp",
           L."cust_id" AS "cust_id",
+          L."event_column_1_out" AS "event_column_1_out",
+          L."event_column_2_out" AS "event_column_2_out",
           R."membership_status" AS "latest_membership_status"
         FROM (
           SELECT
-            "TS_COL",
-            "KEY_COL",
-            "LAST_TS",
+            "__FB_TS_COL",
+            "__FB_KEY_COL",
+            "__FB_LAST_TS",
             "event_timestamp",
-            "cust_id"
+            "cust_id",
+            "event_column_1_out",
+            "event_column_2_out"
           FROM (
             SELECT
-              "TS_COL",
-              "KEY_COL",
-              LAG("EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "KEY_COL" ORDER BY "TS_COL" NULLS LAST, "EFFECTIVE_TS_COL" NULLS LAST) AS "LAST_TS",
+              "__FB_TS_COL",
+              "__FB_KEY_COL",
+              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
               "event_timestamp",
               "cust_id",
-              "EFFECTIVE_TS_COL"
+              "event_column_1_out",
+              "event_column_2_out",
+              "__FB_EFFECTIVE_TS_COL"
             FROM (
               SELECT
-                "event_timestamp" AS "TS_COL",
-                "cust_id" AS "KEY_COL",
-                NULL AS "EFFECTIVE_TS_COL",
+                "event_timestamp" AS "__FB_TS_COL",
+                "cust_id" AS "__FB_KEY_COL",
+                NULL AS "__FB_EFFECTIVE_TS_COL",
                 "event_timestamp" AS "event_timestamp",
-                "cust_id" AS "cust_id"
+                "cust_id" AS "cust_id",
+                "event_column_1" AS "event_column_1_out",
+                "event_column_2" AS "event_column_2_out"
               FROM (
                 SELECT
                   "ts" AS "ts",
@@ -299,11 +307,13 @@ def test_scd_join(global_graph, scd_join_node):
               )
               UNION ALL
               SELECT
-                "effective_timestamp" AS "TS_COL",
-                "cust_id" AS "KEY_COL",
-                "effective_timestamp" AS "EFFECTIVE_TS_COL",
+                "effective_timestamp" AS "__FB_TS_COL",
+                "cust_id" AS "__FB_KEY_COL",
+                "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
                 NULL AS "event_timestamp",
-                NULL AS "cust_id"
+                NULL AS "cust_id",
+                NULL AS "event_column_1_out",
+                NULL AS "event_column_2_out"
               FROM (
                 SELECT
                   "effective_ts" AS "effective_ts",
@@ -314,7 +324,7 @@ def test_scd_join(global_graph, scd_join_node):
             )
           )
           WHERE
-            "EFFECTIVE_TS_COL" IS NULL
+            "__FB_EFFECTIVE_TS_COL" IS NULL
         ) AS L
         LEFT JOIN (
           SELECT
@@ -323,7 +333,7 @@ def test_scd_join(global_graph, scd_join_node):
             "membership_status" AS "membership_status"
           FROM "db"."public"."customer_profile_table"
         ) AS R
-          ON L."LAST_TS" = R."effective_timestamp" AND L."KEY_COL" = R."cust_id"
+          ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL" = R."cust_id"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected

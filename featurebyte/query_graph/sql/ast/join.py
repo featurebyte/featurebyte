@@ -179,10 +179,10 @@ class SCDJoin(TableNode):
     query_node_type = NodeType.JOIN
 
     # Internally used identifiers when constructing SQL
-    TS_COL = "TS_COL"
-    EFFECTIVE_TS_COL = "EFFECTIVE_TS_COL"
-    KEY_COL = "KEY_COL"
-    LAST_TS = "LAST_TS"
+    TS_COL = "__FB_TS_COL"
+    EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
+    KEY_COL = "__FB_KEY_COL"
+    LAST_TS = "__FB_LAST_TS"
 
     def from_query_impl(self, select_expr: Select) -> Select:
         """
