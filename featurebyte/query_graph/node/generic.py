@@ -212,7 +212,74 @@ class FilterNode(BaseNode):
         )
 
 
-class AssignNode(BasePrunableNode):
+class AssignColumnMixin:
+    """AssignColumnMixin class"""
+
+    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+        """
+        Method used to resolve the situation when the node get pruned. As all the nodes only produce single
+        output, we should only choose one node from the input nodes.
+
+        Parameters
+        ----------
+        input_node_names: List[str]
+            List of input node names
+
+        Returns
+        -------
+        str
+            Node name selected to replace this (pruned) node
+        """
+        # for the assign-like operation, the first column is a frame view
+        # if the node is pruned (mean that the new column is not required),
+        # we should use the frame input to resolve the situation.
+        return input_node_names[0]
+
+    @staticmethod
+    def _validate_view(view_op_structure: OperationStructure) -> None:
+        assert view_op_structure.output_category == NodeOutputCategory.VIEW
+        assert view_op_structure.output_type == NodeOutputType.FRAME
+
+    @staticmethod
+    def _construct_operation_structure(
+        input_operation_info: OperationStructure,
+        new_column_name: str,
+        columns: List[ViewDataColumn],
+        node_name: str,
+    ) -> OperationStructure:
+        """
+        Construct operation structure of the assign-column-like operation
+
+        Parameters
+        ----------
+        input_operation_info: OperationStructure
+            Input operation info of a frame that a series will be assigned to
+        new_column_name: str
+            Column name that will be assigned to the new column (from the series input)
+        columns: List[ViewDataColumn]
+            List of columns that are used to derive the series
+        node_name: str
+            Node name of the operation that assign a series to a frame
+
+        Returns
+        -------
+        OperationStructure
+        """
+        input_columns = [col for col in input_operation_info.columns if col.name != new_column_name]
+        new_column = DerivedDataColumn.create(
+            name=new_column_name,
+            columns=columns,
+            transform=None,
+            node_name=node_name,
+        )
+        return OperationStructure(
+            columns=input_columns + [new_column],
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+        )
+
+
+class AssignNode(AssignColumnMixin, BasePrunableNode):
     """AssignNode class"""
 
     class Parameters(BaseModel):
@@ -225,11 +292,10 @@ class AssignNode(BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
-        # assign node consume 1 frame input and 1 optional series input
-        # if the node is pruned (mean that the new series column is not required),
-        # we should use the frame input to resolve the situation.
-        return input_node_names[0]
+    @staticmethod
+    def _validate_series(series_op_structure: OperationStructure) -> None:
+        assert series_op_structure.output_type == NodeOutputType.SERIES
+        assert series_op_structure.output_category == NodeOutputCategory.VIEW
 
     def _derive_node_operation_info(
         self,
@@ -237,26 +303,22 @@ class AssignNode(BasePrunableNode):
         branch_state: OperationStructureBranchState,
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
-        _ = branch_state, global_state
+
+        # First input is a View
         input_operation_info = inputs[0]
+        self._validate_view(input_operation_info)
+
         # AssignNode can only take 1 or 2 parameters (1 parameters is frame, 2nd optional parameter is series)
+        columns = []
         if len(inputs) == 2:
             columns = inputs[1].columns
-        else:
-            columns = []
+            self._validate_series(inputs[1])
 
-        new_column_name = self.parameters.name
-        input_columns = [col for col in input_operation_info.columns if col.name != new_column_name]
-        new_column = DerivedDataColumn.create(
-            name=new_column_name,
+        return self._construct_operation_structure(
+            input_operation_info=input_operation_info,
+            new_column_name=self.parameters.name,
             columns=columns,
-            transform=None,
             node_name=self.name,
-        )
-        return OperationStructure(
-            columns=input_columns + [new_column],
-            output_type=NodeOutputType.FRAME,
-            output_category=NodeOutputCategory.VIEW,
         )
 
 
@@ -435,7 +497,7 @@ class JoinNode(BaseNode):
         )
 
 
-class JoinFeatureNode(BaseNode):
+class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     """JoinFeatureNode class
 
     This node should have two input nodes. The first input node is the View's node, and the second
@@ -460,9 +522,9 @@ class JoinFeatureNode(BaseNode):
             Name of the column when the feature is added to the EventView
         """
 
-        view_entity_column: str
-        view_point_in_time_column: Optional[str]
-        feature_entity_column: str
+        view_entity_column: InColumnStr
+        view_point_in_time_column: Optional[InColumnStr]
+        feature_entity_column: InColumnStr
         name: OutColumnStr
 
     type: Literal[NodeType.JOIN_FEATURE] = Field(NodeType.JOIN_FEATURE, const=True)
@@ -477,11 +539,6 @@ class JoinFeatureNode(BaseNode):
         assert any(node_name.startswith("item_groupby") for node_name in columns[0].node_names)
         assert feature_op_structure.output_type == NodeOutputType.SERIES
 
-    @staticmethod
-    def _validate_view(view_op_structure: OperationStructure) -> None:
-        assert view_op_structure.output_category == NodeOutputCategory.VIEW
-        assert view_op_structure.output_type == NodeOutputType.FRAME
-
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -489,32 +546,21 @@ class JoinFeatureNode(BaseNode):
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
 
-        # First input is the View
+        # First input is a View
         input_operation_info = inputs[0]
         self._validate_view(input_operation_info)
 
-        # Second input node is the Feature
+        # Second input node is a Feature
         feature_operation_info = inputs[1]
         self._validate_feature(feature_operation_info)
 
         # If this View has a column that has the same name as the feature to be added, it will be
         # omitted. This is because the added feature will replace that existing column.
-        new_column_name = self.parameters.name
-        input_columns = [
-            col.clone(name=col.name, node_names=col.node_names.union([self.name]))
-            for col in input_operation_info.columns
-            if col.name != new_column_name
-        ]
-        new_column = DerivedDataColumn.create(
-            name=new_column_name,
+        return self._construct_operation_structure(
+            input_operation_info=input_operation_info,
+            new_column_name=self.parameters.name,
             columns=feature_operation_info.columns,
-            transform=None,
             node_name=self.name,
-        )
-        return OperationStructure(
-            columns=input_columns + [new_column],
-            output_type=NodeOutputType.FRAME,
-            output_category=NodeOutputCategory.VIEW,
         )
 
 
