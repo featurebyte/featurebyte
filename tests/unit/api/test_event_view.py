@@ -6,6 +6,7 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import DBVarType
+from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -277,3 +278,37 @@ def test_get_feature_entity_col(production_ready_feature):
     assert col == "cust_id"
 
     # TODO: be able to test for 0, or multiple entity_identifiers
+
+
+def test_get_view_entity_column__entity_col_provided(
+    snowflake_event_view, production_ready_feature
+):
+    """
+    Test _get_view_entity_column - entity col provided
+    """
+    # Test empty string passed in
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_event_view._get_view_entity_column(production_ready_feature, "")
+    assert "Empty string provided as entity column is invalid" in str(exc_info)
+
+    # Test column is passed in - we don't have to validate whether the column exists in the view, since we
+    # would've done that beforehand already.
+    entity_col_name = "entity_col"
+    col_to_use = snowflake_event_view._get_view_entity_column(
+        production_ready_feature, entity_col_name
+    )
+    assert col_to_use == entity_col_name
+
+
+def test_get_view_entity_column__no_entity_col_provided(
+    snowflake_event_view, production_ready_feature
+):
+    """
+    Test _get_view_entity_column - no entity col provided
+    """
+    # No matching column should throw an error
+    with pytest.raises(EventViewMatchingEntityColumnNotFound) as exc_info:
+        snowflake_event_view._get_view_entity_column(production_ready_feature, None)
+    assert "Unable to find a matching entity column" in str(exc_info)
+
+    # TODO: matching columns found should return the column - need to mock an event view with entity_ids

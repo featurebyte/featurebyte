@@ -13,6 +13,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
+from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import InputNode
@@ -198,7 +199,7 @@ class EventView(View, GroupByMixin):
                 "Entity column override provided is an empty string. Please provide a specific column."
             )
 
-        # Check that the column is a column in the view.
+        # Check that the column is an entity column in the view.
         current_columns = {col.name for col in self.columns_info}
         if entity_col not in current_columns:
             raise ValueError(
@@ -274,9 +275,52 @@ class EventView(View, GroupByMixin):
         assert len(entity_columns) == 1, "expect to have exactly one entity column"
         return entity_columns[0]
 
+    def _get_view_entity_column(self, feature: Feature, entity_column: Optional[str]) -> str:
+        """
+        Get the view entity column.
+
+        Parameters
+        ----------
+        feature: Feature
+            the feature we want to add to the EventView
+        entity_column: Optional[str]
+            The entity column to use in the EventView. The type of this entity should match the entity of the feature.
+
+        Returns
+        -------
+        str
+            the column name of the view to use
+
+        Raises
+        ------
+        ValueError
+            raised when an entity_column is provided, but it's an empty string
+        EventViewMatchingEntityColumnNotFound
+            raised when we are unable to find a matching entity column automatically
+        """
+        # If we provide an entity column, and it's not an empty string, use the entity column
+        if entity_column is not None:
+            if entity_column == "":
+                raise ValueError(
+                    "Empty string provided as entity column is invalid. Please provide a proper "
+                    "column name."
+                )
+            return entity_column
+
+        # Try to match the entity column of the feature, with that of an entity in the view
+        feature_entity_col = EventView._get_feature_entity_col(feature)
+        # TODO: is matching on column name enough? or should we match on entity type/name/some other identifier?
+        if feature_entity_col in self.entity_columns:
+            return feature_entity_col
+
+        raise EventViewMatchingEntityColumnNotFound(
+            "Unable to find a matching entity column. Please specify a column "
+            f"from the EventView columns: {sorted(self.columns)}"
+        )
+
     @typechecked
     def add_feature(
-        self, new_column_name: str, feature: Feature, entity: Optional[str] = None
+        self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
     ) -> None:
         """
         Features that are non-time based and are extracted from other data views can be added as a column to an event
@@ -290,15 +334,16 @@ class EventView(View, GroupByMixin):
             the new column name to be added to the EventView
         feature: Feature
             the feature we want to add to the EventView
-        entity: Optional[str]
+        entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
         # Validation
-        self._validate_feature_addition(feature, entity)
+        self._validate_feature_addition(feature, entity_column)
 
         # Add join node
+        view_entity_column = EventView._get_view_entity_column(feature, entity_column)
         node_params = {
-            "view_entity_column": entity,  # TODO
+            "view_entity_column": view_entity_column,
             "feature_entity_column": EventView._get_feature_entity_col(feature),
             "name": new_column_name,
         }
