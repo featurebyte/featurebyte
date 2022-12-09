@@ -5,6 +5,7 @@ import os
 
 from bson import json_util
 
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import construct_node
 
@@ -145,3 +146,21 @@ def test_prune__item_view_join_event_view(test_dir):
     target_node = query_graph.get_node_by_name("join_2")
     pruned_graph, _ = query_graph.prune(target_node=target_node)
     assert "assign_1" in pruned_graph.nodes_map
+
+
+def test_join_feature_node_is_prunable(global_graph, order_size_feature_join_node):
+    """Test that join feature node is pruned if the node does not contribute to the final output"""
+    project_ts = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[order_size_feature_join_node],
+    )
+    pruned_graph, _ = global_graph.prune(target_node=project_ts)
+    assert pruned_graph.edges_map == {"input_1": ["project_1"]}
+    assert pruned_graph.get_node_by_name("project_1") == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["ts"]},
+    }

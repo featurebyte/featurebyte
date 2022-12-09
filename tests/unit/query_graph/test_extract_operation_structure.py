@@ -190,7 +190,6 @@ def test_extract_operation__lag(global_graph, input_node):
         input_nodes=[project_map["a"], project_map["cust_id"], project_map["ts"]],
     )
     op_struct = global_graph.extract_operation_structure(node=lag_node)
-    common_column_params = extract_column_parameters(input_node)
     expected_source_columns = [
         {"name": "a", **extract_column_parameters(input_node, {"project_2"})},
         {"name": "cust_id", **extract_column_parameters(input_node, {"project_1"})},
@@ -372,7 +371,7 @@ def test_extract_operation__join_double_aggregations(
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_join_node)
     common_event_data_column_params = extract_column_parameters(
         event_data_input_node,
-        other_node_names={"input_2", "join_feature_1"},
+        other_node_names={"input_2"},
     )
     order_size_column = {
         "name": "ord_size",
