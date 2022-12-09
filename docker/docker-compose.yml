@@ -31,6 +31,7 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8088
       WORKERS: 3
+      LOG_LEVEL: warning
     ports:
       - "127.0.0.1:8088:8088"  # featurebyte-server
       - "127.0.0.1:8089:8089"  # documentation

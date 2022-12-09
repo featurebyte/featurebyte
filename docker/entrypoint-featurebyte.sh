@@ -50,4 +50,4 @@ echo "└───────────────────────�
 echo ""
 
 # start featurebyte service
-uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300 > /dev/null 2>&1
+uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300 --log-level=$LOG_LEVEL
