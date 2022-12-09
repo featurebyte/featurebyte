@@ -216,8 +216,22 @@ class AssignColumnMixin:
     """AssignColumnMixin class"""
 
     def resolve_node_pruned(self, input_node_names: List[str]) -> str:
-        # assign node consume 1 frame input and 1 optional series input
-        # if the node is pruned (mean that the new series column is not required),
+        """
+        Method used to resolve the situation when the node get pruned. As all the nodes only produce single
+        output, we should only choose one node from the input nodes.
+
+        Parameters
+        ----------
+        input_node_names: List[str]
+            List of input node names
+
+        Returns
+        -------
+        str
+            Node name selected to replace this (pruned) node
+        """
+        # for the assign-like operation, the first column is a frame view
+        # if the node is pruned (mean that the new column is not required),
         # we should use the frame input to resolve the situation.
         return input_node_names[0]
 
