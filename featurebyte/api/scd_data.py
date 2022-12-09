@@ -106,6 +106,9 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
         return {
             "name": self.name,
             "record_creation_date_column": self.record_creation_date_column,
+            "updated_at": self.updated_at,
+            "status": self.status,
+            "entities": self.entity_ids,
             "natural_key_column": self.natural_key_column,
             "surrogate_key_column": self.surrogate_key_column,
             "effective_timestamp_column": self.effective_timestamp_column,

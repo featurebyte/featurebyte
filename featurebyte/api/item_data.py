@@ -125,8 +125,11 @@ class ItemData(ItemDataModel, DataApiObject):
         return {
             "name": self.name,
             "record_creation_date_column": self.record_creation_date_column,
+            "updated_at": self.updated_at,
+            "status": self.status,
             "tabular_source": self.tabular_source,
             "event_id_column": self.event_id_column,
             "item_id_column": self.item_id_column,
+            "entities": self.entity_ids,
             "warning": "The full info route is not implemented yet. Expect some changes shortly.",
         }
