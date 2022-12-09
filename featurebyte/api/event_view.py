@@ -5,16 +5,21 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Union, cast
 
+import copy
+
 from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature import Feature
+from featurebyte.api.join_utils import join_column_lineage_map, join_tabular_data_ids
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import InputNode
 
@@ -354,5 +359,28 @@ class EventView(View, GroupByMixin):
             input_nodes=[self.node, feature.node],
         )
 
+        # Construct new columns_info
+        updated_columns_info = copy.deepcopy(self.columns_info)
+        updated_columns_info.append(
+            ColumnInfo(
+                name=new_column_name,
+                dtype=feature.dtype,
+                entity_id=feature.entity_identifiers[0],
+            )
+        )
+
+        # Construct new column_lineage_map
+        updated_column_lineage_map = copy.deepcopy(self.column_lineage_map)
+        for col, lineage in updated_column_lineage_map.items():
+            updated_column_lineage_map[col] = append_to_lineage(lineage, new_column_name)
+
+        # Construct new tabular_data_ids
+        # TODO: do we need to add all tabular data IDs?
+        joined_tabular_data_ids = join_tabular_data_ids(
+            self.tabular_data_ids, feature.tabular_data_ids
+        )
+
         # Update metadata
-        # TODO: Update metadata
+        self._update_metadata(
+            node.name, updated_columns_info, updated_column_lineage_map, joined_tabular_data_ids
+        )
