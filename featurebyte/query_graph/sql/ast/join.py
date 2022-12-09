@@ -229,8 +229,8 @@ class SCDJoin(TableNode):
 
     def _construct_left_view_with_effective_timestamp(self) -> Select:
         """
-        This constructs a query that calculates the corresponding SCD effective date for each event
-        timestamp. See an example below.
+        This constructs a query that calculates the corresponding SCD effective date for each row in
+        the left table. See an example below.
 
         Left table:
 
@@ -253,23 +253,26 @@ class SCDJoin(TableNode):
 
         Merged temporary table with LAG function applied with IGNORE NULLS option:
 
-        --------------------------------------------------------------------
-        TS            KEY     EFFECTIVE_TS    LAST_TS       ROW_OF_INTEREST
-        --------------------------------------------------------------------
+        --------------------------------------------------------------------------
+        TS            KEY     EFFECTIVE_TS    LAST_TS       ROW_OF_INTEREST    ...
+        --------------------------------------------------------------------------
         2022-04-10    1000    NULL            NULL          *
         2022-04-12    1000    2022-04-12      NULL
         2022-04-15    1000    NULL            2022-04-12    *
         2022-04-20    1000    2022-04-20      2022-04-12
         2022-04-20    1000    NULL            2022-04-20    *
-        --------------------------------------------------------------------
+        --------------------------------------------------------------------------
 
-        This query extracts the above table and keeps only the TS, KEY and LAST_TS columns and rows
-        of interest (rows that are from the right tables).
+        This query extracts the above table and keeps only the rows of interest (rows that are from
+        the left table). The resulting table has the same number of rows as the original left
+        table, and contains the columns specified in left_input_columns renamed as
+        left_output_columns.
 
         Returns
         -------
         Select
         """
+        # Left table. Set up three special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL
         left_view = cast(Select, self.left_node.sql).subquery()
         left_view_with_ts_and_key = select(
             alias_(quoted_identifier(self.left_timestamp_column), alias=self.TS_COL, quoted=True),
@@ -277,11 +280,14 @@ class SCDJoin(TableNode):
             alias_(expressions.NULL, alias=self.EFFECTIVE_TS_COL, quoted=True),
         ).from_(left_view)
 
+        # Include all columns specified for the left table
         for input_col, output_col in zip(self.left_input_columns, self.left_output_columns):
             left_view_with_ts_and_key = left_view_with_ts_and_key.select(
                 alias_(quoted_identifier(input_col), alias=output_col, quoted=True)
             )
 
+        # Right table. Set up the same special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL. The
+        # ordering of the columns in the SELECT statement matters.
         right_view = cast(Select, self.right_node.sql).subquery()
         right_ts_and_key = select(
             alias_(quoted_identifier(self.right_timestamp_column), alias=self.TS_COL, quoted=True),
@@ -293,11 +299,13 @@ class SCDJoin(TableNode):
             ),
         ).from_(right_view)
 
+        # Include all columns specified for the right table, but simply set them as NULL.
         for column in self.left_output_columns:
             right_ts_and_key = right_ts_and_key.select(
                 alias_(expressions.NULL, alias=column, quoted=True)
             )
 
+        # Merge the above two temporary tables into one
         all_ts_and_key = expressions.Union(
             this=left_view_with_ts_and_key,
             expression=right_ts_and_key,
@@ -327,6 +335,7 @@ class SCDJoin(TableNode):
             order=order,
         )
 
+        # Need to use a nested query for this filter due to the LAG window function
         filter_original_left_view_rows = expressions.Is(
             this=quoted_identifier(self.EFFECTIVE_TS_COL),
             expression=expressions.NULL,
