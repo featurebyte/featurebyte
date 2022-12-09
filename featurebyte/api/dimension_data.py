@@ -100,5 +100,4 @@ class DimensionData(DimensionDataModel, DataApiObject):
             "entities": self.entity_ids,
             "tabular_source": self.tabular_source,
             "dimension_data_id_column": self.dimension_data_id_column,
-            "warning": "The full info route is not implemented yet. Expect some changes shortly.",
         }

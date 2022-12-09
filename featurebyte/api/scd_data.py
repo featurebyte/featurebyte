@@ -124,5 +124,4 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             "end_timestamp_column": self.end_timestamp_column,
             "current_flag": self.current_flag,
             "tabular_source": self.tabular_source,
-            "warning": "The full info route is not implemented yet. Expect some changes shortly.",
         }
