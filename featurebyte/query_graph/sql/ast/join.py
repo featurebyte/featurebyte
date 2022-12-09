@@ -171,14 +171,14 @@ class SCDJoin(TableNode):
     right_on: str
     left_timestamp_column: str
     right_timestamp_column: str
+    left_input_columns: list[str]
+    left_output_columns: list[str]
     right_input_columns: list[str]
     right_output_columns: list[str]
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
     # Internally used identifiers when constructing SQL
-    LEFT_VIEW = "LEFT_VIEW"
-    RIGHT_VIEW = "RIGHT_VIEW"
     TS_COL = "TS_COL"
     EFFECTIVE_TS_COL = "EFFECTIVE_TS_COL"
     KEY_COL = "KEY_COL"
@@ -203,96 +203,29 @@ class SCDJoin(TableNode):
         Select
         """
 
-        inner_scd_joined_expr = self._construct_inner_scd_joined_view()
+        left_view_with_last_ts_expr = self._construct_left_view_with_effective_timestamp()
+        left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
+
+        right_subquery = cast(Select, self.right_node.sql).subquery(alias="R")
 
         join_conditions = [
             expressions.EQ(
-                this=get_qualified_column_identifier(self.left_timestamp_column, "L"),
-                expression=get_qualified_column_identifier(self.left_timestamp_column, "R"),
+                this=get_qualified_column_identifier(self.LAST_TS, "L"),
+                expression=get_qualified_column_identifier(self.right_timestamp_column, "R"),
             ),
             expressions.EQ(
-                this=get_qualified_column_identifier(self.left_on, "L"),
-                expression=get_qualified_column_identifier(self.left_on, "R"),
+                this=get_qualified_column_identifier(self.KEY_COL, "L"),
+                expression=get_qualified_column_identifier(self.right_on, "R"),
             ),
         ]
 
-        select_expr = select_expr.from_(self._left_view_as_table(alias="L")).join(
-            inner_scd_joined_expr.subquery(alias="R"),
+        select_expr = select_expr.from_(left_subquery).join(
+            right_subquery,
             join_type=self.join_type,
             on=expressions.and_(*join_conditions),
         )
 
         return select_expr
-
-    def _construct_inner_scd_joined_view(self) -> Select:
-        """
-        Construct a query that joins the intermediate table with the input SCD table (right table)
-
-        Example output of the join:
-
-        ------------------------------------------------------------------
-        EVENT_TS      CUST_ID    SCD_TS        SCD_COL1    SCD_COL2    ...
-        ------------------------------------------------------------------
-        2022-04-10    1000       NULL          NULL        NULL
-        2022-04-15    1000       2022-04-12    a           x
-        2022-04-20    1000       2022-04-20    b           y
-        ------------------------------------------------------------------
-
-        The result can be joined back to the input event table (left table) using EVENT_TS and
-        CUST_ID columns.
-
-        Returns
-        -------
-        Select
-        """
-
-        left_view_with_effective_ts_expr = self._construct_left_view_with_effective_timestamp()
-
-        scd_columns = []
-        for input_col, output_col in zip(self.right_input_columns, self.right_output_columns):
-            scd_columns.append(
-                alias_(
-                    get_qualified_column_identifier(input_col, "INNER_R"),
-                    alias=output_col,
-                    quoted=True,
-                )
-            )
-
-        join_conditions = [
-            expressions.EQ(
-                this=get_qualified_column_identifier(self.LAST_TS, "INNER_L"),
-                expression=get_qualified_column_identifier(self.right_timestamp_column, "INNER_R"),
-            ),
-            expressions.EQ(
-                this=get_qualified_column_identifier(self.KEY_COL, "INNER_L"),
-                expression=get_qualified_column_identifier(self.right_on, "INNER_R"),
-            ),
-        ]
-
-        inner_scd_joined_expr = (
-            select(
-                alias_(
-                    get_qualified_column_identifier(self.TS_COL, "INNER_L"),
-                    alias=self.left_timestamp_column,
-                    quoted=True,
-                ),
-                alias_(
-                    get_qualified_column_identifier(self.KEY_COL, "INNER_L"),
-                    alias=self.left_on,
-                    quoted=True,
-                ),
-                *scd_columns,
-            )
-            .from_(left_view_with_effective_ts_expr.subquery(alias="INNER_L"))
-            .join(
-                self._right_view_as_table(),
-                join_alias="INNER_R",
-                join_type="inner",
-                on=expressions.and_(*join_conditions),
-            )
-        )
-
-        return inner_scd_joined_expr
 
     def _construct_left_view_with_effective_timestamp(self) -> Select:
         """
@@ -337,19 +270,19 @@ class SCDJoin(TableNode):
         -------
         Select
         """
-
-        distinct_left_view = (
-            select(quoted_identifier(self.left_timestamp_column), quoted_identifier(self.left_on))
-            .distinct()
-            .from_(self._left_view_as_table())
-        )
-
-        left_ts_and_key = select(
+        left_view = cast(Select, self.left_node.sql).subquery()
+        left_view_with_ts_and_key = select(
             alias_(quoted_identifier(self.left_timestamp_column), alias=self.TS_COL, quoted=True),
             alias_(quoted_identifier(self.left_on), alias=self.KEY_COL, quoted=True),
             alias_(expressions.NULL, alias=self.EFFECTIVE_TS_COL, quoted=True),
-        ).from_(distinct_left_view.subquery())
+        ).from_(left_view)
 
+        for input_col, output_col in zip(self.left_input_columns, self.left_output_columns):
+            left_view_with_ts_and_key = left_view_with_ts_and_key.select(
+                alias_(quoted_identifier(input_col), alias=output_col, quoted=True)
+            )
+
+        right_view = cast(Select, self.right_node.sql).subquery()
         right_ts_and_key = select(
             alias_(quoted_identifier(self.right_timestamp_column), alias=self.TS_COL, quoted=True),
             alias_(quoted_identifier(self.right_on), alias=self.KEY_COL, quoted=True),
@@ -358,10 +291,15 @@ class SCDJoin(TableNode):
                 alias=self.EFFECTIVE_TS_COL,
                 quoted=True,
             ),
-        ).from_(self._right_view_as_table())
+        ).from_(right_view)
+
+        for column in self.left_output_columns:
+            right_ts_and_key = right_ts_and_key.select(
+                alias_(expressions.NULL, alias=column, quoted=True)
+            )
 
         all_ts_and_key = expressions.Union(
-            this=left_ts_and_key,
+            this=left_view_with_ts_and_key,
             expression=right_ts_and_key,
             distinct=False,
         )
@@ -398,12 +336,14 @@ class SCDJoin(TableNode):
                 quoted_identifier(self.TS_COL),
                 quoted_identifier(self.KEY_COL),
                 quoted_identifier(self.LAST_TS),
+                *[quoted_identifier(col) for col in self.left_output_columns],
             )
             .from_(
                 select(
                     quoted_identifier(self.TS_COL),
                     quoted_identifier(self.KEY_COL),
                     alias_(matched_effective_timestamp_expr, alias=self.LAST_TS, quoted=True),
+                    *[quoted_identifier(col) for col in self.left_output_columns],
                     quoted_identifier(self.EFFECTIVE_TS_COL),
                 )
                 .from_(all_ts_and_key.subquery())
@@ -414,18 +354,6 @@ class SCDJoin(TableNode):
 
         return left_view_with_effective_timestamp_expr
 
-    def _left_view_as_table(self, alias: Optional[str] = None) -> Expression:
-        return expressions.Table(this=self.LEFT_VIEW, alias=alias)
-
-    def _right_view_as_table(self, alias: Optional[str] = None) -> Expression:
-        return expressions.Table(this=self.RIGHT_VIEW, alias=alias)
-
-    def with_query_impl(self, select_expr: Select) -> Select:
-        select_expr = select_expr.with_(self.LEFT_VIEW, self.left_node.sql).with_(
-            self.RIGHT_VIEW, self.right_node.sql
-        )
-        return select_expr
-
     @classmethod
     def build(cls, context: SQLNodeContext) -> Optional[SCDJoin]:
         if context.parameters.get("scd_parameters") is None:
@@ -433,16 +361,17 @@ class SCDJoin(TableNode):
         parameters = context.parameters
 
         columns_map = {}
-        for input_col, output_col in zip(
-            parameters["left_input_columns"], parameters["left_output_columns"]
-        ):
-            columns_map[output_col] = get_qualified_column_identifier(input_col, "L")
 
-        # It is intended to consider only "right_output_columns" here. In the R aliased subquery
-        # that will be constructed in from_query_impl(), the right side columns would have already
+        # It is intended to consider only "left_output_columns" here. In the L aliased subquery
+        # that will be constructed in from_query_impl(), the left side columns would have already
         # been renamed, so here they should be referred to using output column names.
-        for output_col in parameters["right_output_columns"]:
-            columns_map[output_col] = get_qualified_column_identifier(output_col, "R")
+        for output_col in parameters["left_output_columns"]:
+            columns_map[output_col] = get_qualified_column_identifier(output_col, "L")
+
+        for input_col, output_col in zip(
+            parameters["right_input_columns"], parameters["right_output_columns"]
+        ):
+            columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
 
         node = SCDJoin(
             context=context,
@@ -454,6 +383,8 @@ class SCDJoin(TableNode):
             join_type=parameters["join_type"],
             left_timestamp_column=parameters["scd_parameters"]["left_timestamp_column"],
             right_timestamp_column=parameters["scd_parameters"]["right_timestamp_column"],
+            left_input_columns=parameters["left_input_columns"],
+            left_output_columns=parameters["left_output_columns"],
             right_input_columns=parameters["right_input_columns"],
             right_output_columns=parameters["right_output_columns"],
         )
