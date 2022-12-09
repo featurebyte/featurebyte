@@ -82,6 +82,15 @@ class DimensionData(DimensionDataModel, DataApiObject):
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Override info temporarily until we implement the info route properly.
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary
+
+        Returns
+        -------
+        Dict[str, Any]
         """
         return {
             "name": self.name,
