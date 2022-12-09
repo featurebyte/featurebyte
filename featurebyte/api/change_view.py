@@ -1,7 +1,7 @@
 """
 ChangeView class
 """
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import Field
 from typeguard import typechecked
@@ -66,31 +66,24 @@ class ChangeView(View):
             )
 
     @staticmethod
-    def _get_column_info_for_col_name(scd_data: SlowlyChangingData, col_name: str) -> ColumnInfo:
+    def _get_col_name_to_col_info(scd_data: SlowlyChangingData) -> Dict[str, ColumnInfo]:
         """
-        Helper method to get the col info given a column name from slowly changing data.
+        Helper method to get a dict mapping column name to column info
 
         Parameters
         ----------
         scd_data: SlowlyChangingData
             data to create columns for the ChangeView for
-        col_name: str
-            col name to find
 
         Returns
         -------
-        ColumnInfo
-            effective timestamp col info
-
-        Raises
-        ------
-        ValueError
-            raised if we cannot find column info for the effective timestamp
+        Dict[str, ColumnInfo]
+            map from column name to the ColumnInfo
         """
+        output = {}
         for col_info in scd_data.columns_info:
-            if col_info.name == col_name:
-                return col_info
-        raise ValueError(f"Could not find a ColumnInfo for the column name {col_name}.")
+            output[col_info.name] = col_info
+        return output
 
     @staticmethod
     def _create_column_info_from_scd(
@@ -98,6 +91,13 @@ class ChangeView(View):
     ) -> List[ColumnInfo]:
         """
         Helper method to create column info from the slowly changing data.
+
+        Specifically, the resulting ChangeView only has 4 columns:
+        - change_timestamp (which is the event timestamp of the event view and equal to the effective (or start)
+          timestamp of the SCD)
+        - the natural key of the SCD View
+        - past_NAME_OF_COLUMN: value of the column before the change
+        - new_NAME_OF_COLUMN: value of the column after the change
 
         Parameters
         ----------
@@ -111,16 +111,10 @@ class ChangeView(View):
         List[ColumnInfo]
             columns for the change view
         """
-        # TODO: consider building a map
-        effective_timestamp_col_info = ChangeView._get_column_info_for_col_name(
-            scd_data, scd_data.effective_timestamp_column
-        )
-        natural_key_col_info = ChangeView._get_column_info_for_col_name(
-            scd_data, scd_data.natural_key_column
-        )
-        tracked_column_col_info = ChangeView._get_column_info_for_col_name(
-            scd_data, column_to_track_changes
-        )
+        col_name_to_col_info = ChangeView._get_col_name_to_col_info(scd_data)
+        effective_timestamp_col_info = col_name_to_col_info[scd_data.effective_timestamp_column]
+        natural_key_col_info = col_name_to_col_info[scd_data.natural_key_column]
+        tracked_column_col_info = col_name_to_col_info[column_to_track_changes]
         past_col_info = ColumnInfo(
             name=f"past_{tracked_column_col_info.name}",
             dtype=tracked_column_col_info.dtype,
