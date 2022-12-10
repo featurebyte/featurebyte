@@ -94,6 +94,14 @@ async def test_scd_join_small(snowflake_session, snowflake_feature_store):
                 ]
             ),
             "scd_value_latest": [np.nan, 1, 2],
+            "effective_ts_latest_v2": pd.to_datetime(
+                [
+                    np.nan,
+                    "2022-04-12 10:00:00",
+                    "2022-04-20 10:00:00",
+                ]
+            ),
+            "scd_value_latest_v2": [np.nan, 1, 2],
         }
     )
     table_prefix = "TEST_SCD_JOIN_SMALL"
@@ -125,6 +133,7 @@ async def test_scd_join_small(snowflake_session, snowflake_feature_store):
         )
     )
     event_view.join(scd_view, on="cust_id", rsuffix="_latest")
+    event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
     df_actual = event_view.preview()
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
 
