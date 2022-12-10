@@ -34,6 +34,7 @@ def agg_spec_template_fixture():
         aggregation_id="some_agg_id",
         keys=["CUST_ID"],
         serving_names=["CID"],
+        serving_names_mapping=None,
         value_by=None,
         merge_expr="SUM(value)",
         feature_name="Amount (1d sum)",
@@ -73,6 +74,7 @@ def item_agg_spec_fixture():
     agg_spec = ItemAggregationSpec(
         keys=["order_id"],
         serving_names=["OID"],
+        serving_names_mapping=None,
         feature_name="Order Size",
         agg_expr=select("*").from_("tab"),
     )
@@ -227,6 +229,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
+                serving_names_mapping=None,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -245,6 +248,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
+                serving_names_mapping=None,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -291,6 +295,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
+                serving_names_mapping=mapping,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -309,6 +314,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
+                serving_names_mapping=mapping,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -365,6 +371,7 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
         "keys": ["order_id"],
         "serving_names": ["NEW_ORDER_ID"],
         "feature_name": "order_size",
+        "serving_names_mapping": mapping,
     }
 
     # Check feature specs
