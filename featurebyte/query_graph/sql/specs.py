@@ -17,7 +17,7 @@ from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
 
 
-@dataclass
+@dataclass  # type: ignore[misc]
 class AggregationSpec(ABC):
     """
     Base class of all aggregation specifications
@@ -26,7 +26,7 @@ class AggregationSpec(ABC):
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.serving_names_mapping is not None:
             self.serving_names = apply_serving_names_mapping(
                 self.serving_names, self.serving_names_mapping

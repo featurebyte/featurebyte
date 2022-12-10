@@ -1,8 +1,12 @@
+"""
+SQL generation for aggregation with time windows
+"""
 from __future__ import annotations
 
 from typing import Any, Iterable, Tuple
 
-from sqlglot import expressions, select
+from sqlglot import expressions
+from sqlglot.expressions import select
 
 from featurebyte import SourceType
 from featurebyte.enum import InternalName, SpecialColumnName
@@ -23,7 +27,8 @@ AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 
 
 class TileBasedRequestTablePlan:
-    """SQL generation for expanded request tables
+    """
+    SQL generation for expanded request tables
 
     An expanded request table has the same number of rows as the original request table but with new
     columns added: __FB_LAST_TILE_INDEX and __FB_FIRST_TILE_INDEX. This corresponds to the first and
@@ -57,7 +62,8 @@ class TileBasedRequestTablePlan:
         self.adapter = get_sql_adapter(source_type)
 
     def add_aggregation_spec(self, agg_spec: WindowAggregationSpec) -> None:
-        """Process a new AggregationSpec
+        """
+        Process a new AggregationSpec
 
         Depending on the feature job setting of the provided aggregation, a new expanded request
         table may or may not be required.
@@ -80,7 +86,8 @@ class TileBasedRequestTablePlan:
             self.expanded_request_table_names[unique_tile_indices_id] = output_table_name
 
     def get_expanded_request_table_name(self, agg_spec: WindowAggregationSpec) -> str:
-        """Get the name of the expanded request table given and AggregationSpec
+        """
+        Get the name of the expanded request table given and AggregationSpec
 
         Parameters
         ----------
@@ -97,7 +104,8 @@ class TileBasedRequestTablePlan:
 
     @staticmethod
     def get_unique_tile_indices_id(agg_spec: WindowAggregationSpec) -> TileIndicesIdType:
-        """Get a key for an AggregationSpec that controls reuse of expanded request table
+        """
+        Get a key for an AggregationSpec that controls reuse of expanded request table
 
         Parameters
         ----------
@@ -121,7 +129,8 @@ class TileBasedRequestTablePlan:
         self,
         request_table_name: str,
     ) -> list[tuple[str, expressions.Select]]:
-        """Construct SQL statements that build the expanded request tables
+        """
+        Construct SQL statements that build the expanded request tables
 
         Parameters
         ----------
@@ -159,7 +168,8 @@ class TileBasedRequestTablePlan:
         serving_names: list[str],
         request_table_name: str,
     ) -> expressions.Select:
-        """Construct SQL for expanded SQLs
+        """
+        Construct SQL for expanded SQLs
 
         Parameters
         ----------
@@ -169,7 +179,7 @@ class TileBasedRequestTablePlan:
             Frequency in feature job setting
         time_modulo_frequency : int
             Time modulo frequency in feature job setting
-        serving_names: list[str]
+        serving_names : list[str]
             List of serving names corresponding to entities
         request_table_name: str
             Name of request table to use
@@ -213,14 +223,14 @@ class WindowAggregationSpecSet:
         self.processed_agg_specs: dict[AggregationSpecIdType, set[str]] = {}
 
     def add_aggregation_spec(self, aggregation_spec: WindowAggregationSpec) -> None:
-        """Update state given an PointInTimeAggregationSpec
+        """
+        Update state given a WindowAggregationSpec
 
         Some aggregations can be shared by different features, e.g. "transaction_type (7 day
         entropy)" and "transaction_type (7 day most frequent)" can both reuse the aggregated result
         of "transaction (7 day category count by transaction_type)". This information is tracked
-        using the aggregation_id attribute of PointInTimeAggregationSpec - the
-        PointInTimeAggregationSpec for all of these three features will have the same
-        aggregation_id.
+        using the aggregation_id attribute of WindowAggregationSpec - the WindowAggregationSpec for
+        all of these three features will have the same aggregation_id.
 
         Parameters
         ----------
@@ -252,10 +262,11 @@ class WindowAggregationSpecSet:
         self.processed_agg_specs[key].add(agg_id)
 
     def get_grouped_aggregation_specs(self) -> Iterable[list[WindowAggregationSpec]]:
-        """Yields groups of PointInTimeAggregationSpec
+        """
+        Yields groups of WindowAggregationSpec
 
-        Each group of PointInTimeAggregationSpec has the same tile_table_id. Their tile values can
-        be aggregated in a single GROUP BY clause.
+        Each group of WindowAggregationSpec has the same tile_table_id. Their tile values can be
+        aggregated in a single GROUP BY clause.
 
         Yields
         ------
@@ -267,6 +278,15 @@ class WindowAggregationSpecSet:
 
 
 class WindowAggregator(Aggregator):
+    """
+    WindowAggregator is responsible for SQL generation for aggregation with time windows
+
+    Parameters
+    ----------
+    source_type: SourceType
+        Source type information
+    """
+
     def __init__(self, source_type: SourceType) -> None:
         self.window_aggregation_spec_set = WindowAggregationSpecSet()
         self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
@@ -274,11 +294,26 @@ class WindowAggregator(Aggregator):
         )
         self.adapter = get_sql_adapter(source_type)
 
-    def update(self, aggregation_spec: WindowAggregationSpec):
+    def update(self, aggregation_spec: WindowAggregationSpec) -> None:
+        """
+        Update internal state to account for a WindowAggregationSpec
+
+        Parameters
+        ----------
+        aggregation_spec: WindowAggregationSpec
+            Aggregation specification
+        """
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def get_required_serving_names(self) -> set[str]:
+        """
+        Get the set of required serving names
+
+        Returns
+        -------
+        set[str]
+        """
         out = set()
         for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
             for agg_spec in agg_specs:
@@ -297,7 +332,8 @@ class WindowAggregator(Aggregator):
         agg_result_names: list[str],
         num_tiles: int,
     ) -> expressions.Select:
-        """Construct SQL code for one specific aggregation
+        """
+        Construct SQL code for one specific aggregation
 
         The aggregation consists of inner joining with the tile table on entity id and required tile
         indices and applying the merge expression.
