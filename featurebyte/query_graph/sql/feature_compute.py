@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Union
 
 from sqlglot import expressions
 from sqlglot.expressions import select
@@ -21,7 +21,6 @@ from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
 from featurebyte.query_graph.sql.specs import (
-    AggregationSpec,
     FeatureSpec,
     ItemAggregationSpec,
     WindowAggregationSpec,
@@ -65,7 +64,10 @@ class FeatureExecutionPlan:
         """
         yield from self.aggregators.values()
 
-    def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
+    def add_aggregation_spec(
+        self,
+        aggregation_spec: Union[WindowAggregationSpec, ItemAggregationSpec],
+    ) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
         Parameters
@@ -73,11 +75,8 @@ class FeatureExecutionPlan:
         aggregation_spec : AggregationSpec
             Aggregation specification
         """
-        if isinstance(aggregation_spec, WindowAggregationSpec):
-            self.aggregators[WindowAggregationSpec].update(aggregation_spec)
-        else:
-            assert isinstance(aggregation_spec, ItemAggregationSpec)
-            self.aggregators[ItemAggregationSpec].update(aggregation_spec)
+        aggregator = self.aggregators[type(aggregation_spec)]
+        aggregator.update(aggregation_spec)  # type: ignore
 
     def add_feature_spec(self, feature_spec: FeatureSpec) -> None:
         """Add FeatureSpec to be incorporated when generating SQL

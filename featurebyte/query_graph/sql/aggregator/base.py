@@ -8,8 +8,6 @@ from abc import ABC, abstractmethod
 
 from sqlglot import expressions
 
-from featurebyte.query_graph.sql.specs import AggregationSpec
-
 
 @dataclasses.dataclass
 class AggregationResult:
