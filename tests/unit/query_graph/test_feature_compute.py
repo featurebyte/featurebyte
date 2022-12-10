@@ -9,12 +9,10 @@ import pytest
 from sqlglot import select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.aggregator.item import NonTimeAwareRequestTablePlan
+from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.query_graph.sql.feature_compute import (
-    FeatureExecutionPlanner,
-    NonTimeAwareRequestTablePlan,
-    TileBasedRequestTablePlan,
-)
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
