@@ -142,12 +142,12 @@ class SlowlyChangingView(View):
             calling_view.timestamp_column, str
         )
 
-        right_timestamp_column = self.effective_timestamp_column
+        effective_timestamp_column = self.effective_timestamp_column
         left_timestamp_column = calling_view.timestamp_column
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
-                "right_timestamp_column": right_timestamp_column,
+                "effective_timestamp_column": effective_timestamp_column,
                 "current_flag": self.current_flag,
                 "end_timestamp_column": self.end_timestamp_column,
             }

@@ -143,6 +143,31 @@ def scd_data_input_node_fixture(global_graph, scd_data_input_details):
     return node_input
 
 
+@pytest.fixture(name="dimension_data_input_details")
+def dimension_data_input_details_fixture(input_details):
+    """Similar to input_details but for a Dimension table"""
+    input_details = copy.deepcopy(input_details)
+    input_details["table_details"]["table_name"] = "dimension_table"
+    return input_details
+
+
+@pytest.fixture(name="dimension_data_input_node")
+def dimension_data_input_node_fixture(global_graph, dimension_data_input_details):
+    """Fixture of an SlowlyChangingDimension input node"""
+    node_params = {
+        "type": "dimension_data",
+        "columns": ["cust_id", "cust_value_1", "cust_value_2"],
+    }
+    node_params.update(dimension_data_input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
 @pytest.fixture(name="event_data_input_node")
 def event_data_input_node_fixture(global_graph, input_details):
     """Fixture of an EventData input node"""
@@ -595,7 +620,7 @@ def scd_join_node_fixture(
         "join_type": "left",
         "scd_parameters": {
             "left_timestamp_column": "event_timestamp",
-            "right_timestamp_column": "effective_timestamp",
+            "effective_timestamp_column": "effective_timestamp",
         },
     }
     node = global_graph.add_operation(
@@ -605,6 +630,59 @@ def scd_join_node_fixture(
         input_nodes=[event_data_input_node, scd_data_input_node],
     )
     return node
+
+
+@pytest.fixture(name="lookup_node")
+def lookup_node_fixture(global_graph, dimension_data_input_node):
+    """
+    Fixture of a lookup feature node with multiple features
+    """
+    node_params = {
+        "input_column_names": ["cust_value_1", "cust_value_2"],
+        "feature_names": ["CUSTOMER ATTRIBUTE 1", "CUSTOMER ATTRIBUTE 2"],
+        "entity_column": "cust_id",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": ObjectId(),
+    }
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[dimension_data_input_node],
+    )
+    return lookup_node
+
+
+@pytest.fixture(name="lookup_feature_node")
+def lookup_feature_node_fixture(global_graph, lookup_node):
+    """
+    Fixture of a derived lookup feature
+    """
+    feature_node_1 = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["CUSTOMER ATTRIBUTE 1"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_node.name)],
+    )
+    feature_node_2 = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["CUSTOMER ATTRIBUTE 2"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_node.name)],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_node_1, feature_node_2],
+    )
+    feature_alias = global_graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "MY FEATURE"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_node],
+    )
+    return feature_alias
 
 
 @pytest.fixture(name="graph_single_node")

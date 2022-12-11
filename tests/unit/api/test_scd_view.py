@@ -101,7 +101,7 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
         "join_type": "left",
         "scd_parameters": {
             "left_timestamp_column": "event_timestamp",
-            "right_timestamp_column": "event_timestamp",
+            "effective_timestamp_column": "event_timestamp",
             "current_flag": "col_char",
             "end_timestamp_column": "event_timestamp",
         },

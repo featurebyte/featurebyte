@@ -15,6 +15,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import Aggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
+from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
@@ -23,6 +24,7 @@ from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quote
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
+    LookupSpec,
     WindowAggregationSpec,
 )
 
@@ -36,6 +38,7 @@ class FeatureExecutionPlan:
         self.aggregators = {
             WindowAggregationSpec: WindowAggregator(source_type),
             ItemAggregationSpec: ItemAggregator(),
+            LookupSpec: LookupAggregator(),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
@@ -66,7 +69,7 @@ class FeatureExecutionPlan:
 
     def add_aggregation_spec(
         self,
-        aggregation_spec: Union[WindowAggregationSpec, ItemAggregationSpec],
+        aggregation_spec: Union[WindowAggregationSpec, ItemAggregationSpec, LookupSpec],
     ) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
@@ -321,17 +324,21 @@ class FeatureExecutionPlanner:
             Query graph node
         """
         groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.GROUPBY))
+        item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
+        lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         if groupby_nodes:
             # Feature involves window aggregations. In this case, tiling applies. Even if
             # ITEM_GROUPBY nodes are involved, their results would have already been incorporated in
             # tiles, so we only need to handle GROUPBY node type here.
             for groupby_node in groupby_nodes:
                 self.parse_and_update_specs_from_groupby(groupby_node)
-        else:
+        elif item_groupby_nodes:
             # Feature involves non-time-aware aggregations
-            item_groupby_nodes = list(self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY))
             for item_groupby_node in item_groupby_nodes:
                 self.parse_and_update_specs_from_item_groupby(item_groupby_node)
+        else:
+            for lookup_node in lookup_nodes:
+                self.parse_and_update_specs_from_lookup(lookup_node)
         self.update_feature_specs(node)
 
     def parse_and_update_specs_from_groupby(self, groupby_node: Node) -> None:
@@ -364,6 +371,23 @@ class FeatureExecutionPlanner:
             node, agg_expr, serving_names_mapping=self.serving_names_mapping
         )
         self.plan.add_aggregation_spec(agg_spec)
+
+    def parse_and_update_specs_from_lookup(self, node: Node) -> None:
+        """Update FeatureExecutionPlan with a lookup query node
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+        """
+        agg_specs = LookupSpec.from_lookup_query_node(
+            node,
+            graph=self.graph,
+            source_type=self.source_type,
+            serving_names_mapping=self.serving_names_mapping,
+        )
+        for agg_spec in agg_specs:
+            self.plan.add_aggregation_spec(agg_spec)
 
     def update_feature_specs(self, node: Node) -> None:
         """Update FeatureExecutionPlan with a query graph node

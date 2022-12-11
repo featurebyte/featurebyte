@@ -3,16 +3,19 @@ Module for data structures that describe different types of aggregations that fo
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
+import hashlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import pandas as pd
 from sqlglot.expressions import Select
 
+from featurebyte.enum import SourceType
+from featurebyte.query_graph.model import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode
+from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode, LookupNode
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
 
@@ -40,7 +43,7 @@ class AggregationSpec(ABC):
         Returns
         -------
         str
-            Column name of the aggregated result
+            Column names of the aggregated result
         """
 
 
@@ -70,7 +73,7 @@ class WindowAggregationSpec(AggregationSpec):
         Returns
         -------
         str
-            Column name of the aggregated result
+            Column names of the aggregated result
         """
         return f"agg_w{self.window}_{self.aggregation_id}"
 
@@ -183,6 +186,104 @@ class ItemAggregationSpec(AggregationSpec):
             agg_expr=agg_expr,
         )
         return out
+
+
+@dataclass
+class LookupSpec(AggregationSpec):
+    """
+    LookupSpec contains all information required to generate sql for a lookup feature
+    """
+
+    input_column_name: str
+    feature_name: str
+    entity_column: str
+    serving_names: list[str]
+    source_expr: Select
+
+    @property
+    def agg_result_name(self) -> str:
+        name = f"{self.input_column_name}_{self.source_hash}"
+        return name
+
+    @property
+    def source_hash(self) -> str:
+        """
+        Returns a unique identifier derived from source_expr
+
+        Returns
+        -------
+        str
+        """
+        hasher = hashlib.shake_128()
+        hasher.update(self.source_expr.sql().encode("utf-8"))
+        name = f"{hasher.hexdigest(8)}"
+        return name
+
+    @classmethod
+    def _get_source_sql_expr(
+        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
+    ) -> Select:
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.builder import SQLOperationGraph
+        from featurebyte.query_graph.sql.common import SQLType
+
+        sql_node = SQLOperationGraph(
+            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
+        ).build(node)
+        return cast(Select, sql_node.sql)
+
+    @classmethod
+    def from_lookup_query_node(
+        cls,
+        node: Node,
+        source_expr: Optional[Select] = None,
+        graph: Optional[QueryGraphModel] = None,
+        source_type: Optional[SourceType] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
+    ) -> list[LookupSpec]:
+        """
+        Construct a list of LookupSpec given a lookup query graph node
+
+        Parameters
+        ----------
+        node: Node
+            Query graph node
+        source_expr: Optional[Select]
+            Select statement that represents the source to lookup from. If not provided, it will be
+            inferred from the node and graph.
+        graph: Optional[QueryGraphModel]
+            Query graph. Mandatory if source_expr is not provided
+        source_type: Optional[SourceType]
+            Source type information. Mandatory if source_expr is not provided
+        serving_names_mapping: Optional[dict[str, str]]
+            Serving names mapping
+
+        Returns
+        -------
+        list[LookupSpec]
+        """
+        assert isinstance(node, LookupNode)
+
+        if source_expr is None:
+            assert graph is not None
+            assert source_type is not None
+            source_expr = cls._get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+
+        params = node.parameters.dict()
+        specs = []
+        for input_column_name, feature_name in zip(
+            params["input_column_names"], params["feature_names"]
+        ):
+            spec = LookupSpec(
+                input_column_name=input_column_name,
+                feature_name=feature_name,
+                entity_column=params["entity_column"],
+                serving_names=[params["serving_name"]],
+                serving_names_mapping=serving_names_mapping,
+                source_expr=source_expr,
+            )
+            specs.append(spec)
+        return specs
 
 
 @dataclass

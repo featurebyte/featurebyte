@@ -171,3 +171,31 @@ def test_get_feature_preview_sql__double_aggregation(
         "tests/fixtures/expected_preview_sql_double_aggregation.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_feature_preview_sql__lookup_features(
+    global_graph,
+    lookup_feature_node,
+    update_fixtures,
+):
+    """
+    Test case for preview SQL for a lookup feature
+    """
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph = global_graph
+    node = lookup_feature_node
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_lookup.sql",
+        update_fixture=update_fixtures,
+    )
