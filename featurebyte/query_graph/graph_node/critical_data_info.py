@@ -177,6 +177,8 @@ class CriticalDataInfo(FeatureByteBaseModel):
             "Please revise the imputations so that no value could be imputed twice."
         )
         # check that there is no double imputations in the list of impute operations
+        # for example, if -999 is imputed to None, then we impute None to 0.
+        # in this case, -999 value is imputed twice (first it is imputed to None, then is imputed to 0).
         for i, imputation in enumerate(values[:-1]):
             for other_imputation in values[(i + 1) :]:
                 if other_imputation.check_condition(imputation.imputed_value):  # type: ignore
