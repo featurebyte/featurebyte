@@ -290,39 +290,15 @@ class Feature(
         """
         Whether the feature is a time based one.
 
-        We check for this by looking to see by looking for the existence of an ItemGroupbyNode, and the absence of
-        a GroupbyNode. We can do this as currently, the only non-time based features expected is the item aggregation.
+        We check for this by looking to see by looking at the operation structure to see if it's time-based.
 
         Returns
         -------
         bool
             True if the feature is time based, False otherwise.
-
-        Raises
-        ------
-        ValueError
-            raised when we don't see any group by or itemgroupby aggregations. This will likely change in the future
-            when we add more feature types.
         """
         operation_structure = self.extract_operation_structure()
-        aggregations = operation_structure.aggregations
-        if len(aggregations) == 0:
-            return False
-        groupby_aggregation_count = 0
-        item_groupby_aggregation_count = 0
-        for aggregation in aggregations:
-            if Feature._check_node_has_prefix(aggregation.node_names, NodeType.ITEM_GROUPBY):
-                item_groupby_aggregation_count += 1
-            if Feature._check_node_has_prefix(aggregation.node_names, NodeType.GROUPBY):
-                groupby_aggregation_count += 1
-        # If there are any group by's, this feature is considered time based.
-        if groupby_aggregation_count > 0:
-            return True
-        # If there are no group by's, check to see if there is an item group by.
-        if item_groupby_aggregation_count > 0:
-            return False
-        # If there are none of either, return an error
-        raise ValueError("Unable to determine if feature is time-based.")
+        return operation_structure.is_time_based
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
