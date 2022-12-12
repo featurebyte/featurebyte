@@ -182,11 +182,10 @@ class GroupbyNodeOpStructMixin:
                 other_node_names=other_node_names,
             )
 
-        op_structure = OperationStructure(
+        return OperationStructure(
             **node_kwargs,
             output_type=self.output_type,
             output_category=output_category,
             is_time_based=self.type
             != NodeType.ITEM_GROUPBY,  # Only item aggregates are not time based.
         )
-        return op_structure
