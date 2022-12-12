@@ -9,7 +9,6 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import AggFunc
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -22,13 +21,9 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model import QueryGraphModel
-from featurebyte.query_graph.node.metadata.operation import (
-    AggregationColumn,
-    GroupOperationStructure,
-)
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from tests.util.helper import get_node
 
 
