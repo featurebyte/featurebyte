@@ -503,7 +503,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         ],
         "output_category": "feature",
         "output_type": "series",
-        "is_time_based": False,
+        "is_time_based": True,
     }
 
     # check pruned graph
