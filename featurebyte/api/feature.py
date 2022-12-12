@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Set, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import time
 from http import HTTPStatus
@@ -262,28 +262,6 @@ class Feature(
         FeatureReadiness
         """
         return self.feature_namespace.readiness
-
-    @staticmethod
-    def _check_node_has_prefix(node_names: Set[str], prefix: str) -> bool:
-        """
-        Checks if any of the node names has the prefix passed in.
-
-        Parameters
-        ----------
-        node_names: Set[str]
-            node names
-        prefix: str
-            prefix
-
-        Returns
-        -------
-        bool
-            True if a node has the prefix, False otherwise
-        """
-        for node_name in node_names:
-            if node_name.startswith(prefix):
-                return True
-        return False
 
     @property
     def is_time_based(self) -> bool:
