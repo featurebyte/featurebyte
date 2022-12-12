@@ -211,7 +211,9 @@ class ItemAggregator(Aggregator):
             results.append(result)
         return results
 
-    def get_ctes(self, request_table_name: str) -> list[tuple[str, expressions.Select]]:
+    def get_common_table_expressions(
+        self, request_table_name: str
+    ) -> list[tuple[str, expressions.Select]]:
         return self.non_time_aware_request_table_plan.construct_request_table_ctes(
             request_table_name
         )

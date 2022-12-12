@@ -490,5 +490,7 @@ class WindowAggregator(Aggregator):
 
         return results
 
-    def get_ctes(self, request_table_name: str) -> list[tuple[str, expressions.Select]]:
+    def get_common_table_expressions(
+        self, request_table_name: str
+    ) -> list[tuple[str, expressions.Select]]:
         return self.request_table_plan.construct_request_tile_indices_ctes(request_table_name)

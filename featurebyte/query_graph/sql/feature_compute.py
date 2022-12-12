@@ -259,7 +259,7 @@ class FeatureExecutionPlan:
             cte_statements.extend(prior_cte_statements)
 
         for aggregator in self.iter_aggregators():
-            cte_statements.extend(aggregator.get_ctes(request_table_name))
+            cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
         cte_statements.append(
             self.construct_combined_aggregation_cte(

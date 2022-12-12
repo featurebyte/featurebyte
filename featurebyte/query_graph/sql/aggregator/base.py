@@ -52,10 +52,13 @@ class Aggregator(ABC):
         """
 
     @abstractmethod
-    def get_ctes(self, request_table_name: str) -> list[tuple[str, expressions.Select]]:
+    def get_common_table_expressions(
+        self, request_table_name: str
+    ) -> list[tuple[str, expressions.Select]]:
         """
-        Construct any additional CTEs required to support the aggregation, typically the original
-        request table processed in some ways
+        Construct any common table expressions (CTE) required to support the aggregation, typically
+        the original request table processed in some ways. This will be used to form the WITH
+        section of the feature compute sql.
 
         Parameters
         ----------
@@ -65,4 +68,6 @@ class Aggregator(ABC):
         Returns
         -------
         list[tuple[str, expressions.Select]]
+            List of common table expressions as tuples. The first element of the tuple is the name
+            of the CTE and the second element is the corresponding sql expression.
         """
