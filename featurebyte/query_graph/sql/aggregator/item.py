@@ -55,8 +55,8 @@ class NonTimeAwareRequestTablePlan:
         key = self.get_key(agg_spec)
         return self.request_table_names[key]
 
-    @classmethod
-    def get_key(cls, agg_spec: ItemAggregationSpec) -> AggSpecEntityIDs:
+    @staticmethod
+    def get_key(agg_spec: ItemAggregationSpec) -> AggSpecEntityIDs:
         """
         Get an internal key used to determine request table sharing
 
@@ -94,9 +94,8 @@ class NonTimeAwareRequestTablePlan:
             ctes.append((quoted_identifier(table_name).sql(), request_table_expr))
         return ctes
 
-    @classmethod
+    @staticmethod
     def construct_request_table_expr(
-        cls,
         agg_spec: ItemAggregationSpec,
         request_table_name: str,
     ) -> expressions.Select:
