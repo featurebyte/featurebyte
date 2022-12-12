@@ -85,12 +85,16 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
     Test schedule_online_tiles method in TileSnowflake
     """
     _ = mock_execute_query
+
+    minute_offset = mock_snowflake_tile.time_modulo_frequency_second // 60
+
     sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile)
+
     expected_sql = textwrap.dedent(
-        """
+        f"""
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_ONLINE
           WAREHOUSE = sf_warehouse
-          SCHEDULE = 'USING CRON 3-59/5 * * * * UTC'
+          SCHEDULE = 'USING CRON {minute_offset} * * * * UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
                 'SHELL_TASK_tile_id1_ONLINE',

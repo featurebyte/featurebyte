@@ -130,9 +130,8 @@ async def test_online_disable(
     await feature_manager.online_disable(online_feature_spec)
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(result) == 2
+    assert len(result) == 1
     assert result.iloc[0]["state"] == "suspended"
-    assert result.iloc[1]["state"] == "suspended"
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
     result = await snowflake_session.execute_query(sql)
@@ -169,9 +168,8 @@ async def test_online_disable__tile_in_use(
     await feature_manager.online_disable(online_feature_spec)
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(result) == 2
+    assert len(result) == 1
     assert result.iloc[0]["state"] == "started"
-    assert result.iloc[1]["state"] == "started"
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND FEATURE_NAME = '{online_feature_spec.feature.name}'"
     result = await snowflake_session.execute_query(sql)
@@ -220,9 +218,8 @@ async def test_online_disable___re_enable(
     await feature_manager.online_disable(online_feature_spec)
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(result) == 2
+    assert len(result) == 1
     assert result.iloc[0]["state"] == "suspended"
-    assert result.iloc[1]["state"] == "suspended"
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND IS_DELETED = TRUE"
     result = await snowflake_session.execute_query(sql)
@@ -232,9 +229,8 @@ async def test_online_disable___re_enable(
     await feature_manager.online_enable(online_feature_spec)
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(result) == 2
+    assert len(result) == 1
     assert result.iloc[0]["state"] == "started"
-    assert result.iloc[1]["state"] == "started"
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND IS_DELETED = FALSE"
     result = await snowflake_session.execute_query(sql)

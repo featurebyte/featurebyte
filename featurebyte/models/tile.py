@@ -40,7 +40,7 @@ class TileSpec(FeatureByteBaseModel):
 
     time_modulo_frequency_second: int = Field(ge=0)
     blind_spot_second: int
-    frequency_minute: int = Field(gt=0, le=60)
+    frequency_minute: int = Field(gt=0)
     tile_sql: str
     entity_column_names: List[str]
     value_column_names: List[str]
@@ -97,3 +97,28 @@ class TileSpec(FeatureByteBaseModel):
                 f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
             )
         return values
+
+    @validator("frequency_minute")
+    @classmethod
+    def check_frequency_minute(cls, value: int) -> int:
+        """
+        Validator for frequency_minute
+
+        Parameters
+        ----------
+        value: str
+            input value of attributes feature_name, tile_id, column_names
+
+        Raises
+        ------
+        ValueError
+            if frequency_minute > 60 and is not a multiple of 60
+
+        Returns
+        -------
+            validated frequency_minute
+        """
+        if value > 60 and value % 60 != 0:
+            raise ValueError("frequency_minute should be a multiple of 60 if it is more than 60")
+
+        return value

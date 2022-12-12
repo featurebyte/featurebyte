@@ -57,4 +57,4 @@ async def test_online_enabled_features_have_scheduled_jobs(
     # offline tile (online store pre-computation job is triggered by the online tile task once tile
     # computation completes)
     tasks = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(tasks) == 2
+    assert len(tasks) == 1

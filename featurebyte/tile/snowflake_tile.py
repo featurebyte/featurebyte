@@ -206,8 +206,9 @@ class TileManagerSnowflake(BaseTileManager):
         -------
             generated sql to be executed
         """
+
         start_minute = tile_spec.time_modulo_frequency_second // 60
-        cron = f"{start_minute}-59/{tile_spec.frequency_minute} * * * *"
+        cron = f"{start_minute} * * * *"
 
         return await self._schedule_tiles(
             tile_spec=tile_spec,

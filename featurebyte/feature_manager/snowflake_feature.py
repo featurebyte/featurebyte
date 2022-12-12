@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from datetime import datetime
+
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
@@ -73,10 +75,6 @@ class FeatureManagerSnowflake(BaseModel):
                 # enable online tiles scheduled job
                 await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_online_tiles for {tile_spec}")
-
-                # enable offline tiles scheduled job
-                await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
     async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:
         """
