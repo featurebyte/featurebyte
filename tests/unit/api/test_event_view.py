@@ -261,12 +261,111 @@ def test_validate_entity_col_override__valid_col_passed_in(snowflake_event_view)
     snowflake_event_view._validate_entity_col_override(col_to_use)
 
 
-def test_validate_feature_addition():
+@pytest.fixture(name="empty_event_view_builder")
+def get_empty_event_view_fixture(snowflake_feature_store):
     """
-    Test _validate_feature_addition
+    Get an empty event view.
     """
-    # TODO: impl
-    pass
+
+    def get_event_view():
+        return EventView(
+            columns_info=[],
+            row_index_lineage=[],
+            node_name="",
+            tabular_source=TabularSource(
+                feature_store_id=PydanticObjectId(ObjectId()),
+                table_details=TableDetails(
+                    table_name="random",
+                ),
+            ),
+            tabular_data_ids=[],
+            column_lineage_map={},
+            feature_store=snowflake_feature_store,
+        )
+
+    return get_event_view
+
+
+@pytest.fixture(name="empty_feature_builder")
+def get_empty_feature_fixture(snowflake_feature_store):
+    """
+    Helper to get an empty feature
+    """
+
+    def get_feature():
+        return Feature(
+            entity_ids=[],
+            dtype=DBVarType.INT,
+            row_index_lineage=[],
+            node_name="",
+            tabular_source=TabularSource(
+                feature_store_id=PydanticObjectId(ObjectId()),
+                table_details=TableDetails(
+                    table_name="random",
+                ),
+            ),
+            tabular_data_ids=[],
+            feature_store=snowflake_feature_store,
+        )
+
+    return get_feature
+
+
+def test_validate_feature_addition__time_based_feature_no_override(
+    production_ready_feature, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition with no override col provided - expect error
+    """
+    event_view = empty_event_view_builder()
+    with pytest.raises(ValueError) as exc_info:
+        event_view._validate_feature_addition(production_ready_feature, None)
+    assert "We currently only support the addition of non-time based features" in str(exc_info)
+
+
+def test_validate_feature_addition__time_based_feature_with_override(
+    production_ready_feature, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition with override col provided - expect error
+    """
+    event_view = empty_event_view_builder()
+    with pytest.raises(ValueError) as exc_info:
+        event_view._validate_feature_addition(production_ready_feature, "random")
+    assert "We currently only support the addition of non-time based features" in str(exc_info)
+
+
+def test_validate_feature_addition__non_time_based_no_override(
+    empty_feature_builder, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition non-time based with no override col
+    """
+    event_view = empty_event_view_builder()
+    empty_feature = empty_feature_builder()
+    # Should run with no errors
+    with mock.patch(
+        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
+    ) as mock_is_time_based:
+        mock_is_time_based.return_value = False
+        event_view._validate_feature_addition(empty_feature, None)
+
+
+def test_validate_feature_addition__non_time_based_with_override(
+    event_view_with_col_infos, empty_feature_builder
+):
+    """
+    Test _validate_feature_addition non-time based with override col
+    """
+    col_name = "col_a"
+    event_view = event_view_with_col_infos([ColumnInfo(name=col_name, dtype=DBVarType.INT)])
+    empty_feature = empty_feature_builder()
+    # Should run with no errors
+    with mock.patch(
+        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
+    ) as mock_is_time_based:
+        mock_is_time_based.return_value = False
+        event_view._validate_feature_addition(empty_feature, col_name)
 
 
 def assert_entity_identifiers_raises_errors(identifiers, feature):
@@ -347,26 +446,15 @@ def test_get_feature_entity_id(feature_with_entity_ids):
 
 
 @pytest.fixture(name="event_view_with_col_infos")
-def get_event_view_with_col_infos(snowflake_feature_store):
+def get_event_view_with_col_infos(empty_event_view_builder):
     """
     Get a function that helps us create test event_views with configurable column infos.
     """
 
     def get_event_view(col_info):
-        return EventView(
-            columns_info=col_info,
-            row_index_lineage=[],
-            node_name="",
-            tabular_source=TabularSource(
-                feature_store_id=PydanticObjectId(ObjectId()),
-                table_details=TableDetails(
-                    table_name="random",
-                ),
-            ),
-            tabular_data_ids=[],
-            column_lineage_map={},
-            feature_store=snowflake_feature_store,
-        )
+        event_view = empty_event_view_builder()
+        event_view.columns_info = col_info
+        return event_view
 
     return get_event_view
 
