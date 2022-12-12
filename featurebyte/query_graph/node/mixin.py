@@ -186,4 +186,6 @@ class GroupbyNodeOpStructMixin:
             **node_kwargs,
             output_type=self.output_type,
             output_category=output_category,
+            is_time_based=self.type
+            != NodeType.ITEM_GROUPBY,  # Only item aggregates are not time based.
         )

@@ -591,4 +591,5 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
         ],
         "output_category": "view",
         "output_type": "series",
+        "is_time_based": False,
     }

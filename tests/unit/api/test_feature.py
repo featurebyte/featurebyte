@@ -2,6 +2,7 @@
 Unit test for Feature & FeatureList classes
 """
 from datetime import datetime
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -22,6 +23,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from tests.util.helper import get_node
 
 
@@ -629,3 +631,19 @@ def test_list_filter(saved_feature):
 
     feature_list = Feature.list(data="other_data", entity="customer")
     assert feature_list.shape[0] == 0
+
+
+def test_is_time_based(saved_feature):
+    """
+    Test is_time_based
+    """
+    # Default saved_feature is time based
+    is_time_based = saved_feature.is_time_based
+    assert is_time_based
+
+    # Mock out GroupOperationStructure to have time-based property set to true
+    with patch(
+        "featurebyte.models.feature.FeatureModel.extract_operation_structure"
+    ) as mocked_extract:
+        mocked_extract.return_value = GroupOperationStructure(is_time_based=False)
+        assert not saved_feature.is_time_based
