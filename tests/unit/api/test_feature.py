@@ -637,11 +637,11 @@ def test_is_time_based(saved_feature):
     """
     Test is_time_based
     """
-    # Default value is not time based
+    # Default saved_feature is time based
     is_time_based = saved_feature.is_time_based
     assert is_time_based
 
-    # No aggregations should not be time based
+    # Mock out GroupOperationStructure to have time-based property set to true
     with patch(
         "featurebyte.models.feature.FeatureModel.extract_operation_structure"
     ) as mocked_extract:
