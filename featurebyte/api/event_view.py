@@ -286,7 +286,7 @@ class EventView(View, GroupByMixin):
         if len(entity_columns) != 1:
             raise ValueError(
                 "The feature should only be based on one entity. We are currently unable to add features "
-                "that are created from more than one entity."
+                "that are created from more, or less than one entity."
             )
         return entity_columns[0]
 
