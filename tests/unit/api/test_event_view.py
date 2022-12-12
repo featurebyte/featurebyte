@@ -280,6 +280,25 @@ def test_get_feature_entity_col(production_ready_feature):
     # TODO: be able to test for 0, or multiple entity_identifiers
 
 
+def test_get_feature_entity_id(production_ready_feature):
+    """
+    Test get_feature_entity_col
+    """
+    # verify we can retrieve the entity ID
+    entity_id = EventView._get_feature_entity_id(production_ready_feature)
+    assert entity_id == production_ready_feature.entity_ids[0]
+
+    # TODO: be able to test for 0, or multiple entity_identifiers
+
+
+def test_get_col_with_entity_id():
+    """
+    Test _get_col_with_entity_id
+    """
+    # TODO: need to be able to set entity IDs on event views
+    pass
+
+
 def test_get_view_entity_column__entity_col_provided(
     snowflake_event_view, production_ready_feature
 ):

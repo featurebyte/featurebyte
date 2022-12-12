@@ -18,6 +18,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -289,6 +290,62 @@ class EventView(View, GroupByMixin):
             )
         return entity_columns[0]
 
+    @staticmethod
+    def _get_feature_entity_id(feature: Feature) -> PydanticObjectId:
+        """
+        Get the entity ID of the feature.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature to get entity column for
+
+        Returns
+        -------
+        PydanticObjectId
+            entity ID
+
+        Raises
+        ------
+        ValueError
+            raised when the feature is created from more than one entity
+        """
+        entity_ids = feature.entity_ids
+        if len(entity_ids) != 1:
+            raise ValueError(
+                "The feature should only be based on one entity. We are currently unable to add features "
+                "that are created from more than one entity."
+            )
+        return entity_ids[0]
+
+    def _get_col_with_entity_id(self, entity_id: PydanticObjectId) -> Optional[str]:
+        """
+        Tries to find a single column with the matching entity ID.
+
+        Parameters
+        ----------
+        entity_id: PydanticObjectId
+            entity ID to search for
+
+        Returns
+        -------
+        Optional[str]
+            the column name with matching entity ID, None if no matches are found, or if there are multiple matches.
+        """
+        num_of_matches = 0
+        column_name_to_use = None
+        for col in self.columns_info:
+            if col.entity_id == entity_id:
+                num_of_matches += 1
+                column_name_to_use = col.name
+        # If we find multiple matches, return None.
+        # This should throw an error down the line later if we don't find any matches. We don't raise an error
+        # here in case we add other ways to find a column to join on, and as such defer to the caller to raise an
+        # error as needed.
+        if num_of_matches > 1:
+            return None
+        return column_name_to_use
+
     def _get_view_entity_column(self, feature: Feature, entity_column: Optional[str]) -> str:
         """
         Get the view entity column.
@@ -307,8 +364,6 @@ class EventView(View, GroupByMixin):
 
         Raises
         ------
-        ValueError
-            raised when an entity_column is provided, but it's an empty string
         EventViewMatchingEntityColumnNotFound
             raised when we are unable to find a matching entity column automatically
         """
@@ -318,9 +373,9 @@ class EventView(View, GroupByMixin):
             return entity_column
 
         # Try to match the entity column of the feature, with that of an entity in the view
-        feature_entity_col = EventView._get_feature_entity_col(feature)
-        # TODO: is matching on column name enough? or should we match on entity type/name/some other identifier?
-        if feature_entity_col in self.entity_columns:
+        entity_feature_id = EventView._get_feature_entity_id(feature)
+        feature_entity_col = self._get_col_with_entity_id(entity_feature_id)
+        if feature_entity_col is not None:
             return feature_entity_col
 
         raise EventViewMatchingEntityColumnNotFound(
