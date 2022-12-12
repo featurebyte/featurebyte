@@ -4,7 +4,8 @@ Tests for nested graph related logic
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GraphNode, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
 
 
 @pytest.fixture(name="input_node_params")
