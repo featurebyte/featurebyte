@@ -305,10 +305,9 @@ def test_get_view_entity_column__entity_col_provided(
     """
     Test _get_view_entity_column - entity col provided
     """
-    # Test empty string passed in
-    with pytest.raises(ValueError) as exc_info:
-        snowflake_event_view._get_view_entity_column(production_ready_feature, "")
-    assert "Empty string provided as entity column is invalid" in str(exc_info)
+    # Test empty string passed in - should have no error since we assume validation is done prior.
+    col_to_use = snowflake_event_view._get_view_entity_column(production_ready_feature, "")
+    assert col_to_use == ""
 
     # Test column is passed in - we don't have to validate whether the column exists in the view, since we
     # would've done that beforehand already.
