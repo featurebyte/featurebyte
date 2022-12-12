@@ -134,7 +134,9 @@ class BaseNode(BaseModel):
         if operation_info.columns or operation_info.aggregations:
             # make sure node name should be included in the node operation info
             assert self.name in operation_info.all_node_names
-        return operation_info
+        # Update is_time_based based on the inputs
+        is_time_based = any(input_.is_time_based for input_ in inputs)
+        return OperationStructure(**operation_info.dict(), is_time_based=is_time_based)
 
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """

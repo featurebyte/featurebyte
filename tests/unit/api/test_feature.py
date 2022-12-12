@@ -639,7 +639,7 @@ def test_is_time_based(saved_feature):
     """
     # Default value is not time based
     is_time_based = saved_feature.is_time_based
-    assert not is_time_based
+    assert is_time_based
 
     # No aggregations should not be time based
     with patch(

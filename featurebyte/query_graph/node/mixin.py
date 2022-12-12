@@ -73,9 +73,6 @@ class SeriesOutputNodeOpStructMixin:
                     node_name=self.name,
                 )
             ]
-            node_kwargs["is_time_based"] = any(
-                input_op_structure.is_time_based for input_op_structure in inputs
-            )
 
         return OperationStructure(
             **node_kwargs, output_type=self.output_type, output_category=output_category
@@ -185,10 +182,11 @@ class GroupbyNodeOpStructMixin:
                 other_node_names=other_node_names,
             )
 
-        return OperationStructure(
+        op_structure = OperationStructure(
             **node_kwargs,
             output_type=self.output_type,
             output_category=output_category,
             is_time_based=self.type
             != NodeType.ITEM_GROUPBY,  # Only item aggregates are not time based.
         )
+        return op_structure
