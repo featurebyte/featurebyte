@@ -391,7 +391,7 @@ class EventView(View, GroupByMixin):
         Features that are non-time based and are extracted from other data views can be added as a column to an event
         view if one of its columns has been tagged with the same entity as the entity of the features.
 
-        Time-based features will be support in the future once we have support for offline stores.
+        Time-based features will be supported in the future once we have support for offline stores.
 
         Parameters
         ----------
