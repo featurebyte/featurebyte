@@ -213,27 +213,6 @@ class EventView(View, GroupByMixin):
                 f"of the following columns as an override: {sorted(current_columns)}"
             )
 
-    @staticmethod
-    def _is_time_based(feature: Feature) -> bool:
-        """
-        Checks to see if a feature is time based.
-
-        Parameters
-        ----------
-        feature: Feature
-            feature to check
-
-        Returns
-        -------
-        bool
-            returns True if the feature is time based, False if otherwise.
-        """
-        operation_structure = feature.extract_operation_structure()
-        for aggregation in operation_structure.aggregations:
-            if aggregation.window is not None:
-                return True
-        return False
-
     def _validate_feature_addition(
         self, feature: Feature, entity_col_override: Optional[str]
     ) -> None:
@@ -255,7 +234,7 @@ class EventView(View, GroupByMixin):
             raised when a time-based feature is passed in, or the entity_col_override validation fails
         """
         # Validate whether feature is time based
-        if EventView._is_time_based(feature):
+        if feature.is_time_based:
             raise ValueError("We currently only support the addition of non-time based features.")
 
         # Validate entity_col_override

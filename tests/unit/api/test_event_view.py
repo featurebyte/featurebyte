@@ -261,16 +261,6 @@ def test_validate_entity_col_override__valid_col_passed_in(snowflake_event_view)
     snowflake_event_view._validate_entity_col_override(col_to_use)
 
 
-def test_is_time_based(production_ready_feature):
-    """
-    Test is time based feature
-    """
-    is_time_based = EventView._is_time_based(production_ready_feature)
-    assert is_time_based
-
-    # TODO: assert non-time-based features
-
-
 def test_validate_feature_addition():
     """
     Test _validate_feature_addition
