@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, cast
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict
 
 from collections import defaultdict
 
@@ -9,10 +9,10 @@ from pydantic import Field
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
-from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import GraphPruningExtractor
@@ -118,17 +118,17 @@ class QueryGraph(QueryGraphModel):
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 
-    def flatten(self) -> QueryGraphModel:
+    def flatten(self) -> GraphNodeNameMap:
         """
         Construct a query graph which flattened all the graph nodes of this query graph
 
         Returns
         -------
-        QueryGraphModel
+        GraphNodeNameMap
         """
         return GraphFlatteningTransformer(graph=self).transform()
 
-    def add_graph_node(self, graph_node: "GraphNode", input_nodes: List[Node]) -> Node:
+    def add_graph_node(self, graph_node: GraphNode, input_nodes: List[Node]) -> Node:
         """
         Add graph node to the graph
 
@@ -170,101 +170,6 @@ class QueryGraph(QueryGraphModel):
             regenerate_groupby_hash=True,
         )
         return reconstructed_graph, recon_node_name_map[pruned_node_name_map[target_node.name]]
-
-
-# update forward references after QueryGraph is defined
-GraphNodeParameters.update_forward_refs(QueryGraph=QueryGraph)
-
-
-class GraphNode(BaseGraphNode):
-    """
-    Extend graph node by providing additional graph-node-construction-related methods
-    """
-
-    @classmethod
-    def create(
-        cls,
-        node_type: NodeType,
-        node_params: Dict[str, Any],
-        node_output_type: NodeOutputType,
-        input_nodes: List[Node],
-    ) -> Tuple["GraphNode", List[Node]]:
-        """
-        Construct a graph node
-
-        Parameters
-        ----------
-        node_type: NodeType
-            Type of node (to be inserted in the graph inside the graph node)
-        node_params: Dict[str, Any]
-            Parameters of the node (to be inserted in the graph inside the graph node)
-        node_output_type: NodeOutputType
-            Output type of the node (to be inserted in the graph inside the graph node)
-        input_nodes: List[Nodes]
-            Input nodes of the node (to be inserted in the graph inside the graph node)
-
-        Returns
-        -------
-        Tuple[GraphNode, List[Node]]
-        """
-        graph = QueryGraph()
-        proxy_input_nodes = []
-        for node in input_nodes:
-            proxy_input_node = graph.add_operation(
-                node_type=NodeType.PROXY_INPUT,
-                node_params={"node_name": node.name},
-                node_output_type=node.output_type,
-                input_nodes=[],
-            )
-            proxy_input_nodes.append(proxy_input_node)
-
-        nested_node = graph.add_operation(
-            node_type=node_type,
-            node_params=node_params,
-            node_output_type=node_output_type,
-            input_nodes=proxy_input_nodes,
-        )
-        graph_node = GraphNode(
-            name="graph",
-            output_type=nested_node.output_type,
-            parameters=GraphNodeParameters(graph=graph, output_node_name=nested_node.name),
-        )
-        return graph_node, proxy_input_nodes
-
-    def add_operation(
-        self,
-        node_type: NodeType,
-        node_params: Dict[str, Any],
-        node_output_type: NodeOutputType,
-        input_nodes: List[Node],
-    ) -> Node:
-        """
-        Add operation to the query graph inside the graph node
-
-        Parameters
-        ----------
-        node_type: NodeType
-            node type
-        node_params: dict
-            parameters used for the node operation
-        node_output_type: NodeOutputType
-            node output type
-        input_nodes: list[Node]
-            list of input nodes
-
-        Returns
-        -------
-        Node
-            operation node of the given input (from the graph inside the graph node)
-        """
-        nested_node = self.parameters.graph.add_operation(
-            node_type=node_type,
-            node_params=node_params,
-            node_output_type=node_output_type,
-            input_nodes=input_nodes,
-        )
-        self.parameters.output_node_name = nested_node.name
-        return cast(Node, nested_node)
 
 
 class GraphState(TypedDict):

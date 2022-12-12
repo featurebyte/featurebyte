@@ -49,7 +49,7 @@ class ProxyInputNode(BaseNode):
 class GraphNodeParameters(BaseModel):
     """Graph node parameters"""
 
-    graph: "QueryGraph"  # type: ignore[name-defined]
+    graph: "QueryGraphModel"  # type: ignore[name-defined]
     output_node_name: str
 
 
