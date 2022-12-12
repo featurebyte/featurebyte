@@ -2,12 +2,14 @@
 Unit test for Feature & FeatureList classes
 """
 from datetime import datetime
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import AggFunc
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -20,8 +22,13 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.node.metadata.operation import (
+    AggregationColumn,
+    GroupOperationStructure,
+)
 from tests.util.helper import get_node
 
 
@@ -629,3 +636,121 @@ def test_list_filter(saved_feature):
 
     feature_list = Feature.list(data="other_data", entity="customer")
     assert feature_list.shape[0] == 0
+
+
+def get_aggregation_column_with_node_names(node_names):
+    """
+    Helper function to get an aggregation column with node names.
+    """
+    return AggregationColumn(
+        filter=False,
+        node_names=node_names,
+        name="random",
+        method=AggFunc.MIN,
+        groupby=[],
+        groupby_type=NodeType.GROUPBY,
+    )
+
+
+@pytest.fixture(name="non_time_based_aggregations")
+def get_non_time_based_aggregations_fixture():
+    """
+    Helper to get non-time based aggregations
+    """
+    return get_aggregation_column_with_node_names(
+        [
+            f"{NodeType.ITEM_GROUPBY}_1",
+        ]
+    )
+
+
+@pytest.fixture(name="time_based_aggregations")
+def get_time_based_aggregations_fixture():
+    """
+    Helper to get time based aggregations
+    """
+    return get_aggregation_column_with_node_names(
+        [
+            f"{NodeType.ITEM_GROUPBY}_1",
+            f"{NodeType.GROUPBY}_1",
+        ]
+    )
+
+
+@pytest.fixture(name="random_aggregations")
+def get_random_aggregations_fixture():
+    """
+    Helper to get other aggregations
+    """
+    return get_aggregation_column_with_node_names(
+        [
+            "project_1",
+            "filter_1",
+        ]
+    )
+
+
+@pytest.fixture(name="extract_operation_structure_patch_path")
+def get_extract_operation_structure_patch_path_fixture():
+    """
+    Get the extract operation structure patch path
+    """
+    return "featurebyte.models.feature.FeatureModel.extract_operation_structure"
+
+
+def test_is_time_based__no_aggregations(saved_feature, extract_operation_structure_patch_path):
+    """
+    Test is_time_based with no aggregations
+    """
+    # No aggregations should not be time based
+    with patch(extract_operation_structure_patch_path) as mocked_extract:
+        mocked_extract.return_value = GroupOperationStructure()
+        assert not saved_feature.is_time_based
+
+
+def test_is_time_based__non_time_based(
+    saved_feature, extract_operation_structure_patch_path, non_time_based_aggregations
+):
+    """
+    Test is_time_based for non-time based aggregations
+    """
+    # Aggregation with ItemGroupbyNode, and no GroupbyNode should not be time based
+    with patch(extract_operation_structure_patch_path) as mocked_extract:
+        mocked_extract.return_value = GroupOperationStructure(
+            aggregations=[non_time_based_aggregations, non_time_based_aggregations]
+        )
+        assert not saved_feature.is_time_based
+
+
+def test_is_time_based__time_based(
+    saved_feature,
+    extract_operation_structure_patch_path,
+    non_time_based_aggregations,
+    time_based_aggregations,
+):
+    """
+    Test is_time_based for time based aggregations
+    """
+    # Any groupby present (time based aggregation present) means it is time based
+    with patch(extract_operation_structure_patch_path) as mocked_extract:
+        mocked_extract.return_value = GroupOperationStructure(
+            aggregations=[
+                non_time_based_aggregations,
+                time_based_aggregations,
+                non_time_based_aggregations,
+            ]
+        )
+        assert saved_feature.is_time_based
+
+
+def test_is_time_based__other_aggregations(
+    saved_feature, extract_operation_structure_patch_path, random_aggregations
+):
+    """
+    Test is_time_based for other aggregations
+    """
+    # Multiple aggregations present, but are neither groupby nor itemgroupby - should raise error
+    with patch(extract_operation_structure_patch_path) as mocked_extract:
+        mocked_extract.return_value = GroupOperationStructure(aggregations=[random_aggregations])
+        with pytest.raises(ValueError):
+            _ = saved_feature.is_time_based
