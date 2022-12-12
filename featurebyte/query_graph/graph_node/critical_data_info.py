@@ -1,8 +1,8 @@
 """
 This module contains critical data info related models.
 """
-from typing import TYPE_CHECKING, Any, List, Optional, Union
-from typing_extensions import Annotated, Literal
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
+from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
 
@@ -133,7 +133,7 @@ class IsStringCondition(BaseCondition):
     )
 
     def check_condition(self, value: Any) -> bool:
-        return type(value) is str
+        return isinstance(value, str)
 
 
 class MissingValueImputation(BaseImputeOperation, MissingValueCondition):
