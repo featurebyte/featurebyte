@@ -28,7 +28,6 @@ class ConditionOperationField(StrEnum):
 
 
 IMPUTE_OPERATIONS = []
-FLAG_OPERATIONS = []
 
 
 class BaseImputeOperation(FeatureByteBaseModel):
@@ -73,7 +72,7 @@ class MissingValueCondition(BaseCondition):
     )
 
     def check_condition(self, value: Any) -> bool:
-        return pd.isnull(value)
+        return bool(pd.isnull(value))
 
 
 class DisguisedValueCondition(BaseCondition):
@@ -119,7 +118,7 @@ class BoundaryCondition(BaseCondition):
             ConditionOperationField.GREATER_THAN_OR_EQUAL: lambda x: x >= self.end_point,
         }
         try:
-            return operation_map[self.type](value)
+            return bool(operation_map[self.type](value))
         except TypeError:
             # TypeError exception implies that two value are incomparable
             return False
