@@ -231,3 +231,9 @@ class AggregationNotSupportedForViewError(Exception):
     """
     Raise when the requested aggregation does not support the underlying View
     """
+
+
+class InvalidImputationsError(ValueError):
+    """
+    Raise when the imputations do not fulfill constraints (for example, double imputations is detected).
+    """
