@@ -3,6 +3,9 @@ Module for data structures that describe different types of aggregations that fo
 """
 from __future__ import annotations
 
+from typing import Optional
+
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import pandas as pd
@@ -14,8 +17,35 @@ from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
 
 
+@dataclass  # type: ignore[misc]
+class AggregationSpec(ABC):
+    """
+    Base class of all aggregation specifications
+    """
+
+    serving_names: list[str]
+    serving_names_mapping: Optional[dict[str, str]]
+
+    def __post_init__(self) -> None:
+        if self.serving_names_mapping is not None:
+            self.serving_names = apply_serving_names_mapping(
+                self.serving_names, self.serving_names_mapping
+            )
+
+    @property
+    @abstractmethod
+    def agg_result_name(self) -> str:
+        """Column name of the aggregated result
+
+        Returns
+        -------
+        str
+            Column name of the aggregated result
+        """
+
+
 @dataclass
-class WindowAggregationSpec:
+class WindowAggregationSpec(AggregationSpec):
     """
     Window aggregation specification
     """
@@ -29,7 +59,6 @@ class WindowAggregationSpec:
     tile_table_id: str
     aggregation_id: str
     keys: list[str]
-    serving_names: list[str]
     value_by: str | None
     merge_expr: str
     feature_name: str
@@ -73,9 +102,6 @@ class WindowAggregationSpec:
         assert aggregation_id is not None
 
         serving_names = params["serving_names"]
-        if serving_names_mapping is not None:
-            serving_names = apply_serving_names_mapping(serving_names, serving_names_mapping)
-
         aggregation_specs = []
         for window, feature_name in zip(params["windows"], params["names"]):
             params = groupby_node.parameters.dict()
@@ -89,6 +115,7 @@ class WindowAggregationSpec:
                 aggregation_id=aggregation_id,
                 keys=params["keys"],
                 serving_names=serving_names,
+                serving_names_mapping=serving_names_mapping,
                 value_by=params["value_by"],
                 merge_expr=get_aggregator(params["agg_func"]).merge(aggregation_id),
                 feature_name=feature_name,
@@ -99,7 +126,7 @@ class WindowAggregationSpec:
 
 
 @dataclass
-class ItemAggregationSpec:
+class ItemAggregationSpec(AggregationSpec):
     """
     Non-time aware aggregation specification
     """
@@ -148,11 +175,10 @@ class ItemAggregationSpec:
         assert isinstance(node, ItemGroupbyNode)
         params = node.parameters.dict()
         serving_names = params["serving_names"]
-        if serving_names_mapping is not None:
-            serving_names = apply_serving_names_mapping(serving_names, serving_names_mapping)
         out = ItemAggregationSpec(
             keys=params["keys"],
             serving_names=serving_names,
+            serving_names_mapping=serving_names_mapping,
             feature_name=params["name"],
             agg_expr=agg_expr,
         )

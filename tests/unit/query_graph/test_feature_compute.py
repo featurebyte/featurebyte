@@ -9,12 +9,10 @@ import pytest
 from sqlglot import select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.aggregator.item import NonTimeAwareRequestTablePlan
+from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.query_graph.sql.feature_compute import (
-    FeatureExecutionPlanner,
-    NonTimeAwareRequestTablePlan,
-    TileBasedRequestTablePlan,
-)
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
@@ -34,6 +32,7 @@ def agg_spec_template_fixture():
         aggregation_id="some_agg_id",
         keys=["CUST_ID"],
         serving_names=["CID"],
+        serving_names_mapping=None,
         value_by=None,
         merge_expr="SUM(value)",
         feature_name="Amount (1d sum)",
@@ -73,6 +72,7 @@ def item_agg_spec_fixture():
     agg_spec = ItemAggregationSpec(
         keys=["order_id"],
         serving_names=["OID"],
+        serving_names_mapping=None,
         feature_name="Order Size",
         agg_expr=select("*").from_("tab"),
     )
@@ -108,17 +108,17 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert cte[0] == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
-      POINT_IN_TIME,
+      "POINT_IN_TIME",
       "CID",
       FLOOR((
-        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
       ) / 3600) AS "__FB_LAST_TILE_INDEX",
       FLOOR((
-        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
       ) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
       SELECT DISTINCT
-        POINT_IN_TIME,
+        "POINT_IN_TIME",
         "CID"
       FROM REQUEST_TABLE
     )
@@ -149,17 +149,17 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     assert name == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
-      POINT_IN_TIME,
+      "POINT_IN_TIME",
       "CID",
       FLOOR((
-        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
       ) / 3600) AS "__FB_LAST_TILE_INDEX",
       FLOOR((
-        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
       ) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
     FROM (
       SELECT DISTINCT
-        POINT_IN_TIME,
+        "POINT_IN_TIME",
         "CID"
       FROM REQUEST_TABLE
     )
@@ -171,17 +171,17 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     assert name == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
-      POINT_IN_TIME,
+      "POINT_IN_TIME",
       "CID",
       FLOOR((
-        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
       ) / 3600) AS "__FB_LAST_TILE_INDEX",
       FLOOR((
-        DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800
+        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
       ) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
       SELECT DISTINCT
-        POINT_IN_TIME,
+        "POINT_IN_TIME",
         "CID"
       FROM REQUEST_TABLE
     )
@@ -212,7 +212,11 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(query_graph_with_groupby, source_type=SourceType.SNOWFLAKE)
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.window_aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(
+        plan.aggregators[
+            WindowAggregationSpec
+        ].window_aggregation_spec_set.get_grouped_aggregation_specs()
+    ) == [
         [
             WindowAggregationSpec(
                 window=7200,
@@ -223,6 +227,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
+                serving_names_mapping=None,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -241,6 +246,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
+                serving_names_mapping=None,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -272,7 +278,11 @@ def test_feature_execution_planner__serving_names_mapping(
         query_graph_with_groupby, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.window_aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(
+        plan.aggregators[
+            WindowAggregationSpec
+        ].window_aggregation_spec_set.get_grouped_aggregation_specs()
+    ) == [
         [
             WindowAggregationSpec(
                 window=7200,
@@ -283,6 +293,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
+                serving_names_mapping=mapping,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -301,6 +312,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
+                serving_names_mapping=mapping,
                 value_by=None,
                 merge_expr=(
                     f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -333,7 +345,7 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     plan = planner.generate_plan([order_size_feature_group_node])
 
     # Check item aggregation specs
-    item_aggregation_specs = plan.item_aggregation_specs
+    item_aggregation_specs = plan.aggregators[ItemAggregationSpec].item_aggregation_specs
     assert len(item_aggregation_specs) == 1
     spec_dict = asdict(item_aggregation_specs[0])
     agg_expr = spec_dict.pop("agg_expr")
@@ -357,6 +369,7 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
         "keys": ["order_id"],
         "serving_names": ["NEW_ORDER_ID"],
         "feature_name": "order_size",
+        "serving_names_mapping": mapping,
     }
 
     # Check feature specs

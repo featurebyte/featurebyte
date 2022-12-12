@@ -23,6 +23,7 @@ def test_aggregation_spec__from_groupby_query_node(
             aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["CUSTOMER_ID"],
+            serving_names_mapping=None,
             value_by=None,
             merge_expr=(
                 f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -39,6 +40,7 @@ def test_aggregation_spec__from_groupby_query_node(
             aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["CUSTOMER_ID"],
+            serving_names_mapping=None,
             value_by=None,
             merge_expr=(
                 f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -73,6 +75,7 @@ def test_aggregation_spec__override_serving_names(
             aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["NEW_CUST_ID"],
+            serving_names_mapping=serving_names_mapping,
             value_by=None,
             merge_expr=(
                 f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
@@ -89,6 +92,7 @@ def test_aggregation_spec__override_serving_names(
             aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["NEW_CUST_ID"],
+            serving_names_mapping=serving_names_mapping,
             value_by=None,
             merge_expr=(
                 f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "

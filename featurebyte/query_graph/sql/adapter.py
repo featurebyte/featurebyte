@@ -240,7 +240,7 @@ class SnowflakeAdapter(BaseAdapter):
 
         inner_alias = "INNER_"
 
-        outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
+        outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
         for serving_name in serving_names:
             outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
 
