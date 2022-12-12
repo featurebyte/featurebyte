@@ -106,7 +106,7 @@ class TileSpec(FeatureByteBaseModel):
 
         Parameters
         ----------
-        value: str
+        value: int
             input value of attributes feature_name, tile_id, column_names
 
         Raises
