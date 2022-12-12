@@ -8,6 +8,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Self,
     Sequence,
     Set,
     Tuple,
@@ -58,7 +59,6 @@ class BaseFrozenModel(BaseModel):
         frozen = True
 
 
-BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
 BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 
 
@@ -68,7 +68,7 @@ class BaseColumn(BaseFrozenModel):
     filter: bool
     node_names: Set[str]
 
-    def clone(self: BaseColumnT, **kwargs: Any) -> BaseColumnT:
+    def clone(self, **kwargs: Any) -> Type[Self]:
         """
         Clone an existing object by overriding certain attribute(s)
 
@@ -79,17 +79,17 @@ class BaseColumn(BaseFrozenModel):
 
         Returns
         -------
-        Self
+        Type[Self]
         """
         return type(self)(**{**self.dict(), **kwargs})
 
     def clone_without_internal_nodes(
-        self: BaseColumnT,
+        self,
         proxy_node_name_map: Dict[str, Set[str]],
         graph_node_name: str,
         graph_node_transform: str,
         **kwargs: Any,
-    ) -> BaseColumnT:
+    ) -> Self:
         """
         Clone an existing object by removing internal node names. This method is mainly used in
         the nested graph pruning to remove those node names appear only in the nested graph. For example,
@@ -116,7 +116,7 @@ class BaseColumn(BaseFrozenModel):
 
         Returns
         -------
-        BaseColumnT
+        Self
         """
         # find match proxy input node names & replace them with the external node names
         proxy_input_names = self.node_names.intersection(proxy_node_name_map)
