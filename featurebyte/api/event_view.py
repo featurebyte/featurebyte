@@ -275,9 +275,18 @@ class EventView(View, GroupByMixin):
         -------
         str
             entity column name
+
+        Raises
+        ------
+        ValueError
+            raised when the feature is created from more than one entity
         """
         entity_columns = feature.entity_identifiers
-        assert len(entity_columns) == 1, "expect to have exactly one entity column"
+        if len(entity_columns) != 1:
+            raise ValueError(
+                "The feature should only be based on one entity. We are currently unable to add features "
+                "that are created from more than one entity."
+            )
         return entity_columns[0]
 
     def _get_view_entity_column(self, feature: Feature, entity_column: Optional[str]) -> str:
@@ -303,13 +312,9 @@ class EventView(View, GroupByMixin):
         EventViewMatchingEntityColumnNotFound
             raised when we are unable to find a matching entity column automatically
         """
-        # If we provide an entity column, and it's not an empty string, use the entity column
+        # If we provide an entity column, use the entity column. We assume the column is not an empty string due to
+        # validation done beforehand.
         if entity_column is not None:
-            if entity_column == "":
-                raise ValueError(
-                    "Empty string provided as entity column is invalid. Please provide a proper "
-                    "column name."
-                )
             return entity_column
 
         # Try to match the entity column of the feature, with that of an entity in the view
@@ -375,7 +380,6 @@ class EventView(View, GroupByMixin):
             updated_column_lineage_map[col] = append_to_lineage(lineage, new_column_name)
 
         # Construct new tabular_data_ids
-        # TODO: do we need to add all tabular data IDs?
         joined_tabular_data_ids = join_tabular_data_ids(
             self.tabular_data_ids, feature.tabular_data_ids
         )
