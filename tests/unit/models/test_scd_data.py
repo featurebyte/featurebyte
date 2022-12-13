@@ -24,6 +24,7 @@ def get_scd_columns_info():
         {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
         {"name": "effective_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
         {"name": "end_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+        {"name": "enabled", "dtype": "BOOL", "entity_id": None, "semantic_id": None},
     ]
 
 

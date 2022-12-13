@@ -57,3 +57,12 @@ class SCDDataModel(DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
+
+    @validator("current_flag_column")
+    @classmethod
+    def _check_current_flag_column_exists(
+        cls, value: Optional[str], values: dict[str, Any]
+    ) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types=None
+        )
