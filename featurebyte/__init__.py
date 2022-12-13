@@ -57,4 +57,5 @@ __all__ = [
     "to_timedelta",
     "AggFunc",
     "SourceType",
+    "SnowflakeDetails",
 ]

@@ -78,7 +78,7 @@ class DataApiObject(BaseTableData, SavableApiObject, GetAttrMixin):
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
-        data = self._create_schema_class(**self.json_dict())
+        data = self._create_schema_class(**self.json_dict())  # pylint: disable=not-callable
         return data.json_dict()
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
