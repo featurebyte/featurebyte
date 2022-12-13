@@ -19,8 +19,8 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import TableDetails, TabularSource
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.table import TableDetails, TabularSource
 
 
 @pytest.fixture(name="entity")

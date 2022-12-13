@@ -3,11 +3,11 @@ This module contains DatabaseSource related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType, TableDataType
+from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -15,7 +15,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.table import BaseDataModel
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -93,27 +93,6 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         ]
 
 
-class TableDetails(FeatureByteBaseModel):
-    """Model for table"""
-
-    database_name: Optional[StrictStr]
-    schema_name: Optional[StrictStr]
-    table_name: StrictStr
-
-
-class TabularSource(FeatureByteBaseModel):
-    """Model for tabular source"""
-
-    feature_store_id: PydanticObjectId
-    table_details: TableDetails
-
-
-class DatabaseTableModel(FeatureByteBaseModel):
-    """Model for a database table used in a feature store"""
-
-    tabular_source: TabularSource
-
-
 class DataStatus(OrderedStrEnum):
     """Data status"""
 
@@ -122,7 +101,7 @@ class DataStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
+class DataModel(BaseDataModel, FeatureByteBaseDocumentModel):
     """
     DataModel schema
 
@@ -136,13 +115,6 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Record creation date column name
     """
 
-    type: Literal[
-        TableDataType.EVENT_DATA,
-        TableDataType.ITEM_DATA,
-        TableDataType.DIMENSION_DATA,
-        TableDataType.SCD_DATA,
-    ]
-    columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
 

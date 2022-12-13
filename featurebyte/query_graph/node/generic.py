@@ -9,8 +9,9 @@ from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.enum import AggFunc, TableDataType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
+from featurebyte.models.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.table import TableDetails
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,

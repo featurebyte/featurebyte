@@ -16,12 +16,8 @@ from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import Credential
-from featurebyte.models.feature_store import (
-    DatabaseDetails,
-    FeatureStoreModel,
-    TableDetails,
-    TabularSource,
-)
+from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
+from featurebyte.query_graph.model.table import TableDetails, TabularSource
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
