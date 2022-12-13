@@ -14,19 +14,19 @@ from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import DatabaseTableModel, TableDetails
+from featurebyte.query_graph.model.common_table import TableDetails
+from featurebyte.query_graph.model.table import GenericTableData
 
 
-class DatabaseTable(DatabaseTableModel, BaseFrame):
+class BaseTableData(BaseFrame, FeatureByteBaseModel):
     """
-    DatabaseTable class to preview table
+    BaseTableData class
     """
-
-    feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
     class Config:
         """
@@ -135,3 +135,11 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         values["node_name"] = node.name
         values["row_index_lineage"] = (node.name,)
         return values
+
+
+class DatabaseTable(GenericTableData, BaseTableData):
+    """
+    DatabaseTable class to preview table
+    """
+
+    feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)

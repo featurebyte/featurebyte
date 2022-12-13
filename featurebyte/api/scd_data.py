@@ -43,6 +43,13 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
 
     @property
     def timestamp_column(self) -> Optional[str]:
+        """
+        Effective timestamp column
+
+        Returns
+        -------
+        Optional[str]
+        """
         return self.effective_timestamp_column
 
     @classmethod

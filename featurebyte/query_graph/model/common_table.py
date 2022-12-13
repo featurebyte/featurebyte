@@ -25,13 +25,7 @@ class TabularSource(FeatureByteBaseModel):
     table_details: TableDetails
 
 
-class DatabaseTableModel(FeatureByteBaseModel):
-    """Model for a database table used in a feature store"""
-
-    tabular_source: TabularSource
-
-
-class BaseTableData(DatabaseTableModel):
+class BaseTableData(FeatureByteBaseModel):
     """Base data model used to capture input node info"""
 
     type: Literal[
@@ -42,3 +36,4 @@ class BaseTableData(DatabaseTableModel):
         TableDataType.SCD_DATA,
     ]
     columns_info: List[ColumnInfo]
+    tabular_source: TabularSource

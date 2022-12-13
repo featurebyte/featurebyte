@@ -39,6 +39,13 @@ class EventData(EventDataModel, DataApiObject):
 
     @property
     def timestamp_column(self) -> Optional[str]:
+        """
+        Event timestamp column
+
+        Returns
+        -------
+        Optional[str]
+        """
         return self.event_timestamp_column
 
     @classmethod

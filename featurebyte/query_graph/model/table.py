@@ -1,7 +1,7 @@
 """
 This module contains specialized table related models.
 """
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 
 from abc import abstractmethod
 
@@ -56,14 +56,12 @@ class GenericTableData(ConstructNodeMixin, BaseTableData):
     """GenericTableData class"""
 
     type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC, const=True)
-    id: Optional[PydanticObjectId] = Field(default=None)
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             parameters={
-                "type": TableDataType.GENERIC,
+                "id": None,
                 "feature_store_details": feature_store_details,
-                "id": self.id,
                 **self._get_common_input_node_parameters(),
             }
         )
@@ -79,9 +77,9 @@ class EventTableData(ConstructNodeMixin, BaseTableData):
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             parameters={
-                "feature_store_details": feature_store_details,
-                "timestamp": self.event_timestamp_column,
                 "id": self.id,
+                "timestamp": self.event_timestamp_column,
+                "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             }
         )
@@ -96,8 +94,8 @@ class ItemTableData(ConstructNodeMixin, BaseTableData):
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             parameters={
-                "feature_store_details": feature_store_details,
                 "id": self.id,
+                "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             }
         )
@@ -112,8 +110,8 @@ class DimensionTableData(ConstructNodeMixin, BaseTableData):
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             parameters={
-                "feature_store_details": feature_store_details,
                 "id": self.id,
+                "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             }
         )
@@ -128,8 +126,8 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             parameters={
-                "feature_store_details": feature_store_details,
                 "id": self.id,
+                "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             }
         )

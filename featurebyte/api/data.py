@@ -12,7 +12,7 @@ from pandas import DataFrame
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
-from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.database_table import BaseTableData, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
@@ -59,7 +59,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         self.parent.update(update_payload={"columns_info": columns_info}, allow_update_local=True)
 
 
-class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
+class DataApiObject(BaseTableData, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
     """
