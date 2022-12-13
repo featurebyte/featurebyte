@@ -135,10 +135,17 @@ class SlowlyChangingView(View):
         return self.natural_key_column
 
     def get_common_scd_parameters(self) -> SCDBaseParameters:
+        """
+        Get parameters related to Slowly Changing Data (SCD)
+
+        Returns
+        -------
+        SCDBaseParameters
+        """
         params = SCDBaseParameters(
             **{
                 "effective_timestamp_column": self.effective_timestamp_column,
-                "current_flag_column": self.current_flag,
+                "current_flag_column": self.current_flag_column,
                 "end_timestamp_column": self.end_timestamp_column,
             }
         )
@@ -153,7 +160,6 @@ class SlowlyChangingView(View):
             calling_view.timestamp_column, str
         )
 
-        effective_timestamp_column = self.effective_timestamp_column
         left_timestamp_column = calling_view.timestamp_column
         return {
             "scd_parameters": {

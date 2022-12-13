@@ -130,7 +130,7 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
             "entity_id": cust_id_entity.id,
             "scd_parameters": {
                 "effective_timestamp_column": "event_timestamp",
-                "current_flag": "col_char",
+                "current_flag_column": "col_char",
                 "end_timestamp_column": "event_timestamp",
                 "offset": "7d",
             },

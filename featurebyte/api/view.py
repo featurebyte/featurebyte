@@ -96,6 +96,17 @@ class ViewColumn(Series, SampleMixin):
         """
         Create a lookup feature directly using this column
 
+        Parameters
+        ----------
+        feature_name: str
+            Feature name
+        offset: str
+            When specified, retrieve feature value as of this offset prior to the point-in-time
+
+        Returns
+        -------
+        Feature
+
         Raises
         ------
         ValueError
@@ -108,8 +119,9 @@ class ViewColumn(Series, SampleMixin):
                 " assigning the feature to the View before calling as_feature()"
             )
         input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
-        feature = view[[input_column_name]].as_features([feature_name], offset=offset)[feature_name]
-        return feature
+        view = cast(View, view[[input_column_name]])
+        feature = view.as_features([feature_name], offset=offset)[feature_name]
+        return cast(Feature, feature)
 
 
 class GroupByMixin:
@@ -596,6 +608,22 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def as_features(self, feature_names: list[str], offset: Optional[str] = None) -> FeatureGroup:
         """
         Create lookup features directly from the columns in the View
+
+        Parameters
+        ----------
+        feature_names: list[str]
+            Feature names
+        offset: str
+            When specified, retrieve feature values as of this offset prior to the point-in-time
+
+        Returns
+        -------
+        FeatureGroup
+
+        Raises
+        ------
+        ValueError
+            If the length of feature_names does not match with the number of columns in the View
         """
         special_columns = set(self.protected_columns)
         input_column_names = [
