@@ -686,6 +686,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             {"name": "dimension_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "surrogate_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "natural_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "current_value", "dtype": "BOOL", "entity_id": None, "semantic_id": None},
             {"name": "item_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
         ]
 

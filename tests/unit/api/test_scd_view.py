@@ -25,7 +25,7 @@ class TestSlowlyChangingView(BaseViewTestSuite):
         assert row_subset.surrogate_key_column == view_under_test.surrogate_key_column
         assert row_subset.effective_timestamp_column == view_under_test.effective_timestamp_column
         assert row_subset.end_timestamp_column == view_under_test.end_timestamp_column
-        assert row_subset.current_flag == view_under_test.current_flag
+        assert row_subset.current_flag_column == view_under_test.current_flag_column
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view):
@@ -102,7 +102,7 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
         "scd_parameters": {
             "left_timestamp_column": "event_timestamp",
             "effective_timestamp_column": "event_timestamp",
-            "current_flag": "col_char",
+            "current_flag_column": "col_char",
             "end_timestamp_column": "event_timestamp",
         },
     }

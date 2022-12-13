@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional
 
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.feature_store import DataModel
@@ -32,7 +32,15 @@ class SCDDataModel(DataModel):
     effective_timestamp_column: StrictStr
     surrogate_key_column: Optional[StrictStr]
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
-    current_flag: Optional[StrictStr] = Field(default=None)
+    current_flag_column: Optional[StrictStr] = Field(default=None)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _handle_current_flag_name(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # DEV-556: remove this after migration
+        if "current_flag" in values:
+            values["current_flag_column"] = values["current_flag"]
+        return values
 
     @validator("record_creation_date_column", "effective_timestamp_column", "end_timestamp_column")
     @classmethod
@@ -48,4 +56,13 @@ class SCDDataModel(DataModel):
     def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
+        )
+
+    @validator("current_flag_column")
+    @classmethod
+    def _check_current_flag_column_exists(
+        cls, value: Optional[str], values: dict[str, Any]
+    ) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types=None
         )

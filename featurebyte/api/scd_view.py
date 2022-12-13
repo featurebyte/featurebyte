@@ -41,7 +41,7 @@ class SlowlyChangingView(View):
     surrogate_key_column: str = Field(allow_mutation=False)
     effective_timestamp_column: str = Field(allow_mutation=False)
     end_timestamp_column: Optional[str] = Field(allow_mutation=False)
-    current_flag: Optional[str] = Field(allow_mutation=False)
+    current_flag_column: Optional[str] = Field(allow_mutation=False)
 
     @property
     def timestamp_column(self) -> Optional[str]:
@@ -71,7 +71,7 @@ class SlowlyChangingView(View):
             surrogate_key_column=slowly_changing_data.surrogate_key_column,
             effective_timestamp_column=slowly_changing_data.effective_timestamp_column,
             end_timestamp_column=slowly_changing_data.end_timestamp_column,
-            current_flag=slowly_changing_data.current_flag,
+            current_flag_column=slowly_changing_data.current_flag_column,
         )
 
     @property
@@ -88,7 +88,7 @@ class SlowlyChangingView(View):
             "surrogate_key_column",
             "effective_timestamp_column",
             "end_timestamp_column",
-            "current_flag",
+            "current_flag_column",
         ]
 
     @property
@@ -107,7 +107,7 @@ class SlowlyChangingView(View):
                 "surrogate_key_column": self.surrogate_key_column,
                 "effective_timestamp_column": self.effective_timestamp_column,
                 "end_timestamp_column": self.end_timestamp_column,
-                "current_flag": self.current_flag,
+                "current_flag_column": self.current_flag_column,
             }
         )
         return params
@@ -148,7 +148,7 @@ class SlowlyChangingView(View):
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
                 "effective_timestamp_column": effective_timestamp_column,
-                "current_flag": self.current_flag,
+                "current_flag_column": self.current_flag_column,
                 "end_timestamp_column": self.end_timestamp_column,
             }
         }
