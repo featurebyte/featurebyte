@@ -401,4 +401,4 @@ def test_feature_execution_planner__lookup_features(global_graph, lookup_feature
     }
 
     # Check requred serving names
-    assert plan.required_serving_names == ["CUSTOMER_ID"]
+    assert plan.required_serving_names == {"CUSTOMER_ID"}

@@ -653,8 +653,29 @@ def lookup_node_fixture(global_graph, dimension_data_input_node):
     return lookup_node
 
 
+@pytest.fixture(name="subset_lookup_node")
+def subset_lookup_node_fixture(global_graph, dimension_data_input_node):
+    """
+    Fixture of a lookup node that overlaps with the above
+    """
+    node_params = {
+        "input_column_names": ["cust_value_2"],
+        "feature_names": ["CUSTOMER ATTRIBUTE 2"],
+        "entity_column": "cust_id",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": ObjectId(),
+    }
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[dimension_data_input_node],
+    )
+    return lookup_node
+
+
 @pytest.fixture(name="lookup_feature_node")
-def lookup_feature_node_fixture(global_graph, lookup_node):
+def lookup_feature_node_fixture(global_graph, lookup_node, subset_lookup_node):
     """
     Fixture of a derived lookup feature
     """
@@ -668,7 +689,7 @@ def lookup_feature_node_fixture(global_graph, lookup_node):
         node_type=NodeType.PROJECT,
         node_params={"columns": ["CUSTOMER ATTRIBUTE 2"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[global_graph.get_node_by_name(lookup_node.name)],
+        input_nodes=[global_graph.get_node_by_name(subset_lookup_node.name)],
     )
     feature_node = global_graph.add_operation(
         node_type=NodeType.ADD,

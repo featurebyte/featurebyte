@@ -439,43 +439,63 @@ def test_extract_operation__lookup_feature(
         {"name": "cust_value_1", **common_data_params},
         {"name": "cust_value_2", **common_data_params},
     ]
-    expected_aggregations = [
-        {
-            "columns": [
-                {
-                    "category": None,
-                    "column": expected_columns[0],
+    expected_aggregations = {
+        "filter": False,
+        "node_names": {
+            "add_1",
+            "lookup_1",
+            "project_2",
+            "lookup_2",
+            "input_1",
+            "alias_1",
+            "project_1",
+        },
+        "name": "MY FEATURE",
+        "transforms": ["add"],
+        "columns": [
+            {
+                "filter": False,
+                "node_names": {"lookup_1", "project_1", "input_1"},
+                "name": "CUSTOMER ATTRIBUTE 1",
+                "method": None,
+                "groupby": ["cust_id"],
+                "window": None,
+                "category": None,
+                "type": "aggregation",
+                "column": {
                     "filter": False,
-                    "groupby": ["cust_id"],
-                    "groupby_type": "lookup",
-                    "method": None,
-                    "name": "CUSTOMER ATTRIBUTE 1",
-                    "node_names": {"lookup_1", "project_1", "input_1"},
-                    "type": "aggregation",
-                    "window": None,
+                    "node_names": {"input_1"},
+                    "name": "cust_value_1",
+                    "tabular_data_id": None,
+                    "tabular_data_type": "dimension_data",
+                    "type": "source",
                 },
-                {
-                    "category": None,
-                    "column": expected_columns[1],
+                "groupby_type": "lookup",
+            },
+            {
+                "filter": False,
+                "node_names": {"project_2", "lookup_2", "input_1"},
+                "name": "CUSTOMER ATTRIBUTE 2",
+                "method": None,
+                "groupby": ["cust_id"],
+                "window": None,
+                "category": None,
+                "type": "aggregation",
+                "column": {
                     "filter": False,
-                    "groupby": ["cust_id"],
-                    "groupby_type": "lookup",
-                    "method": None,
-                    "name": "CUSTOMER ATTRIBUTE 2",
-                    "node_names": {"lookup_1", "project_2", "input_1"},
-                    "type": "aggregation",
-                    "window": None,
+                    "node_names": {"input_1"},
+                    "name": "cust_value_2",
+                    "tabular_data_id": None,
+                    "tabular_data_type": "dimension_data",
+                    "type": "source",
                 },
-            ],
-            "filter": False,
-            "name": "MY FEATURE",
-            "node_names": {"add_1", "alias_1", "input_1", "lookup_1", "project_1", "project_2"},
-            "transforms": ["add"],
-            "type": "post_aggregation",
-        }
-    ]
+                "groupby_type": "lookup",
+            },
+        ],
+        "type": "post_aggregation",
+    }
     assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == expected_aggregations
+    assert op_struct.aggregations[0].dict() == expected_aggregations
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
 
