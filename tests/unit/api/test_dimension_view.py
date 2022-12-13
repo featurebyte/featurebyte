@@ -4,6 +4,7 @@ Unit tests for DimensionView class
 import pytest
 
 from featurebyte.api.dimension_view import DimensionView
+from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -86,6 +87,8 @@ def test_as_features__primary_key_not_required(
 
     feature_group = view[columns].as_features(feature_names)
     assert feature_group.feature_names == ["FloatFeature", "CharFeature"]
+    assert feature_group["FloatFeature"].dtype == DBVarType.FLOAT
+    assert feature_group["CharFeature"].dtype == DBVarType.CHAR
 
     float_feature_dict = feature_group["CharFeature"].dict()
     graph_dict = float_feature_dict["graph"]
@@ -134,6 +137,7 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
     view = snowflake_dimension_view_with_entity
     feature = view["col_float"].as_feature("FloatFeature")
     assert feature.name == "FloatFeature"
+    assert feature.dtype == DBVarType.FLOAT
 
     feature_dict = feature.dict()
     graph_dict = feature_dict["graph"]
