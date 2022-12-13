@@ -303,7 +303,7 @@ ViewDataColumn = Annotated[Union[SourceDataColumn, DerivedDataColumn], Field(dis
 class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
-    method: AggFunc
+    method: Optional[AggFunc]
     groupby: List[str]
     window: Optional[str]
     category: Optional[str]
@@ -311,7 +311,7 @@ class AggregationColumn(BaseDataColumn):
         FeatureDataColumnType.AGGREGATION, const=True
     )
     column: Optional[ViewDataColumn]
-    groupby_type: Literal[NodeType.GROUPBY, NodeType.ITEM_GROUPBY]
+    groupby_type: Literal[NodeType.GROUPBY, NodeType.ITEM_GROUPBY, NodeType.LOOKUP]
 
     def __hash__(self) -> int:
         col_dict = self.dict()

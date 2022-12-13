@@ -391,7 +391,7 @@ class SCDJoin(TableNode):
             right_on=parameters["right_on"],
             join_type=parameters["join_type"],
             left_timestamp_column=parameters["scd_parameters"]["left_timestamp_column"],
-            right_timestamp_column=parameters["scd_parameters"]["right_timestamp_column"],
+            right_timestamp_column=parameters["scd_parameters"]["effective_timestamp_column"],
             left_input_columns=parameters["left_input_columns"],
             left_output_columns=parameters["left_output_columns"],
             right_input_columns=parameters["right_input_columns"],

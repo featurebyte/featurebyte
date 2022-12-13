@@ -444,13 +444,84 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         ]
 
 
-class SCDParameters(BaseModel):
-    """Parameters specific to SCD joins"""
+class SCDBaseParameters(BaseModel):
+    """Parameters common to SCD data"""
 
-    left_timestamp_column: str
-    right_timestamp_column: str
+    effective_timestamp_column: str
     current_flag: Optional[str]
     end_timestamp_column: Optional[str]
+
+    @root_validator(pre=True)
+    @classmethod
+    def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # DEV-556: backward compatibility
+        if "right_timestamp_column" in values:
+            values["effective_timestamp_column"] = values["right_timestamp_column"]
+        return values
+
+
+class SCDJoinParameters(SCDBaseParameters):
+    """Parameters for SCD join"""
+
+    left_timestamp_column: str
+
+
+class SCDLookupParameters(SCDBaseParameters):
+    """Parameters for SCD lookup"""
+
+    offset: Optional[str]
+
+
+class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
+    """LookupNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        input_column_names: List[InColumnStr]
+        feature_names: List[OutColumnStr]
+        entity_column: InColumnStr
+        serving_name: str
+        entity_id: PydanticObjectId
+        scd_parameters: Optional[SCDLookupParameters]
+
+        @root_validator(skip_on_failure=True)
+        @classmethod
+        def _validate_input_column_names_feature_names_same_length(
+            cls, values: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            input_column_names = values["input_column_names"]
+            feature_names = values["feature_names"]
+            assert len(input_column_names) == len(feature_names)
+            return values
+
+    type: Literal[NodeType.LOOKUP] = Field(NodeType.LOOKUP, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    parameters: Parameters
+
+    def _get_aggregations(
+        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
+    ) -> List[AggregationColumn]:
+        name_to_column = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=feature_name,
+                method=None,
+                groupby=[self.parameters.entity_column],
+                window=None,
+                category=None,
+                column=name_to_column.get(input_column_name),
+                groupby_type=self.type,
+                node_names={node_name}.union(other_node_names),
+                filter=any(col.filter for col in columns),
+            )
+            for input_column_name, feature_name in zip(
+                self.parameters.input_column_names, self.parameters.feature_names
+            )
+        ]
+
+    def _exclude_source_columns(self) -> List[str]:
+        return [self.parameters.entity_column]
 
 
 class JoinNode(BaseNode):
@@ -466,7 +537,7 @@ class JoinNode(BaseNode):
         right_input_columns: List[InColumnStr]
         right_output_columns: List[OutColumnStr]
         join_type: Literal["left", "inner"]
-        scd_parameters: Optional[SCDParameters]
+        scd_parameters: Optional[SCDJoinParameters]
 
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)

@@ -426,6 +426,60 @@ def test_extract_operation__join_double_aggregations(
     assert grp_op_struct.post_aggregation is None
 
 
+def test_extract_operation__lookup_feature(
+    global_graph,
+    lookup_feature_node,
+    dimension_data_input_node,
+):
+    """Test extract_operation_structure: lookup features"""
+
+    op_struct = global_graph.extract_operation_structure(node=lookup_feature_node)
+    common_data_params = extract_column_parameters(dimension_data_input_node)
+    expected_columns = [
+        {"name": "cust_value_1", **common_data_params},
+        {"name": "cust_value_2", **common_data_params},
+    ]
+    expected_aggregations = [
+        {
+            "filter": False,
+            "node_names": {"input_1", "project_2", "add_1", "alias_1", "project_1", "lookup_1"},
+            "name": "MY FEATURE",
+            "transforms": ["add"],
+            "columns": [
+                {
+                    "filter": False,
+                    "node_names": {"input_1", "project_1", "lookup_1"},
+                    "name": "CUSTOMER ATTRIBUTE 1",
+                    "method": None,
+                    "groupby": ["cust_id"],
+                    "window": None,
+                    "category": None,
+                    "type": "aggregation",
+                    "column": expected_columns[0],
+                    "groupby_type": "lookup",
+                },
+                {
+                    "filter": False,
+                    "node_names": {"input_1", "project_2", "lookup_1"},
+                    "name": "CUSTOMER ATTRIBUTE 2",
+                    "method": None,
+                    "groupby": ["cust_id"],
+                    "window": None,
+                    "category": None,
+                    "type": "aggregation",
+                    "column": expected_columns[1],
+                    "groupby_type": "lookup",
+                },
+            ],
+            "type": "post_aggregation",
+        }
+    ]
+    assert op_struct.columns == expected_columns
+    assert op_struct.aggregations == expected_aggregations
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+
+
 def test_extract_operation__alias(global_graph, input_node):
     """Test extract_operation_structure: alias"""
     project_node = global_graph.add_operation(

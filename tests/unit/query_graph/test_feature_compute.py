@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
+    LookupSpec,
     WindowAggregationSpec,
 )
 
@@ -376,3 +377,29 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     assert plan.feature_specs == {
         "order_size": FeatureSpec(feature_name="order_size", feature_expr='"order_size"')
     }
+
+
+def test_feature_execution_planner__lookup_features(global_graph, projected_lookup_features):
+    """
+    Test FeatureExecutionPlanner on an LookupFeature node
+    """
+    mapping = {"cust_id": "CUSTOMER_ID"}
+    planner = FeatureExecutionPlanner(
+        global_graph, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
+    )
+    nodes = list(projected_lookup_features)
+    plan = planner.generate_plan(nodes)
+    aggregator = plan.aggregators[LookupSpec]
+
+    # Check aggregation results
+    agg_results = aggregator.get_aggregation_results("POINT_IN_TIME")
+    assert len(agg_results) == 1
+    agg_result_dict = asdict(agg_results[0])
+    agg_result_dict.pop("expr")
+    assert agg_result_dict == {
+        "column_names": ["cust_value_1_9b8bee3acf7d5bc7", "cust_value_2_9b8bee3acf7d5bc7"],
+        "join_keys": ["CUSTOMER_ID"],
+    }
+
+    # Check required serving names
+    assert plan.required_serving_names == {"CUSTOMER_ID"}
