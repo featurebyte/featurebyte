@@ -78,7 +78,7 @@ class MissingValueCondition(BaseCondition):
 
 
 class DisguisedValueCondition(BaseCondition):
-    """Missing value condition"""
+    """Disguised value condition"""
 
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
