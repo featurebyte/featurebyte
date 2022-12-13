@@ -30,6 +30,8 @@ async def test_schedule_online_tile(snowflake_tile, snowflake_session, tile_mana
     """
     Test schedule_online_tiles method in TileSnowflake
     """
+    minute_offset = snowflake_tile.time_modulo_frequency_second // 60
+
     await tile_manager.schedule_online_tiles(tile_spec=snowflake_tile)
 
     task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_ONLINE".upper()
@@ -37,7 +39,7 @@ async def test_schedule_online_tile(snowflake_tile, snowflake_session, tile_mana
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{snowflake_tile.tile_id}%'")
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
-    assert result["schedule"].iloc[0] == "USING CRON 3-59/5 * * * * UTC"
+    assert result["schedule"].iloc[0] == f"USING CRON {minute_offset} * * * * UTC"
     assert result["state"].iloc[0] == "started"
 
 
