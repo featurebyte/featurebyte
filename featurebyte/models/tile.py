@@ -74,7 +74,7 @@ class TileSpec(FeatureByteBaseModel):
 
     @root_validator
     @classmethod
-    def check_time_modulo_frequency_second(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def check_time_modulo_and_frequency_minute(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
         Root Validator for time-modulo-frequency
 
@@ -87,38 +87,19 @@ class TileSpec(FeatureByteBaseModel):
         ------
         ValueError
             if time-modulo-frequency is greater than frequency in seconds
-
-        Returns
-        -------
-            original dict
-        """
-        if values["time_modulo_frequency_second"] > values["frequency_minute"] * 60:
-            raise ValueError(
-                f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
-            )
-        return values
-
-    @validator("frequency_minute")
-    @classmethod
-    def check_frequency_minute(cls, value: int) -> int:
-        """
-        Validator for frequency_minute
-
-        Parameters
-        ----------
-        value: int
-            input value of attributes feature_name, tile_id, column_names
-
-        Raises
-        ------
         ValueError
             if frequency_minute > 60 and is not a multiple of 60
 
         Returns
         -------
-            validated frequency_minute
+            original dict
         """
-        if value > 60 and value % 60 != 0:
+        if values["frequency_minute"] > 60 and values["frequency_minute"] % 60 != 0:
             raise ValueError("frequency_minute should be a multiple of 60 if it is more than 60")
 
-        return value
+        if values["time_modulo_frequency_second"] > values["frequency_minute"] * 60:
+            raise ValueError(
+                f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
+            )
+
+        return values

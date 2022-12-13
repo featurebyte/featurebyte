@@ -30,8 +30,10 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
 @pytest.mark.asyncio
 async def test_online_enable(
+    mock_schedule_offline_tiles,
     mock_schedule_online_tiles,
     mock_execute_query,
     mock_snowflake_feature,
@@ -50,8 +52,9 @@ async def test_online_enable(
     await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_called_once()
+    mock_schedule_offline_tiles.assert_called_once()
 
-    assert mock_execute_query.call_count == 4
+    assert mock_execute_query.call_count == 2
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],

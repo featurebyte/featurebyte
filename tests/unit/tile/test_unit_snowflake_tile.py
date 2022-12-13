@@ -25,6 +25,24 @@ def test_construct_snowflaketile_time_modulo_error():
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 
 
+def test_construct_snowflaketile_frequency_minute_error():
+    """
+    Test construct TileSpec validation error
+    """
+    with pytest.raises(ValueError) as excinfo:
+        TileSpec(
+            tile_id="tile_id_1",
+            aggregation_id="agg_id1",
+            time_modulo_frequency_second=150,
+            blind_spot_second=3,
+            frequency_minute=70,
+            tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
+            value_column_names=["col2"],
+            entity_column_names=["col1"],
+        )
+    assert "frequency_minute should be a multiple of 60 if it is more than 60" in str(excinfo.value)
+
+
 def test_construct_snowflaketile_zero_time_modulo_frequency():
     """
     Test construct TileSpec with time modulo frequency of 0
