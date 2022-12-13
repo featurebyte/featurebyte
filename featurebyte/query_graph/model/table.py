@@ -1,7 +1,8 @@
 """
 This module contains specialized table related models.
 """
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Union
+from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
 
@@ -131,3 +132,9 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
                 **self._get_common_input_node_parameters(),
             }
         )
+
+
+SpecificTableData = Annotated[
+    Union[EventTableData, ItemTableData, DimensionTableData, SCDTableData],
+    Field(discriminator="type"),
+]

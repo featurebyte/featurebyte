@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from abc import ABC
 from http import HTTPStatus
 
 from pydantic import Field, root_validator
@@ -20,10 +21,10 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TableDetails
-from featurebyte.query_graph.model.table import GenericTableData
+from featurebyte.query_graph.model.table import ConstructNodeMixin, GenericTableData
 
 
-class BaseTableData(BaseFrame, FeatureByteBaseModel):
+class BaseTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
     """
     BaseTableData class
     """

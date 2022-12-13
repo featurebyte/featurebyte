@@ -3,12 +3,13 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type, TypeVar
+from typing import Any, ClassVar, Optional, Type, TypeVar, cast
 
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from pandas import DataFrame
+from pydantic import parse_obj_as
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
@@ -20,6 +21,9 @@ from featurebyte.exception import DuplicatedRecordException, RecordRetrievalExce
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
+from featurebyte.query_graph.model.table import SpecificTableData
+from featurebyte.query_graph.node.generic import InputNode
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 
@@ -71,6 +75,11 @@ class DataApiObject(BaseTableData, SavableApiObject, GetAttrMixin):
     _list_foreign_keys = [
         ("columns_info.entity_id", Entity, "entities"),
     ]
+
+    def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
+        table_data = parse_obj_as(SpecificTableData, self.dict(by_alias=True))  # type: ignore
+        input_node = table_data.construct_input_node(feature_store_details=feature_store_details)
+        return cast(InputNode, input_node)
 
     @classmethod
     def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
