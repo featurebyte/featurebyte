@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, cast
 
 import hashlib
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -208,16 +209,19 @@ class LookupSpec(AggregationSpec):
     @property
     def source_hash(self) -> str:
         """
-        Returns a unique identifier derived from source_expr
+        Returns a unique identifier derived from source_expr and entity column
 
         Returns
         -------
         str
         """
         hasher = hashlib.shake_128()
-        hasher.update(self.source_expr.sql().encode("utf-8"))
-        name = f"{hasher.hexdigest(8)}"
-        return name
+        params = {
+            "source_expr": self.source_expr.sql(),
+            "entity_column": self.entity_column,
+        }
+        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
+        return hasher.hexdigest(8)
 
     @classmethod
     def _get_source_sql_expr(

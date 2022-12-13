@@ -379,7 +379,7 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     }
 
 
-def test_feature_execution_planner__lookup_features(global_graph, lookup_feature_node):
+def test_feature_execution_planner__lookup_features(global_graph, projected_lookup_features):
     """
     Test FeatureExecutionPlanner on an LookupFeature node
     """
@@ -387,7 +387,8 @@ def test_feature_execution_planner__lookup_features(global_graph, lookup_feature
     planner = FeatureExecutionPlanner(
         global_graph, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
     )
-    plan = planner.generate_plan([lookup_feature_node])
+    nodes = list(projected_lookup_features)
+    plan = planner.generate_plan(nodes)
     aggregator = plan.aggregators[LookupSpec]
 
     # Check aggregation results
@@ -396,9 +397,9 @@ def test_feature_execution_planner__lookup_features(global_graph, lookup_feature
     agg_result_dict = asdict(agg_results[0])
     agg_result_dict.pop("expr")
     assert agg_result_dict == {
-        "column_names": ["cust_value_1_7d65794d746d317a", "cust_value_2_7d65794d746d317a"],
+        "column_names": ["cust_value_1_9b8bee3acf7d5bc7", "cust_value_2_9b8bee3acf7d5bc7"],
         "join_keys": ["CUSTOMER_ID"],
     }
 
-    # Check requred serving names
+    # Check required serving names
     assert plan.required_serving_names == {"CUSTOMER_ID"}

@@ -19,6 +19,8 @@ class LookupAggregator(Aggregator):
     """
 
     def __init__(self) -> None:
+        # The keys in these dicts are unique identifiers (based on LookupSpec's source_hash) that
+        # determine which lookup features can be retrieved in a single join
         self.grouped_lookup_specs: dict[str, list[LookupSpec]] = {}
         self.grouped_agg_result_names: dict[str, set[str]] = {}
 
@@ -35,12 +37,18 @@ class LookupAggregator(Aggregator):
         spec: LookupSpec
             Lookup specification
         """
-        key = f"{spec.source_hash}_{spec.entity_column}"
+        key = spec.source_hash
+
         if key not in self.grouped_lookup_specs:
             self.grouped_agg_result_names[key] = set()
             self.grouped_lookup_specs[key] = []
+
         if spec.agg_result_name in self.grouped_agg_result_names[key]:
+            # Skip updating if the spec produces a result that was seen before. One example this can
+            # occur is when the same lookup is used more than once in a feature list by multiple
+            # features. In that case, they can all share the same lookup result.
             return
+
         self.grouped_agg_result_names[key].add(spec.agg_result_name)
         self.grouped_lookup_specs[key].append(spec)
 

@@ -6,14 +6,14 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."cust_value_1_7d65794d746d317a" AS "cust_value_1_7d65794d746d317a",
-    "T0"."cust_value_2_7d65794d746d317a" AS "cust_value_2_7d65794d746d317a"
+    "T0"."cust_value_1_9b8bee3acf7d5bc7" AS "cust_value_1_9b8bee3acf7d5bc7",
+    "T0"."cust_value_2_9b8bee3acf7d5bc7" AS "cust_value_2_9b8bee3acf7d5bc7"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
-      "cust_value_1" AS "cust_value_1_7d65794d746d317a",
-      "cust_value_2" AS "cust_value_2_7d65794d746d317a"
+      "cust_value_1" AS "cust_value_1_9b8bee3acf7d5bc7",
+      "cust_value_2" AS "cust_value_2_9b8bee3acf7d5bc7"
     FROM (
       SELECT
         "cust_id" AS "cust_id",
@@ -28,6 +28,6 @@ SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
   (
-    "cust_value_1_7d65794d746d317a" + "cust_value_2_7d65794d746d317a"
+    "cust_value_1_9b8bee3acf7d5bc7" + "cust_value_2_9b8bee3acf7d5bc7"
   ) AS "MY FEATURE"
 FROM _FB_AGGREGATED AS AGG
