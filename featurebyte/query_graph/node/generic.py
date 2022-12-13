@@ -471,15 +471,15 @@ class SCDLookupParameters(SCDBaseParameters):
     offset: Optional[str]
 
 
-class LookupNode(BaseNode):
+class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
     """LookupNode class"""
 
     class Parameters(BaseModel):
         """Parameters"""
 
-        input_column_names: list[InColumnStr]
-        feature_names: list[OutColumnStr]
-        entity_column: str
+        input_column_names: List[InColumnStr]
+        feature_names: List[OutColumnStr]
+        entity_column: InColumnStr
         serving_name: str
         entity_id: PydanticObjectId
         scd_parameters: Optional[SCDLookupParameters]
@@ -501,15 +501,26 @@ class LookupNode(BaseNode):
     def _get_aggregations(
         self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
     ) -> List[AggregationColumn]:
-        return []
+        name_to_column = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=feature_name,
+                method=None,
+                groupby=[self.parameters.entity_column],
+                window=None,
+                category=None,
+                column=name_to_column.get(input_column_name),
+                groupby_type=self.type,
+                node_names={node_name}.union(other_node_names),
+                filter=False,
+            )
+            for input_column_name, feature_name in zip(
+                self.parameters.input_column_names, self.parameters.feature_names
+            )
+        ]
 
-    def _derive_node_operation_info(
-        self,
-        inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
-        global_state: OperationStructureInfo,
-    ) -> OperationStructure:
-        return inputs[0]
+    def _exclude_source_columns(self) -> List[str]:
+        return [self.parameters.entity_column]
 
 
 class JoinNode(BaseNode):
