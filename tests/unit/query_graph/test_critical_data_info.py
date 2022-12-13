@@ -57,7 +57,7 @@ def test_critical_data_info__valid_imputations(imputations):
         ),
         (
             [
-                # invalid as 0 is imputed to 0 first, then 0 is imputed to 1 (double imputation)
+                # invalid as None is imputed to 0 first, then 0 is imputed to 1 (double imputation)
                 {"type": "missing", "imputed_value": 0},
                 {"type": "disguised", "disguised_values": [-999, -99], "imputed_value": None},
                 {"type": "less_than_or_equal", "end_point": 0, "imputed_value": 1},

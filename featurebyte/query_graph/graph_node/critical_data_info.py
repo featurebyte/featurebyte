@@ -27,13 +27,15 @@ class ConditionOperationField(StrEnum):
     IS_STRING = "is_string"
 
 
+ScalarT = Optional[Union[int, float, str, bool]]
+NumericT = Union[int, float]
 IMPUTE_OPERATIONS = []
 
 
 class BaseImputeOperation(FeatureByteBaseModel):
     """BaseImputeOperation class"""
 
-    imputed_value: Optional[Any]
+    imputed_value: ScalarT
 
     def __init_subclass__(cls, **kwargs: Any):
         if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
@@ -49,13 +51,13 @@ class BaseCondition(FeatureByteBaseModel):
     """Base condition model"""
 
     @abstractmethod
-    def check_condition(self, value: Any) -> bool:
+    def check_condition(self, value: ScalarT) -> bool:
         """
         Check whether the value fulfill this condition
 
         Parameters
         ----------
-        value: Any
+        value: ScalarT
             Value to be checked
 
         Returns
@@ -71,7 +73,7 @@ class MissingValueCondition(BaseCondition):
         ConditionOperationField.MISSING, const=True
     )
 
-    def check_condition(self, value: Any) -> bool:
+    def check_condition(self, value: ScalarT) -> bool:
         return bool(pd.isnull(value))
 
 
@@ -81,9 +83,9 @@ class DisguisedValueCondition(BaseCondition):
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
     )
-    disguised_values: List[Any]
+    disguised_values: List[ScalarT]
 
-    def check_condition(self, value: Any) -> bool:
+    def check_condition(self, value: ScalarT) -> bool:
         return value in self.disguised_values
 
 
@@ -93,9 +95,9 @@ class UnexpectedValueCondition(BaseCondition):
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True
     )
-    expected_values: List[Any]
+    expected_values: List[ScalarT]
 
-    def check_condition(self, value: Any) -> bool:
+    def check_condition(self, value: ScalarT) -> bool:
         return value not in self.expected_values
 
 
@@ -108,9 +110,9 @@ class BoundaryCondition(BaseCondition):
         ConditionOperationField.GREATER_THAN,
         ConditionOperationField.GREATER_THAN_OR_EQUAL,
     ] = Field(allow_mutation=False)
-    end_point: Any
+    end_point: NumericT
 
-    def check_condition(self, value: Any) -> bool:
+    def check_condition(self, value: ScalarT) -> bool:
         operation_map = {
             ConditionOperationField.LESS_THAN: lambda x: x < self.end_point,
             ConditionOperationField.LESS_THAN_OR_EQUAL: lambda x: x <= self.end_point,
@@ -131,7 +133,7 @@ class IsStringCondition(BaseCondition):
         ConditionOperationField.IS_STRING, const=True
     )
 
-    def check_condition(self, value: Any) -> bool:
+    def check_condition(self, value: ScalarT) -> bool:
         return isinstance(value, str)
 
 
