@@ -55,7 +55,7 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
         effective_timestamp_column: str,
         end_timestamp_column: Optional[str] = None,
         surrogate_key_column: Optional[str] = None,
-        current_flag: Optional[str] = None,
+        current_flag_column: Optional[str] = None,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> SlowlyChangingData:
@@ -76,8 +76,8 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             End timestamp column from the given tabular source
         surrogate_key_column: Optional[str]
             Surrogate key column from the given tabular source
-        current_flag: Optional[str]
-            Indicates whether the keys are for the current data point
+        current_flag_column: Optional[str]
+            Column to indicates whether the keys are for the current data point
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
         _id: Optional[ObjectId]
@@ -96,7 +96,7 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             surrogate_key_column=surrogate_key_column,
             effective_timestamp_column=effective_timestamp_column,
             end_timestamp_column=end_timestamp_column,
-            current_flag=current_flag,
+            current_flag_column=current_flag_column,
         )
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
@@ -122,6 +122,6 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             "surrogate_key_column": self.surrogate_key_column,
             "effective_timestamp_column": self.effective_timestamp_column,
             "end_timestamp_column": self.end_timestamp_column,
-            "current_flag": self.current_flag,
+            "current_flag_column": self.current_flag_column,
             "tabular_source": self.tabular_source,
         }

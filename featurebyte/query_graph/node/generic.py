@@ -447,9 +447,9 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
 class SCDBaseParameters(BaseModel):
     """Parameters common to SCD data"""
 
-    effective_timestamp_column: str
-    current_flag: Optional[str]
-    end_timestamp_column: Optional[str]
+    effective_timestamp_column: InColumnStr
+    current_flag_column: Optional[InColumnStr]
+    end_timestamp_column: Optional[InColumnStr]
 
     @root_validator(pre=True)
     @classmethod
@@ -463,7 +463,7 @@ class SCDBaseParameters(BaseModel):
 class SCDJoinParameters(SCDBaseParameters):
     """Parameters for SCD join"""
 
-    left_timestamp_column: str
+    left_timestamp_column: InColumnStr
 
 
 class SCDLookupParameters(SCDBaseParameters):

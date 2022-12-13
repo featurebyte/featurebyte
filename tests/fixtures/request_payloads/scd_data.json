@@ -76,5 +76,5 @@
     "surrogate_key_column": "col_text",
     "effective_timestamp_column": "effective_at",
     "end_timestamp_column": "end_at",
-    "current_flag": "col_text"
+    "current_flag_column": "col_text"
 }

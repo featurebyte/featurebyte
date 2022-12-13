@@ -352,7 +352,7 @@ def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
         surrogate_key_column="col_int",
         effective_timestamp_column="event_timestamp",
         end_timestamp_column="event_timestamp",
-        current_flag="col_char",
+        current_flag_column="col_char",
         _id=snowflake_scd_data_id,
     )
     assert scd_data.node.parameters.id == scd_data.id

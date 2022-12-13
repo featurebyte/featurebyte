@@ -46,7 +46,7 @@ def get_scd_data_model_fixture(snowflake_feature_store, scd_columns_info):
         surrogate_key_column="surrogate_id",
         effective_timestamp_column="effective_at",
         end_timestamp_column="end_at",
-        current_flag="enabled",
+        current_flag_column="enabled",
     )
 
 
@@ -75,12 +75,13 @@ def get_base_expected_scd_data_model(scd_data_model, scd_columns_info):
         "surrogate_key_column": "surrogate_id",
         "effective_timestamp_column": "effective_at",
         "end_timestamp_column": "end_at",
-        "current_flag": "enabled",
+        "current_flag_column": "enabled",
     }
 
 
 def test_scd_data_model(scd_data_model, expected_scd_data_model):
     """Test creation, serialization and deserialization of SCDData"""
+    # rename current_flag to current_flag_column (check the model handle it properly)
     assert scd_data_model.dict() == expected_scd_data_model
     scd_data_json = scd_data_model.json(by_alias=True)
     scd_data_loaded = SCDDataModel.parse_raw(scd_data_json)

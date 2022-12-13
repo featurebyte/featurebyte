@@ -83,7 +83,7 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
         surrogate_key_column="col_int",
         effective_timestamp_column="event_timestamp",
         end_timestamp_column="event_timestamp",
-        current_flag="col_char",
+        current_flag_column="col_char",
         record_creation_date_column="created_at",
     )
 
@@ -97,6 +97,7 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
     assert scd_data._ipython_key_completions_() == set(scd_data.columns)
 
     scd_data_dict["id"] = scd_data.id
+    scd_data_dict["current_flag_column"] = scd_data_dict.pop("current_flag")
     assert scd_data.dict() == scd_data_dict
 
     # user input validation
@@ -108,7 +109,7 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
             surrogate_key_column="col_int",
             effective_timestamp_column="event_timestamp",
             end_timestamp_column="event_timestamp",
-            current_flag="col_char",
+            current_flag_column="col_char",
             record_creation_date_column=345,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
@@ -127,7 +128,7 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table):
             surrogate_key_column="col_int",
             effective_timestamp_column="event_timestamp",
             end_timestamp_column="event_timestamp",
-            current_flag="col_char",
+            current_flag_column="col_char",
             record_creation_date_column="created_at",
         )
     assert 'SlowlyChangingData (scd_data.name: "sf_scd_data") exists in saved record.' in str(
@@ -148,7 +149,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
                 surrogate_key_column="col_int",
                 effective_timestamp_column="event_timestamp",
                 end_timestamp_column="event_timestamp",
-                current_flag="col_char",
+                current_flag_column="col_char",
                 record_creation_date_column="created_at",
             )
 
@@ -164,7 +165,7 @@ def assert_info_helper(scd_data_info):
     assert scd_data_info["surrogate_key_column"] == "col_int"
     assert scd_data_info["effective_timestamp_column"] == "event_timestamp"
     assert scd_data_info["end_timestamp_column"] == "event_timestamp"
-    assert scd_data_info["current_flag"] == "col_char"
+    assert scd_data_info["current_flag_column"] == "col_char"
 
 
 def test_info(saved_scd_data):

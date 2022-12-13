@@ -21,7 +21,7 @@ class SCDDataCreate(DataCreate):
     surrogate_key_column: Optional[StrictStr]
     effective_timestamp_column: StrictStr
     end_timestamp_column: Optional[StrictStr]
-    current_flag: Optional[StrictStr]
+    current_flag_column: Optional[StrictStr]
 
 
 class SCDDataList(PaginationMixin):
@@ -38,4 +38,4 @@ class SCDDataUpdate(DataUpdate):
     """
 
     end_timestamp_column: Optional[StrictStr]
-    current_flag: Optional[StrictStr]
+    current_flag_column: Optional[StrictStr]
