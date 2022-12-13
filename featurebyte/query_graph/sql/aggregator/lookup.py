@@ -26,6 +26,10 @@ class LookupAggregator(Aggregator):
         """
         Update state to account for LookupSpec
 
+        Main work is to group lookup features from the same source together (identified by a
+        combination of source sql and entity column) so that they can be looked up with a single
+        join.
+
         Parameters
         ----------
         spec: LookupSpec
@@ -61,11 +65,15 @@ class LookupAggregator(Aggregator):
 
     def get_aggregation_results(self, point_in_time_column: str) -> list[AggregationResult]:
         _ = point_in_time_column
+
         out = []
+
         for specs in self.grouped_lookup_specs.values():
+
             entity_column = specs[0].entity_column
             serving_name = specs[0].serving_names[0]
             source_expr = specs[0].source_expr
+
             agg_expr = select(
                 alias_(quoted_identifier(entity_column), alias=serving_name, quoted=True),
                 *[
@@ -77,12 +85,14 @@ class LookupAggregator(Aggregator):
                     for spec in specs
                 ],
             ).from_(source_expr.subquery())
+
             result = AggregationResult(
                 expr=agg_expr,
                 column_names=[spec.agg_result_name for spec in specs],
                 join_keys=[serving_name],
             )
             out.append(result)
+
         return out
 
     def get_common_table_expressions(
