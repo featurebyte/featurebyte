@@ -13,7 +13,7 @@ import pandas as pd
 from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode, LookupNode
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
