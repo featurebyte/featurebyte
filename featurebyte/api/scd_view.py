@@ -13,6 +13,7 @@ from featurebyte.api.view import View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
+from featurebyte.query_graph.node.generic import SCDBaseParameters
 
 
 class SlowlyChangingViewColumn(ViewColumn):
@@ -133,6 +134,16 @@ class SlowlyChangingView(View):
     def get_join_column(self) -> str:
         return self.natural_key_column
 
+    def get_common_scd_parameters(self) -> SCDBaseParameters:
+        params = SCDBaseParameters(
+            **{
+                "effective_timestamp_column": self.effective_timestamp_column,
+                "current_flag_column": self.current_flag,
+                "end_timestamp_column": self.end_timestamp_column,
+            }
+        )
+        return params
+
     def get_join_parameters(self, calling_view: View) -> dict[str, Any]:
 
         # When calling_view doesn't have the timestamp_column attribute, it means that it is a
@@ -147,8 +158,14 @@ class SlowlyChangingView(View):
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
-                "effective_timestamp_column": effective_timestamp_column,
-                "current_flag_column": self.current_flag_column,
-                "end_timestamp_column": self.end_timestamp_column,
+                **self.get_common_scd_parameters().dict(),
+            }
+        }
+
+    def get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+        return {
+            "scd_parameters": {
+                "offset": offset,
+                **self.get_common_scd_parameters().dict(),
             }
         }

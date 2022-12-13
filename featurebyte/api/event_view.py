@@ -119,7 +119,7 @@ class EventView(View, GroupByMixin):
         -------
         set[str]
         """
-        return {self.timestamp_column}
+        return super().inherited_columns.union([self.timestamp_column])
 
     @property
     def protected_attributes(self) -> list[str]:

@@ -781,6 +781,16 @@ def order_entity_fixture():
     return entity
 
 
+@pytest.fixture(name="item_entity", scope="session")
+def item_entity_fixture():
+    """
+    Fixture for an Entity "Item"
+    """
+    entity = Entity(name="Item", serving_names=["item_id"])
+    entity.save()
+    return entity
+
+
 def create_transactions_event_data_from_feature_store(
     feature_store, database_name, schema_name, table_name, event_data_name
 ):
@@ -883,6 +893,7 @@ def snowflake_dimension_data_fixture(
     snowflake_session,
     snowflake_feature_store,
     dimension_data_table_name,
+    item_entity,
 ):
     """
     Fixture for a DimensionData in integration tests
@@ -900,6 +911,7 @@ def snowflake_dimension_data_fixture(
     )
     dimension_data.save()
     dimension_data = DimensionData.get(dimension_data_name)
+    dimension_data["item_id"].as_entity(item_entity.name)
     return dimension_data
 
 
