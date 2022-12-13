@@ -60,11 +60,12 @@ class GenericTableData(ConstructNodeMixin, BaseTableData):
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
+            name="temp",
             parameters={
                 "id": None,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
-            }
+            },
         )
 
 
@@ -77,12 +78,13 @@ class EventTableData(ConstructNodeMixin, BaseTableData):
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
+            name="temp",
             parameters={
                 "id": self.id,
                 "timestamp": self.event_timestamp_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
-            }
+            },
         )
 
 
@@ -94,11 +96,12 @@ class ItemTableData(ConstructNodeMixin, BaseTableData):
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
+            name="temp",
             parameters={
                 "id": self.id,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
-            }
+            },
         )
 
 
@@ -110,11 +113,12 @@ class DimensionTableData(ConstructNodeMixin, BaseTableData):
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
+            name="temp",
             parameters={
                 "id": self.id,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
-            }
+            },
         )
 
 
@@ -126,11 +130,12 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
+            name="temp",
             parameters={
                 "id": self.id,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
-            }
+            },
         )
 
 

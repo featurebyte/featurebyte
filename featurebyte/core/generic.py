@@ -32,8 +32,8 @@ class QueryObject(FeatureByteBaseModel):
     """
 
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
-    node_name: str
-    row_index_lineage: Tuple[StrictStr, ...]
+    node_name: str = Field(default_factory=str)
+    row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple)
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 

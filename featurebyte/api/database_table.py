@@ -12,15 +12,15 @@ from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TableDetails
+from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.model.table import ConstructNodeMixin, GenericTableData
 
 
@@ -39,23 +39,6 @@ class BaseTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
             "node_name": {"exclude": True},
             "row_index_lineage": {"exclude": True},
         }
-
-    @classmethod
-    def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """
-        Construct additional parameter mappings to input node during node insertion
-
-        Parameters
-        ----------
-        values: dict[str, Any]
-            Dictionary contains parameter name to value mapping for the DatabaseTable object
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        _ = values
-        return {"type": TableDataType.GENERIC}
 
     @root_validator(pre=True)
     @classmethod
@@ -120,22 +103,18 @@ class BaseTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
             ]
             values["columns_info"] = columns_info
 
-        node = GlobalQueryGraph().add_operation(
-            node_type=NodeType.INPUT,
-            node_params={
-                "columns": [col.name for col in columns_info],
-                "table_details": table_details.dict(),
-                "feature_store_details": feature_store.dict(
-                    include={"type": True, "details": True}
-                ),
-                **cls._get_other_input_node_parameters(values),
-            },
-            node_output_type=NodeOutputType.FRAME,
+        return values
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        node = GlobalQueryGraph().add_node(
+            self.construct_input_node(
+                feature_store_details=FeatureStoreDetails(**self.feature_store.dict())
+            ),
             input_nodes=[],
         )
-        values["node_name"] = node.name
-        values["row_index_lineage"] = (node.name,)
-        return values
+        self.node_name = node.name
+        self.row_index_lineage = (node.name,)
 
 
 class DatabaseTable(GenericTableData, BaseTableData):

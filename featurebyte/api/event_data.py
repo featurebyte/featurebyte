@@ -12,7 +12,6 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import display_html_in_notebook
-from featurebyte.enum import TableDataType
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
@@ -33,10 +32,6 @@ class EventData(EventDataModel, DataApiObject):
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
 
-    def _get_create_payload(self) -> dict[str, Any]:
-        data = EventDataCreate(**self.json_dict())
-        return data.json_dict()
-
     @property
     def timestamp_column(self) -> Optional[str]:
         """
@@ -47,15 +42,6 @@ class EventData(EventDataModel, DataApiObject):
         Optional[str]
         """
         return self.event_timestamp_column
-
-    @classmethod
-    def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # the key `_id` is used during deserialization, the key `id` is used during setattr
-        return {
-            "type": TableDataType.EVENT_DATA,
-            "timestamp": values["event_timestamp_column"],
-            "id": values.get("_id", values.get("id")),
-        }
 
     @classmethod
     @typechecked

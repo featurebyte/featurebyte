@@ -76,6 +76,11 @@ class DataApiObject(BaseTableData, SavableApiObject, GetAttrMixin):
         ("columns_info.entity_id", Entity, "entities"),
     ]
 
+    def _get_create_payload(self) -> dict[str, Any]:
+        assert self._create_schema_class is not None
+        data = self._create_schema_class(**self.json_dict())
+        return data.json_dict()
+
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         table_data = parse_obj_as(SpecificTableData, self.dict(by_alias=True))  # type: ignore
         input_node = table_data.construct_input_node(feature_store_details=feature_store_details)
