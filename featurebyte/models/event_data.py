@@ -3,16 +3,17 @@ This module contains EventData related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from datetime import datetime
 
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
+from featurebyte.query_graph.model.table import EventTableData
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -75,7 +76,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     setting: Optional[FeatureJobSetting]
 
 
-class EventDataModel(DataModel):
+class EventDataModel(EventTableData, DataModel):
     """
     Model for EventData entity
 
@@ -101,9 +102,7 @@ class EventDataModel(DataModel):
         Datetime when the EventData object was last updated
     """
 
-    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
     event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
-    event_timestamp_column: StrictStr
     default_feature_job_setting: Optional[FeatureJobSetting]
 
     @validator("event_timestamp_column", "record_creation_date_column")

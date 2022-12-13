@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from abc import abstractmethod
 
+from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
@@ -73,7 +74,7 @@ class EventTableData(ConstructNodeMixin, BaseTableData):
 
     type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
     event_timestamp_column: StrictStr
-    id: Optional[PydanticObjectId] = Field(default=None)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -90,7 +91,7 @@ class ItemTableData(ConstructNodeMixin, BaseTableData):
     """ItemTableData class"""
 
     type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
-    id: Optional[PydanticObjectId] = Field(default=None)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -106,7 +107,7 @@ class DimensionTableData(ConstructNodeMixin, BaseTableData):
     """DimensionTableData class"""
 
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
-    id: Optional[PydanticObjectId] = Field(default=None)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -121,8 +122,8 @@ class DimensionTableData(ConstructNodeMixin, BaseTableData):
 class SCDTableData(ConstructNodeMixin, BaseTableData):
     """SCDTableData class"""
 
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
-    id: Optional[PydanticObjectId] = Field(default=None)
+    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(

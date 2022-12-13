@@ -3,16 +3,17 @@ This module contains ItemData related models
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
-from pydantic import Field, StrictStr, validator
+from pydantic import StrictStr, validator
 
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
+from featurebyte.query_graph.model.table import ItemTableData
 
 
-class ItemDataModel(DataModel):
+class ItemDataModel(ItemTableData, DataModel):
     """
     Model for ItemData entity
 
@@ -38,7 +39,6 @@ class ItemDataModel(DataModel):
         Datetime when the ItemData object was last updated
     """
 
-    type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
     event_id_column: StrictStr
     item_id_column: StrictStr
     event_data_id: PydanticObjectId

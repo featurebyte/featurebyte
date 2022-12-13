@@ -3,15 +3,16 @@ This module contains DimensionData related models
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
-from pydantic import Field, StrictStr, validator
+from pydantic import StrictStr, validator
 
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
+from featurebyte.query_graph.model.table import DimensionTableData
 
 
-class DimensionDataModel(DataModel):
+class DimensionDataModel(DimensionTableData, DataModel):
     """
     Model for DimensionData entity
 
@@ -19,7 +20,6 @@ class DimensionDataModel(DataModel):
         The primary key of the dimension data table in the DWH
     """
 
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     dimension_data_id_column: StrictStr
 
     @validator("record_creation_date_column")
