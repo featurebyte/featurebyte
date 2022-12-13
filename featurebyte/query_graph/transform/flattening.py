@@ -5,7 +5,7 @@ from typing import Dict
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer

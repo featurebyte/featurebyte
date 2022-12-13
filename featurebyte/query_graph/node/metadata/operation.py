@@ -371,6 +371,7 @@ class GroupOperationStructure(BaseFrozenModel):
     derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
     aggregations: List[AggregationColumn] = Field(default_factory=list)
     post_aggregation: Optional[PostAggregationColumn]
+    is_time_based: bool = Field(default=False)
 
     @property
     def tabular_data_ids(self) -> List[PydanticObjectId]:
@@ -392,6 +393,7 @@ class OperationStructure(BaseFrozenModel):
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     output_type: NodeOutputType
     output_category: NodeOutputCategory
+    is_time_based: bool = Field(default=False)
 
     @property
     def all_node_names(self) -> Set[str]:
@@ -472,6 +474,7 @@ class OperationStructure(BaseFrozenModel):
             derived_columns=derived_columns,
             aggregations=aggregations,
             post_aggregation=next(iter(post_aggregations), None),
+            is_time_based=self.is_time_based,
         )
 
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List
 
 if TYPE_CHECKING:
-    from featurebyte.query_graph.model import QueryGraphModel
+    from featurebyte.query_graph.model.graph import QueryGraphModel
     from featurebyte.query_graph.node import Node
 
 

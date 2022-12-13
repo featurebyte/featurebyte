@@ -10,7 +10,7 @@ from sqlglot.expressions import select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import Aggregator

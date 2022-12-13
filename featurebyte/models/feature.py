@@ -18,9 +18,9 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
-from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 

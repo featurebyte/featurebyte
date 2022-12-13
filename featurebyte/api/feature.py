@@ -30,8 +30,9 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
-from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.table import TabularSource
 from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
@@ -262,6 +263,21 @@ class Feature(
         FeatureReadiness
         """
         return self.feature_namespace.readiness
+
+    @property
+    def is_time_based(self) -> bool:
+        """
+        Whether the feature is a time based one.
+
+        We check for this by looking to see by looking at the operation structure to see if it's time-based.
+
+        Returns
+        -------
+        bool
+            True if the feature is time based, False otherwise.
+        """
+        operation_structure = self.extract_operation_structure()
+        return operation_structure.is_time_based
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """

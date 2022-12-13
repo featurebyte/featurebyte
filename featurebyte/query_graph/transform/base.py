@@ -5,7 +5,7 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 from abc import abstractmethod
 
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 
 OutputT = TypeVar("OutputT")

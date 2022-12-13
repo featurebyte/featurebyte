@@ -154,6 +154,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "is_time_based": False,
     }
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
@@ -216,6 +217,7 @@ def nested_input_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "is_time_based": False,
     }
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=add_node)
@@ -277,6 +279,7 @@ def nested_output_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "is_time_based": False,
     }
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
@@ -358,6 +361,7 @@ def deep_nested_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "is_time_based": False,
     }
     # check graph pruning
     pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
@@ -500,6 +504,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         ],
         "output_category": "feature",
         "output_type": "series",
+        "is_time_based": True,
     }
 
     # check pruned graph
@@ -590,6 +595,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "is_time_based": False,
     }
     # TODO: [DEV-868] Decouple AssignNode from pruning logic
     # current behaviour is not correct as we currently only support pruning ASSIGN node.

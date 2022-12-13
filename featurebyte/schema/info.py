@@ -19,7 +19,8 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
-from featurebyte.models.feature_store import DatabaseDetails, DataStatus, TableDetails
+from featurebyte.models.feature_store import DatabaseDetails, DataStatus
+from featurebyte.query_graph.model.table import TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature import FeatureBriefInfoList, ReadinessComparison, VersionComparison
