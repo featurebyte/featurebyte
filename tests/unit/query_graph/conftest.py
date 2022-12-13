@@ -153,7 +153,7 @@ def dimension_data_input_details_fixture(input_details):
 
 @pytest.fixture(name="dimension_data_input_node")
 def dimension_data_input_node_fixture(global_graph, dimension_data_input_details):
-    """Fixture of an SlowlyChangingDimension input node"""
+    """Fixture of a DimensionData input node"""
     node_params = {
         "type": "dimension_data",
         "columns": ["cust_id", "cust_value_1", "cust_value_2"],
