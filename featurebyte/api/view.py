@@ -31,8 +31,8 @@ from featurebyte.core.util import append_to_lineage
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy

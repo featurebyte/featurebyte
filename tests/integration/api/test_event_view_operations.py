@@ -12,7 +12,7 @@ import pytest
 from featurebyte import AggFunc, EventData, EventView, FeatureList, SourceType, to_timedelta
 from featurebyte.config import Configurations
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.feature_store import ColumnSpec
+from featurebyte.query_graph.model.column_info import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
 
 

@@ -12,9 +12,10 @@ from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.table import TabularSource
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 

@@ -12,7 +12,7 @@ from sqlglot import expressions
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode

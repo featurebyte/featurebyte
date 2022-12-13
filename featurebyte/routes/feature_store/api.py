@@ -10,8 +10,9 @@ from http import HTTPStatus
 from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.query_graph.model.column_info import ColumnSpec
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
     NameQuery,

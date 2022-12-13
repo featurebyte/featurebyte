@@ -4,7 +4,7 @@ This module contains graph node class.
 from typing import Any, Dict, List, Tuple, cast
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
 
