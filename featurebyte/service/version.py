@@ -15,7 +15,7 @@ from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVers
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model import QueryGraphModel
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate

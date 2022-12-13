@@ -17,7 +17,7 @@ from featurebyte.api.join_utils import (
 )
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import ColumnInfo
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 def test_filter_join_key_from_column():

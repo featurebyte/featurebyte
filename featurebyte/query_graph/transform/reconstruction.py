@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import TableDataType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model import GraphNodeNameMap, QueryGraphModel
+from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode

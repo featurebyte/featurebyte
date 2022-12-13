@@ -5,8 +5,9 @@ We split this into a separate service, as these typically require a session obje
 """
 from typing import Any, List
 
-from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.model.column_info import ColumnSpec
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.session_manager import SessionManagerService
 

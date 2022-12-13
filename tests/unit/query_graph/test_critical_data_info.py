@@ -4,7 +4,7 @@ Tests for featurebyte.query_graph.graph_node.critical_data_info
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.query_graph.graph_node.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 
 
 @pytest.mark.parametrize(

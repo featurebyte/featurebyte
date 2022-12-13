@@ -18,8 +18,8 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 

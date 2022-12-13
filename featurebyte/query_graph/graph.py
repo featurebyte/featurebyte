@@ -10,7 +10,7 @@ from pydantic import Field
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model import Edge, GraphNodeNameMap, QueryGraphModel
+from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer

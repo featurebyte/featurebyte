@@ -14,14 +14,10 @@ from featurebyte.core.frame import BaseFrame
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
-from featurebyte.models.feature_store import (
-    ColumnInfo,
-    DatabaseTableModel,
-    FeatureStoreModel,
-    TableDetails,
-)
+from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 class DatabaseTable(DatabaseTableModel, BaseFrame):

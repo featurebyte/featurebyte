@@ -15,6 +15,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -111,31 +112,6 @@ class DatabaseTableModel(FeatureByteBaseModel):
     """Model for a database table used in a feature store"""
 
     tabular_source: TabularSource
-
-
-class ColumnSpec(FeatureByteBaseModel):
-    """
-    Schema for columns retrieval
-    """
-
-    name: StrictStr
-    dtype: DBVarType
-
-
-class ColumnInfo(ColumnSpec):
-    """
-    ColumnInfo for storing column information
-
-    name: str
-        Column name
-    dtype: DBVarType
-        Variable type of the column
-    entity_id: Optional[PydanticObjectId]
-        Entity id associated with the column
-    """
-
-    entity_id: Optional[PydanticObjectId] = Field(default=None)
-    semantic_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class DataStatus(OrderedStrEnum):

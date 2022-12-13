@@ -14,9 +14,9 @@ from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
-from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 class BaseFrame(QueryObject, SampleMixin):

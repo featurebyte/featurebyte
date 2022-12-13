@@ -11,9 +11,9 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.tabular_data import DataUpdate
 from featurebyte.service.data_update import DataDocumentService, DataUpdateService
