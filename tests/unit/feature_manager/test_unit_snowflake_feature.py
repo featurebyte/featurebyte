@@ -51,7 +51,7 @@ async def test_online_enable(
 
     mock_schedule_online_tiles.assert_called_once()
 
-    assert mock_execute_query.call_count == 2
+    assert mock_execute_query.call_count == 4
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
