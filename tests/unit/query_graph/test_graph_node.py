@@ -118,8 +118,8 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
     assert graph_node.parameters.output_node_name == "add_1"
 
     # insert graph node into the graph & check operation structure output
-    inserted_graph_node = graph.add_graph_node(
-        graph_node=graph_node, input_nodes=[proj_int_node, proj_float_node]
+    inserted_graph_node = graph.add_node(
+        node=graph_node, input_nodes=[proj_int_node, proj_float_node]
     )
     operation_structure = graph.extract_operation_structure(node=inserted_graph_node)
     # internal node names should not be included (node_names: add_1)
@@ -183,7 +183,7 @@ def nested_input_graph_fixture(input_node_params):
         input_nodes=[graph_node.output_node],  # graph_node.output_node: nested input node
     )
     assert graph_node.output_node == project_node
-    inserted_graph_node = graph.add_graph_node(graph_node=graph_node, input_nodes=[])
+    inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[])
     add_node = graph.add_operation(
         node_type=NodeType.ADD,
         node_params={"value": 10},
@@ -251,7 +251,7 @@ def nested_output_graph_fixture(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node.output_node],  # graph_node.output_node: nested project node
     )
-    inserted_graph_node = graph.add_graph_node(graph_node=graph_node, input_nodes=[input_node])
+    inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[input_node])
     assert graph.edges == [{"source": "input_1", "target": "graph_1"}]
 
     # internal node names should not be included (node_names: project_1, add_1)
@@ -327,7 +327,7 @@ def deep_nested_graph_fixture(input_node_params):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[graph_node.output_node],  # graph_node.output_node: nested project node
     )
-    inserted_graph_node = graph.add_graph_node(graph_node, input_nodes=[])
+    inserted_graph_node = graph.add_node(graph_node, input_nodes=[])
     assert graph.edges == []
     inserted_inner_graph = graph.nodes[0].parameters.graph
     inserted_deeper_graph = inserted_inner_graph.nodes[0].parameters.graph
@@ -444,7 +444,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[node_assign],
         )
-        return query_graph.add_graph_node(graph_node, input_nodes)
+        return query_graph.add_node(graph_node, input_nodes)
 
     # construct a graph with a nested graph
     # [input] -> [graph] -> [project]
@@ -549,8 +549,8 @@ def test_graph_node__redundant_graph_node(input_node_params):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=input_nodes,
         )
-        return query_graph.add_graph_node(
-            graph_node=node_graph,
+        return query_graph.add_node(
+            node=node_graph,
             input_nodes=input_nodes,
         )
 
