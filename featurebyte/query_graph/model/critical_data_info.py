@@ -1,7 +1,7 @@
 """
 This module contains critical data info related models.
 """
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
@@ -83,7 +83,7 @@ class DisguisedValueCondition(BaseCondition):
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
     )
-    disguised_values: List[ScalarT]
+    disguised_values: Sequence[ScalarT]
 
     def check_condition(self, value: ScalarT) -> bool:
         return value in self.disguised_values
@@ -95,7 +95,7 @@ class UnexpectedValueCondition(BaseCondition):
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True
     )
-    expected_values: List[ScalarT]
+    expected_values: Sequence[ScalarT]
 
     def check_condition(self, value: ScalarT) -> bool:
         return value not in self.expected_values
