@@ -18,7 +18,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import DatabaseTableModel, TableDetails
+from featurebyte.query_graph.model.common_table import DatabaseTableModel, TableDetails
 
 
 class DatabaseTable(DatabaseTableModel, BaseFrame):

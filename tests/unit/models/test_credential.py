@@ -5,8 +5,10 @@ import json
 
 import pytest
 
+from featurebyte import SnowflakeDetails
+from featurebyte.enum import SourceType
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
-from featurebyte.models.feature_store import FeatureStoreModel, SnowflakeDetails, SourceType
+from featurebyte.models.feature_store import FeatureStoreModel
 
 
 @pytest.fixture(name="username_password_credential")

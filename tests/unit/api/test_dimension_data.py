@@ -1,17 +1,14 @@
 """
 Test dimension data API object
 """
-import datetime
 from unittest.mock import patch
 
 import pytest
-from bson import ObjectId
 
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.query_graph.model.table import TableDetails, TabularSource
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 

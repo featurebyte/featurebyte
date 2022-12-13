@@ -11,11 +11,12 @@ from featurebyte.api.view import View, ViewColumn
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import FeatureStoreModel, TestDatabaseDetails
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import TableDetails, TabularSource
+from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
+from featurebyte.query_graph.model.feature_store import TestDatabaseDetails
 from tests.util.helper import get_node
 
 

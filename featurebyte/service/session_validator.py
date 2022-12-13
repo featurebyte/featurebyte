@@ -7,8 +7,8 @@ from featurebyte.enum import SourceType, StrEnum
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import DatabaseDetails
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.model.feature_store import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager

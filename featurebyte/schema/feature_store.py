@@ -11,8 +11,9 @@ from pydantic import Field, StrictStr, root_validator
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.credential import Credential
-from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.feature_store import DatabaseDetails
 from featurebyte.schema.common.base import PaginationMixin
 
 

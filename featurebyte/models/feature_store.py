@@ -3,64 +3,19 @@ This module contains DatabaseSource related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, List, Optional
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType
+from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.query_graph.model.table import BaseDataModel
-
-
-class BaseDatabaseDetails(FeatureByteBaseModel):
-    """Model for data source information"""
-
-    is_local_source: ClassVar[bool] = False
-
-
-class SnowflakeDetails(BaseDatabaseDetails):
-    """Model for Snowflake data source information"""
-
-    account: StrictStr
-    warehouse: StrictStr
-    database: StrictStr
-    sf_schema: StrictStr  # schema shadows a BaseModel attribute
-
-
-class SQLiteDetails(BaseDatabaseDetails):
-    """Model for SQLite data source information"""
-
-    filename: StrictStr
-    is_local_source: ClassVar[bool] = True
-
-
-class DatabricksDetails(BaseDatabaseDetails):
-    """Model for Databricks data source information"""
-
-    server_hostname: StrictStr
-    http_path: StrictStr
-    featurebyte_catalog: StrictStr
-    featurebyte_schema: StrictStr
-
-
-class TestDatabaseDetails(BaseDatabaseDetails):
-    """Model for a no-op mock database details for use in tests"""
-
-
-DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails, DatabricksDetails, TestDatabaseDetails]
-
-
-class FeatureStoreDetails(FeatureByteBaseModel):
-    """FeatureStoreDetail"""
-
-    type: SourceType
-    details: DatabaseDetails
+from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 
 
 class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
@@ -101,7 +56,7 @@ class DataStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class DataModel(BaseDataModel, FeatureByteBaseDocumentModel):
+class DataModel(BaseTableData, FeatureByteBaseDocumentModel):
     """
     DataModel schema
 

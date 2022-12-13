@@ -10,7 +10,7 @@ import pytest
 from featurebyte import FeatureStore, SourceType
 from featurebyte.exception import DuplicatedRecordException, FeatureStoreSchemaCollisionError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import DatabaseDetails
+from featurebyte.query_graph.model.feature_store import DatabaseDetails
 from featurebyte.service.session_validator import SessionValidatorService
 
 
