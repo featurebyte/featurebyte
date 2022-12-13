@@ -513,7 +513,7 @@ class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=name_to_column.get(input_column_name),
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
-                filter=False,
+                filter=any(col.filter for col in columns),
             )
             for input_column_name, feature_name in zip(
                 self.parameters.input_column_names, self.parameters.feature_names
