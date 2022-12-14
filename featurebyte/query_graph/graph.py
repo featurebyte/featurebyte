@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, Union
 
 from collections import defaultdict
 
@@ -128,14 +128,14 @@ class QueryGraph(QueryGraphModel):
         """
         return GraphFlatteningTransformer(graph=self).transform()
 
-    def add_graph_node(self, graph_node: GraphNode, input_nodes: List[Node]) -> Node:
+    def add_node(self, node: Union[Node, GraphNode], input_nodes: List[Node]) -> Node:
         """
         Add graph node to the graph
 
         Parameters
         ----------
-        graph_node: GraphNode
-            Graph node
+        node: Union[Node, GraphNode]
+            Node to be inserted into the graph
         input_nodes: List[Node]
             Input nodes to the graph node
 
@@ -143,10 +143,15 @@ class QueryGraph(QueryGraphModel):
         -------
         Node
         """
+        if isinstance(node, GraphNode):
+            node_output_type = node.output_node.output_type
+        else:
+            node_output_type = node.output_type
+
         return self.add_operation(
-            node_type=graph_node.type,
-            node_params=graph_node.parameters.dict(),
-            node_output_type=graph_node.output_node.output_type,
+            node_type=node.type,
+            node_params=node.parameters.dict(),
+            node_output_type=node_output_type,
             input_nodes=input_nodes,
         )
 

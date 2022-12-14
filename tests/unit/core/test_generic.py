@@ -7,9 +7,9 @@ import copy
 
 import pytest
 
+from featurebyte import SnowflakeDetails
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.generic import QueryObject
-from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 

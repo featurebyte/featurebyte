@@ -11,7 +11,6 @@ from typeguard import typechecked
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import TableDataType
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
@@ -29,20 +28,15 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
     _update_schema_class = SCDDataUpdate
     _create_schema_class = SCDDataCreate
 
-    def _get_create_payload(self) -> dict[str, Any]:
-        data = SCDDataCreate(**self.json_dict())
-        return data.json_dict()
-
-    @classmethod
-    def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # the key `_id` is used during deserialization, the key `id` is used during setattr
-        return {
-            "type": TableDataType.SCD_DATA,
-            "id": values.get("_id", values.get("id")),
-        }
-
     @property
     def timestamp_column(self) -> Optional[str]:
+        """
+        Effective timestamp column
+
+        Returns
+        -------
+        Optional[str]
+        """
         return self.effective_timestamp_column
 
     @classmethod

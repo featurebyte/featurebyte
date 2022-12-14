@@ -3,9 +3,9 @@ Test for InfoService
 """
 import pytest
 
+from featurebyte import SnowflakeDetails
 from featurebyte.models.dimension_data import DimensionDataModel
-from featurebyte.models.feature_store import SnowflakeDetails
-from featurebyte.query_graph.model.table import TableDetails
+from featurebyte.query_graph.model.common_table import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
     EntityBriefInfo,

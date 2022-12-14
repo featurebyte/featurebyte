@@ -47,7 +47,7 @@ from featurebyte.models.feature_list import (
     FeatureListStatus,
     FeatureReadinessDistribution,
 )
-from featurebyte.query_graph.model.table import TabularSource
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,

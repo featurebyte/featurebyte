@@ -17,7 +17,7 @@ from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc, SourceType
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.feature_store import DatabricksDetails, SnowflakeDetails
+from featurebyte.query_graph.model.feature_store import DatabricksDetails, SnowflakeDetails
 
 
 def get_version() -> str:

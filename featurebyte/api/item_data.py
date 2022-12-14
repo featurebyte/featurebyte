@@ -13,7 +13,6 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.item_data import ItemDataModel
@@ -38,14 +37,6 @@ class ItemData(ItemDataModel, DataApiObject):
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         exclude=True, allow_mutation=False
     )
-
-    @classmethod
-    def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # the key `_id` is used during deserialization, the key `id` is used during setattr
-        return {
-            "type": TableDataType.ITEM_DATA,
-            "id": values.get("_id", values.get("id")),
-        }
 
     @classmethod
     @typechecked

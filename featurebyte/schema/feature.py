@@ -15,7 +15,7 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, Vers
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.table import TabularSource
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 
