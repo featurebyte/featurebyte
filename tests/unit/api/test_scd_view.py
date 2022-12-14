@@ -136,3 +136,14 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
             },
         },
     }
+
+
+def test_scd_view_as_feature__invalid_duration(snowflake_scd_data, cust_id_entity):
+    """
+    Test SlowlyChangingView as_feature configures additional parameters
+    """
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    with pytest.raises(ValueError) as exc:
+        scd_view["col_float"].as_feature("FloatFeature", offset="something")
+    assert "Failed to parse the offset parameter" in str(exc.value)

@@ -38,6 +38,7 @@ from featurebyte.api.join_utils import (
     join_tabular_data_ids,
     update_column_lineage_map_with_suffix,
 )
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -116,7 +117,7 @@ class ViewColumn(Series, SampleMixin):
         if view is None:
             raise ValueError(
                 "as_feature is only supported for named columns in the View object. Consider"
-                " assigning the feature to the View before calling as_feature()"
+                " assigning the feature to the View before calling as_feature()."
             )
         input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
         view = cast(View, view[[input_column_name]])
@@ -330,6 +331,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         Returns any additional query node parameters for as_feature operation (LookupNode)
 
+        This is a no-op unless the lookup is time-aware (currently only available for
+        SlowlyChangingView)
+
         Parameters
         ----------
         offset : str
@@ -339,7 +343,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         dict[str, Any]
         """
-        _ = offset
+        if offset is not None:
+            logger.warning("offset parameter is provided but has no effect")
         return {}
 
     def _update_metadata(
@@ -641,6 +646,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 f"Length of feature_names should be {len(input_column_names)}, got"
                 f" {len(feature_names)}. Consider selecting columns before calling as_features."
             )
+
+        # Validate offset is valid if provided
+        if offset is not None:
+            try:
+                parse_duration_string(offset)
+            except ValueError as e:
+                raise ValueError(f"Failed to parse the offset parameter. Error: {str(e)}")
 
         # Get entity_column
         entity_column = self.get_join_column()

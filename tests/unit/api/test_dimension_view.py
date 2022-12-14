@@ -70,14 +70,13 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view):
 
 @pytest.mark.parametrize("include_entity", [False, True])
 def test_as_features__primary_key_not_required(
-    snowflake_dimension_data, cust_id_entity, include_entity
+    snowflake_dimension_view_with_entity, cust_id_entity, include_entity
 ):
     """
     Test calling as_features() on a subset with / without entity column works correctly
     """
     # Set entity
-    snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    view = snowflake_dimension_view_with_entity
 
     # Select columns for as_features
     columns = ["col_float", "col_char"]
@@ -118,6 +117,17 @@ def test_as_features__primary_key_not_required(
             "scd_parameters": None,
         },
     }
+
+
+def test_as_features__offset_provided_but_ignored(
+    snowflake_dimension_view_with_entity, cust_id_entity
+):
+    """
+    Test as_features() when offset is provided but ignored
+    """
+    # offset ignored but should not have error
+    view = snowflake_dimension_view_with_entity
+    _ = view[["col_float", "col_char"]].as_features(["col_float", "col_char"], offset="7d")
 
 
 def test_as_feature__not_supported(snowflake_dimension_view_with_entity):
