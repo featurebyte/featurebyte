@@ -143,11 +143,9 @@ class SlowlyChangingView(View):
         SCDBaseParameters
         """
         params = SCDBaseParameters(
-            **{
-                "effective_timestamp_column": self.effective_timestamp_column,
-                "current_flag_column": self.current_flag_column,
-                "end_timestamp_column": self.end_timestamp_column,
-            }
+            effective_timestamp_column=self.effective_timestamp_column,
+            current_flag_column=self.current_flag_column,
+            end_timestamp_column=self.end_timestamp_column,
         )
         return params
 
