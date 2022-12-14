@@ -2,7 +2,7 @@
 This module contains unary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Literal
+from typing import Literal, Sequence, Union
 
 from pydantic import BaseModel, Field
 
@@ -70,3 +70,21 @@ class CastNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.CAST] = Field(NodeType.CAST, const=True)
     parameters: Parameters
+
+
+class IsInNode(BaseSeriesOutputNode):
+    """IsInNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        values: Sequence[Union[bool, int, float, str]]
+
+    type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
+    parameters: Parameters
+
+
+class IsStringNode(BaseSeriesOutputNode):
+    """IsStringNode class"""
+
+    type: Literal[NodeType.IS_STRING] = Field(NodeType.IS_STRING, const=True)

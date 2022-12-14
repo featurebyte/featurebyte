@@ -54,6 +54,8 @@ class NodeType(StrEnum):
     ALIAS = "alias"
     IS_NULL = "is_null"
     CAST = "cast"
+    IS_IN = "is_in"  # not-supported
+    IS_STRING = "is_string"  # not-supported
 
     # string operations
     LENGTH = "length"

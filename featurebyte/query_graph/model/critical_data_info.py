@@ -12,6 +12,11 @@ from pydantic import Field, validator
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidImputationsError
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+
+if TYPE_CHECKING:
+    from featurebyte.query_graph.graph_node.base import GraphNode
+    from featurebyte.query_graph.node import Node
 
 
 class ConditionOperationField(StrEnum):
@@ -46,6 +51,50 @@ class BaseImputeOperation(FeatureByteBaseModel):
         class_name = self.__class__.__name__
         return f"{class_name}({self.dict()})"
 
+    def add_impute_operation(
+        self, graph_node: "GraphNode", input_node: "Node", condition_node: "Node"
+    ) -> "Node":
+        """
+        Add impute operation to the graph node
+
+        Parameters
+        ----------
+        graph_node: GraphNode
+            Nested graph node
+        input_node: Node
+            Input node to the query graph
+        condition_node: Node
+            Conditional node to the graph.
+
+        Returns
+        -------
+        Node
+        """
+        graph_node.add_operation(
+            node_type=NodeType.CONDITIONAL,
+            node_params={"value": self.imputed_value},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node, condition_node],
+        )
+        return graph_node.output_node
+
+    @abstractmethod
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        """
+        Construct a node that generate conditional filtering column
+
+        Parameters
+        ----------
+        graph_node: GraphNode
+            Graph node
+        input_node: Node
+            Input (series) node
+
+        Returns
+        -------
+        Node
+        """
+
 
 class BaseCondition(FeatureByteBaseModel):
     """Base condition model"""
@@ -65,6 +114,23 @@ class BaseCondition(FeatureByteBaseModel):
         bool
         """
 
+    @abstractmethod
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        """
+        Construct a node that generate conditional filtering column
+
+        Parameters
+        ----------
+        graph_node: GraphNode
+            Graph node
+        input_node: Node
+            Input (series) node
+
+        Returns
+        -------
+        Node
+        """
+
 
 class MissingValueCondition(BaseCondition):
     """Missing value condition"""
@@ -75,6 +141,14 @@ class MissingValueCondition(BaseCondition):
 
     def check_condition(self, value: ScalarT) -> bool:
         return bool(pd.isnull(value))
+
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        return graph_node.add_operation(
+            node_type=NodeType.IS_NULL,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
 
 
 class DisguisedValueCondition(BaseCondition):
@@ -88,6 +162,14 @@ class DisguisedValueCondition(BaseCondition):
     def check_condition(self, value: ScalarT) -> bool:
         return value in self.disguised_values
 
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        return graph_node.add_operation(
+            node_type=NodeType.IS_IN,
+            node_params={"values": self.disguised_values},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+
 
 class UnexpectedValueCondition(BaseCondition):
     """Unexpected value condition"""
@@ -99,6 +181,20 @@ class UnexpectedValueCondition(BaseCondition):
 
     def check_condition(self, value: ScalarT) -> bool:
         return value not in self.expected_values
+
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        isin_node = graph_node.add_operation(
+            node_type=NodeType.IS_IN,
+            node_params={"values": self.expected_values},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+        return graph_node.add_operation(
+            node_type=NodeType.NOT,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[isin_node],
+        )
 
 
 class BoundaryCondition(BaseCondition):
@@ -125,6 +221,20 @@ class BoundaryCondition(BaseCondition):
             # TypeError exception implies that two value are incomparable
             return False
 
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        node_type_map = {
+            ConditionOperationField.LESS_THAN: NodeType.LT,
+            ConditionOperationField.LESS_THAN_OR_EQUAL: NodeType.LE,
+            ConditionOperationField.GREATER_THAN: NodeType.GT,
+            ConditionOperationField.GREATER_THAN_OR_EQUAL: NodeType.GE,
+        }
+        return graph_node.add_operation(
+            node_type=node_type_map[self.type],
+            node_params={"value": self.end_point},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+
 
 class IsStringCondition(BaseCondition):
     """Is string condition"""
@@ -136,24 +246,32 @@ class IsStringCondition(BaseCondition):
     def check_condition(self, value: ScalarT) -> bool:
         return isinstance(value, str)
 
+    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+        return graph_node.add_operation(
+            node_type=NodeType.IS_STRING,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
 
-class MissingValueImputation(BaseImputeOperation, MissingValueCondition):
+
+class MissingValueImputation(MissingValueCondition, BaseImputeOperation):
     """Impute missing value"""
 
 
-class DisguisedValueImputation(BaseImputeOperation, DisguisedValueCondition):
+class DisguisedValueImputation(DisguisedValueCondition, BaseImputeOperation):
     """Impute disguised values"""
 
 
-class UnexpectedValueImputation(BaseImputeOperation, UnexpectedValueCondition):
+class UnexpectedValueImputation(UnexpectedValueCondition, BaseImputeOperation):
     """Impute unexpected values"""
 
 
-class ValueBeyondEndpointImputation(BaseImputeOperation, BoundaryCondition):
+class ValueBeyondEndpointImputation(BoundaryCondition, BaseImputeOperation):
     """Impute values by specifying boundary"""
 
 
-class StringValueImputation(BaseImputeOperation, IsStringCondition):
+class StringValueImputation(IsStringCondition, BaseImputeOperation):
     """Impute is string value"""
 
 
