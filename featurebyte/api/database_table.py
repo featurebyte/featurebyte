@@ -31,6 +31,7 @@ class BaseTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
 
     node_name: str = Field(default_factory=str)
     row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple)
+    feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
     class Config:
         """
@@ -124,5 +125,3 @@ class DatabaseTable(GenericTableData, BaseTableData):
     """
     DatabaseTable class to preview table
     """
-
-    feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
