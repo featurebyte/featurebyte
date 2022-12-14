@@ -134,7 +134,7 @@ class SlowlyChangingView(View):
     def get_join_column(self) -> str:
         return self.natural_key_column
 
-    def get_common_scd_parameters(self) -> SCDBaseParameters:
+    def _get_common_scd_parameters(self) -> SCDBaseParameters:
         """
         Get parameters related to Slowly Changing Data (SCD)
 
@@ -149,7 +149,7 @@ class SlowlyChangingView(View):
         )
         return params
 
-    def get_join_parameters(self, calling_view: View) -> dict[str, Any]:
+    def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
 
         # When calling_view doesn't have the timestamp_column attribute, it means that it is a
         # DimensionView. It is invalid to join DimensionView with SlowlyChangingView on the right
@@ -162,14 +162,14 @@ class SlowlyChangingView(View):
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
-                **self.get_common_scd_parameters().dict(),
+                **self._get_common_scd_parameters().dict(),
             }
         }
 
-    def get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         return {
             "scd_parameters": {
                 "offset": offset,
-                **self.get_common_scd_parameters().dict(),
+                **self._get_common_scd_parameters().dict(),
             }
         }

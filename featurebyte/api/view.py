@@ -309,7 +309,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             the column name for the join key
         """
 
-    def get_join_parameters(self, calling_view: View) -> dict[str, Any]:
+    def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
         """
         Returns additional query node parameters for join operation
 
@@ -327,7 +327,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         _ = calling_view
         return {}
 
-    def get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         """
         Returns any additional query node parameters for as_feature operation (LookupNode)
 
@@ -579,7 +579,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "right_output_columns": right_output_columns,
             "join_type": how,
         }
-        node_params.update(other_view.get_join_parameters(self))
+        node_params.update(other_view._get_join_parameters(self))
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -667,7 +667,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         serving_name = entity.serving_name
 
         # Input column names
-        additional_params = self.get_as_feature_parameters(offset=offset)
+        additional_params = self._get_as_feature_parameters(offset=offset)
         lookup_node_params = {
             "input_column_names": input_column_names,
             "feature_names": feature_names,
