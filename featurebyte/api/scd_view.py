@@ -142,12 +142,11 @@ class SlowlyChangingView(View):
         -------
         SCDBaseParameters
         """
-        params = SCDBaseParameters(
+        return SCDBaseParameters(
             effective_timestamp_column=self.effective_timestamp_column,
             current_flag_column=self.current_flag_column,
             end_timestamp_column=self.end_timestamp_column,
         )
-        return params
 
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
 
