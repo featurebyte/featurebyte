@@ -84,6 +84,22 @@ class Aggregator(ABC):
         current_index: int,
         queries: list[LeftJoinableSubquery],
     ) -> AggregationResult:
+        """
+        Update table_expr by left joining with a list of LeftJoinableSubquery
+
+        Parameters
+        ----------
+        table_expr: Select
+            Table expression to update
+        current_index: int
+            A running integer to be used to construct new table aliases
+        queries: list[LeftJoinableSubquery]
+            List of sub-queries to be left joined with table_expr
+
+        Returns
+        -------
+        AggregationResult
+        """
 
         aggregated_columns = []
         for internal_agg_result in queries:
