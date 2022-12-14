@@ -3,12 +3,12 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Tuple
 
 from abc import ABC
 from http import HTTPStatus
 
-from pydantic import Field, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
@@ -28,6 +28,9 @@ class BaseTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
     """
     BaseTableData class
     """
+
+    node_name: str = Field(default_factory=str)
+    row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple)
 
     class Config:
         """
