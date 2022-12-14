@@ -404,14 +404,13 @@ class EventView(View, GroupByMixin):
             ColumnInfo(
                 name=new_column_name,
                 dtype=feature.dtype,
-                entity_id=feature.entity_identifiers[0],
+                entity_id=EventView._get_feature_entity_id(feature),
             )
         )
 
         # Construct new column_lineage_map
         updated_column_lineage_map = copy.deepcopy(self.column_lineage_map)
         for col, lineage in updated_column_lineage_map.items():
-            # TODO: should this be `feature.node.name` or `node.name` (i.e. the new node)?
             updated_column_lineage_map[col] = append_to_lineage(lineage, feature.node.name)
 
         # Construct new tabular_data_ids

@@ -14,6 +14,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
+from featurebyte import ItemView
 from featurebyte import SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
@@ -28,7 +29,7 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.base import VersionIdentifier
@@ -523,6 +524,23 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
         assert feature.tabular_data_ids == [snowflake_event_data_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
+
+
+@pytest.fixture(name="non_time_based_feature")
+def get_non_time_based_feature(snowflake_item_data):
+    """
+    Get a non-time-based feature.
+
+    This is a non-time-based feature as it is built from ItemData.
+    """
+    snowflake_item_data.item_id_col.as_entity("customer")
+    snowflake_item_data.item_id_column = "item_id_col"
+    item_view = ItemView.from_item_data(snowflake_item_data)
+    return item_view.groupby("item_id_col").aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="non_time_time_sum_amount_feature",
+    )
 
 
 @pytest.fixture(name="float_feature")

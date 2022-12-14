@@ -3,10 +3,9 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, cast
-
 import time
 from http import HTTPStatus
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import pandas as pd
 from pydantic import Field, root_validator
@@ -33,7 +32,12 @@ from featurebyte.models.feature import (
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
+from featurebyte.query_graph.node.generic import (
+    AliasNode,
+    GroupbyNode,
+    ItemGroupbyNode,
+    ProjectNode,
+)
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
@@ -206,6 +210,10 @@ class Feature(
         entity_ids: list[str] = []
         for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
             entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
+        for node in self.graph.iterate_nodes(
+            target_node=self.node, node_type=NodeType.ITEM_GROUPBY
+        ):
+            entity_ids.extend(cast(ItemGroupbyNode, node).parameters.keys)
         return entity_ids
 
     @property
