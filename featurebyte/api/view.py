@@ -605,7 +605,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
     @typechecked
-    def as_features(self, feature_names: list[str], offset: Optional[str] = None) -> FeatureGroup:
+    def as_features(self, feature_names: List[str], offset: Optional[str] = None) -> FeatureGroup:
         """
         Create lookup features directly from the columns in the View
 
