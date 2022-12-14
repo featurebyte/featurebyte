@@ -5,6 +5,7 @@ import copy
 from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
@@ -116,6 +117,21 @@ async def test_online_enabled_feature_spec(
         }
     )
     result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
+
+    # validate as result of calling SP_TILE_GENERATE to generate historical tiles
+    sql = f"SELECT * FROM {expected_tile_id}"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 100
+    expected_df = pd.DataFrame(
+        {
+            "INDEX": np.array([5514911, 5514910, 5514909], dtype=np.int32),
+            "PRODUCT_ACTION": ["view", "view", "view"],
+            "CUST_ID": np.array([1, 1, 1], dtype=np.int8),
+            "VALUE": np.array([5, 2, 2], dtype=np.int8),
+        }
+    )
+    result = result[:3].drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
 
 
