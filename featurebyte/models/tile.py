@@ -70,7 +70,7 @@ class TileSpec(FeatureByteBaseModel):
         """
         if value is None or value.strip() == "":
             raise ValueError("value cannot be empty")
-        return value.strip()
+        return value.strip().upper()
 
     @root_validator
     @classmethod

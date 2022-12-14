@@ -5,9 +5,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from datetime import datetime
+
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.common import date_util
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_delete_tile_feature_mapping,
@@ -17,6 +20,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -77,6 +81,29 @@ class FeatureManagerSnowflake(BaseModel):
                 # enable offline tiles scheduled job
                 await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+
+                # generate historical tiles
+                await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
+
+    async def _generate_historical_tiles(
+        self, tile_mgr: TileManagerSnowflake, tile_spec: TileSpec
+    ) -> None:
+        # generate historical tile_values
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+        # derive the latest tile_start_date
+        end_ind = date_util.timestamp_to_tile_index(datetime.utcnow(), tile_spec)
+        end_ts = date_util.tile_index_to_timestamp(end_ind, tile_spec)
+        end_ts_str = end_ts.strftime(date_format)
+
+        start_ts_str = datetime(1970, 1, 1).strftime(date_format)
+
+        await tile_mgr.generate_tiles(
+            tile_spec=tile_spec,
+            tile_type=TileType.OFFLINE,
+            end_ts_str=end_ts_str,
+            start_ts_str=start_ts_str,
+        )
 
     async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:
         """
