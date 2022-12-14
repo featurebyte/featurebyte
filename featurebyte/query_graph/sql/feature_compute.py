@@ -106,8 +106,8 @@ class FeatureExecutionPlan:
         join_keys: list[str],
         table_expr: expressions.Select,
         agg_expr: expressions.Select,
-    ) -> tuple[expressions.Select, list[str]]:
-        """Construct SQL that left join aggregated result back to request table
+    ) -> expressions.Select:
+        """Construct SQL that left joins aggregated result back to request table
 
         Parameters
         ----------
@@ -124,8 +124,8 @@ class FeatureExecutionPlan:
 
         Returns
         -------
-        tuple[Select, str]
-            Tuple of updated table expression and alias name for the aggregated column
+        Select
+            Updated table expression
         """
         agg_table_alias = f"T{index}"
         agg_result_name_aliases = [
@@ -141,8 +141,8 @@ class FeatureExecutionPlan:
             join_type="left",
             join_alias=agg_table_alias,
             on=expressions.and_(*join_conditions_lst),
-        )
-        return updated_table_expr, agg_result_name_aliases
+        ).select(*agg_result_name_aliases)
+        return updated_table_expr
 
     def construct_combined_aggregation_cte(
         self,
@@ -166,29 +166,27 @@ class FeatureExecutionPlan:
         tuple[str, expressions.Select]
             Tuple of table name and SQL expression
         """
-        table_expr = select().from_(f"{request_table_name} AS REQ")
-        qualified_aggregation_names = []
-        agg_table_index = 0
-
-        for aggregator in self.iter_aggregators():
-            for agg_result in aggregator.get_aggregation_results(point_in_time_column):
-                table_expr, agg_result_name_aliases = self.construct_left_join_sql(
-                    index=agg_table_index,
-                    agg_result_names=agg_result.column_names,
-                    join_keys=agg_result.join_keys,
-                    table_expr=table_expr,
-                    agg_expr=agg_result.expr,
-                )
-                qualified_aggregation_names.extend(agg_result_name_aliases)
-                agg_table_index += 1
-
+        # Select original columns first
         if request_table_columns:
             request_table_columns = [
                 f"REQ.{quoted_identifier(c).sql()}" for c in request_table_columns
             ]
         else:
             request_table_columns = []
-        table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
+        table_expr = select(*request_table_columns).from_(f"{request_table_name} AS REQ")
+
+        # Update table_expr using the aggregators
+        agg_table_index = 0
+        for aggregator in self.iter_aggregators():
+            for agg_result in aggregator.get_aggregation_results(point_in_time_column):
+                table_expr = self.construct_left_join_sql(
+                    index=agg_table_index,
+                    agg_result_names=agg_result.column_names,
+                    join_keys=agg_result.join_keys,
+                    table_expr=table_expr,
+                    agg_expr=agg_result.expr,
+                )
+                agg_table_index += 1
 
         return self.AGGREGATION_TABLE_NAME, table_expr
 
