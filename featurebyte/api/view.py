@@ -623,6 +623,18 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             node.name, joined_columns_info, joined_column_lineage_map, joined_tabular_data_ids
         )
 
+    @staticmethod
+    def _validate_offset(offset: Optional[str]) -> None:
+        # Validate offset is valid if provided
+        if offset is not None:
+            try:
+                parse_duration_string(offset)
+            except ValueError as exc:
+                raise ValueError(
+                    "Failed to parse the offset parameter. An example of valid offset string is "
+                    f'"7d", got "{offset}". Error: {str(exc)}'
+                ) from exc
+
     @typechecked
     def as_features(self, feature_names: List[str], offset: Optional[str] = None) -> FeatureGroup:
         """
@@ -644,7 +656,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ValueError
             If the length of feature_names does not match with the number of columns in the View
         """
-        # pylint: disable=too-many-locals
         special_columns = set(self.protected_columns)
         input_column_names = [
             column.name for column in self.columns_info if column.name not in special_columns
@@ -655,14 +666,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 f" {len(feature_names)}. Consider selecting columns before calling as_features."
             )
 
-        # Validate offset is valid if provided
-        if offset is not None:
-            try:
-                parse_duration_string(offset)
-            except ValueError as exc:
-                raise ValueError(
-                    f"Failed to parse the offset parameter. Error: {str(exc)}"
-                ) from exc
+        self._validate_offset(offset)
 
         # Get entity_column
         entity_column = self.get_join_column()
