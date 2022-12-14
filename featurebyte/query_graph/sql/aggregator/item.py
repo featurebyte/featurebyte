@@ -6,9 +6,13 @@ from __future__ import annotations
 from typing import cast
 
 from sqlglot import expressions
-from sqlglot.expressions import select
+from sqlglot.expressions import Select, select
 
-from featurebyte.query_graph.sql.aggregator.base import AggregationResult, Aggregator
+from featurebyte.query_graph.sql.aggregator.base import (
+    AggregationResult,
+    Aggregator,
+    LeftJoinableSubquery,
+)
 from featurebyte.query_graph.sql.aggregator.window import AggSpecEntityIDs
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
@@ -197,18 +201,39 @@ class ItemAggregator(Aggregator):
         )
         return agg_expr
 
-    def get_aggregation_results(self, point_in_time_column: str) -> list[AggregationResult]:
-        _ = point_in_time_column
+    def get_item_aggregations(self) -> list[LeftJoinableSubquery]:
+        """
+        Get item aggregation queries
+
+        Returns
+        -------
+        list[LeftJoinableSubquery]
+        """
         results = []
         for item_agg_spec in self.item_aggregation_specs:
             agg_expr = self.construct_item_aggregation_sql(item_agg_spec)
-            result = AggregationResult(
+            result = LeftJoinableSubquery(
                 expr=agg_expr,
                 column_names=[item_agg_spec.feature_name],
                 join_keys=item_agg_spec.serving_names,
             )
             results.append(result)
         return results
+
+    def update_aggregation_table_expr(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_index: int,
+    ) -> AggregationResult:
+
+        _ = point_in_time_column
+        queries = self.get_item_aggregations()
+
+        return self._update_with_left_joins(
+            table_expr=table_expr, current_index=current_index, queries=queries
+        )
 
     def get_common_table_expressions(
         self, request_table_name: str

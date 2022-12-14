@@ -3,16 +3,30 @@ Base class for aggregation SQL generators
 """
 from __future__ import annotations
 
-import dataclasses
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from sqlglot import expressions
+from sqlglot.expressions import Select
+
+from featurebyte.query_graph.sql.common import quoted_identifier
 
 
-@dataclasses.dataclass
+@dataclass
 class AggregationResult:
     """
     Representation of aggregation result from an instance of Aggregator
+    """
+
+    updated_table_expr: Select
+    updated_index: int
+    column_names: list[str]
+
+
+@dataclass
+class LeftJoinableSubquery:
+    """
+    Representation of a subquery that can be left joined with the request table
     """
 
     expr: expressions.Select
@@ -36,20 +50,104 @@ class Aggregator(ABC):
         """
 
     @abstractmethod
-    def get_aggregation_results(self, point_in_time_column: str) -> list[AggregationResult]:
+    def update_aggregation_table_expr(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_index: int,
+    ) -> AggregationResult:
         """
-        Construct a query of aggregated results ready to be left joined with request table
+        Update a provided table in place with aggregated results left joined into it
 
         Parameters
         ----------
+        table_expr: Select
+            The table expression to update. This is typically the temporary aggregation table that
+            has the same number of rows as the request table, referred to in the final feature sql
+            as _FB_AGGREGATED
         point_in_time_column: str
-            Name of the point in time column
+            Point in time column name
+        current_columns: list[str]
+            List of column names in the current table
+        current_index: int
+            A running integer to be used to construct new table aliases
 
         Returns
         -------
-        list[AggregationResult]
-            List of aggregation results
+        AggregationResult
         """
+
+    def _update_with_left_joins(
+        self,
+        table_expr: Select,
+        current_index: int,
+        queries: list[LeftJoinableSubquery],
+    ) -> AggregationResult:
+
+        aggregated_columns = []
+        for internal_agg_result in queries:
+            table_expr = self._construct_left_join_sql(
+                index=current_index,
+                table_expr=table_expr,
+                agg_result_names=internal_agg_result.column_names,
+                join_keys=internal_agg_result.join_keys,
+                agg_expr=internal_agg_result.expr,
+            )
+            current_index += 1
+            aggregated_columns.extend(internal_agg_result.column_names)
+
+        result = AggregationResult(
+            updated_table_expr=table_expr,
+            updated_index=current_index,
+            column_names=aggregated_columns,
+        )
+        return result
+
+    @staticmethod
+    def _construct_left_join_sql(
+        index: int,
+        agg_result_names: list[str],
+        join_keys: list[str],
+        table_expr: expressions.Select,
+        agg_expr: expressions.Select,
+    ) -> expressions.Select:
+        """Construct SQL that left joins aggregated result back to request table
+
+        Parameters
+        ----------
+        index : int
+            Index of the current left join
+        agg_result_names : list[str]
+            Column names of the aggregated results
+        join_keys : list[str]
+            List of join keys
+        table_expr : expressions.Select
+            Table to which the left join should be added to
+        agg_expr : expressions.Select
+            SQL expression that performs the aggregation
+
+        Returns
+        -------
+        Select
+            Updated table expression
+        """
+        agg_table_alias = f"T{index}"
+        agg_result_name_aliases = [
+            f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+            for agg_result_name in agg_result_names
+        ]
+        join_conditions_lst = [
+            f"REQ.{quoted_identifier(key).sql()} = {agg_table_alias}.{quoted_identifier(key).sql()}"
+            for key in join_keys
+        ]
+        updated_table_expr = table_expr.join(
+            agg_expr.subquery(),
+            join_type="left",
+            join_alias=agg_table_alias,
+            on=expressions.and_(*join_conditions_lst),
+        ).select(*agg_result_name_aliases)
+        return updated_table_expr
 
     @abstractmethod
     def get_common_table_expressions(
