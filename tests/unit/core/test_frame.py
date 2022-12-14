@@ -56,8 +56,20 @@ def test__getitem__list_of_str_key(dataframe):
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
     assert sub_dataframe_dict["columns_info"] == [
-        {"name": "CUST_ID", "dtype": DBVarType.INT, "entity_id": None, "semantic_id": None},
-        {"name": "VALUE", "dtype": DBVarType.FLOAT, "entity_id": None, "semantic_id": None},
+        {
+            "name": "CUST_ID",
+            "dtype": DBVarType.INT,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "VALUE",
+            "dtype": DBVarType.FLOAT,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
     ]
     assert sub_dataframe_dict["node_name"] == "project_1"
     node = get_node(sub_dataframe_dict["graph"], "project_1")
@@ -263,24 +275,62 @@ def test_multiple_statements(dataframe):
     }
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dataframe_dict["columns_info"] == [
-        {"name": "CUST_ID", "dtype": DBVarType.INT, "entity_id": None, "semantic_id": None},
+        {
+            "name": "CUST_ID",
+            "dtype": DBVarType.INT,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
         {
             "name": "PRODUCT_ACTION",
             "dtype": DBVarType.VARCHAR,
             "entity_id": None,
             "semantic_id": None,
+            "critical_data_info": None,
         },
-        {"name": "VALUE", "dtype": DBVarType.FLOAT, "entity_id": None, "semantic_id": None},
-        {"name": "MASK", "dtype": DBVarType.BOOL, "entity_id": None, "semantic_id": None},
-        {"name": "TIMESTAMP", "dtype": DBVarType.TIMESTAMP, "entity_id": None, "semantic_id": None},
+        {
+            "name": "VALUE",
+            "dtype": DBVarType.FLOAT,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "MASK",
+            "dtype": DBVarType.BOOL,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "TIMESTAMP",
+            "dtype": DBVarType.TIMESTAMP,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
         {
             "name": "PROMOTION_START_DATE",
             "dtype": DBVarType.DATE,
             "entity_id": None,
             "semantic_id": None,
+            "critical_data_info": None,
         },
-        {"name": "amount", "dtype": DBVarType.FLOAT, "entity_id": None, "semantic_id": None},
-        {"name": "vip_customer", "dtype": DBVarType.BOOL, "entity_id": None, "semantic_id": None},
+        {
+            "name": "amount",
+            "dtype": DBVarType.FLOAT,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "vip_customer",
+            "dtype": DBVarType.BOOL,
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
     ]
     assert dataframe.columns == [
         "CUST_ID",

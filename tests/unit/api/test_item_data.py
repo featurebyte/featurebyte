@@ -32,11 +32,41 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
     """ItemData in serialized dictionary format"""
     return {
         "columns_info": [
-            {"dtype": "INT", "entity_id": None, "name": "event_id_col", "semantic_id": None},
-            {"dtype": "VARCHAR", "entity_id": None, "name": "item_id_col", "semantic_id": None},
-            {"dtype": "VARCHAR", "entity_id": None, "name": "item_type", "semantic_id": None},
-            {"dtype": "FLOAT", "entity_id": None, "name": "item_amount", "semantic_id": None},
-            {"dtype": "TIMESTAMP", "entity_id": None, "name": "created_at", "semantic_id": None},
+            {
+                "dtype": "INT",
+                "entity_id": None,
+                "name": "event_id_col",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
+            {
+                "dtype": "VARCHAR",
+                "entity_id": None,
+                "name": "item_id_col",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
+            {
+                "dtype": "VARCHAR",
+                "entity_id": None,
+                "name": "item_type",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
+            {
+                "dtype": "FLOAT",
+                "entity_id": None,
+                "name": "item_amount",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
+            {
+                "dtype": "TIMESTAMP",
+                "entity_id": None,
+                "name": "created_at",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
         ],
         "created_at": None,
         "event_data_id": ObjectId("6337f9651050ee7d5980660d"),

@@ -18,13 +18,55 @@ arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 def get_scd_columns_info():
     """Fixture to get a some SCD data columns info"""
     return [
-        {"name": "col", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "natural_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "surrogate_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
-        {"name": "effective_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
-        {"name": "end_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
-        {"name": "enabled", "dtype": "BOOL", "entity_id": None, "semantic_id": None},
+        {
+            "name": "col",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "natural_id",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "surrogate_id",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "created_at",
+            "dtype": "TIMESTAMP",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "effective_at",
+            "dtype": "TIMESTAMP",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "end_at",
+            "dtype": "TIMESTAMP",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "enabled",
+            "dtype": "BOOL",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
     ]
 
 

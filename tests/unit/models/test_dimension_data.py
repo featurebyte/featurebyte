@@ -18,9 +18,27 @@ arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 def get_dimension_columns_info():
     """Fixture to get a some dimension data columns info"""
     return [
-        {"name": "col", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "dimension_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+        {
+            "name": "col",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "dimension_id",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "created_at",
+            "dtype": "TIMESTAMP",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
     ]
 
 
