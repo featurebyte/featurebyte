@@ -31,7 +31,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import FEATURE_NODE_TYPES, NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.generic import (
     AliasNode,
@@ -209,12 +209,9 @@ class Feature(
         List[str]
         """
         entity_ids: list[str] = []
-        for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
-            entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
-        for node in self.graph.iterate_nodes(
-            target_node=self.node, node_type=NodeType.ITEM_GROUPBY
-        ):
-            entity_ids.extend(cast(ItemGroupbyNode, node).parameters.keys)
+        for node_type in FEATURE_NODE_TYPES:
+            for node in self.graph.iterate_nodes(target_node=self.node, node_type=node_type):
+                entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
         return entity_ids
 
     @property
