@@ -243,7 +243,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         set[str]
         """
-        return {self.get_join_column()}
+        return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+
+    def _get_additional_inherited_columns(self) -> set[str]:
+        """
+        Additional columns set to be added to inherited_columns. To be overridden by subclasses of
+        View when necessary.
+        """
+        return set()
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:

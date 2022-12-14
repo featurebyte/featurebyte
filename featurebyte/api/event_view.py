@@ -109,8 +109,7 @@ class EventView(View, GroupByMixin):
         )
         return input_node.parameters.timestamp  # type: ignore
 
-    @property
-    def inherited_columns(self) -> set[str]:
+    def _get_additional_inherited_columns(self) -> set[str]:
         """
         Special columns set which will be automatically added to the object of same class
         derived from current object
@@ -119,7 +118,7 @@ class EventView(View, GroupByMixin):
         -------
         set[str]
         """
-        return super().inherited_columns.union([self.timestamp_column])
+        return {self.timestamp_column}
 
     @property
     def protected_attributes(self) -> list[str]:
