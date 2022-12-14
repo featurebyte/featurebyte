@@ -26,6 +26,7 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_utils import project_feature_from_node
 from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
@@ -693,21 +694,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         features = []
         for input_column_name, feature_name in zip(input_column_names, feature_names):
-            feature_node = self.graph.add_operation(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": [feature_name]},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[lookup_node],
-            )
-            var_type = self.column_var_type_map[input_column_name]
-            feature = Feature(
-                name=feature_name,
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node_name=feature_node.name,
-                dtype=var_type,
-                row_index_lineage=(lookup_node.name,),
-                tabular_data_ids=self.tabular_data_ids,
+            feature = project_feature_from_node(
+                node=lookup_node,
+                view=self,
+                feature_name=feature_name,
+                feature_dtype=self.column_var_type_map[input_column_name],
                 entity_ids=[entity_id],
             )
             features.append(feature)
