@@ -117,7 +117,7 @@ class ViewColumn(Series, SampleMixin):
         if view is None:
             raise ValueError(
                 "as_feature is only supported for named columns in the View object. Consider"
-                " assigning the feature to the View before calling as_feature()."
+                " assigning the Feature to the View before calling as_feature()."
             )
         input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
         view = cast(View, view[[input_column_name]])
@@ -250,6 +250,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         """
         Additional columns set to be added to inherited_columns. To be overridden by subclasses of
         View when necessary.
+
+        Returns
+        -------
+        set[str]
         """
         return set()
 
@@ -579,7 +583,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "right_output_columns": right_output_columns,
             "join_type": how,
         }
-        node_params.update(other_view._get_join_parameters(self))
+        node_params.update(
+            other_view._get_join_parameters(self)  # pylint: disable=protected-access
+        )
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -637,6 +643,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ValueError
             If the length of feature_names does not match with the number of columns in the View
         """
+        # pylint: disable=too-many-locals
         special_columns = set(self.protected_columns)
         input_column_names = [
             column.name for column in self.columns_info if column.name not in special_columns
@@ -651,8 +658,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         if offset is not None:
             try:
                 parse_duration_string(offset)
-            except ValueError as e:
-                raise ValueError(f"Failed to parse the offset parameter. Error: {str(e)}")
+            except ValueError as exc:
+                raise ValueError(
+                    f"Failed to parse the offset parameter. Error: {str(exc)}"
+                ) from exc
 
         # Get entity_column
         entity_column = self.get_join_column()
