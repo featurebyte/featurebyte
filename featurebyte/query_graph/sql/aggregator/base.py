@@ -58,7 +58,7 @@ class Aggregator(ABC):
         current_index: int,
     ) -> AggregationResult:
         """
-        Update a provided table in place with aggregated results left joined into it
+        Update a provided table with aggregated results left joined into it
 
         Parameters
         ----------
@@ -100,7 +100,6 @@ class Aggregator(ABC):
         -------
         AggregationResult
         """
-
         aggregated_columns = []
         for internal_agg_result in queries:
             table_expr = self._construct_left_join_sql(
