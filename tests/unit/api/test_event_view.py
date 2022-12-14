@@ -16,9 +16,10 @@ from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
 
