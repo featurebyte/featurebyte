@@ -9,7 +9,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AggFunc, EventData, EventView, FeatureList, SourceType, to_timedelta
+from featurebyte import (
+    AggFunc,
+    EventData,
+    EventView,
+    FeatureList,
+    ItemView,
+    SourceType,
+    to_timedelta,
+)
 from featurebyte.config import Configurations
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.model.column_info import ColumnSpec
@@ -869,4 +877,64 @@ def check_day_of_week_counts(event_view, preview_param):
         "user id": 1,
         "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 9,\n  "1": 5\n}',
         "DAY_OF_WEEK_ENTROPY_24h": 0.651756561172653,
+    }
+
+
+@pytest.fixture(name="non_time_based_feature")
+def get_non_time_based_feature_fixture(snowflake_item_data):
+    """
+    Get a non-time-based feature.
+
+    This is a non-time-based feature as it is built from ItemData.
+    """
+    # snowflake_item_data.item_id.as_entity("order")
+    # snowflake_item_data.item_id_column = "item_id"
+    item_view = ItemView.from_item_data(snowflake_item_data)
+    return item_view.groupby("order_id").aggregate(
+        method=AggFunc.COUNT,
+        feature_name="non_time_count_feature",
+    )
+
+
+def test_add_feature(event_view, non_time_based_feature):
+    """
+    Test add feature
+    """
+    original_column_names = [col.name for col in event_view.columns_info]
+
+    # add feature
+    event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+
+    # test columns are updated as expected
+    event_view_preview = event_view.preview()
+    new_columns = event_view_preview.columns.tolist()
+    expected_updated_column_names = [*original_column_names, "transaction_count"]
+    assert new_columns == expected_updated_column_names
+
+    # test that one of the feature join keys is correct
+    order_id_to_match = "T0"
+    feature_preview = non_time_based_feature.preview(
+        {"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}
+    )
+    for _, row in event_view_preview.iterrows():
+        if row["TRANSACTION_ID"] == order_id_to_match:
+            assert row["transaction_count"] == feature_preview["non_time_count_feature"][0]
+            break
+
+    # test double aggregation of feature by doing an aggregation over the newly added feature column
+    transaction_counts = event_view.groupby("PRODUCT_ACTION").aggregate_over(
+        value_column="transaction_count",
+        method="sum",
+        windows=["24h"],
+        feature_names=["transaction_count_sum_24h"],
+    )
+    timestamp_str = "2001-01-13 12:00:00"
+    df_feature_preview = transaction_counts.preview(
+        {"POINT_IN_TIME": timestamp_str, "PRODUCT_ACTION": "purchase"},
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp(timestamp_str),
+        "PRODUCT_ACTION": "purchase",
+        "transaction_count_sum_24h": 130,
     }

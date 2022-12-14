@@ -526,7 +526,7 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
 
 
 @pytest.fixture(name="non_time_based_feature")
-def get_non_time_based_feature(snowflake_item_data):
+def get_non_time_based_feature_fixture(snowflake_item_data):
     """
     Get a non-time-based feature.
 
