@@ -920,6 +920,7 @@ def snowflake_scd_data_fixture(
     snowflake_session,
     snowflake_feature_store,
     scd_data_table_name,
+    user_entity,
 ):
     """
     Fixture for a SlowlyChangingData in integration tests
@@ -939,6 +940,7 @@ def snowflake_scd_data_fixture(
     )
     data.save()
     data = SlowlyChangingData.get(name)
+    data["User ID"].as_entity(user_entity.name)
     return data
 
 

@@ -54,6 +54,25 @@ def quoted_identifier(column_name: str) -> Expression:
     return expressions.Identifier(this=column_name, quoted=True)
 
 
+def get_qualified_column_identifier(column_name: str, table: str) -> Expression:
+    """
+    Get a qualified column name with a table alias prefix
+
+    Parameters
+    ----------
+    column_name: str
+        Column name
+    table: str
+        Table prefix to add to the column name
+
+    Returns
+    -------
+    Expression
+    """
+    expr = expressions.Column(this=quoted_identifier(column_name), table=table)
+    return expr
+
+
 def get_dialect_from_source_type(source_type: SourceType) -> str | None:
     """
     Get the dialect name given SourceType
