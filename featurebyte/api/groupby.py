@@ -14,7 +14,6 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
-from featurebyte.api.feature_utils import project_feature_from_node
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
@@ -130,9 +129,8 @@ class BaseAggregator(ABC):
                 )
             var_type = agg_method.input_output_var_type_map[input_var_type]
 
-        feature = project_feature_from_node(
+        feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
             node=groupby_node,
-            view=self.view,
             feature_name=feature_name,
             feature_dtype=var_type,
             entity_ids=self.groupby.entity_ids,

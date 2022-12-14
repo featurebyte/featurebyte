@@ -26,7 +26,6 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
-from featurebyte.api.feature_utils import project_feature_from_node
 from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
@@ -45,11 +44,13 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
+from featurebyte.enum import DBVarType
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import ProjectNode
 
 if TYPE_CHECKING:
@@ -635,6 +636,49 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                     f'"7d", got "{offset}". Error: {str(exc)}'
                 ) from exc
 
+    def _project_feature_from_node(
+        self,
+        node: Node,
+        feature_name: str,
+        feature_dtype: DBVarType,
+        entity_ids: List[PydanticObjectId],
+    ) -> Feature:
+        """
+        Create a Feature object from a node that produces features, such as groupby, lookup, etc.
+
+        Parameters
+        ----------
+        node: Node
+            Query graph node
+        feature_name: str
+            Feature name
+        feature_dtype: DBVarType
+            Variable type of the Feature
+        entity_ids: List[PydanticObjectId]
+            Entity ids associated with the Feature
+
+        Returns
+        -------
+        Feature
+        """
+        feature_node = self.graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [feature_name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node],
+        )
+        feature = Feature(
+            name=feature_name,
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node_name=feature_node.name,
+            dtype=feature_dtype,
+            row_index_lineage=(node.name,),
+            tabular_data_ids=self.tabular_data_ids,
+            entity_ids=entity_ids,
+        )
+        return feature
+
     @typechecked
     def as_features(self, feature_names: List[str], offset: Optional[str] = None) -> FeatureGroup:
         """
@@ -698,9 +742,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         features = []
         for input_column_name, feature_name in zip(input_column_names, feature_names):
-            feature = project_feature_from_node(
+            feature = self._project_feature_from_node(
                 node=lookup_node,
-                view=self,
                 feature_name=feature_name,
                 feature_dtype=self.column_var_type_map[input_column_name],
                 entity_ids=[entity_id],
