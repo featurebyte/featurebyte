@@ -91,7 +91,7 @@ class ViewColumn(Series, SampleMixin):
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"tabular_data_ids": self.tabular_data_ids}
 
-    @typechecked()
+    @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
         """
         Create a lookup feature directly using this column
