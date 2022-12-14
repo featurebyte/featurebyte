@@ -21,7 +21,6 @@ from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.transform.reconstruction import (
     GroupbyNode,
@@ -118,12 +117,7 @@ class BaseAggregator(ABC):
         method: str,
         value_column: Optional[str],
     ) -> Feature:
-        feature_node = self.view.graph.add_operation(
-            node_type=NodeType.PROJECT,
-            node_params={"columns": [feature_name]},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[groupby_node],
-        )
+
         # value_column is None for count-like aggregation method
         input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
         if self.groupby.category:
@@ -134,20 +128,19 @@ class BaseAggregator(ABC):
                     f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
                 )
             var_type = agg_method.input_output_var_type_map[input_var_type]
-        feature = Feature(
-            name=feature_name,
-            feature_store=self.view.feature_store,
-            tabular_source=self.view.tabular_source,
-            node_name=feature_node.name,
-            dtype=var_type,
-            row_index_lineage=(groupby_node.name,),
-            tabular_data_ids=self.view.tabular_data_ids,
+
+        feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
+            node=groupby_node,
+            feature_name=feature_name,
+            feature_dtype=var_type,
             entity_ids=self.groupby.entity_ids,
         )
+
         # Count features should be 0 instead of NaN when there are no records
         if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
             feature.fillna(0)
             feature.name = feature_name
+
         return feature
 
 

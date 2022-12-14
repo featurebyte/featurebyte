@@ -44,11 +44,13 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.core.util import append_to_lineage
+from featurebyte.enum import DBVarType
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import ProjectNode
 
 if TYPE_CHECKING:
@@ -622,6 +624,61 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             node.name, joined_columns_info, joined_column_lineage_map, joined_tabular_data_ids
         )
 
+    @staticmethod
+    def _validate_offset(offset: Optional[str]) -> None:
+        # Validate offset is valid if provided
+        if offset is not None:
+            try:
+                parse_duration_string(offset)
+            except ValueError as exc:
+                raise ValueError(
+                    "Failed to parse the offset parameter. An example of valid offset string is "
+                    f'"7d", got "{offset}". Error: {str(exc)}'
+                ) from exc
+
+    def _project_feature_from_node(
+        self,
+        node: Node,
+        feature_name: str,
+        feature_dtype: DBVarType,
+        entity_ids: List[PydanticObjectId],
+    ) -> Feature:
+        """
+        Create a Feature object from a node that produces features, such as groupby, lookup, etc.
+
+        Parameters
+        ----------
+        node: Node
+            Query graph node
+        feature_name: str
+            Feature name
+        feature_dtype: DBVarType
+            Variable type of the Feature
+        entity_ids: List[PydanticObjectId]
+            Entity ids associated with the Feature
+
+        Returns
+        -------
+        Feature
+        """
+        feature_node = self.graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [feature_name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node],
+        )
+        feature = Feature(
+            name=feature_name,
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node_name=feature_node.name,
+            dtype=feature_dtype,
+            row_index_lineage=(node.name,),
+            tabular_data_ids=self.tabular_data_ids,
+            entity_ids=entity_ids,
+        )
+        return feature
+
     @typechecked
     def as_features(self, feature_names: List[str], offset: Optional[str] = None) -> FeatureGroup:
         """
@@ -643,7 +700,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ValueError
             If the length of feature_names does not match with the number of columns in the View
         """
-        # pylint: disable=too-many-locals
         special_columns = set(self.protected_columns)
         input_column_names = [
             column.name for column in self.columns_info if column.name not in special_columns
@@ -654,14 +710,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 f" {len(feature_names)}. Consider selecting columns before calling as_features."
             )
 
-        # Validate offset is valid if provided
-        if offset is not None:
-            try:
-                parse_duration_string(offset)
-            except ValueError as exc:
-                raise ValueError(
-                    f"Failed to parse the offset parameter. Error: {str(exc)}"
-                ) from exc
+        self._validate_offset(offset)
 
         # Get entity_column
         entity_column = self.get_join_column()
@@ -693,21 +742,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         features = []
         for input_column_name, feature_name in zip(input_column_names, feature_names):
-            feature_node = self.graph.add_operation(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": [feature_name]},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[lookup_node],
-            )
-            var_type = self.column_var_type_map[input_column_name]
-            feature = Feature(
-                name=feature_name,
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node_name=feature_node.name,
-                dtype=var_type,
-                row_index_lineage=(lookup_node.name,),
-                tabular_data_ids=self.tabular_data_ids,
+            feature = self._project_feature_from_node(
+                node=lookup_node,
+                feature_name=feature_name,
+                feature_dtype=self.column_var_type_map[input_column_name],
                 entity_ids=[entity_id],
             )
             features.append(feature)
