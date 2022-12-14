@@ -24,9 +24,9 @@ from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.model.table import ConstructNodeMixin, GenericTableData
 
 
-class AbstractTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
+class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
     """
-    AbstractTableData class
+    AbstractTableDataFrame class represents the table data as a frame (in query graph context).
     """
 
     node_name: str = Field(default_factory=str)
@@ -121,7 +121,7 @@ class AbstractTableData(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC
         self.row_index_lineage = (node.name,)
 
 
-class DatabaseTable(GenericTableData, AbstractTableData):
+class DatabaseTable(GenericTableData, AbstractTableDataFrame):
     """
     DatabaseTable class to preview table
     """
