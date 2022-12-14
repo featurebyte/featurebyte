@@ -212,3 +212,9 @@ class BaseViewTestSuite:
         exception_message = str(exc.value)
         assert "type of argument" in exception_message
         assert "got str instead" in exception_message
+
+    def test_join_column_is_part_of_inherited_columns(self, view_under_test):
+        """
+        Test join column (the primary key / natural key of the view) is part of inherited_columns
+        """
+        assert view_under_test.get_join_column() in view_under_test.inherited_columns

@@ -59,7 +59,11 @@ def test_getitem__list_of_str(snowflake_event_view):
     # case 1: select a non-protect column without selecting timestamp column and entity identifier column
     event_view_subset1 = snowflake_event_view[["col_float"]]
     assert isinstance(event_view_subset1, EventView)
-    assert set(event_view_subset1.column_var_type_map) == {"event_timestamp", "col_float"}
+    assert set(event_view_subset1.column_var_type_map) == {
+        "event_timestamp",
+        "col_int",
+        "col_float",
+    }
     assert event_view_subset1.row_index_lineage == snowflake_event_view.row_index_lineage
     assert (
         event_view_subset1.default_feature_job_setting
@@ -67,9 +71,13 @@ def test_getitem__list_of_str(snowflake_event_view):
     )
 
     # case 2: select a non-protected column with a timestamp column
-    event_view_subset2 = snowflake_event_view[["col_float", "event_timestamp"]]
+    event_view_subset2 = snowflake_event_view[["col_float", "col_int", "event_timestamp"]]
     assert isinstance(event_view_subset2, EventView)
-    assert set(event_view_subset2.column_var_type_map) == {"event_timestamp", "col_float"}
+    assert set(event_view_subset2.column_var_type_map) == {
+        "event_timestamp",
+        "col_int",
+        "col_float",
+    }
     assert event_view_subset2.row_index_lineage == snowflake_event_view.row_index_lineage
     assert (
         event_view_subset2.default_feature_job_setting

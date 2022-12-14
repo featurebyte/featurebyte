@@ -6,6 +6,7 @@ import pytest
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
+from tests.util.helper import get_node
 
 
 class TestSlowlyChangingView(BaseViewTestSuite):
@@ -106,3 +107,43 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "end_timestamp_column": "event_timestamp",
         },
     }
+
+
+def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
+    """
+    Test SlowlyChangingView as_feature configures additional parameters
+    """
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    feature = scd_view["col_float"].as_feature("FloatFeature", offset="7d")
+    graph_dict = feature.dict()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_1")
+    assert lookup_node == {
+        "name": "lookup_1",
+        "type": "lookup",
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["col_float"],
+            "feature_names": ["FloatFeature"],
+            "entity_column": "col_text",
+            "serving_name": "cust_id",
+            "entity_id": cust_id_entity.id,
+            "scd_parameters": {
+                "effective_timestamp_column": "event_timestamp",
+                "current_flag_column": "col_char",
+                "end_timestamp_column": "event_timestamp",
+                "offset": "7d",
+            },
+        },
+    }
+
+
+def test_scd_view_as_feature__invalid_duration(snowflake_scd_data, cust_id_entity):
+    """
+    Test SlowlyChangingView as_feature configures additional parameters
+    """
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    with pytest.raises(ValueError) as exc:
+        scd_view["col_float"].as_feature("FloatFeature", offset="something")
+    assert "Failed to parse the offset parameter" in str(exc.value)

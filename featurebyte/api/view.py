@@ -3,7 +3,19 @@ View class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from abc import ABC, abstractmethod
 
@@ -11,6 +23,9 @@ from pydantic import Field, PrivateAttr
 from typeguard import typechecked
 
 from featurebyte.api.data import DataApiObject
+from featurebyte.api.entity import Entity
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
@@ -23,6 +38,7 @@ from featurebyte.api.join_utils import (
     join_tabular_data_ids,
     update_column_lineage_map_with_suffix,
 )
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -33,6 +49,7 @@ from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.node.generic import ProjectNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -74,6 +91,38 @@ class ViewColumn(Series, SampleMixin):
 
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"tabular_data_ids": self.tabular_data_ids}
+
+    @typechecked
+    def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
+        """
+        Create a lookup feature directly using this column
+
+        Parameters
+        ----------
+        feature_name: str
+            Feature name
+        offset: str
+            When specified, retrieve feature value as of this offset prior to the point-in-time
+
+        Returns
+        -------
+        Feature
+
+        Raises
+        ------
+        ValueError
+            If the column is a temporary column not associated with any View
+        """
+        view = self._parent
+        if view is None:
+            raise ValueError(
+                "as_feature is only supported for named columns in the View object. Consider"
+                " assigning the Feature to the View before calling as_feature()."
+            )
+        input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
+        view = cast(View, view[[input_column_name]])
+        feature = view.as_features([feature_name], offset=offset)[feature_name]
+        return cast(Feature, feature)
 
 
 class GroupByMixin:
@@ -186,6 +235,29 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return ["entity_columns"]
 
     @property
+    def inherited_columns(self) -> set[str]:
+        """
+        Special columns set which will be automatically added to the object of same class
+        derived from current object
+
+        Returns
+        -------
+        set[str]
+        """
+        return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+
+    def _get_additional_inherited_columns(self) -> set[str]:
+        """
+        Additional columns set to be added to inherited_columns. To be overridden by subclasses of
+        View when necessary.
+
+        Returns
+        -------
+        set[str]
+        """
+        return set()
+
+    @property
     def _getitem_frame_params(self) -> dict[str, Any]:
         """
         Parameters that will be passed to frame-like class constructor in __getitem__ method
@@ -241,7 +313,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             the column name for the join key
         """
 
-    def get_join_parameters(self, calling_view: View) -> dict[str, Any]:
+    def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
         """
         Returns additional query node parameters for join operation
 
@@ -254,8 +326,29 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Returns
         -------
+        dict[str, Any]
         """
         _ = calling_view
+        return {}
+
+    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+        """
+        Returns any additional query node parameters for as_feature operation (LookupNode)
+
+        This is a no-op unless the lookup is time-aware (currently only available for
+        SlowlyChangingView)
+
+        Parameters
+        ----------
+        offset : str
+            Optional offset parameter
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        if offset is not None:
+            logger.warning("offset parameter is provided but has no effect")
         return {}
 
     def _update_metadata(
@@ -490,7 +583,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "right_output_columns": right_output_columns,
             "join_type": how,
         }
-        node_params.update(other_view.get_join_parameters(self))
+        node_params.update(
+            other_view._get_join_parameters(self)  # pylint: disable=protected-access
+        )
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -526,3 +621,95 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         self._update_metadata(
             node.name, joined_columns_info, joined_column_lineage_map, joined_tabular_data_ids
         )
+
+    @typechecked
+    def as_features(self, feature_names: List[str], offset: Optional[str] = None) -> FeatureGroup:
+        """
+        Create lookup features directly from the columns in the View
+
+        Parameters
+        ----------
+        feature_names: list[str]
+            Feature names
+        offset: str
+            When specified, retrieve feature values as of this offset prior to the point-in-time
+
+        Returns
+        -------
+        FeatureGroup
+
+        Raises
+        ------
+        ValueError
+            If the length of feature_names does not match with the number of columns in the View
+        """
+        # pylint: disable=too-many-locals
+        special_columns = set(self.protected_columns)
+        input_column_names = [
+            column.name for column in self.columns_info if column.name not in special_columns
+        ]
+        if len(feature_names) != len(input_column_names):
+            raise ValueError(
+                f"Length of feature_names should be {len(input_column_names)}, got"
+                f" {len(feature_names)}. Consider selecting columns before calling as_features."
+            )
+
+        # Validate offset is valid if provided
+        if offset is not None:
+            try:
+                parse_duration_string(offset)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Failed to parse the offset parameter. Error: {str(exc)}"
+                ) from exc
+
+        # Get entity_column
+        entity_column = self.get_join_column()
+
+        # Get serving_name
+        columns_info = self.columns_info
+        column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
+        if entity_column not in column_entity_map:
+            raise ValueError(f'Column "{entity_column}" is not an entity!')
+        entity_id = column_entity_map[entity_column]
+        entity = Entity.get_by_id(entity_id)
+        serving_name = entity.serving_name
+
+        # Input column names
+        additional_params = self._get_as_feature_parameters(offset=offset)
+        lookup_node_params = {
+            "input_column_names": input_column_names,
+            "feature_names": feature_names,
+            "entity_column": entity_column,
+            "serving_name": serving_name,
+            "entity_id": entity_id,
+            **additional_params,
+        }
+        lookup_node = self.graph.add_operation(
+            node_type=NodeType.LOOKUP,
+            node_params=lookup_node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[self.node],
+        )
+        features = []
+        for input_column_name, feature_name in zip(input_column_names, feature_names):
+            feature_node = self.graph.add_operation(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": [feature_name]},
+                node_output_type=NodeOutputType.SERIES,
+                input_nodes=[lookup_node],
+            )
+            var_type = self.column_var_type_map[input_column_name]
+            feature = Feature(
+                name=feature_name,
+                feature_store=self.feature_store,
+                tabular_source=self.tabular_source,
+                node_name=feature_node.name,
+                dtype=var_type,
+                row_index_lineage=(lookup_node.name,),
+                tabular_data_ids=self.tabular_data_ids,
+                entity_ids=[entity_id],
+            )
+            features.append(feature)
+
+        return FeatureGroup(features)
