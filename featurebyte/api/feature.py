@@ -3,9 +3,10 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
+from typing import Any, Dict, List, Literal, Optional, cast
+
 import time
 from http import HTTPStatus
-from typing import Any, Dict, List, Literal, Optional, cast
 
 import pandas as pd
 from pydantic import Field, root_validator
