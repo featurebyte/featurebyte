@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.enum import DBVarType
@@ -102,7 +102,6 @@ class EventDataModel(EventTableData, DataModel):
         Datetime when the EventData object was last updated
     """
 
-    event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
     default_feature_job_setting: Optional[FeatureJobSetting]
 
     @validator("event_timestamp_column", "record_creation_date_column")

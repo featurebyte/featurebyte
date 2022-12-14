@@ -1,7 +1,7 @@
 """
 This module contains specialized table related models.
 """
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
@@ -18,7 +18,7 @@ from featurebyte.query_graph.node.generic import InputNode
 
 
 class ConstructNodeMixin:
-    """GetInputNodeMixin class"""
+    """ConstructNodeMixin class"""
 
     type: Literal[
         TableDataType.GENERIC,
@@ -73,8 +73,9 @@ class EventTableData(ConstructNodeMixin, BaseTableData):
     """EventTableData class"""
 
     type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
-    event_timestamp_column: StrictStr
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    event_timestamp_column: StrictStr
+    event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -93,6 +94,9 @@ class ItemTableData(ConstructNodeMixin, BaseTableData):
 
     type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    event_id_column: StrictStr
+    item_id_column: StrictStr
+    event_data_id: PydanticObjectId
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -110,6 +114,7 @@ class DimensionTableData(ConstructNodeMixin, BaseTableData):
 
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    dimension_data_id_column: StrictStr
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -127,6 +132,11 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
 
     type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    natural_key_column: StrictStr
+    effective_timestamp_column: StrictStr
+    surrogate_key_column: Optional[StrictStr]
+    end_timestamp_column: Optional[StrictStr] = Field(default=None)
+    current_flag_column: Optional[StrictStr] = Field(default=None)
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(

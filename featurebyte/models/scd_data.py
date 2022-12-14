@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import root_validator, validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
@@ -27,12 +27,6 @@ class SCDDataModel(SCDTableData, DataModel):
     current_flag: str
         The current status of the data.
     """
-
-    natural_key_column: StrictStr
-    effective_timestamp_column: StrictStr
-    surrogate_key_column: Optional[StrictStr]
-    end_timestamp_column: Optional[StrictStr] = Field(default=None)
-    current_flag_column: Optional[StrictStr] = Field(default=None)
 
     @root_validator(pre=True)
     @classmethod

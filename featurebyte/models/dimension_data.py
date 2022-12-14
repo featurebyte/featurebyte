@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import StrictStr, validator
+from pydantic import validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
@@ -19,8 +19,6 @@ class DimensionDataModel(DimensionTableData, DataModel):
     dimension_data_id_column: str
         The primary key of the dimension data table in the DWH
     """
-
-    dimension_data_id_column: StrictStr
 
     @validator("record_creation_date_column")
     @classmethod

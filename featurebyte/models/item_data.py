@@ -5,10 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import StrictStr, validator
+from pydantic import validator
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
 from featurebyte.query_graph.model.table import ItemTableData
 
@@ -38,10 +37,6 @@ class ItemDataModel(ItemTableData, DataModel):
     updated_at: Optional[datetime]
         Datetime when the ItemData object was last updated
     """
-
-    event_id_column: StrictStr
-    item_id_column: StrictStr
-    event_data_id: PydanticObjectId
 
     @validator("record_creation_date_column")
     @classmethod
