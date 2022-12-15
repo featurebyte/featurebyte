@@ -216,7 +216,9 @@ class Feature(
         return entity_ids
 
     @staticmethod
-    def _get_class_for_node_type(node_type: NodeType) -> Union[GroupbyNode | ItemGroupbyNode]:
+    def _get_class_for_node_type(
+        node_type: NodeType,
+    ) -> Union[Type[GroupbyNode] | Type[ItemGroupbyNode]]:
         """
         Helper method to get the class to cast nodes too.
 
@@ -227,7 +229,7 @@ class Feature(
 
         Returns
         -------
-        Type[GroupbyNode | ItemGroupbyNode]
+        Union[Type[GroupbyNode] | Type[ItemGroupbyNode]]
 
         Raises
         ------
