@@ -143,7 +143,7 @@ class FeatureStoreController(
                     Any
                         credentials
                     """
-                    cred = get_credential(user_id, feature_store_name)
+                    cred = await get_credential(user_id, feature_store_name)
                     if cred is not None:
                         return cred
                     return creds_from_params
