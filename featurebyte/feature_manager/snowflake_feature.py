@@ -92,8 +92,8 @@ class FeatureManagerSnowflake(BaseModel):
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
         # derive the latest tile_start_date
-        end_ind = date_util.timestamp_to_tile_index(datetime.utcnow(), tile_spec)
-        end_ts = date_util.tile_index_to_timestamp(end_ind, tile_spec)
+        end_ind = date_util.timestamp_utc_to_tile_index(datetime.utcnow(), tile_spec)
+        end_ts = date_util.tile_index_to_timestamp_utc(end_ind, tile_spec)
         end_ts_str = end_ts.strftime(date_format)
 
         start_ts_str = datetime(1970, 1, 1).strftime(date_format)

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from featurebyte.models.tile import TileSpec
 
 
-def timestamp_to_tile_index(input_dt: datetime, tile_spec: TileSpec) -> int:
+def timestamp_utc_to_tile_index(input_dt: datetime, tile_spec: TileSpec) -> int:
     """
     Convert datetime to tile index
 
@@ -19,17 +19,12 @@ def timestamp_to_tile_index(input_dt: datetime, tile_spec: TileSpec) -> int:
     tile_spec: TileSpec
         tile spec
 
-    Raises
-    ----------
-    ValueError
-        When input datetime timezone is empty or is not UTC
-
     Returns
     -------
     tile index
     """
     if not input_dt.tzinfo or input_dt.tzname() != "UTC":
-        raise ValueError("UTC timezone is required")
+        input_dt = input_dt.astimezone(timezone.utc)
 
     offset = tile_spec.time_modulo_frequency_second - tile_spec.blind_spot_second
     adjusted_ts = input_dt - timedelta(seconds=offset)
@@ -38,7 +33,7 @@ def timestamp_to_tile_index(input_dt: datetime, tile_spec: TileSpec) -> int:
     return tile_ind
 
 
-def tile_index_to_timestamp(tile_index: int, tile_spec: TileSpec) -> datetime:
+def tile_index_to_timestamp_utc(tile_index: int, tile_spec: TileSpec) -> datetime:
     """
     Convert tile index to datetime
 
