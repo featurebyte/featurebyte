@@ -3,7 +3,7 @@ SQL generation for aggregation without time windows from ItemView
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -128,7 +128,7 @@ class ItemAggregator(Aggregator):
     ItemView
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.item_aggregation_specs: list[ItemAggregationSpec] = []
         self.non_time_aware_request_table_plan: NonTimeAwareRequestTablePlan = (

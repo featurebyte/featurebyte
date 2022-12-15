@@ -59,8 +59,12 @@ def get_scd_join_expr(
         Right table, usually the SCD table
     join_type: Literal["inner", "left"]
         Join type
+    adapter: BaseAdapter
+        Instance of BaseAdapter for engine specific sql generation
     select_expr: Optional[Select]
         Partially constructed select expression, if any
+    offset: Optional[str]
+        Offset to apply when performing SCD join
 
     Returns
     -------
@@ -163,11 +167,16 @@ def augment_table_with_effective_timestamp(
         Left table
     right_table: Table
         Right table, usually the SCD table
+    adapter: BaseAdapter
+        Instance of BaseAdapter for engine specific sql generation
+    offset: Optional[str]
+        Offset to apply when performing SCD join
 
     Returns
     -------
     Select
     """
+    # Adjust left timestamps if offset is provided
     if offset:
         offset_seconds = pd.Timedelta(offset).total_seconds()
         left_ts_col = adapter.dateadd_microsecond(

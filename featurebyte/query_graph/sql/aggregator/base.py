@@ -10,7 +10,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, alias_
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 

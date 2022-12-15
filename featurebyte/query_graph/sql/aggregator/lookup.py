@@ -3,7 +3,7 @@ SQL generation for lookup features
 """
 from __future__ import annotations
 
-from typing import Iterable, Tuple
+from typing import Any, Iterable, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -23,7 +23,7 @@ class LookupAggregator(Aggregator):
     LookupAggregator is responsible for generating SQL for lookup features
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # The keys in these dicts are unique identifiers (based on LookupSpec's source_hash) that
         # determine which lookup features can be retrieved in a single join
         super().__init__(*args, **kwargs)
