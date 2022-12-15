@@ -10,8 +10,6 @@ from pydantic import BaseModel, Field, root_validator
 from featurebyte.enum import AggFunc, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.common_table import TableDetails
-from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -31,6 +29,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 
 
 class InputNode(BaseNode):

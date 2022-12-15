@@ -20,7 +20,8 @@ from featurebyte.exception import (
 )
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 @pytest.fixture(name="entity")

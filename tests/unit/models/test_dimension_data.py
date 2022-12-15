@@ -9,7 +9,7 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.models import DimensionDataModel
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.query_graph.model.common_table import TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 
 arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 

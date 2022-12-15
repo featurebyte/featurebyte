@@ -1,9 +1,9 @@
 """
-This module contains feature store related models that are used in featurebyte/query_graph.
+This module contains feature store & table schemas that are used in node parameters.
 """
 from __future__ import annotations
 
-from typing import ClassVar, Union
+from typing import ClassVar, Optional, Union
 
 from pydantic import StrictStr
 
@@ -54,3 +54,11 @@ class FeatureStoreDetails(FeatureByteBaseModel):
 
     type: SourceType
     details: DatabaseDetails
+
+
+class TableDetails(FeatureByteBaseModel):
+    """Table details"""
+
+    database_name: Optional[StrictStr]
+    schema_name: Optional[StrictStr]
+    table_name: StrictStr

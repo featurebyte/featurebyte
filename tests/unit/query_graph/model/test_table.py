@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.critical_data_info import (
     ConditionOperationField,
     CriticalDataInfo,
@@ -19,12 +19,13 @@ from featurebyte.query_graph.model.critical_data_info import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.model.feature_store import (
+from featurebyte.query_graph.model.table import DimensionTableData, EventTableData, GenericTableData
+from featurebyte.query_graph.node.schema import (
     FeatureStoreDetails,
     SnowflakeDetails,
     SourceType,
+    TableDetails,
 )
-from featurebyte.query_graph.model.table import DimensionTableData, EventTableData, GenericTableData
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 

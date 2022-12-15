@@ -10,7 +10,7 @@ from freezegun import freeze_time
 from featurebyte import exception
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.model.feature_store import SQLiteDetails
+from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,

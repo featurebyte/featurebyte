@@ -13,7 +13,7 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.feature_store import DatabaseDetails
+from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.schema.common.base import PaginationMixin
 
 

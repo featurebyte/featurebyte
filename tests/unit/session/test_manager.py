@@ -9,7 +9,7 @@ from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
-from featurebyte.query_graph.model.feature_store import SQLiteDetails
+from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.session.manager import SessionManager, session_cache
 
 

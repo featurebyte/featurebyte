@@ -16,10 +16,10 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.critical_data_info import ImputeOperation
-from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.generic import InputNode, ProjectNode
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
 class ConstructNodeMixin:

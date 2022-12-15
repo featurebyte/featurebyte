@@ -41,8 +41,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.model.common_table import TableDetails
-from featurebyte.query_graph.model.feature_store import SQLiteDetails
+from featurebyte.query_graph.node.schema import SQLiteDetails, TableDetails
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession

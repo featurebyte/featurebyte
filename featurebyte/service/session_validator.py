@@ -8,7 +8,7 @@ from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureSto
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.model.feature_store import DatabaseDetails
+from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager

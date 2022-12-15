@@ -13,10 +13,8 @@ from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidImputationsError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-if TYPE_CHECKING:
-    from featurebyte.query_graph.graph_node.base import GraphNode
-    from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.node import Node
 
 
 class ConditionOperationField(StrEnum):
@@ -52,7 +50,7 @@ class BaseImputeOperation(FeatureByteBaseModel):
         return f"{class_name}({self.dict()})"
 
     def add_impute_operation(
-        self, graph_node: "GraphNode", input_node: "Node", condition_node: "Node"
+        self, graph_node: GraphNode, input_node: Node, condition_node: Node
     ) -> "Node":
         """
         Add impute operation to the graph node
@@ -79,7 +77,7 @@ class BaseImputeOperation(FeatureByteBaseModel):
         return graph_node.output_node
 
     @abstractmethod
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         """
         Construct a node that generate conditional filtering column
 
@@ -115,7 +113,7 @@ class BaseCondition(FeatureByteBaseModel):
         """
 
     @abstractmethod
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         """
         Construct a node that generate conditional filtering column
 
@@ -142,7 +140,7 @@ class MissingValueCondition(BaseCondition):
     def check_condition(self, value: ScalarT) -> bool:
         return bool(pd.isnull(value))
 
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         return graph_node.add_operation(
             node_type=NodeType.IS_NULL,
             node_params={},
@@ -162,7 +160,7 @@ class DisguisedValueCondition(BaseCondition):
     def check_condition(self, value: ScalarT) -> bool:
         return value in self.disguised_values
 
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         return graph_node.add_operation(
             node_type=NodeType.IS_IN,
             node_params={"values": self.disguised_values},
@@ -182,7 +180,7 @@ class UnexpectedValueCondition(BaseCondition):
     def check_condition(self, value: ScalarT) -> bool:
         return value not in self.expected_values
 
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         isin_node = graph_node.add_operation(
             node_type=NodeType.IS_IN,
             node_params={"values": self.expected_values},
@@ -221,7 +219,7 @@ class BoundaryCondition(BaseCondition):
             # TypeError exception implies that two value are incomparable
             return False
 
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         node_type_map = {
             ConditionOperationField.LESS_THAN: NodeType.LT,
             ConditionOperationField.LESS_THAN_OR_EQUAL: NodeType.LE,
@@ -246,7 +244,7 @@ class IsStringCondition(BaseCondition):
     def check_condition(self, value: ScalarT) -> bool:
         return isinstance(value, str)
 
-    def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         return graph_node.add_operation(
             node_type=NodeType.IS_STRING,
             node_params={},

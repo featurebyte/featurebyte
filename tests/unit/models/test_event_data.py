@@ -8,7 +8,7 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.query_graph.model.common_table import TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 @pytest.fixture(name="feature_job_setting")

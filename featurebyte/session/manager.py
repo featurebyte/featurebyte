@@ -15,7 +15,7 @@ from featurebyte.config import Credentials
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.model.feature_store import DatabaseDetails
+from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.snowflake import SnowflakeSession
