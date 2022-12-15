@@ -197,6 +197,7 @@ class SCDJoin(TableNode):
             right_table,
             join_type=self.join_type,
             select_expr=select_expr,
+            adapter=self.context.adapter,
         )
         return select_expr
 

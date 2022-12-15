@@ -14,14 +14,12 @@ WITH REQUEST_TABLE AS (
       R."membership_status" AS "membership_status_a18d6f89f8538bdb"
     FROM (
       SELECT
-        "__FB_TS_COL",
         "__FB_KEY_COL",
         "__FB_LAST_TS",
         "POINT_IN_TIME",
         "CUSTOMER_ID"
       FROM (
         SELECT
-          "__FB_TS_COL",
           "__FB_KEY_COL",
           LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
           "POINT_IN_TIME",

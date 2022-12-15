@@ -271,7 +271,6 @@ def test_scd_join(global_graph, scd_join_node):
           R."membership_status" AS "latest_membership_status"
         FROM (
           SELECT
-            "__FB_TS_COL",
             "__FB_KEY_COL",
             "__FB_LAST_TS",
             "event_timestamp",
@@ -280,7 +279,6 @@ def test_scd_join(global_graph, scd_join_node):
             "event_column_2_out"
           FROM (
             SELECT
-              "__FB_TS_COL",
               "__FB_KEY_COL",
               LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
               "event_timestamp",
