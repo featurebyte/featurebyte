@@ -15,6 +15,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
+from featurebyte.query_graph.model.critical_data_info import ImputeOperation
 from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
@@ -57,31 +58,34 @@ class ConstructNodeMixin:
 
     @staticmethod
     def _add_impute_operations(
-        column_info: ColumnInfo,
+        imputations: List[ImputeOperation],
         graph_node: GraphNode,
         frame_node: Node,
         project_node: ProjectNode,
+        output_column_name: str,
     ) -> Node:
         """
         Add imputation operations to the graph node
 
         Parameters
         ----------
-        column_info: ColumnInfo
-            Column info object
+        imputations: List[ImputeOperation]
+            List of imputation operations
         graph_node: GraphNode
             Graph node
         frame_node: Node
             Input frame node
         project_node: ProjectNode
             Column projection node
+        output_column_name: str
+            Output column name
 
         Returns
         -------
         Node
         """
         input_node: Node = project_node
-        for imputation in column_info.critical_data_info.imputations:
+        for imputation in imputations:
             condition_node = imputation.add_condition_operation(
                 graph_node=graph_node, input_node=input_node
             )
@@ -91,7 +95,7 @@ class ConstructNodeMixin:
 
         return graph_node.add_operation(
             node_type=NodeType.ASSIGN,
-            node_params={"name": column_info.name, "value": None},
+            node_params={"name": output_column_name, "value": None},
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[frame_node, input_node],
         )
@@ -130,10 +134,11 @@ class ConstructNodeMixin:
 
             assert col_info.critical_data_info is not None
             frame_node = self._add_impute_operations(
-                column_info=col_info,
+                imputations=col_info.critical_data_info.imputations,
                 graph_node=graph_node,
                 project_node=cast(ProjectNode, proj_col_node),
                 frame_node=frame_node or proxy_input_nodes[0],
+                output_column_name=col_info.name,
             )
 
         return graph_node
