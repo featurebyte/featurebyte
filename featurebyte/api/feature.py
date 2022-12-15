@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Type, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Type, cast
 
 import time
 from http import HTTPStatus
@@ -218,7 +218,7 @@ class Feature(
     @staticmethod
     def _get_class_for_node_type(
         node_type: NodeType,
-    ) -> Union[Type[GroupbyNode] | Type[ItemGroupbyNode]]:
+    ) -> Type[GroupbyNode | ItemGroupbyNode]:
         """
         Helper method to get the class to cast nodes too.
 
@@ -229,7 +229,7 @@ class Feature(
 
         Returns
         -------
-        Union[Type[GroupbyNode] | Type[ItemGroupbyNode]]
+        Type[GroupbyNode | ItemGroupbyNode]
 
         Raises
         ------
