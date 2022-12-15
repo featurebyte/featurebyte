@@ -1,6 +1,8 @@
 """
 Unit tests for query graph operation structure extraction
 """
+import pytest
+
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -303,12 +305,25 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     assert grp_op_struct.post_aggregation == expected_filtered_aggregation
 
 
+@pytest.fixture(name="order_id_source_data")
+def order_id_source_data_fixture():
+    """Order id source data"""
+    return {
+        "name": "order_id",
+        "filter": False,
+        "node_names": {"input_1"},
+        "tabular_data_type": "item_data",
+        "tabular_data_id": None,
+        "type": "source",
+    }
+
+
 def test_extract_operation__item_groupby(
-    global_graph, item_data_input_node, order_size_feature_group_node
+    global_graph, item_data_input_node, order_size_feature_group_node, order_id_source_data
 ):
     """Test extract_operation_structure: item groupby"""
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_group_node)
-    assert op_struct.columns == []
+    assert op_struct.columns == [order_id_source_data]
     assert op_struct.aggregations == [
         {
             "name": "order_size",
@@ -363,6 +378,7 @@ def test_extract_operation__join_double_aggregations(
     order_size_feature_join_node,
     order_size_agg_by_cust_id_graph,
     event_data_input_node,
+    order_id_source_data,
 ):
     """Test extract_operation_structure: join feature & double aggregations"""
     _, groupby_node = order_size_agg_by_cust_id_graph
@@ -375,7 +391,7 @@ def test_extract_operation__join_double_aggregations(
     )
     order_size_column = {
         "name": "ord_size",
-        "columns": [],
+        "columns": [order_id_source_data],
         "transforms": ["item_groupby", "add(value=123)"],
         "filter": False,
         "type": "derived",
@@ -420,7 +436,7 @@ def test_extract_operation__join_double_aggregations(
     assert op_struct.aggregations == expected_aggregations
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == []
+    assert grp_op_struct.source_columns == [order_id_source_data]
     assert grp_op_struct.derived_columns == [order_size_column]
     assert grp_op_struct.aggregations == expected_aggregations
     assert grp_op_struct.post_aggregation is None
