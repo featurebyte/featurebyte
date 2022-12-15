@@ -446,5 +446,9 @@ class EventView(View, GroupByMixin):
 
         # Update metadata
         self._update_metadata(
-            node.name, updated_columns_info, updated_column_lineage_map, joined_tabular_data_ids
+            node.name,
+            updated_columns_info,
+            updated_column_lineage_map,
+            joined_tabular_data_ids,
+            self.row_index_lineage,
         )

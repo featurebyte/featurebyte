@@ -78,24 +78,29 @@ def test_update_metadata(simple_test_view):
     new_cols_info = [ColumnInfo(name="colB", dtype=DBVarType.FLOAT)]
     new_col_lineage_map = {"colX": ("a", "b")}
     new_joined_data_ids = [get_random_pydantic_object_id()]
+    new_row_index_lineage = ("new_node_name",)
 
     # verify that the initial state is not the updated state
     assert simple_test_view.node_name != new_node_name
     assert simple_test_view.columns_info != new_cols_info
     assert simple_test_view.column_lineage_map != new_col_lineage_map
-    assert simple_test_view.row_index_lineage != ("new_node_name",)
+    assert simple_test_view.row_index_lineage != new_row_index_lineage
     assert simple_test_view.tabular_data_ids != new_joined_data_ids
 
     # update state
     simple_test_view._update_metadata(
-        new_node_name, new_cols_info, new_col_lineage_map, new_joined_data_ids
+        new_node_name,
+        new_cols_info,
+        new_col_lineage_map,
+        new_joined_data_ids,
+        new_row_index_lineage,
     )
 
     # verify that state is updated
     assert simple_test_view.node_name == new_node_name
     assert simple_test_view.columns_info == new_cols_info
     assert simple_test_view.column_lineage_map == new_col_lineage_map
-    assert simple_test_view.row_index_lineage == ("new_node_name",)
+    assert simple_test_view.row_index_lineage == new_row_index_lineage
     assert simple_test_view.tabular_data_ids == new_joined_data_ids
 
 
