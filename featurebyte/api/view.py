@@ -123,7 +123,9 @@ class ViewColumn(Series, SampleMixin):
             )
         input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
         view = cast(View, view[[input_column_name]])
-        feature = view.as_features([feature_name], offset=offset)[feature_name]
+        feature = view.as_features(
+            [feature_name], offset=offset, as_feature_column=input_column_name
+        )[feature_name]
         return cast(Feature, feature)
 
 
@@ -686,8 +688,32 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         return feature
 
+    def _get_as_features_excluded_columns(self) -> List[str]:
+        """
+        Get a list of columns in the View that should not be considered as feature columns when
+        as_features() is called.
+
+        For example, when as_features() is called this way,
+
+        view[["A", "B", "C"]].as_features(["FeatureA", "FeatureB", "FeatureC"])
+
+        the View object might have additional inherited columns such as the join key. Such columns
+        should not be made Features by as_features(). But not all inherited columns should be
+        excluded automatically because that can include columns such as entity columns which are
+        valid features.
+
+        If it is desired to use excluded columns as features, that can be done using the
+        ViewColumn's as_feature method.
+        """
+        return [self.get_join_column()]
+
     @typechecked
-    def as_features(self, feature_names: List[str], offset: Optional[str] = None) -> FeatureGroup:
+    def as_features(
+        self,
+        feature_names: List[str],
+        offset: Optional[str] = None,
+        as_feature_column: Optional[str] = None,
+    ) -> FeatureGroup:
         """
         Create lookup features directly from the columns in the View
 
@@ -697,6 +723,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Feature names
         offset: str
             When specified, retrieve feature values as of this offset prior to the point-in-time
+        as_feature_column: Optional[str]
+            When specified, override the default column exclusion logic for this column name. Used
+            internally by as_feature to support creating lookup features using special columns.
 
         Returns
         -------
@@ -707,7 +736,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ValueError
             If the length of feature_names does not match with the number of columns in the View
         """
-        special_columns = set(self.protected_columns)
+        special_columns = set(self._get_as_features_excluded_columns())
+        if as_feature_column is not None:
+            special_columns.discard(as_feature_column)
+
         input_column_names = [
             column.name for column in self.columns_info if column.name not in special_columns
         ]

@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from pydantic import Field
 from typeguard import typechecked
@@ -133,6 +133,9 @@ class SlowlyChangingView(View):
 
     def get_join_column(self) -> str:
         return self.natural_key_column
+
+    def _get_as_features_excluded_columns(self) -> List[str]:
+        return [self.get_join_column(), self.effective_timestamp_column]
 
     def _get_common_scd_parameters(self) -> SCDBaseParameters:
         """
