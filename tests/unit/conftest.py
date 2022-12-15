@@ -14,7 +14,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import SnowflakeDetails
+from featurebyte import ItemView, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -28,7 +28,7 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.base import VersionIdentifier
@@ -523,6 +523,35 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
         assert feature.tabular_data_ids == [snowflake_event_data_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
+
+
+@pytest.fixture(name="production_ready_feature")
+def production_ready_feature_fixture(feature_group):
+    """Fixture for a production ready feature"""
+    feature = feature_group["sum_30m"] + 123
+    feature.name = "production_ready_feature"
+    assert feature.parent is None
+    feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
+    feature.__dict__["version"] = "V220401"
+    feature_group["production_ready_feature"] = feature
+    return feature
+
+
+@pytest.fixture(name="non_time_based_feature")
+def get_non_time_based_feature_fixture(snowflake_item_data):
+    """
+    Get a non-time-based feature.
+
+    This is a non-time-based feature as it is built from ItemData.
+    """
+    snowflake_item_data.item_id_col.as_entity("customer")
+    snowflake_item_data.item_id_column = "item_id_col"
+    item_view = ItemView.from_item_data(snowflake_item_data)
+    return item_view.groupby("item_id_col").aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="non_time_time_sum_amount_feature",
+    )
 
 
 @pytest.fixture(name="float_feature")

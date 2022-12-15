@@ -1,14 +1,26 @@
 """
 Unit test for EventView class
 """
-import pytest
 
+from unittest import mock
+from unittest.mock import PropertyMock
+
+import pytest
+from bson import ObjectId
+
+from featurebyte import Feature
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import DBVarType
+from featurebyte.exception import EventViewMatchingEntityColumnNotFound
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalGraphState
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
+from tests.util.helper import get_node
 
 
 class TestEventView(BaseViewTestSuite):
@@ -222,3 +234,416 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_e
     # No error expected
     snowflake_event_view.validate_join(snowflake_dimension_view)
     snowflake_event_view.validate_join(snowflake_event_view)
+
+
+def test_validate_entity_col_override__invalid_columns(snowflake_event_view):
+    """
+    Test _validate_entity_col_override
+    """
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_event_view._validate_entity_col_override("")
+    assert "is an empty string" in str(exc_info)
+
+    with pytest.raises(ValueError) as exc_info:
+        snowflake_event_view._validate_entity_col_override("random_col")
+    assert "not a column in the event view" in str(exc_info)
+
+
+def test_validate_entity_col_override__valid_col_passed_in(snowflake_event_view):
+    """
+    Test _validate_entity_col_override
+    """
+    col_to_use = snowflake_event_view.columns_info[0].name
+    # No error raised
+    snowflake_event_view._validate_entity_col_override(col_to_use)
+
+
+@pytest.fixture(name="empty_event_view_builder")
+def get_empty_event_view_fixture(snowflake_feature_store):
+    """
+    Get an empty event view.
+    """
+
+    def get_event_view():
+        return EventView(
+            columns_info=[],
+            row_index_lineage=[],
+            node_name="input_1",
+            tabular_source=TabularSource(
+                feature_store_id=PydanticObjectId(ObjectId()),
+                table_details=TableDetails(
+                    table_name="random",
+                ),
+            ),
+            tabular_data_ids=[],
+            column_lineage_map={},
+            feature_store=snowflake_feature_store,
+        )
+
+    return get_event_view
+
+
+@pytest.fixture(name="empty_feature_builder")
+def get_empty_feature_fixture(snowflake_feature_store):
+    """
+    Helper to get an empty feature
+    """
+
+    def get_feature():
+        return Feature(
+            entity_ids=[],
+            dtype=DBVarType.INT,
+            row_index_lineage=[],
+            node_name="",
+            tabular_source=TabularSource(
+                feature_store_id=PydanticObjectId(ObjectId()),
+                table_details=TableDetails(
+                    table_name="random",
+                ),
+            ),
+            tabular_data_ids=[],
+            feature_store=snowflake_feature_store,
+        )
+
+    return get_feature
+
+
+def test_validate_feature_addition__time_based_feature_no_override(
+    production_ready_feature, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition with no override col provided - expect error
+    """
+    event_view = empty_event_view_builder()
+    with pytest.raises(ValueError) as exc_info:
+        event_view._validate_feature_addition("random_col", production_ready_feature, None)
+    assert "We currently only support the addition of non-time based features" in str(exc_info)
+
+
+def test_validate_feature_addition__time_based_feature_with_override(
+    production_ready_feature, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition with override col provided - expect error
+    """
+    event_view = empty_event_view_builder()
+    with pytest.raises(ValueError) as exc_info:
+        event_view._validate_feature_addition("random_col", production_ready_feature, "random")
+    assert "We currently only support the addition of non-time based features" in str(exc_info)
+
+
+def test_validate_feature_addition__non_time_based_no_override(
+    empty_feature_builder, empty_event_view_builder
+):
+    """
+    Test _validate_feature_addition non-time based with no override col
+    """
+    event_view = empty_event_view_builder()
+    empty_feature = empty_feature_builder()
+    # Should run with no errors
+    with mock.patch(
+        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
+    ) as mock_is_time_based:
+        mock_is_time_based.return_value = False
+        event_view._validate_feature_addition("random_col", empty_feature, None)
+
+
+def test_validate_feature_addition__non_time_based_with_override(
+    event_view_with_col_infos, empty_feature_builder
+):
+    """
+    Test _validate_feature_addition non-time based with override col
+    """
+    col_name = "col_a"
+    event_view = event_view_with_col_infos([ColumnInfo(name=col_name, dtype=DBVarType.INT)])
+    empty_feature = empty_feature_builder()
+    # Should run with no errors
+    with mock.patch(
+        "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
+    ) as mock_is_time_based:
+        mock_is_time_based.return_value = False
+        event_view._validate_feature_addition("random_col", empty_feature, col_name)
+
+
+def assert_entity_identifiers_raises_errors(identifiers, feature):
+    """
+    Helper method to assert that entity identifiers passed in will raise an error on `_get_feature_entity_col`.
+    """
+    with mock.patch(
+        "featurebyte.api.feature.Feature.entity_identifiers", new_callable=PropertyMock
+    ) as mock_idents:
+        mock_idents.return_value = identifiers
+        with pytest.raises(ValueError) as exc_info:
+            EventView._get_feature_entity_col(feature)
+        assert "The feature should only be based on one entity" in str(exc_info)
+
+
+def test_get_feature_entity_col(production_ready_feature):
+    """
+    Test get_feature_entity_col
+    """
+    # verify we can retrieve the entity
+    col = EventView._get_feature_entity_col(production_ready_feature)
+    assert col == "cust_id"
+
+    # verify that no entity identifiers raises error
+    assert_entity_identifiers_raises_errors([], production_ready_feature)
+
+    # verify that multiple entity identifiers raises error
+    assert_entity_identifiers_raises_errors(["col_a", "col_b"], production_ready_feature)
+
+
+@pytest.fixture(name="feature_with_entity_ids")
+def get_feature_with_entity_ids(snowflake_feature_store):
+    """
+    Get a function that helps us create test features with configurable entity IDs.
+    """
+
+    def get_feature(entity_ids):
+        return Feature(
+            entity_ids=entity_ids,
+            dtype=DBVarType.INT,
+            row_index_lineage=[],
+            node_name="input_1",
+            tabular_source=TabularSource(
+                feature_store_id=PydanticObjectId(ObjectId()),
+                table_details=TableDetails(
+                    table_name="random",
+                ),
+            ),
+            tabular_data_ids=[],
+            feature_store=snowflake_feature_store,
+        )
+
+    return get_feature
+
+
+def test_get_feature_entity_id(feature_with_entity_ids):
+    """
+    Test get_feature_entity_col
+    """
+    entity_id_1 = PydanticObjectId(ObjectId())
+    entity_id_2 = PydanticObjectId(ObjectId())
+    # verify we can retrieve the entity ID
+    feature = feature_with_entity_ids([entity_id_1])
+    entity_id = EventView._get_feature_entity_id(feature)
+    assert entity_id == feature.entity_ids[0]
+
+    # verify that no entity IDs raises error
+    feature = feature_with_entity_ids([])
+    with pytest.raises(ValueError) as exc_info:
+        EventView._get_feature_entity_id(feature)
+    assert "The feature should only be based on one entity" in str(exc_info)
+
+    # verify that multiple entity IDs raises error
+    feature = feature_with_entity_ids([entity_id_1, entity_id_2])
+    with pytest.raises(ValueError) as exc_info:
+        EventView._get_feature_entity_id(feature)
+    assert "The feature should only be based on one entity" in str(exc_info)
+
+
+@pytest.fixture(name="event_view_with_col_infos")
+def get_event_view_with_col_infos(empty_event_view_builder):
+    """
+    Get a function that helps us create test event_views with configurable column infos.
+    """
+
+    def get_event_view(col_info):
+        event_view = empty_event_view_builder()
+        event_view.columns_info = col_info
+        return event_view
+
+    return get_event_view
+
+
+def test_get_col_with_entity_id(event_view_with_col_infos):
+    """
+    Test _get_col_with_entity_id
+    """
+    entity_id = PydanticObjectId(ObjectId())
+    # No column infos returns None
+    event_view = event_view_with_col_infos([])
+    col = event_view._get_col_with_entity_id(entity_id)
+    assert col is None
+
+    # Exactly one matching column info should return the column name
+    col_a_name = "col_a"
+    col_info_a = ColumnInfo(name=col_a_name, dtype=DBVarType.INT, entity_id=entity_id)
+    entity_id_b = PydanticObjectId(ObjectId())
+    diff_entity_id_col_info_b = ColumnInfo(name="col_b", dtype=DBVarType.INT, entity_id=entity_id_b)
+    event_view = event_view_with_col_infos([col_info_a, diff_entity_id_col_info_b])
+    col = event_view._get_col_with_entity_id(entity_id)
+    assert col is col_a_name
+
+    # Multiple matching column info should return None
+    same_entity_id_col_info_c = ColumnInfo(name="col_c", dtype=DBVarType.INT, entity_id=entity_id)
+    event_view = event_view_with_col_infos([col_info_a, same_entity_id_col_info_c])
+    col = event_view._get_col_with_entity_id(entity_id)
+    assert col is None
+
+
+def test_get_view_entity_column__entity_col_provided(
+    snowflake_event_view, production_ready_feature
+):
+    """
+    Test _get_view_entity_column - entity col provided
+    """
+    # Test empty string passed in - should have no error since we assume validation is done prior.
+    col_to_use = snowflake_event_view._get_view_entity_column(production_ready_feature, "")
+    assert col_to_use == ""
+
+    # Test column is passed in - we don't have to validate whether the column exists in the view, since we
+    # would've done that beforehand already.
+    entity_col_name = "entity_col"
+    col_to_use = snowflake_event_view._get_view_entity_column(
+        production_ready_feature, entity_col_name
+    )
+    assert col_to_use == entity_col_name
+
+
+def test_get_view_entity_column__no_entity_col_provided(
+    event_view_with_col_infos, feature_with_entity_ids
+):
+    """
+    Test _get_view_entity_column - no entity col provided
+    """
+    entity_id_1 = PydanticObjectId(ObjectId())
+    entity_id_2 = PydanticObjectId(ObjectId())
+
+    # No matching column should throw an error
+    feature = feature_with_entity_ids([entity_id_1])
+    event_view_with_no_col_info = event_view_with_col_infos(
+        [
+            ColumnInfo(name="random", dtype=DBVarType.INT, entity_id=entity_id_2),
+        ]
+    )
+    with pytest.raises(EventViewMatchingEntityColumnNotFound) as exc_info:
+        event_view_with_no_col_info._get_view_entity_column(feature, None)
+    assert "Unable to find a matching entity column" in str(exc_info)
+
+    # Matching column should match
+    col_a_name = "col_a"
+    event_view_with_matching_col_info = event_view_with_col_infos(
+        [
+            ColumnInfo(name="random", dtype=DBVarType.INT, entity_id=entity_id_2),
+            ColumnInfo(name=col_a_name, dtype=DBVarType.INT, entity_id=entity_id_1),
+        ]
+    )
+    view_entity_col = event_view_with_matching_col_info._get_view_entity_column(feature, None)
+    assert view_entity_col == col_a_name
+
+
+@pytest.fixture(name="generic_input_node_params")
+def get_generic_input_node_params_fixture():
+    node_params = {
+        "type": "generic",
+        "columns": ["random_column"],
+        "table_details": {
+            "database_name": "db",
+            "schema_name": "public",
+            "table_name": "transaction",
+        },
+        "feature_store_details": {
+            "type": "snowflake",
+            "details": {
+                "account": "sf_account",
+                "warehouse": "sf_warehouse",
+                "database": "db",
+                "sf_schema": "public",
+            },
+        },
+    }
+    return {
+        "node_type": NodeType.INPUT,
+        "node_params": node_params,
+        "node_output_type": NodeOutputType.FRAME,
+        "input_nodes": [],
+    }
+
+
+def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input_node_params):
+    """
+    Test add feature
+    """
+    # reset between tests
+    GlobalGraphState.reset()
+
+    # Initialize graph
+    original_node_name = snowflake_event_view.node_name
+    input_node = snowflake_event_view.graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=generic_input_node_params["node_params"],
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    snowflake_event_view.node_name = input_node.name
+    original_column_info = snowflake_event_view.columns_info
+
+    # Add feature
+    snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
+
+    # assert updated view params
+    assert snowflake_event_view.columns_info == [
+        *original_column_info,
+        ColumnInfo(
+            name="new_col",
+            dtype=DBVarType.FLOAT,
+            entity_id=non_time_based_feature.entity_ids[0],
+        ),
+    ]
+    join_feature_node_name = "join_feature_1"
+    assert snowflake_event_view.node_name == join_feature_node_name
+    original_lineage = (original_node_name,)
+    new_col_lineage = (non_time_based_feature.node.name,)
+    assert snowflake_event_view.column_lineage_map == {
+        "col_binary": original_lineage,
+        "col_boolean": original_lineage,
+        "col_char": original_lineage,
+        "col_float": original_lineage,
+        "col_int": original_lineage,
+        "col_text": original_lineage,
+        "created_at": original_lineage,
+        "cust_id": original_lineage,
+        "event_timestamp": original_lineage,
+        "new_col": new_col_lineage,
+    }
+    assert snowflake_event_view.row_index_lineage == (original_node_name,)
+
+    # assert graph node
+    view_dict = snowflake_event_view.dict()
+    node_dict = get_node(view_dict["graph"], view_dict["node_name"])
+    assert node_dict == {
+        "name": join_feature_node_name,
+        "output_type": "frame",
+        "parameters": {
+            "feature_entity_column": "item_id_col",
+            "name": "new_col",
+            "view_entity_column": "cust_id",
+            "view_point_in_time_column": None,
+        },
+        "type": "join_feature",
+    }
+    assert view_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
+        {"source": "join_1", "target": "item_groupby_1"},
+        {"source": "item_groupby_1", "target": "project_1"},
+        {"source": "input_3", "target": "join_feature_1"},
+        {"source": "project_1", "target": "join_feature_1"},
+    ]
+
+
+def test__validate_column_is_not_used(empty_event_view_builder):
+    """
+    Test _validate_column_is_not_used
+    """
+    event_view = empty_event_view_builder()
+    col_name = "col_a"
+    # no error if column name is unused
+    event_view._validate_column_is_not_used(new_column_name=col_name)
+
+    # verify that validation errors if column is used
+    event_view.columns_info = [ColumnInfo(name=col_name, dtype=DBVarType.INT)]
+    with pytest.raises(ValueError) as exc_info:
+        event_view._validate_column_is_not_used(new_column_name=col_name)
+    assert "New column name provided is already a column in the existing view" in str(exc_info)

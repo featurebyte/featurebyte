@@ -1,6 +1,7 @@
 """
 This module contains all the enums used for query graph.
 """
+
 from featurebyte.enum import StrEnum
 
 

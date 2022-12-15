@@ -237,3 +237,9 @@ class InvalidImputationsError(ValueError):
     """
     Raise when the imputations do not fulfill constraints (for example, double imputations is detected).
     """
+
+
+class EventViewMatchingEntityColumnNotFound(Exception):
+    """
+    Raise when we are unable to find a matching entity column when trying to add a feature to an event view.
+    """
