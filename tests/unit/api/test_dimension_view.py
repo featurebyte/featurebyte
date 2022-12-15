@@ -59,6 +59,15 @@ def test_as_features__invalid_column_names(snowflake_dimension_view):
     assert "Length of feature_names should be 8, got 1" in str(exc.value)
 
 
+def test_as_features__all_special_columns(snowflake_dimension_view_with_entity):
+    """
+    Test as_features() when only special columns are selected
+    """
+    with pytest.raises(ValueError) as exc:
+        snowflake_dimension_view_with_entity[["col_int"]].as_features(["IntFeature"])
+    assert "None of the selected columns can be converted to Features" in str(exc.value)
+
+
 def test_as_features__primary_key_not_entity(snowflake_dimension_view):
     """
     Test as_features() when the primary key in not an entity

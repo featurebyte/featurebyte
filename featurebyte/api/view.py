@@ -698,14 +698,48 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         view[["A", "B", "C"]].as_features(["FeatureA", "FeatureB", "FeatureC"])
 
         the View object might have additional inherited columns such as the join key. Such columns
-        should not be made Features by as_features(). But not all inherited columns should be
-        excluded automatically because that can include columns such as entity columns which are
+        should not become made a Feature. But not all inherited columns should be excluded
+        automatically because that can include columns such as entity columns which are
         valid features.
 
         If it is desired to use excluded columns as features, that can be done using the
         ViewColumn's as_feature method.
+
+        Returns
+        -------
+        List[str]
+            List of columns that should not be made a Feature in as_features()
         """
         return [self.get_join_column()]
+
+    def _validate_as_features_input_columns(
+        self, feature_names: list[str], as_feature_column: Optional[str]
+    ) -> list[str]:
+
+        special_columns = set(self._get_as_features_excluded_columns())
+        if as_feature_column is not None:
+            special_columns.discard(as_feature_column)
+
+        input_column_names = [
+            column.name for column in self.columns_info if column.name not in special_columns
+        ]
+
+        if len(input_column_names) == 0:
+            raise ValueError(
+                "None of the selected columns can be converted to Features. Consider calling"
+                " ViewColumn's as_feature method to create Features one at a time."
+            )
+
+        if len(feature_names) != len(input_column_names):
+            input_column_names_str = ", ".join(sorted(input_column_names))
+            raise ValueError(
+                f"Length of feature_names should be {len(input_column_names)}, got"
+                f" {len(feature_names)} (columns to be converted to features are:"
+                f" {input_column_names_str}). Consider selecting columns before calling"
+                " as_features."
+            )
+
+        return input_column_names
 
     @typechecked
     def as_features(
@@ -724,30 +758,22 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         offset: str
             When specified, retrieve feature values as of this offset prior to the point-in-time
         as_feature_column: Optional[str]
-            When specified, override the default column exclusion logic for this column name. Used
+            When specified, override the default columns exclusion rule for this column name. Used
             internally by as_feature to support creating lookup features using special columns.
-
-        Returns
-        -------
-        FeatureGroup
 
         Raises
         ------
         ValueError
-            If the length of feature_names does not match with the number of columns in the View
-        """
-        special_columns = set(self._get_as_features_excluded_columns())
-        if as_feature_column is not None:
-            special_columns.discard(as_feature_column)
+            When any of the specified parameters are invalid
 
-        input_column_names = [
-            column.name for column in self.columns_info if column.name not in special_columns
-        ]
-        if len(feature_names) != len(input_column_names):
-            raise ValueError(
-                f"Length of feature_names should be {len(input_column_names)}, got"
-                f" {len(feature_names)}. Consider selecting columns before calling as_features."
-            )
+        Returns
+        -------
+        FeatureGroup
+        """
+        # Input column names
+        input_column_names = self._validate_as_features_input_columns(
+            feature_names=feature_names, as_feature_column=as_feature_column
+        )
 
         self._validate_offset(offset)
 
@@ -763,7 +789,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         entity = Entity.get_by_id(entity_id)
         serving_name = entity.serving_name
 
-        # Input column names
+        # Set up Lookup node
         additional_params = self._get_as_feature_parameters(offset=offset)
         lookup_node_params = {
             "input_column_names": input_column_names,
