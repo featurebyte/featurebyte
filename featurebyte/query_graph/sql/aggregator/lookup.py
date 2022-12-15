@@ -76,7 +76,7 @@ class LookupAggregator(Aggregator):
             out.update(spec.serving_names)
         return out
 
-    def get_grouped_lookup_specs(self, is_scd: bool) -> Iterable[list[LookupSpec]]:
+    def iterate_grouped_lookup_specs(self, is_scd: bool) -> Iterable[list[LookupSpec]]:
         """
         Iterate over groups of LookupSpec filtering by time awareness. All the LookupSpecs in a
         group can be looked up using the same join.
@@ -109,7 +109,7 @@ class LookupAggregator(Aggregator):
 
         out = []
 
-        for specs in self.get_grouped_lookup_specs(is_scd=False):
+        for specs in self.iterate_grouped_lookup_specs(is_scd=False):
 
             entity_column = specs[0].entity_column
             serving_name = specs[0].serving_names[0]
@@ -187,7 +187,7 @@ class LookupAggregator(Aggregator):
 
         scd_agg_result_names = []
 
-        for lookup_specs in self.get_grouped_lookup_specs(is_scd=True):
+        for lookup_specs in self.iterate_grouped_lookup_specs(is_scd=True):
 
             left_table = Table(
                 expr=table_expr,
