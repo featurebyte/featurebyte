@@ -525,6 +525,18 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
     yield feature_group
 
 
+@pytest.fixture(name="production_ready_feature")
+def production_ready_feature_fixture(feature_group):
+    """Fixture for a production ready feature"""
+    feature = feature_group["sum_30m"] + 123
+    feature.name = "production_ready_feature"
+    assert feature.parent is None
+    feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
+    feature.__dict__["version"] = "V220401"
+    feature_group["production_ready_feature"] = feature
+    return feature
+
+
 @pytest.fixture(name="non_time_based_feature")
 def get_non_time_based_feature_fixture(snowflake_item_data):
     """

@@ -887,8 +887,6 @@ def get_non_time_based_feature_fixture(snowflake_item_data):
 
     This is a non-time-based feature as it is built from ItemData.
     """
-    # snowflake_item_data.item_id.as_entity("order")
-    # snowflake_item_data.item_id_column = "item_id"
     item_view = ItemView.from_item_data(snowflake_item_data)
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
@@ -916,10 +914,11 @@ def test_add_feature(event_view, non_time_based_feature):
     feature_preview = non_time_based_feature.preview(
         {"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}
     )
-    for _, row in event_view_preview.iterrows():
-        if row["TRANSACTION_ID"] == order_id_to_match:
-            assert row["transaction_count"] == feature_preview["non_time_count_feature"][0]
-            break
+    event_view_feature_value = event_view_preview[
+        event_view_preview["TRANSACTION_ID"] == order_id_to_match
+    ].iloc[0]
+    feature_preview_value = feature_preview["non_time_count_feature"][0]
+    assert event_view_feature_value["transaction_count"] == feature_preview_value
 
     # test double aggregation of feature by doing an aggregation over the newly added feature column
     transaction_counts = event_view.groupby("PRODUCT_ACTION").aggregate_over(

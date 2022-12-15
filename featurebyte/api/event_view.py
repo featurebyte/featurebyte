@@ -213,8 +213,29 @@ class EventView(View, GroupByMixin):
                 f"of the following columns as an override: {sorted(current_columns)}"
             )
 
+    def _validate_column_is_not_used(self, new_column_name: str) -> None:
+        """
+        Validate that the new column name passed in isn't an existing column name.
+
+        Parameters
+        ----------
+        new_column_name: str
+            the new column name that we want to use
+
+        Raises
+        ------
+        ValueError
+            raised when the new column name is already the name of an existing column
+        """
+        for column_name in self.columns:
+            if column_name == new_column_name:
+                raise ValueError(
+                    "New column name provided is already a column in the existing view. Please pick a "
+                    "different name."
+                )
+
     def _validate_feature_addition(
-        self, feature: Feature, entity_col_override: Optional[str]
+        self, new_column_name: str, feature: Feature, entity_col_override: Optional[str]
     ) -> None:
         """
         Validates feature addition
@@ -223,6 +244,8 @@ class EventView(View, GroupByMixin):
 
         Parameters
         ----------
+        new_column_name: str
+            the new column name we want to use
         feature: Feature
             the feature we want to add on to the EventView
         entity_col_override: Optional[str]
@@ -233,6 +256,9 @@ class EventView(View, GroupByMixin):
         ValueError
             raised when a time-based feature is passed in, or the entity_col_override validation fails
         """
+        # Validate whether the new column name is used
+        self._validate_column_is_not_used(new_column_name)
+
         # Validate whether feature is time based
         if feature.is_time_based:
             raise ValueError("We currently only support the addition of non-time based features.")

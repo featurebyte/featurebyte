@@ -22,18 +22,6 @@ from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
 
 
-@pytest.fixture(name="production_ready_feature")
-def production_ready_feature_fixture(feature_group):
-    """Fixture for a production ready feature"""
-    feature = feature_group["sum_30m"] + 123
-    feature.name = "production_ready_feature"
-    assert feature.parent is None
-    feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
-    feature.__dict__["version"] = "V220401"
-    feature_group["production_ready_feature"] = feature
-    return feature
-
-
 @pytest.fixture(name="draft_feature")
 def draft_feature_fixture(feature_group):
     """Fixture for a draft feature"""

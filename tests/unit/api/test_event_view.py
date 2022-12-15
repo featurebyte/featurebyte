@@ -15,7 +15,6 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -227,18 +226,6 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_e
     # No error expected
     snowflake_event_view.validate_join(snowflake_dimension_view)
     snowflake_event_view.validate_join(snowflake_event_view)
-
-
-@pytest.fixture(name="production_ready_feature")
-def production_ready_feature_fixture(feature_group):
-    """Fixture for a production ready feature"""
-    feature = feature_group["sum_30m"] + 123
-    feature.name = "production_ready_feature"
-    assert feature.parent is None
-    feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
-    feature.__dict__["version"] = "V220401"
-    feature_group["production_ready_feature"] = feature
-    return feature
 
 
 def test_validate_entity_col_override__invalid_columns(snowflake_event_view):
@@ -636,3 +623,19 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
         {"source": "input_3", "target": "join_feature_1"},
         {"source": "project_1", "target": "join_feature_1"},
     ]
+
+
+def test__validate_column_is_not_used(empty_event_view_builder):
+    """
+    Test _validate_column_is_not_used
+    """
+    event_view = empty_event_view_builder()
+    col_name = "col_a"
+    # no error if column name is unused
+    event_view._validate_column_is_not_used(new_column_name=col_name)
+
+    # verify that validation errors if column is used
+    event_view.columns_info = [ColumnInfo(name=col_name, dtype=DBVarType.INT)]
+    with pytest.raises(ValueError) as exc_info:
+        event_view._validate_column_is_not_used(new_column_name=col_name)
+    assert "New column name provided is already a column in the existing view" in str(exc_info)
