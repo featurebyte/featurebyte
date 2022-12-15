@@ -434,10 +434,9 @@ class EventView(View, GroupByMixin):
             )
         )
 
-        # Construct new column_lineage_map
+        # Construct new column_lineage_map - only add on the new column name to the lineage map
         updated_column_lineage_map = copy.deepcopy(self.column_lineage_map)
-        for col, lineage in updated_column_lineage_map.items():
-            updated_column_lineage_map[col] = append_to_lineage(lineage, feature.node.name)
+        updated_column_lineage_map[new_column_name] = append_to_lineage(tuple(), feature.node.name)
 
         # Construct new tabular_data_ids
         joined_tabular_data_ids = join_tabular_data_ids(

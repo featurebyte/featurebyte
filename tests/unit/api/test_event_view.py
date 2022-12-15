@@ -585,22 +585,21 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
     ]
     join_feature_node_name = "join_feature_1"
     assert snowflake_event_view.node_name == join_feature_node_name
-    expected_lineage = (original_node_name, non_time_based_feature.node.name)
+    original_lineage = (original_node_name,)
+    new_col_lineage = (non_time_based_feature.node.name,)
     assert snowflake_event_view.column_lineage_map == {
-        "col_binary": expected_lineage,
-        "col_boolean": expected_lineage,
-        "col_char": expected_lineage,
-        "col_float": expected_lineage,
-        "col_int": expected_lineage,
-        "col_text": expected_lineage,
-        "created_at": expected_lineage,
-        "cust_id": expected_lineage,
-        "event_timestamp": expected_lineage,
+        "col_binary": original_lineage,
+        "col_boolean": original_lineage,
+        "col_char": original_lineage,
+        "col_float": original_lineage,
+        "col_int": original_lineage,
+        "col_text": original_lineage,
+        "created_at": original_lineage,
+        "cust_id": original_lineage,
+        "event_timestamp": original_lineage,
+        "new_col": new_col_lineage,
     }
-    assert snowflake_event_view.row_index_lineage == (
-        original_node_name,
-        join_feature_node_name,
-    )
+    assert snowflake_event_view.row_index_lineage == (original_node_name,)
 
     # assert graph node
     view_dict = snowflake_event_view.dict()
