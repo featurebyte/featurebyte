@@ -128,7 +128,8 @@ class ItemAggregator(Aggregator):
     ItemView
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.item_aggregation_specs: list[ItemAggregationSpec] = []
         self.non_time_aware_request_table_plan: NonTimeAwareRequestTablePlan = (
             NonTimeAwareRequestTablePlan()

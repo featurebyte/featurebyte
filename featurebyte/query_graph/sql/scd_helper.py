@@ -7,13 +7,17 @@ from typing import Literal, Optional
 
 from dataclasses import dataclass
 
+import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
+from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 # Internally used identifiers when constructing SQL
 TS_COL = "__FB_TS_COL"
+ORIGINAL_TS_COL = "__FB_ORIGINAL_TS_COL"
 EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
 KEY_COL = "__FB_KEY_COL"
 LAST_TS = "__FB_LAST_TS"
@@ -36,7 +40,9 @@ def get_scd_join_expr(
     left_table: Table,
     right_table: Table,
     join_type: Literal["inner", "left"],
+    adapter: BaseAdapter,
     select_expr: Optional[Select] = None,
+    offset: Optional[str] = None,
 ) -> Select:
     """
     Construct a query to perform SCD join
@@ -82,7 +88,7 @@ def get_scd_join_expr(
         )
 
     left_view_with_last_ts_expr = augment_table_with_effective_timestamp(
-        left_table=left_table, right_table=right_table
+        left_table=left_table, right_table=right_table, adapter=adapter, offset=offset
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
@@ -106,7 +112,12 @@ def get_scd_join_expr(
     return select_expr
 
 
-def augment_table_with_effective_timestamp(left_table: Table, right_table: Table) -> Select:
+def augment_table_with_effective_timestamp(
+    left_table: Table,
+    right_table: Table,
+    adapter: BaseAdapter,
+    offset: Optional[str],
+) -> Select:
     """
     This constructs a query that calculates the corresponding SCD effective date for each row in the
     left table. See an example below.
@@ -158,13 +169,27 @@ def augment_table_with_effective_timestamp(left_table: Table, right_table: Table
     -------
     Select
     """
+    if offset:
+        offset_seconds = pd.Timedelta(offset).total_seconds()
+        left_ts_col = adapter.dateadd_microsecond(
+            make_literal_value(offset_seconds * 1e6), quoted_identifier(left_table.timestamp_column)
+        )
+    else:
+        left_ts_col = quoted_identifier(left_table.timestamp_column)
 
     # Left table. Set up three special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL
     left_view_with_ts_and_key = select(
-        alias_(quoted_identifier(left_table.timestamp_column), alias=TS_COL, quoted=True),
+        alias_(left_ts_col, alias=TS_COL, quoted=True),
         alias_(quoted_identifier(left_table.join_key), alias=KEY_COL, quoted=True),
         alias_(expressions.NULL, alias=EFFECTIVE_TS_COL, quoted=True),
     ).from_(left_table.expr.subquery())
+
+    if offset:
+        left_view_with_ts_and_key = left_view_with_ts_and_key.select(
+            alias_(
+                quoted_identifier(left_table.timestamp_column), alias=ORIGINAL_TS_COL, quoted=True
+            )
+        )
 
     # Include all columns specified for the left table
     for input_col, output_col in zip(left_table.input_columns, left_table.output_columns):
@@ -173,7 +198,7 @@ def augment_table_with_effective_timestamp(left_table: Table, right_table: Table
         )
 
     # Right table. Set up the same special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL. The
-    # ordering of the columns in the SELECT statement matters.
+    # ordering of the columns in the SELECT statement matters (must match the left table's).
     right_ts_and_key = select(
         alias_(quoted_identifier(right_table.timestamp_column), alias=TS_COL, quoted=True),
         alias_(quoted_identifier(right_table.join_key), alias=KEY_COL, quoted=True),
@@ -183,6 +208,11 @@ def augment_table_with_effective_timestamp(left_table: Table, right_table: Table
             quoted=True,
         ),
     ).from_(right_table.expr.subquery())
+
+    if offset:
+        right_ts_and_key = right_ts_and_key.select(
+            alias_(expressions.NULL, alias=ORIGINAL_TS_COL, quoted=True)
+        )
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
@@ -225,6 +255,13 @@ def augment_table_with_effective_timestamp(left_table: Table, right_table: Table
         this=quoted_identifier(EFFECTIVE_TS_COL),
         expression=expressions.NULL,
     )
+
+    # If offset was applied, select the original column instead of the shifted timestamp
+    if offset:
+        inner_ts_col_expr = alias_(quoted_identifier(ORIGINAL_TS_COL), alias=TS_COL, quoted=True)
+    else:
+        inner_ts_col_expr = quoted_identifier(TS_COL)
+
     left_view_with_effective_timestamp_expr = (
         select(
             quoted_identifier(TS_COL),
@@ -234,7 +271,7 @@ def augment_table_with_effective_timestamp(left_table: Table, right_table: Table
         )
         .from_(
             select(
-                quoted_identifier(TS_COL),
+                inner_ts_col_expr,
                 quoted_identifier(KEY_COL),
                 alias_(matched_effective_timestamp_expr, alias=LAST_TS, quoted=True),
                 *[quoted_identifier(col) for col in left_table.output_columns],

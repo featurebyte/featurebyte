@@ -694,12 +694,9 @@ def lookup_feature_node_fixture(global_graph, projected_lookup_features):
     return feature_alias
 
 
-@pytest.fixture(name="scd_lookup_feature_node")
-def scd_lookup_feature_node_fixture(global_graph, scd_data_input_node):
-    """
-    Fixture of a SCD lookup feature node
-    """
-    node_params = {
+@pytest.fixture(name="scd_lookup_node_parameters")
+def scd_lookup_node_parameters_fixture():
+    return {
         "input_column_names": ["membership_status"],
         "feature_names": ["Current Membership Status"],
         "entity_column": "cust_id",
@@ -711,6 +708,38 @@ def scd_lookup_feature_node_fixture(global_graph, scd_data_input_node):
             "current_flag_column": "is_record_current",
         },
     }
+
+
+@pytest.fixture(name="scd_lookup_feature_node")
+def scd_lookup_feature_node_fixture(global_graph, scd_data_input_node, scd_lookup_node_parameters):
+    """
+    Fixture of a SCD lookup feature node
+    """
+    node_params = scd_lookup_node_parameters
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_data_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["Current Membership Status"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="scd_offset_lookup_feature_node")
+def scd_offset_lookup_feature_node_fixture(
+    global_graph, scd_data_input_node, scd_lookup_node_parameters
+):
+    """
+    Fixture of a SCD lookup feature node with an offset
+    """
+    node_params = scd_lookup_node_parameters
+    node_params["scd_parameters"]["offset"] = "14d"
     lookup_node = global_graph.add_operation(
         node_type=NodeType.LOOKUP,
         node_params=node_params,

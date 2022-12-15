@@ -23,9 +23,10 @@ class LookupAggregator(Aggregator):
     LookupAggregator is responsible for generating SQL for lookup features
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         # The keys in these dicts are unique identifiers (based on LookupSpec's source_hash) that
         # determine which lookup features can be retrieved in a single join
+        super().__init__(*args, **kwargs)
         self.grouped_lookup_specs: dict[str, list[LookupSpec]] = {}
         self.grouped_agg_result_names: dict[str, set[str]] = {}
 
@@ -207,7 +208,13 @@ class LookupAggregator(Aggregator):
                 input_columns=[spec.input_column_name for spec in lookup_specs],
                 output_columns=agg_result_names,
             )
-            table_expr = get_scd_join_expr(left_table, right_table, join_type="left")
+            table_expr = get_scd_join_expr(
+                left_table,
+                right_table,
+                join_type="left",
+                adapter=self.adapter,
+                offset=scd_parameters.offset,
+            )
 
             current_columns = current_columns + agg_result_names
             scd_agg_result_names.extend(agg_result_names)
