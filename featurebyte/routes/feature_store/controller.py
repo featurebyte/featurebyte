@@ -75,11 +75,16 @@ class FeatureStoreController(
         config = Configurations()
         return config.write_creds(credential, feature_store_name)
 
+    def skip_validation(self) -> bool:
+        """
+        Temporary overridable function to allow the SaaS controller to override this to False.
+        """
+        return True
+
     async def create_feature_store(
         self,
         data: FeatureStoreCreate,
         get_credential: Any,
-        skip_validation: bool = True,
     ) -> FeatureStoreModel:
         """
         Create Feature Store at persistent
@@ -90,8 +95,6 @@ class FeatureStoreController(
             FeatureStore creation payload
         get_credential: Any
             credential handler function
-        skip_validation: bool
-            decide whether to skip validation
 
         Returns
         -------
@@ -113,7 +116,7 @@ class FeatureStoreController(
         # If skip validation, just create the document. This is the current default behaviour until we resolve
         # some issues with how the SaaS version has a deadlock between creating a session, and writing credentials
         # to the collection.
-        if skip_validation:
+        if self.skip_validation():
             return await self.service.create_document(data)
 
         # Validate that feature store ID isn't claimed by the working schema.
