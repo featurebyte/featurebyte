@@ -156,3 +156,27 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     """
     subset_view = snowflake_scd_view[["col_float"]]
     assert subset_view.columns == ["col_float", "col_text", "event_timestamp"]
+
+
+def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity):
+    """
+    Test SlowlyChangingView as_feature selects a special column that is excluded by default
+    """
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    feature = scd_view["event_timestamp"].as_feature("Latest Record Change Date")
+    lookup_node_dict = get_node(feature.dict()["graph"], "lookup_1")
+    assert feature.name == "Latest Record Change Date"
+    assert lookup_node_dict["parameters"] == {
+        "input_column_names": ["event_timestamp"],
+        "feature_names": ["Latest Record Change Date"],
+        "entity_column": "col_text",
+        "serving_name": "cust_id",
+        "entity_id": cust_id_entity.id,
+        "scd_parameters": {
+            "effective_timestamp_column": "event_timestamp",
+            "current_flag_column": "col_char",
+            "end_timestamp_column": "event_timestamp",
+            "offset": None,
+        },
+    }
