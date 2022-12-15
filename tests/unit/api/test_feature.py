@@ -649,20 +649,3 @@ def test_is_time_based(saved_feature):
     ) as mocked_extract:
         mocked_extract.return_value = GroupOperationStructure(is_time_based=False)
         assert not saved_feature.is_time_based
-
-
-def test__get_class_for_node_type():
-    """
-    Test _get_class_for_node_type
-    """
-    expected_mapping = {
-        NodeType.GROUPBY: GroupbyNode,
-        NodeType.ITEM_GROUPBY: ItemGroupbyNode,
-    }
-    for key, value in expected_mapping.items():
-        mapped_value = Feature._get_class_for_node_type(key)
-        assert mapped_value == value
-
-    with pytest.raises(ValueError):
-        unmapped_node_type = NodeType.INPUT
-        Feature._get_class_for_node_type(unmapped_node_type)

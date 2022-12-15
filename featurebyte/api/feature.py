@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Type, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 import time
 from http import HTTPStatus
@@ -209,40 +209,17 @@ class Feature(
         List[str]
         """
         entity_ids: list[str] = []
-        for node_type in FEATURE_NODE_TYPES:
-            for node in self.graph.iterate_nodes(target_node=self.node, node_type=node_type):
-                class_to_cast = Feature._get_class_for_node_type(node_type)
-                entity_ids.extend(cast(class_to_cast, node).parameters.keys)
-        return entity_ids
-
-    @staticmethod
-    def _get_class_for_node_type(
-        node_type: NodeType,
-    ) -> Type[GroupbyNode | ItemGroupbyNode]:
-        """
-        Helper method to get the class to cast nodes too.
-
-        Parameters
-        ----------
-        node_type: NodeType
-            node type to find the class to cast too
-
-        Returns
-        -------
-        Type[GroupbyNode | ItemGroupbyNode]
-
-        Raises
-        ------
-        ValueError
-            raised when we are unable to find a node mapping
-        """
         mapping = {
             NodeType.GROUPBY: GroupbyNode,
             NodeType.ITEM_GROUPBY: ItemGroupbyNode,
         }
-        if node_type not in mapping:
-            raise ValueError("unable to find a node mapping for node type")
-        return mapping[node_type]
+        for node_type in FEATURE_NODE_TYPES:
+            for node in self.graph.iterate_nodes(target_node=self.node, node_type=node_type):
+                if node_type not in mapping:
+                    raise ValueError("unable to find a node mapping for node type")
+                class_to_cast = mapping[node_type]
+                entity_ids.extend(cast(class_to_cast, node).parameters.keys)
+        return entity_ids
 
     @property
     def inherited_columns(self) -> set[str]:
