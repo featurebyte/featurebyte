@@ -6,12 +6,16 @@ from __future__ import annotations
 from typing import Any, Iterable, Tuple
 
 from sqlglot import expressions
-from sqlglot.expressions import select
+from sqlglot.expressions import Select, select
 
 from featurebyte import SourceType
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.aggregator.base import AggregationResult, Aggregator
+from featurebyte.query_graph.sql.aggregator.base import (
+    AggregationResult,
+    Aggregator,
+    LeftJoinableSubquery,
+)
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import WindowAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
@@ -455,8 +459,19 @@ class WindowAggregator(Aggregator):
 
         return agg_expr
 
-    def get_aggregation_results(self, point_in_time_column: str) -> list[AggregationResult]:
+    def get_window_aggregations(self, point_in_time_column: str) -> list[LeftJoinableSubquery]:
+        """
+        Get window aggregation queries
 
+        Parameters
+        ----------
+        point_in_time_column: str
+            Point in time column name
+
+        Returns
+        -------
+        list[LeftJoinableSubquery]
+        """
         results = []
 
         for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
@@ -481,7 +496,7 @@ class WindowAggregator(Aggregator):
                 agg_result_names=agg_result_names,
                 num_tiles=agg_spec.window // agg_spec.frequency,
             )
-            agg_result = AggregationResult(
+            agg_result = LeftJoinableSubquery(
                 expr=agg_expr,
                 column_names=agg_result_names,
                 join_keys=[point_in_time_column] + agg_spec.serving_names,
@@ -489,6 +504,20 @@ class WindowAggregator(Aggregator):
             results.append(agg_result)
 
         return results
+
+    def update_aggregation_table_expr(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_index: int,
+    ) -> AggregationResult:
+
+        queries = self.get_window_aggregations(point_in_time_column)
+
+        return self._update_with_left_joins(
+            table_expr=table_expr, current_index=current_index, queries=queries
+        )
 
     def get_common_table_expressions(
         self, request_table_name: str

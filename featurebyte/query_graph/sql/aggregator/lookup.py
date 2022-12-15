@@ -6,9 +6,13 @@ from __future__ import annotations
 from typing import Iterable
 
 from sqlglot import expressions
-from sqlglot.expressions import alias_, select
+from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.query_graph.sql.aggregator.base import AggregationResult, Aggregator
+from featurebyte.query_graph.sql.aggregator.base import (
+    AggregationResult,
+    Aggregator,
+    LeftJoinableSubquery,
+)
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import LookupSpec
 
@@ -71,8 +75,14 @@ class LookupAggregator(Aggregator):
             out.update(spec.serving_names)
         return out
 
-    def get_aggregation_results(self, point_in_time_column: str) -> list[AggregationResult]:
-        _ = point_in_time_column
+    def get_non_time_based_lookups(self) -> list[LeftJoinableSubquery]:
+        """
+        Get non-time based lookups queries
+
+        Returns
+        -------
+        list[LeftJoinableSubquery]
+        """
 
         out = []
 
@@ -94,7 +104,7 @@ class LookupAggregator(Aggregator):
                 ],
             ).from_(source_expr.subquery())
 
-            result = AggregationResult(
+            result = LeftJoinableSubquery(
                 expr=agg_expr,
                 column_names=[spec.agg_result_name for spec in specs],
                 join_keys=[serving_name],
@@ -102,6 +112,20 @@ class LookupAggregator(Aggregator):
             out.append(result)
 
         return out
+
+    def update_aggregation_table_expr(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_index: int,
+    ) -> AggregationResult:
+
+        queries = self.get_non_time_based_lookups()
+
+        return self._update_with_left_joins(
+            table_expr=table_expr, current_index=current_index, queries=queries
+        )
 
     def get_common_table_expressions(
         self, request_table_name: str

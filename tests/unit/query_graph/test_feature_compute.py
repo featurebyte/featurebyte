@@ -392,7 +392,7 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     aggregator = plan.aggregators[LookupSpec]
 
     # Check aggregation results
-    agg_results = aggregator.get_aggregation_results("POINT_IN_TIME")
+    agg_results = aggregator.get_non_time_based_lookups()
     assert len(agg_results) == 1
     agg_result_dict = asdict(agg_results[0])
     agg_result_dict.pop("expr")
