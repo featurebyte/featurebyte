@@ -35,7 +35,11 @@ NumericT = Union[int, float]
 IMPUTE_OPERATIONS = []
 
 
-class BaseImputeOperation(FeatureByteBaseModel):
+class BaseCleaningOperation(FeatureByteBaseModel):
+    """BaseCleaningOperation class"""
+
+
+class BaseImputeOperation(BaseCleaningOperation):
     """BaseImputeOperation class"""
 
     imputed_value: ScalarT
@@ -274,21 +278,23 @@ class StringValueImputation(IsStringCondition, BaseImputeOperation):
 
 
 if TYPE_CHECKING:
-    # use BaseImputeOperation & BaseFlagOperation for type checking
-    ImputeOperation = BaseImputeOperation
+    # use BaseCleaning for type checking
+    CleaningOperation = BaseCleaningOperation
 else:
     # use Annotated types for type checking during runtime
-    ImputeOperation = Annotated[Union[tuple(IMPUTE_OPERATIONS)], Field(discriminator="type")]
+    CleaningOperation = Annotated[Union[tuple(IMPUTE_OPERATIONS)], Field(discriminator="type")]
 
 
 class CriticalDataInfo(FeatureByteBaseModel):
     """Critical data info model"""
 
-    imputations: List[ImputeOperation]
+    cleaning_operations: List[CleaningOperation]
 
-    @validator("imputations")
+    @validator("cleaning_operations")
     @classmethod
-    def _validate_imputations(cls, values: List[ImputeOperation]) -> List[ImputeOperation]:
+    def _validate_cleaning_operation(
+        cls, values: List[CleaningOperation]
+    ) -> List[CleaningOperation]:
         error_message = (
             "Column values imputed by {first_imputation} will be imputed by {second_imputation}. "
             "Please revise the imputations so that no value could be imputed twice."
