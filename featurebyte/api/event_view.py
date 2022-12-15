@@ -408,7 +408,7 @@ class EventView(View, GroupByMixin):
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
         # Validation
-        self._validate_feature_addition(feature, entity_column)
+        self._validate_feature_addition(new_column_name, feature, entity_column)
 
         # Add join node
         view_entity_column = self._get_view_entity_column(feature, entity_column)

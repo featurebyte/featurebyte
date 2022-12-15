@@ -308,7 +308,7 @@ def test_validate_feature_addition__time_based_feature_no_override(
     """
     event_view = empty_event_view_builder()
     with pytest.raises(ValueError) as exc_info:
-        event_view._validate_feature_addition(production_ready_feature, None)
+        event_view._validate_feature_addition("random_col", production_ready_feature, None)
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
@@ -320,7 +320,7 @@ def test_validate_feature_addition__time_based_feature_with_override(
     """
     event_view = empty_event_view_builder()
     with pytest.raises(ValueError) as exc_info:
-        event_view._validate_feature_addition(production_ready_feature, "random")
+        event_view._validate_feature_addition("random_col", production_ready_feature, "random")
     assert "We currently only support the addition of non-time based features" in str(exc_info)
 
 
@@ -337,7 +337,7 @@ def test_validate_feature_addition__non_time_based_no_override(
         "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
     ) as mock_is_time_based:
         mock_is_time_based.return_value = False
-        event_view._validate_feature_addition(empty_feature, None)
+        event_view._validate_feature_addition("random_col", empty_feature, None)
 
 
 def test_validate_feature_addition__non_time_based_with_override(
@@ -354,7 +354,7 @@ def test_validate_feature_addition__non_time_based_with_override(
         "featurebyte.api.feature.Feature.is_time_based", new_callable=PropertyMock
     ) as mock_is_time_based:
         mock_is_time_based.return_value = False
-        event_view._validate_feature_addition(empty_feature, col_name)
+        event_view._validate_feature_addition("random_col", empty_feature, col_name)
 
 
 def assert_entity_identifiers_raises_errors(identifiers, feature):
