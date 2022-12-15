@@ -124,7 +124,7 @@ class FeatureStoreController(
             creds_from_params = data.credentials
             if creds_from_params is not None:
 
-                def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
+                async def _updated_get_credential(user_id: str, feature_store_name: str) -> Any:
                     """
                     Updated get_credential will try to look up the credentials from config.
 
