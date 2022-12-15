@@ -234,7 +234,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     }
 
     # Compare with expected result
-    mask = (scd_dataframe["Effective Timestamp"] < point_in_time) & (
+    mask = (scd_dataframe["Effective Timestamp"] <= point_in_time) & (
         scd_dataframe["User ID"] == user_id
     )
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
@@ -244,3 +244,30 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
         preview_output["count_7d"]
         == '{\n  "STATUS_CODE_12": 2,\n  "STATUS_CODE_3": 1,\n  "STATUS_CODE_46": 10,\n  "STATUS_CODE_48": 5\n}'
     )
+
+
+def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
+    """
+    Test creating lookup feature from a SlowlyChangingView with offset
+    """
+    # SCD lookup feature
+    offset = "90d"
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status", offset=offset)
+
+    # Preview
+    point_in_time = "2001-11-15 10:00:00"
+    user_id = 1
+    preview_params = {
+        "POINT_IN_TIME": point_in_time,
+        "user id": user_id,
+    }
+    preview_output = scd_lookup_feature.preview(preview_params).iloc[0].to_dict()
+
+    # Compare with expected result
+    mask = (
+        scd_dataframe["Effective Timestamp"]
+        <= (pd.to_datetime(point_in_time) - pd.Timedelta(offset))
+    ) & (scd_dataframe["User ID"] == user_id)
+    expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
+    assert preview_output["Current User Status"] == expected_row["User Status"]

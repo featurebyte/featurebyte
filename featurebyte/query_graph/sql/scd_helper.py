@@ -17,7 +17,6 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 
 # Internally used identifiers when constructing SQL
 TS_COL = "__FB_TS_COL"
-ORIGINAL_TS_COL = "__FB_ORIGINAL_TS_COL"
 EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
 KEY_COL = "__FB_KEY_COL"
 LAST_TS = "__FB_LAST_TS"
@@ -172,7 +171,8 @@ def augment_table_with_effective_timestamp(
     if offset:
         offset_seconds = pd.Timedelta(offset).total_seconds()
         left_ts_col = adapter.dateadd_microsecond(
-            make_literal_value(offset_seconds * 1e6), quoted_identifier(left_table.timestamp_column)
+            make_literal_value(offset_seconds * 1e6 * -1),
+            quoted_identifier(left_table.timestamp_column),
         )
     else:
         left_ts_col = quoted_identifier(left_table.timestamp_column)
@@ -183,13 +183,6 @@ def augment_table_with_effective_timestamp(
         alias_(quoted_identifier(left_table.join_key), alias=KEY_COL, quoted=True),
         alias_(expressions.NULL, alias=EFFECTIVE_TS_COL, quoted=True),
     ).from_(left_table.expr.subquery())
-
-    if offset:
-        left_view_with_ts_and_key = left_view_with_ts_and_key.select(
-            alias_(
-                quoted_identifier(left_table.timestamp_column), alias=ORIGINAL_TS_COL, quoted=True
-            )
-        )
 
     # Include all columns specified for the left table
     for input_col, output_col in zip(left_table.input_columns, left_table.output_columns):
@@ -208,11 +201,6 @@ def augment_table_with_effective_timestamp(
             quoted=True,
         ),
     ).from_(right_table.expr.subquery())
-
-    if offset:
-        right_ts_and_key = right_ts_and_key.select(
-            alias_(expressions.NULL, alias=ORIGINAL_TS_COL, quoted=True)
-        )
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
@@ -256,22 +244,14 @@ def augment_table_with_effective_timestamp(
         expression=expressions.NULL,
     )
 
-    # If offset was applied, select the original column instead of the shifted timestamp
-    if offset:
-        inner_ts_col_expr = alias_(quoted_identifier(ORIGINAL_TS_COL), alias=TS_COL, quoted=True)
-    else:
-        inner_ts_col_expr = quoted_identifier(TS_COL)
-
     left_view_with_effective_timestamp_expr = (
         select(
-            quoted_identifier(TS_COL),
             quoted_identifier(KEY_COL),
             quoted_identifier(LAST_TS),
             *[quoted_identifier(col) for col in left_table.output_columns],
         )
         .from_(
             select(
-                inner_ts_col_expr,
                 quoted_identifier(KEY_COL),
                 alias_(matched_effective_timestamp_expr, alias=LAST_TS, quoted=True),
                 *[quoted_identifier(col) for col in left_table.output_columns],
