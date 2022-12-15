@@ -64,6 +64,7 @@ def test_as_features__all_special_columns(snowflake_dimension_view_with_entity):
     Test as_features() when only special columns are selected
     """
     with pytest.raises(ValueError) as exc:
+        # col_int is the primary key column of this view
         snowflake_dimension_view_with_entity[["col_int"]].as_features(["IntFeature"])
     assert "None of the selected columns can be converted to Features" in str(exc.value)
 
@@ -147,6 +148,15 @@ def test_as_feature__not_supported(snowflake_dimension_view_with_entity):
     with pytest.raises(ValueError) as exc:
         (view["col_float"] + 123).as_feature("col_float_plus_123")
     assert "as_feature is only supported for named columns in the View object" in str(exc.value)
+
+
+def test_as_feature__special_column(snowflake_dimension_view_with_entity):
+    """
+    Test as_feature() by specifying a special column
+    """
+    # col_int is not allowed in as_features(), but ok in as_feature()
+    feature = snowflake_dimension_view_with_entity["col_int"].as_feature("IntFeature")
+    assert feature.name == "IntFeature"
 
 
 def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust_id_entity):
