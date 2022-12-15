@@ -54,7 +54,9 @@ def quoted_identifier(column_name: str) -> Expression:
     return expressions.Identifier(this=column_name, quoted=True)
 
 
-def get_qualified_column_identifier(column_name: str, table: str, quote_table=False) -> Expression:
+def get_qualified_column_identifier(
+    column_name: str, table: str, quote_table: bool = False
+) -> Expression:
     """
     Get a qualified column name with a table alias prefix
 
@@ -72,7 +74,7 @@ def get_qualified_column_identifier(column_name: str, table: str, quote_table=Fa
     Expression
     """
     if quote_table:
-        table = quoted_identifier(table)
+        table = quoted_identifier(table)  # type: ignore[assignment]
     expr = expressions.Column(this=quoted_identifier(column_name), table=table)
     return expr
 
