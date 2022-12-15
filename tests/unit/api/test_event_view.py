@@ -561,6 +561,7 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
     GlobalGraphState.reset()
 
     # Initialize graph
+    original_node_name = snowflake_event_view.node_name
     input_node = snowflake_event_view.graph.add_operation(
         node_type=NodeType.INPUT,
         node_params=generic_input_node_params["node_params"],
@@ -584,7 +585,7 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
     ]
     join_feature_node_name = "join_feature_1"
     assert snowflake_event_view.node_name == join_feature_node_name
-    expected_lineage = ("input_2", non_time_based_feature.node.name)
+    expected_lineage = (original_node_name, non_time_based_feature.node.name)
     assert snowflake_event_view.column_lineage_map == {
         "col_binary": expected_lineage,
         "col_boolean": expected_lineage,
@@ -597,7 +598,7 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
         "event_timestamp": expected_lineage,
     }
     assert snowflake_event_view.row_index_lineage == (
-        "input_2",
+        original_node_name,
         join_feature_node_name,
     )
 

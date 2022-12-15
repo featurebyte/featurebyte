@@ -228,6 +228,11 @@ class Feature(
         Returns
         -------
         Type[GroupbyNode | ItemGroupbyNode]
+
+        Raises
+        ------
+        ValueError
+            raised when we are unable to find a node mapping
         """
         mapping = {
             NodeType.GROUPBY: GroupbyNode,
