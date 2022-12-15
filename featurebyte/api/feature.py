@@ -207,6 +207,11 @@ class Feature(
         Returns
         -------
         List[str]
+
+        Raises
+        ------
+        ValueError
+            raised when we are unable to find a node mapping for type casting
         """
         entity_ids: list[str] = []
         mapping = {
