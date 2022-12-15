@@ -141,7 +141,7 @@ class LookupAggregator(Aggregator):
         table_expr: Select,
         point_in_time_column: str,
         current_columns: list[str],
-        current_index: int,
+        current_query_index: int,
     ) -> AggregationResult:
 
         # SCD lookup
@@ -154,7 +154,7 @@ class LookupAggregator(Aggregator):
         # Non-time based lookup
         queries = self.get_non_time_based_lookups()
         result = self._update_with_left_joins(
-            table_expr=table_expr, current_index=current_index, queries=queries
+            table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
         # Update result column names to account for both types of lookups

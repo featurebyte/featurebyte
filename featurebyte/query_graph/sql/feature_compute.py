@@ -139,7 +139,7 @@ class FeatureExecutionPlan:
                 table_expr=table_expr,
                 point_in_time_column=point_in_time_column,
                 current_columns=current_columns,
-                current_index=agg_table_index,
+                current_query_index=agg_table_index,
             )
             table_expr = agg_result.updated_table_expr
             agg_table_index = agg_result.updated_index
