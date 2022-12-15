@@ -279,6 +279,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined column lineage map
         joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
+        joined_row_index_lineage: tuple[str, ...]
+            joined row index lineage
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
