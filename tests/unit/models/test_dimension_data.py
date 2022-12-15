@@ -9,7 +9,7 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.models import DimensionDataModel
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.query_graph.model.common_table import TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 
 arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 
@@ -18,9 +18,27 @@ arbitrary_test_date_time = datetime.datetime(2022, 2, 1)
 def get_dimension_columns_info():
     """Fixture to get a some dimension data columns info"""
     return [
-        {"name": "col", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "dimension_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
-        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+        {
+            "name": "col",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "dimension_id",
+            "dtype": "INT",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "created_at",
+            "dtype": "TIMESTAMP",
+            "entity_id": None,
+            "semantic_id": None,
+            "critical_data_info": None,
+        },
     ]
 
 

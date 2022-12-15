@@ -10,7 +10,7 @@ from bson import ObjectId
 
 from featurebyte import FeatureStore
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.query_graph.model.feature_store import SQLiteDetails
+from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureCreate
 
 

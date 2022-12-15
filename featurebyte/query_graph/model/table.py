@@ -1,7 +1,7 @@
 """
 This module contains specialized table related models.
 """
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, Iterable, List, Literal, Optional, Union, cast
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
@@ -11,10 +11,15 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
-from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.model.critical_data_info import ImputeOperation
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.node.generic import InputNode, ProjectNode
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
 class ConstructNodeMixin:
@@ -36,6 +41,107 @@ class ConstructNodeMixin:
             "columns": [col.name for col in self.columns_info],
             "table_details": self.tabular_source.table_details,
         }
+
+    def _iterate_column_info_with_imputations(self) -> Iterable[ColumnInfo]:
+        """
+        Iterate column info with imputation rules
+
+        Yields
+        ------
+        ColumnInfo
+            Column info with non-empty imputations
+        """
+        for col_info in self.columns_info:
+            critical_data_info = col_info.critical_data_info
+            if critical_data_info is not None and critical_data_info.imputations:
+                yield col_info
+
+    @staticmethod
+    def _add_impute_operations(
+        imputations: List[ImputeOperation],
+        graph_node: GraphNode,
+        frame_node: Node,
+        project_node: ProjectNode,
+        output_column_name: str,
+    ) -> Node:
+        """
+        Add imputation operations to the graph node
+
+        Parameters
+        ----------
+        imputations: List[ImputeOperation]
+            List of imputation operations
+        graph_node: GraphNode
+            Graph node
+        frame_node: Node
+            Input frame node
+        project_node: ProjectNode
+            Column projection node
+        output_column_name: str
+            Output column name
+
+        Returns
+        -------
+        Node
+        """
+        input_node: Node = project_node
+        for imputation in imputations:
+            condition_node = imputation.add_condition_operation(
+                graph_node=graph_node, input_node=input_node
+            )
+            input_node = imputation.add_impute_operation(
+                graph_node=graph_node, input_node=input_node, condition_node=condition_node
+            )
+
+        return graph_node.add_operation(
+            node_type=NodeType.ASSIGN,
+            node_params={"name": output_column_name, "value": None},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[frame_node, input_node],
+        )
+
+    def construct_cleaning_recipe_node(self, input_node: InputNode) -> Optional[GraphNode]:
+        """
+        Construct cleaning recipe graph node
+
+        Parameters
+        ----------
+        input_node: InputNode
+            Input node for the cleaning recipe
+
+        Returns
+        -------
+        Optional[GraphNode]
+        """
+        graph_node: Optional[GraphNode] = None
+        frame_node: Optional[Node] = None
+        proxy_input_nodes: List[BaseNode] = []
+        for col_info in self._iterate_column_info_with_imputations():
+            if graph_node is None:
+                graph_node, proxy_input_nodes = GraphNode.create(
+                    node_type=NodeType.PROJECT,
+                    node_params={"columns": [col_info.name]},
+                    node_output_type=NodeOutputType.SERIES,
+                    input_nodes=[input_node],
+                )
+
+            proj_col_node = graph_node.add_operation(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": [col_info.name]},
+                node_output_type=NodeOutputType.SERIES,
+                input_nodes=proxy_input_nodes,
+            )
+
+            assert col_info.critical_data_info is not None
+            frame_node = self._add_impute_operations(
+                imputations=col_info.critical_data_info.imputations,
+                graph_node=graph_node,
+                project_node=cast(ProjectNode, proj_col_node),
+                frame_node=frame_node or proxy_input_nodes[0],
+                output_column_name=col_info.name,
+            )
+
+        return graph_node
 
     @abstractmethod
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:

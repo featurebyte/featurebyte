@@ -15,8 +15,8 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
-from featurebyte.query_graph.model.feature_store import TestDatabaseDetails
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.node.schema import TableDetails, TestDatabaseDetails
 from tests.util.helper import get_node
 
 

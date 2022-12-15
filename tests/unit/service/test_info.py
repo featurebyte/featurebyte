@@ -5,7 +5,7 @@ import pytest
 
 from featurebyte import SnowflakeDetails
 from featurebyte.models.dimension_data import DimensionDataModel
-from featurebyte.query_graph.model.common_table import TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
     EntityBriefInfo,

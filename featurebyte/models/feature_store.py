@@ -15,7 +15,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
 class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):

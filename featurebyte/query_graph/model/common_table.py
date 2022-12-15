@@ -1,21 +1,12 @@
 """
 This module contains common table related models.
 """
-from typing import List, Literal, Optional
-
-from pydantic import StrictStr
+from typing import List, Literal
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
-
-
-class TableDetails(FeatureByteBaseModel):
-    """Model for table"""
-
-    database_name: Optional[StrictStr]
-    schema_name: Optional[StrictStr]
-    table_name: StrictStr
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 class TabularSource(FeatureByteBaseModel):

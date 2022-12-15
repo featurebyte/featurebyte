@@ -21,9 +21,9 @@ from featurebyte.exception import DuplicatedRecordException, RecordRetrievalExce
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.model.table import SpecificTableData
 from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 

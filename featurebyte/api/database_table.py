@@ -19,9 +19,8 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import TableDetails
-from featurebyte.query_graph.model.feature_store import FeatureStoreDetails
 from featurebyte.query_graph.model.table import ConstructNodeMixin, GenericTableData
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 
 
 class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
