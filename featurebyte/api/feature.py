@@ -31,7 +31,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.enum import FEATURE_NODE_TYPES, NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.generic import (
     AliasNode,
@@ -207,23 +207,14 @@ class Feature(
         Returns
         -------
         List[str]
-
-        Raises
-        ------
-        ValueError
-            raised when we are unable to find a node mapping for type casting
         """
         entity_ids: list[str] = []
-        mapping = {
-            NodeType.GROUPBY: GroupbyNode,
-            NodeType.ITEM_GROUPBY: ItemGroupbyNode,
-        }
-        for node_type in FEATURE_NODE_TYPES:
-            for node in self.graph.iterate_nodes(target_node=self.node, node_type=node_type):
-                if node_type not in mapping:
-                    raise ValueError("unable to find a node mapping for node type")
-                class_to_cast = mapping[node_type]
-                entity_ids.extend(cast(class_to_cast, node).parameters.keys)
+        for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
+            entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
+        for node in self.graph.iterate_nodes(
+            target_node=self.node, node_type=NodeType.ITEM_GROUPBY
+        ):
+            entity_ids.extend(cast(ItemGroupbyNode, node).parameters.keys)
         return entity_ids
 
     @property

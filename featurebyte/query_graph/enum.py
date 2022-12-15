@@ -1,7 +1,6 @@
 """
 This module contains all the enums used for query graph.
 """
-from typing import List
 
 from featurebyte.enum import StrEnum
 
@@ -95,6 +94,3 @@ class NodeOutputType(StrEnum):
 
     FRAME = "frame"
     SERIES = "series"
-
-
-FEATURE_NODE_TYPES: List[NodeType] = [NodeType.GROUPBY, NodeType.ITEM_GROUPBY]
