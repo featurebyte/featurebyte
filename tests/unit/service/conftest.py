@@ -142,9 +142,9 @@ def default_version_mode_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="online_enable_service")
-def online_enable_service_fixture(user, persistent):
+def online_enable_service_fixture(app_container):
     """OnlineEnableService fixture"""
-    return OnlineEnableService(user=user, persistent=persistent)
+    return app_container.online_enable_service
 
 
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
@@ -166,9 +166,9 @@ def online_enable_service_data_warehouse_mocks_fixture():
 
 
 @pytest.fixture(name="online_serving_service")
-def online_serving_service_fixture(user, persistent):
+def online_serving_service_fixture(app_container):
     """OnlineEnableService fixture"""
-    return OnlineServingService(user=user, persistent=persistent)
+    return app_container.online_serving_service
 
 
 @pytest.fixture(name="version_service")
@@ -178,9 +178,9 @@ def version_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="deploy_service")
-def deploy_service_fixture(user, persistent):
+def deploy_service_fixture(app_container):
     """DeployService fixture"""
-    return DeployService(user=user, persistent=persistent)
+    return app_container.deploy_service
 
 
 @pytest_asyncio.fixture(name="feature_store")

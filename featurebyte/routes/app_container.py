@@ -62,17 +62,53 @@ app_container_config = {
     # These services have dependencies in addition to the normal user, and persistent dependencies.
     "services_with_extra_deps": [
         {
-            "name": "session_manager_service",
-            "clazz": SessionManagerService,
+            "name": "session_validator_service",
+            "clazz": SessionValidatorService,
             "extra_deps": [
                 "credential_provider",
             ],
         },
         {
-            "name": "session_validator_service",
-            "clazz": SessionValidatorService,
+            "name": "session_manager_service",
+            "clazz": SessionManagerService,
             "extra_deps": [
                 "credential_provider",
+                "session_validator_service",
+            ],
+        },
+        {
+            "name": "online_enable_service",
+            "clazz": OnlineEnableService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+        {
+            "name": "online_serving_service",
+            "clazz": OnlineServingService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+        {
+            "name": "deploy_service",
+            "clazz": DeployService,
+            "extra_deps": [
+                "online_enable_service",
+            ],
+        },
+        {
+            "name": "preview_service",
+            "clazz": PreviewService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+        {
+            "name": "feature_store_warehouse_service",
+            "clazz": FeatureStoreWarehouseService,
+            "extra_deps": [
+                "session_manager_service",
             ],
         },
     ],
@@ -111,18 +147,6 @@ app_container_config = {
             "clazz": FeatureReadinessService,
         },
         {
-            "name": "online_enable_service",
-            "clazz": OnlineEnableService,
-        },
-        {
-            "name": "online_serving_service",
-            "clazz": OnlineServingService,
-        },
-        {
-            "name": "deploy_service",
-            "clazz": DeployService,
-        },
-        {
             "name": "feature_job_setting_analysis_service",
             "clazz": FeatureJobSettingAnalysisService,
         },
@@ -147,10 +171,6 @@ app_container_config = {
             "clazz": FeatureStoreService,
         },
         {
-            "name": "preview_service",
-            "clazz": PreviewService,
-        },
-        {
             "name": "semantic_service",
             "clazz": SemanticService,
         },
@@ -173,10 +193,6 @@ app_container_config = {
         {
             "name": "info_service",
             "clazz": InfoService,
-        },
-        {
-            "name": "feature_store_warehouse_service",
-            "clazz": FeatureStoreWarehouseService,
         },
     ],
     # Controllers can depend on any object defined above.

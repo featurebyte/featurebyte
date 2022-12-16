@@ -20,12 +20,16 @@ class SessionManagerService:
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, credential_provider: ConfigCredentialProvider
+        self,
+        user: Any,
+        persistent: Persistent,
+        credential_provider: ConfigCredentialProvider,
+        session_validator_service: SessionValidatorService,
     ):
         self.user = user
         self.persistent = persistent
         self.credential_provider = credential_provider
-        self.session_validator_service = SessionValidatorService(user, persistent)
+        self.session_validator_service = session_validator_service
 
     async def get_feature_store_session(
         self, feature_store: FeatureStoreModel, get_credential: Any
