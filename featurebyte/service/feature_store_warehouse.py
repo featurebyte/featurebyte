@@ -7,7 +7,7 @@ from typing import Any, List
 
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.model.column_info import ColumnSpec
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.session_manager import SessionManagerService
 

@@ -3,20 +3,11 @@ This module contains column info related models.
 """
 from typing import Optional
 
-from pydantic import Field, StrictStr
+from pydantic import Field
 
-from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
-
-
-class ColumnSpec(FeatureByteBaseModel):
-    """
-    Schema for columns retrieval
-    """
-
-    name: StrictStr
-    dtype: DBVarType
+from featurebyte.query_graph.node.schema import ColumnSpec
 
 
 class ColumnInfo(ColumnSpec):

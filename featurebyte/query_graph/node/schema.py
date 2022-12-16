@@ -7,7 +7,7 @@ from typing import ClassVar, Optional, Union
 
 from pydantic import StrictStr
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 
 
@@ -62,3 +62,12 @@ class TableDetails(FeatureByteBaseModel):
     database_name: Optional[StrictStr]
     schema_name: Optional[StrictStr]
     table_name: StrictStr
+
+
+class ColumnSpec(FeatureByteBaseModel):
+    """
+    Schema for columns retrieval
+    """
+
+    name: StrictStr
+    dtype: DBVarType
