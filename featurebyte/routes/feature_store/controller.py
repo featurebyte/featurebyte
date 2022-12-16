@@ -89,8 +89,6 @@ class FeatureStoreController(
             FeatureStore creation payload
         get_credential: Any
             credential handler function
-        skip_validation: bool
-            decide whether to skip validation
 
         Returns
         -------
