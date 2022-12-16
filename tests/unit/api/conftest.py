@@ -219,21 +219,6 @@ def saved_scd_data_fixture(snowflake_feature_store, snowflake_scd_data):
     yield snowflake_scd_data
 
 
-@pytest.fixture(name="snowflake_database_table_item_data")
-def snowflake_database_table_item_data_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store
-):
-    """
-    DatabaseTable object fixture for ItemData (using config object)
-    """
-    _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_feature_store.get_table(
-        database_name="sf_database",
-        schema_name="sf_schema",
-        table_name="items_table",
-    )
-
-
 @pytest.fixture(name="snowflake_item_data")
 def snowflake_item_data_fixture(
     snowflake_database_table_item_data,

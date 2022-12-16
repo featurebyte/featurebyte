@@ -176,7 +176,8 @@ class DataUpdateService(BaseService):
         # update data references in affected entities
         primary_keys_cols_mapping = {
             TableDataType.EVENT_DATA: ["event_id_column"],
-            TableDataType.ITEM_DATA: [],
+            TableDataType.ITEM_DATA: ["item_id_column"],
+            TableDataType.SCD_DATA: ["surrogate_key_column"],
             TableDataType.DIMENSION_DATA: ["dimension_data_id_column"],
         }
         primary_keys_cols = cast(List[str], primary_keys_cols_mapping.get(document.type, []))
