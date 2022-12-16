@@ -73,6 +73,16 @@ from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
                 )
             ),
         ),
+        (
+            AggFunc.LAST,
+            [
+                TileSpec(
+                    tile_expr='FIRST_VALUE("a_column")',
+                    tile_column_name="value_1234beef",
+                )
+            ],
+            "FIRST_VALUE(value_1234beef)",
+        ),
     ],
 )
 def test_tiling_aggregators(agg_func, expected_tile_specs, expected_merge_expr):
