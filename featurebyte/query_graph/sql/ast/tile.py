@@ -30,7 +30,6 @@ class BuildTileNode(TableNode):
     value_by: str | None
     tile_specs: list[TileSpec]
     timestamp: str
-    agg_func: str
     frequency: int
     is_on_demand: bool
     query_node_type = NodeType.GROUPBY
@@ -120,7 +119,6 @@ class BuildTileNode(TableNode):
             value_by=parameters["value_by"],
             tile_specs=tile_specs,
             timestamp=parameters["timestamp"],
-            agg_func=parameters["agg_func"],
             frequency=parameters["frequency"],
             is_on_demand=is_on_demand,
         )
