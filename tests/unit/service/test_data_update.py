@@ -1,13 +1,18 @@
 """
 Test DataUpdateService
 """
+from unittest.mock import patch
+
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.schema.dimension_data import DimensionDataUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
+from featurebyte.schema.item_data import ItemDataUpdate
+from featurebyte.schema.scd_data import SCDDataUpdate
 
 
 @pytest.mark.asyncio
@@ -138,3 +143,38 @@ async def test_update_columns_info(
 
     expected_msg = f"Semantic IDs ['{unknown_id}'] not found for columns ['col_int']"
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "fixture_name,update_class,primary_key_column",
+    [
+        ("snowflake_event_data", EventDataUpdate, "event_id_column"),
+        ("snowflake_scd_data", SCDDataUpdate, "surrogate_key_column"),
+        ("snowflake_item_data", ItemDataUpdate, "item_id_column"),
+        ("snowflake_dimension_data", DimensionDataUpdate, "dimension_data_id_column"),
+    ],
+)
+async def test_update_entity_data_references(
+    request, data_update_service, fixture_name, update_class, primary_key_column
+):
+    """Test update_entity_data_references"""
+    data_model = request.getfixturevalue(fixture_name)
+    columns_info = data_model.json_dict()["columns_info"]
+    primary_index = [
+        i
+        for i, c in enumerate(data_model.columns_info)
+        if c.name == getattr(data_model, primary_key_column)
+    ][0]
+    columns_info[primary_index]["entity_id"] = ObjectId()
+    data = update_class(columns_info=columns_info)
+    with patch.object(data_update_service.entity_service, "get_document") as mock_get_document:
+        mock_get_document.return_value.tabular_data_ids = []
+        mock_get_document.return_value.primary_tabular_data_ids = []
+        with patch.object(
+            data_update_service.entity_service, "update_document"
+        ) as mock_update_document:
+            await data_update_service.update_entity_data_references(document=data_model, data=data)
+            update_payload = mock_update_document.call_args[1]["data"]
+            assert update_payload.tabular_data_ids == [data_model.id]
+            assert update_payload.primary_tabular_data_ids == [data_model.id]

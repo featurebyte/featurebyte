@@ -289,6 +289,21 @@ def snowflake_database_table_fixture(
     yield snowflake_table
 
 
+@pytest.fixture(name="snowflake_database_table_item_data")
+def snowflake_database_table_item_data_fixture(
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store
+):
+    """
+    DatabaseTable object fixture for ItemData (using config object)
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    yield snowflake_feature_store.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="items_table",
+    )
+
+
 @pytest.fixture(name="snowflake_dimension_data_id")
 def snowflake_dimension_data_id_fixture():
     """Snowflake dimension data ID"""
@@ -365,11 +380,13 @@ def snowflake_item_data_fixture(
     mock_get_persistent,
     snowflake_item_data_id,
     snowflake_event_data,
+    snowflake_feature_store,
 ):
     """
     Snowflake ItemData object fixture
     """
     _ = mock_get_persistent
+    snowflake_feature_store.save(conflict_resolution="retrieve")
     snowflake_event_data.save()
     yield ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
