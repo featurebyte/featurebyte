@@ -50,14 +50,14 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."agg_w7200_avg_edade899e2fad6f29dfd3cad353742ff31964e12" AS "agg_w7200_avg_edade899e2fad6f29dfd3cad353742ff31964e12",
-    "T1"."agg_w172800_avg_edade899e2fad6f29dfd3cad353742ff31964e12" AS "agg_w172800_avg_edade899e2fad6f29dfd3cad353742ff31964e12"
+    "T0"."agg_w7200_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c" AS "agg_w7200_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c",
+    "T1"."agg_w172800_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c" AS "agg_w172800_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."CUSTOMER_ID",
-      SUM(sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12) / SUM(count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12) AS "agg_w7200_avg_edade899e2fad6f29dfd3cad353742ff31964e12"
+      SUM(sum_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c) / SUM(count_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c) AS "agg_w7200_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c"
     FROM "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
     INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON (
@@ -76,7 +76,7 @@ WITH REQUEST_TABLE AS (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."CUSTOMER_ID",
-      SUM(sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12) / SUM(count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12) AS "agg_w172800_avg_edade899e2fad6f29dfd3cad353742ff31964e12"
+      SUM(sum_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c) / SUM(count_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c) AS "agg_w172800_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c"
     FROM "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
     INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON (
@@ -95,6 +95,6 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "agg_w7200_avg_edade899e2fad6f29dfd3cad353742ff31964e12" AS "a_2h_average",
-  "agg_w172800_avg_edade899e2fad6f29dfd3cad353742ff31964e12" AS "a_48h_average"
+  "agg_w7200_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c" AS "a_2h_average",
+  "agg_w172800_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c" AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG

@@ -812,17 +812,17 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123
+            "agg_w1800_sum_a1a9657e29a711c4d09475bb8285da86250d2294" + 123
           ) AS "production_ready_feature",
           (
             (
-              "agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123
+              "agg_w1800_sum_a1a9657e29a711c4d09475bb8285da86250d2294" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
               (
-                "agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123
+                "agg_w1800_sum_a1a9657e29a711c4d09475bb8285da86250d2294" + 123
               ) + 123
             ) + 123
           ) AS "quarantine_feature",
@@ -830,7 +830,7 @@ def test_get_sql(feature_list):
             (
               (
                 (
-                  "agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123
+                  "agg_w1800_sum_a1a9657e29a711c4d09475bb8285da86250d2294" + 123
                 ) + 123
               ) + 123
             ) + 123

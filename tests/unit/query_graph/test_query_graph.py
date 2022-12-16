@@ -277,7 +277,7 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
         graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "transaction_f3600_m1800_b900_8a2a4064239908696910f175aa0f4b69105997f3"
-    aggregation_id = "sum_925a5866dd2cbfe915e070831311f860176d09c7"
+    aggregation_id = "sum_42ff4d5e8a1fb28d39b4b985ae645d5d12da305f"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
@@ -337,8 +337,9 @@ def test_query_graph__representation():
                             }
                         },
                         "type": "event_data",
-                        "timestamp": null,
-                        "id": "633844bd416657bb96c96d3f"
+                        "id": "633844bd416657bb96c96d3f",
+                        "timestamp_column": null,
+                        "id_column": null
                     }
                 }
             ]

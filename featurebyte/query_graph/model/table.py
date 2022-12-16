@@ -188,7 +188,8 @@ class EventTableData(ConstructNodeMixin, BaseTableData):
             name="temp",
             parameters={
                 "id": self.id,
-                "timestamp": self.event_timestamp_column,
+                "timestamp_column": self.event_timestamp_column,
+                "id_column": self.event_id_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             },
@@ -209,6 +210,9 @@ class ItemTableData(ConstructNodeMixin, BaseTableData):
             name="temp",
             parameters={
                 "id": self.id,
+                "id_column": self.item_id_column,
+                "event_data_id": self.event_data_id,
+                "event_id_column": self.event_id_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             },
@@ -227,6 +231,7 @@ class DimensionTableData(ConstructNodeMixin, BaseTableData):
             name="temp",
             parameters={
                 "id": self.id,
+                "id_column": self.dimension_data_id_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             },
@@ -249,6 +254,11 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
             name="temp",
             parameters={
                 "id": self.id,
+                "natural_key_column": self.natural_key_column,
+                "effective_timestamp_column": self.effective_timestamp_column,
+                "surrogate_key_column": self.surrogate_key_column,
+                "end_timestamp_column": self.end_timestamp_column,
+                "current_flag_column": self.current_flag_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             },

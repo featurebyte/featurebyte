@@ -52,8 +52,11 @@ class InputNode(BaseNode):
         """EventDataParameters"""
 
         type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
-        timestamp: Optional[InColumnStr]
         id: Optional[PydanticObjectId] = Field(default=None)
+        timestamp_column: Optional[InColumnStr] = Field(
+            default=None
+        )  # DEV-556: this should be compulsory
+        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
         @root_validator(pre=True)
         @classmethod
@@ -70,6 +73,9 @@ class InputNode(BaseNode):
 
         type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
         id: Optional[PydanticObjectId] = Field(default=None)
+        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
+        event_data_id: Optional[PydanticObjectId] = Field(default=None)
+        event_id_column: Optional[InColumnStr] = Field(default=None)
 
     class DimensionDataParameters(BaseParameters):
         """DimensionDataParameters"""
@@ -78,12 +84,22 @@ class InputNode(BaseNode):
             TableDataType.DIMENSION_DATA, const=True
         )
         id: Optional[PydanticObjectId] = Field(default=None)
+        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
     class SCDDataParameters(BaseParameters):
         """SCDDataParameters"""
 
         type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
         id: Optional[PydanticObjectId] = Field(default=None)
+        natural_key_column: Optional[InColumnStr] = Field(
+            default=None
+        )  # DEV-556: this should be compulsory
+        effective_timestamp_column: Optional[InColumnStr] = Field(
+            default=None
+        )  # DEV-556: this should be compulsory
+        surrogate_key_column: Optional[InColumnStr] = Field(default=None)
+        end_timestamp_column: Optional[InColumnStr] = Field(default=None)
+        current_flag_column: Optional[InColumnStr] = Field(default=None)
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)

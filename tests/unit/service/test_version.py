@@ -53,7 +53,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "time_modulo_frequency": 300,
         "frequency": 1800,
         "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "aggregation_id": "sum_397b7898e867241e3238cced04423af283a862da",
+        "aggregation_id": "sum_e10838a59285809ee4b024f0cb459cb3a4de45e1",
     }
 
     new_parameters = version.graph.get_node_by_name("groupby_1").parameters
@@ -63,7 +63,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "time_modulo_frequency": 3600,
         "frequency": 86400,
         "tile_id": "sf_table_f86400_m3600_b86400_d1c26f05670a559eec7e90107400f228b14c209f",
-        "aggregation_id": "sum_27c04cd4b7f10ab112b95b39b21f294d353752f7",
+        "aggregation_id": "sum_1b3e16ad6d5b8c71b4dffe01bbef352089a38e84",
     }
 
     # compare edges & other nodes

@@ -1,9 +1,9 @@
 WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS (
   SELECT
-    avg_66805264414a97e8db2d606e11b248a51cb9b28a.INDEX,
-    avg_66805264414a97e8db2d606e11b248a51cb9b28a.`cust_id`,
-    sum_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a,
-    count_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a
+    avg_166d33dcacac79eb986b84efecd5058e0f914830.INDEX,
+    avg_166d33dcacac79eb986b84efecd5058e0f914830.`cust_id`,
+    sum_value_avg_166d33dcacac79eb986b84efecd5058e0f914830,
+    count_value_avg_166d33dcacac79eb986b84efecd5058e0f914830
   FROM (
     SELECT
       *,
@@ -12,8 +12,8 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
       SELECT
         TO_TIMESTAMP(UNIX_TIMESTAMP(CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
         `cust_id`,
-        SUM(`a`) AS sum_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a,
-        COUNT(`a`) AS count_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a
+        SUM(`a`) AS sum_value_avg_166d33dcacac79eb986b84efecd5058e0f914830,
+        COUNT(`a`) AS count_value_avg_166d33dcacac79eb986b84efecd5058e0f914830
       FROM (
         SELECT
           *,
@@ -47,7 +47,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
       ORDER BY
         tile_index
     )
-  ) AS avg_66805264414a97e8db2d606e11b248a51cb9b28a
+  ) AS avg_166d33dcacac79eb986b84efecd5058e0f914830
 ), REQUEST_TABLE AS (
   SELECT
     CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS `POINT_IN_TIME`,
@@ -88,14 +88,14 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
   SELECT
     REQ.`POINT_IN_TIME`,
     REQ.`CUSTOMER_ID`,
-    `T0`.`agg_w7200_avg_66805264414a97e8db2d606e11b248a51cb9b28a` AS `agg_w7200_avg_66805264414a97e8db2d606e11b248a51cb9b28a`,
-    `T1`.`agg_w172800_avg_66805264414a97e8db2d606e11b248a51cb9b28a` AS `agg_w172800_avg_66805264414a97e8db2d606e11b248a51cb9b28a`
+    `T0`.`agg_w7200_avg_166d33dcacac79eb986b84efecd5058e0f914830` AS `agg_w7200_avg_166d33dcacac79eb986b84efecd5058e0f914830`,
+    `T1`.`agg_w172800_avg_166d33dcacac79eb986b84efecd5058e0f914830` AS `agg_w172800_avg_166d33dcacac79eb986b84efecd5058e0f914830`
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ.`POINT_IN_TIME`,
       REQ.`CUSTOMER_ID`,
-      SUM(sum_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a) / SUM(count_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a) AS `agg_w7200_avg_66805264414a97e8db2d606e11b248a51cb9b28a`
+      SUM(sum_value_avg_166d33dcacac79eb986b84efecd5058e0f914830) / SUM(count_value_avg_166d33dcacac79eb986b84efecd5058e0f914830) AS `agg_w7200_avg_166d33dcacac79eb986b84efecd5058e0f914830`
     FROM `REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID` AS REQ
     INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON (
@@ -114,7 +114,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
     SELECT
       REQ.`POINT_IN_TIME`,
       REQ.`CUSTOMER_ID`,
-      SUM(sum_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a) / SUM(count_value_avg_66805264414a97e8db2d606e11b248a51cb9b28a) AS `agg_w172800_avg_66805264414a97e8db2d606e11b248a51cb9b28a`
+      SUM(sum_value_avg_166d33dcacac79eb986b84efecd5058e0f914830) / SUM(count_value_avg_166d33dcacac79eb986b84efecd5058e0f914830) AS `agg_w172800_avg_166d33dcacac79eb986b84efecd5058e0f914830`
     FROM `REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID` AS REQ
     INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON (
@@ -133,6 +133,6 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
 SELECT
   AGG.`POINT_IN_TIME`,
   AGG.`CUSTOMER_ID`,
-  `agg_w7200_avg_66805264414a97e8db2d606e11b248a51cb9b28a` AS `a_2h_average`,
-  `agg_w172800_avg_66805264414a97e8db2d606e11b248a51cb9b28a` AS `a_48h_average`
+  `agg_w7200_avg_166d33dcacac79eb986b84efecd5058e0f914830` AS `a_2h_average`,
+  `agg_w172800_avg_166d33dcacac79eb986b84efecd5058e0f914830` AS `a_48h_average`
 FROM _FB_AGGREGATED AS AGG

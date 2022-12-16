@@ -523,7 +523,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_397b7898e867241e3238cced04423af283a862da" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_e10838a59285809ee4b024f0cb459cb3a4de45e1" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
