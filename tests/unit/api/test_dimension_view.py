@@ -1,9 +1,12 @@
 """
 Unit tests for DimensionView class
 """
+import textwrap
+
 import pytest
 
 from featurebyte.api.dimension_view import DimensionView
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
@@ -101,15 +104,14 @@ def test_as_features__primary_key_not_required(
 
     float_feature_dict = feature_group["CharFeature"].dict()
     graph_dict = float_feature_dict["graph"]
-    float_feature_node_dict = get_node(graph_dict, "project_2")
+    float_feature_node_dict = get_node(graph_dict, float_feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")
     assert graph_dict["edges"] == [
-        {"source": "input_1", "target": "project_1"},
-        {"source": "project_1", "target": "lookup_1"},
-        {"source": "lookup_1", "target": "project_2"},
+        {"source": "input_1", "target": "lookup_1"},
+        {"source": "lookup_1", "target": "project_1"},
     ]
     assert float_feature_node_dict == {
-        "name": "project_2",
+        "name": "project_1",
         "type": "project",
         "output_type": "series",
         "parameters": {"columns": ["CharFeature"]},
@@ -170,15 +172,14 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
 
     feature_dict = feature.dict()
     graph_dict = feature_dict["graph"]
-    float_feature_node_dict = get_node(graph_dict, "project_2")
+    float_feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")
     assert graph_dict["edges"] == [
-        {"source": "input_1", "target": "project_1"},
-        {"source": "project_1", "target": "lookup_1"},
-        {"source": "lookup_1", "target": "project_2"},
+        {"source": "input_1", "target": "lookup_1"},
+        {"source": "lookup_1", "target": "project_1"},
     ]
     assert float_feature_node_dict == {
-        "name": "project_2",
+        "name": "project_1",
         "type": "project",
         "output_type": "series",
         "parameters": {"columns": ["FloatFeature"]},
@@ -192,7 +193,64 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
             "feature_names": ["FloatFeature"],
             "entity_column": "col_int",
             "serving_name": "cust_id",
-            "entity_id": cust_id_entity.id,
+            "entity_id": cust_id_entity,
             "scd_parameters": None,
         },
     }
+
+
+def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
+    """
+    Test features created from different as_feature call is joined together in sql
+    """
+    view = snowflake_dimension_view_with_entity
+    feature_1 = view["col_float"].as_feature("FloatFeature")
+    feature_2 = view[["col_float", "col_char"]]["col_char"].as_feature("CharFeature")
+    feature_3_and_4 = view[["col_binary", "col_boolean"]].as_features(
+        ["BinaryFeature", "BoolFeature"]
+    )
+    feature_list = FeatureList([feature_1, feature_2, feature_3_and_4])
+    feature_list_sql = feature_list.sql
+    assert (
+        feature_list_sql
+        == textwrap.dedent(
+            """
+        WITH _FB_AGGREGATED AS (
+          SELECT
+            "T0"."col_float_b231997b610bd9b3" AS "col_float_b231997b610bd9b3",
+            "T0"."col_char_b231997b610bd9b3" AS "col_char_b231997b610bd9b3",
+            "T0"."col_binary_b231997b610bd9b3" AS "col_binary_b231997b610bd9b3",
+            "T0"."col_boolean_b231997b610bd9b3" AS "col_boolean_b231997b610bd9b3"
+          FROM REQUEST_TABLE AS REQ
+          LEFT JOIN (
+            SELECT
+              "col_int" AS "cust_id",
+              "col_float" AS "col_float_b231997b610bd9b3",
+              "col_char" AS "col_char_b231997b610bd9b3",
+              "col_binary" AS "col_binary_b231997b610bd9b3",
+              "col_boolean" AS "col_boolean_b231997b610bd9b3"
+            FROM (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "created_at" AS "created_at",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
+          ) AS T0
+            ON REQ."cust_id" = T0."cust_id"
+        )
+        SELECT
+          "col_float_b231997b610bd9b3" AS "FloatFeature",
+          "col_char_b231997b610bd9b3" AS "CharFeature",
+          "col_binary_b231997b610bd9b3" AS "BinaryFeature",
+          "col_boolean_b231997b610bd9b3" AS "BoolFeature"
+        FROM _FB_AGGREGATED AS AGG
+        """
+        ).strip()
+    )

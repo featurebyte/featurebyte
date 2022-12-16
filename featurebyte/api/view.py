@@ -799,11 +799,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "entity_id": entity_id,
             **additional_params,
         }
+
+        # self.node must be a Project due to the way as_features() is called
+        assert self.node.type == NodeType.PROJECT
+        previous_node = self.node
+        while previous_node.type == NodeType.PROJECT:
+            input_node_names = self.graph.get_input_node_names(previous_node)
+            assert len(input_node_names) == 1
+            previous_node = self.graph.get_node_by_name(input_node_names[0])
+
         lookup_node = self.graph.add_operation(
             node_type=NodeType.LOOKUP,
             node_params=lookup_node_params,
             node_output_type=NodeOutputType.FRAME,
-            input_nodes=[self.node],
+            input_nodes=[previous_node],
         )
         features = []
         for input_column_name, feature_name in zip(input_column_names, feature_names):
