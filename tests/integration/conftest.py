@@ -542,7 +542,7 @@ async def snowflake_tile(snowflake_session):
     end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
 
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
-    tile_id = "tile_id1"
+    tile_id = "TILE_ID1"
 
     tile_spec = TileSpec(
         time_modulo_frequency_second=183,
@@ -552,7 +552,7 @@ async def snowflake_tile(snowflake_session):
         column_names=col_names_list,
         entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
         value_column_names=["VALUE"],
-        tile_id="tile_id1",
+        tile_id=tile_id,
         aggregation_id="agg_id1",
     )
 
