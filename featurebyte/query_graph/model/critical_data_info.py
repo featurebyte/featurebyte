@@ -35,7 +35,28 @@ NumericT = Union[int, float]
 IMPUTE_OPERATIONS = []
 
 
-class BaseImputeOperation(FeatureByteBaseModel):
+class BaseCleaningOperation(FeatureByteBaseModel):
+    """BaseCleaningOperation class"""
+
+    @abstractmethod
+    def add_cleaning_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
+        """
+        Add cleaning operation to the graph node
+
+        Parameters
+        ----------
+        graph_node: GraphNode
+            Nested graph node
+        input_node: Node
+            Input node to the query graph
+
+        Returns
+        -------
+        Node
+        """
+
+
+class BaseImputeOperation(BaseCleaningOperation):
     """BaseImputeOperation class"""
 
     imputed_value: ScalarT
@@ -49,25 +70,8 @@ class BaseImputeOperation(FeatureByteBaseModel):
         class_name = self.__class__.__name__
         return f"{class_name}({self.dict()})"
 
-    def add_impute_operation(
-        self, graph_node: GraphNode, input_node: Node, condition_node: Node
-    ) -> "Node":
-        """
-        Add impute operation to the graph node
-
-        Parameters
-        ----------
-        graph_node: GraphNode
-            Nested graph node
-        input_node: Node
-            Input node to the query graph
-        condition_node: Node
-            Conditional node to the graph.
-
-        Returns
-        -------
-        Node
-        """
+    def add_cleaning_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
+        condition_node = self.add_condition_operation(graph_node=graph_node, input_node=input_node)
         graph_node.add_operation(
             node_type=NodeType.CONDITIONAL,
             node_params={"value": self.imputed_value},
@@ -274,21 +278,23 @@ class StringValueImputation(IsStringCondition, BaseImputeOperation):
 
 
 if TYPE_CHECKING:
-    # use BaseImputeOperation & BaseFlagOperation for type checking
-    ImputeOperation = BaseImputeOperation
+    # use BaseCleaning for type checking
+    CleaningOperation = BaseCleaningOperation
 else:
     # use Annotated types for type checking during runtime
-    ImputeOperation = Annotated[Union[tuple(IMPUTE_OPERATIONS)], Field(discriminator="type")]
+    CleaningOperation = Annotated[Union[tuple(IMPUTE_OPERATIONS)], Field(discriminator="type")]
 
 
 class CriticalDataInfo(FeatureByteBaseModel):
     """Critical data info model"""
 
-    imputations: List[ImputeOperation]
+    cleaning_operations: List[CleaningOperation]
 
-    @validator("imputations")
+    @validator("cleaning_operations")
     @classmethod
-    def _validate_imputations(cls, values: List[ImputeOperation]) -> List[ImputeOperation]:
+    def _validate_cleaning_operation(
+        cls, values: List[CleaningOperation]
+    ) -> List[CleaningOperation]:
         error_message = (
             "Column values imputed by {first_imputation} will be imputed by {second_imputation}. "
             "Please revise the imputations so that no value could be imputed twice."
@@ -296,8 +302,9 @@ class CriticalDataInfo(FeatureByteBaseModel):
         # check that there is no double imputations in the list of impute operations
         # for example, if -999 is imputed to None, then we impute None to 0.
         # in this case, -999 value is imputed twice (first it is imputed to None, then is imputed to 0).
-        for i, imputation in enumerate(values[:-1]):
-            for other_imputation in values[(i + 1) :]:
+        imputations = [op for op in values if isinstance(op, BaseImputeOperation)]
+        for i, imputation in enumerate(imputations[:-1]):
+            for other_imputation in imputations[(i + 1) :]:
                 if other_imputation.check_condition(imputation.imputed_value):  # type: ignore
                     raise InvalidImputationsError(
                         error_message.format(

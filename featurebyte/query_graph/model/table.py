@@ -15,7 +15,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
-from featurebyte.query_graph.model.critical_data_info import ImputeOperation
+from featurebyte.query_graph.model.critical_data_info import CleaningOperation
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.generic import InputNode, ProjectNode
@@ -42,35 +42,35 @@ class ConstructNodeMixin:
             "table_details": self.tabular_source.table_details,
         }
 
-    def _iterate_column_info_with_imputations(self) -> Iterable[ColumnInfo]:
+    def _iterate_column_info_with_cleaning_operations(self) -> Iterable[ColumnInfo]:
         """
-        Iterate column info with imputation rules
+        Iterate column info with non-empty cleaning operations
 
         Yields
         ------
         ColumnInfo
-            Column info with non-empty imputations
+            Column info with non-empty cleaning operations
         """
         for col_info in self.columns_info:
             critical_data_info = col_info.critical_data_info
-            if critical_data_info is not None and critical_data_info.imputations:
+            if critical_data_info is not None and critical_data_info.cleaning_operations:
                 yield col_info
 
     @staticmethod
-    def _add_impute_operations(
-        imputations: List[ImputeOperation],
+    def _add_cleaning_operations(
+        cleaning_operations: List[CleaningOperation],
         graph_node: GraphNode,
         frame_node: Node,
         project_node: ProjectNode,
         output_column_name: str,
     ) -> Node:
         """
-        Add imputation operations to the graph node
+        Add cleaning operations to the graph node
 
         Parameters
         ----------
-        imputations: List[ImputeOperation]
-            List of imputation operations
+        cleaning_operations: List[CleaningOperation]
+            List of cleaning operations
         graph_node: GraphNode
             Graph node
         frame_node: Node
@@ -85,12 +85,9 @@ class ConstructNodeMixin:
         Node
         """
         input_node: Node = project_node
-        for imputation in imputations:
-            condition_node = imputation.add_condition_operation(
+        for cleaning_operation in cleaning_operations:
+            input_node = cleaning_operation.add_cleaning_operation(
                 graph_node=graph_node, input_node=input_node
-            )
-            input_node = imputation.add_impute_operation(
-                graph_node=graph_node, input_node=input_node, condition_node=condition_node
             )
 
         return graph_node.add_operation(
@@ -116,7 +113,7 @@ class ConstructNodeMixin:
         graph_node: Optional[GraphNode] = None
         frame_node: Optional[Node] = None
         proxy_input_nodes: List[BaseNode] = []
-        for col_info in self._iterate_column_info_with_imputations():
+        for col_info in self._iterate_column_info_with_cleaning_operations():
             if graph_node is None:
                 graph_node, proxy_input_nodes = GraphNode.create(
                     node_type=NodeType.PROJECT,
@@ -133,8 +130,8 @@ class ConstructNodeMixin:
             )
 
             assert col_info.critical_data_info is not None
-            frame_node = self._add_impute_operations(
-                imputations=col_info.critical_data_info.imputations,
+            frame_node = self._add_cleaning_operations(
+                cleaning_operations=col_info.critical_data_info.cleaning_operations,
                 graph_node=graph_node,
                 project_node=cast(ProjectNode, proj_col_node),
                 frame_node=frame_node or proxy_input_nodes[0],

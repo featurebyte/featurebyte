@@ -32,8 +32,8 @@ from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 )
 def test_critical_data_info__valid_imputations(imputations):
     """Test multiple imputations (valid)"""
-    cdi = CriticalDataInfo(imputations=imputations)
-    assert cdi.dict() == {"imputations": imputations}
+    cdi = CriticalDataInfo(cleaning_operations=imputations)
+    assert cdi.dict() == {"cleaning_operations": imputations}
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_critical_data_info__valid_imputations(imputations):
 def test_critical_data_info__invalid_imputations(imputations, conflicts):
     """Test invalid imputations exception raised properly"""
     with pytest.raises(ValidationError) as exc:
-        CriticalDataInfo(imputations=imputations)
+        CriticalDataInfo(cleaning_operations=imputations)
     error_msg = str(exc.value.json())
     expected_msg = "Please revise the imputations so that no value could be imputed twice."
     assert expected_msg in error_msg
