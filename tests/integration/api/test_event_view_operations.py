@@ -185,6 +185,9 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     feature_2h.save()
     assert feature_2h.saved
 
+    # check that feature info of count aggregation is not empty
+    assert feature_2h.info()["metadata"] is not None
+
     # resolve the error by retrieving the feature with the same name
     # (check that ID value are updated after saved)
     feature_list = FeatureList([feature_group], name="my_fl")

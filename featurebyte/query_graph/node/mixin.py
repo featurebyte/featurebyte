@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Set
 
 from abc import abstractmethod
 
+from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -154,6 +155,11 @@ class GroupbyNodeOpStructMixin:
                 columns.append(col)
 
         columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
+        if not wanted_columns and getattr(self.parameters, "agg_func", None) == AggFunc.COUNT:
+            # for groupby aggregation, the wanted columns is empty
+            # in this case, take the first column from input operation info
+            columns = input_operation_info.columns[:1]
+
         output_category = NodeOutputCategory.FEATURE
         if (
             self.type == NodeType.ITEM_GROUPBY
