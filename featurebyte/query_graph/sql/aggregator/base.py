@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_
 
+from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 
@@ -38,6 +40,9 @@ class Aggregator(ABC):
     """
     Base class of all aggregators
     """
+
+    def __init__(self, source_type: SourceType):
+        self.adapter = get_sql_adapter(source_type)
 
     @abstractmethod
     def get_required_serving_names(self) -> set[str]:

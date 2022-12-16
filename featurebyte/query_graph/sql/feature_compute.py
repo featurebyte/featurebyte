@@ -36,9 +36,9 @@ class FeatureExecutionPlan:
 
     def __init__(self, source_type: SourceType) -> None:
         self.aggregators = {
-            LookupSpec: LookupAggregator(),
+            LookupSpec: LookupAggregator(source_type),
             WindowAggregationSpec: WindowAggregator(source_type),
-            ItemAggregationSpec: ItemAggregator(),
+            ItemAggregationSpec: ItemAggregator(source_type),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
