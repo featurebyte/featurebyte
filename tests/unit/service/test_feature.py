@@ -90,7 +90,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
         "output_type": "frame",
         "parameters": {
             "agg_func": "sum",
-            "aggregation_id": "sum_e10838a59285809ee4b024f0cb459cb3a4de45e1",
+            "aggregation_id": "sum_80fd57e971931c519425572b4b5caf97ecbfe084",
             "blind_spot": 600,
             "entity_ids": [ObjectId("637449b96d6e838b025328e2")],
             "frequency": 1800,
