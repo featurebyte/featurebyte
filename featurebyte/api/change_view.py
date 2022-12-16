@@ -9,7 +9,7 @@ from typeguard import typechecked
 from featurebyte import FeatureJobSetting, SlowlyChangingData
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.models.feature_store import ColumnInfo
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 class ChangeViewColumn(ViewColumn):
