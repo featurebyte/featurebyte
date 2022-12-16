@@ -193,7 +193,7 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
             "feature_names": ["FloatFeature"],
             "entity_column": "col_int",
             "serving_name": "cust_id",
-            "entity_id": cust_id_entity,
+            "entity_id": cust_id_entity.id,
             "scd_parameters": None,
         },
     }

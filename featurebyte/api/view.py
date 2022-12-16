@@ -741,6 +741,31 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         return input_column_names
 
+    def _get_input_node_for_lookup_node(self) -> Node:
+        """
+        Get the node before any projection to be used as the input node for the lookup node in
+        as_features(). Removing redundant projections allows joins to be shared for lookup
+        operations using the same source.
+
+        self.node must be a Project node due to the way as_features() is called:
+
+        view[["A", "B", "C"]].as_features(["FeatureA", "FeatureB", "FeatureC"])
+
+        The view before that projection must also have those columns and can be used as the input
+        instead.
+        """
+
+        assert self.node.type == NodeType.PROJECT
+
+        # Find the first ancestor that is not a Project
+        node_before_projection = self.node
+        while node_before_projection.type == NodeType.PROJECT:
+            input_node_names = self.graph.get_input_node_names(node_before_projection)
+            assert len(input_node_names) == 1
+            node_before_projection = self.graph.get_node_by_name(input_node_names[0])
+
+        return node_before_projection
+
     @typechecked
     def as_features(
         self,
@@ -799,20 +824,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "entity_id": entity_id,
             **additional_params,
         }
-
-        # self.node must be a Project due to the way as_features() is called
-        assert self.node.type == NodeType.PROJECT
-        previous_node = self.node
-        while previous_node.type == NodeType.PROJECT:
-            input_node_names = self.graph.get_input_node_names(previous_node)
-            assert len(input_node_names) == 1
-            previous_node = self.graph.get_node_by_name(input_node_names[0])
+        input_node = self._get_input_node_for_lookup_node()
 
         lookup_node = self.graph.add_operation(
             node_type=NodeType.LOOKUP,
             node_params=lookup_node_params,
             node_output_type=NodeOutputType.FRAME,
-            input_nodes=[previous_node],
+            input_nodes=[input_node],
         )
         features = []
         for input_column_name, feature_name in zip(input_column_names, feature_names):
