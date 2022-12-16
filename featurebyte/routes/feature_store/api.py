@@ -204,13 +204,13 @@ async def list_columns_in_database_table(
 
 
 @router.post("/preview", response_model=str)
-async def get_generic_preview(
+async def get_data_preview(
     request: Request,
     preview: FeatureStorePreview,
     limit: int = Query(default=10, gt=0, le=10000),
 ) -> str:
     """
-    Retrieve generic preview
+    Retrieve data preview for query graph node
     """
     controller = request.state.app_container.feature_store_controller
     return cast(
@@ -222,19 +222,38 @@ async def get_generic_preview(
 
 
 @router.post("/sample", response_model=str)
-async def get_sample(
+async def get_data_sample(
     request: Request,
     sample: FeatureStoreSample,
     size: int = Query(default=10, gt=0, le=10000),
     seed: int = Query(default=1234),
 ) -> str:
     """
-    Retrieve generic preview
+    Retrieve data sample for query graph node
     """
     controller = request.state.app_container.feature_store_controller
     return cast(
         str,
         await controller.sample(
+            sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
+        ),
+    )
+
+
+@router.post("/describe", response_model=str)
+async def get_data_description(
+    request: Request,
+    sample: FeatureStoreSample,
+    size: int = Query(default=10000, gte=0, le=1000000),
+    seed: int = Query(default=1234),
+) -> str:
+    """
+    Retrieve data description for query graph node
+    """
+    controller = request.state.app_container.feature_store_controller
+    return cast(
+        str,
+        await controller.describe(
             sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
         ),
     )

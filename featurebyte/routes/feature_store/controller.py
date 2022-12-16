@@ -293,7 +293,7 @@ class FeatureStoreController(
 
     async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
         """
-        Preview generic graph node
+        Retrieve data preview for query graph node
 
         Parameters
         ----------
@@ -317,7 +317,7 @@ class FeatureStoreController(
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
     ) -> str:
         """
-        Preview generic graph node
+        Retrieve data sample for query graph node
 
         Parameters
         ----------
@@ -336,6 +336,32 @@ class FeatureStoreController(
             Dataframe converted to json string
         """
         return await self.preview_service.sample(
+            sample=sample, size=size, seed=seed, get_credential=get_credential
+        )
+
+    async def describe(
+        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+    ) -> str:
+        """
+        Retrieve data description for query graph node
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+        """
+        return await self.preview_service.describe(
             sample=sample, size=size, seed=seed, get_credential=get_credential
         )
 

@@ -3,22 +3,29 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast
 
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlglot import expressions
+import numpy as np
+from sqlglot import expressions, parse_one
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    SQLType,
+    construct_cte_sql,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
@@ -243,7 +250,7 @@ class GraphInterpreter:
 
         return sql_code
 
-    def construct_sample_sql(
+    def construct_sql(
         self,
         node_name: str,
         num_rows: int = 10,
@@ -251,7 +258,7 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> str:
+    ) -> expressions.Expression:
         """Construct SQL to sample a given node
 
         Parameters
@@ -271,8 +278,8 @@ class GraphInterpreter:
 
         Returns
         -------
-        str
-            SQL code for preview purpose
+        expressions.Expression
+            SQL expression for data sample
         """
         flat_graph, flat_node = self.flatten_graph(node_name=node_name)
         sql_graph = SQLOperationGraph(
@@ -314,6 +321,258 @@ class GraphInterpreter:
         if filter_conditions:
             sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
 
-        sql_code: str = sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type)
+        if num_rows > 0:
+            sql_tree = sql_tree.limit(num_rows)
 
-        return sql_code
+        return sql_tree
+
+    def construct_sample_sql(
+        self,
+        node_name: str,
+        num_rows: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
+    ) -> str:
+        """Construct SQL to sample a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+        seed: int
+            Random seed to use for sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+        timestamp_column: Optional[str]
+            Columnn to apply date range filtering on
+
+        Returns
+        -------
+        str
+            SQL code for preview purpose
+        """
+
+        sql_tree = self.construct_sql(
+            node_name=node_name,
+            num_rows=num_rows,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=timestamp_column,
+        )
+        return sql_to_string(sql_tree, source_type=self.source_type)
+
+    @staticmethod
+    def _empty_value_expr(column_name: str) -> expressions.Expression:
+        """
+        Create expression for column with empty value
+
+        Parameters
+        ----------
+        column_name: str
+            Column name to use
+
+        Returns
+        -------
+        expressions.Expression
+        """
+        expr = expressions.alias_(make_literal_value(None), column_name, quoted=True)
+        return cast(expressions.Expression, expr)
+
+    @staticmethod
+    def _percentile_expr(
+        expression: expressions.Expression, quantile: float
+    ) -> expressions.Expression:
+        """
+        Create expression for percentile of column
+
+        Parameters
+        ----------
+        expression: expressions.Expression
+            Column expression to use for percentile expression
+        quantile: float
+            Quantile to use for percentile expression
+
+        Returns
+        -------
+        expressions.Expression
+        """
+        order_expr = expressions.Order(expressions=[expressions.Ordered(this=expression)])
+        return expressions.WithinGroup(
+            this=expressions.Anonymous(
+                this="percentile_cont", expressions=[parse_one(f"{quantile}")]
+            ),
+            expression=order_expr,
+        )
+
+    def construct_describe_sql(
+        self,
+        dtypes: List[Any],
+        node_name: str,
+        num_rows: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
+    ) -> Tuple[str, List[str], List[str]]:
+        """Construct SQL to sample a given node
+
+        Parameters
+        ----------
+        dtypes: List[Any]
+            List of column dtypes
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+        seed: int
+            Random seed to use for sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+        timestamp_column: Optional[str]
+            Columnn to apply date range filtering on
+
+        Returns
+        -------
+        Tuple[str, List[str], List[str]]
+            SQL code, row names, column names
+        """
+        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
+            self.query_graph.get_node_by_name(node_name)
+        )
+        column_names = []
+        for column in operation_structure.columns:
+            assert column.name
+            column_names.append(column.name)
+
+        sql_tree = self.construct_sql(
+            node_name=node_name,
+            num_rows=num_rows,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=timestamp_column,
+        )
+
+        # get modes
+        selections = []
+        for column_name, dtype in zip(column_names, dtypes):
+            column_expr = quoted_identifier(column_name)
+            selections.append(
+                expressions.alias_(
+                    (
+                        expressions.Anonymous(this="MODE", expressions=[column_expr])
+                        if not np.issubdtype(dtype, np.number)
+                        else make_literal_value(None)
+                    ),
+                    f"mode__{column_name}",
+                    quoted=True,
+                )
+            )
+        cte_context = construct_cte_sql(
+            [
+                ("data", sql_tree),
+                ("mode_values", expressions.select(*selections).from_("data").limit(1)),
+            ]
+        )
+
+        stats_names = [
+            "count",
+            "unique",
+            "top",
+            "freq",
+            "mean",
+            "std",
+            "min",
+            "25%",
+            "50%",
+            "75%",
+            "max",
+        ]
+        selections = []
+        for column_name, dtype in zip(column_names, dtypes):
+            column_expr = quoted_identifier(column_name)
+            mode_column_name = quoted_identifier(f"mode__{column_name}")
+
+            # count
+            selections.append(expressions.Anonymous(this="COUNT", expressions=[column_expr]))
+
+            # unique, top, freq
+            if not np.issubdtype(dtype, np.number):
+                selections.extend(
+                    [
+                        expressions.Anonymous(
+                            this="COUNT", expressions=[f"DISTINCT {column_expr}"]
+                        ),
+                        expressions.Anonymous(this="MODE", expressions=[column_expr]),
+                        expressions.Anonymous(
+                            this="COUNT_IF",
+                            expressions=[f"{column_expr} = mode_values.{mode_column_name}"],
+                        ),
+                    ]
+                )
+            else:
+                selections.extend(
+                    [
+                        self._empty_value_expr(f"unique__{column_name}"),
+                        self._empty_value_expr(f"top__{column_name}"),
+                        self._empty_value_expr(f"freq__{column_name}"),
+                    ]
+                )
+
+            # mean, std, min, 25%, 50%, 75%, max
+            if np.issubdtype(dtype, np.number):
+                converted_float_column = expressions.Anonymous(
+                    this="TO_DOUBLE", expressions=[column_expr]
+                )
+                selections.extend(
+                    [
+                        expressions.Anonymous(this="AVG", expressions=[converted_float_column]),
+                        expressions.Anonymous(this="STDDEV", expressions=[converted_float_column]),
+                        expressions.Anonymous(this="MIN", expressions=[column_expr]),
+                        self._percentile_expr(column_expr, 0.25),
+                        self._percentile_expr(column_expr, 0.5),
+                        self._percentile_expr(column_expr, 0.75),
+                        expressions.Anonymous(this="MAX", expressions=[column_expr]),
+                    ]
+                )
+            else:
+                selections.extend(
+                    [
+                        self._empty_value_expr(f"mean__{column_name}"),
+                        self._empty_value_expr(f"std__{column_name}"),
+                        (
+                            expressions.Anonymous(this="MIN", expressions=[column_expr])
+                            if np.issubdtype(dtype, np.datetime64)
+                            else self._empty_value_expr(f"min__{column_name}")
+                        ),
+                        self._empty_value_expr(f"25%__{column_name}"),
+                        self._empty_value_expr(f"50%__{column_name}"),
+                        self._empty_value_expr(f"75%__{column_name}"),
+                        (
+                            expressions.Anonymous(this="MAX", expressions=[column_expr])
+                            if np.issubdtype(dtype, np.datetime64)
+                            else self._empty_value_expr(f"max__{column_name}")
+                        ),
+                    ]
+                )
+
+        sql_tree = (
+            cte_context.select(*selections)
+            .from_("data")
+            .join(expression="mode_values", join_type="LEFT")
+        )
+
+        return (
+            sql_to_string(sql_tree, source_type=self.source_type),
+            stats_names,
+            column_names,
+        )

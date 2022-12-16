@@ -121,7 +121,7 @@ def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
             dataframe[name] = dataframe[name].astype(int)
 
 
-def convert_dataframe_as_json(dataframe: pd.DataFrame) -> str:
+def convert_dataframe_as_json(dataframe: pd.DataFrame, skip_prepare: bool = False) -> str:
     """
     Convert pandas dataframe to json
 
@@ -129,13 +129,16 @@ def convert_dataframe_as_json(dataframe: pd.DataFrame) -> str:
     ----------
     dataframe: pd.DataFrame
         Dataframe object
+    skip_prepare: bool
+        Whether to skip dataframe preparation
 
     Returns
     -------
     str
         JSON string
     """
-    prepare_dataframe_for_json(dataframe)
+    if not skip_prepare:
+        prepare_dataframe_for_json(dataframe)
     return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
 
 

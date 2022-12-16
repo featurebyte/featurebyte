@@ -1,9 +1,11 @@
 """
 Test for FeatureStore route
 """
+import copy
 from http import HTTPStatus
 from unittest.mock import Mock
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
@@ -307,7 +309,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         ).json_dict()
 
     def test_sample_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test data preview (success)"""
+        """Test data sample (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
@@ -324,7 +326,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
 
     def test_sample_422__no_timestamp_column(self, test_api_client_persistent, data_sample_payload):
-        """Test data preview no timestamp column"""
+        """Test data sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
             "/feature_store/sample",
@@ -349,7 +351,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def test_sample_422__invalid_timestamp_range(
         self, test_api_client_persistent, data_sample_payload
     ):
-        """Test data preview no timestamp column"""
+        """Test data sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
             "/feature_store/sample",
@@ -369,3 +371,116 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 }
             ]
         }
+
+    def test_describe_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
+        """Test data describe (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame(
+            {
+                "event_timestamp": [
+                    20,
+                    np.NaN,
+                    np.NaN,
+                    np.NaN,
+                    0.256,
+                    0.00123,
+                    0,
+                    0.01,
+                    0.155,
+                    0.357,
+                    1.327,
+                ],
+                "col_text": [10, 5, "a", 5, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN],
+            },
+            index=[
+                "count",
+                "unique",
+                "top",
+                "freq",
+                "mean",
+                "std",
+                "min",
+                "25%",
+                "50%",
+                "75%",
+                "max",
+            ],
+        )
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = pd.DataFrame(
+            {
+                "a_count": [20],
+                "a_unique": [np.NaN],
+                "a_top": [np.NaN],
+                "a_freq": [np.NaN],
+                "a_mean": [0.256],
+                "a_std": [0.00123],
+                "a_min": [0],
+                "a_p25": [0.01],
+                "a_p50": [0.155],
+                "a_p75": [0.357],
+                "a_max": [1.327],
+                "b_count": [10],
+                "b_unique": [5],
+                "b_top": ["a"],
+                "b_freq": [5],
+                "b_mean": [np.NaN],
+                "b_std": [np.NaN],
+                "b_min": [np.NaN],
+                "b_p25": [np.NaN],
+                "b_p50": [np.NaN],
+                "b_p75": [np.NaN],
+                "b_max": [np.NaN],
+            }
+        )
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        sample_payload = copy.deepcopy(data_sample_payload)
+        sample_payload["graph"]["nodes"][0]["parameters"]["columns"] = [
+            "event_timestamp",
+            "col_text",
+        ]
+        response = test_api_client.post("/feature_store/describe", json=sample_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert_frame_equal(
+            pd.read_json(response.json(), orient="table"), expected_df, check_dtype=False
+        )
+
+    def test_describe_200_numeric_only(
+        self, test_api_client_persistent, data_sample_payload, mock_get_session
+    ):
+        """Test data describe with numeric columns only (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame(
+            {
+                "event_timestamp": [20, 0.256, 0.00123, 0, 0.01, 0.155, 0.357, 1.327],
+            },
+            index=["count", "mean", "std", "min", "25%", "50%", "75%", "max"],
+        )
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = pd.DataFrame(
+            {
+                "a_count": [20],
+                "a_unique": [np.NaN],
+                "a_top": [np.NaN],
+                "a_freq": [np.NaN],
+                "a_mean": [0.256],
+                "a_std": [0.00123],
+                "a_min": [0],
+                "a_p25": [0.01],
+                "a_p50": [0.155],
+                "a_p75": [0.357],
+                "a_max": [1.327],
+            }
+        )
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        sample_payload = copy.deepcopy(data_sample_payload)
+        sample_payload["graph"]["nodes"][0]["parameters"]["columns"] = [
+            "event_timestamp",
+        ]
+        response = test_api_client.post("/feature_store/describe", json=sample_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert_frame_equal(
+            pd.read_json(response.json(), orient="table"), expected_df, check_dtype=False
+        )
