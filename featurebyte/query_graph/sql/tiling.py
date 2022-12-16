@@ -75,6 +75,7 @@ class TilingAggregator(ABC):
 class OrderIndependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are not order dependent"""
 
+    @property
     def is_order_dependent(self) -> bool:
         return False
 
@@ -82,6 +83,7 @@ class OrderIndependentAggregator(TilingAggregator, ABC):
 class OrderDependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are order dependent"""
 
+    @property
     def is_order_dependent(self) -> bool:
         return True
 

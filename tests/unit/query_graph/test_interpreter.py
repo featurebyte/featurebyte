@@ -361,8 +361,6 @@ def test_graph_interpreter_on_demand_tile_gen(
           tile_index,
           "cust_id",
           __FB_ENTITY_TABLE_START_DATE
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert sql == expected_sql
@@ -440,8 +438,6 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
           tile_index,
           "cust_id",
           "product_type"
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert info.sql == expected_sql
@@ -549,8 +545,6 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
           tile_index,
           "cust_id",
           __FB_ENTITY_TABLE_START_DATE
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert sql == expected
@@ -622,8 +616,6 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
           tile_index,
           "biz_id",
           __FB_ENTITY_TABLE_START_DATE
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert sql == expected
@@ -717,8 +709,6 @@ def test_graph_interpreter_snowflake(graph):
         GROUP BY
           tile_index,
           "CUST_ID"
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert sql_template == expected
@@ -762,8 +752,6 @@ def test_graph_interpreter_snowflake(graph):
         GROUP BY
           tile_index,
           "CUST_ID"
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert rendered_template == expected
@@ -1469,8 +1457,62 @@ def test_databricks_source(query_graph_with_groupby):
         GROUP BY
           tile_index,
           `cust_id`
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert tile_sql == expected
+
+
+def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggregation_feature_node):
+    """
+    Test generating tile sql for an order dependent aggregation
+    """
+    interpreter = GraphInterpreter(global_graph, source_type=SourceType.SNOWFLAKE)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(
+        latest_value_aggregation_feature_node, is_on_demand=False
+    )
+    assert len(tile_gen_sqls) == 1
+    tile_sql = tile_gen_sqls[0].sql
+    assert (
+        tile_sql
+        == textwrap.dedent(
+            """
+        SELECT
+          __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          latest_value_last_6823be98b8982564b304f346a91ca4d56208f18a
+        FROM (
+          SELECT
+            TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+            "cust_id",
+            ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS "__FB_ROW_NUMBER",
+            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS latest_value_last_6823be98b8982564b304f346a91ca4d56208f18a
+          FROM (
+            SELECT
+              *,
+              FLOOR(
+                (
+                  DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                ) / 3600
+              ) AS tile_index
+            FROM (
+              SELECT
+                *
+              FROM (
+                SELECT
+                  "ts" AS "ts",
+                  "cust_id" AS "cust_id",
+                  "a" AS "a",
+                  "b" AS "b"
+                FROM "db"."public"."event_table"
+              )
+              WHERE
+                "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+            )
+          )
+        )
+        WHERE
+          "__FB_ROW_NUMBER" = 1
+        """
+        ).strip()
+    )

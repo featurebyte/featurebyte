@@ -755,6 +755,32 @@ def scd_offset_lookup_feature_node_fixture(
     return feature_node
 
 
+@pytest.fixture(name="latest_value_aggregation_feature_node")
+def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "last",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_latest_value_past_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_latest_value_past_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="graph_single_node")
 def query_graph_single_node(global_graph):
     """
