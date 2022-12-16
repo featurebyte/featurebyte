@@ -510,13 +510,13 @@ class WindowAggregator(Aggregator):
         table_expr: Select,
         point_in_time_column: str,
         current_columns: list[str],
-        current_index: int,
+        current_query_index: int,
     ) -> AggregationResult:
 
         queries = self.get_window_aggregations(point_in_time_column)
 
         return self._update_with_left_joins(
-            table_expr=table_expr, current_index=current_index, queries=queries
+            table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
     def get_common_table_expressions(

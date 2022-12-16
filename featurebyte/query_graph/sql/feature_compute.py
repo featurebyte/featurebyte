@@ -36,9 +36,9 @@ class FeatureExecutionPlan:
 
     def __init__(self, source_type: SourceType) -> None:
         self.aggregators = {
+            LookupSpec: LookupAggregator(),
             WindowAggregationSpec: WindowAggregator(source_type),
             ItemAggregationSpec: ItemAggregator(),
-            LookupSpec: LookupAggregator(),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
@@ -123,12 +123,14 @@ class FeatureExecutionPlan:
         """
         # Select original columns first
         if request_table_columns:
-            current_columns = [quoted_identifier(col).sql() for col in request_table_columns]
-            request_table_columns = [f"REQ.{col}" for col in current_columns]
+            current_columns = request_table_columns[:]
+            formatted_request_table_columns = [
+                f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns
+            ]
         else:
             current_columns = []
-            request_table_columns = []
-        table_expr = select(*request_table_columns).from_(f"{request_table_name} AS REQ")
+            formatted_request_table_columns = []
+        table_expr = select(*formatted_request_table_columns).from_(f"{request_table_name} AS REQ")
 
         # Update table_expr using the aggregators
         agg_table_index = 0
@@ -137,7 +139,7 @@ class FeatureExecutionPlan:
                 table_expr=table_expr,
                 point_in_time_column=point_in_time_column,
                 current_columns=current_columns,
-                current_index=agg_table_index,
+                current_query_index=agg_table_index,
             )
             table_expr = agg_result.updated_table_expr
             agg_table_index = agg_result.updated_index

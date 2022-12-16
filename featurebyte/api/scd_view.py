@@ -92,6 +92,9 @@ class SlowlyChangingView(View):
             "current_flag_column",
         ]
 
+    def _get_additional_inherited_columns(self) -> set[str]:
+        return {self.effective_timestamp_column}
+
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
         """
@@ -147,6 +150,7 @@ class SlowlyChangingView(View):
         """
         return SCDBaseParameters(
             effective_timestamp_column=self.effective_timestamp_column,
+            natural_key_column=self.natural_key_column,
             current_flag_column=self.current_flag_column,
             end_timestamp_column=self.end_timestamp_column,
         )

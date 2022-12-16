@@ -3,7 +3,7 @@ Module for data structures that describe different types of aggregations that fo
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 import hashlib
 import json
@@ -16,7 +16,12 @@ from sqlglot.expressions import Select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode, LookupNode
+from featurebyte.query_graph.node.generic import (
+    GroupbyNode,
+    ItemGroupbyNode,
+    LookupNode,
+    SCDLookupParameters,
+)
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
 
@@ -200,6 +205,7 @@ class LookupSpec(AggregationSpec):
     entity_column: str
     serving_names: list[str]
     source_expr: Select
+    scd_parameters: Optional[SCDLookupParameters]
 
     @property
     def agg_result_name(self) -> str:
@@ -216,10 +222,12 @@ class LookupSpec(AggregationSpec):
         str
         """
         hasher = hashlib.shake_128()
-        params = {
+        params: dict[str, Any] = {
             "source_expr": self.source_expr.sql(),
             "entity_column": self.entity_column,
         }
+        if self.scd_parameters is not None:
+            params["scd_parameters"] = self.scd_parameters.dict()
         hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
         return hasher.hexdigest(8)
 
@@ -273,18 +281,17 @@ class LookupSpec(AggregationSpec):
             assert source_type is not None
             source_expr = cls._get_source_sql_expr(graph=graph, node=node, source_type=source_type)
 
-        params = node.parameters.dict()
+        params = node.parameters
         specs = []
-        for input_column_name, feature_name in zip(
-            params["input_column_names"], params["feature_names"]
-        ):
+        for input_column_name, feature_name in zip(params.input_column_names, params.feature_names):
             spec = LookupSpec(
                 input_column_name=input_column_name,
                 feature_name=feature_name,
-                entity_column=params["entity_column"],
-                serving_names=[params["serving_name"]],
+                entity_column=params.entity_column,
+                serving_names=[params.serving_name],
                 serving_names_mapping=serving_names_mapping,
                 source_expr=source_expr,
+                scd_parameters=params.scd_parameters,
             )
             specs.append(spec)
         return specs

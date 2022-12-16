@@ -3,7 +3,7 @@ SQL generation for lookup features
 """
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -13,7 +13,8 @@ from featurebyte.query_graph.sql.aggregator.base import (
     Aggregator,
     LeftJoinableSubquery,
 )
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import LookupSpec
 
 
@@ -75,6 +76,28 @@ class LookupAggregator(Aggregator):
             out.update(spec.serving_names)
         return out
 
+    def iterate_grouped_lookup_specs(self, is_scd: bool) -> Iterable[list[LookupSpec]]:
+        """
+        Iterate over groups of LookupSpec filtering by time awareness. All the LookupSpecs in a
+        group can be looked up using the same join.
+
+        Parameters
+        ----------
+        is_scd: bool
+            If true, only yields time aware LookupSpecs, and vice versa
+
+        Yields
+        ------
+        list[LookupSpec]
+            Group of LookupSpec as a list
+        """
+        for specs in self.grouped_lookup_specs.values():
+            is_specs_time_aware = specs[0].scd_parameters is not None
+            if is_scd and is_specs_time_aware:
+                yield specs
+            if not is_scd and not is_specs_time_aware:
+                yield specs
+
     def get_non_time_based_lookups(self) -> list[LeftJoinableSubquery]:
         """
         Get non-time based lookups queries
@@ -86,7 +109,7 @@ class LookupAggregator(Aggregator):
 
         out = []
 
-        for specs in self.grouped_lookup_specs.values():
+        for specs in self.iterate_grouped_lookup_specs(is_scd=False):
 
             entity_column = specs[0].entity_column
             serving_name = specs[0].serving_names[0]
@@ -118,14 +141,88 @@ class LookupAggregator(Aggregator):
         table_expr: Select,
         point_in_time_column: str,
         current_columns: list[str],
-        current_index: int,
+        current_query_index: int,
     ) -> AggregationResult:
 
-        queries = self.get_non_time_based_lookups()
-
-        return self._update_with_left_joins(
-            table_expr=table_expr, current_index=current_index, queries=queries
+        # SCD lookup
+        table_expr, scd_agg_result_names = self._update_with_scd_lookups(
+            table_expr=table_expr,
+            point_in_time_column=point_in_time_column,
+            current_columns=current_columns,
         )
+
+        # Non-time based lookup
+        queries = self.get_non_time_based_lookups()
+        result = self._update_with_left_joins(
+            table_expr=table_expr, current_query_index=current_query_index, queries=queries
+        )
+
+        # Update result column names to account for both types of lookups
+        result.column_names = scd_agg_result_names + result.column_names
+        return result
+
+    def _update_with_scd_lookups(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+    ) -> Tuple[Select, list[str]]:
+        """
+        Generates sql for SCD lookup and returns the updated table and added columns
+
+        Parameters
+        ----------
+        table_expr: Select
+            The table expression to update
+        point_in_time_column: str
+            Point in time column name
+        current_columns: list[str]
+            List of column names in the table
+
+        Returns
+        -------
+        Tuple[Select, list[str]]
+            First element is the updated table_expr. Second element is the new columns added
+        """
+
+        scd_agg_result_names = []
+
+        for lookup_specs in self.iterate_grouped_lookup_specs(is_scd=True):
+
+            left_table = Table(
+                expr=table_expr,
+                timestamp_column=point_in_time_column,
+                join_key=lookup_specs[0].serving_names[0],
+                input_columns=current_columns,
+                output_columns=current_columns,
+            )
+
+            agg_result_names = [spec.agg_result_name for spec in lookup_specs]
+            scd_parameters = lookup_specs[0].scd_parameters
+            assert scd_parameters is not None
+            right_table = Table(
+                expr=lookup_specs[0].source_expr,
+                timestamp_column=scd_parameters.effective_timestamp_column,
+                join_key=lookup_specs[0].entity_column,
+                input_columns=[spec.input_column_name for spec in lookup_specs],
+                output_columns=agg_result_names,
+            )
+            table_expr = get_scd_join_expr(left_table, right_table, join_type="left")
+
+            current_columns = current_columns + agg_result_names
+            scd_agg_result_names.extend(agg_result_names)
+
+        if scd_agg_result_names:
+            # If any SCD lookup is performed, set up the REQ alias again so that subsequent joins
+            # using other aggregators can work
+            table_expr = select(
+                *[
+                    alias_(get_qualified_column_identifier(col, "REQ"), col, quoted=True)
+                    for col in current_columns
+                ]
+            ).from_(table_expr.subquery(alias="REQ"))
+
+        return table_expr, scd_agg_result_names
 
     def get_common_table_expressions(
         self, request_table_name: str

@@ -149,6 +149,15 @@ def test_scd_view_as_feature__invalid_duration(snowflake_scd_data, cust_id_entit
     assert "Failed to parse the offset parameter" in str(exc.value)
 
 
+def test_scd_view_inherited__columns(snowflake_scd_view):
+    """
+    Test SlowlyChangingView inherited columns include both natural key column and effective
+    timestamp column
+    """
+    subset_view = snowflake_scd_view[["col_float"]]
+    assert subset_view.columns == ["col_float", "col_text", "event_timestamp"]
+
+
 def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity):
     """
     Test SlowlyChangingView as_feature selects a special column that is excluded by default

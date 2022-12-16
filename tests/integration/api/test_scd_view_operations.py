@@ -5,7 +5,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import EventData, EventView, SlowlyChangingData, SlowlyChangingView
+from featurebyte import (
+    DimensionView,
+    EventData,
+    EventView,
+    FeatureList,
+    SlowlyChangingData,
+    SlowlyChangingView,
+)
 
 
 def get_expected_scd_join_result(
@@ -183,3 +190,57 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
         "user id": 1,
         "count_7d": '{\n  "STATUS_CODE_12": 2,\n  "STATUS_CODE_3": 1,\n  "STATUS_CODE_46": 10,\n  "STATUS_CODE_48": 5\n}',
     }
+
+
+def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe):
+    """
+    Test creating lookup feature from a SlowlyChangingView
+    """
+    # SCD lookup feature
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status")
+
+    # Dimension lookup feature
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_lookup_feature = dimension_view["item_name"].as_feature("Item Name Feature")
+
+    # Window feature that depends on an SCD join
+    event_view = EventView.from_event_data(event_data)
+    event_view.join(scd_view, on="USER ID")
+    window_feature = event_view.groupby("USER ID", "User Status").aggregate_over(
+        method="count",
+        windows=["7d"],
+        feature_names=["count_7d"],
+    )["count_7d"]
+
+    # Preview a feature list with above features
+    feature_list = FeatureList([window_feature, scd_lookup_feature, dimension_lookup_feature])
+    point_in_time = "2001-11-15 10:00:00"
+    item_id = "item_42"
+    user_id = 1
+    preview_params = {
+        "POINT_IN_TIME": point_in_time,
+        "user id": user_id,
+        "item_id": item_id,
+    }
+    preview_output = feature_list.preview(preview_params).iloc[0].to_dict()
+    assert set(preview_output.keys()) == {
+        "POINT_IN_TIME",
+        "user id",
+        "item_id",
+        "count_7d",
+        "Current User Status",
+        "Item Name Feature",
+    }
+
+    # Compare with expected result
+    mask = (scd_dataframe["Effective Timestamp"] < point_in_time) & (
+        scd_dataframe["User ID"] == user_id
+    )
+    expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
+    assert preview_output["Current User Status"] == expected_row["User Status"]
+    assert preview_output["Item Name Feature"] == "name_42"
+    assert (
+        preview_output["count_7d"]
+        == '{\n  "STATUS_CODE_12": 2,\n  "STATUS_CODE_3": 1,\n  "STATUS_CODE_46": 10,\n  "STATUS_CODE_48": 5\n}'
+    )

@@ -694,6 +694,38 @@ def lookup_feature_node_fixture(global_graph, projected_lookup_features):
     return feature_alias
 
 
+@pytest.fixture(name="scd_lookup_feature_node")
+def scd_lookup_feature_node_fixture(global_graph, scd_data_input_node):
+    """
+    Fixture of a SCD lookup feature node
+    """
+    node_params = {
+        "input_column_names": ["membership_status"],
+        "feature_names": ["Current Membership Status"],
+        "entity_column": "cust_id",
+        "serving_name": "CUSTOMER_ID",
+        "entity_id": ObjectId(),
+        "scd_parameters": {
+            "effective_timestamp_column": "event_timestamp",
+            "natural_key_column": "cust_id",
+            "current_flag_column": "is_record_current",
+        },
+    }
+    lookup_node = global_graph.add_operation(
+        node_type=NodeType.LOOKUP,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_data_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["Current Membership Status"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(lookup_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="graph_single_node")
 def query_graph_single_node(global_graph):
     """

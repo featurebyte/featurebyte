@@ -7,9 +7,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from sqlglot import expressions
-from sqlglot.expressions import Select
+from sqlglot.expressions import Select, alias_
 
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 
 @dataclass
@@ -55,7 +55,7 @@ class Aggregator(ABC):
         table_expr: Select,
         point_in_time_column: str,
         current_columns: list[str],
-        current_index: int,
+        current_query_index: int,
     ) -> AggregationResult:
         """
         Update a provided table with aggregated results left joined into it
@@ -70,7 +70,7 @@ class Aggregator(ABC):
             Point in time column name
         current_columns: list[str]
             List of column names in the current table
-        current_index: int
+        current_query_index: int
             A running integer to be used to construct new table aliases
 
         Returns
@@ -81,7 +81,7 @@ class Aggregator(ABC):
     def _update_with_left_joins(
         self,
         table_expr: Select,
-        current_index: int,
+        current_query_index: int,
         queries: list[LeftJoinableSubquery],
     ) -> AggregationResult:
         """
@@ -91,7 +91,7 @@ class Aggregator(ABC):
         ----------
         table_expr: Select
             Table expression to update
-        current_index: int
+        current_query_index: int
             A running integer to be used to construct new table aliases
         queries: list[LeftJoinableSubquery]
             List of sub-queries to be left joined with table_expr
@@ -101,20 +101,22 @@ class Aggregator(ABC):
         AggregationResult
         """
         aggregated_columns = []
+        updated_table_expr = table_expr
+        updated_query_index = current_query_index
         for internal_agg_result in queries:
-            table_expr = self._construct_left_join_sql(
-                index=current_index,
-                table_expr=table_expr,
+            updated_table_expr = self._construct_left_join_sql(
+                index=updated_query_index,
+                table_expr=updated_table_expr,
                 agg_result_names=internal_agg_result.column_names,
                 join_keys=internal_agg_result.join_keys,
                 agg_expr=internal_agg_result.expr,
             )
-            current_index += 1
+            updated_query_index += 1
             aggregated_columns.extend(internal_agg_result.column_names)
 
         result = AggregationResult(
-            updated_table_expr=table_expr,
-            updated_index=current_index,
+            updated_table_expr=updated_table_expr,
+            updated_index=updated_query_index,
             column_names=aggregated_columns,
         )
         return result
@@ -149,10 +151,14 @@ class Aggregator(ABC):
         """
         agg_table_alias = f"T{index}"
         agg_result_name_aliases = [
-            f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+            alias_(
+                get_qualified_column_identifier(agg_result_name, agg_table_alias, quote_table=True),
+                agg_result_name,
+                quoted=True,
+            )
             for agg_result_name in agg_result_names
         ]
-        join_conditions_lst = [
+        join_conditions = [
             f"REQ.{quoted_identifier(key).sql()} = {agg_table_alias}.{quoted_identifier(key).sql()}"
             for key in join_keys
         ]
@@ -160,7 +166,7 @@ class Aggregator(ABC):
             agg_expr.subquery(),
             join_type="left",
             join_alias=agg_table_alias,
-            on=expressions.and_(*join_conditions_lst),
+            on=expressions.and_(*join_conditions),
         ).select(*agg_result_name_aliases)
         return updated_table_expr
 
