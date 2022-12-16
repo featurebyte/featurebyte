@@ -81,7 +81,7 @@ def input_node_fixture(global_graph, input_details):
     node_params = {
         "type": "event_data",
         "columns": ["ts", "cust_id", "a", "b"],
-        "timestamp": "ts",
+        "timestamp_column": "ts",
     }
     node_params.update(input_details)
     node_input = global_graph.add_operation(
@@ -175,7 +175,7 @@ def event_data_input_node_fixture(global_graph, input_details):
     node_params = {
         "type": "event_data",
         "columns": ["ts", "cust_id", "order_id", "order_method"],
-        "timestamp": "ts",
+        "timestamp": "ts",  # DEV-556: this should be timestamp_column
     }
     node_params.update(input_details)
     node_input = global_graph.add_operation(
@@ -330,7 +330,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "edade899e2fad6f29dfd3cad353742ff31964e12"
+    assert aggregation_id == "31305607c6229e85b9dbd8a516f3207fb68a4f2c"
     return aggregation_id
 
 
@@ -809,8 +809,9 @@ def query_graph_single_node(global_graph):
                         "sf_schema": "public",
                     },
                 },
-                "timestamp": None,
+                "timestamp_column": None,
                 "id": None,
+                "id_column": None,
             },
             "output_type": "frame",
         }

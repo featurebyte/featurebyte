@@ -20,7 +20,7 @@ from featurebyte import (
 )
 from featurebyte.config import Configurations
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.model.column_info import ColumnSpec
+from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
 
 

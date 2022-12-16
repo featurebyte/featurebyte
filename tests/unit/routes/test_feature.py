@@ -181,11 +181,7 @@ class TestFeatureApi(BaseApiTestSuite):
         new_response_dict = new_response.json()
         # graph gets aggressively pruned during saving and hash is regenerated
         expected_response = new_payload.copy()
-        groupby_node_parameters = expected_response["graph"]["nodes"][1]["parameters"].copy()
-        groupby_node_parameters["names"] = ["sum_30m"]
-        groupby_node_parameters["windows"] = ["30m"]
-        groupby_node_parameters["aggregation_id"] = "sum_397b7898e867241e3238cced04423af283a862da"
-        expected_response["graph"]["nodes"][1]["parameters"] = groupby_node_parameters
+        expected_response["graph"] = new_response_dict["graph"]
         assert new_response.status_code == HTTPStatus.CREATED
         assert new_response_dict.items() >= expected_response.items()
         assert new_response_dict["version"] == {"name": get_version(), "suffix": 1}
@@ -457,6 +453,6 @@ class TestFeatureApi(BaseApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_397b7898e867241e3238cced04423af283a862da" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_80fd57e971931c519425572b4b5caf97ecbfe084" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )

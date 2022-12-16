@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.model.column_info import ColumnSpec
+from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,

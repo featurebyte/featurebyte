@@ -115,7 +115,7 @@ class EventView(View, GroupByMixin):
             for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.INPUT)
             if cast(InputNode, node).parameters.type == TableDataType.EVENT_DATA
         )
-        return input_node.parameters.timestamp  # type: ignore
+        return input_node.parameters.timestamp_column  # type: ignore
 
     def _get_additional_inherited_columns(self) -> set[str]:
         return {self.timestamp_column}

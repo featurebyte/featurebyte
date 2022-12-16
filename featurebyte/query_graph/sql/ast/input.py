@@ -134,7 +134,7 @@ class BuildTileInputNode(InputNode):
         sql_node = BuildTileInputNode(
             context=context,
             columns_map=columns_map,
-            timestamp=context.parameters["timestamp"],
+            timestamp=context.parameters["timestamp_column"],
             dbtable=context.parameters["table_details"],
             feature_store=feature_store,
         )
@@ -200,7 +200,7 @@ class SelectedEntityBuildTileInputNode(InputNode):
         sql_node = SelectedEntityBuildTileInputNode(
             context=context,
             columns_map=columns_map,
-            timestamp=context.parameters["timestamp"],
+            timestamp=context.parameters["timestamp_column"],
             dbtable=context.parameters["table_details"],
             feature_store=feature_store,
             entity_columns=context.groupby_keys,

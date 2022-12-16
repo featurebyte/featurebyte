@@ -30,7 +30,7 @@ def node_input_fixture(graph):
     node_params = {
         "type": "event_data",
         "columns": ["ts", "cust_id", "a", "b"],
-        "timestamp": "ts",
+        "timestamp_column": "ts",
         "table_details": {
             "database_name": "db",
             "schema_name": "public",
@@ -323,8 +323,8 @@ def test_graph_interpreter_on_demand_tile_gen(
             DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
-          COUNT("a") AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
+          SUM("a") AS sum_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c,
+          COUNT("a") AS count_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c
         FROM (
           SELECT
             *,
@@ -400,15 +400,15 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "639a7b70cdfe06f5c2270c167e3ebf139dcb1725"
+    aggregation_id = "d2255dac34e8c70b81ebfb8f754e0401a12e2004"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "product_type",
-          SUM("a") AS sum_value_avg_639a7b70cdfe06f5c2270c167e3ebf139dcb1725,
-          COUNT("a") AS count_value_avg_639a7b70cdfe06f5c2270c167e3ebf139dcb1725
+          SUM("a") AS sum_value_avg_d2255dac34e8c70b81ebfb8f754e0401a12e2004,
+          COUNT("a") AS count_value_avg_d2255dac34e8c70b81ebfb8f754e0401a12e2004
         FROM (
           SELECT
             *,
@@ -556,7 +556,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "3c43724b30c443ac5ac9049578e0e6061173bb69"
+    aggregation_id = "3fc0c2588aa12ea8e7299df4ca041188d47af05a"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info.sql
@@ -636,7 +636,7 @@ def test_graph_interpreter_snowflake(graph):
         node_params={
             "type": "event_data",
             "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
-            "timestamp": "SERVER_TIMESTAMP",
+            "timestamp_column": "SERVER_TIMESTAMP",
             "table_details": {
                 "database_name": "FB_SIMULATE",
                 "schema_name": "PUBLIC",
@@ -691,7 +691,7 @@ def test_graph_interpreter_snowflake(graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
-          COUNT(*) AS value_count_b77ab5589880bbe509c57a49d70631deb3aadc7d
+          COUNT(*) AS value_count_8cd7ffbec454ca5fe99a79734f98cc5cb996f684
         FROM (
           SELECT
             *,
@@ -736,7 +736,7 @@ def test_graph_interpreter_snowflake(graph):
             DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
-          COUNT(*) AS value_count_b77ab5589880bbe509c57a49d70631deb3aadc7d
+          COUNT(*) AS value_count_8cd7ffbec454ca5fe99a79734f98cc5cb996f684
         FROM (
           SELECT
             *,
@@ -1437,8 +1437,8 @@ def test_databricks_source(query_graph_with_groupby):
         SELECT
           TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           `cust_id`,
-          SUM(`a`) AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
-          COUNT(`a`) AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
+          SUM(`a`) AS sum_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c,
+          COUNT(`a`) AS count_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c
         FROM (
           SELECT
             *,
