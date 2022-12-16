@@ -1,42 +1,45 @@
 """
 Tests for functions in date_util.py module
 """
-from datetime import datetime, timedelta, timezone
+import dateutil.parser
 
 from featurebyte.common import date_util
 
 
-def test_timestamp_to_tile_index(mock_snowflake_tile):
+def test_timestamp_to_tile_index(timestamp_to_index_fixture):
     """Test convert timestamp to tile_index"""
-    dt = datetime(2022, 1, 1, tzinfo=timezone.utc)
+    (
+        time_modulo_frequency_second,
+        blind_spot_second,
+        frequency_minute,
+        time_stamp_str,
+        tile_index,
+    ) = timestamp_to_index_fixture
+
     tile_ind = date_util.timestamp_utc_to_tile_index(
-        dt,
-        mock_snowflake_tile.time_modulo_frequency_second,
-        mock_snowflake_tile.blind_spot_second,
-        mock_snowflake_tile.frequency_minute,
+        dateutil.parser.isoparse(time_stamp_str),
+        time_modulo_frequency_second,
+        blind_spot_second,
+        frequency_minute,
     )
-    assert tile_ind == 5469983
+    assert tile_ind == tile_index
 
 
-def test_timestamp_to_tile_index_different_timezone(mock_snowflake_tile):
+def test_tile_index_to_timestamp(index_to_timestamp_fixture):
     """Test convert timestamp to tile_index"""
-    dt = datetime(2022, 1, 1, tzinfo=timezone(timedelta(hours=8)))
-    tile_ind = date_util.timestamp_utc_to_tile_index(
-        dt,
-        mock_snowflake_tile.time_modulo_frequency_second,
-        mock_snowflake_tile.blind_spot_second,
-        mock_snowflake_tile.frequency_minute,
-    )
-    assert tile_ind != 5469983
+    (
+        tile_index,
+        time_modulo_frequency_second,
+        blind_spot_second,
+        frequency_minute,
+        time_stamp_str,
+    ) = index_to_timestamp_fixture
 
-
-def test_tile_index_to_timestamp(mock_snowflake_tile):
-    """Test convert timestamp to tile_index"""
-    expected_dt = datetime(2021, 12, 31, 23, 58, tzinfo=timezone.utc)
     derived_dt = date_util.tile_index_to_timestamp_utc(
-        5469983,
-        mock_snowflake_tile.time_modulo_frequency_second,
-        mock_snowflake_tile.blind_spot_second,
-        mock_snowflake_tile.frequency_minute,
+        tile_index,
+        time_modulo_frequency_second,
+        blind_spot_second,
+        frequency_minute,
     )
-    assert derived_dt == expected_dt
+    derived_dt_str = derived_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    assert derived_dt_str == time_stamp_str
