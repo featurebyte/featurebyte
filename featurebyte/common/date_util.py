@@ -19,8 +19,12 @@ def timestamp_utc_to_tile_index(
     ----------
     input_dt: datetime
         Input datetime
-    tile_spec: TileSpec
-        tile spec
+    time_modulo_frequency_seconds: int
+        time_modulo_frequency_seconds from tile spec
+    blind_spot_seconds: int
+        blind_spot_seconds from tile spec
+    frequency_minute: int
+        frequency_minute from tile spec
 
     Returns
     -------
@@ -52,8 +56,12 @@ def tile_index_to_timestamp_utc(
     ----------
     tile_index: int
         tile index
-    tile_spec: TileSpec
-        tile spec
+    time_modulo_frequency_seconds: int
+        time_modulo_frequency_seconds from tile spec
+    blind_spot_seconds: int
+        blind_spot_seconds from tile spec
+    frequency_minute: int
+        frequency_minute from tile spec
 
     Returns
     -------
