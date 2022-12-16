@@ -79,7 +79,6 @@ class FeatureStoreController(
         self,
         data: FeatureStoreCreate,
         get_credential: Any,
-        skip_validation: bool = True,
     ) -> FeatureStoreModel:
         """
         Create Feature Store at persistent
@@ -109,13 +108,7 @@ class FeatureStoreController(
         #                                    | if not, error                |
         #        N            |      Y       | if matches in DWH, no error  | write
         #                                    | if not, error                |
-
-        # If skip validation, just create the document. This is the current default behaviour until we resolve
-        # some issues with how the SaaS version has a deadlock between creating a session, and writing credentials
-        # to the collection.
-        if skip_validation:
-            return await self.service.create_document(data)
-
+        #
         # Validate that feature store ID isn't claimed by the working schema.
         # If the feature store ID is already in use, this will throw an error.
         async with self.service.persistent.start_transaction():
