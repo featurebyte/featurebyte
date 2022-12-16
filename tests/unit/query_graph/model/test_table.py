@@ -77,7 +77,7 @@ def event_table_data_fixture(tabular_source):
                 name="amount",
                 dtype=DBVarType.FLOAT,
                 critical_data_info=CriticalDataInfo(
-                    imputations=[
+                    cleaning_operations=[
                         MissingValueImputation(imputed_value=0),
                         ValueBeyondEndpointImputation(
                             type=ConditionOperationField.LESS_THAN, end_point=0, imputed_value=None
@@ -101,7 +101,7 @@ def dimension_table_data_fixture(tabular_source):
                 name="gender",
                 dtype=DBVarType.VARCHAR,
                 critical_data_info=CriticalDataInfo(
-                    imputations=[
+                    cleaning_operations=[
                         UnexpectedValueImputation(
                             expected_values=["male", "female"], imputed_value=None
                         )
@@ -112,7 +112,7 @@ def dimension_table_data_fixture(tabular_source):
                 name="age",
                 dtype=DBVarType.INT,
                 critical_data_info=CriticalDataInfo(
-                    imputations=[
+                    cleaning_operations=[
                         DisguisedValueImputation(disguised_values=[-999], imputed_value=None),
                         StringValueImputation(imputed_value=None),
                     ]
