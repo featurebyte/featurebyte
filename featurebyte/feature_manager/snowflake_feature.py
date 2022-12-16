@@ -92,13 +92,33 @@ class FeatureManagerSnowflake(BaseModel):
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
         # derive the latest tile_start_date
-        end_ind = date_util.timestamp_utc_to_tile_index(datetime.utcnow(), tile_spec)
-        end_ts = date_util.tile_index_to_timestamp_utc(end_ind, tile_spec)
+        end_ind = date_util.timestamp_utc_to_tile_index(
+            datetime.utcnow(),
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
+        end_ts = date_util.tile_index_to_timestamp_utc(
+            end_ind,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
         end_ts_str = end_ts.strftime(date_format)
 
         start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        start_ind = date_util.timestamp_utc_to_tile_index(start_ts, tile_spec)
-        start_ts = date_util.tile_index_to_timestamp_utc(start_ind, tile_spec)
+        start_ind = date_util.timestamp_utc_to_tile_index(
+            start_ts,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
+        start_ts = date_util.tile_index_to_timestamp_utc(
+            start_ind,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
         start_ts_str = start_ts.strftime(date_format)
 
         await tile_mgr.generate_tiles(
