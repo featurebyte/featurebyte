@@ -37,6 +37,7 @@ def agg_spec_template_fixture():
         value_by=None,
         merge_expr="SUM(value)",
         feature_name="Amount (1d sum)",
+        is_order_dependent=False,
     )
     return agg_spec
 
@@ -235,6 +236,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                     f"SUM(count_value_avg_{groupby_node_aggregation_id})"
                 ),
                 feature_name="a_2h_average",
+                is_order_dependent=False,
             )
         ],
         [
@@ -254,6 +256,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                     f"SUM(count_value_avg_{groupby_node_aggregation_id})"
                 ),
                 feature_name="a_48h_average",
+                is_order_dependent=False,
             )
         ],
     ]
@@ -301,6 +304,7 @@ def test_feature_execution_planner__serving_names_mapping(
                     f"SUM(count_value_avg_{groupby_node_aggregation_id})"
                 ),
                 feature_name="a_2h_average",
+                is_order_dependent=False,
             )
         ],
         [
@@ -320,6 +324,7 @@ def test_feature_execution_planner__serving_names_mapping(
                     f"SUM(count_value_avg_{groupby_node_aggregation_id})"
                 ),
                 feature_name="a_48h_average",
+                is_order_dependent=False,
             )
         ],
     ]

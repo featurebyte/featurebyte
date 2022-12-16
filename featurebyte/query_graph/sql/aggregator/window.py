@@ -431,6 +431,7 @@ class WindowAggregator(Aggregator):
             ]
             inner_group_by_keys = group_by_keys + [f"TILE.{quoted_identifier(value_by).sql()}"]
 
+        # Join expanded request table with tile table using range join
         req_joined_with_tiles = (
             select()
             .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
@@ -478,11 +479,31 @@ class WindowAggregator(Aggregator):
         inner_group_by_keys: list[str],
         merge_exprs: list[str],
         inner_agg_result_names: list[str],
-    ):
+    ) -> Select:
+        """
+        Merge tile values to produce feature values for order independent aggregation methods
+
+        The aggregation is done using GROUP BY.
+
+        Parameters
+        ----------
+        req_joined_with_tiles: Select
+            Result of joining expanded request table with tile table
+        inner_group_by_keys: list[str]
+            Keys that the aggregation should use
+        merge_exprs: list[str]
+            Expressions that merge tile values to produce feature values
+        inner_agg_result_names: list[str]
+            Names of the aggregation results, should have the same length as merge_exprs
+
+        Returns
+        -------
+        Select
+        """
         inner_agg_expr = req_joined_with_tiles.select(
             *inner_group_by_keys,
             *[
-                f'{merge_expr} AS "{inner_agg_result_name}"'
+                alias_(merge_expr, inner_agg_result_name, quoted=True)
                 for merge_expr, inner_agg_result_name in zip(merge_exprs, inner_agg_result_names)
             ],
         ).group_by(*inner_group_by_keys)
@@ -494,7 +515,30 @@ class WindowAggregator(Aggregator):
         inner_group_by_keys: list[str],
         merge_exprs: list[str],
         inner_agg_result_names: list[str],
-    ):
+    ) -> Select:
+        """
+        Merge tile values to produce feature values for order dependent aggregation methods
+
+        The aggregation is done using a nested query involving window function to preserve row
+        ordering based on event timestamp. This is to support aggregation methods such as latest
+        value, sequence, etc.
+
+        Parameters
+        ----------
+        req_joined_with_tiles: Select
+            Result of joining expanded request table with tile table
+        inner_group_by_keys: list[str]
+            Keys that the aggregation should use
+        merge_exprs: list[str]
+            Expressions that merge tile values to produce feature values
+        inner_agg_result_names: list[str]
+            Names of the aggregation results, should have the same length as merge_exprs
+
+        Returns
+        -------
+        Select
+        """
+
         def _make_window_expr(expr):
             order = expressions.Order(
                 expressions=[

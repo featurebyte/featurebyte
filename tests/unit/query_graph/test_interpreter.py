@@ -1472,20 +1472,18 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
     )
     assert len(tile_gen_sqls) == 1
     tile_sql = tile_gen_sqls[0].sql
-    assert (
-        tile_sql
-        == textwrap.dedent(
-            """
+    expected = textwrap.dedent(
+        """
         SELECT
           __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          latest_value_last_6823be98b8982564b304f346a91ca4d56208f18a
+          value_last_6823be98b8982564b304f346a91ca4d56208f18a
         FROM (
           SELECT
             TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
             "cust_id",
             ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS latest_value_last_6823be98b8982564b304f346a91ca4d56208f18a
+            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS value_last_6823be98b8982564b304f346a91ca4d56208f18a
           FROM (
             SELECT
               *,
@@ -1514,5 +1512,5 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
         WHERE
           "__FB_ROW_NUMBER" = 1
         """
-        ).strip()
-    )
+    ).strip()
+    assert tile_sql == expected
