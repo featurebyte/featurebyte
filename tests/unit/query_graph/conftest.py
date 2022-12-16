@@ -175,7 +175,7 @@ def event_data_input_node_fixture(global_graph, input_details):
     node_params = {
         "type": "event_data",
         "columns": ["ts", "cust_id", "order_id", "order_method"],
-        "timestamp_column": "ts",
+        "timestamp": "ts",  # DEV-556: this should be timestamp_column
     }
     node_params.update(input_details)
     node_input = global_graph.add_operation(

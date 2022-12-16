@@ -66,6 +66,8 @@ class InputNode(BaseNode):
                 values["table_details"] = values["dbtable"]
             if "feature_store" in values:
                 values["feature_store_details"] = values["feature_store"]
+            if "timestamp" in values:
+                values["timestamp_column"] = values["timestamp"]
             return values
 
     class ItemDataParameters(BaseParameters):
