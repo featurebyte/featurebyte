@@ -5,9 +5,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from datetime import datetime, timezone
+
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.common import date_util
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_delete_tile_feature_mapping,
@@ -17,6 +20,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.online_store import OnlineFeatureSpec
+from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -77,6 +81,52 @@ class FeatureManagerSnowflake(BaseModel):
                 # enable offline tiles scheduled job
                 await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+
+                # generate historical tiles
+                await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
+
+    async def _generate_historical_tiles(
+        self, tile_mgr: TileManagerSnowflake, tile_spec: TileSpec
+    ) -> None:
+        # generate historical tile_values
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+        # derive the latest tile_start_date
+        end_ind = date_util.timestamp_utc_to_tile_index(
+            datetime.utcnow(),
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
+        end_ts = date_util.tile_index_to_timestamp_utc(
+            end_ind,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
+        end_ts_str = end_ts.strftime(date_format)
+
+        start_ts = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        start_ind = date_util.timestamp_utc_to_tile_index(
+            start_ts,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
+        start_ts = date_util.tile_index_to_timestamp_utc(
+            start_ind,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+        )
+        start_ts_str = start_ts.strftime(date_format)
+
+        await tile_mgr.generate_tiles(
+            tile_spec=tile_spec,
+            tile_type=TileType.OFFLINE,
+            end_ts_str=end_ts_str,
+            start_ts_str=start_ts_str,
+        )
 
     async def _update_tile_feature_mapping_table(self, feature_spec: OnlineFeatureSpec) -> None:
         """

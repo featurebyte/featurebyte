@@ -22,15 +22,18 @@ $$
 
     var debug = "Debug"
     var tile_exist = "Y"
+    var tile_id = TILE_ID.toUpperCase()
+
     try {
-        snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
+        snowflake.execute({sqlText: `SELECT * FROM ${tile_id} LIMIT 1`})
     } catch (err)  {
         tile_exist = "N"
     }
-    debug = debug + " - tile_exist: " + tile_exist + " - " + `SELECT * FROM ${TILE_ID} LIMIT 1`
+    debug = debug + " - tile_exist: " + tile_exist + " - " + `SELECT * FROM ${tile_id} LIMIT 1`
+
 
     var tile_sql = SQL.replaceAll("'", "''")
-    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}', '${tile_exist}')`})
+    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_id}', '${tile_exist}')`})
 
     //replace SQL template with start and end date strings for tile generation sql
     tile_sql = `
@@ -44,7 +47,7 @@ $$
     if (tile_exist === "N") {
 
         //feature tile table does not exist, create the table with the input tile sql
-        var tile_create_sql = `create table ${TILE_ID} as ${tile_sql}`
+        var tile_create_sql = `create table ${tile_id} as ${tile_sql}`
         snowflake.execute({sqlText: tile_create_sql})
         debug = debug + " - tile_create_sql: " + tile_create_sql
 
@@ -75,7 +78,7 @@ $$
 
 
         var tile_insert_sql = `
-            merge into ${TILE_ID} a using (${tile_sql}) b
+            merge into ${tile_id} a using (${tile_sql}) b
                 on a.INDEX = b.INDEX AND ${entity_filter_cols_str}
                 when matched then
                     update set a.CREATED_AT = SYSDATE(), ${value_update_cols_str}
@@ -93,7 +96,7 @@ $$
             UPDATE TILE_REGISTRY
             SET LAST_TILE_INDEX_${TILE_TYPE} = F_TIMESTAMP_TO_INDEX('${LAST_TILE_START_STR}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}),
                 ${TILE_LAST_START_DATE_COLUMN}_${TILE_TYPE} = '${LAST_TILE_START_STR}'
-            WHERE TILE_ID = '${TILE_ID}'
+            WHERE TILE_ID = '${tile_id}'
         `
         snowflake.execute({sqlText: update_tile_last_ind_sql})
     }

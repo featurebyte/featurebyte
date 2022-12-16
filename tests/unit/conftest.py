@@ -681,7 +681,7 @@ def mock_snowflake_tile():
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
-        tile_id="tile_id1",
+        tile_id="TILE_ID1",
         aggregation_id="agg_id1",
         value_column_names=["col2"],
         entity_column_names=["col1"],
