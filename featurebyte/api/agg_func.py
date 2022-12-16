@@ -52,6 +52,12 @@ class StdAggFunc(BaseNumAggFunc):
     type: Literal[AggFunc.STD] = Field(AggFunc.STD, const=True)
 
 
+class LastAggFunc(BaseNumAggFunc):
+    """StdAggFunc class"""
+
+    type: Literal[AggFunc.LAST] = Field(AggFunc.LAST, const=True)
+
+
 class BaseMaxMinAggFunc(BaseAggFunc):
     """BaseGeneralAggFunc class"""
 

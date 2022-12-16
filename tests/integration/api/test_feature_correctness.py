@@ -45,6 +45,7 @@ def calculate_feature_ground_truth(
     window_end = epoch_seconds_to_timestamp(window_end_epoch_seconds)
     window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
 
+    df = df.sort_values(event_timestamp_column_name)
     mask = df[entity_column_name] == entity_value
     mask &= (df[event_timestamp_column_name] >= window_start) & (
         df[event_timestamp_column_name] < window_end
@@ -259,6 +260,14 @@ def test_aggregation(
             None,
         ),
         ("AMOUNT", "std", "24h", "std_24h", lambda x: x.std(ddof=0), None),
+        (
+            "AMOUNT",
+            "last",
+            "24h",
+            "latest_24h",
+            lambda x: x.values[-1] if len(x) > 0 else None,
+            None,
+        ),
     ]
 
     event_view = EventView.from_event_data(event_data)

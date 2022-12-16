@@ -71,6 +71,7 @@ class WindowAggregationSpec(AggregationSpec):
     value_by: str | None
     merge_expr: str
     feature_name: str
+    is_order_dependent: bool
 
     @property
     def agg_result_name(self) -> str:
@@ -112,6 +113,7 @@ class WindowAggregationSpec(AggregationSpec):
 
         serving_names = params["serving_names"]
         aggregation_specs = []
+        aggregator = get_aggregator(params["agg_func"])
         for window, feature_name in zip(params["windows"], params["names"]):
             params = groupby_node.parameters.dict()
             window = int(pd.Timedelta(window).total_seconds())
@@ -126,8 +128,9 @@ class WindowAggregationSpec(AggregationSpec):
                 serving_names=serving_names,
                 serving_names_mapping=serving_names_mapping,
                 value_by=params["value_by"],
-                merge_expr=get_aggregator(params["agg_func"]).merge(aggregation_id),
+                merge_expr=aggregator.merge(aggregation_id),
                 feature_name=feature_name,
+                is_order_dependent=aggregator.is_order_dependent,
             )
             aggregation_specs.append(agg_spec)
 

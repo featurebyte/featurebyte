@@ -44,8 +44,6 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
       GROUP BY
         tile_index,
         `cust_id`
-      ORDER BY
-        tile_index
     )
   ) AS avg_166d33dcacac79eb986b84efecd5058e0f914830
 ), REQUEST_TABLE AS (

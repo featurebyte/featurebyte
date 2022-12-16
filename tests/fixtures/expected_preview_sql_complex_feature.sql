@@ -44,8 +44,6 @@ WITH fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848
       GROUP BY
         tile_index,
         "biz_id"
-      ORDER BY
-        tile_index
     )
   ) AS sum_3fc0c2588aa12ea8e7299df4ca041188d47af05a
 ), fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS (
@@ -96,8 +94,6 @@ WITH fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c
 ), REQUEST_TABLE AS (

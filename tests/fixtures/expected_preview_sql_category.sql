@@ -49,8 +49,6 @@ WITH fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c40
         tile_index,
         "cust_id",
         "product_type"
-      ORDER BY
-        tile_index
     )
   ) AS avg_d2255dac34e8c70b81ebfb8f754e0401a12e2004
 ), REQUEST_TABLE AS (

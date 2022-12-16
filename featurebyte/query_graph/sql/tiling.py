@@ -190,15 +190,15 @@ class LatestValueAggregator(OrderDependentAggregator):
     @staticmethod
     def tile(col: str, agg_id: str) -> list[TileSpec]:
         return [
-            TileSpec(f'FIRST_VALUE("{col}")', f"latest_value_{agg_id}"),
+            TileSpec(f'FIRST_VALUE("{col}")', f"value_{agg_id}"),
         ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
-        return f'FIRST_VALUE("latest_value_{agg_id}")'
+        return f"FIRST_VALUE(value_{agg_id})"
 
 
-def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
+def get_aggregator(agg_name: AggFunc) -> TilingAggregator:
     """Retrieves an aggregator class given the aggregation name
 
     Parameters
@@ -227,4 +227,4 @@ def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
     }
     if agg_name not in aggregator_mapping:
         raise ValueError(f"Unsupported aggregation: {agg_name}")
-    return aggregator_mapping[agg_name]
+    return aggregator_mapping[agg_name]()

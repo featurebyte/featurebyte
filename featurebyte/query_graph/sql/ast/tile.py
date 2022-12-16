@@ -159,7 +159,7 @@ class BuildTileNode(TableNode):
         parameters = context.parameters
         input_node = context.input_sql_nodes[0]
         assert isinstance(input_node, TableNode)
-        aggregator = get_aggregator(parameters["agg_func"])()
+        aggregator = get_aggregator(parameters["agg_func"])
         tile_specs = aggregator.tile(parameters["parent"], parameters["aggregation_id"])
         columns = (
             [InternalName.TILE_START_DATE.value]

@@ -48,8 +48,6 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c
   RIGHT JOIN (
@@ -93,8 +91,6 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS max_6d9812d5905f62ec526eefd9c73e076f511c4dd2
     ON avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c.INDEX = max_6d9812d5905f62ec526eefd9c73e076f511c4dd2.INDEX
@@ -140,8 +136,6 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS sum_58e0c83dbc3cde9a03311109ab189393dfbacb01
     ON avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c.INDEX = sum_58e0c83dbc3cde9a03311109ab189393dfbacb01.INDEX
