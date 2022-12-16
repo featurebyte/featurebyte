@@ -140,10 +140,11 @@ class AggFunc(StrEnum):
     SUM = "sum", "Compute sum of values"
     AVG = "avg", "Compute average value"
     MIN = "min", "Compute minimum value"
-    MAX = "max", "Compute maximimum value"
+    MAX = "max", "Compute maximum value"
     COUNT = "count", "Compute row count"
     NA_COUNT = "na_count", "Compute count of missing values"
     STD = "std", "Compute standard deviation of values"
+    LAST = "last", "Compute the latest value"
 
     @classmethod
     def all(cls) -> list[str]:
