@@ -68,7 +68,12 @@ class BuildTileNode(TableNode):
 
         return self._get_tile_sql_order_independent(keys, tile_start_date, input_tiled)
 
-    def _get_tile_sql_order_independent(self, keys, tile_start_date, input_tiled) -> Expression:
+    def _get_tile_sql_order_independent(
+        self,
+        keys: list[Expression],
+        tile_start_date: str,
+        input_tiled: expressions.Select,
+    ) -> Expression:
 
         if self.is_on_demand:
             groupby_keys = keys + [InternalName.ENTITY_TABLE_START_DATE.value]
@@ -87,17 +92,19 @@ class BuildTileNode(TableNode):
 
         return groupby_sql
 
-    def _get_tile_sql_order_dependent(self, keys, tile_start_date, input_tiled) -> Expression:
-
-        order = expressions.Order(
-            expressions=[
-                expressions.Ordered(this=quoted_identifier(self.timestamp), desc=True),
-            ]
-        )
-
-        def _make_window_expr(expr):
-            partition_by = ["tile_index"]
-            partition_by.extend([quoted_identifier(col) for col in keys])
+    def _get_tile_sql_order_dependent(
+        self,
+        keys: list[Expression],
+        tile_start_date: str,
+        input_tiled: expressions.Select,
+    ) -> Expression:
+        def _make_window_expr(expr: str | Expression) -> Expression:
+            order = expressions.Order(
+                expressions=[
+                    expressions.Ordered(this=quoted_identifier(self.timestamp), desc=True),
+                ]
+            )
+            partition_by = [cast(Expression, expressions.Identifier(this="tile_index"))] + keys
             window_expr = expressions.Window(this=expr, partition_by=partition_by, order=order)
             return window_expr
 
@@ -120,7 +127,7 @@ class BuildTileNode(TableNode):
             this=quoted_identifier(self.ROW_NUMBER),
             expression=make_literal_value(1),
         )
-        expr = (
+        tile_expr = (
             select(
                 InternalName.TILE_START_DATE,
                 *keys,
@@ -130,7 +137,7 @@ class BuildTileNode(TableNode):
             .where(outer_condition)
         )
 
-        return expr
+        return tile_expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> BuildTileNode | None:

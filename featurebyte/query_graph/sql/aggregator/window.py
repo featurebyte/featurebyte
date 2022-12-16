@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Iterable, Tuple
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte import SourceType
 from featurebyte.enum import InternalName, SpecialColumnName
@@ -330,7 +330,7 @@ class WindowAggregator(Aggregator):
                 out.update(agg_spec.serving_names)
         return out
 
-    def construct_aggregation_sql(
+    def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,
         expanded_request_table_name: str,
         tile_table_id: str,
@@ -394,6 +394,8 @@ class WindowAggregator(Aggregator):
             Column names of the aggregated results
         num_tiles : int
             Feature window size in terms of number of tiles (function of frequency)
+        is_order_dependent : bool
+            Whether the aggregation depends on the ordering of data
 
         Returns
         -------
@@ -539,7 +541,7 @@ class WindowAggregator(Aggregator):
         Select
         """
 
-        def _make_window_expr(expr):
+        def _make_window_expr(expr: str | Expression) -> Expression:
             order = expressions.Order(
                 expressions=[
                     expressions.Ordered(this="TILE.INDEX", desc=True),

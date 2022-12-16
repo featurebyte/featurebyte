@@ -187,6 +187,8 @@ class StdAggregator(OrderIndependentAggregator):
 
 
 class LatestValueAggregator(OrderDependentAggregator):
+    """Aggregator that computes the latest value"""
+
     @staticmethod
     def tile(col: str, agg_id: str) -> list[TileSpec]:
         return [
