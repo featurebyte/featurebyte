@@ -23,7 +23,6 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
-from featurebyte.service.deploy import DeployService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -34,8 +33,6 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
-from featurebyte.service.online_enable import OnlineEnableService
-from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.version import VersionService
 
