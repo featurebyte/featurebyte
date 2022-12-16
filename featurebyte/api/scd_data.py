@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
+from featurebyte.api.api_object import PrettyDict
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
@@ -106,16 +107,18 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
         -------
         Dict[str, Any]
         """
-        return {
-            "name": self.name,
-            "record_creation_date_column": self.record_creation_date_column,
-            "updated_at": self.updated_at,
-            "status": self.status,
-            "entities": self.entity_ids,
-            "natural_key_column": self.natural_key_column,
-            "surrogate_key_column": self.surrogate_key_column,
-            "effective_timestamp_column": self.effective_timestamp_column,
-            "end_timestamp_column": self.end_timestamp_column,
-            "current_flag_column": self.current_flag_column,
-            "tabular_source": self.tabular_source,
-        }
+        return PrettyDict(
+            {
+                "name": self.name,
+                "record_creation_date_column": self.record_creation_date_column,
+                "updated_at": self.updated_at,
+                "status": self.status,
+                "entities": self.entity_ids,
+                "natural_key_column": self.natural_key_column,
+                "surrogate_key_column": self.surrogate_key_column,
+                "effective_timestamp_column": self.effective_timestamp_column,
+                "end_timestamp_column": self.end_timestamp_column,
+                "current_flag_column": self.current_flag_column,
+                "tabular_source": self.tabular_source,
+            }
+        )

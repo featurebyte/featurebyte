@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
+from featurebyte.api.api_object import PrettyDict
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData
@@ -122,13 +123,15 @@ class ItemData(ItemDataModel, DataApiObject):
         -------
         Dict[str, Any]
         """
-        return {
-            "name": self.name,
-            "record_creation_date_column": self.record_creation_date_column,
-            "updated_at": self.updated_at,
-            "status": self.status,
-            "tabular_source": self.tabular_source,
-            "event_id_column": self.event_id_column,
-            "item_id_column": self.item_id_column,
-            "entities": self.entity_ids,
-        }
+        return PrettyDict(
+            {
+                "name": self.name,
+                "record_creation_date_column": self.record_creation_date_column,
+                "updated_at": self.updated_at,
+                "status": self.status,
+                "tabular_source": self.tabular_source,
+                "event_id_column": self.event_id_column,
+                "item_id_column": self.item_id_column,
+                "entities": self.entity_ids,
+            }
+        )
