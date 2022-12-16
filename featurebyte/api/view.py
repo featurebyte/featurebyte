@@ -747,18 +747,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         as_features(). Removing redundant projections allows joins to be shared for lookup
         operations using the same source.
 
-        self.node must be a Project node due to the way as_features() is called:
+        self.node is typically a Project node due to the way as_features() is called:
 
         view[["A", "B", "C"]].as_features(["FeatureA", "FeatureB", "FeatureC"])
 
         The view before that projection must also have those columns and can be used as the input
         instead.
+
+        Returns
+        -------
+        Node
         """
-
-        assert self.node.type == NodeType.PROJECT
-
         # Find the first ancestor that is not a Project
         node_before_projection = self.node
+
         while node_before_projection.type == NodeType.PROJECT:
             input_node_names = self.graph.get_input_node_names(node_before_projection)
             assert len(input_node_names) == 1
@@ -825,7 +827,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             **additional_params,
         }
         input_node = self._get_input_node_for_lookup_node()
-
         lookup_node = self.graph.add_operation(
             node_type=NodeType.LOOKUP,
             node_params=lookup_node_params,
