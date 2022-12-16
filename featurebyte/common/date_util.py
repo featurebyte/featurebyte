@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from featurebyte.models.tile import TileSpec
-
 
 def timestamp_utc_to_tile_index(
     input_dt: datetime,
@@ -28,7 +26,10 @@ def timestamp_utc_to_tile_index(
     -------
     tile index
     """
-    if not input_dt.tzinfo or input_dt.tzname() != "UTC":
+    if not input_dt.tzinfo:
+        input_dt = input_dt.replace(tzinfo=timezone.utc)
+
+    if input_dt.tzname() != "UTC":
         input_dt = input_dt.astimezone(timezone.utc)
 
     offset = time_modulo_frequency_seconds - blind_spot_seconds
