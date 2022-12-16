@@ -78,7 +78,7 @@ lint-type:
 
 lint-safety: generate-requirements-file
 	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	poetry run pip-audit
+	poetry run pip-audit --ignore-vul GHSA-hcpj-qp55-gfph
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 #* Testing
 test: test-setup
