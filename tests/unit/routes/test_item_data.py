@@ -8,6 +8,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
@@ -37,7 +39,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"ItemData (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_item_data_table'}}\") "
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'items_table'}}\") "
             'already exists. Get the existing object by `ItemData.get(name="sf_item_data")`.',
         ),
     ]
@@ -57,7 +59,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
     update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest.fixture(name="data_model_dict")
-    def data_model_dict_fixture(self, tabular_source, columns_info, user_id):
+    def data_model_dict_fixture(self, tabular_source, columns_info, user_id, feature_store_details):
         """Fixture for a Item Data dict"""
         item_data_dict = {
             "name": "订单表",
@@ -69,6 +71,14 @@ class TestItemDataApi(BaseDataApiTestSuite):
             "status": "PUBLISHED",
             "user_id": str(user_id),
         }
+        item_table_data = ItemTableData(**item_data_dict)
+        input_node = item_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
+        graph = QueryGraph()
+        inserted_node = graph.add_node(node=input_node, input_nodes=[])
+        item_data_dict["graph"] = graph
+        item_data_dict["node_name"] = inserted_node.name
         output = ItemDataModel(**item_data_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None

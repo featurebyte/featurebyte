@@ -8,6 +8,8 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate
 from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
@@ -38,7 +40,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"SCDData (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_scd_table'}}\") "
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
             f'already exists. Get the existing object by `SCDData.get(name="{document_name}")`.',
         ),
     ]
@@ -68,7 +70,9 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         return natural_data.id, surrogate_data.id
 
     @pytest.fixture(name="data_model_dict")
-    def data_model_dict_fixture(self, tabular_source, columns_info, user_id, scd_data_semantic_ids):
+    def data_model_dict_fixture(
+        self, tabular_source, columns_info, user_id, scd_data_semantic_ids, feature_store_details
+    ):
         """Fixture for a SCD Data dict"""
         natural_id, surrogate_id = scd_data_semantic_ids
         cols_info = []
@@ -93,6 +97,14 @@ class TestSCDDataApi(BaseDataApiTestSuite):
             "end_timestamp_column": "end_at",
             "current_flag": "current_value",
         }
+        scd_table_data = SCDTableData(**scd_data_dict)
+        input_node = scd_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
+        graph = QueryGraph()
+        inserted_node = graph.add_node(node=input_node, input_nodes=[])
+        scd_data_dict["graph"] = graph
+        scd_data_dict["node_name"] = inserted_node.name
         output = SCDDataModel(**scd_data_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None

@@ -1,7 +1,7 @@
 {
-    "_id": "6332fdb31e8f0eeccc414520",
+    "_id": "639c65cf8ce21f6bf429321c",
     "created_at": null,
-    "default_feature_list_id": "6332fdb31e8f0eeccc41451d",
+    "default_feature_list_id": "639c65cf8ce21f6bf4293219",
     "default_version_mode": "AUTO",
     "deployed_feature_list_ids": [],
     "dtype_distribution": [
@@ -11,17 +11,14 @@
         }
     ],
     "entity_ids": [
-        "6332fdb21e8f0eeccc414513"
-    ],
-    "tabular_data_ids": [
-        "6332fdb21e8f0eeccc414512"
+        "639c65cf8ce21f6bf429320d"
     ],
     "feature_list_ids": [
-        "6332fdb31e8f0eeccc41451d"
+        "639c65cf8ce21f6bf4293219"
     ],
     "feature_namespace_ids": [
-        "6332fdb31e8f0eeccc414516",
-        "6332fdb31e8f0eeccc414518"
+        "639c65cf8ce21f6bf4293212",
+        "639c65cf8ce21f6bf4293214"
     ],
     "name": "sf_feature_list_multiple",
     "readiness_distribution": [
@@ -31,6 +28,9 @@
         }
     ],
     "status": "DRAFT",
+    "tabular_data_ids": [
+        "6337f9651050ee7d5980660d"
+    ],
     "updated_at": null,
     "user_id": null
 }

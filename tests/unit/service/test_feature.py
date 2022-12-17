@@ -90,9 +90,9 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
         "output_type": "frame",
         "parameters": {
             "agg_func": "sum",
-            "aggregation_id": "sum_80fd57e971931c519425572b4b5caf97ecbfe084",
+            "aggregation_id": "sum_a1a9657e29a711c4d09475bb8285da86250d2294",
             "blind_spot": 600,
-            "entity_ids": [ObjectId("637449b96d6e838b025328e2")],
+            "entity_ids": [ObjectId("639c65cf8ce21f6bf429320d")],
             "frequency": 1800,
             "keys": ["cust_id"],
             "names": ["sum_30m"],
@@ -110,7 +110,6 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
     expected_raw_groupby_params = expected_groupby_node["parameters"].copy()
     expected_raw_groupby_params["names"] = ["sum_30m", "sum_2h", "sum_1d"]
     expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
-    expected_raw_groupby_params["aggregation_id"] = "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
     async for doc in feature_service.list_documents_iterator(query_filter={"_id": feature.id}):
         assert doc["graph"]["nodes"][1] == expected_groupby_node

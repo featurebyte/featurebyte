@@ -110,7 +110,7 @@ class TestFeatureApi(BaseApiTestSuite):
             },
             (
                 'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                "the same \"entity_ids\" value (namespace: ['6332fdb21e8f0eeccc414513'], "
+                "the same \"entity_ids\" value (namespace: ['639c65cf8ce21f6bf429320d'], "
                 "feature: ['631161373527e8d21e4197ac'])."
             ),
         ),
@@ -453,6 +453,6 @@ class TestFeatureApi(BaseApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_80fd57e971931c519425572b4b5caf97ecbfe084" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_a1a9657e29a711c4d09475bb8285da86250d2294" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )

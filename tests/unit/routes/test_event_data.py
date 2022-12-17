@@ -10,6 +10,9 @@ from bson import ObjectId
 
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.table import EventTableData
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.event_data import EventDataCreate
 from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
@@ -70,7 +73,12 @@ class TestEventDataApi(BaseDataApiTestSuite):
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
-        self, tabular_source, columns_info, user_id, event_timestamp_id_semantic_ids
+        self,
+        tabular_source,
+        columns_info,
+        user_id,
+        event_timestamp_id_semantic_ids,
+        feature_store_details,
     ):
         """Fixture for a Event Data dict"""
         event_timestamp_semantic_id, event_id_semantic_id = event_timestamp_id_semantic_ids
@@ -98,6 +106,14 @@ class TestEventDataApi(BaseDataApiTestSuite):
             "status": "PUBLISHED",
             "user_id": str(user_id),
         }
+        event_table_data = EventTableData(**event_data_dict)
+        input_node = event_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
+        graph = QueryGraph()
+        inserted_node = graph.add_node(node=input_node, input_nodes=[])
+        event_data_dict["graph"] = graph
+        event_data_dict["node_name"] = inserted_node.name
         output = EventDataModel(**event_data_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None

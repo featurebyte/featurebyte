@@ -1,17 +1,17 @@
 {
-    "_id": "6332fdb31e8f0eeccc41451f",
-    "default_feature_id": "6332fdb31e8f0eeccc414515",
+    "_id": "639c65cf8ce21f6bf429321b",
+    "default_feature_id": "639c65cf8ce21f6bf4293211",
     "default_version_mode": "AUTO",
     "dtype": "FLOAT",
     "entity_ids": [
-        "6332fdb21e8f0eeccc414513"
-    ],
-    "tabular_data_ids": [
-        "6332fdb21e8f0eeccc414512"
+        "639c65cf8ce21f6bf429320d"
     ],
     "feature_ids": [
-        "6332fdb31e8f0eeccc414515"
+        "639c65cf8ce21f6bf4293211"
     ],
     "name": "sum_30m",
-    "readiness": "DRAFT"
+    "readiness": "DRAFT",
+    "tabular_data_ids": [
+        "6337f9651050ee7d5980660d"
+    ]
 }

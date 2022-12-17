@@ -11,6 +11,7 @@ from pydantic import Field, StrictStr
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -26,6 +27,8 @@ class DataCreate(FeatureByteBaseModel):
     tabular_source: TabularSource
     columns_info: List[ColumnInfo]
     record_creation_date_column: Optional[StrictStr]
+    graph: QueryGraph
+    node_name: str
 
 
 class DataUpdate(BaseDocumentServiceUpdateSchema):

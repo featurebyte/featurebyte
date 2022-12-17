@@ -3,7 +3,7 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, ClassVar, Optional, Tuple, Type
 
 from abc import ABC
 from http import HTTPStatus
@@ -17,9 +17,13 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import ConstructNodeMixin, GenericTableData
+from featurebyte.query_graph.model.table import (
+    ConstructNodeMixin,
+    GenericTableData,
+    SpecificTableData,
+)
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 
 
@@ -29,19 +33,9 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
     """
 
     node_name: str = Field(default_factory=str)
-    row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple)
+    row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-
-    class Config:
-        """
-        Pydantic Config class
-        """
-
-        fields = {
-            "graph": {"exclude": True},
-            "node_name": {"exclude": True},
-            "row_index_lineage": {"exclude": True},
-        }
+    _table_data_class: ClassVar[Optional[Type[SpecificTableData]]] = None
 
     @root_validator(pre=True)
     @classmethod
@@ -106,6 +100,15 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             ]
             values["columns_info"] = columns_info
 
+        if "graph" not in values:
+            graph = QueryGraph()
+            input_node = cls._table_data_class(**values).construct_input_node(
+                feature_store_details=FeatureStoreDetails(**feature_store.dict())
+            )
+            inserted_node = graph.add_node(node=input_node, input_nodes=[])
+            values["graph"] = graph
+            values["node_name"] = inserted_node.name
+
         return values
 
     def __init__(self, **kwargs: Any):
@@ -124,3 +127,5 @@ class DatabaseTable(GenericTableData, AbstractTableDataFrame):
     """
     DatabaseTable class to preview table
     """
+
+    _table_data_class = GenericTableData

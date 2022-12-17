@@ -13,6 +13,7 @@ from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
@@ -31,6 +32,7 @@ class EventData(EventDataModel, DataApiObject):
     _route = "/event_data"
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
+    _table_data_class = EventTableData
 
     @property
     def timestamp_column(self) -> Optional[str]:

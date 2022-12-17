@@ -14,6 +14,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -70,6 +71,8 @@ class DataModel(BaseTableData, FeatureByteBaseDocumentModel):
         Record creation date column name
     """
 
+    graph: Optional[QueryGraph] = Field(default=None)  # DEV-556: should not be optional
+    node_name: Optional[str] = Field(default=None)  # DEV-556: should not be optional
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
 
