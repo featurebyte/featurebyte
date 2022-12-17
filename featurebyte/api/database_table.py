@@ -101,8 +101,10 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             values["columns_info"] = columns_info
 
         if "graph" not in values:
+            assert cls._table_data_class is not None
             graph = QueryGraph()
-            input_node = cls._table_data_class(**values).construct_input_node(
+            table_data = cls._table_data_class(**values)  # pylint: disable=not-callable
+            input_node = table_data.construct_input_node(
                 feature_store_details=FeatureStoreDetails(**feature_store.dict())
             )
             inserted_node = graph.add_node(node=input_node, input_nodes=[])

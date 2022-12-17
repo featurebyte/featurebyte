@@ -12,7 +12,6 @@ from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import EventTableData
-from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.event_data import EventDataCreate
 from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
