@@ -291,7 +291,7 @@ class WindowAggregator(Aggregator):
         Source type information
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.window_aggregation_spec_set = WindowAggregationSpecSet()
         self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
