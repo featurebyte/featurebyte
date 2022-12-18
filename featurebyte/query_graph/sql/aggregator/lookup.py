@@ -85,7 +85,7 @@ class LookupAggregator(Aggregator):
         Parameters
         ----------
         is_scd: bool
-            If true, only yields time aware LookupSpecs, and vice versa
+            If true, only yields LookupSpecs that require SCD join, and vice versa
 
         Yields
         ------
@@ -93,15 +93,32 @@ class LookupAggregator(Aggregator):
             Group of LookupSpec as a list
         """
         for specs in self.grouped_lookup_specs.values():
-            is_specs_time_aware = specs[0].scd_parameters is not None
-            if is_scd and is_specs_time_aware:
+
+            scd_parameters = specs[0].scd_parameters
+            if scd_parameters:
+                if self.is_online_serving:
+                    # Online serving might not have to use SCD join if current flag is applicable
+                    current_flag_usable_for_online_serving = (
+                        scd_parameters.current_flag_column is not None
+                        and scd_parameters.offset is None
+                    )
+                    requires_scd_join = not current_flag_usable_for_online_serving
+                else:
+                    # Historical features must use SCD join
+                    requires_scd_join = True
+            else:
+                requires_scd_join = False
+
+            if is_scd and requires_scd_join:
                 yield specs
-            if not is_scd and not is_specs_time_aware:
+            if not is_scd and not requires_scd_join:
                 yield specs
 
-    def get_non_time_based_lookups(self) -> list[LeftJoinableSubquery]:
+    def get_direct_lookups(self) -> list[LeftJoinableSubquery]:
         """
-        Get non-time based lookups queries
+        Get simple lookup queries without time based conditions
+
+        This includes SCD lookups during online serving when the current flag column is available.
 
         Returns
         -------
@@ -115,6 +132,15 @@ class LookupAggregator(Aggregator):
             entity_column = specs[0].entity_column
             serving_name = specs[0].serving_names[0]
             source_expr = specs[0].source_expr
+
+            scd_parameters = specs[0].scd_parameters
+            if scd_parameters is not None:
+                # This must be the online serving case for SCD and current flag is applicable
+                current_flag_column = scd_parameters.current_flag_column
+                assert current_flag_column is not None
+                source_expr = source_expr.where(
+                    expressions.EQ(this=current_flag_column, expression=expressions.true())
+                )
 
             agg_expr = select(
                 alias_(quoted_identifier(entity_column), alias=serving_name, quoted=True),
@@ -153,7 +179,7 @@ class LookupAggregator(Aggregator):
         )
 
         # Non-time based lookup
-        queries = self.get_non_time_based_lookups()
+        queries = self.get_direct_lookups()
         result = self._update_with_left_joins(
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )

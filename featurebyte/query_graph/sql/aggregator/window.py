@@ -291,13 +291,12 @@ class WindowAggregator(Aggregator):
         Source type information
     """
 
-    def __init__(self, source_type: SourceType) -> None:
-        super().__init__(source_type=source_type)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.window_aggregation_spec_set = WindowAggregationSpecSet()
         self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
-            source_type=source_type
+            source_type=self.source_type
         )
-        self.adapter = get_sql_adapter(source_type)
 
     def update(self, aggregation_spec: WindowAggregationSpec) -> None:
         """
