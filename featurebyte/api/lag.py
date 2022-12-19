@@ -7,7 +7,7 @@ from typeguard import typechecked
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
-LagColumnTypeT = TypeVar("LagColumnTypeT")
+LagColumnTypeT = TypeVar("LagColumnTypeT", bound="ViewColumn")
 
 
 class LagMixin:
