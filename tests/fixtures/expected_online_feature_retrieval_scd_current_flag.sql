@@ -28,7 +28,7 @@ WITH REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
         "membership_status" AS "membership_status"
       FROM "db"."public"."customer_profile_table"
       WHERE
-        is_record_current = TRUE
+        "is_record_current" = TRUE
     )
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"

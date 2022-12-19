@@ -3,6 +3,7 @@ Unit tests for featurebyte.query_graph.sql.aggregator.lookup.LookupAggregator
 """
 from __future__ import annotations
 
+import textwrap
 from dataclasses import asdict
 
 import pytest
@@ -187,6 +188,28 @@ def test_lookup_aggregator__online_with_current_flag(
             ),
         }
     ]
+
+    direct_lookups = aggregator.get_direct_lookups()
+    assert len(direct_lookups) == 1
+    assert direct_lookups[0].column_names == ["membership_status_a18d6f89f8538bdb"]
+    assert direct_lookups[0].join_keys == ["CUSTOMER_ID"]
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          "cust_id" AS "CUSTOMER_ID",
+          "membership_status" AS "membership_status_a18d6f89f8538bdb"
+        FROM (
+          SELECT
+            "effective_ts" AS "effective_ts",
+            "cust_id" AS "cust_id",
+            "membership_status" AS "membership_status"
+          FROM "db"."public"."customer_profile_table"
+          WHERE
+            "is_record_current" = TRUE
+        )
+        """
+    ).strip()
+    assert direct_lookups[0].expr.sql(pretty=True) == expected_sql
 
     scd_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=True))
     assert len(scd_lookup_specs) == 0

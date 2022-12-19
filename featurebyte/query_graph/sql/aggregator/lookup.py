@@ -139,7 +139,9 @@ class LookupAggregator(Aggregator):
                 current_flag_column = scd_parameters.current_flag_column
                 assert current_flag_column is not None
                 source_expr = source_expr.where(
-                    expressions.EQ(this=current_flag_column, expression=expressions.true())
+                    expressions.EQ(
+                        this=quoted_identifier(current_flag_column), expression=expressions.true()
+                    )
                 )
 
             agg_expr = select(
