@@ -2,7 +2,7 @@ FeatureByte currently recognizes 4 types of data sources based on the nature of 
 
 * Event table
 * Item table
-* Slowly Changing Dimension table (type 2)
+* Slowly Changing Dimension table ([type 2](https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row))
 * Dimension table
 
 New data table types,  Sensor, Time Series data, and Calendars will be supported in the coming releases.

@@ -56,10 +56,11 @@ To minimize security risks, leverage scalability of cloud data platform and redu
 * Don’t move data. Computation on data is performed only in the data warehouse, leveraging the scalability, stability and efficiency they provide. There is also no bulk outbound data transfer which minimizes security risks.
 * Use a tiling approach to pre-compute features whenever possible
 
-Feature Lifecycle management
+### Feature Lifecycle management
 To fully empower team of data scientists, FeatureByte is providing enterprises with capabilities to manage the complete lifecycle of features under its commercial license in the coming months:
+
 * Enterprise-grade Security
-* RBAC - privacy
+* Role Based Access Control and data privacy
 * Self Organized Feature Catalog
 * CI/CD pipeline for Views and Features
 * Feature List Deployment Governance
@@ -69,5 +70,9 @@ To fully empower team of data scientists, FeatureByte is providing enterprises w
 * Feature redundancy analysis
 * Training-Serving consistency monitoring
 * Feature usage tracking
-* Resource usage
+* Resource usage reporting
 * Use Case Accuracy monitoring
+
+
+## Get Started!
+Check out the [Installation](../get_started/installation.md) section for instructions to get up and running and the [Quickstart](../get_started/quickstart.md) to get up to speed!
