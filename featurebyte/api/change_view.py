@@ -141,8 +141,8 @@ class ChangeView(View, GroupByMixin):
             default_feature_job_setting=feature_job_setting,
         )
         past_col_name, new_col_name = ChangeView._get_new_column_names(column_to_track_changes)
-        change_view[new_col_name] = change_view[column_to_track_changes]
-        change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)
+        change_view[new_col_name] = change_view[column_to_track_changes]  # type: ignore
+        change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)  # type: ignore
 
         # select the 4 cols we want to present
         change_view = change_view[
@@ -152,11 +152,11 @@ class ChangeView(View, GroupByMixin):
                 new_col_name,
                 past_col_name,
             ]
-        ]
+        ]  # type: ignore
 
         # Update the feature job setting
         change_view.update_default_feature_job_setting(default_feature_job_setting)
-        return change_view  # type: ignore
+        return change_view
 
     @staticmethod
     def get_default_feature_job_setting(
