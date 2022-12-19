@@ -93,7 +93,10 @@ class SlowlyChangingView(View):
         ]
 
     def _get_additional_inherited_columns(self) -> set[str]:
-        return {self.effective_timestamp_column}
+        columns = {self.effective_timestamp_column}
+        if self.current_flag_column is not None:
+            columns.add(self.current_flag_column)
+        return columns
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -138,7 +141,11 @@ class SlowlyChangingView(View):
         return self.natural_key_column
 
     def _get_as_features_excluded_columns(self) -> List[str]:
-        return [self.get_join_column(), self.effective_timestamp_column]
+        return [
+            self.get_join_column(),
+            self.effective_timestamp_column,
+            self.current_flag_column,
+        ]
 
     def _get_common_scd_parameters(self) -> SCDBaseParameters:
         """
