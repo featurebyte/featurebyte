@@ -3,9 +3,8 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union, cast
-
 import copy
+from typing import Any, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -13,6 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature import Feature
 from featurebyte.api.join_utils import join_tabular_data_ids
+from featurebyte.api.lag import LagMixin
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -25,67 +25,14 @@ from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.util import append_to_lineage
 
 
-class EventViewColumn(ViewColumn):
+class EventViewColumn(ViewColumn, LagMixin):
     """
     EventViewColumn class
     """
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Column"])
-
-    @typechecked
-    def lag(self, entity_columns: Union[str, List[str]], offset: int = 1) -> EventViewColumn:
-        """
-        Lag operation
-
-        Parameters
-        ----------
-        entity_columns : str | list[str]
-            Entity columns used when retrieving the lag value
-        offset : int
-            The number of rows backward from which to retrieve a value. Default is 1.
-
-        Returns
-        -------
-        EventViewColumn
-
-        Raises
-        ------
-        ValueError
-            If a lag operation has already been applied to the column
-        """
-        if not isinstance(entity_columns, list):
-            entity_columns = [entity_columns]
-        if NodeType.LAG in self.node_types_lineage:
-            raise ValueError("lag can only be applied once per column")
-        assert self._parent is not None
-
-        timestamp_column = self._parent.timestamp_column
-        assert timestamp_column
-        required_columns = entity_columns + [timestamp_column]
-        input_nodes = [self.node]
-        for col in required_columns:
-            input_nodes.append(self._parent[col].node)
-
-        node = self.graph.add_operation(
-            node_type=NodeType.LAG,
-            node_params={
-                "entity_columns": entity_columns,
-                "timestamp_column": self._parent.timestamp_column,
-                "offset": offset,
-            },
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=input_nodes,
-        )
-        return type(self)(
-            feature_store=self.feature_store,
-            tabular_source=self.tabular_source,
-            node_name=node.name,
-            name=None,
-            dtype=self.dtype,
-            **self.unary_op_series_params(),
-        )
-
+    
 
 class EventView(View, GroupByMixin):
     """
