@@ -141,11 +141,10 @@ class SlowlyChangingView(View):
         return self.natural_key_column
 
     def _get_as_features_excluded_columns(self) -> List[str]:
-        return [
-            self.get_join_column(),
-            self.effective_timestamp_column,
-            self.current_flag_column,
-        ]
+        excluded_columns = [self.get_join_column(), self.effective_timestamp_column]
+        if self.current_flag_column is not None:
+            excluded_columns.append(self.current_flag_column)
+        return excluded_columns
 
     def _get_common_scd_parameters(self) -> SCDBaseParameters:
         """
