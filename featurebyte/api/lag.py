@@ -1,6 +1,8 @@
 """
 Lag module
 """
+from __future__ import annotations
+
 from typing import List, TypeVar, Union
 
 from typeguard import typechecked

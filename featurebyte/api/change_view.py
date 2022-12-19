@@ -1,6 +1,8 @@
 """
 ChangeView class
 """
+from __future__ import annotations
+
 from typing import Dict, List, Optional, Tuple
 
 from pydantic import Field
@@ -147,9 +149,10 @@ class ChangeView(View, GroupByMixin):
         new_col_name = f"new_{tracked_column}"
         return past_col_name, new_col_name
 
-    @staticmethod
+    @classmethod
     @typechecked
     def from_scd_data(
+        cls,
         scd_data: SlowlyChangingData,
         column_to_track_changes: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
@@ -174,26 +177,20 @@ class ChangeView(View, GroupByMixin):
         ChangeView._validate_inputs(scd_data, column_to_track_changes)
 
         # Build view
-        col_info = ChangeView._copy_existing_columns_info_from_scd(scd_data)
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting
         )
-        change_view = ChangeView(
-            feature_store=scd_data.feature_store,
-            tabular_source=scd_data.tabular_source,
-            columns_info=col_info,
-            node_name=scd_data.node_name,
-            column_lineage_map={col.name: (scd_data.node.name,) for col in col_info},
-            row_index_lineage=tuple(scd_data.row_index_lineage),
-            tabular_data_ids=[scd_data.id],
-            # other params
+
+        change_view = cls.from_data(
+            scd_data,
             natural_key_column=scd_data.natural_key_column,
             effective_timestamp_column=scd_data.effective_timestamp_column,
             default_feature_job_setting=feature_job_setting,
         )
+        # TODO: select columns
         past_col_name, new_col_name = ChangeView._get_new_column_names(column_to_track_changes)
-        change_view[new_col_name] = scd_data.column_to_track_changes
-        change_view[past_col_name] = change_view[new_col_name].lag(scd_data.natural_key_column)
+        change_view[new_col_name] = change_view[column_to_track_changes]
+        change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)
 
         # Update the feature job setting
         change_view.update_default_feature_job_setting(default_feature_job_setting)
