@@ -9,12 +9,12 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte import FeatureJobSetting, SlowlyChangingData
-from featurebyte.api.lag import LagMixin
-from featurebyte.api.view import GroupByMixin, View, ViewColumn
+from featurebyte.api.lag import LaggableView
+from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 
 
-class ChangeViewColumn(ViewColumn, LagMixin):
+class ChangeViewColumn(LaggableView):
     """
     ChangeViewColumn class
     """

@@ -13,7 +13,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 LagColumnTypeT = TypeVar("LagColumnTypeT", bound=ViewColumn)
 
 
-class LagMixin:
+class LaggableView(ViewColumn):
     """
     LagMixin provides the `lag` function.
     """
