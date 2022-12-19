@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 from pydantic import Field
 from typeguard import typechecked
@@ -12,7 +12,6 @@ from featurebyte import FeatureJobSetting, SlowlyChangingData
 from featurebyte.api.lag import LagMixin
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 class ChangeViewColumn(ViewColumn, LagMixin):
