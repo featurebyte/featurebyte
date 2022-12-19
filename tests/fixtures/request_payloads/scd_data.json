@@ -68,53 +68,8 @@
     "current_flag_column": "col_char",
     "effective_timestamp_column": "event_timestamp",
     "end_timestamp_column": "event_timestamp",
-    "graph": {
-        "edges": [],
-        "nodes": [
-            {
-                "name": "input_1",
-                "output_type": "frame",
-                "parameters": {
-                    "columns": [
-                        "col_int",
-                        "col_float",
-                        "col_char",
-                        "col_text",
-                        "col_binary",
-                        "col_boolean",
-                        "event_timestamp",
-                        "created_at",
-                        "cust_id"
-                    ],
-                    "current_flag_column": "col_char",
-                    "effective_timestamp_column": "event_timestamp",
-                    "end_timestamp_column": "event_timestamp",
-                    "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database": "sf_database",
-                            "sf_schema": "sf_schema",
-                            "warehouse": "sf_warehouse"
-                        },
-                        "type": "snowflake"
-                    },
-                    "id": "6337f9651050ee7d123466cd",
-                    "natural_key_column": "col_text",
-                    "surrogate_key_column": "col_int",
-                    "table_details": {
-                        "database_name": "sf_database",
-                        "schema_name": "sf_schema",
-                        "table_name": "sf_table"
-                    },
-                    "type": "scd_data"
-                },
-                "type": "input"
-            }
-        ]
-    },
     "name": "sf_scd_data",
     "natural_key_column": "col_text",
-    "node_name": "input_1",
     "record_creation_date_column": null,
     "surrogate_key_column": "col_int",
     "tabular_source": {

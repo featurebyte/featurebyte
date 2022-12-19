@@ -66,48 +66,7 @@
         }
     ],
     "dimension_data_id_column": "col_int",
-    "graph": {
-        "edges": [],
-        "nodes": [
-            {
-                "name": "input_1",
-                "output_type": "frame",
-                "parameters": {
-                    "columns": [
-                        "col_int",
-                        "col_float",
-                        "col_char",
-                        "col_text",
-                        "col_binary",
-                        "col_boolean",
-                        "event_timestamp",
-                        "created_at",
-                        "cust_id"
-                    ],
-                    "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database": "sf_database",
-                            "sf_schema": "sf_schema",
-                            "warehouse": "sf_warehouse"
-                        },
-                        "type": "snowflake"
-                    },
-                    "id": "6337f9651050ee7d1234660d",
-                    "id_column": "col_int",
-                    "table_details": {
-                        "database_name": "sf_database",
-                        "schema_name": "sf_schema",
-                        "table_name": "sf_table"
-                    },
-                    "type": "dimension_data"
-                },
-                "type": "input"
-            }
-        ]
-    },
     "name": "sf_dimension_data",
-    "node_name": "input_1",
     "record_creation_date_column": "created_at",
     "tabular_source": {
         "feature_store_id": "639c65ce8ce21f6bf4293201",

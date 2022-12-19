@@ -39,47 +39,8 @@
     ],
     "event_data_id": "6337f9651050ee7d5980660d",
     "event_id_column": "event_id_col",
-    "graph": {
-        "edges": [],
-        "nodes": [
-            {
-                "name": "input_1",
-                "output_type": "frame",
-                "parameters": {
-                    "columns": [
-                        "event_id_col",
-                        "item_id_col",
-                        "item_type",
-                        "item_amount",
-                        "created_at"
-                    ],
-                    "event_data_id": "6337f9651050ee7d5980660d",
-                    "event_id_column": "event_id_col",
-                    "feature_store_details": {
-                        "details": {
-                            "account": "sf_account",
-                            "database": "sf_database",
-                            "sf_schema": "sf_schema",
-                            "warehouse": "sf_warehouse"
-                        },
-                        "type": "snowflake"
-                    },
-                    "id": "6337f9651050ee7d5980662d",
-                    "id_column": "item_id_col",
-                    "table_details": {
-                        "database_name": "sf_database",
-                        "schema_name": "sf_schema",
-                        "table_name": "items_table"
-                    },
-                    "type": "item_data"
-                },
-                "type": "input"
-            }
-        ]
-    },
     "item_id_column": "item_id_col",
     "name": "sf_item_data",
-    "node_name": "input_1",
     "record_creation_date_column": null,
     "tabular_source": {
         "feature_store_id": "639c65ce8ce21f6bf4293201",
