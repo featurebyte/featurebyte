@@ -82,55 +82,6 @@ class ChangeView(View, GroupByMixin):
             )
 
     @staticmethod
-    def _get_col_name_to_col_info(scd_data: SlowlyChangingData) -> Dict[str, ColumnInfo]:
-        """
-        Helper method to get a dict mapping column name to column info
-
-        Parameters
-        ----------
-        scd_data: SlowlyChangingData
-            data to create columns for the ChangeView for
-
-        Returns
-        -------
-        Dict[str, ColumnInfo]
-            map from column name to the ColumnInfo
-        """
-        output = {}
-        for col_info in scd_data.columns_info:
-            output[col_info.name] = col_info
-        return output
-
-    @staticmethod
-    def _copy_existing_columns_info_from_scd(scd_data: SlowlyChangingData) -> List[ColumnInfo]:
-        """
-        Helper method to take existing column info from the slowly changing data.
-
-        Specifically, we take the following 2 columns from the SCD:
-        - change_timestamp (which is the event timestamp of the event view and equal to the effective (or start)
-          timestamp of the SCD)
-        - the natural key of the SCD View
-
-        The other columns will be added on separately.
-        - past_NAME_OF_COLUMN: value of the column before the change
-        - new_NAME_OF_COLUMN: value of the column after the change
-
-        Parameters
-        ----------
-        scd_data: SlowlyChangingData
-            data to create columns for the ChangeView for
-
-        Returns
-        -------
-        List[ColumnInfo]
-            columns for the change view
-        """
-        col_name_to_col_info = ChangeView._get_col_name_to_col_info(scd_data)
-        effective_timestamp_col_info = col_name_to_col_info[scd_data.effective_timestamp_column]
-        natural_key_col_info = col_name_to_col_info[scd_data.natural_key_column]
-        return [effective_timestamp_col_info, natural_key_col_info]
-
-    @staticmethod
     def _get_new_column_names(tracked_column: str) -> Tuple[str, str]:
         """
         Helper method to return the tracked column names.
