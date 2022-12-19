@@ -154,6 +154,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "row_index_lineage": ("proxy_input_1",),
         "is_time_based": False,
     }
     # check graph pruning
@@ -217,6 +218,7 @@ def nested_input_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
     # check graph pruning
@@ -279,6 +281,7 @@ def nested_output_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "row_index_lineage": ("proxy_input_1",),
         "is_time_based": False,
     }
     # check graph pruning
@@ -361,6 +364,7 @@ def deep_nested_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
     # check graph pruning
@@ -504,6 +508,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         ],
         "output_category": "feature",
         "output_type": "series",
+        "row_index_lineage": ("groupby_1",),
         "is_time_based": True,
     }
 
@@ -595,6 +600,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
+        "row_index_lineage": ("proxy_input_1",),
         "is_time_based": False,
     }
     # TODO: [DEV-868] Decouple AssignNode from pruning logic

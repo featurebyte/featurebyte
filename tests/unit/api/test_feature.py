@@ -647,5 +647,8 @@ def test_is_time_based(saved_feature):
     with patch(
         "featurebyte.models.feature.FeatureModel.extract_operation_structure"
     ) as mocked_extract:
-        mocked_extract.return_value = GroupOperationStructure(is_time_based=False)
+        mocked_extract.return_value = GroupOperationStructure(
+            row_index_lineage=("item_groupby_1",),
+            is_time_based=False,
+        )
         assert not saved_feature.is_time_based
