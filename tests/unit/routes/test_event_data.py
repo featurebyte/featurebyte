@@ -104,6 +104,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
             },
             "status": "PUBLISHED",
             "user_id": str(user_id),
+            "_id": ObjectId(),
         }
         event_table_data = EventTableData(**event_data_dict)
         input_node = event_table_data.construct_input_node(

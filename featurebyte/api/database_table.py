@@ -22,7 +22,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.table import (
     ConstructNodeMixin,
     GenericTableData,
-    SpecificTableData,
+    SpecificTableDataT,
 )
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 
@@ -35,7 +35,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
     node_name: str = Field(default_factory=str)
     row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-    _table_data_class: ClassVar[Optional[Type[SpecificTableData]]] = None
+    _table_data_class: ClassVar[Optional[Type[SpecificTableDataT]]] = None
 
     @root_validator(pre=True)
     @classmethod

@@ -10,6 +10,9 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.persistent import QueryFilter
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.table import SpecificTableData
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -106,11 +109,31 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         return message
 
     async def create_document(self, data: DocumentCreate) -> Document:
-        _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
-            document_id=data.tabular_source.feature_store_id
+        # retrieve feature store
+        feature_store = await FeatureStoreService(
+            user=self.user, persistent=self.persistent
+        ).get_document(document_id=data.tabular_source.feature_store_id)
+
+        # create document ID if it is None
+        data_doc_id = data.id or ObjectId()
+        payload_dict = {**data.json_dict(), "_id": data_doc_id}
+
+        # create graph & node
+        graph = QueryGraph()
+        table_data = SpecificTableData(**payload_dict)
+        assert table_data.id == data_doc_id
+        input_node = table_data.construct_input_node(
+            feature_store_details=FeatureStoreDetails(**feature_store.dict())
         )
+        inserted_node = graph.add_node(node=input_node, input_nodes=[])
+
+        # create document for insertion
         document = self.document_class(
-            user_id=self.user.id, status=DataStatus.DRAFT, **data.json_dict()
+            user_id=self.user.id,
+            status=DataStatus.DRAFT,
+            graph=graph,
+            node_name=inserted_node.name,
+            **payload_dict,
         )
 
         # check any conflict with existing documents

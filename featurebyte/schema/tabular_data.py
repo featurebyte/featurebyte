@@ -27,8 +27,6 @@ class DataCreate(FeatureByteBaseModel):
     tabular_source: TabularSource
     columns_info: List[ColumnInfo]
     record_creation_date_column: Optional[StrictStr]
-    graph: QueryGraph
-    node_name: str
 
 
 class DataUpdate(BaseDocumentServiceUpdateSchema):

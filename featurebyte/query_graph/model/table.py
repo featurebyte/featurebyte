@@ -7,7 +7,7 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 from abc import abstractmethod
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, parse_obj_as
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -262,7 +262,17 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
         )
 
 
-SpecificTableData = Annotated[
+SpecificTableDataT = Annotated[
     Union[EventTableData, ItemTableData, DimensionTableData, SCDTableData],
     Field(discriminator="type"),
 ]
+
+
+class SpecificTableData(BaseTableData):
+    """
+    Pseudo TableData class to support multiple table types.
+    This class basically parses the dictionary into proper type based on its type parameter value.
+    """
+
+    def __new__(cls, *args, **kwargs) -> SpecificTableDataT:
+        return parse_obj_as(SpecificTableDataT, kwargs)
