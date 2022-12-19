@@ -22,7 +22,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import SpecificTableDataT
+from featurebyte.query_graph.model.table import ConstructNodeMixin, SpecificTableDataT
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -83,9 +83,11 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         return data.json_dict()
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
-        table_data = parse_obj_as(SpecificTableDataT, self.dict(by_alias=True))  # type: ignore
-        input_node = table_data.construct_input_node(feature_store_details=feature_store_details)
-        return cast(InputNode, input_node)
+        table_data = parse_obj_as(SpecificTableDataT, self.dict(by_alias=True))
+        input_node = cast(ConstructNodeMixin, table_data).construct_input_node(
+            feature_store_details=feature_store_details
+        )
+        return input_node
 
     @classmethod
     def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
@@ -155,7 +157,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             columns_info=tabular_source.columns_info,
             **kwargs,
         )
-        input_node = table_data.construct_input_node(
+        input_node = table_data.construct_input_node(  # type: ignore[attr-defined]
             feature_store_details=FeatureStoreDetails(**tabular_source.feature_store.dict())
         )
         inserted_node = GlobalQueryGraph().add_node(node=input_node, input_nodes=[])

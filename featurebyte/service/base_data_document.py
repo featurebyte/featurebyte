@@ -3,7 +3,7 @@ BaseDataDocumentService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, TypeVar, cast
 
 from bson.objectid import ObjectId
 
@@ -11,7 +11,7 @@ from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.table import SpecificTableData
+from featurebyte.query_graph.model.table import ConstructNodeMixin, SpecificTableData
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -120,8 +120,7 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
 
         # create graph & node
         graph = QueryGraph()
-        table_data = SpecificTableData(**payload_dict)
-        assert table_data.id == data_doc_id
+        table_data = cast(ConstructNodeMixin, SpecificTableData(**payload_dict))
         input_node = table_data.construct_input_node(
             feature_store_details=FeatureStoreDetails(**feature_store.dict())
         )

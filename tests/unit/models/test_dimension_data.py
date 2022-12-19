@@ -83,8 +83,8 @@ def get_base_expected_dimension_data_model(dimension_data_model, dimension_colum
             },
         },
         "dimension_data_id_column": "dimension_id",
-        "graph": None,
-        "node_name": None,
+        "graph": {"nodes": [], "edges": []},
+        "node_name": "",
     }
 
 

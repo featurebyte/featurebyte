@@ -71,8 +71,8 @@ class DataModel(BaseTableData, FeatureByteBaseDocumentModel):
         Record creation date column name
     """
 
-    graph: Optional[QueryGraph] = Field(default=None)  # DEV-556: should not be optional
-    node_name: Optional[str] = Field(default=None)  # DEV-556: should not be optional
+    graph: QueryGraph = Field(default_factory=QueryGraph)  # DEV-556: remove default_factory
+    node_name: str = Field(default_factory=str)  # DEV-556: remove default factory
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
 

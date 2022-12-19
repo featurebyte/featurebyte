@@ -25,6 +25,7 @@ class BaseFrame(QueryObject, SampleMixin):
     """
 
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
+    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -84,20 +85,17 @@ class BaseFrame(QueryObject, SampleMixin):
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
-            if hasattr(self, "column_lineage_map"):
-                column_lineage_map = {}
-                for col, lineage in new_object.column_lineage_map.items():
-                    column_lineage_map[col] = tuple(
-                        node_name_map[node_name]
-                        for node_name in lineage
-                        if node_name in node_name_map
-                    )
-                new_object.column_lineage_map = column_lineage_map
-
-            if hasattr(self, "row_index_lineage"):
-                new_object.row_index_lineage = tuple(
-                    node_name_map[node_name] for node_name in self.row_index_lineage
+            new_object.row_index_lineage = tuple(
+                node_name_map[node_name]
+                for node_name in self.row_index_lineage
+                if node_name in node_name_map
+            )
+            column_lineage_map = {}
+            for col, lineage in self.column_lineage_map.items():
+                column_lineage_map[col] = tuple(
+                    node_name_map[node_name] for node_name in lineage if node_name in node_name_map
                 )
+            new_object.column_lineage_map = column_lineage_map
 
             # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
             # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
@@ -113,8 +111,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     """
 
     _series_class = Series
-
-    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:

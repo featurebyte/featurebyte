@@ -3,7 +3,7 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Tuple, Type
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 
 from abc import ABC
 from http import HTTPStatus
@@ -19,11 +19,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import (
-    ConstructNodeMixin,
-    GenericTableData,
-    SpecificTableDataT,
-)
+from featurebyte.query_graph.model.table import AllTableDataT, ConstructNodeMixin, GenericTableData
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 
 
@@ -34,8 +30,9 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
 
     node_name: str = Field(default_factory=str)
     row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple, exclude=True)
+    column_lineage_map: Dict[str, Tuple[str, ...]] = Field(default_factory=dict, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-    _table_data_class: ClassVar[Optional[Type[SpecificTableDataT]]] = None
+    _table_data_class: ClassVar[Optional[Type[AllTableDataT]]] = None
 
     @root_validator(pre=True)
     @classmethod
@@ -103,7 +100,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
         if "graph" not in values:
             assert cls._table_data_class is not None
             graph = QueryGraph()
-            table_data = cls._table_data_class(**values)  # pylint: disable=not-callable
+            table_data = cast(ConstructNodeMixin, cls._table_data_class(**values))
             input_node = table_data.construct_input_node(
                 feature_store_details=FeatureStoreDetails(**feature_store.dict())
             )
@@ -123,6 +120,8 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
         )
         self.node_name = node.name
         self.row_index_lineage = (node.name,)
+        for col in self.columns:
+            self.column_lineage_map[col] = (node.name,)
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):
