@@ -6,7 +6,7 @@ While:
 * the Declarative Framework unleashes their creativity
 * and the Feature Store helps them reuse features and quickly push their new features into production,
 
-Feature Discovery helps them uncover features with signals that may not have been captured yet.
+Feature Discovery helps them uncover features with signals that may not have been captured yet. The capability will be available in the coming months.
 
 ### Core Principles
 
@@ -27,7 +27,7 @@ To achieve this, Feature Discovery is built as a rule-based tool that:
 
 ### Discovery Outputs
 
-Feature Discovery can be triggered from:
+Feature Discovery can be requested with the scope of:
 
 * a use case
 * a view and an entity
