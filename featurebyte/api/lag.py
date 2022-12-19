@@ -61,7 +61,7 @@ class LagMixin:
             node_output_type=NodeOutputType.SERIES,
             input_nodes=input_nodes,
         )
-        return LagColumnTypeT(
+        return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             node_name=node.name,
