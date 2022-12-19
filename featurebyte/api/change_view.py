@@ -51,6 +51,9 @@ class ChangeView(View, GroupByMixin):
         """
         return self.effective_timestamp_column
 
+    def _get_additional_inherited_columns(self) -> set[str]:
+        return {self.timestamp_column}
+
     @staticmethod
     def _validate_inputs(scd_data: SlowlyChangingData, column_to_track_changes: str) -> None:
         """
@@ -137,14 +140,23 @@ class ChangeView(View, GroupByMixin):
             effective_timestamp_column=scd_data.effective_timestamp_column,
             default_feature_job_setting=feature_job_setting,
         )
-        # TODO: select columns
         past_col_name, new_col_name = ChangeView._get_new_column_names(column_to_track_changes)
         change_view[new_col_name] = change_view[column_to_track_changes]
         change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)
 
+        # select the 4 cols we want to present
+        change_view = change_view[
+            [
+                scd_data.effective_timestamp_column,
+                column_to_track_changes,
+                new_col_name,
+                past_col_name,
+            ]
+        ]
+
         # Update the feature job setting
         change_view.update_default_feature_job_setting(default_feature_job_setting)
-        return change_view
+        return change_view  # type: ignore
 
     @staticmethod
     def get_default_feature_job_setting(
