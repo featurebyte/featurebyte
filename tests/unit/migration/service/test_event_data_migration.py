@@ -3,7 +3,7 @@ Test EventDataMigrationService
 """
 import copy
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson import json_util
@@ -30,9 +30,13 @@ async def test_migration_v1__when_event_data_collection_not_exists(user, persist
 
 @pytest.mark.asyncio
 @patch("featurebyte.service.base_data_document.FeatureStoreService")
-async def test_migrate_all_records(mock_feature_store_service, user, persistent, test_dir):
+async def test_migrate_all_records(
+    mock_feature_store_service, snowflake_feature_store, user, persistent, test_dir
+):
     """Test migrate all records"""
-    mock_feature_store_service.return_value.get_document = AsyncMock()
+    mock_feature_store_service.return_value.get_document = AsyncMock(
+        return_value=snowflake_feature_store
+    )
 
     event_data_migration_service = EventDataMigrationService(user=user, persistent=persistent)
     total_records = 15

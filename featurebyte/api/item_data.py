@@ -17,6 +17,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 
@@ -34,6 +35,7 @@ class ItemData(ItemDataModel, DataApiObject):
     _route = "/item_data"
     _update_schema_class = ItemDataUpdate
     _create_schema_class = ItemDataCreate
+    _table_data_class = ItemTableData
 
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         exclude=True, allow_mutation=False

@@ -145,9 +145,12 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
     assert set(scd_data.columns).issubset(dir(scd_data))
     assert scd_data._ipython_key_completions_() == set(scd_data.columns)
 
+    output = scd_data.dict()
     scd_data_dict["id"] = scd_data.id
+    scd_data_dict["graph"] = output["graph"]
+    scd_data_dict["node_name"] = output["node_name"]
     scd_data_dict["current_flag_column"] = scd_data_dict.pop("current_flag")  # DEV-556
-    assert scd_data.dict() == scd_data_dict
+    assert output == scd_data_dict
 
     # user input validation
     with pytest.raises(TypeError) as exc:

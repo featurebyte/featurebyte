@@ -11,6 +11,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.tabular_data import DataCreate
 
 
@@ -667,6 +668,11 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
                 "table_name": "table",
             },
         }
+
+    @pytest.fixture(name="feature_store_details")
+    def feature_store_details_fixture(self, snowflake_feature_store):
+        """Fixture for feature store details"""
+        return FeatureStoreDetails(**snowflake_feature_store.dict())
 
     @pytest.fixture(name="columns_info")
     def column_info_fixture(self):

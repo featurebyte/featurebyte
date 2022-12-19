@@ -20,8 +20,9 @@ from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import SpecificTableData
+from featurebyte.query_graph.model.table import ConstructNodeMixin, SpecificTableDataT
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -82,9 +83,11 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         return data.json_dict()
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
-        table_data = parse_obj_as(SpecificTableData, self.dict(by_alias=True))  # type: ignore
-        input_node = table_data.construct_input_node(feature_store_details=feature_store_details)
-        return cast(InputNode, input_node)
+        table_data = parse_obj_as(SpecificTableDataT, self.dict(by_alias=True))
+        input_node = cast(ConstructNodeMixin, table_data).construct_input_node(
+            feature_store_details=feature_store_details
+        )
+        return input_node
 
     @classmethod
     def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
@@ -146,12 +149,27 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             When unexpected retrieval failure
         """
         assert cls._create_schema_class is not None
+        assert cls._table_data_class is not None
+
+        # construct an input node & insert into the global graph
+        table_data = cls._table_data_class(  # pylint: disable=not-callable
+            tabular_source=tabular_source.tabular_source,
+            columns_info=tabular_source.columns_info,
+            **kwargs,
+        )
+        input_node = table_data.construct_input_node(  # type: ignore[attr-defined]
+            feature_store_details=FeatureStoreDetails(**tabular_source.feature_store.dict())
+        )
+        inserted_node = GlobalQueryGraph().add_node(node=input_node, input_nodes=[])
+
         data = cls._create_schema_class(  # pylint: disable=not-callable
             _id=_id or ObjectId(),
             name=name,
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
             record_creation_date_column=record_creation_date_column,
+            graph=GlobalQueryGraph(),
+            node_name=inserted_node.name,
             **kwargs,
         )
         client = Configurations().get_client()

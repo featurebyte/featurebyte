@@ -2,7 +2,7 @@
     "_id": "636c9860459a4b7d59662277",
     "dtype": "FLOAT",
     "entity_ids": [
-        "6332fdb21e8f0eeccc414513"
+        "639c65cf8ce21f6bf429320d"
     ],
     "feature_namespace_id": "636c9860459a4b7d59662278",
     "graph": {
@@ -145,7 +145,7 @@
                         },
                         "type": "snowflake"
                     },
-                    "id": "6332fdb21e8f0eeccc414512",
+                    "id": "6337f9651050ee7d5980660d",
                     "table_details": {
                         "database_name": "sf_database",
                         "schema_name": "sf_schema",
@@ -372,10 +372,10 @@
         "groupby_2"
     ],
     "tabular_data_ids": [
-        "6332fdb21e8f0eeccc414512"
+        "6337f9651050ee7d5980660d"
     ],
     "tabular_source": {
-        "feature_store_id": "6332fdb21e8f0eeccc414510",
+        "feature_store_id": "639c65ce8ce21f6bf4293201",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

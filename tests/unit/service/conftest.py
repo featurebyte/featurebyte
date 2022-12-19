@@ -199,6 +199,7 @@ async def event_data_fixture(test_dir, feature_store, event_data_service, semant
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
         event_data = await event_data_service.create_document(
             data=EventDataCreate(**payload, user_id=user.id)
         )
@@ -227,6 +228,7 @@ async def item_data_fixture(test_dir, feature_store, item_data_service, user):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_item_table"
         item_data = await item_data_service.create_document(
             data=ItemDataCreate(**payload, user_id=user.id)
         )
@@ -240,6 +242,8 @@ async def dimension_data_fixture(test_dir, feature_store, dimension_data_service
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
+        payload["columns_info"][0]["entity_id"] = str(ObjectId())
         item_data = await dimension_data_service.create_document(
             data=DimensionDataCreate(**payload, user_id=user.id)
         )

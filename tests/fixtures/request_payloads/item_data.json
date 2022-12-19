@@ -1,62 +1,53 @@
 {
-    "_id": "635b8487bde9b127384c005f",
+    "_id": "6337f9651050ee7d5980662d",
     "columns_info": [
         {
+            "critical_data_info": null,
             "dtype": "INT",
             "entity_id": null,
-            "name": "col_int"
+            "name": "event_id_col",
+            "semantic_id": null
         },
         {
-            "dtype": "FLOAT",
-            "entity_id": null,
-            "name": "col_float"
-        },
-        {
-            "dtype": "CHAR",
-            "entity_id": null,
-            "name": "col_char"
-        },
-        {
+            "critical_data_info": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "col_text"
+            "name": "item_id_col",
+            "semantic_id": null
         },
         {
-            "dtype": "BINARY",
+            "critical_data_info": null,
+            "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "col_binary"
+            "name": "item_type",
+            "semantic_id": null
         },
         {
-            "dtype": "BOOL",
+            "critical_data_info": null,
+            "dtype": "FLOAT",
             "entity_id": null,
-            "name": "col_boolean"
+            "name": "item_amount",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "event_timestamp"
-        },
-        {
-            "dtype": "TIMESTAMP",
-            "entity_id": null,
-            "name": "created_at"
-        },
-        {
-            "dtype": "INT",
-            "entity_id": "6332fdb21e8f0eeccc414513",
-            "name": "cust_id"
+            "name": "created_at",
+            "semantic_id": null
         }
     ],
-    "event_id_column": "col_int",
-    "item_id_column": "cust_id",
-    "event_data_id": "63653f33a170799463a57fa7",
+    "event_data_id": "6337f9651050ee7d5980660d",
+    "event_id_column": "event_id_col",
+    "item_id_column": "item_id_col",
     "name": "sf_item_data",
+    "record_creation_date_column": null,
     "tabular_source": {
-        "feature_store_id": "6332fdb21e8f0eeccc414510",
+        "feature_store_id": "639c65ce8ce21f6bf4293201",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
-            "table_name": "sf_item_data_table"
+            "table_name": "items_table"
         }
     }
 }

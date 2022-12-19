@@ -1,80 +1,83 @@
 {
-    "_id": "6332fdb21e8f0eeccc514512",
+    "_id": "6337f9651050ee7d123466cd",
     "columns_info": [
         {
+            "critical_data_info": null,
             "dtype": "INT",
             "entity_id": null,
-            "name": "col_int"
+            "name": "col_int",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "FLOAT",
             "entity_id": null,
-            "name": "col_float"
+            "name": "col_float",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "CHAR",
             "entity_id": null,
-            "name": "col_char"
+            "name": "col_char",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "col_text"
+            "name": "col_text",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "BINARY",
             "entity_id": null,
-            "name": "col_binary"
+            "name": "col_binary",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "BOOL",
             "entity_id": null,
-            "name": "col_boolean"
+            "name": "col_boolean",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "created_at"
+            "name": "event_timestamp",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "effective_at"
+            "name": "created_at",
+            "semantic_id": null
         },
         {
-            "dtype": "TIMESTAMP",
-            "entity_id": null,
-            "name": "end_at"
-        },
-        {
+            "critical_data_info": null,
             "dtype": "INT",
             "entity_id": null,
-            "name": "natural_id"
-        },
-        {
-            "dtype": "INT",
-            "entity_id": null,
-            "name": "surrogate_id"
-        },
-        {
-            "dtype": "INT",
-            "entity_id": "6332fdb21e8f0eeccc414513",
-            "name": "cust_id"
+            "name": "cust_id",
+            "semantic_id": null
         }
     ],
+    "current_flag_column": "col_char",
+    "effective_timestamp_column": "event_timestamp",
+    "end_timestamp_column": "event_timestamp",
     "name": "sf_scd_data",
-    "record_creation_date_column": "created_at",
+    "natural_key_column": "col_text",
+    "record_creation_date_column": null,
+    "surrogate_key_column": "col_int",
     "tabular_source": {
-        "feature_store_id": "6332fdb21e8f0eeccc414510",
+        "feature_store_id": "639c65ce8ce21f6bf4293201",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
-            "table_name": "sf_scd_table"
+            "table_name": "sf_table"
         }
-    },
-    "natural_key_column": "col_text",
-    "surrogate_key_column": "col_text",
-    "effective_timestamp_column": "effective_at",
-    "end_timestamp_column": "end_at",
-    "current_flag_column": "col_text"
+    }
 }

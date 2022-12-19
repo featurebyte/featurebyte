@@ -76,7 +76,7 @@ async def test_get_event_data_info(info_service, event_data, entity):
         table_details=TableDetails(
             database_name="sf_database",
             schema_name="sf_schema",
-            table_name="sf_table",
+            table_name="sf_event_table",
         ),
         default_job_setting=None,
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],

@@ -1,20 +1,25 @@
 """
 This module contains specialized table related models.
 """
-from typing import Any, Dict, Iterable, List, Literal, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Literal, Optional, Union, cast
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, parse_obj_as
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
+from featurebyte.query_graph.model.common_table import (
+    DATA_TABLES,
+    SPECIFIC_DATA_TABLES,
+    BaseTableData,
+    TabularSource,
+)
 from featurebyte.query_graph.model.critical_data_info import CleaningOperation
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
@@ -262,7 +267,19 @@ class SCDTableData(ConstructNodeMixin, BaseTableData):
         )
 
 
-SpecificTableData = Annotated[
-    Union[EventTableData, ItemTableData, DimensionTableData, SCDTableData],
-    Field(discriminator="type"),
-]
+if TYPE_CHECKING:
+    AllTableDataT = BaseTableData
+    SpecificTableDataT = BaseTableData
+else:
+    AllTableDataT = Union[tuple(DATA_TABLES)]
+    SpecificTableDataT = Annotated[Union[tuple(SPECIFIC_DATA_TABLES)], Field(discriminator="type")]
+
+
+class SpecificTableData(BaseTableData):
+    """
+    Pseudo TableData class to support multiple table types.
+    This class basically parses the dictionary into proper type based on its type parameter value.
+    """
+
+    def __new__(cls, **kwargs: Any) -> Any:
+        return parse_obj_as(SpecificTableDataT, kwargs)

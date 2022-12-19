@@ -13,6 +13,7 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
@@ -28,6 +29,7 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
     _route = "/scd_data"
     _update_schema_class = SCDDataUpdate
     _create_schema_class = SCDDataCreate
+    _table_data_class = SCDTableData
 
     @property
     def timestamp_column(self) -> Optional[str]:
