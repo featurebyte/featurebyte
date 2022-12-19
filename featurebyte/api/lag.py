@@ -1,3 +1,6 @@
+"""
+Lag module
+"""
 from typing import List, TypeVar, Union
 
 from typeguard import typechecked

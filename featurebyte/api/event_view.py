@@ -32,7 +32,7 @@ class EventViewColumn(ViewColumn, LagMixin):
 
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Column"])
-    
+
 
 class EventView(View, GroupByMixin):
     """
