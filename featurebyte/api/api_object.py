@@ -78,6 +78,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
     # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
+    def __repr__(self) -> str:
+        return repr(self.info())
+
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
         """

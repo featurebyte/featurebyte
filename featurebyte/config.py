@@ -189,7 +189,7 @@ class Configurations:
         )
 
         # create config file if it does not exist
-        if not self._config_file_path.exists() and home_path == DEFAULT_HOME_PATH:
+        if not self._config_file_path.exists():
             self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
             self._config_file_path.write_text(
                 "# featurebyte configuration\n\n"

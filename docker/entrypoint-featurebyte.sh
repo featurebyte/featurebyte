@@ -20,33 +20,34 @@ jupyter-lab \
     --NotebookApp.ip='0.0.0.0' \
     --allow-root \
     --no-browser > /dev/null 2>&1 &
+ln -s /app/.featurebyte/config.yaml /app/.featurebyte/notebook/config.yaml
 
 # Start serving docs
-echo "Starting mkdocs server"
-PYTHONPATH=/app/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --no-livereload --dev-addr 0.0.0.0:8089 > /dev/null 2>&1 &
+echo "Starting docs server"
+uvicorn docs:app --host=0.0.0.0 --port=8089 --workers=2 --log-level=error > /dev/null &
 
-while ! nc -zvw10 localhost 8089 1>/dev/null 2>&1; do echo "Waiting for local mkdocs server to start"; sleep 2; done; echo "mkdocs server is running"
+while ! nc -zvw10 localhost 8089 1>/dev/null 2>&1; do echo "Waiting for local docs server to start"; sleep 2; done; echo "docs server is running"
 
 
 echo "Featurebyte Beta Server is Running"
-echo "┌────────────────────────┬──────────────────────────┐"
-echo "│Service                 │Connection Details        │"
-echo "├────────────────────────┼──────────────────────────┤"
-echo "│featurebyte-backend     │localhost:8088            │"
-echo "├────────────────────────┼──────────────────────────┤"
-echo "│featurebyte-swagger-docs│localhost:8089            │"
-echo "├────────────────────────┼──────────────────────────┤"
-echo "│jupyterlab-notebook     │localhost:8090            │"
-echo "└────────────────────────┴──────────────────────────┘"
+echo "┌────────────────────────┬───────────────────────────┐"
+echo "│Service                 │Connection Details         │"
+echo "├────────────────────────┼───────────────────────────┤"
+echo "│featurebyte-backend     │http://localhost:8088/     │"
+echo "├────────────────────────┼───────────────────────────┤"
+echo "│featurebyte-docs        │http://localhost:8089/     │"
+echo "├────────────────────────┼───────────────────────────┤"
+echo "│jupyterlab-notebook     │http://localhost:8090/     │"
+echo "└────────────────────────┴───────────────────────────┘"
 echo ""
 echo "Persistent Configuration Files"
-echo "┌────────────────────────┬──────────────────────────┐"
-echo "│General Config Location │~/.featurebyte            │"
-echo "├────────────────────────┼──────────────────────────┤"
-echo "│MongoDB Files           │~/.featurebyte/data       │"
-echo "├────────────────────────┴──────────────────────────┤"
-echo "│Jupyter Notebooks       │~/.featurebyte/notebook   │"
-echo "└────────────────────────┴──────────────────────────┘"
+echo "┌────────────────────────┬───────────────────────────┐"
+echo "│General Config Location │~/.featurebyte/config.yaml │"
+echo "├────────────────────────┼───────────────────────────┤"
+echo "│MongoDB Files           │~/.featurebyte/data        │"
+echo "├────────────────────────┴───────────────────────────┤"
+echo "│Jupyter Notebooks       │~/.featurebyte/notebook    │"
+echo "└────────────────────────┴───────────────────────────┘"
 echo ""
 
 # start featurebyte service
