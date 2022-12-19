@@ -27,10 +27,12 @@ class DeployService(BaseService):
     of feature list deployment.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self, user: Any, persistent: Persistent, online_enable_service: OnlineEnableService
+    ):
         super().__init__(user, persistent)
         self.feature_service = FeatureService(user=user, persistent=persistent)
-        self.online_enable_service = OnlineEnableService(user=user, persistent=persistent)
+        self.online_enable_service = online_enable_service
         self.feature_list_service = FeatureListService(user=user, persistent=persistent)
         self.feature_list_namespace_service = FeatureListNamespaceService(
             user=user, persistent=persistent

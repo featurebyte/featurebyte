@@ -12,6 +12,7 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
+from featurebyte.utils.credential import ConfigCredentialProvider
 
 
 class ValidateStatus(StrEnum):
@@ -29,9 +30,12 @@ class SessionValidatorService:
     session that we're trying to initialize is valid.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self, user: Any, persistent: Persistent, credential_provider: ConfigCredentialProvider
+    ):
         self.user = user
         self.persistent = persistent
+        self.credential_provider = credential_provider
         self.feature_store_service = FeatureStoreService(user=self.user, persistent=self.persistent)
 
     @classmethod
@@ -98,7 +102,14 @@ class SessionValidatorService:
         BaseSession
             session for the parameters passed in
         """
-        credentials = await get_credential(self.user.id, feature_store_name)
+        if get_credential is not None:
+            credentials = await get_credential(
+                user_id=self.user.id, feature_store_name=feature_store_name
+            )
+        else:
+            credentials = await self.credential_provider.get_credential(
+                user_id=self.user.id, feature_store_name=feature_store_name
+            )
         session_manager = SessionManager(credentials={feature_store_name: credentials})
         return await session_manager.get_session_with_params(
             feature_store_name, session_type, details

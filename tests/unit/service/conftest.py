@@ -23,7 +23,6 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
-from featurebyte.service.deploy import DeployService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -34,8 +33,6 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
-from featurebyte.service.online_enable import OnlineEnableService
-from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.version import VersionService
 
@@ -142,9 +139,9 @@ def default_version_mode_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="online_enable_service")
-def online_enable_service_fixture(user, persistent):
+def online_enable_service_fixture(app_container):
     """OnlineEnableService fixture"""
-    return OnlineEnableService(user=user, persistent=persistent)
+    return app_container.online_enable_service
 
 
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
@@ -166,9 +163,9 @@ def online_enable_service_data_warehouse_mocks_fixture():
 
 
 @pytest.fixture(name="online_serving_service")
-def online_serving_service_fixture(user, persistent):
+def online_serving_service_fixture(app_container):
     """OnlineEnableService fixture"""
-    return OnlineServingService(user=user, persistent=persistent)
+    return app_container.online_serving_service
 
 
 @pytest.fixture(name="version_service")
@@ -178,9 +175,9 @@ def version_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="deploy_service")
-def deploy_service_fixture(user, persistent):
+def deploy_service_fixture(app_container):
     """DeployService fixture"""
-    return DeployService(user=user, persistent=persistent)
+    return app_container.deploy_service
 
 
 @pytest_asyncio.fixture(name="feature_store")

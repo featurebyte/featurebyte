@@ -10,15 +10,26 @@ from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
+from featurebyte.utils.credential import ConfigCredentialProvider
+
+
+@pytest.fixture(name="credential_provider")
+def get_credential_provider_fixture():
+    """
+    Fixture to get a ConfigCredentialProvider
+    """
+    return ConfigCredentialProvider()
 
 
 @pytest.fixture(name="session_validator_service")
-def get_session_validator_service_fixture(persistent):
+def get_session_validator_service_fixture(persistent, credential_provider):
     """
     Fixture to get a session validator service
     """
     user = User()
-    return SessionValidatorService(user=user, persistent=persistent)
+    return SessionValidatorService(
+        user=user, persistent=persistent, credential_provider=credential_provider
+    )
 
 
 @pytest.mark.asyncio
