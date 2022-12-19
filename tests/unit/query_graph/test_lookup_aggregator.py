@@ -1,3 +1,6 @@
+"""
+Unit tests for featurebyte.query_graph.sql.aggregator.lookup.LookupAggregator
+"""
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -47,6 +50,18 @@ def scd_lookup_specs_without_current_flag(global_graph, scd_lookup_without_curre
 
 
 @pytest.fixture
+def scd_lookup_specs_with_offset(global_graph, scd_offset_lookup_node):
+    """
+    Fixture for a list of LookupSpec derived from SCD lookup with offset
+    """
+    return LookupSpec.from_lookup_query_node(
+        scd_offset_lookup_node,
+        graph=global_graph,
+        source_type=SourceType.SNOWFLAKE,
+    )
+
+
+@pytest.fixture
 def offline_lookup_aggregator():
     """
     Fixture for a LookupAggregator for serving offline features
@@ -70,7 +85,9 @@ def update_aggregator(aggregator, specs):
         aggregator.update(spec)
 
 
-def test_lookup_aggregator__dimension_only(offline_lookup_aggregator, dimension_lookup_specs):
+def test_lookup_aggregator__offline_dimension_only(
+    offline_lookup_aggregator, dimension_lookup_specs
+):
     """
     Test lookup aggregator with only dimension lookup
     """
@@ -105,6 +122,40 @@ def test_lookup_aggregator__dimension_only(offline_lookup_aggregator, dimension_
     assert len(scd_lookup_specs) == 0
 
 
+def test_lookup_aggregator__offline_scd_only(
+    offline_lookup_aggregator, scd_lookup_specs_with_current_flag
+):
+    """
+    Test lookup aggregator with only scd lookups
+    """
+    aggregator = offline_lookup_aggregator
+    update_aggregator(aggregator, scd_lookup_specs_with_current_flag)
+
+    direct_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=False))
+    assert len(direct_lookup_specs) == 0
+
+    scd_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=True))
+    assert len(scd_lookup_specs) == 1
+    specs = [asdict(spec) for spec in scd_lookup_specs[0]]
+    for spec in specs:
+        spec.pop("source_expr")
+    assert specs == [
+        {
+            "serving_names": ["CUSTOMER_ID"],
+            "serving_names_mapping": None,
+            "input_column_name": "membership_status",
+            "feature_name": "Current Membership Status",
+            "entity_column": "cust_id",
+            "scd_parameters": SCDLookupParameters(
+                effective_timestamp_column="event_timestamp",
+                current_flag_column="is_record_current",
+                end_timestamp_column=None,
+                offset=None,
+            ),
+        }
+    ]
+
+
 def test_lookup_aggregator__online_with_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_with_current_flag,
@@ -115,6 +166,7 @@ def test_lookup_aggregator__online_with_current_flag(
     aggregator = online_lookup_aggregator
     update_aggregator(aggregator, scd_lookup_specs_with_current_flag)
 
+    # With current flag column, scd lookup is simplified as direct lookup
     direct_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=False))
     assert len(direct_lookup_specs) == 1
     specs = [asdict(spec) for spec in direct_lookup_specs[0]]
@@ -153,6 +205,7 @@ def test_lookup_aggregator__online_without_current_flag(
     direct_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=False))
     assert len(direct_lookup_specs) == 0
 
+    # If no current flag, SCD join has to be performed even during online serving
     scd_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=True))
     assert len(scd_lookup_specs) == 1
     specs = [asdict(spec) for spec in scd_lookup_specs[0]]
@@ -170,6 +223,42 @@ def test_lookup_aggregator__online_without_current_flag(
                 current_flag_column=None,
                 end_timestamp_column=None,
                 offset=None,
+            ),
+        }
+    ]
+
+
+def test_lookup_aggregator__online_with_offset(
+    online_lookup_aggregator,
+    scd_lookup_specs_with_offset,
+):
+    """
+    Test lookup aggregator with only scd lookups with offset
+    """
+    aggregator = online_lookup_aggregator
+    update_aggregator(aggregator, scd_lookup_specs_with_offset)
+
+    direct_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=False))
+    assert len(direct_lookup_specs) == 0
+
+    # If offset is specified, current flag column cannot be used to simplify online serving
+    scd_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=True))
+    assert len(scd_lookup_specs) == 1
+    specs = [asdict(spec) for spec in scd_lookup_specs[0]]
+    for spec in specs:
+        spec.pop("source_expr")
+    assert specs == [
+        {
+            "serving_names": ["CUSTOMER_ID"],
+            "serving_names_mapping": None,
+            "input_column_name": "membership_status",
+            "feature_name": "Current Membership Status",
+            "entity_column": "cust_id",
+            "scd_parameters": SCDLookupParameters(
+                effective_timestamp_column="event_timestamp",
+                current_flag_column="is_record_current",
+                end_timestamp_column=None,
+                offset="14d",
             ),
         }
     ]
