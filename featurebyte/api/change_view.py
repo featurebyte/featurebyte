@@ -86,9 +86,7 @@ class ChangeView(View):
         return output
 
     @staticmethod
-    def _copy_existing_columns_info_from_scd(
-        scd_data: SlowlyChangingData, column_to_track_changes: str
-    ) -> List[ColumnInfo]:
+    def _copy_existing_columns_info_from_scd(scd_data: SlowlyChangingData) -> List[ColumnInfo]:
         """
         Helper method to take existing column info from the slowly changing data.
 
@@ -105,8 +103,6 @@ class ChangeView(View):
         ----------
         scd_data: SlowlyChangingData
             data to create columns for the ChangeView for
-        column_to_track_changes: str
-            column to track changes for
 
         Returns
         -------
@@ -164,9 +160,7 @@ class ChangeView(View):
         ChangeView._validate_inputs(scd_data, column_to_track_changes)
 
         # Build view
-        col_info = ChangeView._copy_existing_columns_info_from_scd(
-            scd_data, column_to_track_changes
-        )
+        col_info = ChangeView._copy_existing_columns_info_from_scd(scd_data)
         change_view = ChangeView(
             feature_store=scd_data.feature_store,
             tabular_source=scd_data.tabular_source,
