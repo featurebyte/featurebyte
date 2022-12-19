@@ -7,7 +7,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte import FeatureJobSetting, SlowlyChangingData
-from featurebyte.api.view import View, ViewColumn
+from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
@@ -21,7 +21,7 @@ class ChangeViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class ChangeView(View):
+class ChangeView(View, GroupByMixin):
     """
     ChangeView class
     """
@@ -34,7 +34,20 @@ class ChangeView(View):
 
     _series_class = ChangeViewColumn
 
+    default_feature_job_setting: FeatureJobSetting = Field(allow_mutation=False)
+    effective_timestamp_column: str = Field(allow_mutation=False)
     natural_key_column: str = Field(allow_mutation=False)
+
+    @property
+    def timestamp_column(self) -> str:
+        """
+        Timestamp column of the change view
+
+        Returns
+        -------
+        str
+        """
+        return self.effective_timestamp_column
 
     @staticmethod
     def _validate_inputs(scd_data: SlowlyChangingData, column_to_track_changes: str) -> None:
@@ -161,6 +174,9 @@ class ChangeView(View):
 
         # Build view
         col_info = ChangeView._copy_existing_columns_info_from_scd(scd_data)
+        feature_job_setting = ChangeView.get_default_feature_job_setting(
+            default_feature_job_setting
+        )
         change_view = ChangeView(
             feature_store=scd_data.feature_store,
             tabular_source=scd_data.tabular_source,
@@ -171,6 +187,8 @@ class ChangeView(View):
             tabular_data_ids=[scd_data.id],
             # other params
             natural_key_column=scd_data.natural_key_column,
+            effective_timestamp_column=scd_data.effective_timestamp_column,
+            default_feature_job_setting=feature_job_setting,
         )
         past_col_name, new_col_name = ChangeView._get_new_column_names(column_to_track_changes)
         change_view[new_col_name] = scd_data.column_to_track_changes
@@ -180,11 +198,12 @@ class ChangeView(View):
         change_view.update_default_feature_job_setting(default_feature_job_setting)
         return change_view
 
-    def update_default_feature_job_setting(
-        self, feature_job_setting: Optional[FeatureJobSetting] = None
-    ) -> None:
+    @staticmethod
+    def get_default_feature_job_setting(
+        feature_job_setting: Optional[FeatureJobSetting] = None,
+    ) -> FeatureJobSetting:
         """
-        Update default feature job setting. If none is provided, we'll set the default job setting to be once a day,
+        Get default feature job setting. If none is provided, we'll set the default job setting to be once a day,
         at the time of the view creation.
 
         Parameters
@@ -192,17 +211,15 @@ class ChangeView(View):
         feature_job_setting: Optional[FeatureJobSetting]
             Feature job setting object (auto-detected if not provided)
         """
-        if feature_job_setting is None:
-            # default job setting -
-            feature_job_setting = FeatureJobSetting(
-                blind_spot="10m",
-                time_modulo_frequency="1h",
-                frequency="1d",
-            )
-        self.update(
-            update_payload={"default_feature_job_setting": feature_job_setting.dict()},
-            allow_update_local=True,
+        if feature_job_setting is not None:
+            return feature_job_setting
+        # default job setting of once a day
+        return FeatureJobSetting(
+            blind_spot="0",
+            time_modulo_frequency="0",
+            frequency="24h",
         )
 
     def get_join_column(self) -> str:
+        # TODO:
         return self.natural_key_column
