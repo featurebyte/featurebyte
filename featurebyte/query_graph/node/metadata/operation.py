@@ -371,6 +371,7 @@ class GroupOperationStructure(BaseFrozenModel):
     derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
     aggregations: List[AggregationColumn] = Field(default_factory=list)
     post_aggregation: Optional[PostAggregationColumn]
+    row_index_lineage: Tuple[str, ...]
     is_time_based: bool = Field(default=False)
 
     @property
@@ -393,6 +394,7 @@ class OperationStructure(BaseFrozenModel):
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     output_type: NodeOutputType
     output_category: NodeOutputCategory
+    row_index_lineage: Tuple[str, ...]
     is_time_based: bool = Field(default=False)
 
     @property
@@ -474,6 +476,7 @@ class OperationStructure(BaseFrozenModel):
             derived_columns=derived_columns,
             aggregations=aggregations,
             post_aggregation=next(iter(post_aggregations), None),
+            row_index_lineage=self.row_index_lineage,
             is_time_based=self.is_time_based,
         )
 

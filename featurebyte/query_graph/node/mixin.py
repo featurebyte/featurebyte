@@ -76,7 +76,10 @@ class SeriesOutputNodeOpStructMixin:
             ]
 
         return OperationStructure(
-            **node_kwargs, output_type=self.output_type, output_category=output_category
+            **node_kwargs,
+            output_type=self.output_type,
+            output_category=output_category,
+            row_index_lineage=input_operation_info.row_index_lineage,
         )
 
 
@@ -188,10 +191,12 @@ class GroupbyNodeOpStructMixin:
                 other_node_names=other_node_names,
             )
 
+        # Only item aggregates are not time based.
+        is_time_based = self.type != NodeType.ITEM_GROUPBY
         return OperationStructure(
             **node_kwargs,
             output_type=self.output_type,
             output_category=output_category,
-            is_time_based=self.type
-            != NodeType.ITEM_GROUPBY,  # Only item aggregates are not time based.
+            row_index_lineage=(self.name,),
+            is_time_based=is_time_based,
         )
