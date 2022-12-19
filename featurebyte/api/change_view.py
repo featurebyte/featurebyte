@@ -210,6 +210,11 @@ class ChangeView(View, GroupByMixin):
         ----------
         feature_job_setting: Optional[FeatureJobSetting]
             Feature job setting object (auto-detected if not provided)
+
+        Returns
+        -------
+        FeatureJobSetting
+            the feature job setting we want to use
         """
         if feature_job_setting is not None:
             return feature_job_setting
