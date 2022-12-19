@@ -1,7 +1,7 @@
 """
 ChangeView class
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import Field
 from typeguard import typechecked
@@ -86,16 +86,18 @@ class ChangeView(View):
         return output
 
     @staticmethod
-    def _create_column_info_from_scd(
+    def _copy_existing_columns_info_from_scd(
         scd_data: SlowlyChangingData, column_to_track_changes: str
     ) -> List[ColumnInfo]:
         """
-        Helper method to create column info from the slowly changing data.
+        Helper method to take existing column info from the slowly changing data.
 
-        Specifically, the resulting ChangeView only has 4 columns:
+        Specifically, we take the following 2 columns from the SCD:
         - change_timestamp (which is the event timestamp of the event view and equal to the effective (or start)
           timestamp of the SCD)
         - the natural key of the SCD View
+
+        The other columns will be added on separately.
         - past_NAME_OF_COLUMN: value of the column before the change
         - new_NAME_OF_COLUMN: value of the column after the change
 
@@ -114,20 +116,26 @@ class ChangeView(View):
         col_name_to_col_info = ChangeView._get_col_name_to_col_info(scd_data)
         effective_timestamp_col_info = col_name_to_col_info[scd_data.effective_timestamp_column]
         natural_key_col_info = col_name_to_col_info[scd_data.natural_key_column]
-        tracked_column_col_info = col_name_to_col_info[column_to_track_changes]
-        past_col_info = ColumnInfo(
-            name=f"past_{tracked_column_col_info.name}",
-            dtype=tracked_column_col_info.dtype,
-            entity_id=tracked_column_col_info.entity_id,
-            semantic_id=tracked_column_col_info.semantic_id,
-        )
-        new_col_info = ColumnInfo(
-            name=f"new_{tracked_column_col_info.name}",
-            dtype=tracked_column_col_info.dtype,
-            entity_id=tracked_column_col_info.entity_id,
-            semantic_id=tracked_column_col_info.semantic_id,
-        )
-        return [effective_timestamp_col_info, natural_key_col_info, past_col_info, new_col_info]
+        return [effective_timestamp_col_info, natural_key_col_info]
+
+    @staticmethod
+    def _get_new_column_names(tracked_column: str) -> Tuple[str, str]:
+        """
+        Helper method to return the tracked column names.
+
+        Parameters
+        ----------
+        tracked_column: str
+            column we want to track
+
+        Returns
+        -------
+        Tuple[str, str]
+            old, and new column names
+        """
+        past_col_name = f"past_{tracked_column}"
+        new_col_name = f"new_{tracked_column}"
+        return past_col_name, new_col_name
 
     @staticmethod
     @typechecked
@@ -152,15 +160,14 @@ class ChangeView(View):
         -------
         "ChangeView"
         """
-        # TODO: do stuff with default_feature_job_setting
-        _ = default_feature_job_setting
-
         # Validate input
         ChangeView._validate_inputs(scd_data, column_to_track_changes)
 
         # Build view
-        col_info = ChangeView._create_column_info_from_scd(scd_data, column_to_track_changes)
-        return ChangeView(
+        col_info = ChangeView._copy_existing_columns_info_from_scd(
+            scd_data, column_to_track_changes
+        )
+        change_view = ChangeView(
             feature_store=scd_data.feature_store,
             tabular_source=scd_data.tabular_source,
             columns_info=col_info,
@@ -171,36 +178,37 @@ class ChangeView(View):
             # other params
             natural_key_column=scd_data.natural_key_column,
         )
+        past_col_name, new_col_name = ChangeView._get_new_column_names(column_to_track_changes)
+        change_view[new_col_name] = scd_data.column_to_track_changes
+        change_view[past_col_name] = change_view[new_col_name].lag(scd_data.natural_key_column)
+
+        # Update the feature job setting
+        change_view.update_default_feature_job_setting(default_feature_job_setting)
+        return change_view
 
     def update_default_feature_job_setting(
         self, feature_job_setting: Optional[FeatureJobSetting] = None
     ) -> None:
         """
-        Update default feature job setting
+        Update default feature job setting. If none is provided, we'll set the default job setting to be once a day,
+        at the time of the view creation.
 
         Parameters
         ----------
         feature_job_setting: Optional[FeatureJobSetting]
             Feature job setting object (auto-detected if not provided)
         """
-        # TODO: figure this out
-        # if feature_job_setting is None:
-        #     job_setting_analysis = self.post_async_task(
-        #         route="/feature_job_setting_analysis", payload={"event_data_id": str(self.id)}
-        #     )
-        #     recommended_setting = job_setting_analysis["analysis_result"][
-        #         "recommended_feature_job_setting"
-        #     ]
-        #     feature_job_setting = FeatureJobSetting(
-        #         blind_spot=f'{recommended_setting["blind_spot"]}s',
-        #         time_modulo_frequency=f'{recommended_setting["job_time_modulo_frequency"]}s',
-        #         frequency=f'{recommended_setting["frequency"]}s',
-        #     )
-        # TODO: figure this out
-        # self.update(
-        #     update_payload={"default_feature_job_setting": feature_job_setting.dict()},
-        #     allow_update_local=True,
-        # )
+        if feature_job_setting is None:
+            # default job setting -
+            feature_job_setting = FeatureJobSetting(
+                blind_spot="10m",
+                time_modulo_frequency="1h",
+                frequency="1d",
+            )
+        self.update(
+            update_payload={"default_feature_job_setting": feature_job_setting.dict()},
+            allow_update_local=True,
+        )
 
     def get_join_column(self) -> str:
         return self.natural_key_column
