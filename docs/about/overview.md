@@ -21,34 +21,33 @@ Data leakage is prevented thanks to carefully designed and implemented built-in 
 As a preventative measure, data quality annotation at the data level is supported and strongly encouraged as well as the setting of default cleaning steps that are automatically applied if no cleaning steps are specified during feature declaration.
 
 ### No signal left behind
-Relationships between business entities are automatically modeled to recommend features from parent entities, joins are recommended, and state-of-the-art features are suggested based on data semantics and codification of best practices developed by the community at FeatureByte.
+Relationships between business entities are automatically modeled to recommend features from parent entities, joins are recommended, and coming soon, state-of-the-art features will be  suggested based on data semantics and codification of best practices developed by the community at FeatureByte.
 
 ### Feature Exploration and Experiment
-Use cases define the level of analysis, the target and the context of the experiments. Thanks to the use case formulation, observation sets specifically designed for the use case are easily derived for EDA, training, retraining or test purposes.
+Use cases define the level of analysis, the target and the context of the experiments. In the coming release, thanks to the use case formulation, observation sets specifically designed for the use case will be easily derived for EDA, training, retraining or test purposes.
 
 ### Target leakage
-Targets are declared in the similar way as features but using forward joins and aggregates. At training time, targets are materialized together with features with the same points-in-time.
+Soon, targets can be declared in a similar manner to features, but using forward aggregates.  FeatureByte’s forward-looking implementation of targets ensures the target windows exclude the historical values. At training time, targets are materialized together with features with the same points-in-time.
 
-When a use case has a target with a long horizon such as customer churn the next 6 months, training observation sets are built such that the time interval between 2 observations of the same customer is always larger than the target horizon to avoid target leakage.
+When a use case has a target with a long horizon such as customer churn the next 6 months, training observation sets are built to avoid target leakage by requiring that the time interval between 2 observations of the same customer is always larger than the target horizon.
 
 ### Feature Leakage
-For use cases related to an Event Entity, features are served using windows that exclude the event of the request. For example, in a transaction fraud detection, FeatureByte’s windowed aggregation implementation ensures the feature windows exclude the current transaction and avoids leaks when comparing the current transaction to previous transactions.
+For use cases related to an Event Entity, our coming release will ensure that features are served using windows that exclude the event of the request. For example, in a transaction fraud detection, FeatureByte’s windowed aggregation implementation ensures the feature windows exclude the current transaction and avoids leaks when comparing the current transaction to previous transactions.
 
 When a feature is derived from 2 features, the computation of the 2 features is scheduled at the same time to ensure windows of the 2 features are consistent.
 
 ### Collaboration
-To allow collaboration with external contributors and facilitate prototyping, csv or parquet snapshots can be used to run modeling experiments, such as feature list tuning.
+To allow collaboration with external contributors and facilitate prototyping, our coming release will support csv or parquet snapshots that can be used to run modeling experiments, such as feature list tuning.
 
-Use cases and their associated data models can also be shared in FeatureByte’s community platform to collect semantics and feature suggestions from the community or the user’s private network.
+In the coming months, use cases and their associated data models can also be shared in FeatureByte’s community platform to collect semantics and feature suggestions from the community or the user’s private network.
 
 ### Training-Serving Inconsistencies
-The FeatureByte scheduling engine automatically analyzes source data availability and freshness and recommends a default setting for Feature Job scheduling, abstracting the complexity of setting Feature Jobs.
+The FeatureByte scheduling engine automatically analyzes source data availability and freshness in the data warehouse and recommends a default setting for Feature Job scheduling, abstracting the complexity of setting Feature Jobs.
 
 ### Feature Versioning
-
 When new data quality issues arise, or there are changes in the management of the source data, new feature versions can be triggered without disrupting the serving of feature lists already deployed.
 
-Each feature version has a feature lineage. It is then possible to audit features before deploying them, and to derive similar features in the future.
+Each feature version will soon have a feature lineage. It is then possible to audit features before deploying them, and to derive similar features in the future.
 
 ### Security and resource optimization
 To minimize security risks, leverage scalability of cloud data platform and reduce resource usage and storage, FeatureByte follows core principles in the solution implementation:
@@ -57,11 +56,10 @@ To minimize security risks, leverage scalability of cloud data platform and redu
 * Don’t move data. Computation on data is performed only in the data warehouse, leveraging the scalability, stability and efficiency they provide. There is also no bulk outbound data transfer which minimizes security risks.
 * Use a tiling approach to pre-compute features whenever possible
 
-### Feature Lifecycle management
+Feature Lifecycle management
 To fully empower team of data scientists, FeatureByte is providing enterprises with capabilities to manage the complete lifecycle of features under its commercial license in the coming months:
-
 * Enterprise-grade Security
-* Role Based Access Control and data privacy
+* RBAC - privacy
 * Self Organized Feature Catalog
 * CI/CD pipeline for Views and Features
 * Feature List Deployment Governance
@@ -71,9 +69,5 @@ To fully empower team of data scientists, FeatureByte is providing enterprises w
 * Feature redundancy analysis
 * Training-Serving consistency monitoring
 * Feature usage tracking
-* Resource usage reporting
+* Resource usage
 * Use Case Accuracy monitoring
-
-
-## Get Started!
-Check out the [Installation](../get_started/installation.md) section for instructions to get up and running and the [Quickstart](../get_started/quickstart.md) to get up to speed!
