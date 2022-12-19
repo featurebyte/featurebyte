@@ -1,5 +1,3 @@
-DATA SOURCES
-
 FeatureByte currently recognizes 4 types of data sources based on the nature of their content:
 
 * Event table
