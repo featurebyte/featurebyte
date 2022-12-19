@@ -1,16 +1,19 @@
-FeatureByte recognizes 4 types of data sources based on the nature of their content:
+DATA SOURCES
+
+FeatureByte currently recognizes 4 types of data sources based on the nature of their content:
 
 * Event table
 * Item table
-* Slowly Changing Dimension table ([type 2](https://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2:_add_new_row))
+* Slowly Changing Dimension table (type 2)
 * Dimension table
 
-Connection with Sensor and Time Series data will be supported in the coming releases.
+New data table types,  Sensor, Time Series data, and Calendars will be supported in the coming releases.
 
 ### Connection with data sources
-Connection with data sources that reside in cloud data platforms such as Snowflake and DataBricks, is required to serve features for inference.
+A connection with data sources that reside in cloud data platforms such as Snowflake and DataBricks, is required to serve features for inference.
 
-Csv or parquet snapshots can however be used to materialize historical feature values and run modeling experiments, such as feature list tuning to allow collaboration and facilitate prototyping with external contributors.
+To allow collaboration with external contributors and facilitate prototyping, our coming release will support csv or parquet snapshots that can be used to run modeling experiments, such as feature list tuning.
+
 
 ### Event table
 Event tables (also known as a Transaction Fact Table in Data Warehouses) are a rich source of behavioral features. Each row represents a discrete business event measured at a point in time.
@@ -60,7 +63,7 @@ A Slowly Changing Dimension table is a table that contains relatively static dat
 
 Slowly Changing Dimension tables can be:
 
-* used directly to derive an active status or a count at a given point-in-time
+* used directly to derive an active status, a count at a given point-in-time or a time-weighted average of balances over a period
 * joined to Event tables or Item tables
 * or transformed to derive features describing recent changes
 
@@ -69,13 +72,14 @@ Examples of features describing Customer changes in the past 6 months include:
 * how many times has the customer moved?
 * if she moved, where did she use to live? What is the distance to the active residence?
 * does she have a new job?
+* what is the time-weighted average of the balance of her bank account?
 
 ### Dimension table
 A Dimension table is a table that keeps static descriptive information such as a birth date.
 
 Dimension tables can be:
 
-* used directly to derive features
+* used directly to derive features for the entity that is the primary key of the table
 * joined to Event tables or Item tables
 
 Use of a Dimension table requires special vigilance. If data in a dimension table changes slowly, the table should not be used because those changes can lead to severe data leaks during training and poor performance at inference. In this case, the use of a Slowly Changing Dimension table of type 2 is strongly recommended.
