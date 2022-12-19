@@ -121,7 +121,7 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         # create graph & node
         graph = QueryGraph()
         table_data = cast(ConstructNodeMixin, SpecificTableData(**payload_dict))
-        input_node = table_data.construct_input_node(
+        input_node = table_data.construct_input_node(  # pylint: disable=no-member
             feature_store_details=FeatureStoreDetails(**feature_store.dict())
         )
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
