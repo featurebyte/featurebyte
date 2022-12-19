@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from pydantic import Field
 from typeguard import typechecked
@@ -12,6 +12,7 @@ from featurebyte import FeatureJobSetting, SlowlyChangingData
 from featurebyte.api.lag import LaggableView
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.exception import ChangeViewNoJoinColumnError
 
 
 class ChangeViewColumn(LaggableView):
@@ -102,6 +103,18 @@ class ChangeView(View, GroupByMixin):
         new_col_name = f"new_{tracked_column}"
         return past_col_name, new_col_name
 
+    @property
+    def _getitem_frame_params(self) -> dict[str, Any]:
+        params = super()._getitem_frame_params
+        params.update(
+            {
+                "default_feature_job_setting": self.default_feature_job_setting,
+                "natural_key_column": self.natural_key_column,
+                "effective_timestamp_column": self.effective_timestamp_column,
+            }
+        )
+        return params
+
     @classmethod
     @typechecked
     def from_scd_data(
@@ -133,7 +146,6 @@ class ChangeView(View, GroupByMixin):
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting
         )
-
         change_view = cls.from_data(
             scd_data,
             natural_key_column=scd_data.natural_key_column,
@@ -153,9 +165,6 @@ class ChangeView(View, GroupByMixin):
                 past_col_name,
             ]
         ]  # type: ignore
-
-        # Update the feature job setting
-        change_view.update_default_feature_job_setting(default_feature_job_setting)
         return change_view
 
     @staticmethod
@@ -186,5 +195,4 @@ class ChangeView(View, GroupByMixin):
         )
 
     def get_join_column(self) -> str:
-        # TODO:
-        return self.natural_key_column
+        raise ChangeViewNoJoinColumnError

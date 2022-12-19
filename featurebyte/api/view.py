@@ -44,7 +44,11 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
-from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
+from featurebyte.exception import (
+    ChangeViewNoJoinColumnError,
+    NoJoinKeyFoundError,
+    RepeatedColumnNamesError,
+)
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -246,7 +250,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         set[str]
         """
-        return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+        additional_columns = self._get_additional_inherited_columns()
+        try:
+            return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+        except ChangeViewNoJoinColumnError:
+            return additional_columns
 
     def _get_additional_inherited_columns(self) -> set[str]:
         """
