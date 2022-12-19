@@ -5,9 +5,10 @@ from typing import List, TypeVar, Union
 
 from typeguard import typechecked
 
+from featurebyte.api.view import ViewColumn
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
-LagColumnTypeT = TypeVar("LagColumnTypeT", bound="ViewColumn")
+LagColumnTypeT = TypeVar("LagColumnTypeT", bound=ViewColumn)
 
 
 class LagMixin:
