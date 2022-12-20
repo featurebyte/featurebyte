@@ -12,6 +12,7 @@ from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import ConstructNodeMixin, SpecificTableData
+from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -125,7 +126,9 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
             feature_store_details=FeatureStoreDetails(**feature_store.dict())
         )
         inserted_input_node = graph.add_node(node=input_node, input_nodes=[])
-        graph_node = table_data.construct_cleaning_recipe_node(input_node=inserted_input_node)
+        graph_node = table_data.construct_cleaning_recipe_node(  # pylint: disable=no-member
+            input_node=cast(InputNode, inserted_input_node)
+        )
         if graph_node:
             inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 

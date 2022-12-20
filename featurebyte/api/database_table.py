@@ -20,6 +20,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.table import AllTableDataT, ConstructNodeMixin, GenericTableData
+from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 
 
@@ -119,7 +120,9 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             ),
             input_nodes=[],
         )
-        graph_node = self.construct_cleaning_recipe_node(input_node=inserted_input_node)
+        graph_node = self.construct_cleaning_recipe_node(
+            input_node=cast(InputNode, inserted_input_node)
+        )
         if graph_node:
             inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
