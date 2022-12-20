@@ -110,21 +110,10 @@ class AbstractTableDataFrame(
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        graph = GlobalQueryGraph()
-        inserted_input_node = graph.add_node(
-            self.construct_input_node(
-                feature_store_details=self.feature_store.get_feature_store_details()
-            ),
-            input_nodes=[],
-        )
-        graph_node = self.construct_cleaning_recipe_node(input_node=inserted_input_node)
-        if graph_node:
-            inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
-
-        node = inserted_graph_node if graph_node else inserted_input_node
-        self.node_name = node.name
+        _, node_name_map = GlobalQueryGraph().load(self.graph)
+        self.node_name = node_name_map[self.node_name]
         for col in self.columns:
-            self.column_lineage_map[col] = (node.name,)
+            self.column_lineage_map[col] = (self.node_name,)
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):
