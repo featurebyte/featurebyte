@@ -12,7 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature import Feature
 from featurebyte.api.join_utils import join_tabular_data_ids
-from featurebyte.api.lag import LaggableView
+from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -25,7 +25,7 @@ from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.util import append_to_lineage
 
 
-class EventViewColumn(LaggableView):
+class EventViewColumn(LaggableViewColumn):
     """
     EventViewColumn class
     """

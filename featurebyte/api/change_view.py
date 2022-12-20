@@ -9,13 +9,13 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte import FeatureJobSetting, SlowlyChangingData
-from featurebyte.api.lag import LaggableView
+from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import ChangeViewNoJoinColumnError
 
 
-class ChangeViewColumn(LaggableView):
+class ChangeViewColumn(LaggableViewColumn):
     """
     ChangeViewColumn class
     """
@@ -56,7 +56,7 @@ class ChangeView(View, GroupByMixin):
         return {self.timestamp_column}
 
     @staticmethod
-    def _validate_inputs(scd_data: SlowlyChangingData, column_to_track_changes: str) -> None:
+    def _validate_inputs(scd_data: SlowlyChangingData, track_changes_column: str) -> None:
         """
         Validate the inputs.
 
@@ -68,7 +68,7 @@ class ChangeView(View, GroupByMixin):
         ----------
         scd_data: SlowlyChangingData
             data to create view from
-        column_to_track_changes: str
+        track_changes_column: str
             column to track changes for
 
         Raises
@@ -76,9 +76,9 @@ class ChangeView(View, GroupByMixin):
         ValueError
             raised when any of the validation checks fails
         """
-        if column_to_track_changes == "":
+        if track_changes_column == "":
             raise ValueError("Empty column provided. Please provide a valid column.")
-        if column_to_track_changes not in scd_data.columns:
+        if track_changes_column not in scd_data.columns:
             raise ValueError(
                 "Column provided is not a column in the SlowlyChangingData provided. Please pick a column "
                 f"from: {sorted(scd_data.columns)}."
@@ -120,7 +120,7 @@ class ChangeView(View, GroupByMixin):
     def from_scd_data(
         cls,
         scd_data: SlowlyChangingData,
-        column_to_track_changes: str,
+        track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
     ) -> "ChangeView":
         """
@@ -130,7 +130,7 @@ class ChangeView(View, GroupByMixin):
         ----------
         scd_data: SlowlyChangingData
             data to create view from
-        column_to_track_changes: str
+        track_changes_column: str
             column to track changes for
         default_feature_job_setting: Optional[FeatureJobSetting]
             default feature job setting to set
@@ -140,7 +140,7 @@ class ChangeView(View, GroupByMixin):
         "ChangeView"
         """
         # Validate input
-        ChangeView._validate_inputs(scd_data, column_to_track_changes)
+        ChangeView._validate_inputs(scd_data, track_changes_column)
 
         # Build view
         feature_job_setting = ChangeView.get_default_feature_job_setting(
@@ -152,8 +152,8 @@ class ChangeView(View, GroupByMixin):
             effective_timestamp_column=scd_data.effective_timestamp_column,
             default_feature_job_setting=feature_job_setting,
         )
-        past_col_name, new_col_name = ChangeView._get_new_column_names(column_to_track_changes)
-        change_view[new_col_name] = change_view[column_to_track_changes]  # type: ignore
+        past_col_name, new_col_name = ChangeView._get_new_column_names(track_changes_column)
+        change_view[new_col_name] = change_view[track_changes_column]  # type: ignore
         change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)  # type: ignore
 
         # select the 4 cols we want to present
