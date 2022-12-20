@@ -48,13 +48,13 @@ class QueryObject(FeatureByteBaseModel):
         return self.graph.get_node_by_name(self.node_name)
 
     @property
-    def row_index_lineage(self) -> Tuple[str]:
+    def row_index_lineage(self) -> Tuple[str, ...]:
         """
         A list of node names that changes number of rows leading to the current node
 
         Returns
         -------
-        Tuple[str]
+        Tuple[str, ...]
         """
         operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.row_index_lineage

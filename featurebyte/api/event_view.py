@@ -83,7 +83,6 @@ class EventViewColumn(ViewColumn):
             node_name=node.name,
             name=None,
             dtype=self.dtype,
-            row_index_lineage=self.row_index_lineage,
             **self.unary_op_series_params(),
         )
 

@@ -196,7 +196,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_name=node.name,
                 name=item,
                 dtype=self.column_var_type_map[item],
-                row_index_lineage=self.row_index_lineage,
                 **self._getitem_series_params,
             )
             output.set_parent(self)
@@ -217,7 +216,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 columns_info=[col for col in self.columns_info if col.name in item],
                 node_name=node.name,
                 column_lineage_map=column_lineage_map,
-                row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
             )
         # item must be Series type
@@ -233,7 +231,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             columns_info=self.columns_info,
             node_name=node.name,
             column_lineage_map=column_lineage_map,
-            row_index_lineage=append_to_lineage(self.row_index_lineage, node.name),
             **self._getitem_frame_params,
         )
 

@@ -53,7 +53,6 @@ def series_unary_operation(
         node_name=node.name,
         name=None,
         dtype=output_var_type,
-        row_index_lineage=input_series.row_index_lineage,
         **kwargs,
     )
 
@@ -107,7 +106,6 @@ def series_binary_operation(
             node_name=node.name,
             name=None,
             dtype=output_var_type,
-            row_index_lineage=input_series.row_index_lineage,
             **kwargs,
         )
     node_params["value"] = other
@@ -123,7 +121,6 @@ def series_binary_operation(
         node_name=node.name,
         name=None,
         dtype=output_var_type,
-        row_index_lineage=input_series.row_index_lineage,
         **kwargs,
     )
 

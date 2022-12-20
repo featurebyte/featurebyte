@@ -210,7 +210,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             columns_info=data.columns_info,
             node_name=data.node_name,
             column_lineage_map={col.name: (data.node.name,) for col in data.columns_info},
-            row_index_lineage=tuple(data.row_index_lineage),
             tabular_data_ids=[data.id],
             **kwargs,
         )
