@@ -3,7 +3,7 @@ This module contains Feature related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
@@ -126,8 +126,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature name
     dtype: DBVarType
         Variable type of the feature
-    row_index_lineage: Tuple[str, ...]
-        Tuple of transformation step node names which affect the row number of the feature
     graph: QueryGraph
         Graph contains steps of transformation to generate the feature
     node_name: str
@@ -157,7 +155,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     """
 
     dtype: DBVarType = Field(allow_mutation=False)
-    row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)

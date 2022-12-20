@@ -17,7 +17,7 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
-from featurebyte.core.util import append_to_lineage, series_binary_operation, series_unary_operation
+from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -81,7 +81,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_name=node.name,
             name=self.name,
             dtype=self.dtype,
-            row_index_lineage=append_to_lineage(self.row_index_lineage, node.name),
             **self.unary_op_series_params(),
         )
 
@@ -787,9 +786,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
             values["graph"] = global_graph
             values["node_name"] = node_name_map[values["node_name"]]
-            values["row_index_lineage"] = tuple(
-                node_name_map[node_name] for node_name in values["row_index_lineage"]
-            )
         return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -798,9 +794,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
-            new_object.row_index_lineage = tuple(
-                node_name_map[node_name] for node_name in new_object.row_index_lineage
-            )
             # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
             # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
             # global one.

@@ -79,6 +79,7 @@ class OperationStructureExtractor(
             ],
             output_type=operation_structure.output_type,
             output_category=operation_structure.output_category,
+            row_index_lineage=operation_structure.row_index_lineage,
             is_time_based=operation_structure.is_time_based,
         )
 

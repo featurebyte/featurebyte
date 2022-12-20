@@ -71,7 +71,6 @@ def test_feature_model(feature_model_dict, test_dir):
         "node_name": "project_1",
         "online_enabled": False,
         "readiness": "DRAFT",
-        "row_index_lineage": ("groupby_1",),
         "tabular_source": {
             "feature_store_id": ObjectId("639c65ce8ce21f6bf4293201"),
             "table_details": {

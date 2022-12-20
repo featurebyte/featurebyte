@@ -30,6 +30,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.util import append_to_lineage
 
 
 class InputNode(BaseNode):
@@ -144,6 +145,7 @@ class InputNode(BaseNode):
             ],
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
+            row_index_lineage=(self.name,),
         )
 
 
@@ -184,7 +186,10 @@ class ProjectNode(BaseNode):
             ]
 
         return OperationStructure(
-            **node_kwargs, output_type=self.output_type, output_category=output_category
+            **node_kwargs,
+            output_type=self.output_type,
+            output_category=output_category,
+            row_index_lineage=input_operation_info.row_index_lineage,
         )
 
 
@@ -227,6 +232,7 @@ class FilterNode(BaseNode):
             **node_kwargs,
             output_type=input_operation_info.output_type,
             output_category=output_category,
+            row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
         )
 
 
@@ -294,6 +300,7 @@ class AssignColumnMixin:
             columns=input_columns + [new_column],
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
+            row_index_lineage=input_operation_info.row_index_lineage,
         )
 
 
@@ -579,10 +586,15 @@ class JoinNode(BaseNode):
             for col in inputs[1].columns
             if col.name in right_col_map
         ]
+        if self.parameters.join_type == "left":
+            row_index_lineage = inputs[0].row_index_lineage
+        else:
+            row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)
         return OperationStructure(
             columns=left_columns + right_columns,
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
+            row_index_lineage=row_index_lineage,
         )
 
 
@@ -691,5 +703,8 @@ class AliasNode(BaseNode):
             )
 
         return OperationStructure(
-            **node_kwargs, output_type=self.output_type, output_category=output_category
+            **node_kwargs,
+            output_type=self.output_type,
+            output_category=output_category,
+            row_index_lineage=input_operation_info.row_index_lineage,
         )

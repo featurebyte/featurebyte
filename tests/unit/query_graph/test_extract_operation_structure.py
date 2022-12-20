@@ -31,6 +31,7 @@ def test_extract_operation__single_input_node(global_graph, input_node):
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == (input_node.name,)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
@@ -52,6 +53,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
@@ -74,6 +76,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
@@ -100,6 +103,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     expected_columns = [
@@ -110,6 +114,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert grp_op_struct.derived_columns == expected_derived_columns
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.row_index_lineage == ("input_1",)
 
     op_struct = graph.extract_operation_structure(node=assign_node)
     expected_columns = [
@@ -134,6 +139,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert op_struct.columns == expected_columns + expected_derived_columns
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == [
@@ -145,6 +151,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert grp_op_struct.derived_columns == expected_derived_columns
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.row_index_lineage == ("input_1",)
 
 
 def test_extract_operation__filter(graph_four_nodes):
@@ -160,6 +167,7 @@ def test_extract_operation__filter(graph_four_nodes):
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("input_1", "filter_1")
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == [
@@ -168,6 +176,7 @@ def test_extract_operation__filter(graph_four_nodes):
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.row_index_lineage == ("input_1", "filter_1")
 
 
 def test_extract_operation__lag(global_graph, input_node):
@@ -211,12 +220,14 @@ def test_extract_operation__lag(global_graph, input_node):
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("input_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_source_columns
     assert grp_op_struct.derived_columns == expected_derived_columns
     assert grp_op_struct.aggregations == []
     assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.row_index_lineage == ("input_1",)
 
 
 def test_extract_operation__groupby(query_graph_with_groupby):
@@ -247,12 +258,14 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     assert op_struct.aggregations == expected_aggregations
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("groupby_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == expected_aggregations
     assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.row_index_lineage == ("groupby_1",)
 
     # check project on feature group
     project_node = graph.add_operation(
@@ -272,6 +285,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     assert op_struct.aggregations == [expected_aggregation]
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("groupby_1",)
 
     # check filter on feature
     eq_node = graph.add_operation(
@@ -297,12 +311,14 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     }
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == [expected_filtered_aggregation]
+    assert op_struct.row_index_lineage == ("groupby_1", "filter_1")
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == [expected_aggregation]
     assert grp_op_struct.post_aggregation == expected_filtered_aggregation
+    assert grp_op_struct.row_index_lineage == ("groupby_1", "filter_1")
 
 
 @pytest.fixture(name="order_id_source_data")
@@ -340,6 +356,7 @@ def test_extract_operation__item_groupby(
     ]
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("item_groupby_1",)
 
 
 def test_extract_operation__join_node(
@@ -371,6 +388,7 @@ def test_extract_operation__join_node(
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("input_2", "join_1")
 
 
 def test_extract_operation__join_double_aggregations(
@@ -407,6 +425,7 @@ def test_extract_operation__join_double_aggregations(
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
+    assert op_struct.row_index_lineage == ("input_2",)
 
     # check double aggregations & its output
     op_struct = global_graph.extract_operation_structure(node=groupby_node)
@@ -434,12 +453,14 @@ def test_extract_operation__join_double_aggregations(
     ]
     assert op_struct.columns == [order_size_column]
     assert op_struct.aggregations == expected_aggregations
+    assert op_struct.row_index_lineage == ("groupby_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == [order_id_source_data]
     assert grp_op_struct.derived_columns == [order_size_column]
     assert grp_op_struct.aggregations == expected_aggregations
     assert grp_op_struct.post_aggregation is None
+    assert grp_op_struct.row_index_lineage == ("groupby_1",)
 
 
 def test_extract_operation__lookup_feature(
@@ -494,6 +515,7 @@ def test_extract_operation__lookup_feature(
     assert op_struct.aggregations == expected_aggregations
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("lookup_1",)
 
 
 def test_extract_operation__alias(global_graph, input_node):
@@ -534,6 +556,7 @@ def test_extract_operation__alias(global_graph, input_node):
             "node_names": {"input_1", "project_1", "add_1", "alias_1"},
         }
     ]
+    assert op_struct.row_index_lineage == ("input_1",)
 
 
 def test_extract_operation__complicated_assignment_case_1(dataframe):
@@ -573,6 +596,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
         },
     }
     assert op_struct.columns == [expected_new_ts]
+    assert op_struct.row_index_lineage == ("input_1",)
 
     # assign_2 is not included in the lineage as `dataframe["diff"] = 123` does not affect
     # final value of NEW_TIMESTAMP column
@@ -591,6 +615,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
         }
     ]
     assert graph.get_node_by_name("assign_2").parameters == {"name": "diff", "value": 123}
+    assert op_struct.row_index_lineage == ("input_1",)
 
     # check frame
     op_struct = graph.extract_operation_structure(node=dataframe.node)
@@ -611,6 +636,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
         },
         expected_new_ts,
     ]
+    assert op_struct.row_index_lineage == ("input_1",)
 
 
 def test_extract_operation__complicated_assignment_case_2(dataframe):
@@ -661,5 +687,6 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
         ],
         "output_category": "view",
         "output_type": "series",
+        "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }

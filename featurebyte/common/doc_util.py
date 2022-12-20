@@ -35,7 +35,6 @@ COMMON_SKIPPED_ATTRIBUTES = [
     "unary_op_series_params",
     "node_types_lineage",
     "pytype_dbtype_map",
-    "row_index_lineage",
     "node",
     "column_lineage_map",
     "column_var_type_map",

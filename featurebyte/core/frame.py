@@ -12,11 +12,11 @@ from typeguard import typechecked
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
 from featurebyte.core.series import Series
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.util import append_to_lineage
 
 
 class BaseFrame(QueryObject, SampleMixin):
@@ -74,9 +74,6 @@ class BaseFrame(QueryObject, SampleMixin):
                         node_name_map[node_name] for node_name in lineage
                     )
                 values["column_lineage_map"] = column_lineage_map
-                values["row_index_lineage"] = tuple(
-                    node_name_map[node_name] for node_name in values["row_index_lineage"]
-                )
         return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -85,11 +82,6 @@ class BaseFrame(QueryObject, SampleMixin):
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
-            new_object.row_index_lineage = tuple(
-                node_name_map[node_name]
-                for node_name in self.row_index_lineage
-                if node_name in node_name_map
-            )
             column_lineage_map = {}
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = tuple(
@@ -204,7 +196,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_name=node.name,
                 name=item,
                 dtype=self.column_var_type_map[item],
-                row_index_lineage=self.row_index_lineage,
                 **self._getitem_series_params,
             )
             output.set_parent(self)
@@ -225,7 +216,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 columns_info=[col for col in self.columns_info if col.name in item],
                 node_name=node.name,
                 column_lineage_map=column_lineage_map,
-                row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
             )
         # item must be Series type
@@ -241,7 +231,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             columns_info=self.columns_info,
             node_name=node.name,
             column_lineage_map=column_lineage_map,
-            row_index_lineage=append_to_lineage(self.row_index_lineage, node.name),
             **self._getitem_frame_params,
         )
 

@@ -5,10 +5,10 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import copy
 
-from featurebyte.core.util import append_to_lineage
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.util import append_to_lineage
 
 
 def append_rsuffix_to_column_info(

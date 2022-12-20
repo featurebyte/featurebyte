@@ -43,6 +43,7 @@ class ProxyInputNode(BaseNode):
             ],
             output_type=operation_structure.output_type,
             output_category=operation_structure.output_category,
+            row_index_lineage=(self.name,),
         )
 
 

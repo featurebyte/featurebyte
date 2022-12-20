@@ -15,7 +15,6 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.join_utils import join_tabular_data_ids
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
@@ -23,6 +22,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.util import append_to_lineage
 
 
 class EventViewColumn(ViewColumn):
@@ -83,7 +83,6 @@ class EventViewColumn(ViewColumn):
             node_name=node.name,
             name=None,
             dtype=self.dtype,
-            row_index_lineage=self.row_index_lineage,
             **self.unary_op_series_params(),
         )
 
@@ -440,5 +439,4 @@ class EventView(View, GroupByMixin):
             updated_columns_info,
             updated_column_lineage_map,
             joined_tabular_data_ids,
-            self.row_index_lineage,
         )

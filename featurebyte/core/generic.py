@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 import json
 from abc import abstractmethod
 
-from pydantic import Field, StrictStr
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -33,7 +33,6 @@ class QueryObject(FeatureByteBaseModel):
 
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node_name: str
-    row_index_lineage: Tuple[StrictStr, ...]
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
@@ -47,6 +46,18 @@ class QueryObject(FeatureByteBaseModel):
         Node
         """
         return self.graph.get_node_by_name(self.node_name)
+
+    @property
+    def row_index_lineage(self) -> Tuple[str, ...]:
+        """
+        A list of node names that changes number of rows leading to the current node
+
+        Returns
+        -------
+        Tuple[str, ...]
+        """
+        operation_structure = self.graph.extract_operation_structure(self.node)
+        return operation_structure.row_index_lineage
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
@@ -138,7 +149,7 @@ class QueryObject(FeatureByteBaseModel):
         dict_object = json.loads(json_object)
         if "graph" in dict_object:
             pruned_dict_object = self.dict()
-            for key in ["graph", "node_name", "column_lineage_map", "row_index_lineage"]:
+            for key in ["graph", "node_name", "column_lineage_map"]:
                 if key in dict_object:
                     dict_object[key] = pruned_dict_object[key]
             json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
