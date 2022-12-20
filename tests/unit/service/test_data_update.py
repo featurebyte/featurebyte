@@ -146,6 +146,73 @@ async def test_update_columns_info(
 
 
 @pytest.mark.asyncio
+async def test_update_columns_info__critical_data_info(
+    data_update_service, event_data_service, event_data
+):
+    """Test update_columns_info (critical data info)"""
+    # prepare columns info by adding critical data info & removing all entity ids & semantic ids
+    event_data_doc = event_data.dict()
+    columns_info = event_data_doc["columns_info"]
+    columns_info[0]["critical_data_info"] = {
+        "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+    }
+    columns_info = [{**col, "entity_id": None, "semantic_id": None} for col in columns_info]
+
+    # update columns info
+    await data_update_service.update_columns_info(
+        service=event_data_service,
+        document_id=event_data.id,
+        data=EventDataUpdate(columns_info=columns_info),
+    )
+
+    # check the updated document
+    updated_doc = await event_data_service.get_document(document_id=event_data.id)
+    assert updated_doc.columns_info == columns_info
+    assert updated_doc.graph.nodes[0] == event_data_doc["graph"]["nodes"][0]
+    assert updated_doc.graph.nodes[1].parameters == {
+        "graph": {
+            "edges": [
+                {"source": "proxy_input_1", "target": "project_1"},
+                {"source": "project_1", "target": "is_null_1"},
+                {"source": "project_1", "target": "conditional_1"},
+                {"source": "is_null_1", "target": "conditional_1"},
+                {"source": "proxy_input_1", "target": "assign_1"},
+                {"source": "conditional_1", "target": "assign_1"},
+            ],
+            "nodes": [
+                {
+                    "name": "proxy_input_1",
+                    "type": "proxy_input",
+                    "output_type": "frame",
+                    "parameters": {"node_name": "input_1"},
+                },
+                {
+                    "name": "project_1",
+                    "type": "project",
+                    "output_type": "series",
+                    "parameters": {"columns": ["col_int"]},
+                },
+                {"name": "is_null_1", "type": "is_null", "output_type": "series", "parameters": {}},
+                {
+                    "name": "conditional_1",
+                    "type": "conditional",
+                    "output_type": "series",
+                    "parameters": {"value": 0},
+                },
+                {
+                    "name": "assign_1",
+                    "type": "assign",
+                    "output_type": "frame",
+                    "parameters": {"name": "col_int", "value": None},
+                },
+            ],
+        },
+        "output_node_name": "assign_1",
+        "type": "cleaning",
+    }
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "fixture_name,update_class,primary_key_column",
     [

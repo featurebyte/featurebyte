@@ -38,6 +38,7 @@ class DataUpdate(BaseDocumentServiceUpdateSchema):
     status: Optional[DataStatus]
     record_creation_date_column: Optional[StrictStr]
     graph: Optional[QueryGraphModel]
+    node_name: Optional[str]
 
 
 class TabularDataList(PaginationMixin):
