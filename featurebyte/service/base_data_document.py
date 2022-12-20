@@ -118,24 +118,17 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         payload_dict = {**data.json_dict(), "_id": data_doc_id}
 
         # create graph & node
-        graph = QueryGraph()
-        table_data = cast(ConstructNodeMixin, SpecificTableData(**payload_dict))
-        input_node = table_data.construct_input_node(  # pylint: disable=no-member
-            feature_store_details=feature_store.get_feature_store_details()
+        graph, node = self.document_class.construct_graph_and_node(
+            feature_store_details=feature_store.get_feature_store_details(),
+            table_data_dict=payload_dict,
         )
-        inserted_input_node = graph.add_node(node=input_node, input_nodes=[])
-        graph_node = table_data.construct_cleaning_recipe_node(  # pylint: disable=no-member
-            input_node=inserted_input_node
-        )
-        if graph_node:
-            inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
         # create document for insertion
         document = self.document_class(
             user_id=self.user.id,
             status=DataStatus.DRAFT,
             graph=graph,
-            node_name=inserted_graph_node.name if graph_node else inserted_input_node.name,
+            node_name=node.name,
             **payload_dict,
         )
 
