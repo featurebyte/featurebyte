@@ -613,8 +613,8 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
         "view_point_in_time_column": None,
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_2", "target": "join_1"},
         {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
         {"source": "join_1", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
         {"source": "input_1", "target": "join_feature_1"},

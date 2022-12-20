@@ -71,12 +71,12 @@ def test_item_view_sample(snowflake_item_data):
     item_view = ItemView.from_item_data(snowflake_item_data)
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
-        "order_id",
-        "item_id",
-        "item_type",
         "EVENT_TIMESTAMP",
         "USER ID",
         "PRODUCT_ACTION",
+        "order_id",
+        "item_id",
+        "item_type",
     ]
 
     assert sample_df.shape == (10, 6)
