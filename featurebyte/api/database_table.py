@@ -19,6 +19,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, ConstructNodeMixin, GenericTableData
 from featurebyte.query_graph.node.schema import TableDetails
 
@@ -98,7 +99,7 @@ class AbstractTableDataFrame(
             ]
             values["columns_info"] = columns_info
 
-        if "graph" not in values:
+        if "graph" not in values or not QueryGraphModel(**dict(values["graph"])).nodes:
             graph, node = cls.construct_graph_and_node(
                 feature_store_details=feature_store.get_feature_store_details(),
                 table_data_dict=values,

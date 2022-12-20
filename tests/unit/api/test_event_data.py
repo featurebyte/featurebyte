@@ -113,6 +113,8 @@ def event_data_dict_fixture(snowflake_database_table):
         "updated_at": None,
         "user_id": None,
         "status": "DRAFT",
+        "graph": {"nodes": [], "edges": []},
+        "node_name": "",
     }
 
 
