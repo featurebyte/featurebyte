@@ -124,14 +124,17 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         input_node = table_data.construct_input_node(  # pylint: disable=no-member
             feature_store_details=FeatureStoreDetails(**feature_store.dict())
         )
-        inserted_node = graph.add_node(node=input_node, input_nodes=[])
+        inserted_input_node = graph.add_node(node=input_node, input_nodes=[])
+        graph_node = table_data.construct_cleaning_recipe_node(input_node=inserted_input_node)
+        if graph_node:
+            inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
         # create document for insertion
         document = self.document_class(
             user_id=self.user.id,
             status=DataStatus.DRAFT,
             graph=graph,
-            node_name=inserted_node.name,
+            node_name=inserted_graph_node.name if graph_node else inserted_input_node.name,
             **payload_dict,
         )
 

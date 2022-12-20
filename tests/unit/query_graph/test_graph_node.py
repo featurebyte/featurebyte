@@ -3,7 +3,7 @@ Tests for nested graph related logic
 """
 import pytest
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 
@@ -38,6 +38,7 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
         node_params=input_node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     expected_nested_input_node = {
         "name": "input_1",
@@ -90,6 +91,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         node_params={},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_int_node, proj_float_node],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     expected_proxy_nodes = [
         {
@@ -176,6 +178,7 @@ def nested_input_graph_fixture(input_node_params):
         node_params=input_node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     project_node = graph_node.add_operation(
         node_type=NodeType.PROJECT,
@@ -246,6 +249,7 @@ def nested_output_graph_fixture(input_node_params):
         node_params={"columns": ["col_int"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[input_node],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     graph_node.add_operation(
         node_type=NodeType.ADD,
@@ -303,12 +307,14 @@ def deep_nested_graph_fixture(input_node_params):
         node_params=input_node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     inner_graph_node, _ = GraphNode.create(
         node_type=NodeType.GRAPH,
         node_params=deepest_graph_node.parameters.dict(),
         node_output_type=deepest_graph_node.output_type,
         input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     inner_graph_node.add_operation(
         node_type=NodeType.PROJECT,
@@ -323,6 +329,7 @@ def deep_nested_graph_fixture(input_node_params):
         node_params=inner_graph_node.parameters.dict(),
         node_output_type=inner_graph_node.output_type,
         input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
     )
     graph_node.add_operation(
         node_type=NodeType.ADD,
@@ -422,6 +429,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             node_params={"columns": ["a"]},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=input_nodes,
+            graph_node_type=GraphNodeType.CLEANING,
         )
         node_proj_a = graph_node.output_node
         node_proj_b = graph_node.add_operation(
@@ -553,6 +561,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
             node_params={"name": "col_int_plus_one"},
             node_output_type=NodeOutputType.FRAME,
             input_nodes=input_nodes,
+            graph_node_type=GraphNodeType.CLEANING,
         )
         return query_graph.add_node(
             node=node_graph,

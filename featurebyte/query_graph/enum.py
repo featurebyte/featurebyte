@@ -96,3 +96,11 @@ class NodeOutputType(StrEnum):
 
     FRAME = "frame"
     SERIES = "series"
+
+
+class GraphNodeType(StrEnum):
+    """
+    Types of graph node
+    """
+
+    CLEANING = "cleaning"

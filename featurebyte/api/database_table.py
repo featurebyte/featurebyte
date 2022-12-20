@@ -112,12 +112,18 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        node = GlobalQueryGraph().add_node(
+        graph = GlobalQueryGraph()
+        inserted_input_node = graph.add_node(
             self.construct_input_node(
                 feature_store_details=FeatureStoreDetails(**self.feature_store.dict())
             ),
             input_nodes=[],
         )
+        graph_node = self.construct_cleaning_recipe_node(input_node=inserted_input_node)
+        if graph_node:
+            inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
+
+        node = inserted_graph_node if graph_node else inserted_input_node
         self.node_name = node.name
         for col in self.columns:
             self.column_lineage_map[col] = (node.name,)

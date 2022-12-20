@@ -11,7 +11,7 @@ from pydantic import Field, StrictStr, parse_obj_as
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import (
@@ -125,6 +125,7 @@ class ConstructNodeMixin:
                     node_params={"columns": [col_info.name]},
                     node_output_type=NodeOutputType.SERIES,
                     input_nodes=[input_node],
+                    graph_node_type=GraphNodeType.CLEANING,
                 )
 
             proj_col_node = graph_node.add_operation(
