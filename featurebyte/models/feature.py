@@ -157,7 +157,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     """
 
     dtype: DBVarType = Field(allow_mutation=False)
-    row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)

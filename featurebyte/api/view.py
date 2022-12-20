@@ -361,7 +361,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         joined_columns_info: List[ColumnInfo],
         joined_column_lineage_map: Dict[str, Tuple[str, ...]],
         joined_tabular_data_ids: List[PydanticObjectId],
-        joined_row_index_lineage: tuple[str, ...],
     ) -> None:
         """
         Updates the metadata for the new join
@@ -376,8 +375,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined column lineage map
         joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
-        joined_row_index_lineage: tuple[str, ...]
-            joined row index lineage
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
@@ -620,16 +617,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.tabular_data_ids, other_view.tabular_data_ids
         )
 
-        # Update row index lineage
-        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, node.name)
-
         # Update metadata
         self._update_metadata(
             node.name,
             joined_columns_info,
             joined_column_lineage_map,
             joined_tabular_data_ids,
-            joined_row_index_lineage,
         )
 
     @staticmethod
@@ -681,7 +674,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_source=self.tabular_source,
             node_name=feature_node.name,
             dtype=feature_dtype,
-            row_index_lineage=(node.name,),
             tabular_data_ids=self.tabular_data_ids,
             entity_ids=entity_ids,
         )

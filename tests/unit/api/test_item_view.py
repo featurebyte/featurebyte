@@ -226,7 +226,6 @@ def test_join_event_data_attributes__more_columns(
     """
     view = snowflake_item_view
     view.join_event_data_attributes(["col_float"])
-    assert view.row_index_lineage == ("input_6", "join_1", "join_2")
     view_dict = view.dict()
 
     # Check node
@@ -286,7 +285,6 @@ def test_join_event_data_attributes__more_columns(
         "cust_id": "INT",
         "col_float": "FLOAT",
     }
-    assert view_dict["row_index_lineage"] == ("input_2", "join_1", "join_2")
     assert view_dict["column_lineage_map"] == {
         "event_id_col": ("input_2", "join_1", "join_2"),
         "item_id_col": ("input_2", "join_1", "join_2"),

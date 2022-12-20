@@ -440,5 +440,4 @@ class EventView(View, GroupByMixin):
             updated_columns_info,
             updated_column_lineage_map,
             joined_tabular_data_ids,
-            self.row_index_lineage,
         )

@@ -2,6 +2,7 @@
 Unit test for EventView class
 """
 
+import copy
 from unittest import mock
 from unittest.mock import PropertyMock
 
@@ -561,23 +562,12 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input_node_params):
+def test_add_feature(snowflake_event_view, non_time_based_feature):
     """
     Test add feature
     """
-    # reset between tests
-    GlobalGraphState.reset()
-
-    # Initialize graph
+    original_column_info = copy.deepcopy(snowflake_event_view.columns_info)
     original_node_name = snowflake_event_view.node_name
-    input_node = snowflake_event_view.graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params=generic_input_node_params["node_params"],
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    snowflake_event_view.node_name = input_node.name
-    original_column_info = snowflake_event_view.columns_info
 
     # Add feature
     snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
@@ -591,8 +581,10 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
             entity_id=non_time_based_feature.entity_ids[0],
         ),
     ]
-    join_feature_node_name = "join_feature_1"
-    assert snowflake_event_view.node_name == join_feature_node_name
+
+    join_feature_node_name = snowflake_event_view.node.name
+    assert join_feature_node_name.startswith("join_feature")
+
     original_lineage = (original_node_name,)
     new_col_lineage = (non_time_based_feature.node.name,)
     assert snowflake_event_view.column_lineage_map == {
@@ -609,26 +601,23 @@ def test_add_feature(snowflake_event_view, non_time_based_feature, generic_input
     }
     assert snowflake_event_view.row_index_lineage == (original_node_name,)
 
-    # assert graph node
+    # assert graph node (excluding name since that can changed by graph pruning)
     view_dict = snowflake_event_view.dict()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
-    assert node_dict == {
-        "name": join_feature_node_name,
-        "output_type": "frame",
-        "parameters": {
-            "feature_entity_column": "item_id_col",
-            "name": "new_col",
-            "view_entity_column": "cust_id",
-            "view_point_in_time_column": None,
-        },
-        "type": "join_feature",
+    assert node_dict["output_type"] == "frame"
+    assert node_dict["type"] == "join_feature"
+    assert node_dict["parameters"] == {
+        "feature_entity_column": "item_id_col",
+        "name": "new_col",
+        "view_entity_column": "cust_id",
+        "view_point_in_time_column": None,
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
         {"source": "input_2", "target": "join_1"},
+        {"source": "input_1", "target": "join_1"},
         {"source": "join_1", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
-        {"source": "input_3", "target": "join_feature_1"},
+        {"source": "input_1", "target": "join_feature_1"},
         {"source": "project_1", "target": "join_feature_1"},
     ]
 

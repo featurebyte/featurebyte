@@ -146,15 +146,12 @@ class ItemView(View, GroupByMixin):
             self.tabular_data_ids, self.event_view.tabular_data_ids
         )
 
-        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, node.name)
-
         # Update metadata
         self._update_metadata(
             node.name,
             joined_columns_info,
             joined_column_lineage_map,
             joined_tabular_data_ids,
-            joined_row_index_lineage,
         )
 
     @property
