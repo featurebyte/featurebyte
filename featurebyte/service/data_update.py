@@ -152,7 +152,6 @@ class DataUpdateService(BaseService):
                 await service.update_document(
                     document_id=document_id,
                     data=type(data)(columns_info=data.columns_info),  # type: ignore
-                    return_document=False,
                 )
 
                 await self.update_entity_data_references(document, data)

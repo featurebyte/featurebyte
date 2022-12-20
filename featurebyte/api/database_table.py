@@ -20,7 +20,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.table import AllTableDataT, ConstructNodeMixin, GenericTableData
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
@@ -102,7 +102,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
                 ConstructNodeMixin, cls._table_data_class(**values)  # pylint: disable=not-callable
             )
             input_node = table_data.construct_input_node(
-                feature_store_details=FeatureStoreDetails(**feature_store.dict())
+                feature_store_details=feature_store.get_feature_store_details()
             )
             inserted_node = graph.add_node(node=input_node, input_nodes=[])
             values["graph"] = graph
@@ -115,7 +115,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
         graph = GlobalQueryGraph()
         inserted_input_node = graph.add_node(
             self.construct_input_node(
-                feature_store_details=FeatureStoreDetails(**self.feature_store.dict())
+                feature_store_details=self.feature_store.get_feature_store_details()
             ),
             input_nodes=[],
         )

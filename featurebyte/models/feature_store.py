@@ -24,6 +24,16 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
 
     name: StrictStr
 
+    def get_feature_store_details(self) -> FeatureStoreDetails:
+        """
+        Get feature store details
+
+        Returns
+        -------
+        FeatureStoreDetails
+        """
+        return FeatureStoreDetails(**self.json_dict())
+
     class Settings:
         """
         MongoDB settings

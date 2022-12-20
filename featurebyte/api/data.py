@@ -157,7 +157,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             **kwargs,
         )
         input_node = table_data.construct_input_node(  # type: ignore[attr-defined]
-            feature_store_details=FeatureStoreDetails(**tabular_source.feature_store.dict())
+            feature_store_details=tabular_source.feature_store.get_feature_store_details()
         )
         inserted_node = GlobalQueryGraph().add_node(node=input_node, input_nodes=[])
 

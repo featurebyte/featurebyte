@@ -13,6 +13,7 @@ from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -36,6 +37,7 @@ class DataUpdate(BaseDocumentServiceUpdateSchema):
     columns_info: Optional[List[ColumnInfo]]
     status: Optional[DataStatus]
     record_creation_date_column: Optional[StrictStr]
+    graph: Optional[QueryGraphModel]
 
 
 class TabularDataList(PaginationMixin):
