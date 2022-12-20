@@ -151,15 +151,15 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         assert cls._create_schema_class is not None
 
         # construct an input node & insert into the global graph
-        table_data = cls._table_data_class(  # pylint: disable=not-callable
-            tabular_source=tabular_source.tabular_source,
-            columns_info=tabular_source.columns_info,
-            **kwargs,
+        graph, inserted_node = cls.construct_graph_and_node(
+            feature_store_details=tabular_source.feature_store.get_feature_store_details(),
+            table_data_dict={
+                "tabular_source": tabular_source.tabular_source,
+                "columns_info": tabular_source.columns_info,
+                **kwargs,
+            },
+            graph=GlobalQueryGraph(),
         )
-        input_node = table_data.construct_input_node(  # type: ignore[attr-defined]
-            feature_store_details=tabular_source.feature_store.get_feature_store_details()
-        )
-        inserted_node = GlobalQueryGraph().add_node(node=input_node, input_nodes=[])
 
         data = cls._create_schema_class(  # pylint: disable=not-callable
             _id=_id or ObjectId(),
@@ -167,7 +167,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
             record_creation_date_column=record_creation_date_column,
-            graph=GlobalQueryGraph(),
+            graph=graph,
             node_name=inserted_node.name,
             **kwargs,
         )

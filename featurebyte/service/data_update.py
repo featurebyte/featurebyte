@@ -22,6 +22,7 @@ from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
@@ -37,6 +38,7 @@ class DataUpdateService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.semantic_service = SemanticService(user=user, persistent=persistent)
         self.entity_service = EntityService(user=user, persistent=persistent)
 

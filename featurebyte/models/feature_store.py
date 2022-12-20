@@ -3,7 +3,7 @@ This module contains DatabaseSource related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, cast
 
 from pydantic import Field, StrictStr
 
@@ -16,6 +16,8 @@ from featurebyte.models.base import (
 )
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.table import ConstructNodeMixin
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
@@ -67,7 +69,52 @@ class DataStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class DataModel(BaseTableData, FeatureByteBaseDocumentModel):
+class ConstructGraphMixin:
+    """ConstructGraphMixin class"""
+
+    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData
+
+    @classmethod
+    def construct_graph_and_node(
+        cls,
+        feature_store_details: FeatureStoreDetails,
+        table_data_dict: Dict[str, Any],
+        graph: Optional[QueryGraph] = None,
+    ) -> Tuple[QueryGraph, Node]:
+        """
+        Construct graph & node based on column info
+
+        Parameters
+        ----------
+        feature_store_details: FeatureStoreDetails
+            Feature store details
+        table_data_dict: Dict[str, Any]
+            Serialized table data dictionary
+        graph: Optional[QueryGraph]
+            Graph object to insert the node or create a new QueryGraph object if the param is empty
+
+        Returns
+        -------
+        Tuple[QueryGraph, Node]
+        """
+        if graph is None:
+            graph = QueryGraph()
+
+        table_data = cast(ConstructNodeMixin, cls._table_data_class(**table_data_dict))
+        input_node = table_data.construct_input_node(  # pylint: disable=no-member
+            feature_store_details=feature_store_details
+        )
+        inserted_input_node = graph.add_node(node=input_node, input_nodes=[])
+        graph_node = table_data.construct_cleaning_recipe_node(  # pylint: disable=no-member
+            input_node=inserted_input_node
+        )
+        if graph_node:
+            inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
+            return graph, inserted_graph_node
+        return graph, inserted_input_node
+
+
+class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel):
     """
     DataModel schema
 
@@ -86,16 +133,6 @@ class DataModel(BaseTableData, FeatureByteBaseDocumentModel):
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData
-
-    def get_table_data(self) -> BaseTableData:
-        """
-        Get corresponding table data from the data model object
-
-        Returns
-        -------
-        BaseTableData
-        """
-        return self._table_data_class(**self.json_dict())
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
