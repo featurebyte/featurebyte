@@ -33,6 +33,6 @@ def test_change_view(scd_data):
     df = count_1w_feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "user id": 1})
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "User ID": 1,
+        "user id": 1,
         "count_1w": 4,
     }
