@@ -118,7 +118,7 @@ class QueryGraph(QueryGraphModel):
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 
-    def flatten(self) -> QueryGraphModel:
+    def flatten(self) -> GraphNodeNameMap:
         """
         Construct a query graph which flattened all the graph nodes of this query graph
 

@@ -411,9 +411,9 @@ def test_flatten_nested_graph(
             },
         ],
     }
-    assert nested_input_graph.flatten() == expected_flattened_graph
-    assert nested_output_graph.flatten() == expected_flattened_graph
-    assert deep_nested_graph.flatten() == expected_flattened_graph
+    assert nested_input_graph.flatten()[0] == expected_flattened_graph
+    assert nested_output_graph.flatten()[0] == expected_flattened_graph
+    assert deep_nested_graph.flatten()[0] == expected_flattened_graph
 
 
 def test_nested_graph_pruning(input_details, groupby_node_params):
