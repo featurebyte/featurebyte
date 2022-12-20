@@ -35,7 +35,6 @@ def test__getitem__str_key(dataframe, item, expected_type):
         "parameters": {"columns": [item]},
         "output_type": NodeOutputType.SERIES,
     }
-    assert series_dict["row_index_lineage"] == ("input_1",)
     assert series_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
@@ -83,7 +82,6 @@ def test__getitem__list_of_str_key(dataframe):
         "CUST_ID": ("input_1", "project_1"),
         "VALUE": ("input_1", "project_1"),
     }
-    assert sub_dataframe_dict["row_index_lineage"] == ("input_1",)
     assert sub_dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
@@ -103,6 +101,7 @@ def test__getitem__series_key(dataframe, bool_series):
     sub_dataframe = dataframe[bool_series]
     assert sub_dataframe.columns_info == dataframe.columns_info
     assert isinstance(sub_dataframe, Frame)
+    assert sub_dataframe.row_index_lineage == ("input_1", "filter_1")
     sub_dataframe_dict = sub_dataframe.dict()
     assert sub_dataframe_dict["node_name"] == "filter_1"
     node = get_node(sub_dataframe_dict["graph"], "filter_1")
@@ -120,7 +119,6 @@ def test__getitem__series_key(dataframe, bool_series):
         "TIMESTAMP": ("input_1", "filter_1"),
         "PROMOTION_START_DATE": ("input_1", "filter_1"),
     }
-    assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert sub_dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "filter_1"},
@@ -232,9 +230,8 @@ def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_s
     Test Series object value assignment with different row index lineage
     """
     value = dataframe[bool_series]["PRODUCT_ACTION"]
+    assert value.row_index_lineage == ("input_1", "filter_1")
     assert isinstance(value, Series)
-    value_dict = value.dict()
-    assert value_dict["row_index_lineage"] == ("input_1", "filter_1")
     with pytest.raises(ValueError) as exc:
         dataframe["new_column"] = value
     expected_msg = (
@@ -261,6 +258,7 @@ def test_multiple_statements(dataframe):
     cust_id = dataframe["CUST_ID"]
     dataframe["amount"] = cust_id + dataframe["VALUE"]
     dataframe["vip_customer"] = (dataframe["CUST_ID"] < 1000) & (dataframe["amount"] > 1000.0)
+
     cust_id_dict = cust_id.dict()
     dataframe_dict = dataframe.dict()
 
@@ -273,7 +271,7 @@ def test_multiple_statements(dataframe):
         "parameters": {"columns": ["CUST_ID"]},
         "output_type": NodeOutputType.SERIES,
     }
-    assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
+    assert cust_id.row_index_lineage == ("input_1", "filter_1")
     assert dataframe_dict["columns_info"] == [
         {
             "name": "CUST_ID",
@@ -360,7 +358,7 @@ def test_multiple_statements(dataframe):
         "amount": ("assign_1",),
         "vip_customer": ("assign_2",),
     }
-    assert dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
+    assert dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "filter_1"},
@@ -424,7 +422,7 @@ def test_frame__dict(dataframe):
         "CUST_ID": ("input_1", "filter_1", "project_2"),
         "VALUE": ("input_1", "filter_1", "project_2"),
     }
-    assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
+    assert sub_dataframe.row_index_lineage == ("input_1", "filter_2")
     sub_dataframe_dict["feature_store"] = dataframe.feature_store
     loaded_sub_dataframe = Frame.parse_obj(sub_dataframe_dict)
     # note that loaded_sub_dataframe & sub_dataframe are not fully identical (ideally, we should make them identical)

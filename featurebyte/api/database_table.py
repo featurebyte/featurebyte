@@ -29,7 +29,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
     """
 
     node_name: str = Field(default_factory=str)
-    row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple, exclude=True)
     column_lineage_map: Dict[str, Tuple[str, ...]] = Field(default_factory=dict, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
     _table_data_class: ClassVar[Optional[Type[AllTableDataT]]] = None
@@ -121,7 +120,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             input_nodes=[],
         )
         self.node_name = node.name
-        self.row_index_lineage = (node.name,)
         for col in self.columns:
             self.column_lineage_map[col] = (node.name,)
 

@@ -74,9 +74,6 @@ class BaseFrame(QueryObject, SampleMixin):
                         node_name_map[node_name] for node_name in lineage
                     )
                 values["column_lineage_map"] = column_lineage_map
-                values["row_index_lineage"] = tuple(
-                    node_name_map[node_name] for node_name in values["row_index_lineage"]
-                )
         return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -85,11 +82,6 @@ class BaseFrame(QueryObject, SampleMixin):
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
-            new_object.row_index_lineage = tuple(
-                node_name_map[node_name]
-                for node_name in self.row_index_lineage
-                if node_name in node_name_map
-            )
             column_lineage_map = {}
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = tuple(
