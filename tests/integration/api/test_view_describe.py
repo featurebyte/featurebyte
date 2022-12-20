@@ -17,6 +17,7 @@ def test_event_view_describe(snowflake_event_data):
     """
     event_view = EventView.from_event_data(snowflake_event_data)
     describe_df = event_view.describe()
+    print(describe_df)
     assert describe_df.columns.tolist() == [
         "EVENT_TIMESTAMP",
         "CREATED_AT",
@@ -28,8 +29,8 @@ def test_event_view_describe(snowflake_event_data):
         "TRANSACTION_ID",
     ]
     assert describe_df.index.tolist() == [
-        "count",
         "unique",
+        "% missing",
         "top",
         "freq",
         "mean",
@@ -64,13 +65,15 @@ def test_event_view_sample_with_date_range(snowflake_event_data):
     col_describe_df = event_view["TRANSACTION_ID"].describe(**sample_params)
     assert_series_equal(
         col_describe_df["TRANSACTION_ID"],
-        describe_df["TRANSACTION_ID"][["count", "unique", "top", "freq"]],
+        describe_df["TRANSACTION_ID"][["unique", "% missing", "top", "freq"]],
     )
 
     # describe single numeric column
     col_describe_df = event_view["AMOUNT"].describe(**sample_params)
     assert_series_equal(
         col_describe_df["AMOUNT"],
-        describe_df["AMOUNT"][["count", "mean", "std", "min", "25%", "50%", "75%", "max"]],
+        describe_df["AMOUNT"][
+            ["unique", "% missing", "mean", "std", "min", "25%", "50%", "75%", "max"]
+        ],
         check_dtype=False,
     )

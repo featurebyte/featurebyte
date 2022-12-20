@@ -477,6 +477,7 @@ class GraphInterpreter:
                     quoted=True,
                 )
             )
+
         cte_context = construct_cte_sql(
             [
                 ("data", sql_tree),
@@ -485,8 +486,8 @@ class GraphInterpreter:
         )
 
         stats_names = [
-            "count",
             "unique",
+            "% missing",
             "top",
             "freq",
             "mean",
@@ -500,29 +501,48 @@ class GraphInterpreter:
         selections = []
         for column_name, dtype in zip(column_names, dtypes):
             column_expr = quoted_identifier(column_name)
-            mode_column_name = quoted_identifier(f"mode__{column_name}")
 
-            # count
-            selections.append(expressions.Anonymous(this="COUNT", expressions=[column_expr]))
+            # unique, % missing
+            selections.extend(
+                [
+                    expressions.Count(this=expressions.Distinct(expressions=[column_expr])),
+                    expressions.Mul(
+                        this=expressions.Paren(
+                            this=expressions.Sub(
+                                this=make_literal_value(1.0),
+                                expression=expressions.Div(
+                                    this=expressions.Count(this=[column_expr]),
+                                    expression=expressions.Count(this=[make_literal_value("*")]),
+                                ),
+                            ),
+                        ),
+                        expression=make_literal_value(100),
+                    ),
+                ]
+            )
 
-            # unique, top, freq
+            # top, freq
             if not np.issubdtype(dtype, np.number):
                 selections.extend(
                     [
-                        expressions.Anonymous(
-                            this="COUNT", expressions=[f"DISTINCT {column_expr}"]
-                        ),
                         expressions.Anonymous(this="MODE", expressions=[column_expr]),
                         expressions.Anonymous(
                             this="COUNT_IF",
-                            expressions=[f"{column_expr} = mode_values.{mode_column_name}"],
+                            expressions=[
+                                expressions.EQ(
+                                    this=column_expr,
+                                    expression=expressions.Column(
+                                        this=quoted_identifier(f"mode__{column_name}"),
+                                        table="mode_values",
+                                    ),
+                                )
+                            ],
                         ),
                     ]
                 )
             else:
                 selections.extend(
                     [
-                        self._empty_value_expr(f"unique__{column_name}"),
                         self._empty_value_expr(f"top__{column_name}"),
                         self._empty_value_expr(f"freq__{column_name}"),
                     ]

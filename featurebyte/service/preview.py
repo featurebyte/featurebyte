@@ -194,6 +194,7 @@ class PreviewService(BaseService):
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
         )
+        print(describe_sql)
         logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
         result = await session.execute_query(describe_sql)
         result = pd.DataFrame(
