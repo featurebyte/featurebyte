@@ -39,8 +39,8 @@ class TestItemView(BaseViewTestSuite):
         return {
             "mask": view_under_test[self.col] > 1000,
             "expected_edges": [
-                {"source": "input_1", "target": "join_1"},
                 {"source": "input_2", "target": "join_1"},
+                {"source": "input_1", "target": "join_1"},
                 {"source": "join_1", "target": "project_1"},
                 {"source": "project_1", "target": "gt_1"},
                 {"source": "project_1", "target": "filter_1"},
@@ -69,24 +69,24 @@ def test_from_item_data__auto_join_columns(
         "type": "join",
         "output_type": "frame",
         "parameters": {
-            "left_on": "col_int",
-            "right_on": "event_id_col",
-            "left_input_columns": ["event_timestamp", "cust_id"],
-            "left_output_columns": ["event_timestamp", "cust_id"],
-            "right_input_columns": [
+            "left_on": "event_id_col",
+            "right_on": "col_int",
+            "left_input_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
                 "item_amount",
                 "created_at",
             ],
-            "right_output_columns": [
+            "left_output_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
                 "item_amount",
                 "created_at",
             ],
+            "right_input_columns": ["event_timestamp", "cust_id"],
+            "right_output_columns": ["event_timestamp", "cust_id"],
             "join_type": "inner",
             "scd_parameters": None,
         },
@@ -112,7 +112,6 @@ def test_from_item_data__auto_join_columns(
         "event_timestamp": "TIMESTAMP",
         "cust_id": "INT",
     }
-    assert view_dict["row_index_lineage"] == ("input_2", "join_1")
     assert view_dict["column_lineage_map"] == {
         "event_id_col": ("input_2", "join_1"),
         "item_id_col": ("input_2", "join_1"),
@@ -128,14 +127,23 @@ def test_from_item_data__auto_join_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          L."event_timestamp" AS "event_timestamp",
-          L."cust_id" AS "cust_id",
-          R."event_id_col" AS "event_id_col",
-          R."item_id_col" AS "item_id_col",
-          R."item_type" AS "item_type",
-          R."item_amount" AS "item_amount",
-          R."created_at" AS "created_at"
+          L."event_id_col" AS "event_id_col",
+          L."item_id_col" AS "item_id_col",
+          L."item_type" AS "item_type",
+          L."item_amount" AS "item_amount",
+          L."created_at" AS "created_at",
+          R."event_timestamp" AS "event_timestamp",
+          R."cust_id" AS "cust_id"
         FROM (
+          SELECT
+            "event_id_col" AS "event_id_col",
+            "item_id_col" AS "item_id_col",
+            "item_type" AS "item_type",
+            "item_amount" AS "item_amount",
+            "created_at" AS "created_at"
+          FROM "sf_database"."sf_schema"."items_table"
+        ) AS L
+        INNER JOIN (
           SELECT
             "col_int" AS "col_int",
             "col_float" AS "col_float",
@@ -147,17 +155,8 @@ def test_from_item_data__auto_join_columns(
             "created_at" AS "created_at",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "event_id_col" AS "event_id_col",
-            "item_id_col" AS "item_id_col",
-            "item_type" AS "item_type",
-            "item_amount" AS "item_amount",
-            "created_at" AS "created_at"
-          FROM "sf_database"."sf_schema"."items_table"
         ) AS R
-          ON L."col_int" = R."event_id_col"
+          ON L."event_id_col" = R."col_int"
         LIMIT 10
         """
     ).strip()
@@ -227,6 +226,7 @@ def test_join_event_data_attributes__more_columns(
     """
     view = snowflake_item_view
     view.join_event_data_attributes(["col_float"])
+    assert view.row_index_lineage == ("input_6", "join_1", "join_2")
     view_dict = view.dict()
 
     # Check node
@@ -236,11 +236,9 @@ def test_join_event_data_attributes__more_columns(
         "type": "join",
         "output_type": "frame",
         "parameters": {
-            "left_on": "col_int",
-            "right_on": "event_id_col",
-            "left_input_columns": ["col_float"],
-            "left_output_columns": ["col_float"],
-            "right_input_columns": [
+            "left_on": "event_id_col",
+            "right_on": "col_int",
+            "left_input_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
@@ -249,7 +247,7 @@ def test_join_event_data_attributes__more_columns(
                 "event_timestamp",
                 "cust_id",
             ],
-            "right_output_columns": [
+            "left_output_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
@@ -258,6 +256,8 @@ def test_join_event_data_attributes__more_columns(
                 "event_timestamp",
                 "cust_id",
             ],
+            "right_input_columns": ["col_float"],
+            "right_output_columns": ["col_float"],
             "join_type": "inner",
             "scd_parameters": None,
         },
@@ -303,37 +303,33 @@ def test_join_event_data_attributes__more_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          L."col_float" AS "col_float",
-          R."event_id_col" AS "event_id_col",
-          R."item_id_col" AS "item_id_col",
-          R."item_type" AS "item_type",
-          R."item_amount" AS "item_amount",
-          R."created_at" AS "created_at",
-          R."event_timestamp" AS "event_timestamp",
-          R."cust_id" AS "cust_id"
+          L."event_id_col" AS "event_id_col",
+          L."item_id_col" AS "item_id_col",
+          L."item_type" AS "item_type",
+          L."item_amount" AS "item_amount",
+          L."created_at" AS "created_at",
+          L."event_timestamp" AS "event_timestamp",
+          L."cust_id" AS "cust_id",
+          R."col_float" AS "col_float"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            L."event_timestamp" AS "event_timestamp",
-            L."cust_id" AS "cust_id",
-            R."event_id_col" AS "event_id_col",
-            R."item_id_col" AS "item_id_col",
-            R."item_type" AS "item_type",
-            R."item_amount" AS "item_amount",
-            R."created_at" AS "created_at"
+            L."event_id_col" AS "event_id_col",
+            L."item_id_col" AS "item_id_col",
+            L."item_type" AS "item_type",
+            L."item_amount" AS "item_amount",
+            L."created_at" AS "created_at",
+            R."event_timestamp" AS "event_timestamp",
+            R."cust_id" AS "cust_id"
           FROM (
+            SELECT
+              "event_id_col" AS "event_id_col",
+              "item_id_col" AS "item_id_col",
+              "item_type" AS "item_type",
+              "item_amount" AS "item_amount",
+              "created_at" AS "created_at"
+            FROM "sf_database"."sf_schema"."items_table"
+          ) AS L
+          INNER JOIN (
             SELECT
               "col_int" AS "col_int",
               "col_float" AS "col_float",
@@ -345,19 +341,23 @@ def test_join_event_data_attributes__more_columns(
               "created_at" AS "created_at",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
-          ) AS L
-          INNER JOIN (
-            SELECT
-              "event_id_col" AS "event_id_col",
-              "item_id_col" AS "item_id_col",
-              "item_type" AS "item_type",
-              "item_amount" AS "item_amount",
-              "created_at" AS "created_at"
-            FROM "sf_database"."sf_schema"."items_table"
           ) AS R
-            ON L."col_int" = R."event_id_col"
+            ON L."event_id_col" = R."col_int"
+        ) AS L
+        INNER JOIN (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "created_at" AS "created_at",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
         ) AS R
-          ON L."col_int" = R."event_id_col"
+          ON L."event_id_col" = R."col_int"
         LIMIT 10
         """
     ).strip()
@@ -391,8 +391,8 @@ def test_item_view_groupby__item_data_column(snowflake_item_view):
     )["item_amount_sum_24h"]
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
         {"source": "input_2", "target": "join_1"},
+        {"source": "input_1", "target": "join_1"},
         {"source": "join_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
     ]
@@ -486,8 +486,8 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
     assert isinstance(feature, Feature)
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
         {"source": "input_2", "target": "join_1"},
+        {"source": "input_1", "target": "join_1"},
         {"source": "join_1", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
         {"source": "project_1", "target": "is_null_1"},

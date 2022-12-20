@@ -382,7 +382,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
         self.column_lineage_map = joined_column_lineage_map
-        self.row_index_lineage = joined_row_index_lineage
         self.__dict__.update(
             {
                 "tabular_data_ids": joined_tabular_data_ids,
