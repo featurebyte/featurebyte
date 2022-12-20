@@ -294,6 +294,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
         "name",
         "num_features",
         "status",
+        "deployed",
         "readiness_frac",
         "online_frac",
         "data",
@@ -312,7 +313,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
         # add information about default feature list version
         feature_list_versions = FeatureList.list_versions(include_id=True)
         feature_lists = feature_lists.merge(
-            feature_list_versions[["id", "online_frac"]],
+            feature_list_versions[["id", "online_frac", "deployed"]],
             left_on="default_feature_list_id",
             right_on="id",
         )
@@ -390,6 +391,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         "feature_list_namespace_id",
         "num_features",
         "online_frac",
+        "deployed",
         "created_at",
     ]
 
