@@ -149,7 +149,6 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             When unexpected retrieval failure
         """
         assert cls._create_schema_class is not None
-        assert cls._table_data_class is not None
 
         # construct an input node & insert into the global graph
         table_data = cls._table_data_class(  # pylint: disable=not-callable

@@ -3,12 +3,13 @@ This module contains SCD data related models
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional, Type
 
 from pydantic import root_validator, validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import SCDTableData
 
 
@@ -27,6 +28,8 @@ class SCDDataModel(SCDTableData, DataModel):
     current_flag: str
         The current status of the data.
     """
+
+    _table_data_class: ClassVar[Type[BaseTableData]] = SCDTableData
 
     @root_validator(pre=True)
     @classmethod

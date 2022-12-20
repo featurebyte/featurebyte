@@ -41,8 +41,10 @@ class Aggregator(ABC):
     Base class of all aggregators
     """
 
-    def __init__(self, source_type: SourceType):
+    def __init__(self, source_type: SourceType, is_online_serving: bool = False):
+        self.source_type = source_type
         self.adapter = get_sql_adapter(source_type)
+        self.is_online_serving = is_online_serving
 
     @abstractmethod
     def get_required_serving_names(self) -> set[str]:

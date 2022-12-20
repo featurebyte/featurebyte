@@ -13,7 +13,6 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.dimension_data import DimensionDataModel
-from featurebyte.query_graph.model.table import DimensionTableData
 from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionDataUpdate
 
 
@@ -29,7 +28,6 @@ class DimensionData(DimensionDataModel, DataApiObject):
     _route = "/dimension_data"
     _update_schema_class = DimensionDataUpdate
     _create_schema_class = DimensionDataCreate
-    _table_data_class = DimensionTableData
 
     @classmethod
     @typechecked

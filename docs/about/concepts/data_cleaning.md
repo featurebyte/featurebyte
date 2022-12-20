@@ -1,4 +1,4 @@
-As a preventative measure, data quality annotation at the data source level is supported and strongly encouraged as well as the setting of default cleaning steps.
+As a preventative measure, data quality annotation at the data source level, and data cleaning step declarations, are supported and strongly encouraged.
 
 During the annotation, users can define how to handle:
 
@@ -8,6 +8,6 @@ During the annotation, users can define how to handle:
 * out of boundaries numeric values and dates,
 * and string values when numeric values or dates are expected.
 
-Users can define data pipeline data cleaning settings to either ignore values with quality issues or impute those values.
+Users can define data pipeline data cleaning settings to either ignore values with quality issues when aggregations are performed or impute those values.
 
-Those default cleaning steps are then automatically enforced if no cleaning steps are specified during feature declaration.
+Those default cleaning steps are then automatically enforced if no cleaning steps are explicitly specified during feature declaration.

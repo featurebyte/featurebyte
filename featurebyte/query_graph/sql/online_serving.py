@@ -178,7 +178,7 @@ def get_online_store_feature_compute_sql(
     -------
     str
     """
-    planner = FeatureExecutionPlanner(graph, source_type=source_type)
+    planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=False)
     plan = planner.generate_plan([node])
 
     universe_plan = OnlineStoreUniversePlan(graph, node, adapter=get_sql_adapter(source_type))
@@ -459,7 +459,7 @@ def construct_feature_sql_with_enriched_request_table(
     -------
     Select
     """
-    planner = FeatureExecutionPlanner(graph, source_type=source_type)
+    planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=True)
     plan = planner.generate_plan(online_excluded_nodes)
 
     new_request_table_expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")

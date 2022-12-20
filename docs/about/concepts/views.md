@@ -87,7 +87,7 @@ Lags can extract the previous value for a given Entity. This allows the computat
 ### Joins
 To facilitate time aware feature engineering, the event timestamp of the related event data is automatically added to the item view by FeatureByte.
 
-Other joins are recommended when an entity in the view is a primary key or a natural key of another view.
+Other joins are recommended when an entity in the view (or its supertype) is a primary key or a natural key of another view.
 
 Joins of Slowly Changing Dimension views are made at the timestamp of the calling view.
 

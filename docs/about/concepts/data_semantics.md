@@ -5,6 +5,8 @@ The identification of the semantics of data fields and their table is a critical
 
 To better inform users on which feature engineering should be applied, each data source registered in FeatureByte has a semantic layer that captures and accumulates the domain knowledge acquired by users working on the same data. In this layer, data fields’ semantics are encoded via a data ontology specifically designed for Feature Engineering.
 
+The tagging of the semantics of a data field will be supported in the next release.
+
 ### Data Ontology
 FeatureByte’s Ontology has a tree-based structure where each node represents a semantics type with specific feature engineering practices.
 
@@ -44,7 +46,6 @@ Its nodes of level 2 are:
     * And the ratio of the sums is the average speed
 * `Circular` type: for which circular statistics are usually needed. Examples of data fields of a Circular type include Time of a day, Day of a year, and Direction.
 
-
 Examples of nodes of levels 3 connected to `Non-Additive Numeric` type include:
 
 * `Measurement of Intensity` (such as temperature, sound frequency, item price, …): for which change from prior value may be derived 
@@ -52,12 +53,15 @@ Examples of nodes of levels 3 connected to `Non-Additive Numeric` type include:
 * `Longitude / Latitude of a stationary object`: for which distance from another location may be derived
 * `Longitude / Latitude of a moving object`: for which moving distance, moving time, speed, acceleration and direction may be derived
 
+Examples of level 3 nodes connected to `Additive Numeric` type include:
+
+* `Positive Amount`: for which stats grouped by categorical columns may be applied, or daily, weekly, monthly time series may be derived.
+
 Examples of domain specific nodes of level 4 include:
 
 * `Patient temperature`: for which bucketing such as low, normal, fever may be derived
 * `Patient Blood pressure`: for which bucketing such as hypotension, normal, hypertension may be derived
 * `Car location`: for which highway may be detected, high acceleration or high deceleration may be flagged
-* `Amount`: for which stats grouped by categorical columns may be applied, or daily, weekly, monthly time series may be derived.
 
 #### Nodes of the Categorical type
 
@@ -79,7 +83,6 @@ The domain specific nodes of level 4 inform on further feature engineering that 
 * for a `Zip Code`: good practice may consist of concatenating the code with the field with `Country` semantics type
 * for a `City`: good practice may consist of concatenating the code with the fields with `State` and `Country` semantics type
 * for a `ICD-10-CM`: extracting the first 3 symbols may be useful
-
 
 #### Nodes of the Date-time type
 
@@ -125,17 +128,18 @@ The nodes of level 3 connected to `Long Text` include:
 
 #### Nodes of the Dictionary type
 
-The nodes of level 2 determine whether the Dictionary field is a `Dictionary of Positive Values`,  `Dictionary of Negative Values` or  `Dictionary of Unbounded Values`.
+The nodes of level 2 determine whether the Dictionary field is a `Dictionary of Non Positive Values`,  `Dictionary of Non Negative Values` or  `Dictionary of Unbounded Values`.
 
-The nodes of level 3 connected to `Dictionary of Positive Values` include:
+The nodes of level 3 connected to `Dictionary of Non Negative Values` include:
 
-* `Bag of Words`
-* `Bag of Words n-grams`
-* `Bag of Sequence n-grams`
-* `Bag of Items Count`
-* `Bag of Items Positive Amount`
+* Bag of sequence n-grams
+* Dictionary of Items Count
+* Dictionary of Items Positive Amount
+
 
 The nodes of level 4 include:
-* `Bag of Click type n-grams`
-* `Bag of Product category Count`
-* `Bag of Product category Positive Amount`
+* Bag of words n-grams
+* Bag of Click Type n-gram
+* Bag of diagnoses code n-grams
+* Dictionary of Product Category Count
+* Dictionary of Product Category Positive Amount
