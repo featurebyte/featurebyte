@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 import json
 from abc import abstractmethod
 
-from pydantic import Field, StrictStr
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.models.base import FeatureByteBaseModel

@@ -43,7 +43,6 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
 from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
 from featurebyte.logger import logger

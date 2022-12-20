@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 from abc import ABC
 from http import HTTPStatus
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
