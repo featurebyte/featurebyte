@@ -20,13 +20,11 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.model.table import AllTableDataT, ConstructNodeMixin, GenericTableData
+from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node.schema import TableDetails
 
 
-class AbstractTableDataFrame(
-    BaseFrame, ConstructNodeMixin, ConstructGraphMixin, FeatureByteBaseModel, ABC
-):
+class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseModel, ABC):
     """
     AbstractTableDataFrame class represents the table data as a frame (in query graph context).
     """

@@ -3,7 +3,9 @@ This module contains DatabaseSource related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+
+from abc import ABC
 
 from pydantic import Field, StrictStr
 
@@ -16,7 +18,6 @@ from featurebyte.models.base import (
 )
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import ConstructNodeMixin
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -72,7 +73,7 @@ class DataStatus(OrderedStrEnum):
 class ConstructGraphMixin:
     """ConstructGraphMixin class"""
 
-    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData
+    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @classmethod
     def construct_graph_and_node(
@@ -100,7 +101,7 @@ class ConstructGraphMixin:
         if graph is None:
             graph = QueryGraph()
 
-        table_data = cast(ConstructNodeMixin, cls._table_data_class(**table_data_dict))
+        table_data = cls._table_data_class(**table_data_dict)
         input_node = table_data.construct_input_node(  # pylint: disable=no-member
             feature_store_details=feature_store_details
         )
@@ -114,7 +115,7 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel):
+class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel, ABC):
     """
     DataModel schema
 
@@ -132,7 +133,7 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
     node_name: str = Field(default_factory=str)  # DEV-556: remove default factory
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
-    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData
+    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:

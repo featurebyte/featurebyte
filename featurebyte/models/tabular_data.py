@@ -20,7 +20,7 @@ DataModel = Annotated[
 ]
 
 
-class TabularDataModel(BaseDataModel):
+class TabularDataModel(BaseDataModel):  # pylint: disable=abstract-method
     """
     Pseudo Data class to support multiple data types.
     This class basically parses the persistent data model record & deserialized it into proper type.
