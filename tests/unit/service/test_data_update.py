@@ -147,10 +147,11 @@ async def test_update_columns_info(
 
 @pytest.mark.asyncio
 async def test_update_columns_info__critical_data_info(
-    data_update_service, event_data_service, event_data
+    data_update_service, event_data_service, event_data, entity
 ):
     """Test update_columns_info (critical data info)"""
     # prepare columns info by adding critical data info & removing all entity ids & semantic ids
+    _ = entity
     event_data_doc = event_data.dict()
     columns_info = event_data_doc["columns_info"]
     columns_info[0]["critical_data_info"] = {

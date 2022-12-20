@@ -167,7 +167,7 @@ class DataUpdateService(BaseService):
                 )
                 await service.update_document(
                     document_id=document_id,
-                    data=type(data)(graph=graph, node_name=node.name),
+                    data=type(data)(graph=graph, node_name=node.name),  # type: ignore
                 )
 
                 # update entity data reference
