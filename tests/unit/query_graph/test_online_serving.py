@@ -201,3 +201,26 @@ def test_online_store_feature_retrieval_sql__request_subquery(
         "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column(
+    global_graph, scd_lookup_feature_node, update_fixtures
+):
+    """
+    Test constructing feature retrieval sql for online store when request table is a subquery
+    """
+    df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
+    request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
+
+    sql = get_online_store_retrieval_sql(
+        request_table_expr=request_table_expr,
+        request_table_columns=["CUSTOMER_ID"],
+        graph=global_graph,
+        nodes=[scd_lookup_feature_node],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",
+        update_fixture=update_fixtures,
+    )
