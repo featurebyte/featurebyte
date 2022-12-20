@@ -19,12 +19,12 @@ jupyter-lab \
     --NotebookApp.allow_origin='*' \
     --NotebookApp.ip='0.0.0.0' \
     --allow-root \
-    --no-browser > /dev/null 2>&1 &
+    --no-browser &
 ln -s /app/.featurebyte/config.yaml /app/.featurebyte/notebook/config.yaml
 
 # Start serving docs
 echo "Starting docs server"
-uvicorn docs:app --host=0.0.0.0 --port=8089 --workers=2 --log-level=error > /dev/null &
+uvicorn docs:app --host=0.0.0.0 --port=8089 --workers=2 --log-level=error &
 
 while ! nc -zvw10 localhost 8089 1>/dev/null 2>&1; do echo "Waiting for local docs server to start"; sleep 2; done; echo "docs server is running"
 
