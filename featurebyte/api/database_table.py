@@ -3,7 +3,7 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Tuple, Type, cast
 
 from abc import ABC
 from http import HTTPStatus
@@ -32,7 +32,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
     row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple, exclude=True)
     column_lineage_map: Dict[str, Tuple[str, ...]] = Field(default_factory=dict, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-    _table_data_class: ClassVar[Optional[Type[AllTableDataT]]] = None
+    _table_data_class: ClassVar[Type[AllTableDataT]]
 
     @root_validator(pre=True)
     @classmethod
@@ -98,7 +98,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             values["columns_info"] = columns_info
 
         if "graph" not in values:
-            assert cls._table_data_class is not None
             graph = QueryGraph()
             table_data = cast(
                 ConstructNodeMixin, cls._table_data_class(**values)  # pylint: disable=not-callable

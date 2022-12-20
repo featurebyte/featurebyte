@@ -3,7 +3,7 @@ This module contains DatabaseSource related models
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, ClassVar, List, Optional, Type
 
 from pydantic import Field, StrictStr
 
@@ -75,6 +75,17 @@ class DataModel(BaseTableData, FeatureByteBaseDocumentModel):
     node_name: str = Field(default_factory=str)  # DEV-556: remove default factory
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
+    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData
+
+    def get_table_data(self) -> BaseTableData:
+        """
+        Get corresponding table data from the data model object
+
+        Returns
+        -------
+        BaseTableData
+        """
+        return self._table_data_class(**self.json_dict())
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
