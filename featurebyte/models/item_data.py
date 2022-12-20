@@ -3,12 +3,13 @@ This module contains ItemData related models
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional, Type
 
 from pydantic import validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import ItemTableData
 
 
@@ -37,6 +38,8 @@ class ItemDataModel(ItemTableData, DataModel):
     updated_at: Optional[datetime]
         Datetime when the ItemData object was last updated
     """
+
+    _table_data_class: ClassVar[Type[BaseTableData]] = ItemTableData
 
     @validator("record_creation_date_column")
     @classmethod

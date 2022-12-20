@@ -3,7 +3,7 @@ This module contains EventData related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type
 
 from datetime import datetime
 
@@ -13,6 +13,7 @@ from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import EventTableData
 
 
@@ -103,6 +104,7 @@ class EventDataModel(EventTableData, DataModel):
     """
 
     default_feature_job_setting: Optional[FeatureJobSetting]
+    _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
 
     @validator("event_timestamp_column", "record_creation_date_column")
     @classmethod
