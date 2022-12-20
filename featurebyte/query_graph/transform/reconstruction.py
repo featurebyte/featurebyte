@@ -79,8 +79,9 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
         pruned_input_node_name: str,
     ) -> Dict[str, Any]:
         table_details = None
+        valid_table_types = {TableDataType.EVENT_DATA, TableDataType.SCD_DATA}
         for node in dfs_traversal(graph, input_node):
-            if isinstance(node, InputNode) and node.parameters.type == TableDataType.EVENT_DATA:
+            if isinstance(node, InputNode) and node.parameters.type in valid_table_types:
                 # get the table details from the input node
                 table_details = node.parameters.table_details.dict()
                 break

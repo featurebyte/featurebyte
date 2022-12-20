@@ -73,6 +73,7 @@ def change_view_test_helper(snowflake_scd_data, change_view):
     assert len(change_view.columns_info) == 4
     assert change_view.timestamp_column == snowflake_scd_data.effective_timestamp_column
     assert change_view.natural_key_column == snowflake_scd_data.natural_key_column
+    assert change_view.columns == ["col_text", "event_timestamp", "new_col_int", "past_col_int"]
 
 
 def test_from_scd_data__no_default_job_setting(

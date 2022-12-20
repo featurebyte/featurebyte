@@ -439,7 +439,7 @@ class GroupBy(OpsMixin):
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
 
-        This aggregation is available to EventView and ItemView.
+        This aggregation is available to EventView, ItemView, and ChangeView.
 
         Parameters
         ----------

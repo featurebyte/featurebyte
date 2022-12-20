@@ -159,8 +159,8 @@ class ChangeView(View, GroupByMixin):
         # select the 4 cols we want to present
         change_view = change_view[
             [
-                scd_data.effective_timestamp_column,
-                column_to_track_changes,
+                change_view.natural_key_column,
+                change_view.effective_timestamp_column,
                 new_col_name,
                 past_col_name,
             ]
