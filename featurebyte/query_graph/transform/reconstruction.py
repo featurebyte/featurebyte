@@ -79,6 +79,8 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
 
         Parameters
         ----------
+        graph: QueryGraphModel
+            graph
         input_node: NodeT
             input node
 

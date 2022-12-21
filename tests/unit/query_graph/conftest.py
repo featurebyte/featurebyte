@@ -797,7 +797,9 @@ def get_scd_table_details_fixture():
 
 
 @pytest.fixture(name="graph_single_node_scd_data")
-def get_graph_single_node_scd_data_fixture(global_graph, scd_table_details):
+def get_graph_single_node_scd_data_fixture(
+    global_graph, scd_table_details, snowflake_feature_store_details_dict
+):
     """
     Query graph with a single node with SCD data
     """
@@ -807,15 +809,7 @@ def get_graph_single_node_scd_data_fixture(global_graph, scd_table_details):
             "type": "scd_data",
             "columns": ["column"],
             "table_details": scd_table_details.dict(),
-            "feature_store_details": {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
+            "feature_store_details": snowflake_feature_store_details_dict,
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -833,15 +827,7 @@ def get_graph_single_node_scd_data_fixture(global_graph, scd_table_details):
                 "type": "scd_data",
                 "columns": ["column"],
                 "table_details": scd_table_details.dict(),
-                "feature_store_details": {
-                    "type": "snowflake",
-                    "details": {
-                        "account": "sf_account",
-                        "warehouse": "sf_warehouse",
-                        "database": "db",
-                        "sf_schema": "public",
-                    },
-                },
+                "feature_store_details": snowflake_feature_store_details_dict,
                 "id": None,
                 "natural_key_column": None,
                 "surrogate_key_column": None,
@@ -870,7 +856,9 @@ def get_event_data_table_details_fixture():
 
 
 @pytest.fixture(name="graph_single_node")
-def query_graph_single_node(global_graph, event_data_table_details):
+def query_graph_single_node(
+    global_graph, event_data_table_details, snowflake_feature_store_details_dict
+):
     """
     Query graph with a single node
     """
@@ -880,15 +868,7 @@ def query_graph_single_node(global_graph, event_data_table_details):
             "type": "event_data",
             "columns": ["column"],
             "table_details": event_data_table_details.dict(),
-            "feature_store_details": {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "warehouse": "sf_warehouse",
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
+            "feature_store_details": snowflake_feature_store_details_dict,
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -906,15 +886,7 @@ def query_graph_single_node(global_graph, event_data_table_details):
                 "type": "event_data",
                 "columns": ["column"],
                 "table_details": event_data_table_details.dict(),
-                "feature_store_details": {
-                    "type": "snowflake",
-                    "details": {
-                        "account": "sf_account",
-                        "warehouse": "sf_warehouse",
-                        "database": "db",
-                        "sf_schema": "public",
-                    },
-                },
+                "feature_store_details": snowflake_feature_store_details_dict,
                 "timestamp_column": None,
                 "id": None,
                 "id_column": None,
