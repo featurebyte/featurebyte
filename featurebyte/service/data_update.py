@@ -22,6 +22,7 @@ from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
@@ -37,6 +38,7 @@ class DataUpdateService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
+        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.semantic_service = SemanticService(user=user, persistent=persistent)
         self.entity_service = EntityService(user=user, persistent=persistent)
 
@@ -149,12 +151,26 @@ class DataUpdateService(BaseService):
 
             async with self.persistent.start_transaction():
 
-                await service.update_document(
+                # update columns info
+                updated_data_doc = await service.update_document(
                     document_id=document_id,
                     data=type(data)(columns_info=data.columns_info),  # type: ignore
-                    return_document=False,
                 )
 
+                # update graph and node
+                feature_store = await self.feature_store_service.get_document(
+                    document_id=updated_data_doc.tabular_source.feature_store_id
+                )
+                graph, node = updated_data_doc.construct_graph_and_node(
+                    feature_store_details=feature_store.get_feature_store_details(),
+                    table_data_dict=updated_data_doc.json_dict(),
+                )
+                await service.update_document(
+                    document_id=document_id,
+                    data=type(data)(graph=graph, node_name=node.name),  # type: ignore
+                )
+
+                # update entity data reference
                 await self.update_entity_data_references(document, data)
 
     async def update_entity_data_references(

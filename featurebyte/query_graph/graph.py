@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, Union
+from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, cast
 
 from collections import defaultdict
 
@@ -12,6 +12,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -118,7 +119,7 @@ class QueryGraph(QueryGraphModel):
             regenerate_groupby_hash=regenerate_groupby_hash,
         )
 
-    def flatten(self) -> QueryGraphModel:
+    def flatten(self) -> GraphNodeNameMap:
         """
         Construct a query graph which flattened all the graph nodes of this query graph
 
@@ -128,31 +129,34 @@ class QueryGraph(QueryGraphModel):
         """
         return GraphFlatteningTransformer(graph=self).transform()
 
-    def add_node(self, node: Union[Node, GraphNode], input_nodes: List[Node]) -> Node:
+    def add_node(self, node: NodeT, input_nodes: List[Node]) -> NodeT:
         """
         Add graph node to the graph
 
         Parameters
         ----------
-        node: Union[Node, GraphNode]
+        node: NodeT
             Node to be inserted into the graph
         input_nodes: List[Node]
             Input nodes to the graph node
 
         Returns
         -------
-        Node
+        NodeT
         """
         if isinstance(node, GraphNode):
             node_output_type = node.output_node.output_type
         else:
             node_output_type = node.output_type
 
-        return self.add_operation(
-            node_type=node.type,
-            node_params=node.parameters.dict(),
-            node_output_type=node_output_type,
-            input_nodes=input_nodes,
+        return cast(
+            NodeT,
+            self.add_operation(
+                node_type=node.type,
+                node_params=node.parameters.dict(),
+                node_output_type=node_output_type,
+                input_nodes=input_nodes,
+            ),
         )
 
     def prepare_to_store(self, target_node: Node) -> Tuple[QueryGraphModel, str]:

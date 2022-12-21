@@ -19,6 +19,7 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@overload",
     "@abstractmethod",
+    "NotImplementedError",
 ]
 fail_under = 50
 show_missing = true

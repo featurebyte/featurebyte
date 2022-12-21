@@ -5,7 +5,7 @@ from typing import Dict
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer
@@ -18,7 +18,9 @@ class GraphFlatteningGlobalState(BaseModel):
     node_name_map: Dict[str, str] = Field(default_factory=dict)
 
 
-class GraphFlatteningTransformer(BaseGraphTransformer[QueryGraphModel, GraphFlatteningGlobalState]):
+class GraphFlatteningTransformer(
+    BaseGraphTransformer[GraphNodeNameMap, GraphFlatteningGlobalState]
+):
     """GraphFlatteningTransformer class"""
 
     @staticmethod
@@ -26,7 +28,7 @@ class GraphFlatteningTransformer(BaseGraphTransformer[QueryGraphModel, GraphFlat
         global_state: GraphFlatteningGlobalState, node: BaseGraphNode
     ) -> None:
         # flatten the nested graph first before inserting those nested graph nodes back to global one
-        nested_flat_graph = GraphFlatteningTransformer(graph=node.parameters.graph).transform()
+        nested_flat_graph, _ = GraphFlatteningTransformer(graph=node.parameters.graph).transform()
         nested_node_name_map: Dict[str, str] = {}  # nested-node-name => graph-node-name
         for nested_node in nested_flat_graph.iterate_sorted_nodes():
             input_nodes = []
@@ -65,14 +67,14 @@ class GraphFlatteningTransformer(BaseGraphTransformer[QueryGraphModel, GraphFlat
             )
             global_state.node_name_map[node.name] = inserted_node.name
 
-    def transform(self) -> QueryGraphModel:
+    def transform(self) -> GraphNodeNameMap:
         """
         Transform the graph by flattening all the nested graph.
 
         Returns
         -------
-        QueryGraphModel
+        GraphNodeNameMap
         """
         global_state = GraphFlatteningGlobalState()
         self._transform(global_state=global_state)
-        return global_state.graph
+        return global_state.graph, global_state.node_name_map

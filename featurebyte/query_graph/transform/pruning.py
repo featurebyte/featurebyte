@@ -105,7 +105,11 @@ class GraphPruningExtractor(
             graph=nested_graph, node_name_map=node_name_map, node_name=output_node_name
         )
         return node.clone(
-            parameters={"graph": pruned_graph, "output_node_name": node_name_map[output_node_name]}
+            parameters={
+                "graph": pruned_graph,
+                "output_node_name": node_name_map[output_node_name],
+                "type": node.parameters.type,
+            }
         )
 
     def _post_compute(

@@ -202,14 +202,16 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     query_graph = QueryGraph()
     inserted_input_node = query_graph.add_node(node=event_input_node, input_nodes=[])
     graph_node = event_table_data.construct_cleaning_recipe_node(input_node=inserted_input_node)
-    query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
+    output_node = query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
     # flatten the graph
-    flat_graph = GraphFlatteningTransformer(graph=query_graph).transform()
+    flat_graph, flat_node_name_map = GraphFlatteningTransformer(graph=query_graph).transform()
 
     # generate query
     graph_interpreter = GraphInterpreter(query_graph=flat_graph, source_type=SourceType.SNOWFLAKE)
-    output = graph_interpreter.construct_preview_sql(node_name="assign_1", num_rows=10)
+    output = graph_interpreter.construct_preview_sql(
+        node_name=flat_node_name_map[output_node.name], num_rows=10
+    )
     assert (
         output
         == textwrap.dedent(

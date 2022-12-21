@@ -3,7 +3,7 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from abc import ABC
 from http import HTTPStatus
@@ -16,14 +16,15 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import AllTableDataT, ConstructNodeMixin, GenericTableData
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
+from featurebyte.query_graph.node.schema import TableDetails
 
 
-class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
+class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseModel, ABC):
     """
     AbstractTableDataFrame class represents the table data as a frame (in query graph context).
     """
@@ -96,31 +97,23 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             ]
             values["columns_info"] = columns_info
 
-        if "graph" not in values:
-            graph = QueryGraph()
-            table_data = cast(
-                ConstructNodeMixin, cls._table_data_class(**values)  # pylint: disable=not-callable
+        # check whether the graph exists or whether the graph is empty (means nodes is empty)
+        if "graph" not in values or not QueryGraphModel(**dict(values["graph"])).nodes:
+            graph, node = cls.construct_graph_and_node(
+                feature_store_details=feature_store.get_feature_store_details(),
+                table_data_dict=values,
             )
-            input_node = table_data.construct_input_node(
-                feature_store_details=FeatureStoreDetails(**feature_store.dict())
-            )
-            inserted_node = graph.add_node(node=input_node, input_nodes=[])
             values["graph"] = graph
-            values["node_name"] = inserted_node.name
+            values["node_name"] = node.name
 
         return values
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        node = GlobalQueryGraph().add_node(
-            self.construct_input_node(
-                feature_store_details=FeatureStoreDetails(**self.feature_store.dict())
-            ),
-            input_nodes=[],
-        )
-        self.node_name = node.name
+        _, node_name_map = GlobalQueryGraph().load(self.graph)
+        self.node_name = node_name_map[self.node_name]
         for col in self.columns:
-            self.column_lineage_map[col] = (node.name,)
+            self.column_lineage_map[col] = (self.node_name,)
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):

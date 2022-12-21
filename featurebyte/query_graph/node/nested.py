@@ -6,7 +6,7 @@ from typing import List, Literal, Sequence, cast
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
@@ -52,6 +52,7 @@ class GraphNodeParameters(BaseModel):
 
     graph: "QueryGraphModel"  # type: ignore[name-defined]
     output_node_name: str
+    type: GraphNodeType
 
 
 class BaseGraphNode(BaseNode):

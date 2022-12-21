@@ -835,10 +835,9 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
-        insert_id = response_dict["_id"]
 
         update_response = test_api_client.patch(
-            f"{self.base_route}/{insert_id}",
+            f"{self.base_route}/{response_dict['_id']}",
             json={"record_creation_date_column": "another_created_at"},
         )
         update_response_dict = update_response.json()
@@ -849,6 +848,34 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         expected_response.pop("updated_at")
         assert update_response_dict.items() > expected_response.items()
         assert update_response_dict["updated_at"] is not None
+
+    def test_update_columns_info(self, test_api_client_persistent, data_response, columns_info):
+        """Test update columns info"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        graph_nodes = response_dict["graph"]["nodes"]
+        assert len(graph_nodes) == 1
+        assert graph_nodes[0]["name"] == "input_1"
+
+        # modify current_value's critical data info
+        current_value_info = columns_info[-2]
+        assert current_value_info["name"] == "current_value"
+        current_value_info["critical_data_info"] = {
+            "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+        }
+        columns_info[-2] = current_value_info
+
+        # update critical data info
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}",
+            json={"columns_info": columns_info},
+        )
+        update_response_dict = update_response.json()
+        assert update_response.status_code == HTTPStatus.OK
+        updated_graph_nodes = update_response_dict["graph"]["nodes"]
+        assert len(updated_graph_nodes) == 2
+        assert updated_graph_nodes[0] == graph_nodes[0]
+        assert updated_graph_nodes[1]["name"] == "graph_1"
 
     def test_update_422(
         self,

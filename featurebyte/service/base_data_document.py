@@ -8,11 +8,8 @@ from typing import Any, Optional, TypeVar, cast
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import UniqueConstraintResolutionSignature
-from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.feature_store import ConstructGraphMixin, DataStatus
 from featurebyte.models.persistent import QueryFilter
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.table import ConstructNodeMixin, SpecificTableData
-from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.tabular_data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -119,19 +116,17 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         payload_dict = {**data.json_dict(), "_id": data_doc_id}
 
         # create graph & node
-        graph = QueryGraph()
-        table_data = cast(ConstructNodeMixin, SpecificTableData(**payload_dict))
-        input_node = table_data.construct_input_node(  # pylint: disable=no-member
-            feature_store_details=FeatureStoreDetails(**feature_store.dict())
+        graph, node = cast(ConstructGraphMixin, self.document_class).construct_graph_and_node(
+            feature_store_details=feature_store.get_feature_store_details(),
+            table_data_dict=payload_dict,
         )
-        inserted_node = graph.add_node(node=input_node, input_nodes=[])
 
         # create document for insertion
         document = self.document_class(
             user_id=self.user.id,
             status=DataStatus.DRAFT,
             graph=graph,
-            node_name=inserted_node.name,
+            node_name=node.name,
             **payload_dict,
         )
 
