@@ -125,8 +125,8 @@ class BaseTableData(FeatureByteBaseModel):
         Optional[GraphNode]
         """
         graph_node: Optional[GraphNode] = None
-        frame_node: Optional[Node] = None
         proxy_input_nodes: List[BaseNode] = []
+        frame_node: Node
         for col_info in self._iterate_column_info_with_cleaning_operations():
             if graph_node is None:
                 graph_node, proxy_input_nodes = GraphNode.create(
