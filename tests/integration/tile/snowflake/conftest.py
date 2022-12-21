@@ -47,4 +47,4 @@ async def tile_task_online_store_prep(snowflake_session):
     yield tile_id, feature_store_table_name, feature_name, entity_col_names
 
     await snowflake_session.execute_query("DELETE FROM TILE_FEATURE_MAPPING")
-    await snowflake_session.execute_query(f"DROP TABLE {feature_store_table_name}")
+    await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {feature_store_table_name}")

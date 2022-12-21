@@ -59,6 +59,79 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep):
     result = await snowflake_session.execute_query(sql)
     assert result["COUNT"].iloc[0] == 2
 
+    # verify tile job monitor
+    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 4
+    assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
+
+    session_id = result["SESSION_ID"].iloc[0]
+    assert result["SESSION_ID"].tolist() == [session_id, session_id, session_id, session_id]
+    assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
+    assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
+    assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
+
+
+@pytest.mark.asyncio
+async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep):
+    """
+    Test the stored procedure of generating tiles
+    """
+
+    tile_id, feature_store_table_name, _, _ = tile_task_prep
+
+    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
+    value_col_names = "VALUE"
+    table_name = "TEMP_TABLE"
+    tile_monitor = 10
+    tile_end_ts = "2022-06-05T23:58:00Z"
+    tile_sql = (
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
+        f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
+        f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
+    )
+
+    # simulate error for the stored procedure to stop half way
+    await snowflake_session.execute_query(
+        "ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID to TILE_ID_TEMP"
+    )
+    sql = f"""
+        call SP_TILE_GENERATE_SCHEDULE(
+          '{tile_id}',
+          183,
+          3,
+          5,
+          1440,
+          '{tile_sql}',
+          '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
+          '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
+          '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
+          '{entity_col_names}',
+          '{value_col_names}',
+          'ONLINE',
+          {tile_monitor},
+          '{tile_end_ts}'
+        )
+        """
+
+    try:
+        await snowflake_session.execute_query(sql)
+    except:
+        await snowflake_session.execute_query(
+            "ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID_TEMP to TILE_ID"
+        )
+
+    # verify tile job monitor
+    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 2
+    assert result["STATUS"].tolist() == ["STARTED", "MONITORED"]
+
+    session_id = result["SESSION_ID"].iloc[0]
+    assert result["SESSION_ID"].tolist() == [session_id, session_id]
+    assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
+
 
 @pytest.mark.asyncio
 async def test_schedule_monitor_tile_online(snowflake_session):
