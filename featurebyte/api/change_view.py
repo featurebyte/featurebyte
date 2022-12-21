@@ -232,7 +232,7 @@ class ChangeView(View, GroupByMixin):
         )
         # We type:ignore these assignments as the right side variable has wrong type hints. We're looking to fix
         # this in DEV-918.
-        change_view[new_col_name] = change_view[track_changes_column]  # type: ignore
+        change_view[new_col_name] = change_view[track_changes_column]
         change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)  # type: ignore
 
         # select the 4 cols we want to present

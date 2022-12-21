@@ -3,7 +3,7 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, TypeVar, Union
 
 import pandas as pd
 from pydantic import Field, root_validator
@@ -17,6 +17,8 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.util import append_to_lineage
+
+FrameTypeT = TypeVar("FrameTypeT")
 
 
 class BaseFrame(QueryObject, SampleMixin):
@@ -161,7 +163,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
+    def __getitem__(self: FrameTypeT, item: Union[str, List[str], Series]) -> FrameTypeT:
         """
         Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
         column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
