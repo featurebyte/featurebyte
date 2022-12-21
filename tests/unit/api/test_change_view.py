@@ -144,3 +144,19 @@ def test_from_scd_data__with_default_job_setting(snowflake_scd_data):
     change_view = ChangeView.from_scd_data(snowflake_scd_data, "col_int", job_setting_provided)
     assert change_view.default_feature_job_setting == job_setting_provided
     change_view_test_helper(snowflake_scd_data, change_view)
+
+
+def test_update_feature_job_setting(snowflake_change_view):
+    """
+    Test update feature job setting
+    """
+    # Assert that a feature job setting exists
+    assert snowflake_change_view.default_feature_job_setting is not None
+
+    new_feature_job_setting = FeatureJobSetting(
+        blind_spot="15m",
+        time_modulo_frequency="30m",
+        frequency="1h",
+    )
+    snowflake_change_view.update_default_feature_job_setting(new_feature_job_setting)
+    assert snowflake_change_view.default_feature_job_setting == new_feature_job_setting
