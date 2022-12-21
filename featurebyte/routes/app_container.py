@@ -564,4 +564,6 @@ class AppContainer:
             storage=storage,
             app_config=app_container_config,
         )
-        return app_container.get_instance_map()
+        # Call this to build the instance map if it's not built
+        app_container.get_instance_map()
+        return app_container
