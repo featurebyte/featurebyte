@@ -357,17 +357,25 @@ class AppContainer:
         self.persistent = persistent
         self.temp_storage = temp_storage
         self.task_manager = task_manager
-        self.temp_storage = storage
+        self.storage = storage
         self.app_config = app_config
 
         # validate that there are no clashing names
         AppContainer.validate_configs(app_config)
 
     def __getattr__(self, key: str) -> Any:
-        return self.instance_map[key]
+        return AppContainer.cached_instance_map[key]
 
     @staticmethod
     def validate_configs(app_config: Dict[str, Any]) -> None:
+        """
+        Validate configs
+
+        Parameters
+        ----------
+        app_config: Dict[str, Any]
+            app config we want to build the container around
+        """
         # validate that there are no clashing names
         seen_names = set()
         for definitions in app_config.values():
@@ -483,6 +491,14 @@ class AppContainer:
         return instance_map
 
     def build_instance_map(self) -> Dict[str, Any]:
+        """
+        Build instance map
+
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
         # Note that the order of operations here is important. Objects that get built later can depend on
         # objects that were instantiated earlier.
         instance_map = self.seed_map()
@@ -490,8 +506,26 @@ class AppContainer:
         instance_map = self.build_services(instance_map)
         instance_map = self.build_services_with_other_deps(instance_map)
         instance_map = self.build_controllers(instance_map)
+
+        # Cache the map for future use
         AppContainer.cached_instance_map = instance_map
-        return instance_map
+
+        return AppContainer.cached_instance_map
+
+    def get_instance_map(self) -> Dict[str, Any]:
+        """
+        Get instance map
+
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
+        # Use cached map if it's already present
+        if len(AppContainer.cached_instance_map) > 0:
+            return AppContainer.cached_instance_map
+
+        return self.build_instance_map()
 
     @classmethod
     def get_instance(
@@ -522,15 +556,12 @@ class AppContainer:
         -------
         AppContainer instance
         """
-        # Use cached map if it's already present
-        if len(AppContainer.instance_map) > 0:
-            return AppContainer.cached_instance_map
-
-        return AppContainer(
+        app_container = AppContainer(
             user=user,
             persistent=persistent,
             temp_storage=temp_storage,
             task_manager=task_manager,
             storage=storage,
             app_config=app_container_config,
-        ).build_instance_map()
+        )
+        return app_container.get_instance_map()
