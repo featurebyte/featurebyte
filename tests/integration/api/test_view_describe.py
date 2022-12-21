@@ -17,7 +17,6 @@ def test_event_view_describe(snowflake_event_data):
     """
     event_view = EventView.from_event_data(snowflake_event_data)
     describe_df = event_view.describe()
-    print(describe_df)
     assert describe_df.columns.tolist() == [
         "EVENT_TIMESTAMP",
         "CREATED_AT",
@@ -31,6 +30,7 @@ def test_event_view_describe(snowflake_event_data):
     assert describe_df.index.tolist() == [
         "unique",
         "% missing",
+        "entropy",
         "top",
         "freq",
         "mean",
@@ -42,12 +42,12 @@ def test_event_view_describe(snowflake_event_data):
         "max",
     ]
 
-    assert describe_df.shape == (11, 8)
+    assert describe_df.shape == (12, 8)
     assert describe_df.EVENT_TIMESTAMP["min"] == "2001-01-01T00:23:02.000349000"
     assert describe_df.EVENT_TIMESTAMP["max"] == "2002-01-01T22:43:16.000409000"
 
 
-def test_event_view_sample_with_date_range(snowflake_event_data):
+def test_event_view_describe_with_date_range(snowflake_event_data):
     """
     Test describe for EventView with date range
     """
@@ -57,7 +57,7 @@ def test_event_view_sample_with_date_range(snowflake_event_data):
         "to_timestamp": "2001-10-14",
     }
     describe_df = event_view.describe(**sample_params)
-    assert describe_df.shape == (11, 8)
+    assert describe_df.shape == (12, 8)
     assert describe_df.EVENT_TIMESTAMP["min"] == "2001-10-10T00:15:16.000751000"
     assert describe_df.EVENT_TIMESTAMP["max"] == "2001-10-13T23:50:48.000003000"
 
@@ -65,7 +65,7 @@ def test_event_view_sample_with_date_range(snowflake_event_data):
     col_describe_df = event_view["TRANSACTION_ID"].describe(**sample_params)
     assert_series_equal(
         col_describe_df["TRANSACTION_ID"],
-        describe_df["TRANSACTION_ID"][["unique", "% missing", "top", "freq"]],
+        describe_df["TRANSACTION_ID"][["unique", "% missing", "entropy", "top", "freq"]],
     )
 
     # describe single numeric column

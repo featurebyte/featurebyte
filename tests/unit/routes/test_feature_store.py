@@ -379,7 +379,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         expected_df = pd.DataFrame(
             {
                 "event_timestamp": [
-                    20,
+                    5,
+                    1.0,
                     np.NaN,
                     np.NaN,
                     np.NaN,
@@ -391,11 +392,25 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                     0.357,
                     1.327,
                 ],
-                "col_text": [10, 5, "a", 5, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN, np.NaN],
+                "col_text": [
+                    5,
+                    3.0,
+                    0.123,
+                    "a",
+                    5,
+                    np.NaN,
+                    np.NaN,
+                    np.NaN,
+                    np.NaN,
+                    np.NaN,
+                    np.NaN,
+                    np.NaN,
+                ],
             },
             index=[
-                "count",
                 "unique",
+                "% missing",
+                "entropy",
                 "top",
                 "freq",
                 "mean",
@@ -408,32 +423,37 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         )
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = pd.DataFrame(
-            {
-                "a_count": [20],
-                "a_unique": [np.NaN],
-                "a_top": [np.NaN],
-                "a_freq": [np.NaN],
-                "a_mean": [0.256],
-                "a_std": [0.00123],
-                "a_min": [0],
-                "a_p25": [0.01],
-                "a_p50": [0.155],
-                "a_p75": [0.357],
-                "a_max": [1.327],
-                "b_count": [10],
-                "b_unique": [5],
-                "b_top": ["a"],
-                "b_freq": [5],
-                "b_mean": [np.NaN],
-                "b_std": [np.NaN],
-                "b_min": [np.NaN],
-                "b_p25": [np.NaN],
-                "b_p50": [np.NaN],
-                "b_p75": [np.NaN],
-                "b_max": [np.NaN],
-            }
-        )
+        mock_session.execute_query.side_effect = [
+            pd.DataFrame({"event_timestamp": [1], "col_text": ["a"]}),
+            pd.DataFrame(
+                {
+                    "a_unique": [5],
+                    "a_% missing": [1.0],
+                    "a_entropy": [np.NaN],
+                    "a_top": [np.NaN],
+                    "a_freq": [np.NaN],
+                    "a_mean": [0.256],
+                    "a_std": [0.00123],
+                    "a_min": [0],
+                    "a_p25": [0.01],
+                    "a_p50": [0.155],
+                    "a_p75": [0.357],
+                    "a_max": [1.327],
+                    "b_unique": [5],
+                    "b_% missing": [3.0],
+                    "b_entropy": [0.123],
+                    "b_top": ["a"],
+                    "b_freq": [5],
+                    "b_mean": [np.NaN],
+                    "b_std": [np.NaN],
+                    "b_min": [np.NaN],
+                    "b_p25": [np.NaN],
+                    "b_p50": [np.NaN],
+                    "b_p75": [np.NaN],
+                    "b_max": [np.NaN],
+                }
+            ),
+        ]
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][0]["parameters"]["columns"] = [
@@ -454,26 +474,30 @@ class TestFeatureStoreApi(BaseApiTestSuite):
 
         expected_df = pd.DataFrame(
             {
-                "event_timestamp": [20, 0.256, 0.00123, 0, 0.01, 0.155, 0.357, 1.327],
+                "event_timestamp": [20, 1.0, 0.256, 0.00123, 0, 0.01, 0.155, 0.357, 1.327],
             },
-            index=["count", "mean", "std", "min", "25%", "50%", "75%", "max"],
+            index=["unique", "% missing", "mean", "std", "min", "25%", "50%", "75%", "max"],
         )
         mock_session = mock_get_session.return_value
-        mock_session.execute_query.return_value = pd.DataFrame(
-            {
-                "a_count": [20],
-                "a_unique": [np.NaN],
-                "a_top": [np.NaN],
-                "a_freq": [np.NaN],
-                "a_mean": [0.256],
-                "a_std": [0.00123],
-                "a_min": [0],
-                "a_p25": [0.01],
-                "a_p50": [0.155],
-                "a_p75": [0.357],
-                "a_max": [1.327],
-            }
-        )
+        mock_session.execute_query.side_effect = [
+            pd.DataFrame({"event_timestamp": [1]}),
+            pd.DataFrame(
+                {
+                    "a_unique": [20],
+                    "a_% missing": [1.0],
+                    "a_entropy": [np.NaN],
+                    "a_top": [np.NaN],
+                    "a_freq": [np.NaN],
+                    "a_mean": [0.256],
+                    "a_std": [0.00123],
+                    "a_min": [0],
+                    "a_p25": [0.01],
+                    "a_p50": [0.155],
+                    "a_p75": [0.357],
+                    "a_max": [1.327],
+                }
+            ),
+        ]
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][0]["parameters"]["columns"] = [

@@ -3,15 +3,18 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, List, Optional
+from typing import OrderedDict as OrderedDictT
+from typing import Set, Tuple, cast
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
 from sqlglot import expressions, parse_one
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -411,6 +414,235 @@ class GraphInterpreter:
             expression=order_expr,
         )
 
+    @property
+    def stats_expressions(self) -> OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]]:
+        """
+        Ordered dictionary of stats name and stats expression function and applicable data types
+
+        Returns
+        -------
+        OrderedDict[str, Tuple[Any, Optional[Set[DBVarType]]]]
+        """
+        stats_expressions: OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]] = OrderedDict()
+        stats_expressions["unique"] = (
+            lambda col_expr, _: expressions.Count(
+                this=expressions.Distinct(expressions=[col_expr])
+            ),
+            None,
+        )
+        stats_expressions["% missing"] = (
+            lambda col_expr, _: expressions.Mul(
+                this=expressions.Paren(
+                    this=expressions.Sub(
+                        this=make_literal_value(1.0),
+                        expression=expressions.Div(
+                            this=expressions.Count(this=[col_expr]),
+                            expression=expressions.Count(this=[make_literal_value("*")]),
+                        ),
+                    ),
+                ),
+                expression=make_literal_value(100),
+            ),
+            None,
+        )
+        stats_expressions["entropy"] = (None, {DBVarType.CHAR})
+        stats_expressions["top"] = (
+            lambda col_expr, _: expressions.Anonymous(this="MODE", expressions=[col_expr]),
+            {DBVarType.CHAR},
+        )
+        stats_expressions["freq"] = (
+            lambda col_expr, column_idx: expressions.Anonymous(
+                this="COUNT_IF",
+                expressions=[
+                    expressions.EQ(
+                        this=col_expr,
+                        expression=expressions.Column(
+                            this=quoted_identifier(f"mode__{column_idx}"),
+                            table="mode_values",
+                        ),
+                    )
+                ],
+            ),
+            {DBVarType.CHAR},
+        )
+        stats_expressions["mean"] = (
+            lambda col_expr, _: expressions.Avg(
+                this=expressions.Anonymous(this="TO_DOUBLE", expressions=[col_expr])
+            ),
+            {DBVarType.FLOAT, DBVarType.INT},
+        )
+        stats_expressions["std"] = (
+            lambda col_expr, _: expressions.Stddev(
+                this=expressions.Anonymous(this="TO_DOUBLE", expressions=[col_expr])
+            ),
+            {DBVarType.FLOAT, DBVarType.INT},
+        )
+        stats_expressions["min"] = (
+            lambda col_expr, _: expressions.Min(this=col_expr),
+            {
+                DBVarType.FLOAT,
+                DBVarType.INT,
+                DBVarType.TIMESTAMP,
+                DBVarType.DATE,
+                DBVarType.TIME,
+                DBVarType.TIMEDELTA,
+            },
+        )
+        stats_expressions["25%"] = (
+            lambda col_expr, _: self._percentile_expr(col_expr, 0.25),
+            {DBVarType.FLOAT, DBVarType.INT},
+        )
+        stats_expressions["50%"] = (
+            lambda col_expr, _: self._percentile_expr(col_expr, 0.5),
+            {DBVarType.FLOAT, DBVarType.INT},
+        )
+        stats_expressions["75%"] = (
+            lambda col_expr, _: self._percentile_expr(col_expr, 0.75),
+            {DBVarType.FLOAT, DBVarType.INT},
+        )
+        stats_expressions["max"] = (
+            lambda col_expr, _: expressions.Max(this=col_expr),
+            {
+                DBVarType.FLOAT,
+                DBVarType.INT,
+                DBVarType.TIMESTAMP,
+                DBVarType.DATE,
+                DBVarType.TIME,
+                DBVarType.TIMEDELTA,
+            },
+        )
+        return stats_expressions
+
+    def _construct_stats_sql(
+        self, sql_tree: expressions.Expression, column_names: List[str], dtypes: List[Any]
+    ) -> expressions.Expression:
+        """
+        Construct sql to retrieve statistics for an SQL view
+
+        Parameters
+        ----------
+        sql_tree: expressions.Expression
+            SQL Expression to describe
+        column_names: List[str]
+            List of column names
+        dtypes: List[Any]
+            List of column dtypes
+
+        Returns
+        -------
+        expressions.Expression
+        """
+        cte_statements = [("data", sql_tree)]
+
+        # get modes
+        stats_selections = []
+        mode_selections = []
+        entropy_tables = []
+        final_selections = []
+        for column_idx, (column_name, dtype) in enumerate(zip(column_names, dtypes)):
+            col_expr = quoted_identifier(column_name)
+
+            # temporary type detection
+            data_type = DBVarType.CHAR
+            if np.issubdtype(dtype, np.number):
+                data_type = DBVarType.FLOAT
+            elif np.issubdtype(dtype, np.datetime64):
+                data_type = DBVarType.TIMESTAMP
+
+            if data_type == DBVarType.CHAR:
+                # compute mode values
+                mode_selections.append(
+                    expressions.alias_(
+                        self.stats_expressions["top"][0](col_expr, column_idx),
+                        f"mode__{column_idx}",
+                        quoted=True,
+                    )
+                )
+                # counts
+                cat_counts = (
+                    expressions.select(
+                        col_expr,
+                        expressions.alias_(
+                            expressions.Count(this=make_literal_value("*")),
+                            alias="COUNTS",
+                            quoted=True,
+                        ),
+                    )
+                    .from_("data")
+                    .group_by(col_expr)
+                )
+                table_name = f"entropy__{column_idx}"
+                cte_statements.append(
+                    (
+                        table_name,
+                        expressions.select(
+                            expressions.alias_(
+                                expression=expressions.Anonymous(
+                                    this="F_COUNT_DICT_ENTROPY",
+                                    expressions=[
+                                        expressions.Anonymous(
+                                            this="object_agg",
+                                            expressions=[col_expr, quoted_identifier("COUNTS")],
+                                        )
+                                    ],
+                                ),
+                                alias=f"entropy__{column_idx}",
+                                quoted=True,
+                            )
+                        ).from_(expressions.Subquery(this=cat_counts, alias="cat_counts")),
+                    )
+                )
+                entropy_tables.append(table_name)
+
+            # stats
+            for stats_name, (stats_func, applicable_dtypes) in self.stats_expressions.items():
+                if stats_func:
+                    if not applicable_dtypes or data_type in applicable_dtypes:
+                        stats_selections.append(
+                            expressions.alias_(
+                                stats_func(col_expr, column_idx),
+                                f"{stats_name}__{column_idx}",
+                                quoted=True,
+                            ),
+                        )
+                    else:
+                        stats_selections.append(
+                            self._empty_value_expr(f"{stats_name}__{column_idx}")
+                        )
+
+                if stats_name == "entropy":
+                    entropy_name = f"entropy__{column_idx}"
+                    final_selections.append(
+                        (
+                            expressions.Column(
+                                this=quoted_identifier(entropy_name), table=entropy_name
+                            )
+                        )
+                        if entropy_name in entropy_tables
+                        else self._empty_value_expr(entropy_name)
+                    )
+                else:
+                    final_selections.append(
+                        expressions.Column(
+                            this=quoted_identifier(f"{stats_name}__{column_idx}"), table="stats"
+                        )
+                    )
+
+        # get statistics
+        sql_tree = expressions.select(*stats_selections).from_("data")
+        if mode_selections:
+            # get mode values
+            cte_statements.append(
+                ("mode_values", expressions.select(*mode_selections).from_("data").limit(1))
+            )
+            sql_tree = sql_tree.join(expression="mode_values", join_type="LEFT")
+        cte_statements.append(("stats", sql_tree))
+
+        sql_tree = construct_cte_sql(cte_statements).select(*final_selections).from_("stats")
+        for table_name in entropy_tables:
+            sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+        return sql_tree
+
     def construct_describe_sql(
         self,
         dtypes: List[Any],
@@ -462,137 +694,11 @@ class GraphInterpreter:
             timestamp_column=timestamp_column,
         )
 
-        # get modes
-        selections = []
-        for column_name, dtype in zip(column_names, dtypes):
-            column_expr = quoted_identifier(column_name)
-            selections.append(
-                expressions.alias_(
-                    (
-                        expressions.Anonymous(this="MODE", expressions=[column_expr])
-                        if not np.issubdtype(dtype, np.number)
-                        else make_literal_value(None)
-                    ),
-                    f"mode__{column_name}",
-                    quoted=True,
-                )
-            )
-
-        cte_context = construct_cte_sql(
-            [
-                ("data", sql_tree),
-                ("mode_values", expressions.select(*selections).from_("data").limit(1)),
-            ]
+        sql_tree = self._construct_stats_sql(
+            sql_tree=sql_tree, column_names=column_names, dtypes=dtypes
         )
-
-        stats_names = [
-            "unique",
-            "% missing",
-            "top",
-            "freq",
-            "mean",
-            "std",
-            "min",
-            "25%",
-            "50%",
-            "75%",
-            "max",
-        ]
-        selections = []
-        for column_name, dtype in zip(column_names, dtypes):
-            column_expr = quoted_identifier(column_name)
-
-            # unique, % missing
-            selections.extend(
-                [
-                    expressions.Count(this=expressions.Distinct(expressions=[column_expr])),
-                    expressions.Mul(
-                        this=expressions.Paren(
-                            this=expressions.Sub(
-                                this=make_literal_value(1.0),
-                                expression=expressions.Div(
-                                    this=expressions.Count(this=[column_expr]),
-                                    expression=expressions.Count(this=[make_literal_value("*")]),
-                                ),
-                            ),
-                        ),
-                        expression=make_literal_value(100),
-                    ),
-                ]
-            )
-
-            # top, freq
-            if not np.issubdtype(dtype, np.number):
-                selections.extend(
-                    [
-                        expressions.Anonymous(this="MODE", expressions=[column_expr]),
-                        expressions.Anonymous(
-                            this="COUNT_IF",
-                            expressions=[
-                                expressions.EQ(
-                                    this=column_expr,
-                                    expression=expressions.Column(
-                                        this=quoted_identifier(f"mode__{column_name}"),
-                                        table="mode_values",
-                                    ),
-                                )
-                            ],
-                        ),
-                    ]
-                )
-            else:
-                selections.extend(
-                    [
-                        self._empty_value_expr(f"top__{column_name}"),
-                        self._empty_value_expr(f"freq__{column_name}"),
-                    ]
-                )
-
-            # mean, std, min, 25%, 50%, 75%, max
-            if np.issubdtype(dtype, np.number):
-                converted_float_column = expressions.Anonymous(
-                    this="TO_DOUBLE", expressions=[column_expr]
-                )
-                selections.extend(
-                    [
-                        expressions.Anonymous(this="AVG", expressions=[converted_float_column]),
-                        expressions.Anonymous(this="STDDEV", expressions=[converted_float_column]),
-                        expressions.Anonymous(this="MIN", expressions=[column_expr]),
-                        self._percentile_expr(column_expr, 0.25),
-                        self._percentile_expr(column_expr, 0.5),
-                        self._percentile_expr(column_expr, 0.75),
-                        expressions.Anonymous(this="MAX", expressions=[column_expr]),
-                    ]
-                )
-            else:
-                selections.extend(
-                    [
-                        self._empty_value_expr(f"mean__{column_name}"),
-                        self._empty_value_expr(f"std__{column_name}"),
-                        (
-                            expressions.Anonymous(this="MIN", expressions=[column_expr])
-                            if np.issubdtype(dtype, np.datetime64)
-                            else self._empty_value_expr(f"min__{column_name}")
-                        ),
-                        self._empty_value_expr(f"25%__{column_name}"),
-                        self._empty_value_expr(f"50%__{column_name}"),
-                        self._empty_value_expr(f"75%__{column_name}"),
-                        (
-                            expressions.Anonymous(this="MAX", expressions=[column_expr])
-                            if np.issubdtype(dtype, np.datetime64)
-                            else self._empty_value_expr(f"max__{column_name}")
-                        ),
-                    ]
-                )
-
-        sql_tree = (
-            cte_context.select(*selections)
-            .from_("data")
-            .join(expression="mode_values", join_type="LEFT")
-        )
-
         return (
             sql_to_string(sql_tree, source_type=self.source_type),
-            stats_names,
+            list(self.stats_expressions.keys()),
             column_names,
         )
