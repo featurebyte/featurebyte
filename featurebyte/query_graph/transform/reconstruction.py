@@ -69,6 +69,55 @@ class BasePruningSensitiveNode(BaseNode):
 class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
     """An extended GroupbyNode that implements the derive_parameters_post_prune method"""
 
+    @staticmethod
+    def _get_table_details(graph: QueryGraphModel, input_node: NodeT) -> Dict[str, Any]:
+        """
+        Helper method to get table details.
+
+        When there are both EventData and SlowlyChangingDimension, then the feature is being created on an EventView
+        joined with SCDView. In that case, the table detail should retrieve the event data's details.
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            graph
+        input_node: NodeT
+            input node
+
+        Returns
+        -------
+        Dict[str, Any]
+            dict representation of the table details
+
+        Raises
+        ------
+        ValueError
+            raised when we are unable to find the table details
+        """
+        event_table_details = None
+        scd_table_details = None
+        valid_table_types = {TableDataType.EVENT_DATA, TableDataType.SCD_DATA}
+        for node in dfs_traversal(graph, input_node):
+            if isinstance(node, InputNode) and node.parameters.type in valid_table_types:
+                # get the table details from the input node
+                table_details = node.parameters.table_details.dict()
+                if node.parameters.type == TableDataType.EVENT_DATA:
+                    event_table_details = table_details
+                elif node.parameters.type == TableDataType.SCD_DATA:
+                    scd_table_details = table_details
+
+                # minor optimization to early break if we have found both table details
+                if scd_table_details is not None and event_table_details is not None:
+                    break
+
+        # Error if we are unable to find any table details
+        if event_table_details is None and scd_table_details is None:
+            raise ValueError("Failed to add groupby operation.")
+
+        if event_table_details is not None:
+            return event_table_details
+        return scd_table_details  # type: ignore[return-value]
+
     @classmethod
     def derive_parameters_post_prune(
         cls,
@@ -78,14 +127,7 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
         pruned_graph: QueryGraphModel,
         pruned_input_node_name: str,
     ) -> Dict[str, Any]:
-        table_details = None
-        for node in dfs_traversal(graph, input_node):
-            if isinstance(node, InputNode) and node.parameters.type == TableDataType.EVENT_DATA:
-                # get the table details from the input node
-                table_details = node.parameters.table_details.dict()
-                break
-        if table_details is None:
-            raise ValueError("Failed to add groupby operation.")
+        table_details = GroupbyNode._get_table_details(graph, input_node)
         # tile_id & aggregation_id should be based on pruned graph to improve tile reuse
         tile_id = get_tile_table_identifier(
             table_details_dict=table_details, parameters=temp_node.parameters.dict()

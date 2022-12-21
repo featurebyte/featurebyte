@@ -243,3 +243,11 @@ class EventViewMatchingEntityColumnNotFound(Exception):
     """
     Raise when we are unable to find a matching entity column when trying to add a feature to an event view.
     """
+
+
+class ChangeViewNoJoinColumnError(Exception):
+    """
+    Raise when get_join_column is called in ChangeView.
+
+    ChangeView's don't have a primary key, and as such we don't expect there to be a join column.
+    """

@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typeguard import typechecked
 
 from featurebyte.api.agg_func import AggFuncType, construct_agg_func
+from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -151,7 +152,7 @@ class WindowAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [EventView, ItemView]
+        return [EventView, ItemView, ChangeView]
 
     @property
     def aggregation_method_name(self) -> str:
@@ -374,7 +375,7 @@ class SimpleAggregator(BaseAggregator):
 
 class GroupBy(OpsMixin):
     """
-    GroupBy class that is applicable to EventView and ItemView
+    GroupBy class that is applicable to EventView, ItemView, and ChangeView
     """
 
     # documentation metadata
@@ -383,7 +384,7 @@ class GroupBy(OpsMixin):
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView],
+        obj: Union[EventView, ItemView, ChangeView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
@@ -438,7 +439,7 @@ class GroupBy(OpsMixin):
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
 
-        This aggregation is available to EventView and ItemView.
+        This aggregation is available to EventView, ItemView, and ChangeView.
 
         Parameters
         ----------

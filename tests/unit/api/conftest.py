@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte import EventView
+from featurebyte.api.change_view import ChangeView
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.event_data import EventData
 from featurebyte.api.item_data import ItemData
@@ -211,6 +212,15 @@ def snowflake_slowly_changing_view_fixture(snowflake_scd_data):
     """
     scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
     yield scd_view
+
+
+@pytest.fixture(name="snowflake_change_view")
+def snowflake_change_view(snowflake_scd_data):
+    """
+    ChangeView fixture
+    """
+    change_view = ChangeView.from_scd_data(snowflake_scd_data, "col_int")
+    yield change_view
 
 
 @pytest.fixture(name="snowflake_event_view")
