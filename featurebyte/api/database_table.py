@@ -97,7 +97,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
             ]
             values["columns_info"] = columns_info
 
-        # check whether the graph exists or whether the graph is empty
+        # check whether the graph exists or whether the graph is empty (means nodes is empty)
         if "graph" not in values or not QueryGraphModel(**dict(values["graph"])).nodes:
             graph, node = cls.construct_graph_and_node(
                 feature_store_details=feature_store.get_feature_store_details(),

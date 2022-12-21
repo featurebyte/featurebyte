@@ -136,6 +136,7 @@ class BaseTableData(FeatureByteBaseModel):
                     input_nodes=[input_node],
                     graph_node_type=GraphNodeType.CLEANING,
                 )
+                frame_node = proxy_input_nodes[0]
 
             proj_col_node = graph_node.add_operation(
                 node_type=NodeType.PROJECT,
@@ -149,7 +150,7 @@ class BaseTableData(FeatureByteBaseModel):
                 cleaning_operations=col_info.critical_data_info.cleaning_operations,
                 graph_node=graph_node,
                 project_node=cast(ProjectNode, proj_col_node),
-                frame_node=frame_node or proxy_input_nodes[0],
+                frame_node=frame_node,
                 output_column_name=col_info.name,
             )
 
