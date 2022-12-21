@@ -69,15 +69,19 @@ class BasePruningSensitiveNode(BaseNode):
 class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
     """An extended GroupbyNode that implements the derive_parameters_post_prune method"""
 
-    @classmethod
-    def derive_parameters_post_prune(
-        cls,
-        graph: QueryGraphModel,
-        input_node: NodeT,
-        temp_node: BasePruningSensitiveNode,
-        pruned_graph: QueryGraphModel,
-        pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
+    @staticmethod
+    def _get_table_details(graph: QueryGraphModel, input_node: NodeT) -> Any:
+        """
+        Helper method to get table details
+
+        Parameters
+        ----------
+        input_node: NodeT
+
+        Returns
+        -------
+        Any
+        """
         table_details = None
         valid_table_types = {TableDataType.EVENT_DATA, TableDataType.SCD_DATA}
         for node in dfs_traversal(graph, input_node):
@@ -87,6 +91,17 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
                 break
         if table_details is None:
             raise ValueError("Failed to add groupby operation.")
+
+    @classmethod
+    def derive_parameters_post_prune(
+        cls,
+        graph: QueryGraphModel,
+        input_node: NodeT,
+        temp_node: BasePruningSensitiveNode,
+        pruned_graph: QueryGraphModel,
+        pruned_input_node_name: str,
+    ) -> Dict[str, Any]:
+        table_details = GroupbyNode._get_table_details(graph, input_node)
         # tile_id & aggregation_id should be based on pruned graph to improve tile reuse
         tile_id = get_tile_table_identifier(
             table_details_dict=table_details, parameters=temp_node.parameters.dict()
