@@ -97,3 +97,7 @@ def test_app_container(app_container_object):
         instance_map = app_container_object.get_instance_map()
         assert len(AppContainer.cached_instance_map) == len(instance_map)
         assert mock_build_instance_map.call_count == 1
+
+        # verify that manually calling build_instance_map will increase the call count
+        app_container_object.build_instance_map()
+        assert mock_build_instance_map.call_count == 2
