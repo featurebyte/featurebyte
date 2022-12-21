@@ -11,6 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
+from featurebyte.query_graph.node.schema import TableDetails
 from tests.util.helper import add_groupby_operation
 
 
@@ -783,8 +784,93 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
     return feature_node
 
 
+@pytest.fixture(name="scd_table_details")
+def get_scd_table_details_fixture():
+    """
+    Get SCD table details fixture
+    """
+    return TableDetails(
+        database_name="scd_db",
+        schema_name="public",
+        table_name="demographic",
+    )
+
+
+@pytest.fixture(name="graph_single_node_scd_data")
+def get_graph_single_node_scd_data_fixture(global_graph, scd_table_details):
+    """
+    Query graph with a single node with SCD data
+    """
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "scd_data",
+            "columns": ["column"],
+            "table_details": scd_table_details.dict(),
+            "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "warehouse": "sf_warehouse",
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=node_input)
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[node_input.name])
+    assert mapped_node.name == "input_1"
+    graph_dict = global_graph.dict()
+    assert graph_dict == pruned_graph.dict()
+    assert graph_dict["nodes"] == [
+        {
+            "name": "input_1",
+            "type": "input",
+            "parameters": {
+                "type": "scd_data",
+                "columns": ["column"],
+                "table_details": scd_table_details.dict(),
+                "feature_store_details": {
+                    "type": "snowflake",
+                    "details": {
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "db",
+                        "sf_schema": "public",
+                    },
+                },
+                "id": None,
+                "natural_key_column": None,
+                "surrogate_key_column": None,
+                "current_flag_column": None,
+                "effective_timestamp_column": None,
+                "end_timestamp_column": None,
+            },
+            "output_type": "frame",
+        }
+    ]
+    assert graph_dict["edges"] == []
+    assert node_input.type == "input"
+    yield global_graph, node_input
+
+
+@pytest.fixture(name="event_data_table_details")
+def get_event_data_table_details_fixture():
+    """
+    Get event data table details fixture
+    """
+    return TableDetails(
+        database_name="db",
+        schema_name="public",
+        table_name="transaction",
+    )
+
+
 @pytest.fixture(name="graph_single_node")
-def query_graph_single_node(global_graph):
+def query_graph_single_node(global_graph, event_data_table_details):
     """
     Query graph with a single node
     """
@@ -793,11 +879,7 @@ def query_graph_single_node(global_graph):
         node_params={
             "type": "event_data",
             "columns": ["column"],
-            "table_details": {
-                "database_name": "db",
-                "schema_name": "public",
-                "table_name": "transaction",
-            },
+            "table_details": event_data_table_details.dict(),
             "feature_store_details": {
                 "type": "snowflake",
                 "details": {
@@ -823,11 +905,7 @@ def query_graph_single_node(global_graph):
             "parameters": {
                 "type": "event_data",
                 "columns": ["column"],
-                "table_details": {
-                    "database_name": "db",
-                    "schema_name": "public",
-                    "table_name": "transaction",
-                },
+                "table_details": event_data_table_details.dict(),
                 "feature_store_details": {
                     "type": "snowflake",
                     "details": {
