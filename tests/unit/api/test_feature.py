@@ -21,10 +21,8 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from tests.util.helper import get_node
 
@@ -277,6 +275,7 @@ def saved_feature_fixture(
                 "name": [float_feature_namespace.name],
                 "dtype": [float_feature_namespace.dtype],
                 "readiness": [float_feature_namespace.readiness],
+                "online_enabled": [float_feature.online_enabled],
                 "data": [["sf_event_data"]],
                 "entities": [["customer"]],
                 "created_at": [float_feature_namespace.created_at],
