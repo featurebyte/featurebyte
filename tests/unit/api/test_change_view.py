@@ -4,31 +4,31 @@ Unit tests for change view
 Note that we don't currently inherit from the base view test suite as there are quite a few differences. I'll
 work on updating that in a follow-up.
 """
+from datetime import datetime
+from unittest.mock import Mock, patch
+
 import pytest
 
 from featurebyte import FeatureJobSetting
 from featurebyte.api.change_view import ChangeView
 
 
-@pytest.fixture(name="change_view_default_feature_job_setting")
-def get_change_view_default_feature_job_setting():
-    """
-    Fixture to get the default feature job setting
-    """
-    return FeatureJobSetting(
-        blind_spot="0",
-        time_modulo_frequency="0",
-        frequency="24h",
-    )
-
-
-def test_get_default_feature_job_setting(change_view_default_feature_job_setting):
+def test_get_default_feature_job_setting():
     """
     Test get_default_feature_job_setting
     """
     # default is returned if nothing is provided
-    feature_job_setting = ChangeView.get_default_feature_job_setting()
-    assert feature_job_setting == change_view_default_feature_job_setting
+    datetime_mock = Mock(wraps=datetime)
+    mocked_hour = 11
+    mocked_minute = 15
+    datetime_mock.now.return_value = datetime(1999, 1, 1, mocked_hour, mocked_minute, 0)
+    with patch("featurebyte.api.change_view.datetime", new=datetime_mock):
+        feature_job_setting = ChangeView.get_default_feature_job_setting()
+        assert feature_job_setting == FeatureJobSetting(
+            blind_spot="0",
+            time_modulo_frequency=f"{mocked_hour}h{mocked_minute}m",
+            frequency="24h",
+        )
 
     job_setting_provided = FeatureJobSetting(
         blind_spot="1h", time_modulo_frequency="1h", frequency="12h"
@@ -116,15 +116,22 @@ def change_view_test_helper(snowflake_scd_data, change_view):
     assert change_view.columns == ["col_text", "event_timestamp", "new_col_int", "past_col_int"]
 
 
-def test_from_scd_data__no_default_job_setting(
-    snowflake_scd_data, change_view_default_feature_job_setting
-):
+def test_from_scd_data__no_default_job_setting(snowflake_scd_data):
     """
     Test from_scd_data - no default job setting provided
     """
-    change_view = ChangeView.from_scd_data(snowflake_scd_data, "col_int")
-    assert change_view.default_feature_job_setting == change_view_default_feature_job_setting
-    change_view_test_helper(snowflake_scd_data, change_view)
+    datetime_mock = Mock(wraps=datetime)
+    mocked_hour = 11
+    mocked_minute = 15
+    datetime_mock.now.return_value = datetime(1999, 1, 1, mocked_hour, mocked_minute, 0)
+    with patch("featurebyte.api.change_view.datetime", new=datetime_mock):
+        change_view = ChangeView.from_scd_data(snowflake_scd_data, "col_int")
+        assert change_view.default_feature_job_setting == FeatureJobSetting(
+            blind_spot="0",
+            time_modulo_frequency=f"{mocked_hour}h{mocked_minute}m",
+            frequency="24h",
+        )
+        change_view_test_helper(snowflake_scd_data, change_view)
 
 
 def test_from_scd_data__with_default_job_setting(snowflake_scd_data):

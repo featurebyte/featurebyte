@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
+from datetime import datetime
+
 from pydantic import Field
 from typeguard import typechecked
 
@@ -264,10 +266,12 @@ class ChangeView(View, GroupByMixin):
         """
         if feature_job_setting is not None:
             return feature_job_setting
-        # default job setting of once a day
+        # default job setting of once a day, at the time the view is created
+        now = datetime.now()
+        hour, minute = now.hour, now.minute
         return FeatureJobSetting(
             blind_spot="0",
-            time_modulo_frequency="0",
+            time_modulo_frequency=f"{hour}h{minute}m",
             frequency="24h",
         )
 

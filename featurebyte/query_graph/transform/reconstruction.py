@@ -116,7 +116,7 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
 
         if event_table_details is not None:
             return event_table_details
-        return scd_table_details
+        return scd_table_details  # type: ignore[return-value]
 
     @classmethod
     def derive_parameters_post_prune(
