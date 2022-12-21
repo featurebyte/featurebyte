@@ -323,6 +323,9 @@ class AppContainer:
     App Container
     """
 
+    # Cache a copy of the instance map after we've initialized it once. This will allow us to reuse it.
+    cached_instance_map: Dict[str, Any] = {}
+
     def __init__(
         self,
         user: Any,
@@ -350,13 +353,21 @@ class AppContainer:
         app_config: Dict[str, Any]
             input app config dict, default to app_container_config
         """
-        _ = storage  # not used in the app_container bean yet
+        self.user = user
+        self.persistent = persistent
+        self.temp_storage = temp_storage
+        self.task_manager = task_manager
+        self.temp_storage = storage
+        self.app_config = app_config
 
-        self.instance_map: Dict[str, Any] = {
-            "task_controller": TaskController(task_manager=task_manager),
-            "tempdata_controller": TempDataController(temp_storage=temp_storage),
-        }
+        # validate that there are no clashing names
+        AppContainer.validate_configs(app_config)
 
+    def __getattr__(self, key: str) -> Any:
+        return self.instance_map[key]
+
+    @staticmethod
+    def validate_configs(app_config: Dict[str, Any]) -> None:
         # validate that there are no clashing names
         seen_names = set()
         for definitions in app_config.values():
@@ -369,40 +380,118 @@ class AppContainer:
                     )
                 seen_names.add(definition_name)
 
-        # build no dependency objects
-        for item in app_config["no_dependency_objects"]:
-            name, clazz = item["name"], item["clazz"]
-            self.instance_map[name] = clazz()
+    def seed_map(self) -> Dict[str, Any]:
+        """
+        Seed map with some base instances
 
-        # build services
-        for item in app_config["services"]:
-            name, clazz = item["name"], item["clazz"]
-            service_instance = clazz(user=user, persistent=persistent)
-            self.instance_map[name] = service_instance
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
+        return {
+            "task_controller": TaskController(task_manager=self.task_manager),
+            "tempdata_controller": TempDataController(temp_storage=self.temp_storage),
+        }
 
-        # build services with other dependencies
-        for item in app_config["services_with_extra_deps"]:
+    def build_no_dependencies(self, instance_map: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build objects with no dependencies
+
+        Parameters
+        ----------
+        instance_map: Dict[str, Any]
+            instance map
+
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
+        for item in self.app_config["no_dependency_objects"]:
+            name, clazz = item["name"], item["clazz"]
+            instance_map[name] = clazz()
+        return instance_map
+
+    def build_services(self, instance_map: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build service objects
+
+        Parameters
+        ----------
+        instance_map: Dict[str, Any]
+            instance map
+
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
+        for item in self.app_config["services"]:
+            name, clazz = item["name"], item["clazz"]
+            service_instance = clazz(user=self.user, persistent=self.persistent)
+            instance_map[name] = service_instance
+        return instance_map
+
+    def build_services_with_other_deps(self, instance_map: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build service objects with other deps
+
+        Parameters
+        ----------
+        instance_map: Dict[str, Any]
+            instance map
+
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
+        for item in self.app_config["services_with_extra_deps"]:
             name, clazz = item["name"], item["clazz"]
             extra_depends = item.get("extra_deps", None)
             # seed depend_instances with the normal user and persistent objects
-            depend_instances = [user, persistent]
+            depend_instances = [self.user, self.persistent]
             for s_name in extra_depends:
-                depend_instances.append(self.instance_map[s_name])
+                depend_instances.append(instance_map[s_name])
             instance = clazz(*depend_instances)
-            self.instance_map[name] = instance
+            instance_map[name] = instance
+        return instance_map
 
-        # build controllers
-        for item in app_config["controllers"]:
+    def build_controllers(self, instance_map: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build controller objects
+
+        Parameters
+        ----------
+        instance_map: Dict[str, Any]
+            instance map
+
+        Returns
+        -------
+        Dict[str, Any]
+            instance map
+        """
+        for item in self.app_config["controllers"]:
             name, clazz = item["name"], item["clazz"]
             depends = item.get("depends", None)
             depend_instances = []
             for s_name in depends:
-                depend_instances.append(self.instance_map[s_name])
+                depend_instances.append(instance_map[s_name])
             instance = clazz(*depend_instances)
-            self.instance_map[name] = instance
+            instance_map[name] = instance
+        return instance_map
 
-    def __getattr__(self, key: str) -> Any:
-        return self.instance_map[key]
+    def build_instance_map(self) -> Dict[str, Any]:
+        # Note that the order of operations here is important. Objects that get built later can depend on
+        # objects that were instantiated earlier.
+        instance_map = self.seed_map()
+        instance_map = self.build_no_dependencies(instance_map)
+        instance_map = self.build_services(instance_map)
+        instance_map = self.build_services_with_other_deps(instance_map)
+        instance_map = self.build_controllers(instance_map)
+        AppContainer.cached_instance_map = instance_map
+        return instance_map
 
     @classmethod
     def get_instance(
@@ -433,6 +522,9 @@ class AppContainer:
         -------
         AppContainer instance
         """
+        # Use cached map if it's already present
+        if len(AppContainer.instance_map) > 0:
+            return AppContainer.cached_instance_map
 
         return AppContainer(
             user=user,
@@ -441,4 +533,4 @@ class AppContainer:
             task_manager=task_manager,
             storage=storage,
             app_config=app_container_config,
-        )
+        ).build_instance_map()
