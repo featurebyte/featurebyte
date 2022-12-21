@@ -132,14 +132,15 @@ The nodes of level 2 determine whether the Dictionary field is a `Dictionary of 
 
 The nodes of level 3 connected to `Dictionary of Non Negative Values` include:
 
-* Bag of sequence n-grams
-* Dictionary of Items Count
-* Dictionary of Items Positive Amount
+* `Bag of sequence n-grams`
+* `Dictionary of Items Count`
+* `Dictionary of Items Positive Amount`
 
 
 The nodes of level 4 include:
-* Bag of words n-grams
-* Bag of Click Type n-gram
-* Bag of diagnoses code n-grams
-* Dictionary of Product Category Count
-* Dictionary of Product Category Positive Amount
+
+* `Bag of words n-grams`
+* `Bag of Click Type n-gram`
+* `Bag of diagnoses code n-grams`
+* `Dictionary of Product Category Count`
+* `Dictionary of Product Category Positive Amount`
