@@ -72,7 +72,10 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
     @staticmethod
     def _get_table_details(graph: QueryGraphModel, input_node: NodeT) -> Any:
         """
-        Helper method to get table details
+        Helper method to get table details.
+
+        When there are both EventData and SlowlyChangingDimension, then the feature is being created on an EventView
+        joined with SCDView. In that case, the table detail should retrieve the event data's details.
 
         Parameters
         ----------
@@ -82,15 +85,29 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
         -------
         Any
         """
-        table_details = None
+        event_table_details = None
+        scd_table_details = None
         valid_table_types = {TableDataType.EVENT_DATA, TableDataType.SCD_DATA}
         for node in dfs_traversal(graph, input_node):
             if isinstance(node, InputNode) and node.parameters.type in valid_table_types:
                 # get the table details from the input node
                 table_details = node.parameters.table_details.dict()
-                break
-        if table_details is None:
+                if node.parameters.type == TableDataType.EVENT_DATA:
+                    event_table_details = table_details
+                elif node.parameters.type == TableDataType.SCD_DATA:
+                    scd_table_details = table_details
+
+                # minor optimization to early break if we have found both table details
+                if scd_table_details is not None and event_table_details is not None:
+                    break
+
+        # Error if we are unable to find any table details
+        if event_table_details is None and scd_table_details is None:
             raise ValueError("Failed to add groupby operation.")
+
+        if event_table_details is not None:
+            return event_table_details
+        return scd_table_details
 
     @classmethod
     def derive_parameters_post_prune(

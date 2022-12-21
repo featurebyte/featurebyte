@@ -60,6 +60,8 @@ class ChangeView(View, GroupByMixin):
         """
         Validate prefixes
 
+        Parameters
+        ----------
         prefixes: Optional[Tuple[Optional[str], Optional[str]]]
             Optional prefixes where each element indicates the prefix to add to the new column names for the name of
             the column that we want to track. The first prefix will be used for the old, and the second for the new.
