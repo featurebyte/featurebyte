@@ -22,6 +22,18 @@ from featurebyte.query_graph.util import append_to_lineage
 class BaseFrame(QueryObject, SampleMixin):
     """
     BaseFrame class
+
+    Parameters
+    ----------
+    columns_info: List[ColumnInfo]
+        List of column specifications that are contained in this frame.
+    column_lineage_map: Dict[str, Tuple[str, ...]]
+        Column lineage map tracks a mapping of a column name, to a tuple of node names that have caused the values in a
+        column to have changed. This could include situations where
+        - the number of rows are decreasing in a column due to a selection (eg. select col_a from table(col_a, col_b))
+        - changing the values through an assignment (eg. col["a"] = col["b"])
+        - we apply an operation to update the value (eg. col["a"] = col["a"] + 123)
+        This is used to help us optimize some logic to not create nodes unnecessarily.
     """
 
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
