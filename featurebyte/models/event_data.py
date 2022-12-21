@@ -18,7 +18,26 @@ from featurebyte.query_graph.model.table import EventTableData
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
-    """Model for Feature Job Setting"""
+    """
+    Model for Feature Job Setting
+
+    The setting is defined by 3 main duration parameters.
+    - Frequency: how often we want the job to run
+    - Blind spot: the length of time that we deliberately want to from feature derivation. For example, if we
+      calculate features at 10am, a blind spot of 2h means we only use data up to 8am.
+      This is useful to account for data delay in the warehouse, as without this, the features can be noisy.
+    - Time modulo frequency: an offset to specify when feature jobs are run.
+    Note that these duration parameters are the same duration type strings that pandas accepts in pd.Timedelta().
+
+    Some examples:
+    - job run at 12am
+        frequency 24h
+        time modulo frequency 0
+
+    - job run at 8am
+        frequency 24h
+        time modulo frequency 8h
+    """
 
     __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureJobSetting", "")
 
