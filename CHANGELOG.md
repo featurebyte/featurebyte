@@ -2,7 +2,7 @@
 
 ---
 
-## v0.1.0
+## v0.1.1
 
 ---
 
@@ -11,6 +11,7 @@
 
 ### 🚩 Deprecations 🚩
 
++ `databricks-sql-connector`: removed in favour of `featurebyte-databricks-sql-connector`
 
 ### 💡 Enhancements 💡
 
