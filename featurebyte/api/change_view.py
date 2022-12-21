@@ -122,7 +122,7 @@ class ChangeView(View, GroupByMixin):
         scd_data: SlowlyChangingData,
         track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
-    ) -> "ChangeView":
+    ) -> ChangeView:
         """
         Create a change view from SCD data.
 

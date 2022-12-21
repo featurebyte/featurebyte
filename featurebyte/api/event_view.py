@@ -3,8 +3,9 @@ EventView class
 """
 from __future__ import annotations
 
-import copy
 from typing import Any, Optional, cast
+
+import copy
 
 from pydantic import Field
 from typeguard import typechecked
