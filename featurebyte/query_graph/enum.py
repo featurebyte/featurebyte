@@ -100,7 +100,7 @@ class NodeOutputType(StrEnum):
 
 class GraphNodeType(StrEnum):
     """
-    Types of graph node
+    GraphNodeType enum is used to tag the purpose of the graph node.
     """
 
     CLEANING = "cleaning"

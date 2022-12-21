@@ -850,7 +850,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         assert update_response_dict["updated_at"] is not None
 
     def test_update_columns_info(self, test_api_client_persistent, data_response, columns_info):
-        """Test update (unprocessable) - entity ID not found"""
+        """Test update columns info"""
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
         graph_nodes = response_dict["graph"]["nodes"]
