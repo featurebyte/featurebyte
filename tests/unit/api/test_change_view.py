@@ -89,9 +89,21 @@ def test_get_new_column_names():
     Test _get_new_column_names
     """
     col_name = "col_name"
-    old_col, new_col = ChangeView._get_new_column_names(col_name)
+    old_col, new_col = ChangeView._get_new_column_names(col_name, None)
     assert old_col == f"past_{col_name}"
     assert new_col == f"new_{col_name}"
+
+    old_col, new_col = ChangeView._get_new_column_names(col_name, (None, "updated_"))
+    assert old_col == f"past_{col_name}"
+    assert new_col == f"updated_{col_name}"
+
+    old_col, new_col = ChangeView._get_new_column_names(col_name, ("prior_", None))
+    assert old_col == f"prior_{col_name}"
+    assert new_col == f"new_{col_name}"
+
+    old_col, new_col = ChangeView._get_new_column_names(col_name, ("prior_", "updated_"))
+    assert old_col == f"prior_{col_name}"
+    assert new_col == f"updated_{col_name}"
 
 
 def change_view_test_helper(snowflake_scd_data, change_view):

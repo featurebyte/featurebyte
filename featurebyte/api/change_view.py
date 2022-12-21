@@ -133,7 +133,9 @@ class ChangeView(View, GroupByMixin):
         ChangeView._validate_prefixes(prefixes)
 
     @staticmethod
-    def _get_new_column_names(tracked_column: str) -> Tuple[str, str]:
+    def _get_new_column_names(
+        tracked_column: str, prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+    ) -> Tuple[str, str]:
         """
         Helper method to return the tracked column names.
 
@@ -141,14 +143,28 @@ class ChangeView(View, GroupByMixin):
         ----------
         tracked_column: str
             column we want to track
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
+            the column that we want to track. The first prefix will be used for the old, and the second for the new.
+            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
+            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
+            they must be different.
 
         Returns
         -------
         Tuple[str, str]
             old, and new column names
         """
-        past_col_name = f"past_{tracked_column}"
-        new_col_name = f"new_{tracked_column}"
+        old_prefix = "past_"
+        new_prefix = "new_"
+        if prefixes is not None:
+            if prefixes[0] is not None:
+                old_prefix = prefixes[0]
+            if prefixes[1] is not None:
+                new_prefix = prefixes[1]
+
+        past_col_name = f"{old_prefix}{tracked_column}"
+        new_col_name = f"{new_prefix}{tracked_column}"
         return past_col_name, new_col_name
 
     @property
