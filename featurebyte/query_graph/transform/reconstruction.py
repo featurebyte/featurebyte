@@ -80,11 +80,17 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
         Parameters
         ----------
         input_node: NodeT
+            input node
 
         Returns
         -------
         Dict[str, Any]
             dict representation of the table details
+
+        Raises
+        ------
+        ValueError
+            raised when we are unable to find the table details
         """
         event_table_details = None
         scd_table_details = None
