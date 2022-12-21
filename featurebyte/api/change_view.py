@@ -78,7 +78,7 @@ class ChangeView(View, GroupByMixin):
         before, after = prefixes
         if before is None and after is None:
             raise ValueError(
-                "Prefixes provided are both None. Please indicate at least one prefix to " "update."
+                "Prefixes provided are both None. Please indicate at least one prefix to update."
             )
         if before == "" or after == "":
             raise ValueError(
@@ -223,7 +223,9 @@ class ChangeView(View, GroupByMixin):
             effective_timestamp_column=scd_data.effective_timestamp_column,
             default_feature_job_setting=feature_job_setting,
         )
-        past_col_name, new_col_name = ChangeView._get_new_column_names(track_changes_column)
+        past_col_name, new_col_name = ChangeView._get_new_column_names(
+            track_changes_column, prefixes
+        )
         # We type:ignore these assignments as the right side variable has wrong type hints. We're looking to fix
         # this in DEV-918.
         change_view[new_col_name] = change_view[track_changes_column]  # type: ignore
