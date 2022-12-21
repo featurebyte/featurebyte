@@ -56,7 +56,46 @@ class ChangeView(View, GroupByMixin):
         return {self.timestamp_column}
 
     @staticmethod
-    def _validate_inputs(scd_data: SlowlyChangingData, track_changes_column: str) -> None:
+    def _validate_prefixes(prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None) -> None:
+        """
+        Validate prefixes
+
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
+            the column that we want to track. The first prefix will be used for the old, and the second for the new.
+            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
+            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
+            they must be different.
+
+        Raises
+        ------
+        ValueError
+            raised when any of the validation checks fails
+        """
+        if prefixes is None:
+            return
+
+        before, after = prefixes
+        if before is None and after is None:
+            raise ValueError(
+                "Prefixes provided are both None. Please indicate at least one prefix to " "update."
+            )
+        if before == "" or after == "":
+            raise ValueError(
+                "Please provide a non-empty string as a prefix value. If you want to use the default "
+                "value, please provide a `None` type instead."
+            )
+        if before == after:
+            raise ValueError(
+                f"Prefixes provided need to be different values. Current prefix value: {before}"
+            )
+
+    @staticmethod
+    def _validate_inputs(
+        scd_data: SlowlyChangingData,
+        track_changes_column: str,
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
+    ) -> None:
         """
         Validate the inputs.
 
@@ -70,6 +109,12 @@ class ChangeView(View, GroupByMixin):
             data to create view from
         track_changes_column: str
             column to track changes for
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
+            the column that we want to track. The first prefix will be used for the old, and the second for the new.
+            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
+            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
+            they must be different.
 
         Raises
         ------
@@ -83,6 +128,9 @@ class ChangeView(View, GroupByMixin):
                 "Column provided is not a column in the SlowlyChangingData provided. Please pick a column "
                 f"from: {sorted(scd_data.columns)}."
             )
+
+        # Validate prefixes
+        ChangeView._validate_prefixes(prefixes)
 
     @staticmethod
     def _get_new_column_names(tracked_column: str) -> Tuple[str, str]:
@@ -122,6 +170,7 @@ class ChangeView(View, GroupByMixin):
         scd_data: SlowlyChangingData,
         track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
     ) -> ChangeView:
         """
         Create a change view from SCD data.
@@ -134,13 +183,19 @@ class ChangeView(View, GroupByMixin):
             column to track changes for
         default_feature_job_setting: Optional[FeatureJobSetting]
             default feature job setting to set
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
+            the column that we want to track. The first prefix will be used for the old, and the second for the new.
+            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
+            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
+            they must be different.
 
         Returns
         -------
         "ChangeView"
         """
         # Validate input
-        ChangeView._validate_inputs(scd_data, track_changes_column)
+        ChangeView._validate_inputs(scd_data, track_changes_column, prefixes)
 
         # Build view
         feature_job_setting = ChangeView.get_default_feature_job_setting(

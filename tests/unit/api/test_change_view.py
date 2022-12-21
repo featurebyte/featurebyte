@@ -56,6 +56,34 @@ def test_validate_inputs(snowflake_scd_data):
     ChangeView._validate_inputs(snowflake_scd_data, "col_int")
 
 
+def test_validate_prefixes():
+    """
+    Test _validate_prefixes
+    """
+    # No error expected
+    ChangeView._validate_prefixes(None)
+
+    # Both None should error
+    with pytest.raises(ValueError) as exc_info:
+        ChangeView._validate_prefixes((None, None))
+    assert "Prefixes provided are both None" in str(exc_info)
+
+    # Empty string in second position should error
+    with pytest.raises(ValueError) as exc_info:
+        ChangeView._validate_prefixes(("old", ""))
+    assert "Please provide a non-empty string as a prefix value" in str(exc_info)
+
+    # Empty string in first position should error
+    with pytest.raises(ValueError) as exc_info:
+        ChangeView._validate_prefixes(("", "new"))
+    assert "Please provide a non-empty string as a prefix value" in str(exc_info)
+
+    # Same prefix should error
+    with pytest.raises(ValueError) as exc_info:
+        ChangeView._validate_prefixes(("same_prefix", "same_prefix"))
+    assert "Prefixes provided need to be different values" in str(exc_info)
+
+
 def test_get_new_column_names():
     """
     Test _get_new_column_names
