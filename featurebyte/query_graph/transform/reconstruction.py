@@ -70,7 +70,7 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
     """An extended GroupbyNode that implements the derive_parameters_post_prune method"""
 
     @staticmethod
-    def _get_table_details(graph: QueryGraphModel, input_node: NodeT) -> Any:
+    def _get_table_details(graph: QueryGraphModel, input_node: NodeT) -> Dict[str, Any]:
         """
         Helper method to get table details.
 
@@ -83,7 +83,8 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
 
         Returns
         -------
-        Any
+        Dict[str, Any]
+            dict representation of the table details
         """
         event_table_details = None
         scd_table_details = None
