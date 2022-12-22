@@ -39,7 +39,7 @@ class ChangeView(View, GroupByMixin):
 
     _series_class = ChangeViewColumn
 
-    default_feature_job_setting: FeatureJobSetting = Field(allow_mutation=False)
+    default_feature_job_setting: FeatureJobSetting
     effective_timestamp_column: str = Field(allow_mutation=False)
     natural_key_column: str = Field(allow_mutation=False)
 
@@ -245,6 +245,18 @@ class ChangeView(View, GroupByMixin):
             ]
         ]  # type: ignore
         return change_view
+
+    @typechecked
+    def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:
+        """
+        Update default feature job setting
+
+        Parameters
+        ----------
+        feature_job_setting: FeatureJobSetting
+            Feature job setting
+        """
+        self.default_feature_job_setting = feature_job_setting
 
     @staticmethod
     def get_default_feature_job_setting(
