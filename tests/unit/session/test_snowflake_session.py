@@ -169,6 +169,7 @@ EXPECTED_TABLES = [
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
     "TILE_FEATURE_MAPPING",
+    "TILE_JOB_MONITOR",
 ]
 
 METADATA_QUERY = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
@@ -340,6 +341,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "T_TILE_FEATURE_MAPPING.sql",
             "identifier": "TILE_FEATURE_MAPPING",
+            "type": "table",
+        },
+        {
+            "filename": "T_TILE_JOB_MONITOR.sql",
+            "identifier": "TILE_JOB_MONITOR",
             "type": "table",
         },
     ]
