@@ -2,14 +2,26 @@
 Backward compatibility tests
 """
 import os
+import tempfile
 from http import HTTPStatus
 from unittest import mock
 
 import pytest
+import yaml
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
+from featurebyte.api.data import DataApiObject
+from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.entity import Entity
+from featurebyte.api.event_data import EventData
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.item_data import ItemData
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
+from featurebyte.config import Configurations
 from featurebyte.persistent.mongo import MongoDB
 
 
@@ -88,3 +100,63 @@ def test_inner_get_routes(test_api_client, resource_name, dependent_resources):
             route = f"/{resource_name}/{document['_id']}/{dependent_resource}"
             response = test_api_client.get(route)
             assert response.status_code == HTTPStatus.OK, (route, response.text)
+
+
+@pytest.fixture(name="api_config", scope="module")
+def config_fixture(test_api_client):
+    config_dict = {
+        "credential": [
+            {
+                "feature_store": "snowflake_featurestore",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": os.getenv("SNOWFLAKE_USER"),
+                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            },
+            {
+                "feature_store": "sqlite_datasource",
+            },
+            {
+                "feature_store": "databricks_featurestore",
+                "credential_type": "ACCESS_TOKEN",
+                "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            },
+        ],
+        "profile": [
+            {
+                "name": "local",
+                "api_url": "http://localhost:8080",
+                "api_token": "token",
+            }
+        ],
+    }
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        config_file_path = os.path.join(tempdir, "config.yaml")
+        with open(config_file_path, "w") as file_handle:
+            file_handle.write(yaml.dump(config_dict))
+            file_handle.flush()
+            with mock.patch("featurebyte.config.APIClient.request") as mock_request:
+                mock_request.side_effect = test_api_client.request
+                yield Configurations(config_file_path=config_file_path)
+
+
+@pytest.mark.parametrize(
+    "api_object_class",
+    [
+        FeatureStore,
+        Entity,
+        EventData,
+        ItemData,
+        DimensionData,
+        SlowlyChangingData,
+        DataApiObject,
+        Feature,
+        FeatureList,
+    ],
+)
+def test_list_and_get_api_objects(api_config, api_object_class):
+    """Test listing api object through SDK"""
+    objs = api_object_class.list()
+    if objs.shape[0]:
+        obj_name = objs["name"].iloc[0]
+        _ = api_object_class.get(name=obj_name)
