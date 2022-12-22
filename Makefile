@@ -13,6 +13,7 @@ PERMISSIVE_LICENSES := "\
 	ISC License (ISCL);\
 	Python Software Foundation License;\
 	Apache Software License;\
+	Apache License 2.0;\
 	Mozilla Public License 2.0 (MPL 2.0);\
 	MPL-2.0;\
 	Historical Permission Notice and Disclaimer (HPND);\
