@@ -21,7 +21,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: init
 .PHONY: install install-databricks-sql-connector
 .PHONY: format
-.PHONY: lint lint-style lint-type lint-safety
+.PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
 .PHONY: clean
@@ -59,9 +59,11 @@ lint-style:
 lint-type:
 	poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
-lint-safety:
+lint-requirements-txt:
+	poetry export --without-hashes > requirements.txt
+
+lint-safety: | lint-requirements-txt
 	# Exporting dependencies to requirements.txt
-	@poetry export --without-hashes > requirements.txt
 	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
 	poetry run pip-audit --ignore-vul GHSA-hcpj-qp55-gfph
 
@@ -100,14 +102,6 @@ docs-build:
 
 #* Cleaning
 clean:
-	@echo "Running Clean"
-	@find . | grep -E "./.coverage*" | xargs rm -rf || true
-	@find . | grep -E "(__pycache__|\.pyc|\.pyo$$)" | xargs rm -rf || true
-	@find . | grep -E ".DS_Store" | xargs rm -rf || true
-	@find . | grep -E ".mypy_cache" | xargs rm -rf || true
-	@find . | grep -E ".ipynb_checkpoints" | xargs rm -rf || true
-	@find . | grep -E ".pytest_cache" | xargs rm -rf|| true
-	@rm pytest-coverage.txt || true
-	@rm pytest.xml || true
-	@rm -rf dist/ docs/build htmlcov/ site/ || true
-	@rm requirements.txt || true
+	git stash -u
+	git clean -dfx --exclude=.idea/
+	git stash pop
