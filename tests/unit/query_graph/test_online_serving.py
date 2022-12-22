@@ -35,7 +35,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
         SELECT DISTINCT
           CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
           "cust_id" AS "CUSTOMER_ID"
-        FROM fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d
+        FROM TILE_F3600_M1800_B900_5553F7746DB8FE154748D0FD9C06E1C1EDE7B165
         WHERE
           INDEX >= FLOOR(
             (
@@ -65,7 +65,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
         SELECT DISTINCT
           CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
           "cust_id" AS "CUSTOMER_ID"
-        FROM fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178
+        FROM TILE_F3600_M1800_B900_02821BF9E19848A02C80344CE43A658F577CCDC7
         WHERE
           INDEX >= FLOOR(
             (

@@ -98,7 +98,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
-            "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+            "tile_id": "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E",
             "time_modulo_frequency": 300,
             "timestamp": "event_timestamp",
             "value_by": None,

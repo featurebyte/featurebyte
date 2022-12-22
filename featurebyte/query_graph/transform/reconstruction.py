@@ -7,16 +7,15 @@ from abc import abstractmethod
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import TableDataType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
-from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import GraphPruningExtractor
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
@@ -70,53 +69,16 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
     """An extended GroupbyNode that implements the derive_parameters_post_prune method"""
 
     @staticmethod
-    def _get_table_details(graph: QueryGraphModel, input_node: NodeT) -> Dict[str, Any]:
-        """
-        Helper method to get table details.
-
-        When there are both EventData and SlowlyChangingDimension, then the feature is being created on an EventView
-        joined with SCDView. In that case, the table detail should retrieve the event data's details.
-
-        Parameters
-        ----------
-        graph: QueryGraphModel
-            graph
-        input_node: NodeT
-            input node
-
-        Returns
-        -------
-        Dict[str, Any]
-            dict representation of the table details
-
-        Raises
-        ------
-        ValueError
-            raised when we are unable to find the table details
-        """
-        event_table_details = None
-        scd_table_details = None
-        valid_table_types = {TableDataType.EVENT_DATA, TableDataType.SCD_DATA}
-        for node in dfs_traversal(graph, input_node):
-            if isinstance(node, InputNode) and node.parameters.type in valid_table_types:
-                # get the table details from the input node
-                table_details = node.parameters.table_details.dict()
-                if node.parameters.type == TableDataType.EVENT_DATA:
-                    event_table_details = table_details
-                elif node.parameters.type == TableDataType.SCD_DATA:
-                    scd_table_details = table_details
-
-                # minor optimization to early break if we have found both table details
-                if scd_table_details is not None and event_table_details is not None:
-                    break
-
-        # Error if we are unable to find any table details
-        if event_table_details is None and scd_table_details is None:
-            raise ValueError("Failed to add groupby operation.")
-
-        if event_table_details is not None:
-            return event_table_details
-        return scd_table_details  # type: ignore[return-value]
+    def _get_row_index_lineage_hash(
+        pruned_graph: QueryGraphModel,
+        pruned_input_node_name: str,
+    ) -> str:
+        op_struct = (
+            OperationStructureExtractor(pruned_graph)
+            .extract(node=pruned_graph.get_node_by_name(pruned_input_node_name))
+            .operation_structure_map[pruned_input_node_name]
+        )
+        return pruned_graph.node_name_to_ref[op_struct.row_index_lineage[-1]]
 
     @classmethod
     def derive_parameters_post_prune(
@@ -127,10 +89,13 @@ class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
         pruned_graph: QueryGraphModel,
         pruned_input_node_name: str,
     ) -> Dict[str, Any]:
-        table_details = GroupbyNode._get_table_details(graph, input_node)
         # tile_id & aggregation_id should be based on pruned graph to improve tile reuse
+        row_index_lineage_hash = cls._get_row_index_lineage_hash(
+            pruned_graph=pruned_graph, pruned_input_node_name=pruned_input_node_name
+        )
         tile_id = get_tile_table_identifier(
-            table_details_dict=table_details, parameters=temp_node.parameters.dict()
+            row_index_lineage_hash=row_index_lineage_hash,
+            parameters=temp_node.parameters.dict(),
         )
         aggregation_id = get_aggregation_identifier(
             transformations_hash=pruned_graph.node_name_to_ref[pruned_input_node_name],
