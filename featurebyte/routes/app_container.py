@@ -3,6 +3,8 @@ Container for Controller objects to enable Dependency Injection
 """
 from typing import Any, Dict
 
+import os
+
 from featurebyte.persistent import Persistent
 from featurebyte.routes.dimension_data.controller import DimensionDataController
 from featurebyte.routes.entity.controller import EntityController
@@ -507,7 +509,7 @@ class AppContainer:
         instance_map = self.build_controllers(instance_map)
 
         # Cache the map for future use
-        global CACHED_INSTANCE_MAP
+        global CACHED_INSTANCE_MAP  # pylint: disable=global-statement
         CACHED_INSTANCE_MAP = instance_map
 
         return CACHED_INSTANCE_MAP
@@ -522,8 +524,6 @@ class AppContainer:
             instance map
         """
         # Don't need to build if there's already a cached map.
-        import os
-
         in_test = os.environ["PYTEST_RUN_CONFIG"]
         cached_instances = len(CACHED_INSTANCE_MAP) > 0
         if cached_instances and not in_test:
