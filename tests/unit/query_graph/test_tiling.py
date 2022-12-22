@@ -275,3 +275,19 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
         "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E",
         "sum_5d3d660c706349b0259a663b6c2877f8101a5a74",
     )
+
+
+def test_tile_table_id__filter(snowflake_event_view_with_entity, aggregate_kwargs):
+    """Test different filters produce different tile id"""
+    view = snowflake_event_view_with_entity
+    view_filtered = view[view["col_int"] > 10]
+
+    tile_id, _ = run_groupby_and_get_tile_table_identifier(
+        snowflake_event_view_with_entity, aggregate_kwargs, create_entity=False
+    )
+    tile_id_filtered, _ = run_groupby_and_get_tile_table_identifier(
+        view_filtered, aggregate_kwargs, create_entity=False
+    )
+
+    # tile_ids is different due to different row index lineage
+    assert tile_id != tile_id_filtered
