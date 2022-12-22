@@ -288,7 +288,7 @@ def test_query_graph__representation():
         node_params={
             "type": "event_data",
             "id": ObjectId("633844bd416657bb96c96d3f"),
-            "columns": ["column"],
+            "columns": [{"name": "column", "dtype": "INT"}],
             "table_details": {
                 "database_name": "db",
                 "schema_name": "public",
@@ -318,7 +318,10 @@ def test_query_graph__representation():
                     "output_type": "frame",
                     "parameters": {
                         "columns": [
-                            "column"
+                            {
+                                "name": "column",
+                                "dtype": "INT"
+                            }
                         ],
                         "table_details": {
                             "database_name": "db",

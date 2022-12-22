@@ -55,10 +55,10 @@ def test_feature_model(feature_model_dict, test_dir):
         "created_at": None,
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
-        "entity_ids": [ObjectId("639c65cf8ce21f6bf429320d")],
+        "entity_ids": [ObjectId("63a443938bcb22a734625955")],
         "tabular_data_ids": [ObjectId("6337f9651050ee7d5980660d")],
         "feature_list_ids": [],
-        "feature_namespace_id": ObjectId("639c65cf8ce21f6bf4293212"),
+        "feature_namespace_id": ObjectId("63a443938bcb22a73462595a"),
         "graph": {
             "edges": [
                 {"source": "input_1", "target": "groupby_1"},
@@ -66,13 +66,13 @@ def test_feature_model(feature_model_dict, test_dir):
             ],
             "nodes": feature_dict["graph"]["nodes"],
         },
-        "id": ObjectId("639c65cf8ce21f6bf4293211"),
+        "id": ObjectId("63a443938bcb22a734625959"),
         "name": "sum_30m",
         "node_name": "project_1",
         "online_enabled": False,
         "readiness": "DRAFT",
         "tabular_source": {
-            "feature_store_id": ObjectId("639c65ce8ce21f6bf4293201"),
+            "feature_store_id": ObjectId("63a443938bcb22a734625949"),
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
@@ -131,7 +131,9 @@ def test_extract_operation_structure(feature_model_dict):
         "tabular_data_type": "event_data",
         "node_names": {"input_1"},
     }
-    expected_columns = [SourceDataColumn(name="col_float", **common_source_col_params)]
+    expected_columns = [
+        SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)
+    ]
     assert op_struct.source_columns == expected_columns
     assert op_struct.derived_columns == []
     assert op_struct.aggregations == [
@@ -142,9 +144,10 @@ def test_extract_operation_structure(feature_model_dict):
             window="30m",
             category=None,
             type="aggregation",
-            column=SourceDataColumn(name="col_float", **common_source_col_params),
+            column=SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params),
             filter=False,
             groupby_type="groupby",
             node_names={"input_1", "groupby_1", "project_1"},
+            dtype="FLOAT",
         )
     ]

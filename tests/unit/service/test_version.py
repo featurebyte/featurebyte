@@ -44,7 +44,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "timestamp": "event_timestamp",
         "names": ["sum_30m"],
         "serving_names": ["cust_id"],
-        "entity_ids": [ObjectId("639c65cf8ce21f6bf429320d")],
+        "entity_ids": [ObjectId("63a443938bcb22a734625955")],
     }
     parameters = feature.graph.get_node_by_name("groupby_1").parameters
     assert parameters.dict() == {

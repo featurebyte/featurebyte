@@ -96,7 +96,7 @@ def dimension_table_data_fixture(tabular_source):
     """Dimension table data fixture"""
     return DimensionTableData(
         columns_info=[
-            ColumnInfo(name="user_id", dtype=DBVarType.TIMESTAMP),
+            ColumnInfo(name="user_id", dtype=DBVarType.INT),
             ColumnInfo(
                 name="gender",
                 dtype=DBVarType.VARCHAR,
@@ -134,7 +134,10 @@ def generic_input_node_fixture(feature_store_details, generic_table_data):
         "type": "input",
         "name": "temp",
         "parameters": {
-            "columns": ["col_int", "col_float"],
+            "columns": [
+                {"name": "col_int", "dtype": "INT"},
+                {"name": "col_float", "dtype": "FLOAT"},
+            ],
             "feature_store_details": feature_store_details,
             "id": None,
             "table_details": generic_table_data.tabular_source.table_details,
@@ -153,7 +156,10 @@ def event_input_node_fixture(feature_store_details, event_table_data):
         "type": "input",
         "name": "temp",
         "parameters": {
-            "columns": ["event_timestamp", "amount"],
+            "columns": [
+                {"name": "event_timestamp", "dtype": "TIMESTAMP"},
+                {"name": "amount", "dtype": "FLOAT"},
+            ],
             "feature_store_details": feature_store_details,
             "id": event_table_data.id,
             "table_details": event_table_data.tabular_source.table_details,
@@ -176,7 +182,11 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
         "type": "input",
         "name": "temp",
         "parameters": {
-            "columns": ["user_id", "gender", "age"],
+            "columns": [
+                {"name": "user_id", "dtype": "INT"},
+                {"name": "gender", "dtype": "VARCHAR"},
+                {"name": "age", "dtype": "INT"},
+            ],
             "feature_store_details": feature_store_details,
             "id": dimension_table_data.id,
             "table_details": dimension_table_data.tabular_source.table_details,

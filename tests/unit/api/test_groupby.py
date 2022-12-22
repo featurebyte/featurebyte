@@ -228,7 +228,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
     feature_node_name = feature.node.name
     groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
-    assert groupby_node.parameters == {
+    assert groupby_node.parameters.dict() == {
         "keys": ["cust_id"],
         "parent": "col_float",
         "agg_func": "sum",

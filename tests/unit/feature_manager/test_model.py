@@ -11,7 +11,7 @@ def test_extended_feature_model__float_feature(float_feature):
         **float_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "a1a9657e29a711c4d09475bb8285da86250d2294"
+    aggregation_id = "fba233e0f502088c233315a322f4c51e939072c0"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -75,7 +75,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
         **agg_per_category_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "e7529955d0c7f03bff408e805f3ea3799fc01042"
+    aggregation_id = "919af24c701a98cef59de8e13ad34d1497ffba79"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
