@@ -32,9 +32,6 @@ $$
     var tile_id = TILE_ID.toUpperCase()
 
     var session_id = tile_id+new Date().toISOString()
-    // generate unique hashcode as session_id
-    session_id = session_id.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
-
     var audit_insert_sql = `INSERT INTO TILE_JOB_MONITOR(TILE_ID, SESSION_ID, STATUS, MESSAGE) VALUES ('${tile_id}', '${session_id}', '<STATUS>', '<MESSAGE>')`
 
     snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")})
