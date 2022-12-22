@@ -17,7 +17,7 @@ RUN apt-get update && \
     apt-get clean
 
 # install poetry
-RUN pip install --extra-index-url "https://${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME}:${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple/" poetry==1.2.0rc99
+RUN pip install  poetry==1.3.1
 
 # Copy project files
 WORKDIR /app
@@ -26,6 +26,7 @@ COPY poetry.lock pyproject.toml /app/
 # Install requirements
 RUN poetry config virtualenvs.create false && \
     poetry install --only main --only docs --extras "server" --no-interaction --no-ansi && \
+    poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD} && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 
@@ -39,13 +40,11 @@ COPY ./docker/docs.py  /app/
 # build docs
 RUN PYTHONPATH=$PWD:$PWD/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs build
 
-# install databricks-connector via pip (dependency error with pyarrow)
-# downgrade pyarrow - backwards compatibility issue with databricks
-RUN pip install databricks-sql-connector==2.1.0 && \
-    pip install pyarrow==8.0.0 && \
-    pip install jupyterlab && \
+RUN pip install jupyterlab && \
     pip install --no-index -f /app/dist featurebyte && \
-    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
+    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD && \
+    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME && \
+    poetry config --unset http-basic.featurebyte_np
 
 # Copy scripts
 COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
