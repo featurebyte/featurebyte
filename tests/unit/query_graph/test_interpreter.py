@@ -277,7 +277,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
     info_dict = asdict(info)
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "TILE_F3600_M1800_B900_5553F7746DB8FE154748D0FD9C06E1C1EDE7B165",
+        "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -368,7 +368,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     assert sql == expected_sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "TILE_F3600_M1800_B900_5553F7746DB8FE154748D0FD9C06E1C1EDE7B165",
+        "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -447,7 +447,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     assert info.sql == expected_sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "TILE_F3600_M1800_B900_02821BF9E19848A02C80344CE43A658F577CCDC7",
+        "tile_table_id": "TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226",
         "aggregation_id": f"avg_{aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -484,7 +484,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     sql = info.sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "TILE_F3600_M1800_B900_5553F7746DB8FE154748D0FD9C06E1C1EDE7B165",
+        "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",
@@ -562,7 +562,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     sql = info.sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "TILE_F3600_M1800_B900_5E4D665F70BA9D7A61FB92E1015A9D6F02D4C834",
+        "tile_table_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
         "aggregation_id": f"sum_{aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",

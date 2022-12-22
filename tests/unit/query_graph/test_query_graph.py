@@ -200,7 +200,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     output, _ = query_graph_with_groupby.reconstruct(
         node_name_to_replacement_node={}, regenerate_groupby_hash=False
     )
-    expected_tile_id = "TILE_F3600_M1800_B900_5E4D665F70BA9D7A61FB92E1015A9D6F02D4C834"
+    expected_tile_id = "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624"
     assert output.edges_map == query_graph_with_groupby.edges_map
     assert output.nodes_map["groupby_1"] == query_graph_with_groupby.nodes_map["groupby_1"]
     assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
