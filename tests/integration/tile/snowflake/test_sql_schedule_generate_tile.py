@@ -4,13 +4,14 @@ This module contains integration tests for scheduled tile generation stored proc
 from datetime import datetime
 
 import pytest
+from pandas.testing import assert_frame_equal
 from snowflake.connector import ProgrammingError
 
 from featurebyte.enum import InternalName
 
 
 @pytest.mark.asyncio
-async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep):
+async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, tile_manager):
     """
     Test the stored procedure of generating tiles
     """
@@ -59,7 +60,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep):
     result = await snowflake_session.execute_query(sql)
     assert result["COUNT"].iloc[0] == 2
 
-    # verify tile job monitor
+    # verify tile job monitor using sql
     sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 4
@@ -70,6 +71,24 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep):
     assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
     assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
+
+    # verify all tile job monitor records using tile_manager
+    result2 = await tile_manager.retrieve_tile_job_audit_logs(start_date=datetime(1970, 1, 1))
+    assert_frame_equal(result, result2)
+
+    # verify tile job monitor records using tile_manager with start_date and nd_date
+    end_date = result["CREATED_AT"].iloc[1]
+    result2 = await tile_manager.retrieve_tile_job_audit_logs(
+        start_date=datetime(1970, 1, 1), end_date=end_date
+    )
+    assert len(result2) == 2
+
+    # verify tile job monitor records using tile_manager with start_date, end_date and tile_id
+    end_date = result["CREATED_AT"].iloc[1]
+    result2 = await tile_manager.retrieve_tile_job_audit_logs(
+        start_date=datetime(1970, 1, 1), end_date=end_date, tile_id=tile_id
+    )
+    assert len(result2) == 2
 
 
 @pytest.mark.asyncio

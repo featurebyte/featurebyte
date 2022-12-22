@@ -5,6 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from datetime import datetime
+
+import pandas as pd
 from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
@@ -15,6 +18,7 @@ from featurebyte.tile.base import BaseTileManager
 from featurebyte.tile.snowflake_sql_template import (
     tm_generate_tile,
     tm_insert_tile_registry,
+    tm_retrieve_tile_job_audit_logs,
     tm_schedule_tile,
     tm_select_tile_registry,
     tm_tile_entity_tracking,
@@ -303,3 +307,37 @@ class TileManagerSnowflake(BaseTileManager):
         await self._session.execute_query(f"ALTER TASK IF EXISTS {temp_task_name} RESUME")
 
         return sql
+
+    async def retrieve_tile_job_audit_logs(
+        self,
+        start_date: datetime,
+        end_date: Optional[datetime] = None,
+        tile_id: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Retrieve audit logs of tile job executions
+
+        Parameters
+        ----------
+        start_date: datetime
+            start date of retrieval
+        end_date: Optional[datetime]
+            end date of retrieval, optional
+        tile_id: Optional[str]
+            targeted tile id of retrieval, optional
+
+        Returns
+        -------
+            dataframe of tile job execution information
+        """
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+        start_date_str = start_date.strftime(date_format)
+        end_date_str = end_date.strftime(date_format) if end_date else ""
+        tile_id = tile_id if tile_id else ""
+
+        sql = tm_retrieve_tile_job_audit_logs.render(
+            start_date_str=start_date_str, end_date_str=end_date_str, tile_id=tile_id
+        )
+        logger.debug(f"generated sql: {sql}")
+        result = await self._session.execute_query(sql)
+        return result

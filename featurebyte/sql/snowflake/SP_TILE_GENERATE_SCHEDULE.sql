@@ -32,7 +32,9 @@ $$
     var tile_id = TILE_ID.toUpperCase()
 
     var session_id = tile_id+new Date().toISOString()
+    // generate unique hashcode as session_id
     session_id = session_id.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
+
     snowflake.execute({sqlText: `INSERT INTO TILE_JOB_MONITOR(TILE_ID, SESSION_ID, STATUS) VALUES ('${tile_id}', '${session_id}', 'STARTED')`})
 
     // determine tile_end_ts (tile end timestamp) based on tile_type and JOB_SCHEDULE_TS
