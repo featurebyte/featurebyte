@@ -65,18 +65,18 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 4
     assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
-
+    assert result["MESSAGE"].tolist() == ["", "", "", ""]
     session_id = result["SESSION_ID"].iloc[0]
     assert result["SESSION_ID"].tolist() == [session_id, session_id, session_id, session_id]
     assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
     assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
     assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
 
-    # verify all tile job monitor records using tile_manager
+    # verify that all tile job monitor records retrieved using tile_manager are the same
     result2 = await tile_manager.retrieve_tile_job_audit_logs(start_date=datetime(1970, 1, 1))
     assert_frame_equal(result, result2)
 
-    # verify tile job monitor records using tile_manager with start_date and nd_date
+    # verify tile job monitor records using tile_manager with start_date and end_date
     end_date = result["CREATED_AT"].iloc[1]
     result2 = await tile_manager.retrieve_tile_job_audit_logs(
         start_date=datetime(1970, 1, 1), end_date=end_date
@@ -133,7 +133,6 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
           '{tile_end_ts}'
         )
         """
-
     try:
         await snowflake_session.execute_query(sql)
     except:
@@ -144,12 +143,15 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
     # verify tile job monitor
     sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
     result = await snowflake_session.execute_query(sql)
-    assert len(result) == 2
-    assert result["STATUS"].tolist() == ["STARTED", "MONITORED"]
+    assert len(result) == 3
+    assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED_FAILED"]
+    error_msg = result["MESSAGE"].iloc[2]
+    assert "error" in error_msg and "TILE_ID" in error_msg
 
     session_id = result["SESSION_ID"].iloc[0]
-    assert result["SESSION_ID"].tolist() == [session_id, session_id]
+    assert result["SESSION_ID"].tolist() == [session_id] * 3
     assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
+    assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
 
 
 @pytest.mark.asyncio
