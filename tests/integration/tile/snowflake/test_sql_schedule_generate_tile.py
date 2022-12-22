@@ -67,6 +67,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
     assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
     assert result["MESSAGE"].tolist() == ["", "", "", ""]
     session_id = result["SESSION_ID"].iloc[0]
+    assert "|" in session_id
     assert result["SESSION_ID"].tolist() == [session_id, session_id, session_id, session_id]
     assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
     assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
