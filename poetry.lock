@@ -1143,13 +1143,13 @@ version = "1.1.1"
 category = "dev"
 description = "A Python utility / library to sort Python imports."
 files = [
-    {file = "isort-5.11.3-py3-none-any.whl", hash = "sha256:83155ffa936239d986b0f190347a3f2285f42a9b9e1725c89d865b27dd0627e5"},
-    {file = "isort-5.11.3.tar.gz", hash = "sha256:a8ca25fbfad0f7d5d8447a4314837298d9f6b23aed8618584c894574f626b64b"},
+    {file = "isort-5.11.4-py3-none-any.whl", hash = "sha256:c033fd0edb91000a7f09527fe5c75321878f98322a77ddcc81adbd83724afb7b"},
+    {file = "isort-5.11.4.tar.gz", hash = "sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6"},
 ]
 name = "isort"
 optional = false
 python-versions = ">=3.7.0"
-version = "5.11.3"
+version = "5.11.4"
 
 [package.dependencies]
 colorama = {version = ">=0.4.3,<0.5.0", optional = true, markers = "extra == \"colors\""}
@@ -2101,16 +2101,13 @@ test = ["black", "isort", "pytest"]
 category = "main"
 description = "Core utilities for Python packages"
 files = [
-    {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
-    {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
+    {file = "packaging-22.0-py3-none-any.whl", hash = "sha256:957e2148ba0e1a3b282772e791ef1d8083648bc131c8ab0c1feba110ce1146c3"},
+    {file = "packaging-22.0.tar.gz", hash = "sha256:2198ec20bd4c017b8f9717e00f0c8714076fc2fd93816750ab48e2c41de2cfd3"},
 ]
 name = "packaging"
 optional = false
-python-versions = ">=3.6"
-version = "21.3"
-
-[package.dependencies]
-pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
+python-versions = ">=3.7"
+version = "22.0"
 
 [[package]]
 category = "main"
@@ -2336,16 +2333,17 @@ test = ["docutils", "pytest-cov", "pytest-pycodestyle", "pytest-runner"]
 category = "dev"
 description = "pip requirements parser - a mostly correct pip requirements parsing library because it uses pip's own code."
 files = [
-    {file = "pip-requirements-parser-32.0.0.tar.gz", hash = "sha256:5159b8a9485a5a0d0254a29c9bd8b8ce66db2eb9a1a0244c64dfce43f7f2ac90"},
-    {file = "pip_requirements_parser-32.0.0-py3-none-any.whl", hash = "sha256:aa664781e69f82ecefda542d5210aa5b0f6533be95aea39a5453943db09359ed"},
+    {file = "pip-requirements-parser-32.0.1.tar.gz", hash = "sha256:b4fa3a7a0be38243123cf9d1f3518da10c51bdb165a2b2985566247f9155a7d3"},
+    {file = "pip_requirements_parser-32.0.1-py3-none-any.whl", hash = "sha256:4659bc2a667783e7a15d190f6fccf8b2486685b6dba4c19c3876314769c57526"},
 ]
 name = "pip-requirements-parser"
 optional = false
-python-versions = ">=3.6.*"
-version = "32.0.0"
+python-versions = ">=3.6.0"
+version = "32.0.1"
 
 [package.dependencies]
-packaging = "<22.0.0"
+packaging = "*"
+pyparsing = "*"
 
 [package.extras]
 docs = ["Sphinx (>=3.3.1)", "doc8 (>=0.8.1)", "sphinx-rtd-theme (>=0.5.0)"]
