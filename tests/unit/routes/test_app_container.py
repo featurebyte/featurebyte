@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from featurebyte.app import User
-from featurebyte.routes.app_container import AppContainer, app_container_config
+from featurebyte.routes.app_container import CACHED_INSTANCE_MAP, AppContainer, app_container_config
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import LocalTempStorage
 
@@ -81,7 +81,7 @@ def test_app_container(app_container_object):
     Test app container functions
     """
     # verify that there's nothing in the cached map
-    assert len(AppContainer.cached_instance_map) == 0
+    assert len(CACHED_INSTANCE_MAP) == 0
 
     with patch.object(
         AppContainer, "build_instance_map", wraps=app_container_object.build_instance_map
@@ -89,13 +89,13 @@ def test_app_container(app_container_object):
         # verify that building once invokes build_instance_map
         instance_map = app_container_object.get_instance_map()
         assert len(instance_map) > 0
-        assert len(AppContainer.cached_instance_map) == len(instance_map)
+        assert len(CACHED_INSTANCE_MAP) == len(instance_map)
         assert mock_build_instance_map.call_count == 1
 
         # verify that calling build again doesn't invoke build_instance_map again
         # also verify that the cached_instance_map doesn't change in size
         instance_map = app_container_object.get_instance_map()
-        assert len(AppContainer.cached_instance_map) == len(instance_map)
+        assert len(CACHED_INSTANCE_MAP) == len(instance_map)
         assert mock_build_instance_map.call_count == 1
 
         # verify that manually calling build_instance_map will increase the call count

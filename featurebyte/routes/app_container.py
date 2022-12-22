@@ -317,14 +317,13 @@ app_container_config = {
     ],
 }
 
+CACHED_INSTANCE_MAP: Dict[str, Any] = {}
+
 
 class AppContainer:
     """
     App Container
     """
-
-    # Cache a copy of the instance map after we've initialized it once. This will allow us to reuse it.
-    cached_instance_map: Dict[str, Any] = {}
 
     def __init__(
         self,
@@ -364,7 +363,7 @@ class AppContainer:
         AppContainer.validate_configs(app_config)
 
     def __getattr__(self, key: str) -> Any:
-        return AppContainer.cached_instance_map[key]
+        return CACHED_INSTANCE_MAP[key]
 
     @staticmethod
     def validate_configs(app_config: Dict[str, Any]) -> None:
@@ -508,24 +507,30 @@ class AppContainer:
         instance_map = self.build_controllers(instance_map)
 
         # Cache the map for future use
-        AppContainer.cached_instance_map = instance_map
+        global CACHED_INSTANCE_MAP
+        CACHED_INSTANCE_MAP = instance_map
 
-        return AppContainer.cached_instance_map
+        return CACHED_INSTANCE_MAP
 
-    def get_instance_map(self) -> Dict[str, Any]:
+    def get_instance_map(self) -> Any:
         """
         Get instance map
 
         Returns
         -------
-        Dict[str, Any]
+        Any
             instance map
         """
-        # Use cached map if it's already present
-        if len(AppContainer.cached_instance_map) > 0:
-            return AppContainer.cached_instance_map
+        # Don't need to build if there's already a cached map.
+        import os
 
-        return self.build_instance_map()
+        in_test = os.environ["PYTEST_RUN_CONFIG"]
+        cached_instances = len(CACHED_INSTANCE_MAP) > 0
+        if cached_instances and not in_test:
+            return self
+
+        self.build_instance_map()
+        return self
 
     @classmethod
     def get_instance(
@@ -564,6 +569,4 @@ class AppContainer:
             storage=storage,
             app_config=app_container_config,
         )
-        # Call this to build the instance map if it's not built
-        app_container.get_instance_map()
-        return app_container
+        return app_container.get_instance_map()
