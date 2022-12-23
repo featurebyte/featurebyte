@@ -1477,13 +1477,13 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
         SELECT
           __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          value_last_6823be98b8982564b304f346a91ca4d56208f18a
+          value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
         FROM (
           SELECT
             TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
             "cust_id",
             ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS value_last_6823be98b8982564b304f346a91ca4d56208f18a
+            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
           FROM (
             SELECT
               *,
