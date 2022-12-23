@@ -6,7 +6,6 @@ import pytest
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 @pytest.fixture(name="input_node_params")
@@ -102,7 +101,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         {
             "name": f"proxy_input_{i+1}",
             "type": "proxy_input",
-            "parameters": {"node_name": f"project_{i+1}"},
+            "parameters": {"input_order": i},
             "output_type": "series",
         }
         for i in range(2)
@@ -650,6 +649,6 @@ def test_graph_node__redundant_graph_node(input_node_params):
             "name": "proxy_input_1",
             "type": "proxy_input",
             "output_type": "frame",
-            "parameters": {"node_name": "input_1"},
+            "parameters": {"input_order": 0},
         }
     ]

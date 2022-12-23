@@ -1,7 +1,7 @@
 """
 This module contains graph flattening related classes.
 """
-from typing import Dict
+from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +25,7 @@ class GraphFlatteningTransformer(
 
     @staticmethod
     def _flatten_nested_graph(
-        global_state: GraphFlatteningGlobalState, node: BaseGraphNode
+        global_state: GraphFlatteningGlobalState, node: BaseGraphNode, graph_input_nodes: List[Node]
     ) -> None:
         # flatten the nested graph first before inserting those nested graph nodes back to global one
         nested_flat_graph, _ = GraphFlatteningTransformer(graph=node.parameters.graph).transform()
@@ -37,8 +37,8 @@ class GraphFlatteningTransformer(
                 input_nodes.append(global_state.graph.get_node_by_name(input_node_name))
 
             if isinstance(nested_node, ProxyInputNode):
-                ref_node_name = nested_node.parameters.node_name
-                nested_node_name_map[nested_node.name] = global_state.node_name_map[ref_node_name]
+                input_order = nested_node.parameters.input_order
+                nested_node_name_map[nested_node.name] = graph_input_nodes[input_order].name
             else:
                 inserted_node = global_state.graph.add_operation(
                     node_type=nested_node.type,
@@ -52,13 +52,15 @@ class GraphFlatteningTransformer(
                 global_state.node_name_map[node.name] = nested_node_name_map[nested_node.name]
 
     def _compute(self, global_state: GraphFlatteningGlobalState, node: Node) -> None:
+        input_nodes = [
+            global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
+            for input_node_name in self.graph.get_input_node_names(node=node)
+        ]
         if isinstance(node, BaseGraphNode):
-            self._flatten_nested_graph(global_state=global_state, node=node)
+            self._flatten_nested_graph(
+                global_state=global_state, node=node, graph_input_nodes=input_nodes
+            )
         else:
-            input_nodes = [
-                global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
-                for input_node_name in self.graph.get_input_node_names(node=node)
-            ]
             inserted_node = global_state.graph.add_operation(
                 node_type=node.type,
                 node_params=node.parameters.dict(),

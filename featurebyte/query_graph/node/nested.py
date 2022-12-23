@@ -21,7 +21,7 @@ class ProxyInputNode(BaseNode):
     class ProxyInputNodeParameters(BaseModel):
         """Proxy input node parameters"""
 
-        node_name: str
+        input_order: int
 
     type: Literal[NodeType.PROXY_INPUT] = Field(NodeType.PROXY_INPUT, const=True)
     output_type: NodeOutputType
@@ -34,8 +34,8 @@ class ProxyInputNode(BaseNode):
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # lookup the operation structure using the proxy input's node_name parameter
-        ref_node_name = self.parameters.node_name
-        operation_structure = global_state.operation_structure_map[ref_node_name]
+        proxy_input_order = self.parameters.input_order
+        operation_structure = global_state.proxy_input_operation_structures[proxy_input_order]
         return OperationStructure(
             columns=[col.clone(node_names=[self.name]) for col in operation_structure.columns],
             aggregations=[

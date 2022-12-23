@@ -529,6 +529,7 @@ class OperationStructureInfo(BaseModel):
 
     operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
     edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
+    proxy_input_operation_structures: List[OperationStructure] = Field(default_factory=list)
 
     @validator("edges_map")
     @classmethod

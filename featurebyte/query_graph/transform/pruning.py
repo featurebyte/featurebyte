@@ -82,7 +82,7 @@ class GraphPruningExtractor(
         cls,
         node: BaseGraphNode,
         target_nodes: List[Node],
-        operation_structure_map: Dict[str, OperationStructure],
+        proxy_input_operation_structures: List[OperationStructure],
         aggressive: bool,
     ) -> Node:
         nested_graph = node.parameters.graph
@@ -98,7 +98,7 @@ class GraphPruningExtractor(
         pruned_graph, node_name_map = GraphPruningExtractor(graph=nested_graph).extract(
             node=nested_target_node,
             target_columns=target_columns,
-            operation_structure_map=operation_structure_map,
+            proxy_input_operation_structures=proxy_input_operation_structures,
             aggressive=aggressive,
         )
         output_node_name = cls._resolve_pruned_node_name(
@@ -144,14 +144,14 @@ class GraphPruningExtractor(
         target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         if global_state.aggressive:
             if isinstance(node, BaseGraphNode):
-                operation_structure_map = {
-                    node_name: global_state.operation_structure_map[node_name]
+                proxy_input_operation_structures = [
+                    global_state.operation_structure_map[node_name]
                     for node_name in self.graph.get_input_node_names(node=node)
-                }
+                ]
                 pruned_node = self._prune_nested_graph(
                     node=node,
                     target_nodes=target_nodes,
-                    operation_structure_map=operation_structure_map,
+                    proxy_input_operation_structures=proxy_input_operation_structures,
                     aggressive=global_state.aggressive,
                 )
             else:
@@ -173,12 +173,12 @@ class GraphPruningExtractor(
         self,
         node: Node,
         target_columns: Optional[List[str]] = None,
-        operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
+        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
         aggressive: bool = False,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(
-            node=node, operation_structure_map=operation_structure_map
+            node=node, proxy_input_operation_structures=proxy_input_operation_structures
         )
         operation_structure = op_struct_info.operation_structure_map[node.name]
         temp_node_name = "temp"
