@@ -1,7 +1,7 @@
 """
 This module contains operation structure extraction related classes.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
@@ -46,7 +46,7 @@ class OperationStructureExtractor(
     def _prepare_operation_structure(
         node: BaseGraphNode,
         operation_structure: OperationStructure,
-        operation_structure_map: Dict[str, OperationStructure],
+        proxy_input_operation_structures: List[OperationStructure],
     ) -> OperationStructure:
         # find the proxy input nodes from the nested graph to create proxy node name to outer node names mapping
         # (to remap the proxy node name in the nested graph back to outer graph)
@@ -56,9 +56,9 @@ class OperationStructureExtractor(
         for proxy_input_node in nested_graph.iterate_nodes(
             target_node=nested_target_node, node_type=NodeType.PROXY_INPUT
         ):
-            ref_node_name = proxy_input_node.parameters.node_name
-            proxy_input_node_name_map[proxy_input_node.name] = operation_structure_map[
-                ref_node_name
+            input_order = proxy_input_node.parameters.input_order
+            proxy_input_node_name_map[proxy_input_node.name] = proxy_input_operation_structures[
+                input_order
             ].all_node_names
 
         # update node_names of the nested operation structure so that the internal node names (node names only
@@ -93,11 +93,9 @@ class OperationStructureExtractor(
         nested_output_node = nested_graph.get_node_by_name(nested_output_node_name)
         # operation structure map contains inputs to the graph node
         # so that proxy input node can refer to them
-        input_node_names = self.graph.get_input_node_names(node=node)
-        operation_structure_map = dict(zip(input_node_names, input_operation_structures))
         nested_op_structure_info = OperationStructureExtractor(graph=nested_graph).extract(
             node=nested_output_node,
-            operation_structure_map=operation_structure_map,
+            proxy_input_operation_structures=input_operation_structures,
         )
         nested_operation_structure = nested_op_structure_info.operation_structure_map[
             nested_output_node_name
@@ -105,7 +103,7 @@ class OperationStructureExtractor(
         return self._prepare_operation_structure(
             node=node,
             operation_structure=nested_operation_structure,
-            operation_structure_map=operation_structure_map,
+            proxy_input_operation_structures=input_operation_structures,
         )
 
     def _post_compute(
@@ -134,12 +132,12 @@ class OperationStructureExtractor(
     def extract(
         self,
         node: Node,
-        operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
+        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
         **kwargs: Any,
     ) -> OperationStructureInfo:
         state_params = {}
-        if operation_structure_map:
-            state_params["operation_structure_map"] = operation_structure_map
+        if proxy_input_operation_structures:
+            state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
 
         global_state = OperationStructureInfo(**state_params)
         self._extract(

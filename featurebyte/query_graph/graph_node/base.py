@@ -48,10 +48,10 @@ class GraphNode(BaseGraphNode):
         """
         graph = QueryGraphModel()
         proxy_input_nodes = []
-        for node in input_nodes:
+        for i, node in enumerate(input_nodes):
             proxy_input_node = graph.add_operation(
                 node_type=NodeType.PROXY_INPUT,
-                node_params={"node_name": node.name},
+                node_params={"input_order": i},
                 node_output_type=node.output_type,
                 input_nodes=[],
             )
