@@ -8,7 +8,7 @@ def test_combine_tile_tables(query_graph_with_similar_groupby_nodes):
 
     # Check that each groupby node has the same tile_id. Their respective tile sqls have to be
     # merged into one
-    tile_id = "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d"
+    tile_id = "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725"
     for node in nodes:
         assert node.parameters.tile_id == tile_id
 

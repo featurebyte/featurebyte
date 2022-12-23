@@ -34,11 +34,12 @@ class FeatureExecutionPlan:
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
-    def __init__(self, source_type: SourceType) -> None:
+    def __init__(self, source_type: SourceType, is_online_serving: bool) -> None:
+        aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
         self.aggregators = {
-            LookupSpec: LookupAggregator(source_type),
-            WindowAggregationSpec: WindowAggregator(source_type),
-            ItemAggregationSpec: ItemAggregator(source_type),
+            LookupSpec: LookupAggregator(**aggregator_kwargs),
+            WindowAggregationSpec: WindowAggregator(**aggregator_kwargs),
+            ItemAggregationSpec: ItemAggregator(**aggregator_kwargs),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
@@ -239,20 +240,28 @@ class FeatureExecutionPlanner:
 
     Parameters
     ----------
-    graph : QueryGraphModel
+    graph: QueryGraphModel
         Query graph
+    source_type: SourceType
+        Source type information
+    is_online_serving: bool
+        Whether the generated code is intended for online serving
+    serving_names_mapping: dict[str, str] | None
+        Mapping from default serving names to new serving names
     """
 
     def __init__(
         self,
         graph: QueryGraphModel,
         source_type: SourceType,
+        is_online_serving: bool,
         serving_names_mapping: dict[str, str] | None = None,
     ):
         self.graph = graph
-        self.plan = FeatureExecutionPlan(source_type)
+        self.plan = FeatureExecutionPlan(source_type, is_online_serving)
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
+        self.is_online_serving = is_online_serving
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes

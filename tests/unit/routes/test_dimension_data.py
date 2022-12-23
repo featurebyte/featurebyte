@@ -8,6 +8,8 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.table import DimensionTableData
 from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
@@ -40,7 +42,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_dimension_table'}}\") "
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
             f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]
@@ -70,7 +72,12 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(
-        self, tabular_source, columns_info, user_id, dimension_data_semantic_ids
+        self,
+        tabular_source,
+        columns_info,
+        user_id,
+        dimension_data_semantic_ids,
+        feature_store_details,
     ):
         """Fixture for a Dimension Data dict"""
         dimension_data_id = dimension_data_semantic_ids
@@ -90,6 +97,14 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             "user_id": str(user_id),
             "dimension_data_id_column": "dimension_id",  # this value needs to match the column name used in test data
         }
+        dimension_table_data = DimensionTableData(**dimension_data_dict)
+        input_node = dimension_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
+        graph = QueryGraph()
+        inserted_node = graph.add_node(node=input_node, input_nodes=[])
+        dimension_data_dict["graph"] = graph
+        dimension_data_dict["node_name"] = inserted_node.name
         output = DimensionDataModel(**dimension_data_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None

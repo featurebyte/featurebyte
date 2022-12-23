@@ -137,8 +137,11 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     assert set(dimension_data.columns).issubset(dir(dimension_data))
     assert dimension_data._ipython_key_completions_() == set(dimension_data.columns)
 
+    output = dimension_data.dict()
     dimension_data_dict["id"] = dimension_data.id
-    assert dimension_data.dict() == dimension_data_dict
+    dimension_data_dict["graph"] = output["graph"]
+    dimension_data_dict["node_name"] = output["node_name"]
+    assert output == dimension_data_dict
 
     # user input validation
     with pytest.raises(TypeError) as exc:

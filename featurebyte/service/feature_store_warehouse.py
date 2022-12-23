@@ -17,9 +17,11 @@ class FeatureStoreWarehouseService(BaseService):
     FeatureStoreWarehouseService is responsible for interacting with the data warehouse.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self, user: Any, persistent: Persistent, session_manager_service: SessionManagerService
+    ):
         super().__init__(user, persistent)
-        self.session_manager_service = SessionManagerService(user, persistent)
+        self.session_manager_service = session_manager_service
 
     async def list_databases(
         self, feature_store: FeatureStoreModel, get_credential: Any

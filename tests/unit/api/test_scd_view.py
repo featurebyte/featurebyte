@@ -155,7 +155,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     timestamp column
     """
     subset_view = snowflake_scd_view[["col_float"]]
-    assert subset_view.columns == ["col_float", "col_text", "event_timestamp"]
+    assert subset_view.columns == ["col_float", "col_char", "col_text", "event_timestamp"]
 
 
 def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity):

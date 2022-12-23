@@ -3,7 +3,7 @@ This module contains graph node class.
 """
 from typing import Any, Dict, List, Tuple, cast
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
@@ -24,6 +24,7 @@ class GraphNode(BaseGraphNode):
         node_params: Dict[str, Any],
         node_output_type: NodeOutputType,
         input_nodes: List[Node],
+        graph_node_type: GraphNodeType,
     ) -> Tuple["GraphNode", List[Node]]:
         """
         Construct a graph node
@@ -38,6 +39,8 @@ class GraphNode(BaseGraphNode):
             Output type of the node (to be inserted in the graph inside the graph node)
         input_nodes: List[Nodes]
             Input nodes of the node (to be inserted in the graph inside the graph node)
+        graph_node_type: GraphNodeType
+            Type of graph node
 
         Returns
         -------
@@ -63,7 +66,11 @@ class GraphNode(BaseGraphNode):
         graph_node = GraphNode(
             name="graph",
             output_type=nested_node.output_type,
-            parameters=GraphNodeParameters(graph=graph, output_node_name=nested_node.name),
+            parameters=GraphNodeParameters(
+                graph=graph,
+                output_node_name=nested_node.name,
+                type=graph_node_type,
+            ),
         )
         return graph_node, proxy_input_nodes
 

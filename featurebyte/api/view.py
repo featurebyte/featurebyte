@@ -43,9 +43,12 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
-from featurebyte.exception import NoJoinKeyFoundError, RepeatedColumnNamesError
+from featurebyte.exception import (
+    ChangeViewNoJoinColumnError,
+    NoJoinKeyFoundError,
+    RepeatedColumnNamesError,
+)
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -211,7 +214,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             columns_info=data.columns_info,
             node_name=data.node_name,
             column_lineage_map={col.name: (data.node.name,) for col in data.columns_info},
-            row_index_lineage=tuple(data.row_index_lineage),
             tabular_data_ids=[data.id],
             **kwargs,
         )
@@ -248,7 +250,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         -------
         set[str]
         """
-        return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+        additional_columns = self._get_additional_inherited_columns()
+        try:
+            return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+        except ChangeViewNoJoinColumnError:
+            return additional_columns
 
     def _get_additional_inherited_columns(self) -> set[str]:
         """
@@ -361,7 +367,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         joined_columns_info: List[ColumnInfo],
         joined_column_lineage_map: Dict[str, Tuple[str, ...]],
         joined_tabular_data_ids: List[PydanticObjectId],
-        joined_row_index_lineage: tuple[str, ...],
     ) -> None:
         """
         Updates the metadata for the new join
@@ -376,13 +381,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined column lineage map
         joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
-        joined_row_index_lineage: tuple[str, ...]
-            joined row index lineage
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
         self.column_lineage_map = joined_column_lineage_map
-        self.row_index_lineage = joined_row_index_lineage
         self.__dict__.update(
             {
                 "tabular_data_ids": joined_tabular_data_ids,
@@ -621,16 +623,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.tabular_data_ids, other_view.tabular_data_ids
         )
 
-        # Update row index lineage
-        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, node.name)
-
         # Update metadata
         self._update_metadata(
             node.name,
             joined_columns_info,
             joined_column_lineage_map,
             joined_tabular_data_ids,
-            joined_row_index_lineage,
         )
 
     @staticmethod
@@ -682,7 +680,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_source=self.tabular_source,
             node_name=feature_node.name,
             dtype=feature_dtype,
-            row_index_lineage=(node.name,),
             tabular_data_ids=self.tabular_data_ids,
             entity_ids=entity_ids,
         )

@@ -21,10 +21,8 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.node.generic import GroupbyNode, ItemGroupbyNode
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from tests.util.helper import get_node
 
@@ -262,7 +260,7 @@ def saved_feature_fixture(
     assert groupby_node.parameters.windows == ["1d"]
     assert (
         groupby_node.parameters.tile_id
-        == "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd"
+        == "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E"
     )
     assert groupby_node.parameters.aggregation_id == "sum_a1a9657e29a711c4d09475bb8285da86250d2294"
 
@@ -277,6 +275,7 @@ def saved_feature_fixture(
                 "name": [float_feature_namespace.name],
                 "dtype": [float_feature_namespace.dtype],
                 "readiness": [float_feature_namespace.readiness],
+                "online_enabled": [float_feature.online_enabled],
                 "data": [["sf_event_data"]],
                 "entities": [["customer"]],
                 "created_at": [float_feature_namespace.created_at],
@@ -647,5 +646,8 @@ def test_is_time_based(saved_feature):
     with patch(
         "featurebyte.models.feature.FeatureModel.extract_operation_structure"
     ) as mocked_extract:
-        mocked_extract.return_value = GroupOperationStructure(is_time_based=False)
+        mocked_extract.return_value = GroupOperationStructure(
+            row_index_lineage=("item_groupby_1",),
+            is_time_based=False,
+        )
         assert not saved_feature.is_time_based

@@ -96,3 +96,11 @@ class NodeOutputType(StrEnum):
 
     FRAME = "frame"
     SERIES = "series"
+
+
+class GraphNodeType(StrEnum):
+    """
+    GraphNodeType enum is used to tag the purpose of the graph node.
+    """
+
+    CLEANING = "cleaning"

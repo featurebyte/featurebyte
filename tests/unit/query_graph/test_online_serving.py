@@ -35,7 +35,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
         SELECT DISTINCT
           CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
           "cust_id" AS "CUSTOMER_ID"
-        FROM fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d
+        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
         WHERE
           INDEX >= FLOOR(
             (
@@ -65,7 +65,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
         SELECT DISTINCT
           CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
           "cust_id" AS "CUSTOMER_ID"
-        FROM fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178
+        FROM TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226
         WHERE
           INDEX >= FLOOR(
             (
@@ -199,5 +199,28 @@ def test_online_store_feature_retrieval_sql__request_subquery(
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column(
+    global_graph, scd_lookup_feature_node, update_fixtures
+):
+    """
+    Test constructing feature retrieval sql for online store when request table is a subquery
+    """
+    df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
+    request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
+
+    sql = get_online_store_retrieval_sql(
+        request_table_expr=request_table_expr,
+        request_table_columns=["CUSTOMER_ID"],
+        graph=global_graph,
+        nodes=[scd_lookup_feature_node],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",
         update_fixture=update_fixtures,
     )

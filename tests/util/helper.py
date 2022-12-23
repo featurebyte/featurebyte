@@ -79,9 +79,7 @@ def add_groupby_operation(graph, groupby_node_params, input_node):
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
-            "tile_id": get_tile_table_identifier(
-                {"table_name": "fake_transactions_table"}, groupby_node_params
-            ),
+            "tile_id": get_tile_table_identifier("deadbeef1234", groupby_node_params),
             "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[input_node.name], groupby_node_params
             ),

@@ -49,8 +49,70 @@ from featurebyte.service.tabular_data import DataService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
+from featurebyte.utils.credential import ConfigCredentialProvider
 
 app_container_config = {
+    # These are objects which don't take in any dependencies, and can be instantiated as is.
+    "no_dependency_objects": [
+        {
+            "name": "credential_provider",
+            "clazz": ConfigCredentialProvider,
+        }
+    ],
+    # These services have dependencies in addition to the normal user, and persistent dependencies.
+    "services_with_extra_deps": [
+        {
+            "name": "session_validator_service",
+            "clazz": SessionValidatorService,
+            "extra_deps": [
+                "credential_provider",
+            ],
+        },
+        {
+            "name": "session_manager_service",
+            "clazz": SessionManagerService,
+            "extra_deps": [
+                "credential_provider",
+                "session_validator_service",
+            ],
+        },
+        {
+            "name": "online_enable_service",
+            "clazz": OnlineEnableService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+        {
+            "name": "online_serving_service",
+            "clazz": OnlineServingService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+        {
+            "name": "deploy_service",
+            "clazz": DeployService,
+            "extra_deps": [
+                "online_enable_service",
+            ],
+        },
+        {
+            "name": "preview_service",
+            "clazz": PreviewService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+        {
+            "name": "feature_store_warehouse_service",
+            "clazz": FeatureStoreWarehouseService,
+            "extra_deps": [
+                "session_manager_service",
+            ],
+        },
+    ],
+    # These services only require the user, and persistent dependencies.
     "services": [
         {
             "name": "entity_service",
@@ -81,24 +143,8 @@ app_container_config = {
             "clazz": FeatureListService,
         },
         {
-            "name": "session_validator_service",
-            "clazz": SessionValidatorService,
-        },
-        {
             "name": "feature_readiness_service",
             "clazz": FeatureReadinessService,
-        },
-        {
-            "name": "online_enable_service",
-            "clazz": OnlineEnableService,
-        },
-        {
-            "name": "online_serving_service",
-            "clazz": OnlineServingService,
-        },
-        {
-            "name": "deploy_service",
-            "clazz": DeployService,
         },
         {
             "name": "feature_job_setting_analysis_service",
@@ -125,10 +171,6 @@ app_container_config = {
             "clazz": FeatureStoreService,
         },
         {
-            "name": "preview_service",
-            "clazz": PreviewService,
-        },
-        {
             "name": "semantic_service",
             "clazz": SemanticService,
         },
@@ -152,15 +194,8 @@ app_container_config = {
             "name": "info_service",
             "clazz": InfoService,
         },
-        {
-            "name": "session_manager_service",
-            "clazz": SessionManagerService,
-        },
-        {
-            "name": "feature_store_warehouse_service",
-            "clazz": FeatureStoreWarehouseService,
-        },
     ],
+    # Controllers can depend on any object defined above.
     "controllers": [
         {
             "name": "entity_controller",
@@ -322,22 +357,49 @@ class AppContainer:
             "tempdata_controller": TempDataController(temp_storage=temp_storage),
         }
 
-        for app_type in ["services", "controllers"]:
-            for item in app_config[app_type]:
-                name = item["name"]
-                clazz = item["clazz"]
-                depends = item.get("depends", None)
-                if depends is None:
-                    # construct service instances
-                    instance = clazz(user=user, persistent=persistent)
-                else:
-                    # construct controller instances
-                    depend_instances = []
-                    for s_name in depends:
-                        depend_instances.append(self.instance_map[s_name])
-                    instance = clazz(*depend_instances)
+        # validate that there are no clashing names
+        seen_names = set()
+        for definitions in app_config.values():
+            for definition in definitions:
+                definition_name = definition["name"]
+                if definition_name in seen_names:
+                    raise ValueError(
+                        f"error creating dependency map. {definition_name} has been defined already. "
+                        "Consider changing the name of the dependency."
+                    )
+                seen_names.add(definition_name)
 
-                self.instance_map[name] = instance
+        # build no dependency objects
+        for item in app_config["no_dependency_objects"]:
+            name, clazz = item["name"], item["clazz"]
+            self.instance_map[name] = clazz()
+
+        # build services
+        for item in app_config["services"]:
+            name, clazz = item["name"], item["clazz"]
+            service_instance = clazz(user=user, persistent=persistent)
+            self.instance_map[name] = service_instance
+
+        # build services with other dependencies
+        for item in app_config["services_with_extra_deps"]:
+            name, clazz = item["name"], item["clazz"]
+            extra_depends = item.get("extra_deps", None)
+            # seed depend_instances with the normal user and persistent objects
+            depend_instances = [user, persistent]
+            for s_name in extra_depends:
+                depend_instances.append(self.instance_map[s_name])
+            instance = clazz(*depend_instances)
+            self.instance_map[name] = instance
+
+        # build controllers
+        for item in app_config["controllers"]:
+            name, clazz = item["name"], item["clazz"]
+            depends = item.get("depends", None)
+            depend_instances = []
+            for s_name in depends:
+                depend_instances.append(self.instance_map[s_name])
+            instance = clazz(*depend_instances)
+            self.instance_map[name] = instance
 
     def __getattr__(self, key: str) -> Any:
         return self.instance_map[key]

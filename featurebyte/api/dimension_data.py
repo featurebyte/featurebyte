@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
+from featurebyte.api.api_object import PrettyDict
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
@@ -68,7 +69,7 @@ class DimensionData(DimensionDataModel, DataApiObject):
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
-        Provide baisc info for the dimension data.
+        Provide basic info for the dimension data.
 
         Parameters
         ----------
@@ -79,12 +80,14 @@ class DimensionData(DimensionDataModel, DataApiObject):
         -------
         Dict[str, Any]
         """
-        return {
-            "name": self.name,
-            "record_creation_date_column": self.record_creation_date_column,
-            "updated_at": self.updated_at,
-            "status": self.status,
-            "entities": self.entity_ids,
-            "tabular_source": self.tabular_source,
-            "dimension_data_id_column": self.dimension_data_id_column,
-        }
+        return PrettyDict(
+            {
+                "name": self.name,
+                "record_creation_date_column": self.record_creation_date_column,
+                "updated_at": self.updated_at,
+                "status": self.status,
+                "entities": self.entity_ids,
+                "tabular_source": self.tabular_source,
+                "dimension_data_id_column": self.dimension_data_id_column,
+            }
+        )

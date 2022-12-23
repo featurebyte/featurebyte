@@ -52,11 +52,28 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
     _list_schema = FeatureNamespaceModel
-    _list_fields = ["name", "dtype", "readiness", "data", "entities", "created_at"]
+    _list_fields = [
+        "name",
+        "dtype",
+        "readiness",
+        "online_enabled",
+        "data",
+        "entities",
+        "created_at",
+    ]
     _list_foreign_keys = [
         ("entity_ids", Entity, "entities"),
         ("tabular_data_ids", DataApiObject, "data"),
     ]
+
+    @classmethod
+    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
+        features = super()._post_process_list(item_list)
+        # add online_enabled
+        features["online_enabled"] = features[
+            ["default_feature_id", "online_enabled_feature_ids"]
+        ].apply(lambda row: row[0] in row[1], axis=1)
+        return features
 
     @classmethod
     def list(

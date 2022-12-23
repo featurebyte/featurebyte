@@ -119,6 +119,8 @@ def get_base_expected_scd_data_model(scd_data_model, scd_columns_info):
         "effective_timestamp_column": "effective_at",
         "end_timestamp_column": "end_at",
         "current_flag_column": "enabled",
+        "graph": {"nodes": [], "edges": []},
+        "node_name": "",
     }
 
 

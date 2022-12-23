@@ -80,7 +80,7 @@ async def test_feature_list_deployed(
               SELECT
                 1 AS "cust_id"
             ) AS REQ
-            LEFT JOIN online_store_d2ed607faa7d8527306806fca080c333051df742 AS T0
+            LEFT JOIN online_store_0574391b6a26244d48f1e582a20357c02b3e27c4 AS T0
               ON REQ."cust_id" = T0."cust_id"
             """
         ).strip()

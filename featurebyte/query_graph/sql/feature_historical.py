@@ -122,7 +122,10 @@ def get_historical_features_sql(
         If any required serving name is not provided
     """
     planner = FeatureExecutionPlanner(
-        graph, serving_names_mapping=serving_names_mapping, source_type=source_type
+        graph,
+        serving_names_mapping=serving_names_mapping,
+        source_type=source_type,
+        is_online_serving=False,
     )
     plan = planner.generate_plan(nodes)
 

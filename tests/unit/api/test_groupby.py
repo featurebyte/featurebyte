@@ -55,7 +55,7 @@ def test_constructor__wrong_input_type(snowflake_event_view):
         GroupBy(obj=True, keys="whatever")
     expected_msg = (
         'type of argument "obj" must be one of (featurebyte.api.event_view.EventView, '
-        "featurebyte.api.item_view.ItemView); got bool instead"
+        "featurebyte.api.item_view.ItemView, featurebyte.api.change_view.ChangeView); got bool instead"
     )
     assert expected_msg in str(exc.value)
 
@@ -201,7 +201,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "sf_table_f360_m180_b90_6779d772dcc5c83e10a93ca08923844041ded978",
+        "tile_id": "TILE_F360_M180_B90_4EB818A0E7060B67114936BF6E8F21D600289D91",
         "aggregation_id": "sum_697ea04ec28a79540e5b097b94720320fa9704c1",
         "timestamp": "event_timestamp",
         "value_by": None,
@@ -237,7 +237,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "sf_table_f360_m180_b90_995fb463dce4af3f8384b1d76cd5575e9e9c9a39",
+        "tile_id": "TILE_F360_M180_B90_6C947F5A1417CAD7CC41E37783BF13F6606E06A0",
         "aggregation_id": "sum_33562fdbbf645854fb9624befd27040653a66c06",
         "timestamp": "event_timestamp",
         "value_by": "col_int",

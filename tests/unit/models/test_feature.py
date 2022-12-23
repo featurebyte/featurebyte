@@ -55,10 +55,10 @@ def test_feature_model(feature_model_dict, test_dir):
         "created_at": None,
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
-        "entity_ids": [ObjectId("6332fdb21e8f0eeccc414513")],
-        "tabular_data_ids": [ObjectId("6332fdb21e8f0eeccc414512")],
+        "entity_ids": [ObjectId("639c65cf8ce21f6bf429320d")],
+        "tabular_data_ids": [ObjectId("6337f9651050ee7d5980660d")],
         "feature_list_ids": [],
-        "feature_namespace_id": ObjectId("6332fdb31e8f0eeccc414516"),
+        "feature_namespace_id": ObjectId("639c65cf8ce21f6bf4293212"),
         "graph": {
             "edges": [
                 {"source": "input_1", "target": "groupby_1"},
@@ -66,14 +66,13 @@ def test_feature_model(feature_model_dict, test_dir):
             ],
             "nodes": feature_dict["graph"]["nodes"],
         },
-        "id": ObjectId("6332fdb31e8f0eeccc414515"),
+        "id": ObjectId("639c65cf8ce21f6bf4293211"),
         "name": "sum_30m",
         "node_name": "project_1",
         "online_enabled": False,
         "readiness": "DRAFT",
-        "row_index_lineage": ("groupby_1",),
         "tabular_source": {
-            "feature_store_id": ObjectId("6332fdb21e8f0eeccc414510"),
+            "feature_store_id": ObjectId("639c65ce8ce21f6bf4293201"),
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",

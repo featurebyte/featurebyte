@@ -11,6 +11,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
+from featurebyte.utils.credential import ConfigCredentialProvider
 
 
 class SessionManagerService:
@@ -18,10 +19,17 @@ class SessionManagerService:
     SessionManagerService class is responsible for retrieving a session manager.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        credential_provider: ConfigCredentialProvider,
+        session_validator_service: SessionValidatorService,
+    ):
         self.user = user
         self.persistent = persistent
-        self.session_validator_service = SessionValidatorService(user, persistent)
+        self.credential_provider = credential_provider
+        self.session_validator_service = session_validator_service
 
     async def get_feature_store_session(
         self, feature_store: FeatureStoreModel, get_credential: Any
@@ -47,13 +55,16 @@ class SessionManagerService:
             When the credentials used to access the feature store is missing or invalid
         """
         try:
-            session_manager = SessionManager(
-                credentials={
-                    feature_store.name: await get_credential(
-                        user_id=self.user.id, feature_store_name=feature_store.name
-                    )
-                }
-            )
+            if get_credential is not None:
+                credential = await get_credential(
+                    user_id=self.user.id, feature_store_name=feature_store.name
+                )
+            else:
+                credential = await self.credential_provider.get_credential(
+                    user_id=self.user.id, feature_store_name=feature_store.name
+                )
+            credentials = {feature_store.name: credential}
+            session_manager = SessionManager(credentials=credentials)
             session = await session_manager.get_session(feature_store)
             await self.session_validator_service.validate_feature_store_exists(
                 feature_store.details

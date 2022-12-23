@@ -80,3 +80,39 @@ async def persistent_fixture(mongo_persistent) -> MongoDB:
     """
     persistent, _ = mongo_persistent
     yield persistent
+
+
+@pytest.fixture(
+    params=[
+        [15, 25, 1, "2022-06-13T08:51:50.000Z", 27585172],
+        [15, 25, 1, "2022-06-13T08:52:49.000Z", 27585172],
+        [15, 25, 1, "2022-06-13T08:52:50.000Z", 27585173],
+        [15, 25, 1, "2022-06-13 08:51:50", 27585172],
+        [15, 25, 1, "2022-06-13 08:52:49", 27585172],
+        [15, 25, 1, "2022-06-13 08:52:50", 27585173],
+        [15, 100, 2, "2022-06-13T09:24:35.000Z", 13792603],
+        [15, 100, 2, "2022-06-13T09:25:35.000Z", 13792603],
+        [15, 100, 2, "2022-06-13T09:26:34.000Z", 13792603],
+        [15, 100, 2, "2022-06-13T09:26:35.000Z", 13792604],
+    ],
+)
+def timestamp_to_index_fixture(request):
+    """
+    Parameterized fixture for timestamp to index conversion
+    """
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        [27585172, 15, 25, 1, "2022-06-13T08:51:50.000Z"],
+        [27585173, 15, 25, 1, "2022-06-13T08:52:50.000Z"],
+        [13792603, 15, 100, 2, "2022-06-13T09:24:35.000Z"],
+        [13792604, 15, 100, 2, "2022-06-13T09:26:35.000Z"],
+    ],
+)
+def index_to_timestamp_fixture(request):
+    """
+    Parameterized fixture for index to timestamp conversion
+    """
+    return request.param

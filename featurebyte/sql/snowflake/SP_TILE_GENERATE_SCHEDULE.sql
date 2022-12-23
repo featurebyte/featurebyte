@@ -29,6 +29,12 @@ $$
     */
 
     var debug = "Debug - JOB_SCHEDULE_TS: " + JOB_SCHEDULE_TS
+    var tile_id = TILE_ID.toUpperCase()
+
+    var session_id = tile_id + "|" + new Date().toISOString()
+    var audit_insert_sql = `INSERT INTO TILE_JOB_MONITOR(TILE_ID, SESSION_ID, STATUS, MESSAGE) VALUES ('${tile_id}', '${session_id}', '<STATUS>', '<MESSAGE>')`
+
+    snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")})
 
     // determine tile_end_ts (tile end timestamp) based on tile_type and JOB_SCHEDULE_TS
     var tile_end_ts = JOB_SCHEDULE_TS
@@ -40,7 +46,6 @@ $$
 
     var tile_type = TYPE.toUpperCase()
     var lookback_period = FREQUENCY_MINUTE * (MONITOR_PERIODS + 1)
-    var tile_id = TILE_ID.toUpperCase()
 
     if (tile_type === "OFFLINE") {
         // offline schedule
@@ -65,13 +70,16 @@ $$
 
     var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+monitor_tile_end_ts_str+"''")
     var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_type}')`
-    result = snowflake.execute(
-        {
-            sqlText: monitor_stored_proc
-        }
-    )
-    result.next()
-    debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
+    try {
+        result = snowflake.execute({sqlText: monitor_stored_proc})
+        result.next()
+        debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
+    } catch (err)  {
+        message = err.message.replaceAll("'", "")
+        snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "MONITORED_FAILED").replace("<MESSAGE>", message)})
+        throw err
+    }
+    snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "MONITORED").replace("<MESSAGE>", "")})
 
     // trigger stored procedure to generate tiles
     var generate_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+tile_end_ts_str+"''")
@@ -81,17 +89,27 @@ $$
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
     var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_type}', '${last_tile_start_ts_str}')`
-    var result = snowflake.execute(
-        {
-            sqlText: generate_stored_proc
-        }
-    )
-    result.next()
-    debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
+    try {
+        result = snowflake.execute({sqlText: generate_stored_proc})
+        result.next()
+        debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
+    } catch (err)  {
+        message = err.message.replaceAll("'", "")
+        snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "GENERATED_FAILED").replace("<MESSAGE>", message)})
+        throw err
+    }
+    snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "GENERATED").replace("<MESSAGE>", "")})
 
     // update related online feature store
-    job_schedule_ts_str = JOB_SCHEDULE_TS.toISOString()
-    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}', '${job_schedule_ts_str}')`})
+    try {
+        job_schedule_ts_str = JOB_SCHEDULE_TS.toISOString()
+        snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}', '${job_schedule_ts_str}')`})
+    } catch (err)  {
+        message = err.message.replaceAll("'", "")
+        snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "ONLINE_STORE_FAILED").replace("<MESSAGE>", message)})
+        throw err
+    }
+    snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "COMPLETED").replace("<MESSAGE>", "")})
 
     return debug
 $$;

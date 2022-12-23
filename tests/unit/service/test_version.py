@@ -44,7 +44,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "timestamp": "event_timestamp",
         "names": ["sum_30m"],
         "serving_names": ["cust_id"],
-        "entity_ids": [ObjectId("637449b96d6e838b025328e2")],
+        "entity_ids": [ObjectId("639c65cf8ce21f6bf429320d")],
     }
     parameters = feature.graph.get_node_by_name("groupby_1").parameters
     assert parameters.dict() == {
@@ -52,8 +52,8 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "blind_spot": 600,
         "time_modulo_frequency": 300,
         "frequency": 1800,
-        "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "aggregation_id": "sum_80fd57e971931c519425572b4b5caf97ecbfe084",
+        "tile_id": "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E",
+        "aggregation_id": "sum_a1a9657e29a711c4d09475bb8285da86250d2294",
     }
 
     new_parameters = version.graph.get_node_by_name("groupby_1").parameters
@@ -62,8 +62,8 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "blind_spot": 86400,
         "time_modulo_frequency": 3600,
         "frequency": 86400,
-        "tile_id": "sf_table_f86400_m3600_b86400_d1c26f05670a559eec7e90107400f228b14c209f",
-        "aggregation_id": "sum_1bdc2e3a22b7cfe2ca65d7c2b161f7fc2953dce1",
+        "tile_id": "TILE_F86400_M3600_B86400_EB59DE8A3155235069E383C75BA0B314B7F64551",
+        "aggregation_id": "sum_8fac908c5e6c78cb3e086f8d034f6a2d4c826916",
     }
 
     # compare edges & other nodes

@@ -13,37 +13,42 @@ ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential netcat && \
+    apt-get install -y build-essential netcat curl && \
     apt-get clean
 
 # install poetry
-RUN pip install --extra-index-url "https://${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME}:${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}@${FEATUREBYTE_REPOSITORY}/simple/" poetry==1.2.0rc99
+RUN pip install  poetry==1.3.1
 
 # Copy project files
 WORKDIR /app
 COPY poetry.lock pyproject.toml /app/
-COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
-COPY ./docker/migration.py              /scripts/migration.py
 
 # Install requirements
 RUN poetry config virtualenvs.create false && \
     poetry install --only main --only docs --extras "server" --no-interaction --no-ansi && \
+    poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD} && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 
 # copy featurebyte and featurebyte package
-COPY ./featurebyte /app/featurebyte
-COPY ./docs        /app/docs
-COPY ./dist        /app/dist
-COPY ./mkdocs.yaml /app/mkdocs.yaml
+COPY ./featurebyte     /app/featurebyte
+COPY ./docs            /app/docs
+COPY ./dist            /app/dist
+COPY ./mkdocs.yaml     /app/mkdocs.yaml
+COPY ./docker/docs.py  /app/
 
-# install databricks-connector via pip (dependency error with pyarrow)
-# downgrade pyarrow - backwards compatibility issue with databricks
-RUN pip install databricks-sql-connector==2.1.0 && \
-    pip install pyarrow==8.0.0 && \
-    pip install jupyterlab && \
+# build docs
+RUN PYTHONPATH=$PWD:$PWD/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs build
+
+RUN pip install jupyterlab && \
     pip install --no-index -f /app/dist featurebyte && \
-    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD
+    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD && \
+    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME && \
+    poetry config --unset http-basic.featurebyte_np
+
+# Copy scripts
+COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
+COPY ./docker/migration.py              /scripts/migration.py
 
 RUN adduser --uid $UID --disabled-password --gecos '' $USER
 RUN chown -R $USER:$USER /app

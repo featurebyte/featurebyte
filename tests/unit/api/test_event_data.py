@@ -113,6 +113,8 @@ def event_data_dict_fixture(snowflake_database_table):
         "updated_at": None,
         "user_id": None,
         "status": "DRAFT",
+        "graph": {"nodes": [], "edges": []},
+        "node_name": "",
     }
 
 
@@ -137,8 +139,11 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     assert set(event_data.columns).issubset(dir(event_data))
     assert event_data._ipython_key_completions_() == set(event_data.columns)
 
+    output = event_data.dict()
     event_data_dict["id"] = event_data.id
-    assert event_data.dict() == event_data_dict
+    event_data_dict["graph"] = output["graph"]
+    event_data_dict["node_name"] = output["node_name"]
+    assert output == event_data_dict
 
     # user input validation
     with pytest.raises(TypeError) as exc:

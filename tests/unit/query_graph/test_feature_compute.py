@@ -212,7 +212,9 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
 def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    planner = FeatureExecutionPlanner(query_graph_with_groupby, source_type=SourceType.SNOWFLAKE)
+    planner = FeatureExecutionPlanner(
+        query_graph_with_groupby, source_type=SourceType.SNOWFLAKE, is_online_serving=False
+    )
     plan = planner.generate_plan([groupby_node])
     assert list(
         plan.aggregators[
@@ -225,7 +227,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
-                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
@@ -245,7 +247,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
-                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
@@ -279,7 +281,10 @@ def test_feature_execution_planner__serving_names_mapping(
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     mapping = {"CUSTOMER_ID": "NEW_CUST_ID"}
     planner = FeatureExecutionPlanner(
-        query_graph_with_groupby, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
+        query_graph_with_groupby,
+        serving_names_mapping=mapping,
+        source_type=SourceType.SNOWFLAKE,
+        is_online_serving=False,
     )
     plan = planner.generate_plan([groupby_node])
     assert list(
@@ -293,7 +298,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
-                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
@@ -313,7 +318,7 @@ def test_feature_execution_planner__serving_names_mapping(
                 frequency=3600,
                 blind_spot=900,
                 time_modulo_frequency=1800,
-                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                tile_table_id="TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
                 aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
@@ -346,7 +351,10 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     """
     mapping = {"order_id": "NEW_ORDER_ID"}
     planner = FeatureExecutionPlanner(
-        global_graph, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
+        global_graph,
+        serving_names_mapping=mapping,
+        source_type=SourceType.SNOWFLAKE,
+        is_online_serving=False,
     )
     plan = planner.generate_plan([order_size_feature_group_node])
 
@@ -390,14 +398,17 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     """
     mapping = {"cust_id": "CUSTOMER_ID"}
     planner = FeatureExecutionPlanner(
-        global_graph, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
+        global_graph,
+        serving_names_mapping=mapping,
+        source_type=SourceType.SNOWFLAKE,
+        is_online_serving=False,
     )
     nodes = list(projected_lookup_features)
     plan = planner.generate_plan(nodes)
     aggregator = plan.aggregators[LookupSpec]
 
     # Check aggregation results
-    agg_results = aggregator.get_non_time_based_lookups()
+    agg_results = aggregator.get_direct_lookups()
     assert len(agg_results) == 1
     agg_result_dict = asdict(agg_results[0])
     agg_result_dict.pop("expr")

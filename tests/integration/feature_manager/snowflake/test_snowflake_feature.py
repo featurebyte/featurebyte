@@ -5,12 +5,14 @@ import copy
 from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.utils.snowflake.sql import escape_column_names
 
@@ -39,6 +41,7 @@ async def online_enabled_feature_spec_fixture(
     feature_manager,
     feature_sql,
     feature_store_table_name,
+    snowflake_tile,
 ):
     """
     Fixture for an OnlineFeatureSpec corresponding to an online enabled feature
@@ -49,16 +52,20 @@ async def online_enabled_feature_spec_fixture(
             "feature_store_table_name",
             PropertyMock(return_value=feature_store_table_name),
         ):
-            online_feature_spec = OnlineFeatureSpec(
-                feature=snowflake_feature,
-            )
-            await feature_manager.online_enable(online_feature_spec)
+            with patch.object(
+                ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[snowflake_tile])
+            ):
 
-            yield online_feature_spec
+                online_feature_spec = OnlineFeatureSpec(
+                    feature=snowflake_feature,
+                )
+                await feature_manager.online_enable(online_feature_spec)
 
-            await snowflake_session.execute_query(
-                f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
-            )
+                yield online_feature_spec
+
+                await snowflake_session.execute_query(
+                    f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+                )
 
 
 @pytest.mark.asyncio
@@ -66,7 +73,7 @@ async def test_online_enabled_feature_spec(
     online_enabled_feature_spec,
     snowflake_session,
     snowflake_feature,
-    snowflake_feature_expected_tile_spec_dict,
+    snowflake_tile,
     feature_manager,
     feature_sql,
     feature_store_table_name,
@@ -75,26 +82,27 @@ async def test_online_enabled_feature_spec(
     Test online_enable
     """
     online_feature_spec = online_enabled_feature_spec
-    expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
+    expected_tile_id = snowflake_tile.tile_id
 
     tasks = await snowflake_session.execute_query(
         f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].tile_id}%'"
     )
     assert len(tasks) == 2
-    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id.upper()}_OFFLINE"
-    assert tasks["schedule"].iloc[0] == "USING CRON 5 0 * * * UTC"
+    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id}_OFFLINE"
+    assert tasks["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"
     assert tasks["state"].iloc[0] == "started"
-    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id.upper()}_ONLINE"
-    assert tasks["schedule"].iloc[1] == "USING CRON 5-59/30 * * * * UTC"
+    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id}_ONLINE"
+    assert tasks["schedule"].iloc[1] == "USING CRON 3 * * * * UTC"
     assert tasks["state"].iloc[1] == "started"
 
-    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{expected_tile_id}'"
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 1
     expected_df = pd.DataFrame(
         {
-            "TILE_ID": [online_feature_spec.tile_ids[0]],
+            "TILE_ID": [expected_tile_id],
             "FEATURE_NAME": [online_feature_spec.feature.name],
+            "FEATURE_TYPE": ["FLOAT"],
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
             "FEATURE_READINESS": [str(online_feature_spec.feature.readiness)],
             "FEATURE_EVENT_DATA_IDS": [
@@ -111,7 +119,20 @@ async def test_online_enabled_feature_spec(
     result = result.drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
 
-    yield online_feature_spec
+    # validate as result of calling SP_TILE_GENERATE to generate historical tiles
+    sql = f"SELECT * FROM {expected_tile_id}"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 100
+    expected_df = pd.DataFrame(
+        {
+            "INDEX": np.array([5514911, 5514910, 5514909], dtype=np.int32),
+            "PRODUCT_ACTION": ["view", "view", "view"],
+            "CUST_ID": np.array([1, 1, 1], dtype=np.int8),
+            "VALUE": np.array([5, 2, 2], dtype=np.int8),
+        }
+    )
+    result = result[:3].drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
 
 
 @pytest.mark.asyncio
@@ -282,10 +303,9 @@ async def test_get_last_tile_index(
 
     await tile_manager.insert_tile_registry(tile_spec=snowflake_feature.tile_specs[0])
     last_index_df = await feature_manager.retrieve_last_tile_index(snowflake_feature)
-    expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
 
     assert len(last_index_df) == 1
-    assert last_index_df.iloc[0]["TILE_ID"] == expected_tile_id
+    assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1
 
 
@@ -304,6 +324,8 @@ async def test_get_tile_monitor_summary(
     tile_id = snowflake_feature.tile_specs[0].tile_id
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 95"
     monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 100"
+
+    await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
 
     sql = (
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "

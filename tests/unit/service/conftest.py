@@ -23,7 +23,6 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
-from featurebyte.service.deploy import DeployService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -34,8 +33,6 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
-from featurebyte.service.online_enable import OnlineEnableService
-from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.version import VersionService
 
@@ -142,9 +139,9 @@ def default_version_mode_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="online_enable_service")
-def online_enable_service_fixture(user, persistent):
+def online_enable_service_fixture(app_container):
     """OnlineEnableService fixture"""
-    return OnlineEnableService(user=user, persistent=persistent)
+    return app_container.online_enable_service
 
 
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
@@ -166,9 +163,9 @@ def online_enable_service_data_warehouse_mocks_fixture():
 
 
 @pytest.fixture(name="online_serving_service")
-def online_serving_service_fixture(user, persistent):
+def online_serving_service_fixture(app_container):
     """OnlineEnableService fixture"""
-    return OnlineServingService(user=user, persistent=persistent)
+    return app_container.online_serving_service
 
 
 @pytest.fixture(name="version_service")
@@ -178,9 +175,9 @@ def version_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="deploy_service")
-def deploy_service_fixture(user, persistent):
+def deploy_service_fixture(app_container):
     """DeployService fixture"""
-    return DeployService(user=user, persistent=persistent)
+    return app_container.deploy_service
 
 
 @pytest_asyncio.fixture(name="feature_store")
@@ -202,6 +199,7 @@ async def event_data_fixture(test_dir, feature_store, event_data_service, semant
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
         event_data = await event_data_service.create_document(
             data=EventDataCreate(**payload, user_id=user.id)
         )
@@ -230,6 +228,7 @@ async def item_data_fixture(test_dir, feature_store, item_data_service, user):
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_item_table"
         item_data = await item_data_service.create_document(
             data=ItemDataCreate(**payload, user_id=user.id)
         )
@@ -243,6 +242,8 @@ async def dimension_data_fixture(test_dir, feature_store, dimension_data_service
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
+        payload["columns_info"][0]["entity_id"] = str(ObjectId())
         item_data = await dimension_data_service.create_document(
             data=DimensionDataCreate(**payload, user_id=user.id)
         )

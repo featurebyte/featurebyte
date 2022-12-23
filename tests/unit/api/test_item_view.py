@@ -22,7 +22,6 @@ class TestItemView(BaseViewTestSuite):
     view_type = ViewType.ITEM_VIEW
     col = "item_amount"
     factory_method = ItemView.from_item_data
-    use_data_under_test_in_lineage = True
     view_class = ItemView
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
@@ -112,7 +111,6 @@ def test_from_item_data__auto_join_columns(
         "event_timestamp": "TIMESTAMP",
         "cust_id": "INT",
     }
-    assert view_dict["row_index_lineage"] == ("input_2", "join_1")
     assert view_dict["column_lineage_map"] == {
         "event_id_col": ("input_2", "join_1"),
         "item_id_col": ("input_2", "join_1"),
@@ -286,7 +284,6 @@ def test_join_event_data_attributes__more_columns(
         "cust_id": "INT",
         "col_float": "FLOAT",
     }
-    assert view_dict["row_index_lineage"] == ("input_2", "join_1", "join_2")
     assert view_dict["column_lineage_map"] == {
         "event_id_col": ("input_2", "join_1", "join_2"),
         "item_id_col": ("input_2", "join_1", "join_2"),

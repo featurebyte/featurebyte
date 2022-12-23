@@ -12,19 +12,32 @@ from typeguard import typechecked
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
 from featurebyte.core.series import Series
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.util import append_to_lineage
 
 
 class BaseFrame(QueryObject, SampleMixin):
     """
     BaseFrame class
+
+    Parameters
+    ----------
+    columns_info: List[ColumnInfo]
+        List of column specifications that are contained in this frame.
+    column_lineage_map: Dict[str, Tuple[str, ...]]
+        Column lineage map tracks a mapping of a column name, to a tuple of node names that have caused the values in a
+        column to have changed. This could include situations where
+        - the number of rows are decreasing in a column due to a selection (eg. select col_a from table(col_a, col_b))
+        - changing the values through an assignment (eg. col["a"] = col["b"])
+        - we apply an operation to update the value (eg. col["a"] = col["a"] + 123)
+        This is used to help us optimize some logic to not create nodes unnecessarily.
     """
 
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
+    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -59,6 +72,42 @@ class BaseFrame(QueryObject, SampleMixin):
         """
         return list(self.column_var_type_map)
 
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node_name"] = node_name_map[values["node_name"]]
+            if "column_lineage_map" in values:
+                column_lineage_map = {}
+                for col, lineage in values["column_lineage_map"].items():
+                    column_lineage_map[col] = tuple(
+                        node_name_map[node_name] for node_name in lineage
+                    )
+                values["column_lineage_map"] = column_lineage_map
+        return values
+
+    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        if isinstance(self.graph, GlobalQueryGraph):
+            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+            new_object = self.copy()
+            new_object.node_name = mapped_node.name
+            column_lineage_map = {}
+            for col, lineage in self.column_lineage_map.items():
+                column_lineage_map[col] = tuple(
+                    node_name_map[node_name] for node_name in lineage if node_name in node_name_map
+                )
+            new_object.column_lineage_map = column_lineage_map
+
+            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
+            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
+            # global one.
+            new_object.__dict__["graph"] = pruned_graph
+            return new_object.dict(*args, **kwargs)
+        return super().dict(*args, **kwargs)
+
 
 class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     """
@@ -66,8 +115,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     """
 
     _series_class = Series
-
-    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -161,7 +208,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_name=node.name,
                 name=item,
                 dtype=self.column_var_type_map[item],
-                row_index_lineage=self.row_index_lineage,
                 **self._getitem_series_params,
             )
             output.set_parent(self)
@@ -182,7 +228,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 columns_info=[col for col in self.columns_info if col.name in item],
                 node_name=node.name,
                 column_lineage_map=column_lineage_map,
-                row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
             )
         # item must be Series type
@@ -198,7 +243,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             columns_info=self.columns_info,
             node_name=node.name,
             column_lineage_map=column_lineage_map,
-            row_index_lineage=append_to_lineage(self.row_index_lineage, node.name),
             **self._getitem_frame_params,
         )
 
@@ -248,41 +292,3 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
 
         # update node_name
         self.node_name = node.name
-
-    @root_validator()
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node_name"] = node_name_map[values["node_name"]]
-            column_lineage_map = {}
-            for col, lineage in values["column_lineage_map"].items():
-                column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
-            values["column_lineage_map"] = column_lineage_map
-            values["row_index_lineage"] = tuple(
-                node_name_map[node_name] for node_name in values["row_index_lineage"]
-            )
-        return values
-
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
-            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            new_object = self.copy()
-            new_object.node_name = mapped_node.name
-            column_lineage_map = {}
-            for col, lineage in new_object.column_lineage_map.items():
-                column_lineage_map[col] = tuple(
-                    node_name_map[node_name] for node_name in lineage if node_name in node_name_map
-                )
-            new_object.column_lineage_map = column_lineage_map
-            new_object.row_index_lineage = tuple(
-                node_name_map[node_name] for node_name in new_object.row_index_lineage
-            )
-            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
-            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
-            # global one.
-            new_object.__dict__["graph"] = pruned_graph
-            return new_object.dict(*args, **kwargs)
-        return super().dict(*args, **kwargs)

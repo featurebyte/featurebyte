@@ -46,7 +46,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         ),
         (
             payload_multi,
-            'Feature (id: "6332fdb31e8f0eeccc414517") not found. Please save the Feature object first.',
+            'Feature (id: "639c65cf8ce21f6bf4293213") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},
@@ -523,7 +523,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_80fd57e971931c519425572b4b5caf97ecbfe084" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_a1a9657e29a711c4d09475bb8285da86250d2294" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 

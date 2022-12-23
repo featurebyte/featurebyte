@@ -3,12 +3,12 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, ClassVar, Dict, Tuple, Type
 
 from abc import ABC
 from http import HTTPStatus
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
@@ -16,32 +16,23 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.table import ConstructNodeMixin, GenericTableData
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
+from featurebyte.query_graph.node.schema import TableDetails
 
 
-class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel, ABC):
+class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseModel, ABC):
     """
     AbstractTableDataFrame class represents the table data as a frame (in query graph context).
     """
 
     node_name: str = Field(default_factory=str)
-    row_index_lineage: Tuple[StrictStr, ...] = Field(default_factory=tuple)
+    column_lineage_map: Dict[str, Tuple[str, ...]] = Field(default_factory=dict, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-
-    class Config:
-        """
-        Pydantic Config class
-        """
-
-        fields = {
-            "graph": {"exclude": True},
-            "node_name": {"exclude": True},
-            "row_index_lineage": {"exclude": True},
-        }
+    _table_data_class: ClassVar[Type[AllTableDataT]]
 
     @root_validator(pre=True)
     @classmethod
@@ -106,21 +97,28 @@ class AbstractTableDataFrame(BaseFrame, ConstructNodeMixin, FeatureByteBaseModel
             ]
             values["columns_info"] = columns_info
 
+        # check whether the graph exists or whether the graph is empty (means nodes is empty)
+        if "graph" not in values or not QueryGraphModel(**dict(values["graph"])).nodes:
+            graph, node = cls.construct_graph_and_node(
+                feature_store_details=feature_store.get_feature_store_details(),
+                table_data_dict=values,
+            )
+            values["graph"] = graph
+            values["node_name"] = node.name
+
         return values
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        node = GlobalQueryGraph().add_node(
-            self.construct_input_node(
-                feature_store_details=FeatureStoreDetails(**self.feature_store.dict())
-            ),
-            input_nodes=[],
-        )
-        self.node_name = node.name
-        self.row_index_lineage = (node.name,)
+        _, node_name_map = GlobalQueryGraph().load(self.graph)
+        self.node_name = node_name_map[self.node_name]
+        for col in self.columns:
+            self.column_lineage_map[col] = (self.node_name,)
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):
     """
     DatabaseTable class to preview table
     """
+
+    _table_data_class = GenericTableData

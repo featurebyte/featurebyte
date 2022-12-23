@@ -114,21 +114,20 @@ def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, 
     return aggregation_identifier
 
 
-def get_tile_table_identifier(
-    table_details_dict: dict[str, Any], parameters: dict[str, Any]
-) -> str:
+def get_tile_table_identifier(row_index_lineage_hash: str, parameters: dict[str, Any]) -> str:
     """Get tile table identifier that can be used as tile table name
 
     Tile table identifier is determined by the combination of:
-    1) Tabular source
+    1) Row index lineage
     2) Entity columns
     3) Category column specified in groupby
     4) Feature job settings
 
     Parameters
     ----------
-    table_details_dict : dict[str, Any]
-        Dict representation of the underlying TableDetails of the EventData
+    row_index_lineage_hash : str
+        A unique identifier based on the row index lineage. This hash takes into account the
+        InputNode (raw table) and any filtering and / or join operations applied.
     parameters : dict[str, Any]
         Node parameters
 
@@ -156,13 +155,12 @@ def get_tile_table_identifier(
     )
     hash_components.append(job_setting)
 
-    # Tabular source
-    hash_components.append(json.dumps(table_details_dict, sort_keys=True))
+    # Row index lineage determines the rows that will be present in the tile table
+    hash_components.append(row_index_lineage_hash)
 
     # Readable prefix for troubleshooting
-    table_name = table_details_dict["table_name"]
     prefix = (
-        f"{table_name}"
+        f"tile"
         f"_f{parameters['frequency']}"
         f"_m{parameters['time_modulo_frequency']}"
         f"_b{parameters['blind_spot']}"
@@ -174,4 +172,26 @@ def get_tile_table_identifier(
 
     # Ignore "too many positional arguments" for hexdigest(20), but that seems like a false alarm
     tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])  # pylint: disable=E1121
-    return tile_table_identifier
+    return tile_table_identifier.upper()
+
+
+def append_to_lineage(lineage: tuple[str, ...], node_name: str) -> tuple[str, ...]:
+    """
+    Add operation node name to the (row-index) lineage (list of node names)
+
+    Parameters
+    ----------
+    lineage: tuple[str, ...]
+        tuple of node names to represent the feature/row-index lineage
+    node_name: str
+        operation node name
+
+    Returns
+    -------
+    updated_lineage: tuple[str, ...]
+        updated lineage after adding the new operation name
+
+    """
+    output = list(lineage)
+    output.append(node_name)
+    return tuple(output)

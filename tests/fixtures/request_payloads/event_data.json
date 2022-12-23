@@ -1,50 +1,68 @@
 {
-    "_id": "6332fdb21e8f0eeccc414512",
+    "_id": "6337f9651050ee7d5980660d",
     "columns_info": [
         {
+            "critical_data_info": null,
             "dtype": "INT",
             "entity_id": null,
-            "name": "col_int"
+            "name": "col_int",
+            "semantic_id": "639c65ce8ce21f6bf4293207"
         },
         {
+            "critical_data_info": null,
             "dtype": "FLOAT",
             "entity_id": null,
-            "name": "col_float"
+            "name": "col_float",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "CHAR",
             "entity_id": null,
-            "name": "col_char"
+            "name": "col_char",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "col_text"
+            "name": "col_text",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "BINARY",
             "entity_id": null,
-            "name": "col_binary"
+            "name": "col_binary",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "BOOL",
             "entity_id": null,
-            "name": "col_boolean"
+            "name": "col_boolean",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "event_timestamp"
+            "name": "event_timestamp",
+            "semantic_id": "639c65ce8ce21f6bf4293205"
         },
         {
+            "critical_data_info": null,
             "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "created_at"
+            "name": "created_at",
+            "semantic_id": null
         },
         {
+            "critical_data_info": null,
             "dtype": "INT",
-            "entity_id": "6332fdb21e8f0eeccc414513",
-            "name": "cust_id"
+            "entity_id": "639c65cf8ce21f6bf429320d",
+            "name": "cust_id",
+            "semantic_id": null
         }
     ],
     "default_feature_job_setting": null,
@@ -53,7 +71,7 @@
     "name": "sf_event_data",
     "record_creation_date_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "6332fdb21e8f0eeccc414510",
+        "feature_store_id": "639c65ce8ce21f6bf4293201",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

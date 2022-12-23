@@ -554,6 +554,7 @@ def test_list(saved_feature_list):
                 "name": [saved_feature_list_namespace.name],
                 "num_features": 1,
                 "status": [saved_feature_list_namespace.status],
+                "deployed": [saved_feature_list.deployed],
                 "readiness_frac": 0.0,
                 "online_frac": 0.0,
                 "data": [["sf_event_data"]],
@@ -575,6 +576,7 @@ def test_list_versions(saved_feature_list):
                 "feature_list_namespace_id": [saved_feature_list.feature_list_namespace.id],
                 "num_features": 1,
                 "online_frac": 0.0,
+                "deployed": [saved_feature_list.deployed],
                 "created_at": [saved_feature_list.created_at],
             }
         ),

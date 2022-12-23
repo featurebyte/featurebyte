@@ -18,7 +18,6 @@ from featurebyte.api.join_utils import (
 )
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.core.util import append_to_lineage
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
@@ -146,15 +145,12 @@ class ItemView(View, GroupByMixin):
             self.tabular_data_ids, self.event_view.tabular_data_ids
         )
 
-        joined_row_index_lineage = append_to_lineage(self.row_index_lineage, node.name)
-
         # Update metadata
         self._update_metadata(
             node.name,
             joined_columns_info,
             joined_column_lineage_map,
             joined_tabular_data_ids,
-            joined_row_index_lineage,
         )
 
     @property

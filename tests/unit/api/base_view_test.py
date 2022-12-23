@@ -30,7 +30,6 @@ class BaseViewTestSuite:
     view_type: ViewType = ""
     col = ""
     factory_method = None
-    use_data_under_test_in_lineage = False
     view_class = None
     bool_col = col
 
@@ -123,15 +122,7 @@ class BaseViewTestSuite:
             "parameters": {"columns": [self.col]},
             "output_type": NodeOutputType.SERIES,
         }
-        expected_lineage = (
-            (view_under_test.node.name,)
-            if not self.use_data_under_test_in_lineage
-            else (
-                data_under_test.node.name,
-                view_under_test.node.name,
-            )
-        )
-        assert cust_id.row_index_lineage == expected_lineage
+        assert cust_id.row_index_lineage == view_under_test.row_index_lineage
         assert cust_id.parent.node == view_under_test.node
 
     @abstractmethod
