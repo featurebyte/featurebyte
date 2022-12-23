@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
 
-from featurebyte.enum import AggFunc, TableDataType
+from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
@@ -29,7 +29,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.util import append_to_lineage
 
 
@@ -39,9 +39,18 @@ class InputNode(BaseNode):
     class BaseParameters(BaseModel):
         """BaseParameters"""
 
-        columns: List[InColumnStr]
+        columns: List[ColumnSpec]
         table_details: TableDetails
         feature_store_details: FeatureStoreDetails
+
+        @root_validator(pre=True)
+        @classmethod
+        def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+            # DEV-556: convert list of string to list of dictionary
+            columns = values.get("columns")
+            if columns and isinstance(columns[0], str):
+                values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
+            return values
 
     class GenericParameters(BaseParameters):
         """GenericParameters"""
@@ -136,10 +145,11 @@ class InputNode(BaseNode):
         return OperationStructure(
             columns=[
                 SourceDataColumn(
-                    name=column,
+                    name=column.name,
                     tabular_data_id=self.parameters.id,
                     tabular_data_type=self.parameters.type,
                     node_names={self.name},
+                    dtype=column.dtype,
                 )
                 for column in self.parameters.columns
             ],
@@ -224,6 +234,7 @@ class FilterNode(BaseNode):
                     transform=self.transform_info,
                     node_name=self.name,
                     other_node_names=mask_operation_info.all_node_names,
+                    dtype=col.dtype,
                 )
                 for col in input_operation_info.aggregations
             ]
@@ -270,6 +281,7 @@ class AssignColumnMixin:
         new_column_name: str,
         columns: List[ViewDataColumn],
         node_name: str,
+        new_column_var_type: DBVarType,
     ) -> OperationStructure:
         """
         Construct operation structure of the assign-column-like operation
@@ -284,6 +296,8 @@ class AssignColumnMixin:
             List of columns that are used to derive the series
         node_name: str
             Node name of the operation that assign a series to a frame
+        new_column_var_type: DBVarType
+            Variable type of new column
 
         Returns
         -------
@@ -295,6 +309,7 @@ class AssignColumnMixin:
             columns=columns,
             transform=None,
             node_name=node_name,
+            dtype=new_column_var_type,
         )
         return OperationStructure(
             columns=input_columns + [new_column],
@@ -336,14 +351,19 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         # AssignNode can only take 1 or 2 parameters (1 parameters is frame, 2nd optional parameter is series)
         columns = []
         if len(inputs) == 2:
-            columns = inputs[1].columns
-            self._validate_series(inputs[1])
+            series_input = inputs[1]
+            self._validate_series(series_input)
+            columns = series_input.columns
+            dtype = series_input.series_output_dtype
+        else:
+            dtype = self.detect_var_type_from_value(self.parameters.value)
 
         return self._construct_operation_structure(
             input_operation_info=input_operation_info,
             new_column_name=self.parameters.name,
             columns=columns,
             node_name=self.name,
+            new_column_var_type=dtype,
         )
 
 
@@ -360,6 +380,9 @@ class LagNode(BaseSeriesOutputNode):
     type: Literal[NodeType.LAG] = Field(NodeType.LAG, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return inputs[0].series_output_dtype
 
 
 class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
@@ -392,7 +415,11 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return [str(col) for col in cols]
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -406,6 +433,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
+                dtype=output_var_type,
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
@@ -450,7 +478,11 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return [str(key) for key in self.parameters.keys]
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -464,6 +496,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
+                dtype=output_var_type,
             )
         ]
 
@@ -524,7 +557,11 @@ class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
     parameters: Parameters
 
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
     ) -> List[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
         return [
@@ -534,10 +571,11 @@ class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
                 groupby=[self.parameters.entity_column],
                 window=None,
                 category=None,
-                column=name_to_column.get(input_column_name),
+                column=name_to_column[input_column_name],
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 filter=any(col.filter for col in columns),
+                dtype=name_to_column[input_column_name].dtype,
             )
             for input_column_name, feature_name in zip(
                 self.parameters.input_column_names, self.parameters.feature_names
@@ -662,6 +700,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             new_column_name=self.parameters.name,
             columns=feature_operation_info.columns,
             node_name=self.name,
+            new_column_var_type=feature_operation_info.series_output_dtype,
         )
 
 

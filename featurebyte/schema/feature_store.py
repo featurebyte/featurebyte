@@ -87,7 +87,8 @@ class FeatureStoreSample(FeatureStorePreview):
 
             # validate timestamp_column exists in a frame
             graph = values["graph"]
-            column_names = graph.get_input_node(values["node_name"]).parameters.columns
+            columns = graph.get_input_node(values["node_name"]).parameters.columns
+            column_names = [col.name for col in columns]
             assert (
                 timestamp_column in column_names
             ), f'timestamp_column: "{timestamp_column}" does not exist'

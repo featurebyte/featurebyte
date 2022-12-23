@@ -323,8 +323,8 @@ def test_graph_interpreter_on_demand_tile_gen(
             DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c,
-          COUNT("a") AS count_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c
+          SUM("a") AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
+          COUNT("a") AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
         FROM (
           SELECT
             *,
@@ -398,15 +398,15 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "d2255dac34e8c70b81ebfb8f754e0401a12e2004"
+    aggregation_id = "4175f93da804be8506df45531ac006c24741d02b"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "product_type",
-          SUM("a") AS sum_value_avg_d2255dac34e8c70b81ebfb8f754e0401a12e2004,
-          COUNT("a") AS count_value_avg_d2255dac34e8c70b81ebfb8f754e0401a12e2004
+          SUM("a") AS sum_value_avg_{aggregation_id},
+          COUNT("a") AS count_value_avg_{aggregation_id}
         FROM (
           SELECT
             *,
@@ -550,7 +550,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "3fc0c2588aa12ea8e7299df4ca041188d47af05a"
+    aggregation_id = "ef6e0961ae987b3faf4e63668d8997850e840d9a"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info.sql
@@ -683,7 +683,7 @@ def test_graph_interpreter_snowflake(graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
-          COUNT(*) AS value_count_8cd7ffbec454ca5fe99a79734f98cc5cb996f684
+          COUNT(*) AS value_count_fc1ac0d8922166006b45c682224593ed1d15c3c6
         FROM (
           SELECT
             *,
@@ -726,7 +726,7 @@ def test_graph_interpreter_snowflake(graph):
             DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
-          COUNT(*) AS value_count_8cd7ffbec454ca5fe99a79734f98cc5cb996f684
+          COUNT(*) AS value_count_fc1ac0d8922166006b45c682224593ed1d15c3c6
         FROM (
           SELECT
             *,
@@ -1425,8 +1425,8 @@ def test_databricks_source(query_graph_with_groupby):
         SELECT
           TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           `cust_id`,
-          SUM(`a`) AS sum_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c,
-          COUNT(`a`) AS count_value_avg_31305607c6229e85b9dbd8a516f3207fb68a4f2c
+          SUM(`a`) AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
+          COUNT(`a`) AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
         FROM (
           SELECT
             *,

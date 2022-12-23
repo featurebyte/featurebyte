@@ -186,8 +186,8 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("ord_size") AS sum_value_avg_b57eb8b3fb058e40d54049d9579a426ca2364ed6,
-          COUNT("ord_size") AS count_value_avg_b57eb8b3fb058e40d54049d9579a426ca2364ed6
+          SUM("ord_size") AS sum_value_avg_b88dc6c07aae0c36bef764588de5f5e6df18be7a,
+          COUNT("ord_size") AS count_value_avg_b88dc6c07aae0c36bef764588de5f5e6df18be7a
         FROM (
           SELECT
             *,

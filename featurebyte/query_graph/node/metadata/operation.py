@@ -23,7 +23,7 @@ from collections import defaultdict
 from bson import json_util
 from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.enum import AggFunc, StrEnum, TableDataType
+from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
@@ -65,6 +65,7 @@ BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 class BaseColumn(BaseFrozenModel):
     """BaseColumn class"""
 
+    dtype: DBVarType
     filter: bool
     node_names: Set[str]
 
@@ -215,6 +216,7 @@ class BaseDerivedColumn(BaseColumn):
         columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]],
         transform: Optional[str],
         node_name: str,
+        dtype: DBVarType,
         other_node_names: Optional[Set[str]] = None,
     ) -> BaseDerivedColumnT:
         """
@@ -230,6 +232,8 @@ class BaseDerivedColumn(BaseColumn):
             Node transformation
         node_name: str
             Node name
+        dtype: DBVarType
+            Column type
         other_node_names: Optional[Set[str]]
             Set of node name
 
@@ -244,7 +248,9 @@ class BaseDerivedColumn(BaseColumn):
             node_names.update(other_node_names)
         if transform:
             transforms.append(transform)
-        return cls(name=name, columns=columns, transforms=transforms, node_names=node_names)
+        return cls(
+            name=name, dtype=dtype, columns=columns, transforms=transforms, node_names=node_names
+        )
 
     def clone_without_internal_nodes(
         self,
@@ -398,6 +404,37 @@ class OperationStructure(BaseFrozenModel):
     is_time_based: bool = Field(default=False)
 
     @property
+    def series_output_dtype(self) -> DBVarType:
+        """
+        Retrieve the series output variable type
+
+        Returns
+        -------
+        DBVarType
+
+        Raises
+        ------
+        TypeError
+            If the output of the node is not series
+        ValueError
+            If the output column number of the node is not one
+        """
+        if self.output_type != NodeOutputType.SERIES:
+            raise TypeError("Output of the node is not series.")
+
+        if self.output_category == NodeOutputCategory.VIEW:
+            num_column = len(self.columns)
+        else:
+            num_column = len(self.aggregations)
+
+        if num_column != 1:
+            raise ValueError("Series output should contain one and only one column.")
+
+        if self.output_category == NodeOutputCategory.VIEW:
+            return self.columns[0].dtype
+        return self.aggregations[0].dtype
+
+    @property
     def all_node_names(self) -> Set[str]:
         """
         Retrieve all node names in the operation structure
@@ -492,6 +529,7 @@ class OperationStructureInfo(BaseModel):
 
     operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
     edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
+    proxy_input_operation_structures: List[OperationStructure] = Field(default_factory=list)
 
     @validator("edges_map")
     @classmethod

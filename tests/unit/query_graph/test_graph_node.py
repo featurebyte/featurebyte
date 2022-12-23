@@ -13,7 +13,11 @@ def input_node_params_fixture():
     """Input node parameters fixture"""
     return {
         "type": "generic",
-        "columns": ["col_int", "col_float", "col_varchar"],
+        "columns": [
+            {"name": "col_int", "dtype": "INT"},
+            {"name": "col_float", "dtype": "FLOAT"},
+            {"name": "col_varchar", "dtype": "VARCHAR"},
+        ],
         "table_details": {
             "database_name": "db",
             "schema_name": "public",
@@ -97,7 +101,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         {
             "name": f"proxy_input_{i+1}",
             "type": "proxy_input",
-            "parameters": {"node_name": f"project_{i+1}"},
+            "parameters": {"input_order": i},
             "output_type": "series",
         }
         for i in range(2)
@@ -137,6 +141,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",
+                        "dtype": "INT",
                     },
                     {
                         "filter": False,
@@ -145,6 +150,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",
+                        "dtype": "FLOAT",
                     },
                 ],
                 "filter": False,
@@ -152,6 +158,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
                 "node_names": {"project_1", "graph_1", "input_1", "project_2"},
                 "transforms": ["graph"],
                 "type": "derived",
+                "dtype": "FLOAT",
             }
         ],
         "output_category": "view",
@@ -210,6 +217,7 @@ def nested_input_graph_fixture(input_node_params):
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",
+                        "dtype": "INT",
                     }
                 ],
                 "filter": False,
@@ -217,6 +225,7 @@ def nested_input_graph_fixture(input_node_params):
                 "node_names": {"add_1", "graph_1"},
                 "transforms": ["add(value=10)"],
                 "type": "derived",
+                "dtype": "INT",
             }
         ],
         "output_category": "view",
@@ -274,6 +283,7 @@ def nested_output_graph_fixture(input_node_params):
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",
+                        "dtype": "INT",
                     }
                 ],
                 "filter": False,
@@ -281,6 +291,7 @@ def nested_output_graph_fixture(input_node_params):
                 "node_names": {"graph_1", "input_1"},
                 "transforms": ["graph"],
                 "type": "derived",
+                "dtype": "INT",
             }
         ],
         "output_category": "view",
@@ -360,6 +371,7 @@ def deep_nested_graph_fixture(input_node_params):
                         "tabular_data_id": None,
                         "tabular_data_type": "generic",
                         "type": "source",
+                        "dtype": "INT",
                     }
                 ],
                 "filter": False,
@@ -367,6 +379,7 @@ def deep_nested_graph_fixture(input_node_params):
                 "node_names": {"graph_1"},
                 "transforms": ["graph"],
                 "type": "derived",
+                "dtype": "INT",
             }
         ],
         "output_category": "view",
@@ -434,7 +447,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         node_proj_a = graph_node.output_node
         node_proj_b = graph_node.add_operation(
             node_type=NodeType.PROJECT,
-            node_params={"columns": ["col_b"]},
+            node_params={"columns": ["b"]},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=proxy_inputs,
         )
@@ -465,7 +478,12 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
         node_type=NodeType.INPUT,
         node_params={
             "type": "event_data",
-            "columns": ["ts", "cust_id", "a", "b"],
+            "columns": [
+                {"name": "ts", "dtype": "TIMESTAMP"},
+                {"name": "cust_id", "dtype": "INT"},
+                {"name": "a", "dtype": "FLOAT"},
+                {"name": "b", "dtype": "FLOAT"},
+            ],
             "timestamp": "ts",
             **input_details,
         },
@@ -493,6 +511,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                     "tabular_data_id": None,
                     "tabular_data_type": "event_data",
                     "type": "source",
+                    "dtype": "FLOAT",
                 },
                 "filter": False,
                 "groupby": ["cust_id"],
@@ -502,6 +521,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                 "node_names": {"input_1", "graph_1", "project_1"},
                 "type": "aggregation",
                 "window": "2h",
+                "dtype": "FLOAT",
             }
         ],
         "columns": [
@@ -512,6 +532,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "FLOAT",
             }
         ],
         "output_category": "feature",
@@ -605,6 +626,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
                 "tabular_data_id": None,
                 "tabular_data_type": "generic",
                 "type": "source",
+                "dtype": "INT",
             }
         ],
         "output_category": "view",
@@ -612,9 +634,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         "row_index_lineage": ("proxy_input_1",),
         "is_time_based": False,
     }
-    # TODO: [DEV-868] Decouple AssignNode from pruning logic
-    # current behaviour is not correct as we currently only support pruning ASSIGN node.
-    # if we check the graph inside the graph node, the ASSIGN node is pruned.
+    # TODO: [DEV-868] Make graph node prunable
     pruned_graph, node_name_map = graph.prune(target_node=proj_node, aggressive=True)
     assert pruned_graph.edges_map == {
         "input_1": ["project_1", "graph_1"],
@@ -629,6 +649,6 @@ def test_graph_node__redundant_graph_node(input_node_params):
             "name": "proxy_input_1",
             "type": "proxy_input",
             "output_type": "frame",
-            "parameters": {"node_name": "input_1"},
+            "parameters": {"input_order": 0},
         }
     ]

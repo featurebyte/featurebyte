@@ -3,6 +3,7 @@ Tests for classes defined in featurebyte/query_graph/node/metadata/operation.py
 """
 import pytest
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn, SourceDataColumn
 
@@ -15,6 +16,7 @@ def source_col1_fixture():
         tabular_data_id=None,
         tabular_data_type="event_data",
         node_names={"input_1"},
+        dtype=DBVarType.FLOAT,
     )
 
 
@@ -26,6 +28,7 @@ def source_col2_fixture():
         tabular_data_id=None,
         tabular_data_type="event_data",
         node_names={"input_1"},
+        dtype=DBVarType.INT,
     )
 
 
@@ -49,6 +52,7 @@ def derived_col1_fixture(source_col1, source_col2, transform_add):
         columns=[source_col1, source_col2],
         transform=transform_add,
         node_name="add_1",
+        dtype=DBVarType.FLOAT,
     )
 
 
@@ -60,6 +64,7 @@ def derived_col2_fixture(derived_col1):
         columns=[derived_col1],
         transform="alias",
         node_name="alias_1",
+        dtype=DBVarType.FLOAT,
     )
 
 
@@ -105,12 +110,14 @@ def test_derived_data_column_create(
         columns=[source_col1, derived_col1],
         transform=transform_mul,
         node_name="mul_1",
+        dtype=DBVarType.FLOAT,
     )
     assert derived_col == DerivedDataColumn(
         name="new_derived_col",
         columns=[source_col1, source_col2],
         transforms=[transform_add, transform_mul],
         node_names={"input_1", "add_1", "mul_1"},
+        dtype=DBVarType.FLOAT,
     )
 
 
@@ -121,6 +128,7 @@ def test_insert_column():
         tabular_data_id=None,
         tabular_data_type="event_data",
         node_names={"input_1", "project_1"},
+        dtype=DBVarType.FLOAT,
     )
     another_col1 = col1.clone(node_names={"input_1", "filter_1"}, filter=True)
     col_map = DerivedDataColumn.insert_column(
@@ -134,6 +142,7 @@ def test_insert_column():
             "tabular_data_type": "event_data",
             "type": "source",
             "filter": True,
+            "dtype": "FLOAT",
         }
     }
 
@@ -151,6 +160,7 @@ def test_data_column_clone_with_replacement(source_col1):
         tabular_data_id=source_col1.tabular_data_id,
         tabular_data_type=source_col1.tabular_data_type,
         node_names={"input_1", "project_1"},
+        dtype=DBVarType.FLOAT,
     )
 
     # case 2: when the node name not found in the replace_node_name_map
@@ -164,6 +174,7 @@ def test_data_column_clone_with_replacement(source_col1):
         tabular_data_id=source_col1.tabular_data_id,
         tabular_data_type=source_col1.tabular_data_type,
         node_names={"graph_1"},
+        dtype=DBVarType.FLOAT,
     )
 
 
@@ -185,6 +196,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "FLOAT",
             },
             {
                 "filter": False,
@@ -193,6 +205,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "INT",
             },
         ],
         "filter": False,
@@ -200,6 +213,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
         "node_names": {"add_2", "input_2"},  # note that graph_1 is not included here
         "transforms": ["add"],
         "type": "derived",
+        "dtype": "FLOAT",
     }
 
     # case 2: when some node name found in the replace_node_name_map and some not found
@@ -218,6 +232,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "FLOAT",
             },
             {
                 "filter": False,
@@ -226,6 +241,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "INT",
             },
         ],
         "filter": False,
@@ -233,6 +249,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
         "node_names": {"input_2", "graph_1"},  # note that add_1 is removed
         "transforms": ["graph"],
         "type": "derived",
+        "dtype": "FLOAT",
     }
 
     # case 3: when all nodes not found replace_node_name_map
@@ -251,6 +268,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "FLOAT",
             },
             {
                 "filter": False,
@@ -259,6 +277,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
+                "dtype": "INT",
             },
         ],
         "filter": False,
@@ -266,4 +285,5 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
         "node_names": {"graph_1"},
         "transforms": ["graph"],
         "type": "derived",
+        "dtype": "FLOAT",
     }

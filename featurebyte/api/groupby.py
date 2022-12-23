@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 
 from typeguard import typechecked
 
-from featurebyte.api.agg_func import AggFuncType, construct_agg_func
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
@@ -23,6 +22,7 @@ from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.agg_func import AggFuncType, construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
     GroupbyNode,
     ItemGroupbyNode,
@@ -121,14 +121,14 @@ class BaseAggregator(ABC):
 
         # value_column is None for count-like aggregation method
         input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
-        if self.groupby.category:
-            var_type = DBVarType.OBJECT
-        else:
-            if input_var_type not in agg_method.input_output_var_type_map:
-                raise ValueError(
-                    f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
-                )
-            var_type = agg_method.input_output_var_type_map[input_var_type]
+        if not agg_method.is_var_type_supported(input_var_type):
+            raise ValueError(
+                f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
+            )
+
+        var_type = agg_method.derive_output_var_type(
+            input_var_type=input_var_type, category=self.groupby.category
+        )
 
         feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
             node=groupby_node,

@@ -90,7 +90,8 @@ class InputNode(TableNode):
         dict[str, Expression]
         """
         columns_map: dict[str, Expression] = {}
-        for colname in context.parameters["columns"]:
+        for col_dict in context.parameters["columns"]:
+            colname = col_dict["name"]
             columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
         return columns_map
 

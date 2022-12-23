@@ -1,10 +1,10 @@
 {
-    "_id": "639c65cf8ce21f6bf4293213",
+    "_id": "63a443938bcb22a73462595b",
     "dtype": "FLOAT",
     "entity_ids": [
-        "639c65cf8ce21f6bf429320d"
+        "63a443938bcb22a734625955"
     ],
-    "feature_namespace_id": "639c65cf8ce21f6bf4293214",
+    "feature_namespace_id": "63a443938bcb22a73462595c",
     "graph": {
         "edges": [
             {
@@ -22,15 +22,42 @@
                 "output_type": "frame",
                 "parameters": {
                     "columns": [
-                        "col_int",
-                        "col_float",
-                        "col_char",
-                        "col_text",
-                        "col_binary",
-                        "col_boolean",
-                        "event_timestamp",
-                        "created_at",
-                        "cust_id"
+                        {
+                            "dtype": "INT",
+                            "name": "col_int"
+                        },
+                        {
+                            "dtype": "FLOAT",
+                            "name": "col_float"
+                        },
+                        {
+                            "dtype": "CHAR",
+                            "name": "col_char"
+                        },
+                        {
+                            "dtype": "VARCHAR",
+                            "name": "col_text"
+                        },
+                        {
+                            "dtype": "BINARY",
+                            "name": "col_binary"
+                        },
+                        {
+                            "dtype": "BOOL",
+                            "name": "col_boolean"
+                        },
+                        {
+                            "dtype": "TIMESTAMP",
+                            "name": "event_timestamp"
+                        },
+                        {
+                            "dtype": "TIMESTAMP",
+                            "name": "created_at"
+                        },
+                        {
+                            "dtype": "INT",
+                            "name": "cust_id"
+                        }
                     ],
                     "feature_store_details": {
                         "details": {
@@ -58,10 +85,10 @@
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
-                    "aggregation_id": "sum_a1a9657e29a711c4d09475bb8285da86250d2294",
+                    "aggregation_id": "sum_fba233e0f502088c233315a322f4c51e939072c0",
                     "blind_spot": 600,
                     "entity_ids": [
-                        "639c65cf8ce21f6bf429320d"
+                        "63a443938bcb22a734625955"
                     ],
                     "frequency": 1800,
                     "keys": [
@@ -102,14 +129,11 @@
     },
     "name": "sum_2h",
     "node_name": "project_1",
-    "row_index_lineage": [
-        "groupby_1"
-    ],
     "tabular_data_ids": [
         "6337f9651050ee7d5980660d"
     ],
     "tabular_source": {
-        "feature_store_id": "639c65ce8ce21f6bf4293201",
+        "feature_store_id": "63a443938bcb22a734625949",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

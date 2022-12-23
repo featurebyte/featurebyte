@@ -24,7 +24,7 @@ def test_extract_operation__single_input_node(global_graph, input_node):
     """Test extract_operation_structure: single input node"""
     op_struct = global_graph.extract_operation_structure(node=input_node)
     expected_columns = [
-        {"name": col, **extract_column_parameters(input_node)}
+        {"name": col.name, "dtype": col.dtype, **extract_column_parameters(input_node)}
         for col in input_node.parameters.columns
     ]
     assert op_struct.columns == expected_columns
@@ -48,7 +48,9 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
 
     project_node = graph.get_node_by_name("project_1")
     op_struct = graph.extract_operation_structure(node=project_node)
-    expected_columns = [{"name": "a", **extract_column_parameters(input_node, {"project_1"})}]
+    expected_columns = [
+        {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}
+    ]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
@@ -69,8 +71,8 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     )
     op_struct = graph.extract_operation_structure(node=project_node)
     expected_columns = [
-        {"name": "a", **extract_column_parameters(input_node, {"project_3"})},
-        {"name": "b", **extract_column_parameters(input_node, {"project_3"})},
+        {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_3"})},
+        {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_3"})},
     ]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
@@ -89,9 +91,18 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     expected_derived_columns = [
         {
             "name": None,
+            "dtype": "FLOAT",
             "columns": [
-                {"name": "a", **extract_column_parameters(input_node, {"project_1"})},
-                {"name": "b", **extract_column_parameters(input_node, {"project_2"})},
+                {
+                    "name": "a",
+                    "dtype": "FLOAT",
+                    **extract_column_parameters(input_node, {"project_1"}),
+                },
+                {
+                    "name": "b",
+                    "dtype": "FLOAT",
+                    **extract_column_parameters(input_node, {"project_2"}),
+                },
             ],
             "transforms": ["add"],
             "filter": False,
@@ -107,8 +118,8 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
 
     grp_op_struct = op_struct.to_group_operation_structure()
     expected_columns = [
-        {"name": "a", **extract_column_parameters(input_node, {"project_1"})},
-        {"name": "b", **extract_column_parameters(input_node, {"project_2"})},
+        {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})},
+        {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
     ]
     assert grp_op_struct.source_columns == expected_columns
     assert grp_op_struct.derived_columns == expected_derived_columns
@@ -118,17 +129,26 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
 
     op_struct = graph.extract_operation_structure(node=assign_node)
     expected_columns = [
-        {"name": "ts", **common_column_params},
-        {"name": "cust_id", **common_column_params},
-        {"name": "a", **common_column_params},
-        {"name": "b", **common_column_params},
+        {"name": "ts", "dtype": "TIMESTAMP", **common_column_params},
+        {"name": "cust_id", "dtype": "INT", **common_column_params},
+        {"name": "a", "dtype": "FLOAT", **common_column_params},
+        {"name": "b", "dtype": "FLOAT", **common_column_params},
     ]
     expected_derived_columns = [
         {
             "name": "c",
+            "dtype": "FLOAT",
             "columns": [
-                {"name": "a", **extract_column_parameters(input_node, {"project_1"})},
-                {"name": "b", **extract_column_parameters(input_node, {"project_2"})},
+                {
+                    "name": "a",
+                    "dtype": "FLOAT",
+                    **extract_column_parameters(input_node, {"project_1"}),
+                },
+                {
+                    "name": "b",
+                    "dtype": "FLOAT",
+                    **extract_column_parameters(input_node, {"project_2"}),
+                },
             ],
             "transforms": ["add"],
             "filter": False,
@@ -143,10 +163,10 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == [
-        {"name": "ts", **common_column_params},
-        {"name": "cust_id", **common_column_params},
-        {"name": "a", **extract_column_parameters(input_node, {"project_1"})},
-        {"name": "b", **extract_column_parameters(input_node, {"project_2"})},
+        {"name": "ts", "dtype": "TIMESTAMP", **common_column_params},
+        {"name": "cust_id", "dtype": "INT", **common_column_params},
+        {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})},
+        {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
     ]
     assert grp_op_struct.derived_columns == expected_derived_columns
     assert grp_op_struct.aggregations == []
@@ -162,7 +182,9 @@ def test_extract_operation__filter(graph_four_nodes):
     common_column_params = extract_column_parameters(
         input_node, other_node_names={"input_1", "project_1", "eq_1", "filter_1"}
     )
-    expected_columns = [{"name": "column", **common_column_params, "filter": True}]
+    expected_columns = [
+        {"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}
+    ]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
@@ -171,7 +193,7 @@ def test_extract_operation__filter(graph_four_nodes):
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == [
-        {"name": "column", **common_column_params, "filter": True}
+        {"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}
     ]
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == []
@@ -202,13 +224,18 @@ def test_extract_operation__lag(global_graph, input_node):
     )
     op_struct = global_graph.extract_operation_structure(node=lag_node)
     expected_source_columns = [
-        {"name": "a", **extract_column_parameters(input_node, {"project_2"})},
-        {"name": "cust_id", **extract_column_parameters(input_node, {"project_1"})},
-        {"name": "ts", **extract_column_parameters(input_node, {"project_3"})},
+        {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
+        {"name": "cust_id", "dtype": "INT", **extract_column_parameters(input_node, {"project_1"})},
+        {
+            "name": "ts",
+            "dtype": "TIMESTAMP",
+            **extract_column_parameters(input_node, {"project_3"}),
+        },
     ]
     expected_derived_columns = [
         {
             "name": None,
+            "dtype": "FLOAT",
             "columns": expected_source_columns,
             "transforms": ["lag(entity_columns=['cust_id'], offset=1, timestamp_column='ts')"],
             "filter": False,
@@ -240,7 +267,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     common_aggregation_params = {
         "groupby": ["cust_id"],
         "method": "avg",
-        "column": {"name": "a", **common_column_params},
+        "column": {"name": "a", "dtype": "FLOAT", **common_column_params},
         "category": None,
         "groupby_type": "groupby",
         "filter": False,
@@ -248,11 +275,11 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "node_names": {"input_1", "groupby_1"},
     }
     expected_columns = [
-        {"name": "a", **common_column_params},
+        {"name": "a", "dtype": "FLOAT", **common_column_params},
     ]
     expected_aggregations = [
-        {"name": "a_2h_average", "window": "2h", **common_aggregation_params},
-        {"name": "a_48h_average", "window": "48h", **common_aggregation_params},
+        {"name": "a_2h_average", "dtype": "FLOAT", "window": "2h", **common_aggregation_params},
+        {"name": "a_48h_average", "dtype": "FLOAT", "window": "48h", **common_aggregation_params},
     ]
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == expected_aggregations
@@ -280,6 +307,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "window": "2h",
         **common_aggregation_params,
         "node_names": {"input_1", "groupby_1", "project_3"},
+        "dtype": "FLOAT",
     }
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == [expected_aggregation]
@@ -308,6 +336,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "node_names": {"input_1", "eq_1", "filter_1", "project_3", "groupby_1"},
         "transforms": ["filter"],
         "type": "post_aggregation",
+        "dtype": "FLOAT",
     }
     assert op_struct.columns == expected_columns
     assert op_struct.aggregations == [expected_filtered_aggregation]
@@ -326,6 +355,7 @@ def order_id_source_data_fixture():
     """Order id source data"""
     return {
         "name": "order_id",
+        "dtype": "INT",
         "filter": False,
         "node_names": {"input_1"},
         "tabular_data_type": "item_data",
@@ -343,6 +373,7 @@ def test_extract_operation__item_groupby(
     assert op_struct.aggregations == [
         {
             "name": "order_size",
+            "dtype": "FLOAT",
             "category": None,
             "column": None,
             "groupby": ["order_id"],
@@ -380,10 +411,10 @@ def test_extract_operation__join_node(
         other_node_names={"input_1", "join_1"},
     )
     assert op_struct.columns == [
-        {"name": "order_id", **common_event_data_column_params},
-        {"name": "order_method_left", **common_event_data_column_params},
-        {"name": "item_name_right", **common_item_data_column_params},
-        {"name": "item_type_right", **common_item_data_column_params},
+        {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
+        {"name": "order_method_left", "dtype": "VARCHAR", **common_event_data_column_params},
+        {"name": "item_name_right", "dtype": "VARCHAR", **common_item_data_column_params},
+        {"name": "item_type_right", "dtype": "VARCHAR", **common_item_data_column_params},
     ]
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"
@@ -414,12 +445,13 @@ def test_extract_operation__join_double_aggregations(
         "filter": False,
         "type": "derived",
         "node_names": {"project_1", "item_groupby_1", "join_feature_1", "add_1", "input_1"},
+        "dtype": "FLOAT",
     }
     assert op_struct.columns == [
-        {"name": "ts", **common_event_data_column_params},
-        {"name": "cust_id", **common_event_data_column_params},
-        {"name": "order_id", **common_event_data_column_params},
-        {"name": "order_method", **common_event_data_column_params},
+        {"name": "ts", "dtype": "TIMESTAMP", **common_event_data_column_params},
+        {"name": "cust_id", "dtype": "INT", **common_event_data_column_params},
+        {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
+        {"name": "order_method", "dtype": "VARCHAR", **common_event_data_column_params},
         order_size_column,
     ]
     assert op_struct.aggregations == []
@@ -449,6 +481,7 @@ def test_extract_operation__join_double_aggregations(
                 "project_1",
                 "groupby_1",
             },
+            "dtype": "FLOAT",
         }
     ]
     assert op_struct.columns == [order_size_column]
@@ -473,8 +506,8 @@ def test_extract_operation__lookup_feature(
     op_struct = global_graph.extract_operation_structure(node=lookup_feature_node)
     common_data_params = extract_column_parameters(dimension_data_input_node)
     expected_columns = [
-        {"name": "cust_value_1", **common_data_params},
-        {"name": "cust_value_2", **common_data_params},
+        {"name": "cust_value_1", "dtype": "FLOAT", **common_data_params},
+        {"name": "cust_value_2", "dtype": "FLOAT", **common_data_params},
     ]
     expected_aggregations = [
         {
@@ -494,6 +527,7 @@ def test_extract_operation__lookup_feature(
                     "type": "aggregation",
                     "column": expected_columns[0],
                     "groupby_type": "lookup",
+                    "dtype": "FLOAT",
                 },
                 {
                     "filter": False,
@@ -506,9 +540,11 @@ def test_extract_operation__lookup_feature(
                     "type": "aggregation",
                     "column": expected_columns[1],
                     "groupby_type": "lookup",
+                    "dtype": "FLOAT",
                 },
             ],
             "type": "post_aggregation",
+            "dtype": "FLOAT",
         }
     ]
     assert op_struct.columns == expected_columns
@@ -535,11 +571,14 @@ def test_extract_operation__alias(global_graph, input_node):
     op_struct = global_graph.extract_operation_structure(node=add_node)
     expected_derived_columns = {
         "name": None,
-        "columns": [{"name": "a", **extract_column_parameters(input_node, {"project_1"})}],
+        "columns": [
+            {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})}
+        ],
         "transforms": ["add(value=10)"],
         "filter": False,
         "type": "derived",
         "node_names": {"input_1", "project_1", "add_1"},
+        "dtype": "FLOAT",
     }
     assert op_struct.columns == [expected_derived_columns]
     alias_node = global_graph.add_operation(
@@ -578,6 +617,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
         "columns": [
             {
                 "name": "TIMESTAMP_VALUE",
+                "dtype": "TIMESTAMP",
                 **extract_column_parameters(input_node, {"project_1"}),
             }
         ],
@@ -594,6 +634,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "project_2",
             "project_3",
         },
+        "dtype": "TIMESTAMP",
     }
     assert op_struct.columns == [expected_new_ts]
     assert op_struct.row_index_lineage == ("input_1",)
@@ -612,6 +653,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "type": "derived",
             "filter": False,
             "node_names": {"assign_2", "project_4"},
+            "dtype": "INT",
         }
     ]
     assert graph.get_node_by_name("assign_2").parameters == {"name": "diff", "value": 123}
@@ -621,13 +663,14 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
     op_struct = graph.extract_operation_structure(node=dataframe.node)
     expected_new_ts["node_names"].remove("project_3")
     assert op_struct.columns == [
-        {"name": "CUST_ID", **common_data_column_params},
-        {"name": "PRODUCT_ACTION", **common_data_column_params},
-        {"name": "VALUE", **common_data_column_params},
-        {"name": "MASK", **common_data_column_params},
-        {"name": "TIMESTAMP_VALUE", **common_data_column_params},
+        {"name": "CUST_ID", "dtype": "INT", **common_data_column_params},
+        {"name": "PRODUCT_ACTION", "dtype": "VARCHAR", **common_data_column_params},
+        {"name": "VALUE", "dtype": "FLOAT", **common_data_column_params},
+        {"name": "MASK", "dtype": "BOOL", **common_data_column_params},
+        {"name": "TIMESTAMP_VALUE", "dtype": "TIMESTAMP", **common_data_column_params},
         {
             "name": "diff",
+            "dtype": "INT",
             "columns": [],
             "transforms": [],
             "type": "derived",
@@ -657,10 +700,12 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                 "columns": [
                     {
                         "name": "VALUE",
+                        "dtype": "FLOAT",
                         **extract_column_parameters(input_node, {"project_1"}),
                     },
                     {
                         "name": "CUST_ID",
+                        "dtype": "INT",
                         **extract_column_parameters(input_node, {"project_2"}),
                     },
                 ],
@@ -683,6 +728,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                 },
                 "transforms": ["sub", "add"],
                 "type": "derived",
+                "dtype": "FLOAT",
             }
         ],
         "output_category": "view",

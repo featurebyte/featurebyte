@@ -192,7 +192,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
     feature_node_name = feature.node.name
     groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
-    assert groupby_node.parameters == {
+    assert groupby_node.parameters.dict() == {
         "keys": ["cust_id"],
         "parent": "col_float",
         "agg_func": "sum",
@@ -201,8 +201,8 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "TILE_F360_M180_B90_4EB818A0E7060B67114936BF6E8F21D600289D91",
-        "aggregation_id": "sum_697ea04ec28a79540e5b097b94720320fa9704c1",
+        "tile_id": "TILE_F360_M180_B90_B38E423B7A5D8829661A0D73EA8AFE71CEF3CE27",
+        "aggregation_id": "sum_6e0ab0e472928aa53dc94b1a38df7f0456e89577",
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
@@ -228,7 +228,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
     feature_node_name = feature.node.name
     groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
-    assert groupby_node.parameters == {
+    assert groupby_node.parameters.dict() == {
         "keys": ["cust_id"],
         "parent": "col_float",
         "agg_func": "sum",
@@ -237,8 +237,8 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "TILE_F360_M180_B90_6C947F5A1417CAD7CC41E37783BF13F6606E06A0",
-        "aggregation_id": "sum_33562fdbbf645854fb9624befd27040653a66c06",
+        "tile_id": "TILE_F360_M180_B90_24BD7EC4B4940F513AE87ACD85D90244A6938BD8",
+        "aggregation_id": "sum_7f69a66a52c4fd6d2005b819a8553a46439f3245",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],

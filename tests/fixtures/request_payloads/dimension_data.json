@@ -69,11 +69,12 @@
     "name": "sf_dimension_data",
     "record_creation_date_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "639c65ce8ce21f6bf4293201",
+        "feature_store_id": "63a443938bcb22a734625949",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
-    }
+    },
+    "type": "dimension_data"
 }

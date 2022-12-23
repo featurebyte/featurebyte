@@ -5,8 +5,9 @@ from typing import Any, Dict, List, Set
 
 from abc import abstractmethod
 
-from featurebyte.enum import AggFunc
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -14,73 +15,8 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
     OperationStructureInfo,
-    PostAggregationColumn,
     ViewDataColumn,
 )
-
-
-class SeriesOutputNodeOpStructMixin:
-    """SeriesOutputNodeOpStructMixin class"""
-
-    name: str
-    transform_info: str
-    output_type: NodeOutputType
-
-    def _derive_node_operation_info(
-        self,
-        inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
-        global_state: OperationStructureInfo,
-    ) -> OperationStructure:
-        """
-        Derive node operation info
-
-        Parameters
-        ----------
-        inputs: List[OperationStructure]
-            List of input nodes' operation info
-        branch_state: OperationStructureBranchState
-            State captures the graph branching state info
-        global_state: OperationStructureInfo
-            State captures the global graph info (used during operation structure derivation)
-
-        Returns
-        -------
-        OperationStructure
-        """
-        _ = branch_state, global_state
-        input_operation_info = inputs[0]
-        output_category = input_operation_info.output_category
-        columns = []
-        aggregations = []
-        for inp in inputs:
-            columns.extend(inp.columns)
-            aggregations.extend(inp.aggregations)
-
-        node_kwargs: Dict[str, Any] = {}
-        if output_category == NodeOutputCategory.VIEW:
-            node_kwargs["columns"] = [
-                DerivedDataColumn.create(
-                    name=None, columns=columns, transform=self.transform_info, node_name=self.name
-                )
-            ]
-        else:
-            node_kwargs["columns"] = columns
-            node_kwargs["aggregations"] = [
-                PostAggregationColumn.create(
-                    name=None,
-                    columns=aggregations,
-                    transform=self.transform_info,
-                    node_name=self.name,
-                )
-            ]
-
-        return OperationStructure(
-            **node_kwargs,
-            output_type=self.output_type,
-            output_category=output_category,
-            row_index_lineage=input_operation_info.row_index_lineage,
-        )
 
 
 class GroupbyNodeOpStructMixin:
@@ -94,7 +30,11 @@ class GroupbyNodeOpStructMixin:
 
     @abstractmethod
     def _get_aggregations(
-        self, columns: List[ViewDataColumn], node_name: str, other_node_names: Set[str]
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
     ) -> List[AggregationColumn]:
         """
         Construct aggregations based on node parameters
@@ -107,6 +47,8 @@ class GroupbyNodeOpStructMixin:
             Node name
         other_node_names: Set[str]
             Set of node names (input lineage)
+        output_var_type: DBVarType
+            Aggregation output variable type
 
         Returns
         -------
@@ -172,6 +114,20 @@ class GroupbyNodeOpStructMixin:
             # this mean the output of this item_groupby is view but not feature.
             output_category = NodeOutputCategory.VIEW
 
+        # prepare output variable type
+        if getattr(self.parameters, "agg_func", None):
+            aggregation_func_obj = construct_agg_func(self.parameters.agg_func)
+            parent_column = next(
+                (col for col in columns if col.name == self.parameters.parent), None
+            )
+            input_var_type = parent_column.dtype if parent_column else columns[0].dtype
+            output_var_type = aggregation_func_obj.derive_output_var_type(
+                input_var_type=input_var_type, category=getattr(self.parameters, "category", None)
+            )
+        else:
+            # to be overriden at the _get_aggregations
+            output_var_type = DBVarType.UNKNOWN
+
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
@@ -181,6 +137,7 @@ class GroupbyNodeOpStructMixin:
                     transform=self.transform_info,
                     node_name=self.name,
                     other_node_names=other_node_names,
+                    dtype=output_var_type,
                 )
             ]
         else:
@@ -189,6 +146,7 @@ class GroupbyNodeOpStructMixin:
                 columns,
                 node_name=self.name,
                 other_node_names=other_node_names,
+                output_var_type=output_var_type,
             )
 
         # Only item aggregates are not time based.

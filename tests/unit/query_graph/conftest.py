@@ -81,7 +81,12 @@ def input_node_fixture(global_graph, input_details):
     # pylint: disable=duplicate-code
     node_params = {
         "type": "event_data",
-        "columns": ["ts", "cust_id", "a", "b"],
+        "columns": [
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "a", "dtype": DBVarType.FLOAT},
+            {"name": "b", "dtype": DBVarType.FLOAT},
+        ],
         "timestamp_column": "ts",
     }
     node_params.update(input_details)
@@ -107,7 +112,12 @@ def item_data_input_node_fixture(global_graph, item_data_input_details):
     """Fixture of an input node representing an ItemData"""
     node_params = {
         "type": "item_data",
-        "columns": ["order_id", "item_id", "item_name", "item_type"],
+        "columns": [
+            {"name": "order_id", "dtype": DBVarType.INT},
+            {"name": "item_id", "dtype": DBVarType.INT},
+            {"name": "item_name", "dtype": DBVarType.VARCHAR},
+            {"name": "item_type", "dtype": DBVarType.VARCHAR},
+        ],
     }
     node_params.update(item_data_input_details)
     node_input = global_graph.add_operation(
@@ -132,7 +142,11 @@ def scd_data_input_node_fixture(global_graph, scd_data_input_details):
     """Fixture of an SlowlyChangingDimension input node"""
     node_params = {
         "type": "scd_data",
-        "columns": ["effective_ts", "cust_id", "membership_status"],
+        "columns": [
+            {"name": "effective_ts", "dtype": DBVarType.TIMESTAMP},
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "membership_status", "dtype": DBVarType.VARCHAR},
+        ],
     }
     node_params.update(scd_data_input_details)
     node_input = global_graph.add_operation(
@@ -157,7 +171,11 @@ def dimension_data_input_node_fixture(global_graph, dimension_data_input_details
     """Fixture of a DimensionData input node"""
     node_params = {
         "type": "dimension_data",
-        "columns": ["cust_id", "cust_value_1", "cust_value_2"],
+        "columns": [
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "cust_value_1", "dtype": DBVarType.FLOAT},
+            {"name": "cust_value_2", "dtype": DBVarType.FLOAT},
+        ],
     }
     node_params.update(dimension_data_input_details)
     node_input = global_graph.add_operation(
@@ -175,7 +193,12 @@ def event_data_input_node_fixture(global_graph, input_details):
     # pylint: disable=duplicate-code
     node_params = {
         "type": "event_data",
-        "columns": ["ts", "cust_id", "order_id", "order_method"],
+        "columns": [
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "order_id", "dtype": DBVarType.INT},
+            {"name": "order_method", "dtype": DBVarType.VARCHAR},
+        ],
         "timestamp": "ts",  # DEV-556: this should be timestamp_column
     }
     node_params.update(input_details)
@@ -331,7 +354,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "31305607c6229e85b9dbd8a516f3207fb68a4f2c"
+    assert aggregation_id == "33d7045ac1aea1e0a20f32ca16f997f220f5cbc8"
     return aggregation_id
 
 
@@ -791,7 +814,7 @@ def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
         "serving_names": ["CUSTOMER_ID"],
         "value_by": None,
         "parent": "a",
-        "agg_func": "last",
+        "agg_func": "latest",
         "time_modulo_frequency": 1800,  # 30m
         "frequency": 3600,  # 1h
         "blind_spot": 900,  # 15m
@@ -833,7 +856,7 @@ def get_graph_single_node_scd_data_fixture(
         node_type=NodeType.INPUT,
         node_params={
             "type": "scd_data",
-            "columns": ["column"],
+            "columns": [{"name": "column", "dtype": "FLOAT"}],
             "table_details": scd_table_details.dict(),
             "feature_store_details": snowflake_feature_store_details_dict,
         },
@@ -851,7 +874,7 @@ def get_graph_single_node_scd_data_fixture(
             "type": "input",
             "parameters": {
                 "type": "scd_data",
-                "columns": ["column"],
+                "columns": [{"name": "column", "dtype": "FLOAT"}],
                 "table_details": scd_table_details.dict(),
                 "feature_store_details": snowflake_feature_store_details_dict,
                 "id": None,
@@ -892,7 +915,7 @@ def query_graph_single_node(
         node_type=NodeType.INPUT,
         node_params={
             "type": "event_data",
-            "columns": ["column"],
+            "columns": [{"name": "column", "dtype": "FLOAT"}],
             "table_details": event_data_table_details.dict(),
             "feature_store_details": snowflake_feature_store_details_dict,
         },
@@ -910,7 +933,7 @@ def query_graph_single_node(
             "type": "input",
             "parameters": {
                 "type": "event_data",
-                "columns": ["column"],
+                "columns": [{"name": "column", "dtype": "FLOAT"}],
                 "table_details": event_data_table_details.dict(),
                 "feature_store_details": snowflake_feature_store_details_dict,
                 "timestamp_column": None,
@@ -1030,7 +1053,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         node_type=NodeType.INPUT,
         node_params={
             "type": "generic",
-            "columns": [col["name"] for col in columns_info],
+            "columns": columns_info,
             "timestamp": "VALUE",
             "table_details": {
                 "database_name": "db",

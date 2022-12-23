@@ -185,7 +185,7 @@ async def test_update_columns_info__critical_data_info(
                     "name": "proxy_input_1",
                     "type": "proxy_input",
                     "output_type": "frame",
-                    "parameters": {"node_name": "input_1"},
+                    "parameters": {"input_order": 0},
                 },
                 {
                     "name": "project_1",

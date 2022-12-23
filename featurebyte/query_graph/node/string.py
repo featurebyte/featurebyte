@@ -2,15 +2,17 @@
 This module contains string operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithAScalarParamNode,
 )
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 
 Side = Literal["left", "right", "both"]
 Case = Literal["upper", "lower"]
@@ -21,6 +23,9 @@ class LengthNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.LENGTH] = Field(NodeType.LENGTH, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.INT
 
 
 class TrimNode(BaseSeriesOutputNode):
@@ -35,6 +40,9 @@ class TrimNode(BaseSeriesOutputNode):
     type: Literal[NodeType.TRIM] = Field(NodeType.TRIM, const=True)
     parameters: Parameters
 
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.VARCHAR
+
 
 class ReplaceNode(BaseSeriesOutputNode):
     """ReplaceNode class"""
@@ -47,6 +55,9 @@ class ReplaceNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.REPLACE] = Field(NodeType.REPLACE, const=True)
     parameters: Parameters
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.VARCHAR
 
 
 class PadNode(BaseSeriesOutputNode):
@@ -62,6 +73,9 @@ class PadNode(BaseSeriesOutputNode):
     type: Literal[NodeType.PAD] = Field(NodeType.PAD, const=True)
     parameters: Parameters
 
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.VARCHAR
+
 
 class StringCaseNode(BaseSeriesOutputNode):
     """StringCaseNode class"""
@@ -73,6 +87,9 @@ class StringCaseNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.STR_CASE] = Field(NodeType.STR_CASE, const=True)
     parameters: Parameters
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.VARCHAR
 
 
 class StringContainsNode(BaseSeriesOutputNode):
@@ -87,6 +104,9 @@ class StringContainsNode(BaseSeriesOutputNode):
     type: Literal[NodeType.STR_CONTAINS] = Field(NodeType.STR_CONTAINS, const=True)
     parameters: Parameters
 
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.BOOL
+
 
 class SubStringNode(BaseSeriesOutputNode):
     """SubStringNode class"""
@@ -100,8 +120,14 @@ class SubStringNode(BaseSeriesOutputNode):
     type: Literal[NodeType.SUBSTRING] = Field(NodeType.SUBSTRING, const=True)
     parameters: Parameters
 
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.VARCHAR
+
 
 class ConcatNode(BaseSeriesOutputWithAScalarParamNode):
     """ConcatNode class"""
 
     type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.VARCHAR

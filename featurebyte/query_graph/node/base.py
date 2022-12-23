@@ -2,20 +2,23 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
+    DerivedDataColumn,
+    NodeOutputCategory,
     OperationStructure,
     OperationStructureBranchState,
     OperationStructureInfo,
+    PostAggregationColumn,
 )
-from featurebyte.query_graph.node.mixin import SeriesOutputNodeOpStructMixin
 
 NODE_TYPES = []
 NodeT = TypeVar("NodeT", bound="BaseNode")
@@ -64,6 +67,30 @@ class BaseNode(BaseModel):
             # used for the signal type tagging (for feature theme).
             return f"{str(self.type).lower()}({', '.join(parameters)})"
         return str(self.type).lower()
+
+    @classmethod
+    def detect_var_type_from_value(cls, value: Any) -> DBVarType:
+        """
+        Detect variable type of the given scalar value
+
+        Parameters
+        ----------
+        value: Any
+            Input value
+
+        Returns
+        -------
+        DBVarType
+        """
+        if isinstance(value, bool):
+            return DBVarType.BOOL
+        if isinstance(value, int):
+            return DBVarType.INT
+        if isinstance(value, float):
+            return DBVarType.FLOAT
+        if isinstance(value, str):
+            return DBVarType.VARCHAR
+        return DBVarType.UNKNOWN
 
     @classmethod
     def _extract_column_str_values(
@@ -195,14 +222,98 @@ class BaseNode(BaseModel):
         """
 
 
-class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode):
+class SeriesOutputNodeOpStructMixin:
+    """SeriesOutputNodeOpStructMixin class"""
+
+    name: str
+    transform_info: str
+    output_type: NodeOutputType
+
+    @abstractmethod
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        """
+        Derive variable type from the input operation structures
+
+        Parameters
+        ----------
+        inputs: List[OperationStructure]
+            Operation structures of the input nodes
+
+        Returns
+        -------
+        DBVarType
+        """
+
+    def _derive_node_operation_info(
+        self,
+        inputs: List[OperationStructure],
+        branch_state: OperationStructureBranchState,
+        global_state: OperationStructureInfo,
+    ) -> OperationStructure:
+        """
+        Derive node operation info
+
+        Parameters
+        ----------
+        inputs: List[OperationStructure]
+            List of input nodes' operation info
+        branch_state: OperationStructureBranchState
+            State captures the graph branching state info
+        global_state: OperationStructureInfo
+            State captures the global graph info (used during operation structure derivation)
+
+        Returns
+        -------
+        OperationStructure
+        """
+        _ = branch_state, global_state
+        input_operation_info = inputs[0]
+        output_category = input_operation_info.output_category
+        columns = []
+        aggregations = []
+        for inp in inputs:
+            columns.extend(inp.columns)
+            aggregations.extend(inp.aggregations)
+
+        node_kwargs: Dict[str, Any] = {}
+        if output_category == NodeOutputCategory.VIEW:
+            node_kwargs["columns"] = [
+                DerivedDataColumn.create(
+                    name=None,
+                    columns=columns,
+                    transform=self.transform_info,
+                    node_name=self.name,
+                    dtype=self.derive_var_type(inputs),
+                )
+            ]
+        else:
+            node_kwargs["columns"] = columns
+            node_kwargs["aggregations"] = [
+                PostAggregationColumn.create(
+                    name=None,
+                    columns=aggregations,
+                    transform=self.transform_info,
+                    node_name=self.name,
+                    dtype=self.derive_var_type(inputs),
+                )
+            ]
+
+        return OperationStructure(
+            **node_kwargs,
+            output_type=self.output_type,
+            output_category=output_category,
+            row_index_lineage=input_operation_info.row_index_lineage,
+        )
+
+
+class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output"""
 
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
-class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode):
+class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output & contain a single scalar parameter"""
 
     class Parameters(BaseModel):
@@ -212,6 +323,30 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
+
+
+class BinaryLogicalOpMixin(BaseSeriesOutputWithAScalarParamNode):
+    """BinaryLogicalOpMixin class"""
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.BOOL
+
+
+class BinaryRelationalOpMixin(BaseSeriesOutputWithAScalarParamNode):
+    """BinaryRelationalOpMixin class"""
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.BOOL
+
+
+class BinaryArithmeticOpMixin(SeriesOutputNodeOpStructMixin):
+    """BinaryArithmeticOpMixin class"""
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        input_var_types = {inp.series_output_dtype for inp in inputs}
+        if DBVarType.FLOAT in input_var_types:
+            return DBVarType.FLOAT
+        return inputs[0].series_output_dtype
 
 
 class BasePrunableNode(BaseNode):
