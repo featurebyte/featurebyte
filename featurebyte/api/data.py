@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 from http import HTTPStatus
 
@@ -21,6 +21,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 
@@ -32,6 +33,25 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
     """
 
     info: ColumnInfo
+
+    def _prepare_columns_info(self, column_info: ColumnInfo) -> List[ColumnInfo]:
+        """
+        Prepare columns info using info attribute of this object
+
+        column_info: ColumnInfo
+            Column info to be override
+
+        Returns
+        -------
+        List[ColumnInfo]
+        """
+        columns_info = []
+        for col in self.parent.columns_info:
+            if col.name == column_info.name:
+                columns_info.append(column_info)
+            else:
+                columns_info.append(col)
+        return columns_info
 
     @typechecked
     def as_entity(self, entity_name: Optional[str]) -> None:
@@ -49,15 +69,30 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
             entity = Entity.get(entity_name)
             entity_id = entity.id
 
-        columns_info = []
-        for col in self.parent.columns_info:
-            if col.name == self.info.name:
-                self.info = ColumnInfo(**{**col.dict(), "entity_id": entity_id})
-                columns_info.append(self.info)
-            else:
-                columns_info.append(col)
+        column_info = ColumnInfo(**{**self.info.dict(), "entity_id": entity_id})
+        self.parent.update(
+            update_payload={"columns_info": self._prepare_columns_info(column_info)},
+            allow_update_local=True,
+        )
+        self.info = column_info
 
-        self.parent.update(update_payload={"columns_info": columns_info}, allow_update_local=True)
+    @typechecked
+    def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
+        """
+        Update critical data info of the data column
+
+        Parameters
+        ----------
+        cleaning_operations: List[CleaningOperation]
+            List of cleaning operations to be applied on the column
+        """
+        critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
+        column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})
+        self.parent.update(
+            update_payload={"columns_info": self._prepare_columns_info(column_info)},
+            allow_update_local=True,
+        )
+        self.info = column_info
 
 
 class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
@@ -207,6 +242,18 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         output = DataColumn(info=info)
         output.set_parent(self)
         return output
+
+    def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
+        previous_columns_info = self.columns_info
+        super().update(update_payload=update_payload, allow_update_local=allow_update_local)
+        if self.columns_info != previous_columns_info:
+            # update the global query graph if there is any changes in columns_info
+            _, inserted_node = self.construct_graph_and_node(
+                feature_store_details=self.feature_store.get_feature_store_details(),
+                table_data_dict=self.json_dict(),
+                graph=GlobalQueryGraph(),
+            )
+            self.node_name = inserted_node.name
 
     @typechecked
     def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
