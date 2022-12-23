@@ -38,6 +38,8 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         """
         Prepare columns info using info attribute of this object
 
+        Parameters
+        ----------
         column_info: ColumnInfo
             Column info to be override
 
