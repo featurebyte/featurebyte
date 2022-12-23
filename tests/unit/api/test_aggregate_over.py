@@ -15,6 +15,7 @@ from featurebyte.enum import DBVarType
         ("col_text", DBVarType.VARCHAR),
         ("col_boolean", DBVarType.BOOL),
         ("created_at", DBVarType.TIMESTAMP),
+        ("col_binary", DBVarType.BINARY),
     ],
 )
 def test_aggregate_over__latest_method_output_vartype(
