@@ -65,6 +65,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 4
     assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
+    assert result["TILE_TYPE"].tolist() == ["ONLINE", "ONLINE", "ONLINE", "ONLINE"]
     assert result["MESSAGE"].tolist() == ["", "", "", ""]
     session_id = result["SESSION_ID"].iloc[0]
     assert "|" in session_id
