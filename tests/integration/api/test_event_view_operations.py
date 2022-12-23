@@ -419,14 +419,14 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     )
     feature_group_combined = feature_list_combined[feature_list_combined.feature_names]
     df_feature_preview = feature_group_combined.preview(preview_param)
-    expected_amount_sum_24h = 220.18
+    expected_amount_sum_24h = 582.14
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "user id": 1,
-        "COUNT_2h": 2,
+        "COUNT_2h": 3,
         "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
         "NUM_PURCHASE_7d": 6,
-        "iet_entropy_24h": 0.6971221346393941,
+        "iet_entropy_24h": 1.661539,
         "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
         "amount_sum_24h": expected_amount_sum_24h,
     }

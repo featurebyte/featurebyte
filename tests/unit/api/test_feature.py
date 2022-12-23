@@ -260,7 +260,7 @@ def saved_feature_fixture(
     assert groupby_node.parameters.windows == ["1d"]
     assert (
         groupby_node.parameters.tile_id
-        == "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd"
+        == "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E"
     )
     assert groupby_node.parameters.aggregation_id == "sum_a1a9657e29a711c4d09475bb8285da86250d2294"
 

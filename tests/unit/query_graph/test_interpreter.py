@@ -277,7 +277,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
     info_dict = asdict(info)
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+        "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -368,7 +368,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     assert sql == expected_sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+        "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -447,7 +447,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     assert info.sql == expected_sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178",
+        "tile_table_id": "TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226",
         "aggregation_id": f"avg_{aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
@@ -484,7 +484,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     sql = info.sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+        "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",
@@ -562,7 +562,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     sql = info.sql
     info_dict.pop("sql_template")
     assert info_dict == {
-        "tile_table_id": "fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848027e3c",
+        "tile_table_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
         "aggregation_id": f"sum_{aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",
@@ -673,7 +673,7 @@ def test_graph_interpreter_snowflake(graph):
         node_params={
             **node_params,
             "tile_id": get_tile_table_identifier(
-                table_details_dict={"table_name": "fake_transactions_table"}, parameters=node_params
+                row_index_lineage_hash="deadbeef1234", parameters=node_params
             ),
             "aggregation_id": get_aggregation_identifier(
                 transformations_hash=graph.node_name_to_ref[node_input.name], parameters=node_params

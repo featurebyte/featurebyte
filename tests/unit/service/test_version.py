@@ -52,7 +52,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "blind_spot": 600,
         "time_modulo_frequency": 300,
         "frequency": 1800,
-        "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+        "tile_id": "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E",
         "aggregation_id": "sum_a1a9657e29a711c4d09475bb8285da86250d2294",
     }
 
@@ -62,7 +62,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "blind_spot": 86400,
         "time_modulo_frequency": 3600,
         "frequency": 86400,
-        "tile_id": "sf_table_f86400_m3600_b86400_d1c26f05670a559eec7e90107400f228b14c209f",
+        "tile_id": "TILE_F86400_M3600_B86400_EB59DE8A3155235069E383C75BA0B314B7F64551",
         "aggregation_id": "sum_8fac908c5e6c78cb3e086f8d034f6a2d4c826916",
     }
 
