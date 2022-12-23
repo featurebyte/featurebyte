@@ -2,87 +2,94 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Literal
+from typing import List, Literal
 
 from pydantic import Field
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.base import BaseSeriesOutputWithAScalarParamNode
+from featurebyte.query_graph.node.base import (
+    BaseSeriesOutputWithAScalarParamNode,
+    BinaryArithmeticOpMixin,
+    BinaryLogicalOpMixin,
+    BinaryRelationalOpMixin,
+)
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 
 
-class AndNode(BaseSeriesOutputWithAScalarParamNode):
+class AndNode(BinaryLogicalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """AndNode class"""
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
 
-class OrNode(BaseSeriesOutputWithAScalarParamNode):
+class OrNode(BinaryLogicalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
 
 
-class EqualNode(BaseSeriesOutputWithAScalarParamNode):
+class EqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """EqualNode class"""
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
 
-class NotEqualNode(BaseSeriesOutputWithAScalarParamNode):
+class NotEqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
 
 
-class GreaterThanNode(BaseSeriesOutputWithAScalarParamNode):
+class GreaterThanNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """GreaterThanNode class"""
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
 
 
-class GreaterEqualNode(BaseSeriesOutputWithAScalarParamNode):
+class GreaterEqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """GreaterEqualNode class"""
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
 
 
-class LessThanNode(BaseSeriesOutputWithAScalarParamNode):
+class LessThanNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """LessThanNode class"""
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
 
 
-class LessEqualNode(BaseSeriesOutputWithAScalarParamNode):
+class LessEqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """LessEqualNode class"""
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
 
 
-class AddNode(BaseSeriesOutputWithAScalarParamNode):
+class AddNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """AddNode class"""
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
 
-class SubtractNode(BaseSeriesOutputWithAScalarParamNode):
+class SubtractNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """SubtractNode class"""
 
     type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
 
 
-class MultiplyNode(BaseSeriesOutputWithAScalarParamNode):
+class MultiplyNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """MultiplyNode class"""
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
 
-class DivideNode(BaseSeriesOutputWithAScalarParamNode):
+class DivideNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """DivideNode class"""
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
 
-class ModuloNode(BaseSeriesOutputWithAScalarParamNode):
+class ModuloNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
     """ModuloNode class"""
 
     type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)
@@ -93,8 +100,14 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.POWER] = Field(NodeType.POWER, const=True)
 
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
 
     type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return inputs[0].series_output_dtype

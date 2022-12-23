@@ -14,7 +14,7 @@ from featurebyte.query_graph.model.critical_data_info import CleaningOperation
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.generic import InputNode, ProjectNode
-from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
+from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 
 
 class TabularSource(FeatureByteBaseModel):
@@ -52,7 +52,7 @@ class BaseTableData(FeatureByteBaseModel):
     def _get_common_input_node_parameters(self) -> Dict[str, Any]:
         return {
             "type": self.type,
-            "columns": [col.name for col in self.columns_info],
+            "columns": [ColumnSpec(**col.dict()) for col in self.columns_info],
             "table_details": self.tabular_source.table_details,
         }
 

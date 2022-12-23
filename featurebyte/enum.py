@@ -128,6 +128,7 @@ class DBVarType(StrEnum):
     ARRAY = "ARRAY", "Array column"
     MAP = "MAP", "Map column"
     STRUCT = "STRUCT", "Struct column"
+    UNKNOWN = "UNKNOWN", "Unknown column type"
 
 
 class AggFunc(StrEnum):

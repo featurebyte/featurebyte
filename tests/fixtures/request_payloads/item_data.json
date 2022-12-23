@@ -43,11 +43,12 @@
     "name": "sf_item_data",
     "record_creation_date_column": null,
     "tabular_source": {
-        "feature_store_id": "639c65ce8ce21f6bf4293201",
+        "feature_store_id": "63a443938bcb22a734625949",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "items_table"
         }
-    }
+    },
+    "type": "item_data"
 }

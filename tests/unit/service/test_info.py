@@ -249,7 +249,7 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
         created_at=info.created_at,
         updated_at=info.updated_at,
     )
-    assert info == expected_info
+    assert info.dict() == expected_info.dict()
 
 
 @pytest.mark.asyncio
