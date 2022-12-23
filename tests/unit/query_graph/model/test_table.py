@@ -27,7 +27,6 @@ from featurebyte.query_graph.node.schema import (
     TableDetails,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
 
 @pytest.fixture(name="tabular_source")
@@ -214,14 +213,9 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     graph_node = event_table_data.construct_cleaning_recipe_node(input_node=inserted_input_node)
     output_node = query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
-    # flatten the graph
-    flat_graph, flat_node_name_map = GraphFlatteningTransformer(graph=query_graph).transform()
-
     # generate query
-    graph_interpreter = GraphInterpreter(query_graph=flat_graph, source_type=SourceType.SNOWFLAKE)
-    output = graph_interpreter.construct_preview_sql(
-        node_name=flat_node_name_map[output_node.name], num_rows=10
-    )
+    graph_interpreter = GraphInterpreter(query_graph=query_graph, source_type=SourceType.SNOWFLAKE)
+    output = graph_interpreter.construct_preview_sql(node_name=output_node.name, num_rows=10)
     assert (
         output
         == textwrap.dedent(
