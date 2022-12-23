@@ -262,7 +262,7 @@ def test_aggregation(
         ("AMOUNT", "std", "24h", "std_24h", lambda x: x.std(ddof=0), None),
         (
             "AMOUNT",
-            "last",
+            "latest",
             "24h",
             "latest_24h",
             lambda x: x.values[-1] if len(x) > 0 else None,

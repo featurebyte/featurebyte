@@ -74,7 +74,7 @@ from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
             ),
         ),
         (
-            AggFunc.LAST,
+            AggFunc.LATEST,
             [
                 TileSpec(
                     tile_expr='FIRST_VALUE("a_column")',

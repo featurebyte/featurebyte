@@ -52,14 +52,10 @@ class StdAggFunc(BaseNumAggFunc):
     type: Literal[AggFunc.STD] = Field(AggFunc.STD, const=True)
 
 
-class LastAggFunc(BaseNumAggFunc):
-    """StdAggFunc class"""
-
-    type: Literal[AggFunc.LAST] = Field(AggFunc.LAST, const=True)
-
-
 class BaseMaxMinAggFunc(BaseAggFunc):
-    """BaseGeneralAggFunc class"""
+    """
+    BaseMaxMinAggFunc class
+    """
 
     input_output_var_type_map = {
         DBVarType.BOOL: DBVarType.BOOL,
@@ -102,6 +98,12 @@ class NaCountAggFunc(BaseCountAggFunc):
     """NaCountAggFunc class"""
 
     type: Literal[AggFunc.NA_COUNT] = Field(AggFunc.NA_COUNT, const=True)
+
+
+class LatestAggFunc(BaseMaxMinAggFunc):
+    """LatestAggFunc class"""
+
+    type: Literal[AggFunc.LATEST] = Field(AggFunc.LATEST, const=True)
 
 
 if TYPE_CHECKING:

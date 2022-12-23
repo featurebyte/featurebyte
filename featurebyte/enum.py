@@ -144,7 +144,7 @@ class AggFunc(StrEnum):
     COUNT = "count", "Compute row count"
     NA_COUNT = "na_count", "Compute count of missing values"
     STD = "std", "Compute standard deviation of values"
-    LAST = "last", "Compute the latest value"
+    LATEST = "latest", "Compute the latest value"
 
     @classmethod
     def all(cls) -> list[str]:

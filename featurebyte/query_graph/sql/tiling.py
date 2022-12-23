@@ -225,7 +225,7 @@ def get_aggregator(agg_name: AggFunc) -> TilingAggregator:
         AggFunc.COUNT: CountAggregator,
         AggFunc.NA_COUNT: NACountAggregator,
         AggFunc.STD: StdAggregator,
-        AggFunc.LAST: LatestValueAggregator,
+        AggFunc.LATEST: LatestValueAggregator,
     }
     if agg_name not in aggregator_mapping:
         raise ValueError(f"Unsupported aggregation: {agg_name}")
