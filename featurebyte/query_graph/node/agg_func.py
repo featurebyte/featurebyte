@@ -169,11 +169,6 @@ class LatestAggFunc(MatchingVarTypeAggFunc):
 
     type: Literal[AggFunc.LATEST] = Field(AggFunc.LATEST, const=True)
 
-    def derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        return input_var_type
-
 
 if TYPE_CHECKING:
     AggFuncType = BaseAggFunc
