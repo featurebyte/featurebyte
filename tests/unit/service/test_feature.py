@@ -98,7 +98,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
-            "tile_id": "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E",
+            "tile_id": "TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178",
             "time_modulo_frequency": 300,
             "timestamp": "event_timestamp",
             "value_by": None,
@@ -110,7 +110,9 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
     expected_raw_groupby_params = expected_groupby_node["parameters"].copy()
     expected_raw_groupby_params["names"] = ["sum_30m", "sum_2h", "sum_1d"]
     expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
-    expected_raw_groupby_params["aggregation_id"] = "sum_fba233e0f502088c233315a322f4c51e939072c0"
+    expected_raw_groupby_params[
+        "tile_id"
+    ] = "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
     async for doc in feature_service.list_documents_iterator(query_filter={"_id": feature.id}):
         assert doc["graph"]["nodes"][1] == expected_groupby_node

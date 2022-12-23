@@ -206,7 +206,7 @@ def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
     assert output.nodes_map["groupby_1"].parameters.tile_id == expected_tile_id
 
     # check that tile id is different if regenerate_groupby_hash=True
-    expected_tile_id = "TILE_F3600_M1800_B900_41B2402CDB18DDC35878C99147FE153139FD47D0"
+    expected_tile_id = "TILE_F3600_M1800_B900_B0C4FEC926625091C00D634AF8F7D03EA464918C"
     output, _ = query_graph_with_groupby.reconstruct(
         node_name_to_replacement_node={}, regenerate_groupby_hash=True
     )
@@ -274,8 +274,8 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     groupby_node = add_pruning_sensitive_operation(
         graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=node_input
     )
-    tile_id = "TILE_F3600_M1800_B900_AE07D5D9F533517A56229C3A10A420B0708BFF78"
-    aggregation_id = "sum_d767eb6a159567b19f1558f14c1f9170c2c9d24e"
+    tile_id = "TILE_F3600_M1800_B900_EC6D76DA23C191C86A5DCF6D5777C82C92C34930"
+    aggregation_id = "sum_a73868167cb600aedfaf16dee4559ad29681e63e"
     assert groupby_node.parameters.tile_id == tile_id
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
