@@ -1,7 +1,7 @@
 """
 This module contains operation structure extraction related classes.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
