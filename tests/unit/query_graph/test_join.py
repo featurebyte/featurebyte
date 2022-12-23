@@ -246,8 +246,6 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
         GROUP BY
           tile_index,
           "cust_id"
-        ORDER BY
-          tile_index
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected

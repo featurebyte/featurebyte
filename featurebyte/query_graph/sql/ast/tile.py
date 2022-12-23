@@ -7,12 +7,13 @@ from typing import cast
 
 from dataclasses import dataclass
 
-from sqlglot import parse_one
-from sqlglot.expressions import Expression, select
+from sqlglot import expressions, parse_one
+from sqlglot.expressions import Expression, alias_, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 from featurebyte.query_graph.sql.specs import WindowAggregationSpec
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
@@ -30,10 +31,13 @@ class BuildTileNode(TableNode):
     value_by: str | None
     tile_specs: list[TileSpec]
     timestamp: str
-    agg_func: str
     frequency: int
     is_on_demand: bool
+    is_order_dependent: bool
     query_node_type = NodeType.GROUPBY
+
+    # Internal names
+    ROW_NUMBER = "__FB_ROW_NUMBER"
 
     @property
     def sql(self) -> Expression:
@@ -59,6 +63,18 @@ class BuildTileNode(TableNode):
         if self.value_by is not None:
             keys.append(quoted_identifier(self.value_by))
 
+        if self.is_order_dependent:
+            return self._get_tile_sql_order_dependent(keys, tile_start_date, input_tiled)
+
+        return self._get_tile_sql_order_independent(keys, tile_start_date, input_tiled)
+
+    def _get_tile_sql_order_independent(
+        self,
+        keys: list[Expression],
+        tile_start_date: str,
+        input_tiled: expressions.Select,
+    ) -> Expression:
+
         if self.is_on_demand:
             groupby_keys = keys + [InternalName.ENTITY_TABLE_START_DATE.value]
         else:
@@ -72,10 +88,56 @@ class BuildTileNode(TableNode):
             )
             .from_(input_tiled.subquery())
             .group_by("tile_index", *groupby_keys)
-            .order_by("tile_index")
         )
 
         return groupby_sql
+
+    def _get_tile_sql_order_dependent(
+        self,
+        keys: list[Expression],
+        tile_start_date: str,
+        input_tiled: expressions.Select,
+    ) -> Expression:
+        def _make_window_expr(expr: str | Expression) -> Expression:
+            order = expressions.Order(
+                expressions=[
+                    expressions.Ordered(this=quoted_identifier(self.timestamp), desc=True),
+                ]
+            )
+            partition_by = [cast(Expression, expressions.Identifier(this="tile_index"))] + keys
+            window_expr = expressions.Window(this=expr, partition_by=partition_by, order=order)
+            return window_expr
+
+        window_exprs = [
+            alias_(
+                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")), alias=self.ROW_NUMBER
+            ),
+            *[
+                alias_(_make_window_expr(spec.tile_expr), alias=spec.tile_column_name)
+                for spec in self.tile_specs
+            ],
+        ]
+        inner_expr = select(
+            alias_(tile_start_date, alias=InternalName.TILE_START_DATE, quoted=False),
+            *keys,
+            *window_exprs,
+        ).from_(input_tiled.subquery())
+
+        outer_condition = expressions.EQ(
+            this=quoted_identifier(self.ROW_NUMBER),
+            expression=make_literal_value(1),
+        )
+        tile_expr = (
+            select(
+                InternalName.TILE_START_DATE,
+                *keys,
+                *[spec.tile_column_name for spec in self.tile_specs],
+            )
+            .from_(inner_expr.subquery())
+            .where(outer_condition)
+        )
+
+        return tile_expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> BuildTileNode | None:
@@ -120,9 +182,9 @@ class BuildTileNode(TableNode):
             value_by=parameters["value_by"],
             tile_specs=tile_specs,
             timestamp=parameters["timestamp"],
-            agg_func=parameters["agg_func"],
             frequency=parameters["frequency"],
             is_on_demand=is_on_demand,
+            is_order_dependent=aggregator.is_order_dependent,
         )
         return sql_node
 

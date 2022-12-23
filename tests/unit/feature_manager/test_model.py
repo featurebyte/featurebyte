@@ -50,8 +50,6 @@ def test_extended_feature_model__float_feature(float_feature):
         GROUP BY
           tile_index,
           "cust_id"
-        ORDER BY
-          tile_index
         """
     ).strip()
     expected_tile_specs = [
@@ -116,8 +114,6 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
           tile_index,
           "cust_id",
           "col_int"
-        ORDER BY
-          tile_index
         """
     ).strip()
     expected_tile_specs = [

@@ -15,9 +15,9 @@ class TileSpec:
 
     Parameters
     ----------
-    tile_expr : str
+    tile_expr: str
         SQL expression
-    tile_column_name : str
+    tile_column_name: str
         Alias for the result of the SQL expression
     """
 
@@ -31,6 +31,11 @@ class TilingAggregator(ABC):
     The two methods that need to be implemented provide information on how the tiles are computed
     and how the tiles should be merged.
     """
+
+    @property
+    @abstractmethod
+    def is_order_dependent(self) -> bool:
+        """Whether the aggregation depends on the ordering of values in the data"""
 
     @staticmethod
     @abstractmethod
@@ -67,7 +72,23 @@ class TilingAggregator(ABC):
         """
 
 
-class CountAggregator(TilingAggregator):
+class OrderIndependentAggregator(TilingAggregator, ABC):
+    """Base class for all aggregators are not order dependent"""
+
+    @property
+    def is_order_dependent(self) -> bool:
+        return False
+
+
+class OrderDependentAggregator(TilingAggregator, ABC):
+    """Base class for all aggregators are order dependent"""
+
+    @property
+    def is_order_dependent(self) -> bool:
+        return True
+
+
+class CountAggregator(OrderIndependentAggregator):
     """Aggregator that computes the row count"""
 
     @staticmethod
@@ -80,7 +101,7 @@ class CountAggregator(TilingAggregator):
         return f"SUM(value_{agg_id})"
 
 
-class AvgAggregator(TilingAggregator):
+class AvgAggregator(OrderIndependentAggregator):
     """Aggregator that computes the average"""
 
     @staticmethod
@@ -96,7 +117,7 @@ class AvgAggregator(TilingAggregator):
         return f"SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id})"
 
 
-class SumAggregator(TilingAggregator):
+class SumAggregator(OrderIndependentAggregator):
     """Aggregator that computes the sum"""
 
     @staticmethod
@@ -108,7 +129,7 @@ class SumAggregator(TilingAggregator):
         return f"SUM(value_{agg_id})"
 
 
-class MinAggregator(TilingAggregator):
+class MinAggregator(OrderIndependentAggregator):
     """Aggregator that computes the minimum value"""
 
     @staticmethod
@@ -120,7 +141,7 @@ class MinAggregator(TilingAggregator):
         return f"MIN(value_{agg_id})"
 
 
-class MaxAggregator(TilingAggregator):
+class MaxAggregator(OrderIndependentAggregator):
     """Aggregator that computes the maximum value"""
 
     @staticmethod
@@ -132,7 +153,7 @@ class MaxAggregator(TilingAggregator):
         return f"MAX(value_{agg_id})"
 
 
-class NACountAggregator(TilingAggregator):
+class NACountAggregator(OrderIndependentAggregator):
     """Aggregator that counts the number of missing values"""
 
     @staticmethod
@@ -144,7 +165,7 @@ class NACountAggregator(TilingAggregator):
         return f"SUM(value_{agg_id})"
 
 
-class StdAggregator(TilingAggregator):
+class StdAggregator(OrderIndependentAggregator):
     """Aggregator that computes the standard deviation"""
 
     @staticmethod
@@ -165,7 +186,21 @@ class StdAggregator(TilingAggregator):
         return stddev
 
 
-def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
+class LatestValueAggregator(OrderDependentAggregator):
+    """Aggregator that computes the latest value"""
+
+    @staticmethod
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
+        return [
+            TileSpec(f'FIRST_VALUE("{col}")', f"value_{agg_id}"),
+        ]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        return f"FIRST_VALUE(value_{agg_id})"
+
+
+def get_aggregator(agg_name: AggFunc) -> TilingAggregator:
     """Retrieves an aggregator class given the aggregation name
 
     Parameters
@@ -190,7 +225,8 @@ def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
         AggFunc.COUNT: CountAggregator,
         AggFunc.NA_COUNT: NACountAggregator,
         AggFunc.STD: StdAggregator,
+        AggFunc.LATEST: LatestValueAggregator,
     }
     if agg_name not in aggregator_mapping:
         raise ValueError(f"Unsupported aggregation: {agg_name}")
-    return aggregator_mapping[agg_name]
+    return aggregator_mapping[agg_name]()

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Iterable, Tuple
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte import SourceType
 from featurebyte.enum import InternalName, SpecialColumnName
@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.aggregator.base import (
     Aggregator,
     LeftJoinableSubquery,
 )
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import WindowAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
@@ -27,7 +28,10 @@ TimeModuloFreq = int
 AggSpecEntityIDs = Tuple[str, ...]
 TileIndicesIdType = Tuple[Window, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
 TileIdType = str
-AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
+IsOrderDependent = bool
+AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs, IsOrderDependent]
+
+ROW_NUMBER = "__FB_ROW_NUMBER"
 
 
 class TileBasedRequestTablePlan:
@@ -249,6 +253,7 @@ class WindowAggregationSpecSet:
             aggregation_spec.tile_table_id,
             aggregation_spec.window,
             tuple(aggregation_spec.serving_names),
+            aggregation_spec.is_order_dependent,
         )
 
         # Initialize containers for new tile_table_id and window combination
@@ -324,7 +329,7 @@ class WindowAggregator(Aggregator):
                 out.update(agg_spec.serving_names)
         return out
 
-    def construct_aggregation_sql(
+    def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,
         expanded_request_table_name: str,
         tile_table_id: str,
@@ -335,6 +340,7 @@ class WindowAggregator(Aggregator):
         merge_exprs: list[str],
         agg_result_names: list[str],
         num_tiles: int,
+        is_order_dependent: bool,
     ) -> expressions.Select:
         """
         Construct SQL code for one specific aggregation
@@ -387,6 +393,8 @@ class WindowAggregator(Aggregator):
             Column names of the aggregated results
         num_tiles : int
             Feature window size in terms of number of tiles (function of frequency)
+        is_order_dependent : bool
+            Whether the aggregation depends on the ordering of data
 
         Returns
         -------
@@ -424,16 +432,9 @@ class WindowAggregator(Aggregator):
             ]
             inner_group_by_keys = group_by_keys + [f"TILE.{quoted_identifier(value_by).sql()}"]
 
-        inner_agg_expr = (
-            select(
-                *inner_group_by_keys,
-                *[
-                    f'{merge_expr} AS "{inner_agg_result_name}"'
-                    for merge_expr, inner_agg_result_name in zip(
-                        merge_exprs, inner_agg_result_names
-                    )
-                ],
-            )
+        # Join expanded request table with tile table using range join
+        req_joined_with_tiles = (
+            select()
             .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
             .join(
                 tile_table_id,
@@ -442,8 +443,22 @@ class WindowAggregator(Aggregator):
                 on=join_conditions,
             )
             .where(*range_join_where_conditions)
-            .group_by(*inner_group_by_keys)
         )
+
+        if is_order_dependent:
+            inner_agg_expr = self.merge_tiles_order_dependent(
+                req_joined_with_tiles=req_joined_with_tiles,
+                inner_group_by_keys=inner_group_by_keys,
+                merge_exprs=merge_exprs,
+                inner_agg_result_names=inner_agg_result_names,
+            )
+        else:
+            inner_agg_expr = self.merge_tiles_order_independent(
+                req_joined_with_tiles=req_joined_with_tiles,
+                inner_group_by_keys=inner_group_by_keys,
+                merge_exprs=merge_exprs,
+                inner_agg_result_names=inner_agg_result_names,
+            )
 
         if value_by is None:
             agg_expr = inner_agg_expr
@@ -458,6 +473,103 @@ class WindowAggregator(Aggregator):
             )
 
         return agg_expr
+
+    @staticmethod
+    def merge_tiles_order_independent(
+        req_joined_with_tiles: Select,
+        inner_group_by_keys: list[str],
+        merge_exprs: list[str],
+        inner_agg_result_names: list[str],
+    ) -> Select:
+        """
+        Merge tile values to produce feature values for order independent aggregation methods
+
+        The aggregation is done using GROUP BY.
+
+        Parameters
+        ----------
+        req_joined_with_tiles: Select
+            Result of joining expanded request table with tile table
+        inner_group_by_keys: list[str]
+            Keys that the aggregation should use
+        merge_exprs: list[str]
+            Expressions that merge tile values to produce feature values
+        inner_agg_result_names: list[str]
+            Names of the aggregation results, should have the same length as merge_exprs
+
+        Returns
+        -------
+        Select
+        """
+        inner_agg_expr = req_joined_with_tiles.select(
+            *inner_group_by_keys,
+            *[
+                alias_(merge_expr, inner_agg_result_name, quoted=True)
+                for merge_expr, inner_agg_result_name in zip(merge_exprs, inner_agg_result_names)
+            ],
+        ).group_by(*inner_group_by_keys)
+        return inner_agg_expr
+
+    @staticmethod
+    def merge_tiles_order_dependent(
+        req_joined_with_tiles: Select,
+        inner_group_by_keys: list[str],
+        merge_exprs: list[str],
+        inner_agg_result_names: list[str],
+    ) -> Select:
+        """
+        Merge tile values to produce feature values for order dependent aggregation methods
+
+        The aggregation is done using a nested query involving window function to preserve row
+        ordering based on event timestamp. This is to support aggregation methods such as latest
+        value, sequence, etc.
+
+        Parameters
+        ----------
+        req_joined_with_tiles: Select
+            Result of joining expanded request table with tile table
+        inner_group_by_keys: list[str]
+            Keys that the aggregation should use
+        merge_exprs: list[str]
+            Expressions that merge tile values to produce feature values
+        inner_agg_result_names: list[str]
+            Names of the aggregation results, should have the same length as merge_exprs
+
+        Returns
+        -------
+        Select
+        """
+
+        def _make_window_expr(expr: str | Expression) -> Expression:
+            order = expressions.Order(
+                expressions=[
+                    expressions.Ordered(this="TILE.INDEX", desc=True),
+                ]
+            )
+            window_expr = expressions.Window(
+                this=expr, partition_by=inner_group_by_keys, order=order
+            )
+            return window_expr
+
+        window_exprs = [
+            alias_(
+                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")),
+                alias=ROW_NUMBER,
+                quoted=True,
+            )
+        ] + [
+            alias_(_make_window_expr(merge_expr), alias=inner_agg_result_name, quoted=True)
+            for (merge_expr, inner_agg_result_name) in zip(merge_exprs, inner_agg_result_names)
+        ]
+        window_based_expr = req_joined_with_tiles.select(
+            *inner_group_by_keys,
+            *window_exprs,
+        )
+        filter_condition = expressions.EQ(
+            this=quoted_identifier(ROW_NUMBER), expression=make_literal_value(1)
+        )
+        inner_agg_expr = select("*").from_(window_based_expr.subquery()).where(filter_condition)
+        return inner_agg_expr
 
     def get_window_aggregations(self, point_in_time_column: str) -> list[LeftJoinableSubquery]:
         """
@@ -479,6 +591,7 @@ class WindowAggregator(Aggregator):
             # All WindowAggregationSpec in agg_specs share common attributes such as tile_table_id,
             # keys, etc. Get the first one to access them.
             agg_spec = agg_specs[0]
+            is_order_dependent = agg_specs[0].is_order_dependent
             expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
                 agg_spec
             )
@@ -495,6 +608,7 @@ class WindowAggregator(Aggregator):
                 merge_exprs=merge_exprs,
                 agg_result_names=agg_result_names,
                 num_tiles=agg_spec.window // agg_spec.frequency,
+                is_order_dependent=is_order_dependent,
             )
             agg_result = LeftJoinableSubquery(
                 expr=agg_expr,

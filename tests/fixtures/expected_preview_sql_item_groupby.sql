@@ -46,8 +46,6 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
 ), REQUEST_TABLE AS (

@@ -116,8 +116,8 @@ class StdAggFunc(BaseNumAggFunc):
     type: Literal[AggFunc.STD] = Field(AggFunc.STD, const=True)
 
 
-class BaseMaxMinAggFunc(BaseAggFunc):
-    """BaseGeneralAggFunc class"""
+class MatchingVarTypeAggFunc(BaseAggFunc):
+    """MatchingVarTypeAggFunc class where output type is the same as input type"""
 
     def _derive_output_var_type(
         self, input_var_type: DBVarType, category: Optional[str] = None
@@ -128,13 +128,13 @@ class BaseMaxMinAggFunc(BaseAggFunc):
         return True
 
 
-class MaxAggFunc(BaseMaxMinAggFunc):
+class MaxAggFunc(MatchingVarTypeAggFunc):
     """MaxAggFunc class"""
 
     type: Literal[AggFunc.MAX] = Field(AggFunc.MAX, const=True)
 
 
-class MinAggFunc(BaseMaxMinAggFunc):
+class MinAggFunc(MatchingVarTypeAggFunc):
     """MinAggFunc class"""
 
     type: Literal[AggFunc.MIN] = Field(AggFunc.MIN, const=True)
@@ -162,6 +162,12 @@ class NaCountAggFunc(BaseCountAggFunc):
     """NaCountAggFunc class"""
 
     type: Literal[AggFunc.NA_COUNT] = Field(AggFunc.NA_COUNT, const=True)
+
+
+class LatestAggFunc(MatchingVarTypeAggFunc):
+    """LatestAggFunc class"""
+
+    type: Literal[AggFunc.LATEST] = Field(AggFunc.LATEST, const=True)
 
 
 if TYPE_CHECKING:

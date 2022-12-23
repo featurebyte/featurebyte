@@ -48,8 +48,6 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
   RIGHT JOIN (
@@ -93,8 +91,6 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS max_0a6e8412af84dcc90ceee99264d5171684eb18b7
     ON avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8.INDEX = max_0a6e8412af84dcc90ceee99264d5171684eb18b7.INDEX
@@ -140,8 +136,6 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       GROUP BY
         tile_index,
         "cust_id"
-      ORDER BY
-        tile_index
     )
   ) AS sum_1d908e3b5ef1d25d9f5c298ad3f611fc00722d8b
     ON avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8.INDEX = sum_1d908e3b5ef1d25d9f5c298ad3f611fc00722d8b.INDEX

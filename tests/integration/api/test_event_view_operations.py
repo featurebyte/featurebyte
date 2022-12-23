@@ -256,7 +256,7 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
-def test_event_view_operations(event_view, transaction_data_upper_case):
+def test_event_view_ops(event_view, transaction_data_upper_case):
     """
     Test operations that can be performed on an EventView before creating features
     """

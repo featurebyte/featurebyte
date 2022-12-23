@@ -49,8 +49,6 @@ WITH TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226 AS (
         tile_index,
         "cust_id",
         "product_type"
-      ORDER BY
-        tile_index
     )
   ) AS avg_4175f93da804be8506df45531ac006c24741d02b
 ), REQUEST_TABLE AS (
