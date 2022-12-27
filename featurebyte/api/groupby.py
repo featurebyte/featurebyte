@@ -189,7 +189,7 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
-        fill_value: Optional[ColumnDataTypes]
+        fill_value: Optional[Union[int, float, str, bool]]
             Value to fill if the value in the column is empty
 
         Returns
@@ -341,7 +341,7 @@ class SimpleAggregator(BaseAggregator):
             Aggregation method
         feature_name: str
             Output feature name
-        fill_value: Optional[ColumnDataTypes]
+        fill_value: Optional[Union[int, float, str, bool]]
             Value to fill if the value in the column is empty
 
         Returns
@@ -468,7 +468,7 @@ class GroupBy(OpsMixin):
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
-        fill_value: Optional[ColumnDataTypes]
+        fill_value: Optional[Union[int, float, str, bool]]
             Value to fill if the value in the column is empty
 
         Returns
@@ -506,7 +506,7 @@ class GroupBy(OpsMixin):
             Aggregation method
         feature_name: Optional[str]
             Output feature name
-        fill_value: Optional[ColumnDataTypes]
+        fill_value: Optional[Union[int, float, str, bool]]
             Value to fill if the value in the column is empty
 
         Returns
