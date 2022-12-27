@@ -16,6 +16,7 @@ from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.feature_type import FeatureType
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
@@ -480,3 +481,93 @@ class Feature(
             str,
             response.json(),
         )
+
+    @staticmethod
+    def get_feature_type(feature: Feature) -> FeatureType:
+        """
+        Get the type of a feature
+
+        Parmaeters
+        ----------
+        feature: Feature
+            feature to check
+
+        Returns
+        -------
+        FeatureType
+            feature type
+        """
+        # TODO: implement - not sure what's the best way to do this / if it's needed
+        return FeatureType.UNKNOWN
+
+    @staticmethod
+    def _validate_feature_type(feature: Feature, feature_type: FeatureType) -> None:
+        """
+        Validates whether a feature is of a particular feature type.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature
+        feature_type: FeatureType
+            feature type we want to assert against
+
+        Raises
+        ------
+        ValueError
+            raised when the feature is not of the specified feature type
+        """
+        current_feature_type = Feature.get_feature_type(feature)
+        if current_feature_type != feature_type:
+            raise ValueError(f"feature {feature.name} is not of the type {feature_type} ")
+
+    @typechecked
+    def isin(self, feature: Feature) -> None:
+        """
+        Identify if the lookup feature value is in the keys of the dictionary
+
+        lookup_feature.isin(dictionary_feature)
+        """
+        Feature._validate_feature_type(self, FeatureType.LOOKUP)
+        Feature._validate_feature_type(feature, FeatureType.DICTIONARY)
+
+        new_node = self.graph.add_operation(
+            node_type=NodeType.IS_IN,
+            node_params={},  # TODO:
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[self.node],
+        )
+        self.node_name = new_node.name
+
+    @typechecked
+    def get(self, feature: Feature) -> None:
+        """
+        get the value in the dictionary_feature
+
+        dictionary_feature.get(lookup_feature)
+        """
+        Feature._validate_feature_type(self, FeatureType.DICTIONARY)
+        Feature._validate_feature_type(feature, FeatureType.LOOKUP)
+        pass
+
+    @typechecked
+    def get_relative_frequency(self, feature: Feature) -> None:
+        """
+        get relative frequency of the lookup_feature in the dictionary
+
+        dictionary_feature.get_relative_frequency(lookup_feature)
+        """
+        Feature._validate_feature_type(self, FeatureType.DICTIONARY)
+        Feature._validate_feature_type(feature, FeatureType.LOOKUP)
+        pass
+
+    @typechecked
+    def get_rank(self, feature: Feature) -> None:
+        """
+        get rank of the lookup_feature in the dictionary
+
+        dictionary_feature.get_rank(lookup_feature, descending=True)
+        """
+        Feature._validate_feature_type(self, FeatureType.DICTIONARY)
+        Feature._validate_feature_type(feature, FeatureType.LOOKUP)
+        pass

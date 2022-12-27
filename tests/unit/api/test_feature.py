@@ -9,6 +9,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import SlowlyChangingView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -651,3 +652,14 @@ def test_is_time_based(saved_feature):
             is_time_based=False,
         )
         assert not saved_feature.is_time_based
+
+
+def test_get_feature_type(snowflake_scd_data, cust_id_entity):
+    """
+    Test SlowlyChangingView as_feature configures additional parameters
+    """
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    feature = scd_view["col_float"].as_feature("FloatFeature", offset="7d")
+    graph_dict = feature.dict()["graph"]
+    lookup_node = get_node(graph_dict, "lookup_1")
