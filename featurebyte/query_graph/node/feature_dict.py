@@ -11,6 +11,7 @@ class IsInDictionaryNode(SQLNode):
     IsInDictionary node class
     """
 
+    lookup_feature_expression: Expression
     target_dictionary_node: Expression
 
     @property
