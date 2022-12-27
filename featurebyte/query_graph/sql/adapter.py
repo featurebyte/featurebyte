@@ -286,6 +286,18 @@ class DatabricksAdapter(BaseAdapter):
     """
 
     @classmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
+        inner_agg_expr: expressions.Select,
+    ) -> expressions.Select:
+        raise NotImplementedError()
+
+    @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         return expressions.Anonymous(this="UNIX_TIMESTAMP", expressions=[timestamp_expr])
 
@@ -366,5 +378,5 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
         Instance of BaseAdapter
     """
     if source_type == SourceType.DATABRICKS:
-        return DatabricksAdapter()  # type: ignore[abstract]
+        return DatabricksAdapter()
     return SnowflakeAdapter()
