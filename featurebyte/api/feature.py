@@ -123,6 +123,8 @@ class Feature(
     Feature class
     """
 
+    # pylint: disable=too-many-public-methods
+
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Feature"], proxy_class="featurebyte.Feature")
 
@@ -487,7 +489,7 @@ class Feature(
         """
         Get the type of a feature
 
-        Parmaeters
+        Parameters
         ----------
         feature: Feature
             feature to check
@@ -498,6 +500,7 @@ class Feature(
             feature type
         """
         # TODO: implement - not sure what's the best way to do this / if it's needed
+        _ = feature
         return FeatureType.UNKNOWN
 
     @staticmethod
@@ -540,7 +543,7 @@ class Feature(
         self.node_name = new_node.name
 
     @typechecked
-    def get(self, feature: Feature) -> None:
+    def get_value(self, feature: Feature) -> None:
         """
         get the value in the dictionary_feature
 
@@ -548,7 +551,6 @@ class Feature(
         """
         Feature._validate_feature_type(self, FeatureType.DICTIONARY)
         Feature._validate_feature_type(feature, FeatureType.LOOKUP)
-        pass
 
     @typechecked
     def get_relative_frequency(self, feature: Feature) -> None:
@@ -559,7 +561,6 @@ class Feature(
         """
         Feature._validate_feature_type(self, FeatureType.DICTIONARY)
         Feature._validate_feature_type(feature, FeatureType.LOOKUP)
-        pass
 
     @typechecked
     def get_rank(self, feature: Feature) -> None:
@@ -570,4 +571,3 @@ class Feature(
         """
         Feature._validate_feature_type(self, FeatureType.DICTIONARY)
         Feature._validate_feature_type(feature, FeatureType.LOOKUP)
-        pass
