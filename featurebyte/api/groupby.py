@@ -141,10 +141,9 @@ class BaseAggregator(ABC):
 
         # Count features should be 0 instead of NaN when there are no records
         value_to_fill = get_or_default(fill_value, 0)
-        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
-
-            feature.name = feature_name
         feature.fillna(value_to_fill)
+        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
+            feature.name = feature_name
 
         return feature
 
