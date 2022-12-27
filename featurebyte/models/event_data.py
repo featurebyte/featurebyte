@@ -29,14 +29,23 @@ class FeatureJobSetting(FeatureByteBaseModel):
     - Time modulo frequency: an offset to specify when feature jobs are run.
     Note that these duration parameters are the same duration type strings that pandas accepts in pd.Timedelta().
 
-    Some examples:
-    - job run at 12am
-        frequency 24h
-        time modulo frequency 0
+    Examples
+    --------
+    Configure a feature job to run daily at 12am
 
-    - job run at 8am
-        frequency 24h
-        time modulo frequency 8h
+    >>> feature_job_setting = FeatureJobSetting( # doctest: +SKIP
+      blind_spot="0"
+      frequency="24h"
+      time_modulo_frequency="0"
+    )
+
+    Configure a feature job to run daily at 8am
+
+    >>> feature_job_setting = FeatureJobSetting( # doctest: +SKIP
+      blind_spot="0"
+      frequency="24h"
+      time_modulo_frequency="8h"
+    )
     """
 
     __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureJobSetting", "")
