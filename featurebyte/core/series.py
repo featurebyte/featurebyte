@@ -17,7 +17,6 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
-from featurebyte.core.types import ColumnDataTypes
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
@@ -576,7 +575,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return ~self.isnull()
 
     @typechecked
-    def fillna(self, other: ColumnDataTypes) -> None:
+    def fillna(self, other: Union[int, float, str, bool]) -> None:
         """
         Replace missing values with the provided value in-place
 

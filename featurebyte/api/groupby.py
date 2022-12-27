@@ -20,7 +20,6 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.common.typing import get_or_default
 from featurebyte.core.mixin import OpsMixin
-from featurebyte.core.types import ColumnDataTypes
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.query_graph.node import Node
@@ -119,7 +118,7 @@ class BaseAggregator(ABC):
         groupby_node: Node,
         method: str,
         value_column: Optional[str],
-        fill_value: Optional[ColumnDataTypes],
+        fill_value: Optional[Union[int, float, str, bool]],
     ) -> Feature:
 
         # value_column is None for count-like aggregation method
@@ -171,7 +170,7 @@ class WindowAggregator(BaseAggregator):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
-        fill_value: Optional[ColumnDataTypes] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -330,7 +329,7 @@ class SimpleAggregator(BaseAggregator):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
-        fill_value: Optional[ColumnDataTypes] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -448,7 +447,7 @@ class GroupBy(OpsMixin):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
-        fill_value: Optional[ColumnDataTypes] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -493,7 +492,7 @@ class GroupBy(OpsMixin):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
-        fill_value: Optional[ColumnDataTypes] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
