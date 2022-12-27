@@ -47,6 +47,10 @@ class NodeType(StrEnum):
     LOOKUP = "lookup"
     JOIN = "join"
     JOIN_FEATURE = "join_feature"
+    IS_IN_DICT = "is_in_dict"
+    GET = "get"
+    GET_RELATIVE_FREQUENCY = "get_relative_frequency"
+    GET_RANK = "get_rank"
 
     # other operations
     ASSIGN = "assign"
