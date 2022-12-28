@@ -1,14 +1,22 @@
 """
 Unit test for EventViewGroupBy
 """
+from typing import List, Type
+
 import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.api.groupby import GroupBy
+from featurebyte.api.groupby import BaseAggregator, GroupBy
+from featurebyte.api.view import View
 from featurebyte.enum import DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.node.agg_func import AggFuncType
+from featurebyte.query_graph.transform.reconstruction import (
+    GroupbyNode,
+    add_pruning_sensitive_operation,
+)
 
 
 @pytest.mark.parametrize(
@@ -389,3 +397,51 @@ def test_supported_views__aggregate(snowflake_event_view_with_entity):
             value_column="col_float", method="sum", feature_name="my_feature"
         )
     assert str(exc.value) == "aggregate() is only available for ItemView"
+
+
+class BaseAggregatorTest(BaseAggregator):
+    @property
+    def supported_views(self) -> List[Type[View]]:
+        return [EventView]
+
+    @property
+    def aggregation_method_name(self) -> str:
+        return "aggregate"
+
+
+def test_project_feature_from_groupby_node(snowflake_event_data, cust_id_entity):
+    """
+    Test _project_feature_from_groupby_node
+    """
+    snowflake_event_data.cust_id.as_entity("customer")
+    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+
+    group_by = event_view.groupby("cust_id")
+    aggregator = BaseAggregatorTest(group_by)
+    groupby_node = add_pruning_sensitive_operation(
+        graph=event_view.graph,
+        node_cls=GroupbyNode,
+        node_params={
+            "keys": group_by.keys,
+            "parent": None,
+            "agg_func": AggFuncType.COUNT,
+            "value_by": None,
+            "windows": [],
+            "timestamp": "",
+            "blind_spot": 0,
+            "time_modulo_frequency": 0,
+            "frequency": 24,
+            "names": [],
+            "serving_names": [],
+            "entity_ids": [],
+        },
+        input_node=event_view.node,
+    )
+    feature = aggregator._project_feature_from_groupby_node(
+        AggFuncType.COUNT,
+        "feature_name",
+        groupby_node,
+        method="sum",
+        value_column=None,
+        fill_value="hello",
+    )
