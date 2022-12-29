@@ -136,6 +136,7 @@ toml-sort = "^0.20.0"
 
 [tool.poetry.group.docs.dependencies]
 docstring-parser = "^0.15"
+mike = "^1.1.2"
 mkautodoc = "^0.2.0"
 mkdocs = "^1.4.1"
 mkdocs-awesome-pages-plugin = "^2.8.0"

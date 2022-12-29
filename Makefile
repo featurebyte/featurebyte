@@ -93,13 +93,15 @@ stop-service:
 
 #* Docs Generation
 docs:
-	PYTHONPATH=$(PWD)/docs/extensions poetry run mkdocs serve
+	${MAKE} docs-build
+	${MAKE} docs-serve
 
-docs-full:
-	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve
+docs-serve:
+	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike serve --config-file mkdocs.yaml
 
 docs-build:
-	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs build
+	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike deploy --update-aliases $(shell poetry version -s | grep -oP '^[0-9]+[.][0-9]+') latest --config-file mkdocs.yaml
+
 
 #* Cleaning
 clean:
