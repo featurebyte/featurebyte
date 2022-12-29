@@ -9,6 +9,7 @@ import pandas as pd
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
+from featurebyte.api.view import View
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
 from featurebyte.core.series import Series
@@ -18,7 +19,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.util import append_to_lineage
 
-FrameTypeT = TypeVar("FrameTypeT")
+FrameTypeT = TypeVar("FrameTypeT", bound=View)
 
 
 class BaseFrame(QueryObject, SampleMixin):
