@@ -18,6 +18,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.common.typing import get_or_default
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
@@ -117,6 +118,7 @@ class BaseAggregator(ABC):
         groupby_node: Node,
         method: str,
         value_column: Optional[str],
+        fill_value: Optional[Union[int, float, str, bool]],
     ) -> Feature:
 
         # value_column is None for count-like aggregation method
@@ -136,11 +138,41 @@ class BaseAggregator(ABC):
             feature_dtype=var_type,
             entity_ids=self.groupby.entity_ids,
         )
+        self._fill_feature(feature, method, feature_name, fill_value)
+        return feature
 
+    def _fill_feature(
+        self,
+        feature: Feature,
+        method: str,
+        feature_name: str,
+        fill_value: Optional[Union[int, float, str, bool]],
+    ) -> Feature:
+        """
+        Fill feature values as needed.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature
+        method: str
+            aggregation method
+        feature_name: str
+            feature name
+        fill_value: Optional[Union[int, float, str, bool]],
+            value to fill
+
+        Returns
+        -------
+        Feature
+        """
         # Count features should be 0 instead of NaN when there are no records
         if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
-            feature.fillna(0)
+            value_to_fill = get_or_default(fill_value, 0)
+            feature.fillna(value_to_fill)
             feature.name = feature_name
+        elif fill_value is not None:
+            feature.fillna(fill_value)
 
         return feature
 
@@ -166,6 +198,7 @@ class WindowAggregator(BaseAggregator):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -185,6 +218,8 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
+        fill_value: Optional[Union[int, float, str, bool]]
+            Value to fill if the value in the column is empty
 
         Returns
         -------
@@ -226,6 +261,7 @@ class WindowAggregator(BaseAggregator):
                 groupby_node=groupby_node,
                 method=method,
                 value_column=value_column,
+                fill_value=fill_value,
             )
             items.append(feature)
         feature_group = FeatureGroup(items)
@@ -321,6 +357,7 @@ class SimpleAggregator(BaseAggregator):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -333,6 +370,8 @@ class SimpleAggregator(BaseAggregator):
             Aggregation method
         feature_name: str
             Output feature name
+        fill_value: Optional[Union[int, float, str, bool]]
+            Value to fill if the value in the column is empty
 
         Returns
         -------
@@ -369,6 +408,7 @@ class SimpleAggregator(BaseAggregator):
             groupby_node=groupby_node,
             method=method,
             value_column=value_column,
+            fill_value=fill_value,
         )
         return feature
 
@@ -435,6 +475,7 @@ class GroupBy(OpsMixin):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -456,6 +497,8 @@ class GroupBy(OpsMixin):
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
+        fill_value: Optional[Union[int, float, str, bool]]
+            Value to fill if the value in the column is empty
 
         Returns
         -------
@@ -468,6 +511,7 @@ class GroupBy(OpsMixin):
             feature_names=feature_names,
             timestamp_column=timestamp_column,
             feature_job_setting=feature_job_setting,
+            fill_value=fill_value,
         )
 
     @typechecked
@@ -476,6 +520,7 @@ class GroupBy(OpsMixin):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -490,6 +535,8 @@ class GroupBy(OpsMixin):
             Aggregation method
         feature_name: Optional[str]
             Output feature name
+        fill_value: Optional[Union[int, float, str, bool]]
+            Value to fill if the value in the column is empty
 
         Returns
         -------
@@ -499,4 +546,5 @@ class GroupBy(OpsMixin):
             value_column=value_column,
             method=method,
             feature_name=feature_name,
+            fill_value=fill_value,
         )

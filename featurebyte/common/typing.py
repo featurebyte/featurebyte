@@ -3,7 +3,7 @@ Common utilities related to typing
 """
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, Literal, Optional, cast
 
 import pandas as pd
 from pandas.api.types import is_scalar
@@ -45,3 +45,24 @@ def is_scalar_nan(value: Any) -> bool:
     if not is_scalar(value):
         return False
     return cast(bool, pd.isna(value))
+
+
+def get_or_default(value: Optional[Any], default_value: Any) -> Any:
+    """
+    Returns the default value if the value passed in is None.
+
+    Parameters
+    ----------
+    value: Optional[Any]
+        value to check if optional
+    default_value: Any
+        default value to return
+
+    Returns
+    -------
+    Any
+        value to use
+    """
+    if value is not None:
+        return value
+    return default_value
