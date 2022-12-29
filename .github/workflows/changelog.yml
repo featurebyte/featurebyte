@@ -8,17 +8,14 @@ name: changelog
 
 
 on:
-  workflow_dispatch: {}
-## Disable first
-#  pull_request:
-#    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
-#    branches:
-#      - main
+  pull_request:
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
-
 
 jobs:
   changelog:
