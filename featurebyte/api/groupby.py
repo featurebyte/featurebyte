@@ -138,10 +138,7 @@ class BaseAggregator(ABC):
             feature_dtype=var_type,
             entity_ids=self.groupby.entity_ids,
         )
-
-        # Count features should be 0 instead of NaN when there are no records
         self._fill_feature(feature, method, feature_name, fill_value)
-
         return feature
 
     def _fill_feature(
