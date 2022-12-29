@@ -1,6 +1,5 @@
 name: build-docs
 on:
-  # Ignored
   workflow_dispatch: {}
 
 
@@ -29,6 +28,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Need to fetch gh-pages
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -53,7 +54,13 @@ jobs:
 
       - name: Build docs
         run: |
+          # Install dependencies
           make install
+
+          # Build
+          # This builds and appends to branch [gh-pages]
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           make docs-build
 
       - name: Set Docker Image Ctx
@@ -62,6 +69,13 @@ jobs:
           export IMAGE_TAG=$(git rev-parse --short HEAD)
           echo "IMAGE_REPO=${IMAGE_REPO}" >> $GITHUB_ENV
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Set the base environment
+        run: |
+          # Obtain the base documentation site
+          # Only pull docker/ folder from main
+          git switch -f gh-pages
+          git checkout main -- docker
 
       - name: Setup Docker
         uses: docker/setup-buildx-action@v2
@@ -82,3 +96,9 @@ jobs:
           tags: |
             ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
             ${{ env.IMAGE_REPO }}:latest
+
+      - name: Push new version to gh-pages
+        run: |
+          # Pushing to origin
+          git reset --hard
+          git push origin gh-pages

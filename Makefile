@@ -99,6 +99,8 @@ docs:
 docs-serve:
 	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike serve --config-file mkdocs.yaml
 
+# This will automatically tag the version as poetry version (0.1.33) => (0.1)
+# And commit it to your local git
 docs-build:
 	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike deploy --update-aliases $(shell poetry version -s | grep -oP '^[0-9]+[.][0-9]+') latest --config-file mkdocs.yaml
 
