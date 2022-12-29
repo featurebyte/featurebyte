@@ -164,26 +164,15 @@ def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     assert expected_msg in str(exc.value)
 
 
-def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_entity):
+def test_groupby__default_feature_job_setting(
+    snowflake_event_view_with_entity_and_feature_job, cust_id_entity
+):
     """
     Test default job setting from event data is used
     """
-    node_name = snowflake_event_data.node.name
-    id_before = snowflake_event_data.id
-    snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        )
-    )
-
-    # check internal settings
-    assert snowflake_event_data.node.name == node_name
-    assert snowflake_event_data.id == id_before
-
-    snowflake_event_data.cust_id.as_entity("customer")
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
-
-    feature_group = event_view.groupby("cust_id").aggregate_over(
+    feature_group = snowflake_event_view_with_entity_and_feature_job.groupby(
+        "cust_id"
+    ).aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -404,31 +393,6 @@ class BaseAggregatorTest(BaseAggregator):
         return "aggregate"
 
 
-@pytest.fixture(name="snowflake_event_view_with_customer_entity")
-def get_snowflake_event_view_with_customer_entity_fixture(snowflake_event_data, cust_id_entity):
-    """
-    Fixture to get snowflake_event_view_with_customer_entity
-    """
-    _ = cust_id_entity
-
-    # create GroupBy and Feature
-    node_name = snowflake_event_data.node.name
-    id_before = snowflake_event_data.id
-    snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        )
-    )
-
-    # check internal settings
-    assert snowflake_event_data.node.name == node_name
-    assert snowflake_event_data.id == id_before
-
-    snowflake_event_data.cust_id.as_entity("customer")
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
-    yield event_view
-
-
 def get_graph_edges_from_feature(feature):
     """
     Helper method to get graph edges from feature
@@ -437,11 +401,11 @@ def get_graph_edges_from_feature(feature):
 
 
 @pytest.fixture(name="test_aggregator_and_sum_feature")
-def get_test_aggregator_and_feature_fixture(snowflake_event_view_with_customer_entity):
+def get_test_aggregator_and_feature_fixture(snowflake_event_view_with_entity_and_feature_job):
     """
     Get a test aggregator
     """
-    group_by = snowflake_event_view_with_customer_entity.groupby("cust_id")
+    group_by = snowflake_event_view_with_entity_and_feature_job.groupby("cust_id")
     feature_group = group_by.aggregate_over(
         value_column="col_float",
         method="sum",
@@ -471,11 +435,11 @@ def test__fill_feature_noop(test_aggregator_and_sum_feature):
 
 
 @pytest.fixture(name="test_aggregator_and_count_feature")
-def get_test_aggregator_and_count_feature_fixture(snowflake_event_view_with_customer_entity):
+def get_test_aggregator_and_count_feature_fixture(snowflake_event_view_with_entity_and_feature_job):
     """
     Get a test aggregator
     """
-    group_by = snowflake_event_view_with_customer_entity.groupby("cust_id")
+    group_by = snowflake_event_view_with_entity_and_feature_job.groupby("cust_id")
     feature_group = group_by.aggregate_over(
         method="count",
         windows=["30m"],
