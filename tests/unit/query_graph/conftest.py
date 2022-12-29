@@ -833,63 +833,30 @@ def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
     return feature_node
 
 
-@pytest.fixture(name="scd_table_details")
-def get_scd_table_details_fixture():
-    """
-    Get SCD table details fixture
-    """
-    return TableDetails(
-        database_name="scd_db",
-        schema_name="public",
-        table_name="demographic",
+@pytest.fixture(name="latest_value_without_window_feature_node")
+def latest_value_without_window_feature_node_fixture(global_graph, input_node):
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "latest",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_latest_value"],
+        "windows": [None],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, input_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_latest_value"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
     )
-
-
-@pytest.fixture(name="graph_single_node_scd_data")
-def get_graph_single_node_scd_data_fixture(
-    global_graph, scd_table_details, snowflake_feature_store_details_dict
-):
-    """
-    Query graph with a single node with SCD data
-    """
-    node_input = global_graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "scd_data",
-            "columns": [{"name": "column", "dtype": "FLOAT"}],
-            "table_details": scd_table_details.dict(),
-            "feature_store_details": snowflake_feature_store_details_dict,
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    pruned_graph, node_name_map = global_graph.prune(target_node=node_input)
-    mapped_node = pruned_graph.get_node_by_name(node_name_map[node_input.name])
-    assert mapped_node.name == "input_1"
-    graph_dict = global_graph.dict()
-    assert graph_dict == pruned_graph.dict()
-    assert graph_dict["nodes"] == [
-        {
-            "name": "input_1",
-            "type": "input",
-            "parameters": {
-                "type": "scd_data",
-                "columns": [{"name": "column", "dtype": "FLOAT"}],
-                "table_details": scd_table_details.dict(),
-                "feature_store_details": snowflake_feature_store_details_dict,
-                "id": None,
-                "natural_key_column": None,
-                "surrogate_key_column": None,
-                "current_flag_column": None,
-                "effective_timestamp_column": None,
-                "end_timestamp_column": None,
-            },
-            "output_type": "frame",
-        }
-    ]
-    assert graph_dict["edges"] == []
-    assert node_input.type == "input"
-    yield global_graph, node_input
+    return feature_node
 
 
 @pytest.fixture(name="event_data_table_details")

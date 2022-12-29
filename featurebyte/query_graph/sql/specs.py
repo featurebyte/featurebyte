@@ -115,6 +115,8 @@ class WindowAggregationSpec(AggregationSpec):
         aggregation_specs = []
         aggregator = get_aggregator(params["agg_func"])
         for window, feature_name in zip(params["windows"], params["names"]):
+            if window is None:
+                continue
             params = groupby_node.parameters.dict()
             window = int(pd.Timedelta(window).total_seconds())
             agg_spec = cls(

@@ -283,6 +283,32 @@ def test_get_feature_preview_sql__latest_aggregation(
     )
 
 
+def test_get_feature_preview_sql__latest_aggregation_no_window(
+    global_graph,
+    latest_value_without_window_feature_node,
+    update_fixtures,
+):
+    """
+    Test case for preview SQL for latest aggregation feature without window
+    """
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=[latest_value_without_window_feature_node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_latest_aggregation_no_window.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 def test_get_feature_preview_sql__all_types(
     global_graph,
     mixed_point_in_time_and_item_aggregations,
