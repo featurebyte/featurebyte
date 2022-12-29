@@ -140,6 +140,36 @@ class BaseAggregator(ABC):
         )
 
         # Count features should be 0 instead of NaN when there are no records
+        self._fill_feature(feature, method, feature_name, fill_value)
+
+        return feature
+
+    def _fill_feature(
+        self,
+        feature: Feature,
+        method: str,
+        feature_name: str,
+        fill_value: Optional[Union[int, float, str, bool]],
+    ) -> Feature:
+        """
+        Fill feature values as needed.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature
+        method: str
+            aggregation method
+        feature_name: str
+            feature name
+        fill_value: Optional[Union[int, float, str, bool]],
+            value to fill
+
+        Returns
+        -------
+        Feature
+        """
+        # Count features should be 0 instead of NaN when there are no records
         if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
             value_to_fill = get_or_default(fill_value, 0)
             feature.fillna(value_to_fill)

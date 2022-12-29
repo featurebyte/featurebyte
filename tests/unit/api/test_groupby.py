@@ -12,11 +12,6 @@ from featurebyte.api.view import View
 from featurebyte.enum import DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.node.agg_func import AggFuncType
-from featurebyte.query_graph.transform.reconstruction import (
-    GroupbyNode,
-    add_pruning_sensitive_operation,
-)
 
 
 @pytest.mark.parametrize(
@@ -409,39 +404,164 @@ class BaseAggregatorTest(BaseAggregator):
         return "aggregate"
 
 
-def test_project_feature_from_groupby_node(snowflake_event_data, cust_id_entity):
+@pytest.fixture(name="snowflake_event_view_with_customer_entity")
+def get_snowflake_event_view_with_customer_entity_fixture(snowflake_event_data, cust_id_entity):
     """
-    Test _project_feature_from_groupby_node
+    Fixture to get snowflake_event_view_with_customer_entity
     """
+    _ = cust_id_entity
+
+    # create GroupBy and Feature
+    node_name = snowflake_event_data.node.name
+    id_before = snowflake_event_data.id
+    snowflake_event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        )
+    )
+
+    # check internal settings
+    assert snowflake_event_data.node.name == node_name
+    assert snowflake_event_data.id == id_before
+
     snowflake_event_data.cust_id.as_entity("customer")
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    yield event_view
 
-    group_by = event_view.groupby("cust_id")
-    aggregator = BaseAggregatorTest(group_by)
-    groupby_node = add_pruning_sensitive_operation(
-        graph=event_view.graph,
-        node_cls=GroupbyNode,
-        node_params={
-            "keys": group_by.keys,
-            "parent": None,
-            "agg_func": AggFuncType.COUNT,
-            "value_by": None,
-            "windows": [],
-            "timestamp": "",
-            "blind_spot": 0,
-            "time_modulo_frequency": 0,
-            "frequency": 24,
-            "names": [],
-            "serving_names": [],
-            "entity_ids": [],
-        },
-        input_node=event_view.node,
-    )
-    feature = aggregator._project_feature_from_groupby_node(
-        AggFuncType.COUNT,
-        "feature_name",
-        groupby_node,
+
+def get_graph_edges_from_feature(feature):
+    """
+    Helper method to get graph edges from feature
+    """
+    return feature.dict()["graph"]["edges"]
+
+
+@pytest.fixture(name="test_aggregator_and_sum_feature")
+def get_test_aggregator_and_feature_fixture(snowflake_event_view_with_customer_entity):
+    """
+    Get a test aggregator
+    """
+    group_by = snowflake_event_view_with_customer_entity.groupby("cust_id")
+    feature_group = group_by.aggregate_over(
+        value_column="col_float",
         method="sum",
-        value_column=None,
-        fill_value="hello",
+        windows=["30m"],
+        feature_names=["feat_30m"],
     )
+    feature = feature_group["feat_30m"]
+    return BaseAggregatorTest(group_by), feature
+
+
+def test__fill_feature_noop(test_aggregator_and_sum_feature):
+    """
+    Test _fill_feature
+    """
+    aggregator, feature = test_aggregator_and_sum_feature
+
+    # Passing in None as fill value, and sum count type should result in a no-op
+    original_edges = get_graph_edges_from_feature(feature)
+    filled_feature = aggregator._fill_feature(
+        feature,
+        "sum",
+        feature.name,
+        None,
+    )
+    updated_edges = get_graph_edges_from_feature(filled_feature)
+    assert original_edges == updated_edges  # no change in edges
+
+
+@pytest.fixture(name="test_aggregator_and_count_feature")
+def get_test_aggregator_and_count_feature_fixture(snowflake_event_view_with_customer_entity):
+    """
+    Get a test aggregator
+    """
+    group_by = snowflake_event_view_with_customer_entity.groupby("cust_id")
+    feature_group = group_by.aggregate_over(
+        method="count",
+        windows=["30m"],
+        feature_names=["feat_30m"],
+    )
+    feature = feature_group["feat_30m"]
+    return BaseAggregatorTest(group_by), feature
+
+
+def test__fill_feature_count_fill_with_0(test_aggregator_and_count_feature):
+    """
+    Test _fill_feature
+    """
+    aggregator, feature = test_aggregator_and_count_feature
+    original_edges = get_graph_edges_from_feature(feature)
+    filled_feature = aggregator._fill_feature(
+        feature,
+        "count",
+        feature.name,
+        None,
+    )
+    filled_edges = get_graph_edges_from_feature(filled_feature)
+    assert_edges_updated_with_conditional(original_edges, filled_edges)
+    node = get_node_from_feature(filled_feature, "conditional_2")
+    assert node["parameters"]["value"] == 0
+
+
+def get_node_from_feature(feature, node_name):
+    """
+    Helper function to get a node from a feature, given a node name.
+    """
+    feature_dict = feature.dict()
+    nodes = {}
+    for node in feature_dict["graph"]["nodes"]:
+        nodes[node["name"]] = node
+    return nodes[node_name]
+
+
+def test__fill_feature_update_value_count_feature(test_aggregator_and_count_feature):
+    """
+    Test _fill_feature
+    """
+    aggregator, feature = test_aggregator_and_count_feature
+    original_edges = get_graph_edges_from_feature(feature)
+    value_to_update = 2
+    filled_feature = aggregator._fill_feature(
+        feature,
+        "count",
+        feature.name,
+        value_to_update,
+    )
+    filled_edges = get_graph_edges_from_feature(filled_feature)
+    assert_edges_updated_with_conditional(original_edges, filled_edges)
+    node = get_node_from_feature(filled_feature, "conditional_2")
+    assert node["parameters"]["value"] == value_to_update
+
+
+def assert_edges_updated_with_conditional(original_edges, updated_edges):
+    """
+    Helper function to assert that edges have been updated
+    """
+    # We expect the graph to have additional conditional nodes filled up for the fillna operation
+    expected_filled_edges = [
+        *original_edges,
+        {"source": "alias_1", "target": "is_null_2"},
+        {"source": "alias_1", "target": "conditional_2"},
+        {"source": "is_null_2", "target": "conditional_2"},
+        {"source": "conditional_2", "target": "alias_2"},
+    ]
+    assert expected_filled_edges == updated_edges
+
+
+def test__fill_feature_update_value_non_count_features(test_aggregator_and_count_feature):
+    """
+    Test _fill_feature
+    """
+    aggregator, feature = test_aggregator_and_count_feature
+    original_edges = get_graph_edges_from_feature(feature)
+    value_to_update = 2
+    filled_feature = aggregator._fill_feature(
+        feature,
+        "sum",
+        feature.name,
+        value_to_update,
+    )
+    filled_edges = get_graph_edges_from_feature(filled_feature)
+    assert_edges_updated_with_conditional(original_edges, filled_edges)
+    node = get_node_from_feature(filled_feature, "conditional_2")
+    assert node["parameters"]["value"] == value_to_update
