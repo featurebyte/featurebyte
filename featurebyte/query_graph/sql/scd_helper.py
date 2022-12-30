@@ -275,7 +275,7 @@ def augment_table_with_effective_timestamp(
     #
     # One unfortunate note is that it's not possible to change the NULL LAST behaviour to NULL FIRST
     # even when setting nulls_first=True when creating Ordered, since sqlglot always omits NULL
-    # FIRST. But Snowflake's behaviours is NULL LAST unless otherwise specified!
+    # FIRST. But Snowflake's behaviour is NULL LAST unless otherwise specified!
     order = expressions.Order(
         expressions=[
             expressions.Ordered(this=quoted_identifier(TS_COL)),

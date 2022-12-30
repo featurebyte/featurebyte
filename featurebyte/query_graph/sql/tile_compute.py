@@ -174,7 +174,7 @@ class OnDemandTileComputePlan:
         -------
         Optional[int]
         """
-        return self.max_window_size_by_tile_id.get(tile_id)
+        return self.max_window_size_by_tile_id[tile_id]
 
     def construct_on_demand_tile_ctes(self) -> list[tuple[str, Select]]:
         """Construct the CTE statements that would compute all the required tiles
@@ -283,6 +283,9 @@ def compute_start_end_date_from_point_in_time(
         start_date_epoch_seconds = end_date_epoch_seconds - num_tiles * frequency
         start_date = epoch_seconds_to_timestamp(start_date_epoch_seconds)
     else:
+        # In this case, we need a timestamp that is earlier than all possible event timestamps and
+        # aligns with the tile boundary. This computes the earliest possible timestamp at around the
+        # beginning of epoch.
         start_date = epoch_seconds_to_timestamp(time_modulo_frequency - blind_spot)
 
     return start_date, end_date
