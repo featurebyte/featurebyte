@@ -15,13 +15,7 @@ services:
     hostname: featurebyte-server
     container_name: featurebyte-server
     depends_on: [mongo-rs]
-    ### Change to this when we release
-    # image: mydockerimage:latest
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      args:
-        FEATUREBYTE_NP_PASSWORD: $FEATUREBYTE_NP_PASSWORD  # You need to set an env variable here
+    image: featurebyte-beta:latest
     volumes:
       - ~/.featurebyte:/app/.featurebyte
       - /tmp:/tmp
