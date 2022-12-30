@@ -92,17 +92,19 @@ stop-service:
 	cd docker && docker compose down
 
 #* Docs Generation
+DOCS_CMD := PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike
 docs:
 	${MAKE} docs-build
 	${MAKE} docs-serve
 
 docs-serve:
-	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike serve --config-file mkdocs.yaml
+	${DOCS_CMD} serve --config-file mkdocs.yaml
 
 # This will automatically tag the version as poetry version (0.1.33) => (0.1)
 # And commit it to your local git
+# Do not push to origin, this will be done via a github action
 docs-build:
-	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mike deploy --update-aliases $(shell poetry version -s | grep -oP '^[0-9]+[.][0-9]+') latest --config-file mkdocs.yaml
+	${DOCS_CMD} deploy --config-file mkdocs.yaml --update-aliases $(shell poetry version -s | grep -oP '^[0-9]+[.][0-9]+') latest
 
 
 #* Cleaning
