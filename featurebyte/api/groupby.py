@@ -294,13 +294,15 @@ class WindowAggregator(BaseAggregator):
         if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
             raise ValueError("Window sizes or feature names contains duplicated value(s).")
 
-        number_of_unbounded_windows = sum(map(lambda x: x is None, windows))
+        number_of_unbounded_windows = len([w for w in windows if w is None])
 
-        if number_of_unbounded_windows >= 1 and method != AggFunc.LATEST:
-            raise ValueError('Unbounded window is only supported for the "latest" method')
+        if number_of_unbounded_windows > 0:
 
-        if number_of_unbounded_windows > 1:
-            raise ValueError("Unbounded window should only be specified once")
+            if method != AggFunc.LATEST:
+                raise ValueError('Unbounded window is only supported for the "latest" method')
+
+            if self.groupby.category is not None:
+                raise ValueError("category is not supported for aggregation with unbounded window")
 
     def _prepare_node_parameters(
         self,
