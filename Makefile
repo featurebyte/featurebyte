@@ -98,8 +98,8 @@ beta-bundle: beta-build
 	# Copy dependencies over to bundled folder
 	cp docker/docker-compose.yml  beta/docker-compose.yml
 	cp docker/start.sh            beta/start.sh
+	cp docker/start.ps1           beta/start.ps1
 	cp docker/entrypoint-mongo.sh beta/entrypoint-mongo.sh
-	# cp docker/start.sh beta/start.ps1   # TODO: A powershell script
 
 	# Compress with tar.gz and zip
 	tar czvf featurebyte_beta.tar.gz beta/
