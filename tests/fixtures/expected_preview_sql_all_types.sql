@@ -239,21 +239,13 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
                       "INDEX" AS "__FB_EFFECTIVE_TS_COL",
                       NULL AS "POINT_IN_TIME",
                       NULL AS "CUSTOMER_ID"
-                    FROM (
-                      SELECT
-                        *
-                      FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
-                    )
+                    FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
                   )
                 )
                 WHERE
                   "__FB_EFFECTIVE_TS_COL" IS NULL
               ) AS L
-              LEFT JOIN (
-                SELECT
-                  *
-                FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
-              ) AS R
+              LEFT JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS R
                 ON L."__FB_LAST_TS" = R."INDEX" AND L."__FB_KEY_COL" = R."cust_id"
             ) AS REQ
           )

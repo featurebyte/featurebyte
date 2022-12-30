@@ -65,10 +65,8 @@ class LatestAggregator(Aggregator):
                 assert len(spec.tile_value_columns) == 1
                 tile_value_columns.extend(spec.tile_value_columns)
 
-            # TODO: allow expr to be a non-Select, and skip subquery() in scd_helper in that case?
-            tile_table_expr = select("*").from_(specs[0].tile_table_id)
             right_table = Table(
-                expr=tile_table_expr,
+                expr=specs[0].tile_table_id,
                 timestamp_column="INDEX",
                 join_key=specs[0].keys[0],
                 input_columns=tile_value_columns,

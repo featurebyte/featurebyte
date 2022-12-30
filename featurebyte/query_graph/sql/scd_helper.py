@@ -28,7 +28,7 @@ class Table:
     Representation of a table to be used in SCD join
     """
 
-    expr: Select
+    expr: str | Select
     timestamp_column: str | Expression
     join_key: str
     input_columns: list[str]
@@ -39,10 +39,27 @@ class Table:
         """
         Returns an expression for the timestamp column (return as is if it's already an expression,
         else return the quoted column name)
+
+        Returns
+        -------
+        Expression
         """
         if isinstance(self.timestamp_column, str):
             return quoted_identifier(self.timestamp_column)
         return self.timestamp_column
+
+    def as_subquery(self, alias: Optional[str] = None) -> Expression:
+        """
+        Returns an expression that can be selected from (converted to subquery if required)
+
+        Returns
+        -------
+        Expression
+        """
+        if isinstance(self.expr, str):
+            return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
+        assert isinstance(self.expr, Select)
+        return self.expr.subquery(alias=alias)
 
 
 def get_scd_join_expr(
@@ -113,7 +130,7 @@ def get_scd_join_expr(
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
-    right_subquery = right_table.expr.subquery(alias="R")
+    right_subquery = right_table.as_subquery(alias="R")
     join_conditions = [
         expressions.EQ(
             this=get_qualified_column_identifier(LAST_TS, "L"),
@@ -209,7 +226,7 @@ def augment_table_with_effective_timestamp(
         alias_(left_ts_col, alias=TS_COL, quoted=True),
         alias_(quoted_identifier(left_table.join_key), alias=KEY_COL, quoted=True),
         alias_(expressions.NULL, alias=EFFECTIVE_TS_COL, quoted=True),
-    ).from_(left_table.expr.subquery())
+    ).from_(left_table.as_subquery())
 
     # Include all columns specified for the left table
     for input_col, output_col in zip(left_table.input_columns, left_table.output_columns):
@@ -227,7 +244,7 @@ def augment_table_with_effective_timestamp(
             alias=EFFECTIVE_TS_COL,
             quoted=True,
         ),
-    ).from_(right_table.expr.subquery())
+    ).from_(right_table.as_subquery())
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
