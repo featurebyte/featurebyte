@@ -929,6 +929,7 @@ def test_add_feature(event_view, non_time_based_feature):
         method="sum",
         windows=["24h"],
         feature_names=["transaction_count_sum_24h"],
+        fill_value=2,
     )
     timestamp_str = "2001-01-13 12:00:00"
     df_feature_preview = transaction_counts.preview(

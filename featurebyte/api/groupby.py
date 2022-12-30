@@ -173,6 +173,7 @@ class BaseAggregator(ABC):
             feature.name = feature_name
         elif fill_value is not None:
             feature.fillna(fill_value)
+            feature.name = feature_name
 
         return feature
 

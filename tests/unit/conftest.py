@@ -14,7 +14,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import ItemView, SnowflakeDetails
+from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -427,6 +427,20 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     yield snowflake_event_data
 
 
+@pytest.fixture(name="snowflake_event_data_with_entity_and_feature_job")
+def snowflake_event_data_with_entity_and_feature_job_fixture(snowflake_event_data, cust_id_entity):
+    """
+    Entity fixture that sets cust_id in snowflake_event_data as an Entity
+    """
+    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        )
+    )
+    yield snowflake_event_data
+
+
 @pytest.fixture(name="snowflake_feature_store_details_dict")
 def snowflake_feature_store_details_dict_fixture():
     """Feature store details dict fixture"""
@@ -501,6 +515,20 @@ def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     """
     event_view = EventView.from_event_data(event_data=snowflake_event_data_with_entity)
     assert event_view.node.parameters.id == snowflake_event_data_with_entity.id
+    yield event_view
+
+
+@pytest.fixture(name="snowflake_event_view_with_entity_and_feature_job")
+def snowflake_event_view_entity_feature_job_fixture(
+    snowflake_event_data_with_entity_and_feature_job,
+):
+    """
+    Snowflake event view with entity
+    """
+    event_view = EventView.from_event_data(
+        event_data=snowflake_event_data_with_entity_and_feature_job
+    )
+    assert event_view.node.parameters.id == snowflake_event_data_with_entity_and_feature_job.id
     yield event_view
 
 
