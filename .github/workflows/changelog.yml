@@ -17,7 +17,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
-
 jobs:
   changelog:
     runs-on: ubuntu-latest
@@ -28,7 +27,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Do not let user add directly to CHANGELOG.md
       - name: Ensure changes to the CHANGELOG
         run: |
           if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]; then
@@ -37,4 +35,5 @@ jobs:
             echo "The CHANGELOG.md was not modified."
             echo "See CONTRIBUTING.md for more details"
             echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+            exit 1
           fi

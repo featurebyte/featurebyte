@@ -1,7 +1,7 @@
 name: build-docs
 on:
-  # Ignored
   workflow_dispatch: {}
+
 
 permissions: write-all
 
@@ -12,18 +12,24 @@ env:
   GCR_PYPI_LOCATION: us-central1
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}  # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  # Docker
+  GCR_DOCKER_PROJECT_ID: vpc-host-nonprod-xa739-xz970
+  GCR_DOCKER_REPO: docker
+  GCR_DOCKER_LOCATION: us-central1
 
 
 jobs:
   build-docs:
     runs-on: ubuntu-20.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ["3.8"]
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Need to fetch gh-pages
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -46,8 +52,53 @@ jobs:
           poetry config virtualenvs.in-project true
           poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
-
       - name: Build docs
         run: |
+          # Install dependencies
+          make install
+
+          # Build
+          # This builds and appends to branch [gh-pages]
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           make docs-build
-          # At this step you have the static docs generated in site/ folder
+
+      - name: Set Docker Image Ctx
+        run: |
+          export IMAGE_REPO=$(printf "%s-docker.pkg.dev/%s/%s/featurebyte-docs\n" $GCR_DOCKER_LOCATION $GCR_DOCKER_PROJECT_ID $GCR_DOCKER_REPO)
+          export IMAGE_TAG=$(git rev-parse --short HEAD)
+          echo "IMAGE_REPO=${IMAGE_REPO}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Set the base environment
+        run: |
+          # Obtain the base documentation site
+          # Only pull docker/ folder from main
+          git switch -f gh-pages
+          git checkout main -- docker
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker Login to Staging Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.GCR_DOCKER_LOCATION }}-docker.pkg.dev
+          username: _json_key_base64
+          password: ${{ secrets.GCR_DOCKER_CREDENTIALS_RW_B64 }}
+
+      - name: Build & Tag & Push Image to staging
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          file: docker/docs.Dockerfile
+          context: .
+          tags: |
+            ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_REPO }}:latest
+
+      - name: Push new version to gh-pages
+        run: |
+          # Pushing to origin
+          git reset --hard
+          git push origin gh-pages
