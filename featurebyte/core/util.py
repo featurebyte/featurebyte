@@ -186,6 +186,7 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     bool
         True, if item and event data are related, False otherwise
     """
+    _, _ = input_series, other_series
     # TODO:
     return False
 

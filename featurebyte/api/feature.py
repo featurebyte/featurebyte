@@ -22,6 +22,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.event_data import FeatureJobSetting
@@ -499,8 +500,10 @@ class Feature(
         FeatureType
             feature type
         """
-        # TODO: implement - not sure what's the best way to do this / if it's needed
-        _ = feature
+        if feature.dtype == DBVarType.OBJECT:
+            return FeatureType.DICTIONARY
+        if any(node.type == NodeType.LOOKUP for node in feature.graph.dict()["nodes"]):
+            return FeatureType.LOOKUP
         return FeatureType.UNKNOWN
 
     @staticmethod
