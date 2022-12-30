@@ -31,6 +31,10 @@ def test_aggregation_spec__from_groupby_query_node(
             ),
             feature_name="a_2h_average",
             is_order_dependent=False,
+            tile_value_columns=[
+                f"sum_value_avg_{groupby_node_aggregation_id}",
+                f"count_value_avg_{groupby_node_aggregation_id}",
+            ],
         ),
         TileBasedAggregationSpec(
             window=172800,
@@ -49,6 +53,10 @@ def test_aggregation_spec__from_groupby_query_node(
             ),
             feature_name="a_48h_average",
             is_order_dependent=False,
+            tile_value_columns=[
+                f"sum_value_avg_{groupby_node_aggregation_id}",
+                f"count_value_avg_{groupby_node_aggregation_id}",
+            ],
         ),
     ]
     assert agg_specs == expected_agg_specs
@@ -85,6 +93,10 @@ def test_aggregation_spec__override_serving_names(
             ),
             feature_name="a_2h_average",
             is_order_dependent=False,
+            tile_value_columns=[
+                f"sum_value_avg_{groupby_node_aggregation_id}",
+                f"count_value_avg_{groupby_node_aggregation_id}",
+            ],
         ),
         TileBasedAggregationSpec(
             window=172800,
@@ -103,6 +115,10 @@ def test_aggregation_spec__override_serving_names(
             ),
             feature_name="a_48h_average",
             is_order_dependent=False,
+            tile_value_columns=[
+                f"sum_value_avg_{groupby_node_aggregation_id}",
+                f"count_value_avg_{groupby_node_aggregation_id}",
+            ],
         ),
     ]
     assert agg_specs == expected_agg_specs
