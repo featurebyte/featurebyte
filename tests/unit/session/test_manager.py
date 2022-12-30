@@ -1,6 +1,8 @@
 """
 Tests for SessionManager class
 """
+import os
+import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
@@ -102,10 +104,12 @@ async def test_session_manager__wrong_configuration_file(snowflake_feature_store
     """
     Test exception raised when wrong configuration file is used
     """
-    config = Configurations("non/existent/path")
-    session_manager = SessionManager(credentials=config.credentials)
-    with pytest.raises(ValueError) as exc:
-        _ = await session_manager.get_session(snowflake_feature_store)
-    assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
-        exc.value
-    )
+    with tempfile.TemporaryDirectory() as temp_dir:
+        non_existent_path = os.path.join(temp_dir, "non", "existent", "path")
+        config = Configurations(non_existent_path)
+        session_manager = SessionManager(credentials=config.credentials)
+        with pytest.raises(ValueError) as exc:
+            _ = await session_manager.get_session(snowflake_feature_store)
+        assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
+            exc.value
+        )
