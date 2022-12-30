@@ -3,7 +3,7 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import List, Optional, Tuple, cast
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -20,6 +20,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
 
 @dataclass
@@ -173,6 +174,23 @@ class GraphInterpreter:
         self.query_graph = query_graph
         self.source_type = source_type
 
+    def flatten_graph(self, node_name: str) -> Tuple[QueryGraphModel, Node]:
+        """
+        Flatten the query graph (replace those graph node with flattened nodes)
+
+        Parameters
+        ----------
+        node_name: str
+            Target node name
+
+        Returns
+        -------
+        Tuple[QueryGraphModel, str]
+        """
+        graph, node_name_map = GraphFlatteningTransformer(graph=self.query_graph).transform()
+        node = graph.get_node_by_name(node_name_map[node_name])
+        return graph, node
+
     def construct_tile_gen_sql(self, starting_node: Node, is_on_demand: bool) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
@@ -187,10 +205,11 @@ class GraphInterpreter:
         -------
         List[TileGenSql]
         """
+        flat_graph, flat_starting_node = self.flatten_graph(node_name=starting_node.name)
         generator = TileSQLGenerator(
-            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
+            flat_graph, is_on_demand=is_on_demand, source_type=self.source_type
         )
-        return generator.construct_tile_gen_sql(starting_node)
+        return generator.construct_tile_gen_sql(flat_starting_node)
 
     def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> str:
         """Construct SQL to preview a given node
@@ -207,10 +226,11 @@ class GraphInterpreter:
         str
             SQL code for preview purpose
         """
+        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
         sql_graph = SQLOperationGraph(
-            self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
+            flat_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
         )
-        sql_node = sql_graph.build(self.query_graph.get_node_by_name(node_name))
+        sql_node = sql_graph.build(flat_node)
 
         assert isinstance(sql_node, (TableNode, ExpressionNode))
         if isinstance(sql_node, TableNode):
@@ -254,10 +274,11 @@ class GraphInterpreter:
         str
             SQL code for preview purpose
         """
+        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
         sql_graph = SQLOperationGraph(
-            self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
+            flat_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
         )
-        sql_node = sql_graph.build(self.query_graph.get_node_by_name(node_name))
+        sql_node = sql_graph.build(flat_node)
 
         assert isinstance(sql_node, (TableNode, ExpressionNode))
         if isinstance(sql_node, TableNode):
