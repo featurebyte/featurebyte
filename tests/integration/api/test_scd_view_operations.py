@@ -24,8 +24,12 @@ def get_expected_scd_join_result(
     right_timestamp,
 ):
     """
-    Perform an SCD join using in memory DataFramess
+    Perform an SCD join using in memory DataFrames
     """
+    df_left[left_timestamp] = pd.to_datetime(df_left[left_timestamp], utc=True).dt.tz_localize(None)
+    df_right[right_timestamp] = pd.to_datetime(df_right[right_timestamp], utc=True).dt.tz_localize(
+        None
+    )
     df_left = df_left.set_index(left_timestamp).sort_index()
     df_right = df_right.set_index(right_timestamp).sort_index()
     df_result = pd.merge_asof(
@@ -156,6 +160,7 @@ def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_d
     df_expected = expected_dataframe_scd_join
 
     # Check correctness of joined view
+    df["EVENT_TIMESTAMP"] = pd.to_datetime(df["EVENT_TIMESTAMP"], utc=True).dt.tz_localize(None)
     df_compare = df[["EVENT_TIMESTAMP", "USER ID", "User Status"]].merge(
         df_expected[["EVENT_TIMESTAMP", "USER ID", "User Status"]],
         on=["EVENT_TIMESTAMP", "USER ID"],

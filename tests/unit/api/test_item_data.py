@@ -61,7 +61,7 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
                 "critical_data_info": None,
             },
             {
-                "dtype": "TIMESTAMP",
+                "dtype": "TIMESTAMP_TZ",
                 "entity_id": None,
                 "name": "created_at",
                 "semantic_id": None,
@@ -343,9 +343,7 @@ def test_update_record_creation_date_column__saved_object(saved_item_data):
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_item_data.update_record_creation_date_column("item_id_col")
-    expected_msg = (
-        "Column \"item_id_col\" is expected to have type(s): ['TIMESTAMP'] (type=value_error)"
-    )
+    expected_msg = "Column \"item_id_col\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
     assert expected_msg in str(exc.value)
 
 

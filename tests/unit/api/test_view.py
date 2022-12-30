@@ -342,6 +342,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert current_view.column_lineage_map == {}
     assert current_view.tabular_data_ids == []
 
+    generic_input_node_params["node_params"]["columns"] = ["colC", "colD", "colE"]
     input_node = other_view.graph.add_operation(
         node_type=generic_input_node_params["node_type"],
         node_params=generic_input_node_params["node_params"],
@@ -349,7 +350,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         input_nodes=generic_input_node_params["input_nodes"],
     )
     other_view.node_name = input_node.name
-    assert other_view.node_name == "input_1"
+    assert other_view.node_name == "input_2"
     assert other_view.columns_info == [col_info_c, col_info_d, col_info_e]
     assert other_view.column_lineage_map == {}
     assert other_view.tabular_data_ids == []
@@ -388,7 +389,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     }
     assert view_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "join_1"},
-        {"source": "input_1", "target": "join_1"},
+        {"source": "input_2", "target": "join_1"},
     ]
 
 

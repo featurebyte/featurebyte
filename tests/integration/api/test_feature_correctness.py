@@ -18,7 +18,7 @@ from tests.util.helper import get_lagged_series_pandas
 def calculate_feature_ground_truth(
     df,
     point_in_time,
-    event_timestamp_column_name,
+    utc_event_timestamps,
     entity_column_name,
     entity_value,
     variable_column_name,
@@ -48,11 +48,10 @@ def calculate_feature_ground_truth(
     else:
         window_start = None
 
-    df = df.sort_values(event_timestamp_column_name)
     mask = df[entity_column_name] == entity_value
-    mask &= df[event_timestamp_column_name] < window_end
+    mask &= utc_event_timestamps < window_end
     if window_start is not None:
-        mask &= df[event_timestamp_column_name] >= window_start
+        mask &= utc_event_timestamps >= window_start
     df_filtered = df[mask]
 
     if category is None:
@@ -84,6 +83,9 @@ def training_events(transaction_data_upper_case):
     df = df[cols].drop_duplicates(cols)
     df = df.sample(1000, replace=False, random_state=0).reset_index(drop=True)
     df.rename({"EVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
+
+    # only TZ-naive timestamps in UTC supported for point-in-time
+    df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
 
     # Add random spikes to point in time of some rows
     rng = np.random.RandomState(0)
@@ -310,6 +312,10 @@ def test_aggregation(
 
     features = []
     df_expected_all = [training_events]
+    df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
+    utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(
+        None
+    )
 
     elapsed_time_ref = 0
     for (
@@ -337,9 +343,9 @@ def test_aggregation(
         df_expected = get_expected_feature_values(
             training_events,
             feature_name,
-            df=transaction_data_upper_case,
+            df=df,
             entity_column_name=entity_column_name,
-            event_timestamp_column_name=event_timestamp_column_name,
+            utc_event_timestamps=utc_event_timestamps,
             variable_column_name=variable_column_name,
             agg_func=agg_func_callable,
             window_size=window_size,

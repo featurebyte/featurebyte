@@ -181,7 +181,9 @@ class FeatureListController(
             **params,
         )
 
-    async def preview(self, featurelist_preview: FeatureListPreview, get_credential: Any) -> str:
+    async def preview(
+        self, featurelist_preview: FeatureListPreview, get_credential: Any
+    ) -> dict[str, Any]:
         """
         Preview a Feature List
 
@@ -194,7 +196,7 @@ class FeatureListController(
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
 
         Raises

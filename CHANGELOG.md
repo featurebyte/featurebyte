@@ -16,6 +16,8 @@
 ### 💡 Enhancements 💡
 
 + `changelog`: Added changelog checker github workflow
++ `changelog`: Added support for data describe in API
++ `changelog`: Added support for timestamps with timezone offsets
 
 ### 🧰 Bug fixes 🧰
 

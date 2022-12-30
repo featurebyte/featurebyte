@@ -614,22 +614,25 @@ class JoinNode(BaseNode):
         params = self.parameters
         left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
         right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
-        left_columns = [
-            col.clone(name=left_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
+        left_columns = {
+            col.name: col.clone(name=left_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
             for col in inputs[0].columns
             if col.name in left_col_map
-        ]
-        right_columns = [
-            col.clone(name=right_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
+        }
+        right_columns = {
+            col.name: col.clone(name=right_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
             for col in inputs[1].columns
             if col.name in right_col_map
-        ]
+        }
         if self.parameters.join_type == "left":
             row_index_lineage = inputs[0].row_index_lineage
         else:
             row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)
         return OperationStructure(
-            columns=left_columns + right_columns,
+            columns=(
+                [left_columns[col_name] for col_name in params.left_input_columns]
+                + [right_columns[col_name] for col_name in params.right_input_columns]
+            ),
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,

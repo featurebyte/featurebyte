@@ -613,7 +613,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
                 (
                     f"1 validation error for {self.class_name}Model\n"
                     f"record_creation_date_column\n  "
-                    f"Column \"item_id\" is expected to have type(s): ['TIMESTAMP'] (type=value_error)"
+                    f"Column \"item_id\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
                 ),
             ),
         ]

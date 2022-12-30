@@ -29,8 +29,8 @@ def test_event_view_sample(snowflake_event_data):
     ]
 
     assert sample_df.shape == (10, 8)
-    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-05 17:42:00.000640")
-    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 07:57:21.000525")
+    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-06 03:42:00.000640+10:00")
+    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 13:57:21.000525+06:00")
 
 
 def test_event_view_sample_seed(snowflake_event_data):
@@ -40,8 +40,8 @@ def test_event_view_sample_seed(snowflake_event_data):
     event_view = EventView.from_event_data(snowflake_event_data)
     sample_df = event_view.sample(size=10, seed=4321)
     assert sample_df.shape == (10, 8)
-    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-01 00:23:02.000349")
-    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-05 04:34:01.000068")
+    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-01 22:23:02.000349+22:00")
+    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-05 14:34:01.000068+10:00")
 
 
 def test_event_view_sample_with_date_range(snowflake_event_data):
@@ -57,8 +57,8 @@ def test_event_view_sample_with_date_range(snowflake_event_data):
     }
     sample_df = event_view.sample(**sample_params)
     assert sample_df.shape == (15, 8)
-    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-10-10 05:58:16.000637")
-    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-13 04:12:06.000903")
+    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-10-10 18:58:16.000637+13:00")
+    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-13 13:12:06.000903+09:00")
 
     col_sample_df = event_view["TRANSACTION_ID"].sample(**sample_params)
     assert_series_equal(col_sample_df["TRANSACTION_ID"], sample_df["TRANSACTION_ID"])
@@ -80,8 +80,8 @@ def test_item_view_sample(snowflake_item_data):
     ]
 
     assert sample_df.shape == (10, 6)
-    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-03 12:45:53.000756")
-    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-12-08 23:37:22.000888")
+    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-03 23:45:53.000756+11:00")
+    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-12-09 06:37:22.000888+07:00")
 
 
 def test_item_view_sample_with_date_range(snowflake_item_data):
@@ -97,8 +97,8 @@ def test_item_view_sample_with_date_range(snowflake_item_data):
     }
     sample_df = item_view.sample(**sample_params)
     assert sample_df.shape == (15, 6)
-    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-10-10 05:58:16.000637")
-    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-13 23:50:48.000003")
+    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-10-10 18:58:16.000637+13:00")
+    assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 01:50:48.000003+02:00")
 
     col_sample_df = item_view["item_id"].sample(**sample_params)
     assert_series_equal(col_sample_df["item_id"], sample_df["item_id"])

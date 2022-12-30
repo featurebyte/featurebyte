@@ -239,6 +239,8 @@ class Configurations:
 
         with open(path, encoding="utf-8") as file_obj:
             self.settings = yaml.safe_load(file_obj)
+            if not self.settings:
+                return
 
         credentials = self.settings.pop("credential", [])
         for credential in credentials:

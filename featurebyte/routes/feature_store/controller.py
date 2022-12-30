@@ -291,7 +291,9 @@ class FeatureStoreController(
             get_credential=get_credential,
         )
 
-    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
+    async def preview(
+        self, preview: FeatureStorePreview, limit: int, get_credential: Any
+    ) -> dict[str, Any]:
         """
         Retrieve data preview for query graph node
 
@@ -306,7 +308,7 @@ class FeatureStoreController(
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
         """
         return await self.preview_service.preview(
@@ -315,7 +317,7 @@ class FeatureStoreController(
 
     async def sample(
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Retrieve data sample for query graph node
 
@@ -332,7 +334,7 @@ class FeatureStoreController(
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
         """
         return await self.preview_service.sample(
@@ -341,7 +343,7 @@ class FeatureStoreController(
 
     async def describe(
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Retrieve data description for query graph node
 
@@ -358,7 +360,7 @@ class FeatureStoreController(
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
         """
         return await self.preview_service.describe(

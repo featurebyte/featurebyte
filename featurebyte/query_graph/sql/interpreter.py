@@ -3,7 +3,7 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 from typing import OrderedDict as OrderedDictT
 from typing import Set, Tuple, cast
 
@@ -11,7 +11,6 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 
-import numpy as np
 from sqlglot import expressions, parse_one
 
 from featurebyte.enum import DBVarType, SourceType
@@ -20,6 +19,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
+from featurebyte.query_graph.node.metadata.operation import ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
@@ -221,39 +221,51 @@ class GraphInterpreter:
         )
         return generator.construct_tile_gen_sql(flat_starting_node)
 
-    def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> str:
-        """Construct SQL to preview a given node
+    def _apply_type_conversions(
+        self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
+    ) -> Tuple[expressions.Select, dict[str, DBVarType]]:
+        """
+        Apply type conversions for data retrieval
 
         Parameters
         ----------
-        node_name : str
-            Query graph node name
-        num_rows : int
-            Number of rows to include in the preview
+        sql_tree: expressions.Select
+            SQL Expression to describe
+        columns: List[ViewDataColumn]
+            List of columns
 
         Returns
         -------
-        str
-            SQL code for preview purpose
+        Tuple[expressions.Select, dict[str, DBVarType]]
+            SQL expression for data retrieval, column to apply conversion on resulting dataframe
         """
-        flat_graph, flat_node = self.flatten_graph(node_name=node_name)
-        sql_graph = SQLOperationGraph(
-            flat_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
-        )
-        sql_node = sql_graph.build(flat_node)
+        # convert timestamp_ntz columns to string
+        type_conversions = {}
+        for column in columns:
+            if not column.name:
+                continue
+            if column.dtype == DBVarType.TIMESTAMP_TZ:
+                type_conversions[column.name] = column.dtype
 
-        assert isinstance(sql_node, (TableNode, ExpressionNode))
-        if isinstance(sql_node, TableNode):
-            sql_tree = sql_node.sql
-        else:
-            sql_tree = sql_node.sql_standalone
+        if type_conversions:
+            for idx, col_expr in enumerate(sql_tree.expressions):
+                type_conversion = type_conversions.get(col_expr.alias)
+                if type_conversion == DBVarType.TIMESTAMP_TZ:
+                    if isinstance(col_expr, expressions.Alias):
+                        alias = col_expr.alias
+                        col_expr = col_expr.this
+                    elif col_expr.name:
+                        alias = col_expr.name
+                    else:
+                        alias = None
+                    casted_col_expr = expressions.Cast(this=col_expr, to=parse_one("VARCHAR"))
+                    if alias:
+                        casted_col_expr = expressions.alias_(casted_col_expr, alias, quoted=True)
+                    sql_tree.expressions[idx] = casted_col_expr
 
-        assert isinstance(sql_tree, expressions.Select)
-        sql_code: str = sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type)
+        return sql_tree, type_conversions
 
-        return sql_code
-
-    def construct_sql(
+    def _construct_sample_sql(
         self,
         node_name: str,
         num_rows: int = 10,
@@ -261,28 +273,28 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> expressions.Expression:
-        """Construct SQL to sample a given node
+    ) -> Tuple[expressions.Select, dict[str, DBVarType]]:
+        """Construct SQL to sample data from a given node
 
         Parameters
         ----------
         node_name : str
             Query graph node name
         num_rows : int
-            Number of rows to include in the preview
+            Number of rows to sample, no sampling if None
         seed: int
             Random seed to use for sampling
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to filter on
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to filter on
         timestamp_column: Optional[str]
-            Columnn to apply date range filtering on
+            Column to apply date range filtering on
 
         Returns
         -------
-        expressions.Expression
-            SQL expression for data sample
+        Tuple[expressions.Select, dict[str, DBVarType]]
+            SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_graph, flat_node = self.flatten_graph(node_name=node_name)
         sql_graph = SQLOperationGraph(
@@ -298,9 +310,12 @@ class GraphInterpreter:
 
         assert isinstance(sql_tree, expressions.Select)
 
-        # apply random ordering
-        sql_tree = sql_tree.order_by(
-            expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
+        # apply type conversions
+        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
+            self.query_graph.get_node_by_name(node_name)
+        )
+        sql_tree, type_conversions = self._apply_type_conversions(
+            sql_tree=sql_tree, columns=operation_structure.columns
         )
 
         # apply timestamp filtering
@@ -325,9 +340,36 @@ class GraphInterpreter:
             sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
 
         if num_rows > 0:
+            # apply random sampling
+            sql_tree = sql_tree.order_by(
+                expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
+            )
             sql_tree = sql_tree.limit(num_rows)
 
-        return sql_tree
+        return sql_tree, type_conversions
+
+    def construct_preview_sql(
+        self, node_name: str, num_rows: int = 10
+    ) -> Tuple[str, dict[str, DBVarType]]:
+        """Construct SQL to preview data from a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+
+        Returns
+        -------
+        Tuple[str, dict[str, DBVarType]]:
+            SQL code for preview and type conversions to apply on results
+        """
+        sql_tree, type_conversions = self._construct_sample_sql(node_name=node_name, num_rows=0)
+        return (
+            sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
+            type_conversions,
+        )
 
     def construct_sample_sql(
         self,
@@ -337,8 +379,8 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> str:
-        """Construct SQL to sample a given node
+    ) -> Tuple[str, dict[str, DBVarType]]:
+        """Construct SQL to sample data from a given node
 
         Parameters
         ----------
@@ -349,19 +391,19 @@ class GraphInterpreter:
         seed: int
             Random seed to use for sampling
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to filter on
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to filter on
         timestamp_column: Optional[str]
-            Columnn to apply date range filtering on
+            Column to apply date range filtering on
 
         Returns
         -------
-        str
-            SQL code for preview purpose
+        Tuple[str, dict[str, DBVarType]]:
+            SQL code for sample and type conversions to apply on results
         """
 
-        sql_tree = self.construct_sql(
+        sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
@@ -369,7 +411,7 @@ class GraphInterpreter:
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
         )
-        return sql_to_string(sql_tree, source_type=self.source_type)
+        return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
     @staticmethod
     def _empty_value_expr(column_name: str) -> expressions.Expression:
@@ -414,14 +456,67 @@ class GraphInterpreter:
             expression=order_expr,
         )
 
-    @property
-    def stats_expressions(self) -> OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]]:
+    @staticmethod
+    def _tz_offset_expr(timestamp_tz_expr: expressions.Expression) -> expressions.Expression:
         """
-        Ordered dictionary of stats name and stats expression function and applicable data types
+        Create expression for timezone offset of a timestamp_tz expr
+
+        Parameters
+        ----------
+        timestamp_tz_expr: expressions.Expression
+            Column expression for a timestamp with timezone offset
 
         Returns
         -------
-        OrderedDict[str, Tuple[Any, Optional[Set[DBVarType]]]]
+        expressions.Expression
+        """
+        return expressions.Anonymous(
+            this="TO_DECIMAL",
+            expressions=[
+                expressions.Concat(
+                    expressions=[
+                        make_literal_value("0"),
+                        expressions.Anonymous(
+                            this="SPLIT_PART",
+                            expressions=[
+                                timestamp_tz_expr,
+                                make_literal_value("+"),
+                                make_literal_value(2),
+                            ],
+                        ),
+                    ]
+                )
+            ],
+        )
+
+    @property
+    def stats_expressions(
+        self,
+    ) -> OrderedDictT[
+        str,
+        Tuple[
+            Optional[Callable[[expressions.Expression, int], expressions.Expression]],
+            Optional[Set[DBVarType]],
+        ],
+    ]:
+        """
+        Ordered dictionary that defines the statistics to be computed for data description.
+        For each entry:
+        - the key is the name of the statistics to be computed
+        - value is a tuple of:
+            - optional function to generate SQL expression with the following signature:
+                f(col_expr: expressions.Expression, column_idx: int) -> expressions.Expression
+            - optional list of applicable DBVarType that the statistics supports. If None all types are supported.
+
+        Returns
+        -------
+        OrderedDictT[
+            str,
+            Tuple[
+                Optional[Callable[[expressions.Expression, int], expressions.Expression]],
+                Optional[Set[DBVarType]],
+            ],
+        ]
         """
         stats_expressions: OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]] = OrderedDict()
         stats_expressions["unique"] = (
@@ -430,7 +525,7 @@ class GraphInterpreter:
             ),
             None,
         )
-        stats_expressions["% missing"] = (
+        stats_expressions["%missing"] = (
             lambda col_expr, _: expressions.Mul(
                 this=expressions.Paren(
                     this=expressions.Sub(
@@ -445,10 +540,22 @@ class GraphInterpreter:
             ),
             None,
         )
-        stats_expressions["entropy"] = (None, {DBVarType.CHAR})
+        stats_expressions["%empty"] = (
+            lambda col_expr, column_idx: expressions.Anonymous(
+                this="COUNT_IF",
+                expressions=[
+                    expressions.EQ(
+                        this=col_expr,
+                        expression=make_literal_value(""),
+                    )
+                ],
+            ),
+            {DBVarType.CHAR, DBVarType.VARCHAR},
+        )
+        stats_expressions["entropy"] = (None, {DBVarType.CHAR, DBVarType.VARCHAR})
         stats_expressions["top"] = (
             lambda col_expr, _: expressions.Anonymous(this="MODE", expressions=[col_expr]),
-            {DBVarType.CHAR},
+            {DBVarType.CHAR, DBVarType.VARCHAR},
         )
         stats_expressions["freq"] = (
             lambda col_expr, column_idx: expressions.Anonymous(
@@ -463,7 +570,7 @@ class GraphInterpreter:
                     )
                 ],
             ),
-            {DBVarType.CHAR},
+            {DBVarType.CHAR, DBVarType.VARCHAR},
         )
         stats_expressions["mean"] = (
             lambda col_expr, _: expressions.Avg(
@@ -483,6 +590,7 @@ class GraphInterpreter:
                 DBVarType.FLOAT,
                 DBVarType.INT,
                 DBVarType.TIMESTAMP,
+                DBVarType.TIMESTAMP_TZ,
                 DBVarType.DATE,
                 DBVarType.TIME,
                 DBVarType.TIMEDELTA,
@@ -506,58 +614,83 @@ class GraphInterpreter:
                 DBVarType.FLOAT,
                 DBVarType.INT,
                 DBVarType.TIMESTAMP,
+                DBVarType.TIMESTAMP_TZ,
                 DBVarType.DATE,
                 DBVarType.TIME,
                 DBVarType.TIMEDELTA,
             },
         )
+        stats_expressions["min TZ offset"] = (
+            lambda col_expr, _: expressions.Min(this=self._tz_offset_expr(col_expr)),
+            {DBVarType.TIMESTAMP_TZ},
+        )
+        stats_expressions["max TZ offset"] = (
+            lambda col_expr, _: expressions.Max(this=self._tz_offset_expr(col_expr)),
+            {DBVarType.TIMESTAMP_TZ},
+        )
         return stats_expressions
 
     def _construct_stats_sql(
-        self, sql_tree: expressions.Expression, column_names: List[str], dtypes: List[Any]
-    ) -> expressions.Expression:
+        self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
+    ) -> expressions.Select:
         """
         Construct sql to retrieve statistics for an SQL view
 
         Parameters
         ----------
-        sql_tree: expressions.Expression
+        sql_tree: expressions.Select
             SQL Expression to describe
-        column_names: List[str]
-            List of column names
-        dtypes: List[Any]
-            List of column dtypes
+        columns: List[ViewDataColumn]
+            List of columns
 
         Returns
         -------
-        expressions.Expression
+        expressions.Select
         """
         cte_statements = [("data", sql_tree)]
+
+        def _is_dtype_supported(
+            dtype: DBVarType, supported_dtypes: Optional[Set[DBVarType]]
+        ) -> bool:
+            """
+            Whether dtype is in supported dtypes
+
+            Parameters
+            ----------
+            dtype: DBVarType
+                DBVarType to check for support
+            supported_dtypes: Optional[Set[DBVarType]]
+                Set of DBVarType supported
+
+            Returns
+            -------
+            bool
+            """
+            if not supported_dtypes:
+                # If None all type are supported
+                return True
+            return dtype in supported_dtypes
 
         # get modes
         stats_selections = []
         mode_selections = []
         entropy_tables = []
         final_selections = []
-        for column_idx, (column_name, dtype) in enumerate(zip(column_names, dtypes)):
-            col_expr = quoted_identifier(column_name)
-
-            # temporary type detection
-            data_type = DBVarType.CHAR
-            if np.issubdtype(dtype, np.number):
-                data_type = DBVarType.FLOAT
-            elif np.issubdtype(dtype, np.datetime64):
-                data_type = DBVarType.TIMESTAMP
-
-            if data_type == DBVarType.CHAR:
+        for column_idx, column in enumerate(columns):
+            assert column.name
+            col_expr = quoted_identifier(column.name)
+            if _is_dtype_supported(column.dtype, self.stats_expressions["top"][1]):
+                stats_func = self.stats_expressions["top"][0]
+                assert stats_func
                 # compute mode values
                 mode_selections.append(
                     expressions.alias_(
-                        self.stats_expressions["top"][0](col_expr, column_idx),
+                        stats_func(col_expr, column_idx),
                         f"mode__{column_idx}",
                         quoted=True,
                     )
                 )
+            if _is_dtype_supported(column.dtype, self.stats_expressions["entropy"][1]):
                 # counts
                 cat_counts = (
                     expressions.select(
@@ -570,6 +703,8 @@ class GraphInterpreter:
                     )
                     .from_("data")
                     .group_by(col_expr)
+                    .order_by("COUNTS DESC")
+                    .limit(500)
                 )
                 table_name = f"entropy__{column_idx}"
                 cte_statements.append(
@@ -595,9 +730,9 @@ class GraphInterpreter:
                 entropy_tables.append(table_name)
 
             # stats
-            for stats_name, (stats_func, applicable_dtypes) in self.stats_expressions.items():
+            for stats_name, (stats_func, supported_dtypes) in self.stats_expressions.items():
                 if stats_func:
-                    if not applicable_dtypes or data_type in applicable_dtypes:
+                    if _is_dtype_supported(column.dtype, supported_dtypes):
                         stats_selections.append(
                             expressions.alias_(
                                 stats_func(col_expr, column_idx),
@@ -645,20 +780,17 @@ class GraphInterpreter:
 
     def construct_describe_sql(
         self,
-        dtypes: List[Any],
         node_name: str,
         num_rows: int = 10,
         seed: int = 1234,
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> Tuple[str, List[str], List[str]]:
-        """Construct SQL to sample a given node
+    ) -> Tuple[str, dict[str, DBVarType], List[str], List[ViewDataColumn]]:
+        """Construct SQL to describe data from a given node
 
         Parameters
         ----------
-        dtypes: List[Any]
-            List of column dtypes
         node_name : str
             Query graph node name
         num_rows : int
@@ -666,26 +798,22 @@ class GraphInterpreter:
         seed: int
             Random seed to use for sampling
         from_timestamp: Optional[datetime]
-            Start of date range to sample from
+            Start of date range to filter on
         to_timestamp: Optional[datetime]
-            End of date range to sample from
+            End of date range to filter on
         timestamp_column: Optional[str]
-            Columnn to apply date range filtering on
+            Column to apply date range filtering on
 
         Returns
         -------
-        Tuple[str, List[str], List[str]]
-            SQL code, row names, column names
+        Tuple[str, dict[str, DBVarType], List[str], List[ViewDataColumn]]
+            SQL code, type conversions to apply on result, row names, columns
         """
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
             self.query_graph.get_node_by_name(node_name)
         )
-        column_names = []
-        for column in operation_structure.columns:
-            assert column.name
-            column_names.append(column.name)
 
-        sql_tree = self.construct_sql(
+        sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
@@ -694,11 +822,10 @@ class GraphInterpreter:
             timestamp_column=timestamp_column,
         )
 
-        sql_tree = self._construct_stats_sql(
-            sql_tree=sql_tree, column_names=column_names, dtypes=dtypes
-        )
+        sql_tree = self._construct_stats_sql(sql_tree=sql_tree, columns=operation_structure.columns)
         return (
             sql_to_string(sql_tree, source_type=self.source_type),
+            type_conversions,
             list(self.stats_expressions.keys()),
-            column_names,
+            operation_structure.columns,
         )

@@ -269,6 +269,7 @@ def transaction_dataframe():
             ),
         ]
     )
+
     # make timestamps unique (avoid ties when getting lags, for convenience of writing tests)
     event_timestamps += rng.rand(event_timestamps.shape[0]) * pd.Timedelta("1ms")
 
@@ -293,6 +294,12 @@ def transaction_dataframe():
     data["event_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
     # exclude any nanosecond components since it is not supported
     data["event_timestamp"] = data["event_timestamp"].dt.floor("us")
+    # add timezone offset
+    offsets = rng.choice(range(24), size=data["event_timestamp"].shape[0])
+    data["event_timestamp"] = data["event_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
+    data["event_timestamp"] = pd.to_datetime(
+        data["event_timestamp"].astype(str) + [f"+{i:02d}:00" for i in offsets]
+    )
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
     yield data
 
@@ -376,7 +383,7 @@ def scd_dataframe_fixture(transaction_data):
     rng = np.random.RandomState(0)  # pylint: disable=no-member
 
     natural_key_values = transaction_data["user id"].unique()
-    dates = transaction_data["event_timestamp"].dt.floor("d")
+    dates = pd.to_datetime(transaction_data["event_timestamp"], utc=True).dt.floor("d")
     effective_timestamp_values = pd.date_range(dates.min(), dates.max())
     # Add variations at hour level
     effective_timestamp_values += pd.to_timedelta(
@@ -485,7 +492,10 @@ async def snowflake_session_fixture(
 
     # Tile table for tile manager integration tests
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
-    df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
+    # Tile table timestamps are TZ-naive
+    df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(
+        df_tiles[InternalName.TILE_START_DATE], utc=True
+    ).dt.tz_localize(None)
     await session.register_table("TEMP_TABLE", df_tiles, temporary=False)
 
     yield session
@@ -812,7 +822,7 @@ def create_transactions_event_data_from_feature_store(
     )
     expected_dtypes = pd.Series(
         {
-            "EVENT_TIMESTAMP": "TIMESTAMP",
+            "EVENT_TIMESTAMP": "TIMESTAMP_TZ",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
             "USER ID": "INT",

@@ -19,8 +19,8 @@ def test_database_table(snowflake_database_table, expected_snowflake_table_previ
             "col_text": DBVarType.VARCHAR,
             "col_binary": DBVarType.BINARY,
             "col_boolean": DBVarType.BOOL,
-            "event_timestamp": DBVarType.TIMESTAMP,
-            "created_at": DBVarType.TIMESTAMP,
+            "event_timestamp": DBVarType.TIMESTAMP_TZ,
+            "created_at": DBVarType.TIMESTAMP_TZ,
             "cust_id": DBVarType.INT,
         }
     )

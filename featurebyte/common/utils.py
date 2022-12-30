@@ -3,7 +3,7 @@ Utility functions for API Objects
 """
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from datetime import datetime
 from decimal import Decimal
@@ -12,6 +12,8 @@ from io import BytesIO
 import pandas as pd
 import pyarrow as pa
 from dateutil import parser
+
+from featurebyte.enum import DBVarType
 
 
 def create_new_arrow_stream_writer(buffer: Any, schema: pa.Schema) -> pa.RecordBatchStreamWriter:
@@ -121,25 +123,85 @@ def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
             dataframe[name] = dataframe[name].astype(int)
 
 
-def convert_dataframe_as_json(dataframe: pd.DataFrame, skip_prepare: bool = False) -> str:
+def dataframe_to_json(
+    dataframe: pd.DataFrame,
+    type_conversions: Optional[dict[str, DBVarType]] = None,
+    skip_prepare: bool = False,
+) -> dict[str, Any]:
     """
-    Convert pandas dataframe to json
+    Write pandas dataframe to json
 
     Parameters
     ----------
     dataframe: pd.DataFrame
         Dataframe object
+    type_conversions: Optional[dict[str, DBVarType]]
+        Conversions to apply on columns
     skip_prepare: bool
         Whether to skip dataframe preparation
 
     Returns
     -------
-    str
-        JSON string
+    dict[str, Any]
+        Dict containing JSON string and type conversions
     """
     if not skip_prepare:
         prepare_dataframe_for_json(dataframe)
-    return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
+    return {
+        "data": dataframe.to_json(orient="table", date_unit="ns", double_precision=15),
+        "type_conversions": type_conversions,
+    }
+
+
+def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
+    """
+    Read pandas dataframe from json
+
+    Parameters
+    ----------
+    values: dict[str, Any]
+        Dict containing JSON string and type conversions
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe object
+
+    Raises
+    ------
+    NotImplementedError
+        Unsupported type conversion
+    """
+
+    def _to_datetime(value: Any) -> Any:
+        """
+        Convert value with datetime if feasible
+
+        Parameters
+        ----------
+        value: Any
+            Value to convert
+
+        Returns
+        -------
+        Any
+        """
+        if isinstance(value, str):
+            try:
+                return pd.to_datetime(value)
+            except (TypeError, parser.ParserError):
+                pass
+        return value
+
+    dataframe = pd.read_json(values["data"], orient="table", convert_dates=False)
+    type_conversions: Optional[dict[str, DBVarType]] = values.get("type_conversions")
+    if type_conversions:
+        for col_name, dtype in type_conversions.items():
+            if dtype == DBVarType.TIMESTAMP_TZ:
+                dataframe[col_name] = dataframe[col_name].apply(_to_datetime)
+            else:
+                raise NotImplementedError()
+    return dataframe
 
 
 def validate_datetime_input(value: Union[datetime, str]) -> str:

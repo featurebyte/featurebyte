@@ -91,6 +91,7 @@ class LatestAggregator(Aggregator):
                 adapter=self.adapter,
                 allow_exact_match=False,
                 quote_right_input_columns=False,
+                convert_timestamps_to_utc=False,
             )
             current_columns = current_columns + agg_result_names
             all_agg_result_names.extend(agg_result_names)

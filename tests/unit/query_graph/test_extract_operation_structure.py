@@ -413,8 +413,8 @@ def test_extract_operation__join_node(
     assert op_struct.columns == [
         {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
         {"name": "order_method_left", "dtype": "VARCHAR", **common_event_data_column_params},
-        {"name": "item_name_right", "dtype": "VARCHAR", **common_item_data_column_params},
         {"name": "item_type_right", "dtype": "VARCHAR", **common_item_data_column_params},
+        {"name": "item_name_right", "dtype": "VARCHAR", **common_item_data_column_params},
     ]
     assert op_struct.aggregations == []
     assert op_struct.output_category == "view"

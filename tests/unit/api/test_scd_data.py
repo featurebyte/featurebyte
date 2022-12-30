@@ -89,14 +89,14 @@ def scd_data_dict_fixture(snowflake_database_table):
             {
                 "entity_id": None,
                 "name": "event_timestamp",
-                "dtype": "TIMESTAMP",
+                "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
             },
             {
                 "entity_id": None,
                 "name": "created_at",
-                "dtype": "TIMESTAMP",
+                "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
             },

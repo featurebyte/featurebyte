@@ -66,9 +66,9 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
         "col_text": DBVarType.VARCHAR,
         "col_binary": DBVarType.BINARY,
         "col_boolean": DBVarType.BOOL,
-        "created_at": DBVarType.TIMESTAMP,
+        "created_at": DBVarType.TIMESTAMP_TZ,
         "cust_id": DBVarType.INT,
-        "event_timestamp": DBVarType.TIMESTAMP,
+        "event_timestamp": DBVarType.TIMESTAMP_TZ,
     }
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_view"
@@ -77,7 +77,7 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
         "col_time": DBVarType.TIME,
         "col_timestamp_ltz": DBVarType.TIMESTAMP,
         "col_timestamp_ntz": DBVarType.TIMESTAMP,
-        "col_timestamp_tz": DBVarType.TIMESTAMP,
+        "col_timestamp_tz": DBVarType.TIMESTAMP_TZ,
     }
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="fixed_table"
@@ -525,14 +525,14 @@ def test_get_columns_schema_from_dataframe():
         "x_int": "INT",
         "x_float": "DOUBLE",
         "x_string": "VARCHAR",
-        "x_date": "DATETIME",
+        "x_date": "TIMESTAMP_NTZ",
         "x_int32": "INT",
         "x_int16": "INT",
         "x_int8": "INT",
         "x_float32": "DOUBLE",
         "x_float16": "DOUBLE",
     }
-    expected_schema = ", ".join(f'"{k}" {v}' for (k, v) in expected_dict.items())
+    expected_schema = list(expected_dict.items())
     assert schema == expected_schema
 
 

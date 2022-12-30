@@ -159,7 +159,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             **params,
         )
 
-    async def preview(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
+    async def preview(self, feature_preview: FeaturePreview, get_credential: Any) -> dict[str, Any]:
         """
         Preview a Feature
 
@@ -172,7 +172,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
 
         Raises

@@ -260,9 +260,9 @@ def saved_feature_fixture(
     assert groupby_node.parameters.windows == ["1d"]
     assert (
         groupby_node.parameters.tile_id
-        == "TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"
+        == "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817"
     )
-    assert groupby_node.parameters.aggregation_id == "sum_fba233e0f502088c233315a322f4c51e939072c0"
+    assert groupby_node.parameters.aggregation_id == "sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85"
 
     # test list features
     assert float_feature.name == "sum_1d"
@@ -604,7 +604,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "agg_w86400_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_1d"\n'
+        'SELECT\n  "agg_w86400_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 

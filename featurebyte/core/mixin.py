@@ -13,7 +13,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr, StrictStr
 from typeguard import typechecked
 
-from featurebyte.common.utils import validate_datetime_input
+from featurebyte.common.utils import dataframe_from_json, validate_datetime_input
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
@@ -220,7 +220,7 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
-        return pd.read_json(response.json(), orient="table", convert_dates=False)
+        return dataframe_from_json(response.json())
 
     @property
     def timestamp_column(self) -> Optional[str]:
@@ -282,12 +282,12 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
-        return pd.read_json(response.json(), orient="table", convert_dates=False)
+        return dataframe_from_json(response.json())
 
     @typechecked
     def describe(
         self: HasExtractPrunedGraphAndNode,
-        size: int = 10000,
+        size: int = 0,
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
@@ -333,4 +333,4 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
-        return pd.read_json(response.json(), orient="table", convert_dates=False)
+        return dataframe_from_json(response.json())

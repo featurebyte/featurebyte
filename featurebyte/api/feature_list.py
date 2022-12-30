@@ -28,7 +28,11 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
-from featurebyte.common.utils import dataframe_from_arrow_stream, dataframe_to_arrow_bytes
+from featurebyte.common.utils import (
+    dataframe_from_arrow_stream,
+    dataframe_from_json,
+    dataframe_to_arrow_bytes,
+)
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.exception import (
@@ -223,7 +227,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return pd.read_json(result, orient="table", convert_dates=False)
+        return dataframe_from_json(result)
 
     @property
     def sql(self) -> str:

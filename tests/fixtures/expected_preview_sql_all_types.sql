@@ -188,7 +188,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
-            "POINT_IN_TIME" AS "__FB_TS_COL",
+            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
             "CUSTOMER_ID" AS "__FB_KEY_COL",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -254,7 +254,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           )
           UNION ALL
           SELECT
-            "event_timestamp" AS "__FB_TS_COL",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL",
             "event_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",

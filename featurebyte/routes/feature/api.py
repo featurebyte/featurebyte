@@ -3,7 +3,7 @@ Feature API routes
 """
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import Any, Dict, Optional, Union, cast
 
 from http import HTTPStatus
 
@@ -143,17 +143,17 @@ async def get_feature_info(
     return cast(FeatureInfo, info)
 
 
-@router.post("/preview", response_model=str)
+@router.post("/preview", response_model=Dict[str, Any])
 async def get_feature_preview(
     request: Request,
     feature_preview: FeaturePreview,
-) -> str:
+) -> Dict[str, Any]:
     """
     Retrieve Feature preview
     """
     controller = request.state.app_container.feature_controller
     return cast(
-        str,
+        Dict[str, Any],
         await controller.preview(
             feature_preview=feature_preview, get_credential=request.state.get_credential
         ),
