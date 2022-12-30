@@ -36,12 +36,13 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
 
     def _prepare_columns_info(self, column_info: ColumnInfo) -> List[ColumnInfo]:
         """
-        Prepare columns info using info attribute of this object
+        Prepare columns info attribute of the update payload. The output of this function is used as part of the
+        data update route payload.
 
         Parameters
         ----------
         column_info: ColumnInfo
-            Column info to be override
+            Column info is used to replace the item of `columns_info` of this object.
 
         Returns
         -------

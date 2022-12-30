@@ -65,18 +65,24 @@ def test_data_column__as_entity__saved_data(saved_event_data, config):
     assert saved_event_data.saved is True
 
     # check event data column's info attribute & event data's columns_info
+    has_col_int_column = False
     assert saved_event_data.col_int.info.entity_id == entity.id
     for col in saved_event_data.columns_info:
         if col.name == "col_int":
             assert col.entity_id == entity.id
+            has_col_int_column = True
+    assert has_col_int_column, "columns_info does not contain col_int"
 
     # check that the column entity map is saved to persistent
     client = config.get_client()
     response = client.get(url=f"/event_data/{saved_event_data.id}")
     response_dict = response.json()
+    has_col_int_column = False
     for col in response_dict["columns_info"]:
         if col["name"] == "col_int":
             assert col["entity_id"] == str(entity.id)
+            has_col_int_column = True
+    assert has_col_int_column, "columns_info does not contain col_int"
 
 
 def test_data_column__as_entity__saved__entity_not_found_exception(saved_event_data, config):
