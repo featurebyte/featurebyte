@@ -83,3 +83,20 @@ def test_unbounded_window__category_not_supported(snowflake_event_view_with_enti
             ),
         )
     assert str(exc.value) == "category is not supported for aggregation with unbounded window"
+
+
+def test_unbounded_window__composite_keys(snowflake_event_view_with_entity):
+    """
+    Test composite keys not yet supported
+    """
+    with pytest.raises(NotImplementedError) as exc:
+        snowflake_event_view_with_entity.groupby(["cust_id", "col_int"]).aggregate_over(
+            value_column="col_float",
+            method="latest",
+            windows=[None],
+            feature_names=["feat_latest"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    assert str(exc.value) == "Composite keys not yet supported"

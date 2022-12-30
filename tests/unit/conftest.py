@@ -424,6 +424,7 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     Entity fixture that sets cust_id in snowflake_event_data as an Entity
     """
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_data.col_int.as_entity(cust_id_entity.name)
     yield snowflake_event_data
 
 
