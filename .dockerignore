@@ -12,3 +12,6 @@ htmlcov
 requirements.txt
 .venv
 docker/data
+beta/
+featurebyte_beta.tar.gz
+featurebyte_beta.zip

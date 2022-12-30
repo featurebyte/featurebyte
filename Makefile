@@ -25,6 +25,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
+.PHONY: beta-start beta-bundle beta-stop beta-build beta-bundle-publish
 .PHONY: clean
 
 #* Initialize
@@ -84,11 +85,32 @@ test-routes:
 	uvicorn featurebyte.app:app --reload
 
 #* Docker
-start-service:
-	poetry build   # We are exporting dist/ to the image
-	cd docker && docker compose up --build
+beta-start: beta-build
+	cd docker && docker compose up
 
-stop-service:
+beta-build:
+	poetry build   # We are exporting dist/ to the image
+	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
+
+beta-bundle: beta-build
+	-mkdir beta
+	docker save featurebyte-beta:latest -o beta/featurebyte-beta.tar
+	# Copy dependencies over to bundled folder
+	cp docker/docker-compose.yml  beta/docker-compose.yml
+	cp docker/start.sh            beta/start.sh
+	cp docker/start.ps1           beta/start.ps1
+	cp docker/entrypoint-mongo.sh beta/entrypoint-mongo.sh
+
+	# Compress with tar.gz and zip
+	tar czvf featurebyte_beta.tar.gz beta/
+	zip -9 featurebyte_beta.zip -r beta/
+
+beta-bundle-publish: beta-bundle
+	# You need to have rights in production bucket
+	gsutil cp featurebyte_beta.tar.gz gs://featurebyte_beta/
+	gsutil cp featurebyte_beta.zip    gs://featurebyte_beta/
+
+beta-stop:
 	cd docker && docker compose down
 
 #* Docs Generation
