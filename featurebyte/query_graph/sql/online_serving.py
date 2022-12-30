@@ -23,7 +23,10 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
-from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
+from featurebyte.query_graph.sql.tile_util import (
+    calculate_first_and_last_tile_indices,
+    update_maximum_window_size_dict,
+)
 
 
 class OnlineStoreUniversePlan:
@@ -43,17 +46,19 @@ class OnlineStoreUniversePlan:
 
     def __init__(self, graph: QueryGraph, node: Node, adapter: BaseAdapter):
         self.adapter = adapter
-        self.max_window_size_by_tile_id: dict[str, int] = defaultdict(int)
+        self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.params_by_tile_id: dict[str, Any] = {}
         self._update(graph, node)
 
-    def get_first_and_last_indices_by_tile_id(self) -> List[Tuple[str, Expression, Expression]]:
+    def get_first_and_last_indices_by_tile_id(
+        self,
+    ) -> List[Tuple[str, Optional[Expression], Expression]]:
         """
         Get the first and last tile indices required to compute the feature
 
         Returns
         -------
-        List[Tuple[str, Expression, Expression]]
+        List[Tuple[str, Optional[Expression], Expression]]
         """
         out = []
         point_in_time_expr = self._get_point_in_time_expr()
@@ -101,10 +106,11 @@ class OnlineStoreUniversePlan:
         serving_names = params["serving_names"]
         keys = params["keys"]
 
-        filter_condition = expressions.and_(
-            expressions.GTE(this="INDEX", expression=first_index),
-            expressions.LT(this="INDEX", expression=last_index),
-        )
+        filter_conditions: list[Expression] = []
+        if first_index is not None:
+            filter_conditions.append(expressions.GTE(this="INDEX", expression=first_index))
+        filter_conditions.append(expressions.LT(this="INDEX", expression=last_index))
+
         expr = (
             select(
                 expressions.alias_(self._get_point_in_time_expr(), SpecialColumnName.POINT_IN_TIME),
@@ -117,7 +123,7 @@ class OnlineStoreUniversePlan:
             )
             .distinct()
             .from_(tile_id)
-            .where(filter_condition)
+            .where(expressions.and_(*filter_conditions))
         )
         universe_columns = [SpecialColumnName.POINT_IN_TIME] + serving_names
 
@@ -139,8 +145,10 @@ class OnlineStoreUniversePlan:
             agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node)
             for agg_spec in agg_specs:
                 tile_id = agg_spec.tile_table_id
-                self.max_window_size_by_tile_id[tile_id] = max(
-                    agg_spec.window, self.max_window_size_by_tile_id[tile_id]
+                update_maximum_window_size_dict(
+                    max_window_size_dict=self.max_window_size_by_tile_id,
+                    key=tile_id,
+                    window_size=agg_spec.window,
                 )
                 self.params_by_tile_id[tile_id] = {
                     "keys": agg_spec.keys,

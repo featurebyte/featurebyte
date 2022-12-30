@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.query_graph.sql.tile_util import update_maximum_window_size_dict
 
 
 class OnDemandTileComputePlan:
@@ -141,7 +142,7 @@ class OnDemandTileComputePlan:
         return tile_sqls
 
     def update_max_window_size(self, tile_info: TileGenSql) -> None:
-        """Update the maximum feature window size observed for each aggregation_id
+        """Update the maximum feature window size observed for each tile table
 
         Parameters
         ----------
@@ -149,25 +150,17 @@ class OnDemandTileComputePlan:
             Tile table information
         """
         tile_id = tile_info.tile_table_id
-
-        if any(window is None for window in tile_info.windows):
-            max_window = None
-            self.max_window_size_by_tile_id[tile_id] = max_window
-            return
-
-        max_window = max(int(pd.Timedelta(x).total_seconds()) for x in tile_info.windows)
-        assert max_window % tile_info.frequency == 0
-
-        if tile_id not in self.max_window_size_by_tile_id:
-            self.max_window_size_by_tile_id[tile_id] = max_window
-        else:
-            # Existing window size of None means that the window should be unbounded; in that
-            # case window size comparison is irrelevant and should be skipped
-            existing_window_size = self.max_window_size_by_tile_id[tile_id]
-            if existing_window_size is None:
-                return
-            if max_window > existing_window_size:
-                self.max_window_size_by_tile_id[tile_id] = max_window
+        for window in tile_info.windows:
+            if window is not None:
+                window_size = int(pd.Timedelta(window).total_seconds())
+                assert window_size % tile_info.frequency == 0
+            else:
+                window_size = None
+            update_maximum_window_size_dict(
+                max_window_size_dict=self.max_window_size_by_tile_id,
+                key=tile_id,
+                window_size=window_size,
+            )
 
     def get_max_window_size(self, tile_id: str) -> Optional[int]:
         """Get the maximum feature window size for a given tile table id

@@ -3,7 +3,7 @@ Module for tiles related utilities
 """
 from __future__ import annotations
 
-from typing import Tuple, cast
+from typing import Any, Optional, Tuple, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
@@ -15,10 +15,10 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 def calculate_first_and_last_tile_indices(
     adapter: BaseAdapter,
     point_in_time_expr: Expression,
-    window_size: int,
+    window_size: Optional[int],
     frequency: int,
     time_modulo_frequency: int,
-) -> Tuple[Expression, Expression]:
+) -> Tuple[Optional[Expression], Expression]:
     """
     Calculate the first (inclusive) and last (exclusive) tile indices required to compute a feature,
     given:
@@ -52,10 +52,13 @@ def calculate_first_and_last_tile_indices(
         frequency=frequency,
         time_modulo_frequency=time_modulo_frequency,
     )
-    num_tiles = window_size // frequency
-    first_tile_index_expr = cast(
-        Expression, parse_one(f"{last_tile_index_expr.sql()} - {num_tiles}")
-    )
+    if window_size is not None:
+        num_tiles = window_size // frequency
+        first_tile_index_expr = cast(
+            Expression, parse_one(f"{last_tile_index_expr.sql()} - {num_tiles}")
+        )
+    else:
+        first_tile_index_expr = None
     return first_tile_index_expr, last_tile_index_expr
 
 
@@ -98,3 +101,38 @@ def calculate_last_tile_index_expr(
             this=last_tile_index_expr, expression=make_literal_value(1)
         )
     return last_tile_index_expr
+
+
+def update_maximum_window_size_dict(
+    max_window_size_dict: dict[Any, int | None],
+    key: Any,
+    window_size: int | None,
+) -> None:
+    """
+    Update a dictionary that keeps track of maximum window size per certain key
+
+    Window size of None is considered as larger than any concrete window size.
+
+    Parameters
+    ----------
+    max_window_size_dict: dict[Any, int | None]
+        Dictionary to update
+    key: Any
+        Key of interest to update
+    window_size: int | None
+        Window size in seconds
+    """
+    if key not in max_window_size_dict:
+        max_window_size_dict[key] = window_size
+    else:
+        existing_window_size = max_window_size_dict[key]
+
+        # Existing window size of None means that the window should be unbounded; in that
+        # case window size comparison is irrelevant and should be skipped
+        if existing_window_size is None:
+            return
+
+        if window_size is None:
+            max_window_size_dict[key] = None
+        else:
+            max_window_size_dict[key] = max(existing_window_size, window_size)
