@@ -13,7 +13,7 @@ from featurebyte.query_graph.sql.aggregator.base import (
     Aggregator,
     LeftJoinableSubquery,
 )
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import LookupSpec
 
@@ -248,14 +248,7 @@ class LookupAggregator(Aggregator):
             scd_agg_result_names.extend(agg_result_names)
 
         if scd_agg_result_names:
-            # If any SCD lookup is performed, set up the REQ alias again so that subsequent joins
-            # using other aggregators can work
-            table_expr = select(
-                *[
-                    alias_(get_qualified_column_identifier(col, "REQ"), col, quoted=True)
-                    for col in current_columns
-                ]
-            ).from_(table_expr.subquery(alias="REQ"))
+            table_expr = self._wrap_in_nested_query(table_expr=table_expr, columns=current_columns)
 
         return table_expr, scd_agg_result_names
 

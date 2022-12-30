@@ -6,11 +6,11 @@ from __future__ import annotations
 from typing import Any
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Select
 
 from featurebyte.query_graph.sql.aggregator.base import AggregationResult, Aggregator
 from featurebyte.query_graph.sql.aggregator.window import TileBasedAggregationSpecSet
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
@@ -96,14 +96,7 @@ class LatestAggregator(Aggregator):
             all_agg_result_names.extend(agg_result_names)
 
         if all_agg_result_names:
-            # If any SCD lookup is performed, set up the REQ alias again so that subsequent joins
-            # using other aggregators can work
-            table_expr = select(
-                *[
-                    alias_(get_qualified_column_identifier(col, "REQ"), col, quoted=True)
-                    for col in current_columns
-                ]
-            ).from_(table_expr.subquery(alias="REQ"))
+            table_expr = self._wrap_in_nested_query(table_expr=table_expr, columns=current_columns)
 
         return AggregationResult(
             updated_table_expr=table_expr,
