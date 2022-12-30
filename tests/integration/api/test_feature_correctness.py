@@ -40,16 +40,19 @@ def calculate_feature_ground_truth(
     last_job_epoch_seconds = last_job_index * frequency + time_modulo_frequency
 
     window_end_epoch_seconds = last_job_epoch_seconds - blind_spot
-    window_start_epoch_seconds = window_end_epoch_seconds - window_size
-
     window_end = epoch_seconds_to_timestamp(window_end_epoch_seconds)
-    window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
+
+    if window_size is not None:
+        window_start_epoch_seconds = window_end_epoch_seconds - window_size
+        window_start = epoch_seconds_to_timestamp(window_start_epoch_seconds)
+    else:
+        window_start = None
 
     df = df.sort_values(event_timestamp_column_name)
     mask = df[entity_column_name] == entity_value
-    mask &= (df[event_timestamp_column_name] >= window_start) & (
-        df[event_timestamp_column_name] < window_end
-    )
+    mask &= df[event_timestamp_column_name] < window_end
+    if window_start is not None:
+        mask &= df[event_timestamp_column_name] >= window_start
     df_filtered = df[mask]
 
     if category is None:
@@ -268,6 +271,14 @@ def test_aggregation(
             lambda x: x.values[-1] if len(x) > 0 else None,
             None,
         ),
+        (
+            "AMOUNT",
+            "latest",
+            None,
+            "latest_ever",
+            lambda x: x.values[-1] if len(x) > 0 else None,
+            None,
+        ),
     ]
 
     event_view = EventView.from_event_data(event_data)
@@ -319,7 +330,10 @@ def test_aggregation(
         features.append(feature_group[feature_name])
 
         tic = time.time()
-        window_size = pd.Timedelta(window).total_seconds()
+        if window is not None:
+            window_size = pd.Timedelta(window).total_seconds()
+        else:
+            window_size = None
         df_expected = get_expected_feature_values(
             training_events,
             feature_name,

@@ -15,6 +15,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import Aggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
+from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
@@ -25,7 +26,7 @@ from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
     LookupSpec,
-    WindowAggregationSpec,
+    TileBasedAggregationSpec,
 )
 
 
@@ -37,9 +38,10 @@ class FeatureExecutionPlan:
     def __init__(self, source_type: SourceType, is_online_serving: bool) -> None:
         aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
         self.aggregators = {
-            LookupSpec: LookupAggregator(**aggregator_kwargs),
-            WindowAggregationSpec: WindowAggregator(**aggregator_kwargs),
-            ItemAggregationSpec: ItemAggregator(**aggregator_kwargs),
+            "latest": LatestAggregator(**aggregator_kwargs),
+            "lookup": LookupAggregator(**aggregator_kwargs),
+            "window": WindowAggregator(**aggregator_kwargs),
+            "item": ItemAggregator(**aggregator_kwargs),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
@@ -70,7 +72,7 @@ class FeatureExecutionPlan:
 
     def add_aggregation_spec(
         self,
-        aggregation_spec: Union[WindowAggregationSpec, ItemAggregationSpec, LookupSpec],
+        aggregation_spec: Union[TileBasedAggregationSpec, ItemAggregationSpec, LookupSpec],
     ) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
@@ -79,7 +81,18 @@ class FeatureExecutionPlan:
         aggregation_spec : AggregationSpec
             Aggregation specification
         """
-        aggregator = self.aggregators[type(aggregation_spec)]
+        key = None
+        if isinstance(aggregation_spec, TileBasedAggregationSpec):
+            if aggregation_spec.window is None:
+                key = "latest"
+            else:
+                key = "window"
+        elif isinstance(aggregation_spec, ItemAggregationSpec):
+            key = "item"
+        elif isinstance(aggregation_spec, LookupSpec):
+            key = "lookup"
+        assert key is not None
+        aggregator = self.aggregators[key]
         aggregator.update(aggregation_spec)  # type: ignore
 
     def add_feature_spec(self, feature_spec: FeatureSpec) -> None:
@@ -313,7 +326,7 @@ class FeatureExecutionPlanner:
         groupby_node : Node
             Groupby query node
         """
-        agg_specs = WindowAggregationSpec.from_groupby_query_node(
+        agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
             groupby_node, serving_names_mapping=self.serving_names_mapping
         )
         for agg_spec in agg_specs:

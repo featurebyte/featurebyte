@@ -3,7 +3,7 @@ SQL generation for aggregation with time windows
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Optional, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -18,10 +18,10 @@ from featurebyte.query_graph.sql.aggregator.base import (
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.query_graph.sql.specs import WindowAggregationSpec
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
-Window = int
+Window = Optional[int]
 Frequency = int
 BlindSpot = int
 TimeModuloFreq = int
@@ -69,7 +69,7 @@ class TileBasedRequestTablePlan:
         self.expanded_request_table_names: dict[TileIndicesIdType, str] = {}
         self.adapter = get_sql_adapter(source_type)
 
-    def add_aggregation_spec(self, agg_spec: WindowAggregationSpec) -> None:
+    def add_aggregation_spec(self, agg_spec: TileBasedAggregationSpec) -> None:
         """
         Process a new AggregationSpec
 
@@ -78,7 +78,7 @@ class TileBasedRequestTablePlan:
 
         Parameters
         ----------
-        agg_spec : WindowAggregationSpec
+        agg_spec : TileBasedAggregationSpec
             Aggregation specification
         """
         unique_tile_indices_id = self.get_unique_tile_indices_id(agg_spec)
@@ -93,13 +93,13 @@ class TileBasedRequestTablePlan:
             )
             self.expanded_request_table_names[unique_tile_indices_id] = output_table_name
 
-    def get_expanded_request_table_name(self, agg_spec: WindowAggregationSpec) -> str:
+    def get_expanded_request_table_name(self, agg_spec: TileBasedAggregationSpec) -> str:
         """
         Get the name of the expanded request table given and AggregationSpec
 
         Parameters
         ----------
-        agg_spec : WindowAggregationSpec
+        agg_spec : TileBasedAggregationSpec
             Aggregation specification
 
         Returns
@@ -111,13 +111,13 @@ class TileBasedRequestTablePlan:
         return self.expanded_request_table_names[key]
 
     @staticmethod
-    def get_unique_tile_indices_id(agg_spec: WindowAggregationSpec) -> TileIndicesIdType:
+    def get_unique_tile_indices_id(agg_spec: TileBasedAggregationSpec) -> TileIndicesIdType:
         """
         Get a key for an AggregationSpec that controls reuse of expanded request table
 
         Parameters
         ----------
-        agg_spec : WindowAggregationSpec
+        agg_spec : TileBasedAggregationSpec
             Aggregation specification
 
         Returns
@@ -221,18 +221,18 @@ class TileBasedRequestTablePlan:
         return expr
 
 
-class WindowAggregationSpecSet:
+class TileBasedAggregationSpecSet:
     """
-    Responsible for keeping track of WindowAggregationSpec that arises from query graph nodes
+    Responsible for keeping track of TileBasedAggregationSpec that arises from query graph nodes
     """
 
     def __init__(self) -> None:
-        self.aggregation_specs: dict[AggregationSpecIdType, list[WindowAggregationSpec]] = {}
+        self.aggregation_specs: dict[AggregationSpecIdType, list[TileBasedAggregationSpec]] = {}
         self.processed_agg_specs: dict[AggregationSpecIdType, set[str]] = {}
 
-    def add_aggregation_spec(self, aggregation_spec: WindowAggregationSpec) -> None:
+    def add_aggregation_spec(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
-        Update state given a WindowAggregationSpec
+        Update state given a TileBasedAggregationSpec
 
         Some aggregations can be shared by different features, e.g. "transaction_type (7 day
         entropy)" and "transaction_type (7 day most frequent)" can both reuse the aggregated result
@@ -242,7 +242,7 @@ class WindowAggregationSpecSet:
 
         Parameters
         ----------
-        aggregation_spec : WindowAggregationSpec
+        aggregation_spec : TileBasedAggregationSpec
             Aggregation_specification
         """
         # AggregationSpec is window size specific. Two AggregationSpec with different window sizes
@@ -270,11 +270,11 @@ class WindowAggregationSpecSet:
         self.aggregation_specs[key].append(aggregation_spec)
         self.processed_agg_specs[key].add(agg_id)
 
-    def get_grouped_aggregation_specs(self) -> Iterable[list[WindowAggregationSpec]]:
+    def get_grouped_aggregation_specs(self) -> Iterable[list[TileBasedAggregationSpec]]:
         """
-        Yields groups of WindowAggregationSpec
+        Yields groups of TileBasedAggregationSpec
 
-        Each group of WindowAggregationSpec has the same tile_table_id. Their tile values can be
+        Each group of TileBasedAggregationSpec has the same tile_table_id. Their tile values can be
         aggregated in a single GROUP BY clause.
 
         Yields
@@ -298,18 +298,18 @@ class WindowAggregator(Aggregator):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.window_aggregation_spec_set = WindowAggregationSpecSet()
+        self.window_aggregation_spec_set = TileBasedAggregationSpecSet()
         self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
             source_type=self.source_type
         )
 
-    def update(self, aggregation_spec: WindowAggregationSpec) -> None:
+    def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
         Update internal state to account for a WindowAggregationSpec
 
         Parameters
         ----------
-        aggregation_spec: WindowAggregationSpec
+        aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
@@ -588,8 +588,8 @@ class WindowAggregator(Aggregator):
 
         for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
 
-            # All WindowAggregationSpec in agg_specs share common attributes such as tile_table_id,
-            # keys, etc. Get the first one to access them.
+            # All TileBasedAggregationSpec in agg_specs share common attributes such as
+            # tile_table_id, keys, etc. Get the first one to access them.
             agg_spec = agg_specs[0]
             is_order_dependent = agg_specs[0].is_order_dependent
             expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(

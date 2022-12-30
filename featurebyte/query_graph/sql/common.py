@@ -55,7 +55,10 @@ def quoted_identifier(column_name: str) -> Expression:
 
 
 def get_qualified_column_identifier(
-    column_name: str, table: str, quote_table: bool = False
+    column_name: str,
+    table: str,
+    quote_table: bool = False,
+    quote_column: bool = True,
 ) -> Expression:
     """
     Get a qualified column name with a table alias prefix
@@ -68,6 +71,8 @@ def get_qualified_column_identifier(
         Table prefix to add to the column name
     quote_table : bool
         Whether to enclose the table prefix in quotes
+    quote_column : bool
+        Whether to enclose the column name in quotes
 
     Returns
     -------
@@ -75,7 +80,9 @@ def get_qualified_column_identifier(
     """
     if quote_table:
         table = quoted_identifier(table)  # type: ignore[assignment]
-    expr = expressions.Column(this=quoted_identifier(column_name), table=table)
+    if quote_column:
+        column_name = quoted_identifier(column_name)
+    expr = expressions.Column(this=column_name, table=table)
     return expr
 
 

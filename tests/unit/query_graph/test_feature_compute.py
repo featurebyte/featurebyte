@@ -17,14 +17,14 @@ from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
     LookupSpec,
-    WindowAggregationSpec,
+    TileBasedAggregationSpec,
 )
 
 
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
-    agg_spec = WindowAggregationSpec(
+    agg_spec = TileBasedAggregationSpec(
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -218,11 +218,11 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
     plan = planner.generate_plan([groupby_node])
     assert list(
         plan.aggregators[
-            WindowAggregationSpec
+            TileBasedAggregationSpec
         ].window_aggregation_spec_set.get_grouped_aggregation_specs()
     ) == [
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -242,7 +242,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
             )
         ],
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -289,11 +289,11 @@ def test_feature_execution_planner__serving_names_mapping(
     plan = planner.generate_plan([groupby_node])
     assert list(
         plan.aggregators[
-            WindowAggregationSpec
+            TileBasedAggregationSpec
         ].window_aggregation_spec_set.get_grouped_aggregation_specs()
     ) == [
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -313,7 +313,7 @@ def test_feature_execution_planner__serving_names_mapping(
             )
         ],
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,

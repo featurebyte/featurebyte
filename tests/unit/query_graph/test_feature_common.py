@@ -2,7 +2,7 @@
 Tests for featurebyte.query_graph.feature_common
 """
 
-from featurebyte.query_graph.sql.specs import WindowAggregationSpec
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 
 
 def test_aggregation_spec__from_groupby_query_node(
@@ -12,9 +12,9 @@ def test_aggregation_spec__from_groupby_query_node(
     Test constructing list of AggregationSpec from groupby query graph node
     """
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    agg_specs = WindowAggregationSpec.from_groupby_query_node(groupby_node)
+    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node)
     expected_agg_specs = [
-        WindowAggregationSpec(
+        TileBasedAggregationSpec(
             window=7200,
             frequency=3600,
             blind_spot=900,
@@ -32,7 +32,7 @@ def test_aggregation_spec__from_groupby_query_node(
             feature_name="a_2h_average",
             is_order_dependent=False,
         ),
-        WindowAggregationSpec(
+        TileBasedAggregationSpec(
             window=172800,
             frequency=3600,
             blind_spot=900,
@@ -64,11 +64,11 @@ def test_aggregation_spec__override_serving_names(
     serving_names_mapping = {
         "CUSTOMER_ID": "NEW_CUST_ID",
     }
-    agg_specs = WindowAggregationSpec.from_groupby_query_node(
+    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
         groupby_node, serving_names_mapping=serving_names_mapping
     )
     expected_agg_specs = [
-        WindowAggregationSpec(
+        TileBasedAggregationSpec(
             window=7200,
             frequency=3600,
             blind_spot=900,
@@ -86,7 +86,7 @@ def test_aggregation_spec__override_serving_names(
             feature_name="a_2h_average",
             is_order_dependent=False,
         ),
-        WindowAggregationSpec(
+        TileBasedAggregationSpec(
             window=172800,
             frequency=3600,
             blind_spot=900,

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -29,10 +29,20 @@ class Table:
     """
 
     expr: Select
-    timestamp_column: str
+    timestamp_column: str | Expression
     join_key: str
     input_columns: list[str]
     output_columns: list[str]
+
+    @property
+    def timestamp_column_expr(self) -> Expression:
+        """
+        Returns an expression for the timestamp column (return as is if it's already an expression,
+        else return the quoted column name)
+        """
+        if isinstance(self.timestamp_column, str):
+            return quoted_identifier(self.timestamp_column)
+        return self.timestamp_column
 
 
 def get_scd_join_expr(
@@ -42,6 +52,7 @@ def get_scd_join_expr(
     adapter: BaseAdapter,
     select_expr: Optional[Select] = None,
     offset: Optional[str] = None,
+    quote_right_input_columns: bool = True,
 ) -> Select:
     """
     Construct a query to perform SCD join
@@ -65,6 +76,9 @@ def get_scd_join_expr(
         Partially constructed select expression, if any
     offset: Optional[str]
         Offset to apply when performing SCD join
+    quote_right_input_columns: Optional[bool]
+        Whether to quote right table's input columns. Temporary and should be removed after
+        https://featurebyte.atlassian.net/browse/DEV-935
 
     Returns
     -------
@@ -82,7 +96,11 @@ def get_scd_join_expr(
             ],
             *[
                 alias_(
-                    get_qualified_column_identifier(input_col, "R"), alias=output_col, quoted=True
+                    get_qualified_column_identifier(
+                        input_col, "R", quote_column=quote_right_input_columns
+                    ),
+                    alias=output_col,
+                    quoted=True,
                 )
                 for input_col, output_col in zip(
                     right_table.input_columns, right_table.output_columns
@@ -181,10 +199,10 @@ def augment_table_with_effective_timestamp(
         offset_seconds = pd.Timedelta(offset).total_seconds()
         left_ts_col = adapter.dateadd_microsecond(
             make_literal_value(offset_seconds * 1e6 * -1),
-            quoted_identifier(left_table.timestamp_column),
+            left_table.timestamp_column_expr,
         )
     else:
-        left_ts_col = quoted_identifier(left_table.timestamp_column)
+        left_ts_col = left_table.timestamp_column_expr
 
     # Left table. Set up three special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL
     left_view_with_ts_and_key = select(
@@ -231,6 +249,10 @@ def augment_table_with_effective_timestamp(
     # have NULL as the EFFECTIVE_TS_COL) come after SCD rows in the right table when there are
     # ties between dates. This way, LAG yields the exact matching date, instead of a previous
     # effective date.
+    #
+    # One unfortunate note is that it's not possible to change the NULL LAST behaviour to NULL FIRST
+    # even when setting nulls_first=True when creating Ordered, since sqlglot always omits NULL
+    # FIRST. But Snowflake's behaviours is NULL LAST unless otherwise specified!
     order = expressions.Order(
         expressions=[
             expressions.Ordered(this=quoted_identifier(TS_COL)),

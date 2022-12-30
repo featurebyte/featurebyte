@@ -315,6 +315,7 @@ def test_get_feature_preview_sql__all_types(
     lookup_feature_node,
     scd_lookup_feature_node,
     latest_value_aggregation_feature_node,
+    latest_value_without_window_feature_node,
     update_fixtures,
 ):
     """
@@ -333,6 +334,7 @@ def test_get_feature_preview_sql__all_types(
         lookup_feature_node,
         scd_lookup_feature_node,
         latest_value_aggregation_feature_node,
+        latest_value_without_window_feature_node,
     ]
     preview_sql = get_feature_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,
