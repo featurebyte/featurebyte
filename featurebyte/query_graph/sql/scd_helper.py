@@ -3,7 +3,7 @@ Utilities for SCD join / lookup
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 from dataclasses import dataclass
 
@@ -52,6 +52,11 @@ class Table:
         """
         Returns an expression that can be selected from (converted to subquery if required)
 
+        Parameters
+        ----------
+        alias: Optional[str]
+            Table alias, if specified.
+
         Returns
         -------
         Expression
@@ -59,7 +64,7 @@ class Table:
         if isinstance(self.expr, str):
             return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
         assert isinstance(self.expr, Select)
-        return self.expr.subquery(alias=alias)
+        return cast(Expression, self.expr.subquery(alias=alias))
 
 
 def get_scd_join_expr(
@@ -93,7 +98,7 @@ def get_scd_join_expr(
         Partially constructed select expression, if any
     offset: Optional[str]
         Offset to apply when performing SCD join
-    quote_right_input_columns: Optional[bool]
+    quote_right_input_columns: bool
         Whether to quote right table's input columns. Temporary and should be removed after
         https://featurebyte.atlassian.net/browse/DEV-935
 
@@ -131,6 +136,7 @@ def get_scd_join_expr(
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
     right_subquery = right_table.as_subquery(alias="R")
+    assert isinstance(right_table.timestamp_column, str)
     join_conditions = [
         expressions.EQ(
             this=get_qualified_column_identifier(LAST_TS, "L"),
@@ -237,10 +243,10 @@ def augment_table_with_effective_timestamp(
     # Right table. Set up the same special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL. The
     # ordering of the columns in the SELECT statement matters (must match the left table's).
     right_ts_and_key = select(
-        alias_(quoted_identifier(right_table.timestamp_column), alias=TS_COL, quoted=True),
+        alias_(right_table.timestamp_column_expr, alias=TS_COL, quoted=True),
         alias_(quoted_identifier(right_table.join_key), alias=KEY_COL, quoted=True),
         alias_(
-            quoted_identifier(right_table.timestamp_column),
+            right_table.timestamp_column_expr,
             alias=EFFECTIVE_TS_COL,
             quoted=True,
         ),

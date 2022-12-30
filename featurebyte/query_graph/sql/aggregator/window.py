@@ -3,7 +3,7 @@ SQL generation for aggregation with time windows
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Tuple
+from typing import Any, Iterable, Optional, Tuple, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -81,6 +81,7 @@ class TileBasedRequestTablePlan:
         agg_spec : TileBasedAggregationSpec
             Aggregation specification
         """
+        assert agg_spec.window is not None
         unique_tile_indices_id = self.get_unique_tile_indices_id(agg_spec)
         if unique_tile_indices_id not in self.expanded_request_table_names:
             output_table_name = (
@@ -124,6 +125,7 @@ class TileBasedRequestTablePlan:
         -------
         tuple
         """
+        assert agg_spec.window is not None
         unique_tile_indices_id = (
             agg_spec.window,
             agg_spec.frequency,
@@ -158,6 +160,7 @@ class TileBasedRequestTablePlan:
                 time_modulo_frequency,
                 serving_names,
             ) = unique_tile_indices_id
+            assert window_size is not None
             expanded_table_sql = self.construct_expanded_request_table_sql(
                 window_size=window_size,
                 frequency=frequency,
@@ -312,6 +315,7 @@ class WindowAggregator(Aggregator):
         aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
+        assert aggregation_spec.window is not None
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
@@ -598,6 +602,7 @@ class WindowAggregator(Aggregator):
             merge_exprs = [agg_spec.merge_expr for agg_spec in agg_specs]
             agg_result_names = [agg_spec.agg_result_name for agg_spec in agg_specs]
 
+            assert agg_spec.window is not None
             agg_expr = self.construct_aggregation_sql(
                 expanded_request_table_name=expanded_request_table_name,
                 tile_table_id=agg_spec.tile_table_id,

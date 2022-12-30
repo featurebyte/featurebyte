@@ -81,7 +81,7 @@ def get_qualified_column_identifier(
     if quote_table:
         table = quoted_identifier(table)  # type: ignore[assignment]
     if quote_column:
-        column_name = quoted_identifier(column_name)
+        column_name = quoted_identifier(column_name)  # type: ignore[assignment]
     expr = expressions.Column(this=column_name, table=table)
     return expr
 

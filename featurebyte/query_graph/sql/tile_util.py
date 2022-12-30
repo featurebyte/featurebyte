@@ -65,7 +65,7 @@ def calculate_last_tile_index_expr(
     frequency: int,
     time_modulo_frequency: int,
     exclusive: bool = True,
-):
+) -> Expression:
     """
     Calculate the last tile index required to compute a feature
 
@@ -81,6 +81,10 @@ def calculate_last_tile_index_expr(
         Time modulo frequency in feature job setting
     exclusive : bool
         Whether the calculated tile index is exclusive (i.e. should be excluded when merging tiles)
+
+    Returns
+    -------
+    Expression
     """
     point_in_time_epoch_expr = adapter.to_epoch_seconds(point_in_time_expr)
     last_tile_index_expr = cast(

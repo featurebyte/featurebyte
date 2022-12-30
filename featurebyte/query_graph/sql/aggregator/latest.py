@@ -1,3 +1,10 @@
+"""
+SQL generation for latest feature without a window
+"""
+from __future__ import annotations
+
+from typing import Any
+
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
@@ -14,13 +21,18 @@ class LatestAggregator(Aggregator):
     LatestAggregator is responsible for SQL generation for latest value aggregation without a window
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.specs_set = TileBasedAggregationSpecSet()
 
     def update(self, spec: TileBasedAggregationSpec) -> None:
         """
         Update internal states given a TileBasedAggregationSpec
+
+        Parameters
+        ----------
+        spec: TileBasedAggregationSpec
+            Aggregation specification
         """
         assert spec.window is None
         self.specs_set.add_aggregation_spec(spec)

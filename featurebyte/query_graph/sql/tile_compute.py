@@ -158,13 +158,16 @@ class OnDemandTileComputePlan:
         max_window = max(int(pd.Timedelta(x).total_seconds()) for x in tile_info.windows)
         assert max_window % tile_info.frequency == 0
 
-        if tile_id not in self.max_window_size_by_tile_id or (
+        if tile_id not in self.max_window_size_by_tile_id:
+            self.max_window_size_by_tile_id[tile_id] = max_window
+        else:
             # Existing window size of None means that the window should be unbounded; in that
             # case window size comparison is irrelevant and should be skipped
-            self.max_window_size_by_tile_id[tile_id] is not None
-            and max_window > self.max_window_size_by_tile_id[tile_id]
-        ):
-            self.max_window_size_by_tile_id[tile_id] = max_window
+            existing_window_size = self.max_window_size_by_tile_id[tile_id]
+            if existing_window_size is None:
+                return
+            if max_window > existing_window_size:
+                self.max_window_size_by_tile_id[tile_id] = max_window
 
     def get_max_window_size(self, tile_id: str) -> Optional[int]:
         """Get the maximum feature window size for a given tile table id
