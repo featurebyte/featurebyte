@@ -186,6 +186,7 @@ class InfoService(BaseService):
                         **column_info.dict(),
                         "entity": entity_map.get(column_info.entity_id),  # type: ignore[arg-type]
                         "semantic": semantic_map.get(column_info.semantic_id),  # type: ignore[arg-type]
+                        "critical_data_info": column_info.critical_data_info,
                     }
                 )
 

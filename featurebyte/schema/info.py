@@ -20,6 +20,7 @@ from featurebyte.models.feature_list import (
     FeatureTypeFeatureCount,
 )
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
@@ -151,6 +152,7 @@ class DataColumnInfo(FeatureByteBaseModel):
     dtype: DBVarType
     entity: Optional[str] = Field(default=None)
     semantic: Optional[str] = Field(default=None)
+    critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
 
 
 class DataInfo(DataBriefInfo, BaseInfo):
