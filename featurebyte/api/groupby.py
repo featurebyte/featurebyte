@@ -19,7 +19,6 @@ from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.common.typing import get_or_default
-from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.query_graph.node import Node
@@ -414,7 +413,7 @@ class SimpleAggregator(BaseAggregator):
         return feature
 
 
-class GroupBy(OpsMixin):
+class GroupBy:
     """
     GroupBy class that is applicable to EventView, ItemView, and ChangeView
     """

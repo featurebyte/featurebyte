@@ -34,7 +34,7 @@ class OpsMixin:
     """
 
     @property
-    def pytype_dbtype_map(self) -> dict[Any, Any]:
+    def pytype_dbtype_map(self) -> dict[Any, DBVarType]:
         """
         Supported python builtin scalar type to database type mapping
 
