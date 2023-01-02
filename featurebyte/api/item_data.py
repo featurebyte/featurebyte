@@ -3,13 +3,12 @@ ItemData class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import PrettyDict
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData

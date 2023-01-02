@@ -3,12 +3,11 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import PrettyDict
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
