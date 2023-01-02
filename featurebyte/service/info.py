@@ -3,21 +3,22 @@ InfoService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature_store import DataModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
     DataBriefInfoList,
+    DimensionDataInfo,
     EntityBriefInfoList,
     EntityInfo,
-    EventDataColumnInfo,
     EventDataInfo,
     FeatureInfo,
     FeatureListBriefInfoList,
@@ -25,11 +26,14 @@ from featurebyte.schema.info import (
     FeatureListNamespaceInfo,
     FeatureNamespaceInfo,
     FeatureStoreInfo,
+    ItemDataInfo,
+    SCDDataInfo,
 )
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -37,7 +41,9 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
 
@@ -54,8 +60,11 @@ class InfoService(BaseService):
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.data_service = DataService(user=user, persistent=persistent)
-        self.semantic_service = SemanticService(user=user, persistent=persistent)
         self.event_data_service = EventDataService(user=user, persistent=persistent)
+        self.item_data_service = ItemDataService(user=user, persistent=persistent)
+        self.dimension_data_service = DimensionDataService(user=user, persistent=persistent)
+        self.scd_data_service = SCDDataService(user=user, persistent=persistent)
+        self.semantic_service = SemanticService(user=user, persistent=persistent)
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.entity_service = EntityService(user=user, persistent=persistent)
         self.feature_service = FeatureService(user=user, persistent=persistent)
@@ -143,6 +152,56 @@ class InfoService(BaseService):
             serving_names=entity.serving_names,
         )
 
+    async def _get_data_info(self, data_document: DataModel, verbose: bool) -> Dict[str, Any]:
+        """
+        Get data info
+
+        Parameters
+        ----------
+        data_document: DataModel
+            Data document (could be event data, SCD data, item data, dimension data, etc)
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        entities = await self.entity_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": data_document.entity_ids}}
+        )
+        semantics = await self.semantic_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": data_document.semantic_ids}}
+        )
+        columns_info = None
+        if verbose:
+            columns_info = []
+            entity_map = {ObjectId(entity["_id"]): entity["name"] for entity in entities["data"]}
+            semantic_map = {
+                ObjectId(semantic["_id"]): semantic["name"] for semantic in semantics["data"]
+            }
+            for column_info in data_document.columns_info:
+                columns_info.append(
+                    {
+                        **column_info.dict(),
+                        "entity": entity_map.get(column_info.entity_id),  # type: ignore[arg-type]
+                        "semantic": semantic_map.get(column_info.semantic_id),  # type: ignore[arg-type]
+                    }
+                )
+
+        return {
+            "name": data_document.name,
+            "created_at": data_document.created_at,
+            "updated_at": data_document.updated_at,
+            "record_creation_date_column": data_document.record_creation_date_column,
+            "table_details": data_document.tabular_source.table_details,
+            "status": data_document.status,
+            "entities": EntityBriefInfoList.from_paginated_data(entities),
+            "semantics": [semantic["name"] for semantic in semantics["data"]],
+            "column_count": len(data_document.columns_info),
+            "columns_info": columns_info,
+        }
+
     async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
         """
         Get event data info
@@ -159,32 +218,87 @@ class InfoService(BaseService):
         EventDataInfo
         """
         event_data = await self.event_data_service.get_document(document_id=document_id)
-        entities = await self.entity_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": event_data.entity_ids}}
-        )
-        columns_info = None
-        if verbose:
-            columns_info = []
-            entity_map = {ObjectId(entity["_id"]): entity["name"] for entity in entities["data"]}
-            for column_info in event_data.columns_info:
-                columns_info.append(
-                    EventDataColumnInfo(
-                        **column_info.dict(), entity=entity_map.get(column_info.entity_id)  # type: ignore
-                    )
-                )
-
+        data_dict = await self._get_data_info(data_document=event_data, verbose=verbose)
         return EventDataInfo(
-            name=event_data.name,
-            created_at=event_data.created_at,
-            updated_at=event_data.updated_at,
+            **data_dict,
+            event_id_column=event_data.event_id_column,
             event_timestamp_column=event_data.event_timestamp_column,
-            record_creation_date_column=event_data.record_creation_date_column,
-            table_details=event_data.tabular_source.table_details,
             default_feature_job_setting=event_data.default_feature_job_setting,
-            status=event_data.status,
-            entities=EntityBriefInfoList.from_paginated_data(entities),
-            column_count=len(event_data.columns_info),
-            columns_info=columns_info,
+        )
+
+    async def get_item_data_info(self, document_id: ObjectId, verbose: bool) -> ItemDataInfo:
+        """
+        Get item data info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        ItemDataInfo
+        """
+        item_data = await self.item_data_service.get_document(document_id=document_id)
+        data_dict = await self._get_data_info(data_document=item_data, verbose=verbose)
+        event_data = await self.event_data_service.get_document(document_id=item_data.event_data_id)
+        return ItemDataInfo(
+            **data_dict,
+            event_id_column=item_data.event_id_column,
+            item_id_column=item_data.item_id_column,
+            event_data_name=event_data.name,
+        )
+
+    async def get_dimension_data_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> DimensionDataInfo:
+        """
+        Get dimension data info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        DimensionDataInfo
+        """
+        dimension_data = await self.dimension_data_service.get_document(document_id=document_id)
+        data_dict = await self._get_data_info(data_document=dimension_data, verbose=verbose)
+        return DimensionDataInfo(
+            **data_dict,
+            dimension_data_id_column=dimension_data.dimension_data_id_column,
+        )
+
+    async def get_scd_data_info(self, document_id: ObjectId, verbose: bool) -> SCDDataInfo:
+        """
+        Get Slow Changing Dimension data info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        SCDDataInfo
+        """
+        scd_data = await self.scd_data_service.get_document(document_id=document_id)
+        data_dict = await self._get_data_info(data_document=scd_data, verbose=verbose)
+        return SCDDataInfo(
+            **data_dict,
+            natural_key_column=scd_data.natural_key_column,
+            effective_timestamp_column=scd_data.effective_timestamp_column,
+            surrogate_key_column=scd_data.surrogate_key_column,
+            end_timestamp_column=scd_data.end_timestamp_column,
+            current_flag_column=scd_data.current_flag_column,
         )
 
     @staticmethod

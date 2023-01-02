@@ -1,6 +1,7 @@
 """
 Tests for ItemData routes
 """
+from http import HTTPStatus
 from unittest import mock
 
 import pytest
@@ -104,3 +105,50 @@ class TestItemDataApi(BaseDataApiTestSuite):
             if col_info["name"] == "item_id":
                 item_id_semantic_id = col_info["semantic_id"]
         assert item_id_semantic_id == str(item_id_semantic.id)
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        # save event data first so that it can be referenced in get_item_data_info
+        test_api_client, _ = test_api_client_persistent
+        payload = BaseDataApiTestSuite.load_payload(
+            "tests/fixtures/request_payloads/event_data.json"
+        )
+        response = test_api_client.post("/event_data", json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+        # test item data info
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        expected_info_response = {
+            "name": "sf_item_data",
+            "record_creation_date_column": None,
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "items_table",
+            },
+            "status": "DRAFT",
+            "entities": [],
+            "semantics": ["item_id"],
+            "column_count": 5,
+            "event_data_name": "sf_event_data",
+        }
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict.items() > expected_info_response.items(), response_dict
+        assert "created_at" in response_dict
+        assert response_dict["columns_info"] is None
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        verbose_response_dict = verbose_response.json()
+        assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
+        assert "created_at" in verbose_response_dict
+        assert verbose_response_dict["columns_info"] is not None

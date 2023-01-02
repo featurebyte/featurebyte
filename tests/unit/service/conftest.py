@@ -21,6 +21,7 @@ from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_data import ItemDataCreate
+from featurebyte.schema.scd_data import SCDDataCreate
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.dimension_data import DimensionDataService
@@ -33,6 +34,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.version import VersionService
 
@@ -94,6 +96,12 @@ def item_data_service_fixture(user, persistent):
 def dimension_data_service_fixture(user, persistent):
     """DimensionData service"""
     return DimensionDataService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="scd_data_service")
+def scd_data_service_fixture(user, persistent):
+    """SCDData service"""
+    return SCDDataService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -248,6 +256,20 @@ async def dimension_data_fixture(test_dir, feature_store, dimension_data_service
             data=DimensionDataCreate(**payload, user_id=user.id)
         )
         return item_data
+
+
+@pytest_asyncio.fixture(name="scd_data")
+async def scd_data_fixture(test_dir, feature_store, scd_data_service, user):
+    """SCDData model"""
+    _ = feature_store
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/scd_data.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        payload["tabular_source"]["table_details"]["table_name"] = "sf_scd_table"
+        scd_data = await scd_data_service.create_document(
+            data=SCDDataCreate(**payload, user_id=user.id)
+        )
+        return scd_data
 
 
 @pytest_asyncio.fixture(name="entity")

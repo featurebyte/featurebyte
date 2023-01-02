@@ -36,11 +36,7 @@ class EventDataController(
             document.event_id_column: event_id,
         }
 
-    async def get_info(
-        self,
-        document_id: ObjectId,
-        verbose: bool,
-    ) -> EventDataInfo:
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
         """
         Get document info given document ID
 
@@ -53,7 +49,7 @@ class EventDataController(
 
         Returns
         -------
-        InfoDocument
+        EventDataInfo
         """
         info_document = await self.info_service.get_event_data_info(
             document_id=document_id, verbose=verbose

@@ -298,6 +298,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
             "default_feature_job_setting": None,
             "status": "DRAFT",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "semantics": ["event_timestamp", "event_id"],
             "column_count": 9,
         }
         assert response.status_code == HTTPStatus.OK, response.text

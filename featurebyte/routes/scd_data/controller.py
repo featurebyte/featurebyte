@@ -5,9 +5,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from bson import ObjectId
+
 from featurebyte.enum import SemanticType
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.routes.common.base_data import BaseDataDocumentController
+from featurebyte.schema.info import SCDDataInfo
 from featurebyte.schema.scd_data import SCDDataList, SCDDataUpdate
 from featurebyte.service.scd_data import SCDDataService
 
@@ -37,3 +40,23 @@ class SCDDataController(BaseDataDocumentController[SCDDataModel, SCDDataService,
                 }
             )
         return column_semantic_map
+
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> SCDDataInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        SCDDataInfo
+        """
+        info_document = await self.info_service.get_scd_data_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document
