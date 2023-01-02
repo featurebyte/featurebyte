@@ -83,14 +83,14 @@ class DimensionTableData(BaseTableData):
 
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    dimension_data_id_column: StrictStr
+    dimension_id_column: StrictStr
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             name="temp",
             parameters={
                 "id": self.id,
-                "id_column": self.dimension_data_id_column,
+                "id_column": self.dimension_id_column,
                 "feature_store_details": feature_store_details,
                 **self._get_common_input_node_parameters(),
             },

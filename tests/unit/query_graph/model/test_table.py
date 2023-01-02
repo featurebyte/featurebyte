@@ -119,7 +119,7 @@ def dimension_table_data_fixture(tabular_source):
             ),
         ],
         tabular_source=tabular_source,
-        dimension_data_id_column="user_id",
+        dimension_id_column="user_id",
     )
 
 

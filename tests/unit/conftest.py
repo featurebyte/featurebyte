@@ -349,7 +349,7 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
     dimension_data = DimensionData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
-        dimension_data_id_column="col_int",
+        dimension_id_column="col_int",
         record_creation_date_column="created_at",
         _id=snowflake_dimension_data_id,
     )

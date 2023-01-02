@@ -65,7 +65,7 @@
             "semantic_id": null
         }
     ],
-    "dimension_data_id_column": "col_int",
+    "dimension_id_column": "col_int",
     "name": "sf_dimension_data",
     "record_creation_date_column": "created_at",
     "tabular_source": {

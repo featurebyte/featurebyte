@@ -260,7 +260,7 @@ def get_insert_tabular_data_helper_fixture(mongo_persistent):
                 table_details=TableDetails(table_name="test_table"),
             ).json_dict(),
             "columns_info": [ColumnInfo(name=col_name, dtype=DBVarType.INT).json_dict()],
-            "dimension_data_id_column": col_name,
+            "dimension_id_column": col_name,
             "version": {"name": "name_val", "suffix": None},
         }
         user_id = ObjectId()

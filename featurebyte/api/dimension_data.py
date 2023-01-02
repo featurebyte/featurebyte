@@ -35,7 +35,7 @@ class DimensionData(DimensionDataModel, DataApiObject):
         cls,
         tabular_source: DatabaseTable,
         name: str,
-        dimension_data_id_column: str,
+        dimension_id_column: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> DimensionData:
@@ -48,7 +48,7 @@ class DimensionData(DimensionDataModel, DataApiObject):
             DatabaseTable object constructed from FeatureStore
         name: str
             Event data name
-        dimension_data_id_column: str
+        dimension_id_column: str
             Dimension data ID column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
@@ -64,7 +64,7 @@ class DimensionData(DimensionDataModel, DataApiObject):
             name=name,
             record_creation_date_column=record_creation_date_column,
             _id=_id,
-            dimension_data_id_column=dimension_data_id_column,
+            dimension_id_column=dimension_id_column,
         )
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
@@ -88,6 +88,6 @@ class DimensionData(DimensionDataModel, DataApiObject):
                 "status": self.status,
                 "entities": self.entity_ids,
                 "tabular_source": self.tabular_source,
-                "dimension_data_id_column": self.dimension_data_id_column,
+                "dimension_id_column": self.dimension_id_column,
             }
         )

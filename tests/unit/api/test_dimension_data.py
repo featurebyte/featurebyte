@@ -108,7 +108,7 @@ def dimension_data_dict_fixture(snowflake_database_table):
                 "critical_data_info": None,
             },
         ],
-        "dimension_data_id_column": "col_int",
+        "dimension_id_column": "col_int",
         "record_creation_date_column": "created_at",
         "created_at": None,
         "updated_at": None,
@@ -124,7 +124,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     dimension_data = DimensionData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_dimension_data",
-        dimension_data_id_column="col_int",
+        dimension_id_column="col_int",
         record_creation_date_column="created_at",
     )
 
@@ -148,7 +148,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
         DimensionData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
-            dimension_data_id_column="col_int",
+            dimension_id_column="col_int",
             record_creation_date_column=345,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
@@ -163,7 +163,7 @@ def test_from_tabular_source__duplicated_record(saved_dimension_data, snowflake_
         DimensionData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name="sf_dimension_data",
-            dimension_data_id_column="col_int",
+            dimension_id_column="col_int",
             record_creation_date_column="created_at",
         )
     assert (
@@ -181,7 +181,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
             DimensionData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_dimension_data",
-                dimension_data_id_column="col_int",
+                dimension_id_column="col_int",
                 record_creation_date_column="created_at",
             )
 
@@ -190,7 +190,7 @@ def assert_info_helper(dimension_data_info):
     """
     Helper function to assert info from dimension data.
     """
-    assert dimension_data_info["dimension_data_id_column"] == "col_int"
+    assert dimension_data_info["dimension_id_column"] == "col_int"
     assert dimension_data_info["entities"] == []
     assert dimension_data_info["name"] == "sf_dimension_data"
     assert dimension_data_info["record_creation_date_column"] == "created_at"

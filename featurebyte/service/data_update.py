@@ -194,7 +194,7 @@ class DataUpdateService(BaseService):
             TableDataType.EVENT_DATA: ["event_id_column"],
             TableDataType.ITEM_DATA: ["item_id_column"],
             TableDataType.SCD_DATA: ["surrogate_key_column"],
-            TableDataType.DIMENSION_DATA: ["dimension_data_id_column"],
+            TableDataType.DIMENSION_DATA: ["dimension_id_column"],
         }
         primary_keys_cols = cast(List[str], primary_keys_cols_mapping.get(document.type, []))
         primary_keys = [getattr(document, key_col) for key_col in primary_keys_cols]

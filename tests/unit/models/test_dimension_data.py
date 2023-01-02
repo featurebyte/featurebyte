@@ -82,7 +82,7 @@ def get_base_expected_dimension_data_model(dimension_data_model, dimension_colum
                 "table_name": "table",
             },
         },
-        "dimension_data_id_column": "dimension_id",
+        "dimension_id_column": "dimension_id",
         "graph": {"nodes": [], "edges": []},
         "node_name": "",
     }
@@ -94,6 +94,11 @@ def test_dimension_data_model(dimension_data_model, expected_dimension_data_mode
     dimension_data_json = dimension_data_model.json(by_alias=True)
     dimension_data_loaded = DimensionDataModel.parse_raw(dimension_data_json)
     assert dimension_data_loaded == dimension_data_model
+
+    # DEV-556: check backward compatibility
+    dimension_data_dict = dimension_data_model.dict(by_alias=True)
+    dimension_data_dict["dimension_data_id_column"] = dimension_data_dict.pop("dimension_id_column")
+    assert dimension_data_model == DimensionDataModel(**dimension_data_dict)
 
 
 def assert_missing_column(exc_info: ExceptionInfo):
@@ -108,7 +113,7 @@ def assert_missing_column(exc_info: ExceptionInfo):
 def test_missing_dimension_data_id_column_errors(expected_dimension_data_model):
     """Test missing column validation on dimension data id column"""
     # Remove the "dimension_data_id_column" so that we can test the missing column validation
-    expected_dimension_data_model.pop("dimension_data_id_column")
+    expected_dimension_data_model.pop("dimension_id_column")
     with pytest.raises(ValidationError) as exc_info:
         DimensionDataModel.parse_obj(expected_dimension_data_model)
     assert_missing_column(exc_info)

@@ -38,7 +38,7 @@ class DimensionView(View):
 
     _series_class = DimensionViewColumn
 
-    dimension_data_id_column: str = Field(allow_mutation=False)
+    dimension_id_column: str = Field(allow_mutation=False)
 
     @classmethod
     @typechecked
@@ -58,7 +58,7 @@ class DimensionView(View):
         """
         return cls.from_data(
             dimension_data,
-            dimension_data_id_column=dimension_data.dimension_data_id_column,
+            dimension_id_column=dimension_data.dimension_id_column,
         )
 
     @property
@@ -70,9 +70,7 @@ class DimensionView(View):
         -------
         list[str]
         """
-        return super().protected_attributes + [
-            "dimension_data_id_column",
-        ]
+        return super().protected_attributes + ["dimension_id_column"]
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -84,11 +82,7 @@ class DimensionView(View):
         dict[str, Any]
         """
         params = super()._getitem_frame_params
-        params.update(
-            {
-                "dimension_data_id_column": self.dimension_data_id_column,
-            }
-        )
+        params.update({"dimension_id_column": self.dimension_id_column})
         return params
 
     def validate_join(self, other_view: View) -> None:
@@ -110,4 +104,4 @@ class DimensionView(View):
             raise JoinViewMismatchError
 
     def get_join_column(self) -> str:
-        return self.dimension_data_id_column
+        return self.dimension_id_column

@@ -26,7 +26,7 @@ class TestDimensionView(BaseViewTestSuite):
     bool_col = "col_boolean"
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
-        assert row_subset.dimension_data_id_column == view_under_test.dimension_data_id_column
+        assert row_subset.dimension_id_column == view_under_test.dimension_id_column
 
 
 def test_validate_join(snowflake_dimension_view, snowflake_scd_view):
