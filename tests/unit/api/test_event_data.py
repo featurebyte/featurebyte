@@ -303,15 +303,20 @@ def test_info(saved_event_data, cust_id_entity):
     assert verbose_info_dict["updated_at"] is not None, verbose_info_dict["updated_at"]
     assert "created_at" in verbose_info_dict, verbose_info_dict
     assert verbose_info_dict["columns_info"] == [
-        {"name": "col_int", "dtype": "INT", "entity": None},
-        {"name": "col_float", "dtype": "FLOAT", "entity": None},
-        {"name": "col_char", "dtype": "CHAR", "entity": None},
-        {"name": "col_text", "dtype": "VARCHAR", "entity": None},
-        {"name": "col_binary", "dtype": "BINARY", "entity": None},
-        {"name": "col_boolean", "dtype": "BOOL", "entity": None},
-        {"name": "event_timestamp", "dtype": "TIMESTAMP", "entity": None},
-        {"name": "created_at", "dtype": "TIMESTAMP", "entity": None},
-        {"name": "cust_id", "dtype": "INT", "entity": "customer"},
+        {"name": "col_int", "dtype": "INT", "entity": None, "semantic": "event_id"},
+        {"name": "col_float", "dtype": "FLOAT", "entity": None, "semantic": None},
+        {"name": "col_char", "dtype": "CHAR", "entity": None, "semantic": None},
+        {"name": "col_text", "dtype": "VARCHAR", "entity": None, "semantic": None},
+        {"name": "col_binary", "dtype": "BINARY", "entity": None, "semantic": None},
+        {"name": "col_boolean", "dtype": "BOOL", "entity": None, "semantic": None},
+        {
+            "name": "event_timestamp",
+            "dtype": "TIMESTAMP",
+            "entity": None,
+            "semantic": "event_timestamp",
+        },
+        {"name": "created_at", "dtype": "TIMESTAMP", "entity": None, "semantic": None},
+        {"name": "cust_id", "dtype": "INT", "entity": "customer", "semantic": None},
     ]
 
 

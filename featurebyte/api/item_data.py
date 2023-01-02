@@ -109,29 +109,3 @@ class ItemData(ItemDataModel, DataApiObject):
                 return values
             values["default_feature_job_setting"] = default_feature_job_setting
         return values
-
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
-        """
-        Provide basic info for item data.
-
-        Parameters
-        ----------
-        verbose: bool
-            This is a no-op for now. This will be used when we add more functionality to this funciton.
-
-        Returns
-        -------
-        Dict[str, Any]
-        """
-        return PrettyDict(
-            {
-                "name": self.name,
-                "record_creation_date_column": self.record_creation_date_column,
-                "updated_at": self.updated_at,
-                "status": self.status,
-                "tabular_source": self.tabular_source,
-                "event_id_column": self.event_id_column,
-                "item_id_column": self.item_id_column,
-                "entities": self.entity_ids,
-            }
-        )

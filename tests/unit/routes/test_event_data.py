@@ -298,7 +298,6 @@ class TestEventDataApi(BaseDataApiTestSuite):
             "default_feature_job_setting": None,
             "status": "DRAFT",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "semantics": ["event_timestamp", "event_id"],
             "column_count": 9,
         }
         assert response.status_code == HTTPStatus.OK, response.text
@@ -306,6 +305,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
         assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
         assert response_dict["columns_info"] is None
+        assert set(response_dict["semantics"]) == {"event_id", "event_timestamp"}
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
