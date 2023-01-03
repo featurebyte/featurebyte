@@ -36,8 +36,18 @@ async def create_context(request: Request, data: ContextCreate) -> ContextModel:
     return context
 
 
+@router.get("/{context_id}", response_model=ContextModel)
+async def get_context(request: Request, context_id: PydanticObjectId) -> ContextModel:
+    """
+    Get Context
+    """
+    controller = request.state.app_container.context_controller
+    context: ContextModel = await controller.get(document_id=context_id)
+    return context
+
+
 @router.get("", response_model=ContextList)
-async def list_context(
+async def list_contexts(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
@@ -69,7 +79,7 @@ async def update_context(
     Update Context
     """
     controller = request.state.app_container.context_controller
-    context: ContextModel = await controller.update_data(document_id=context_id, data=data)
+    context: ContextModel = await controller.update_context(context_id=context_id, data=data)
     return context
 
 
