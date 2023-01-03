@@ -193,7 +193,7 @@ class DimensionDataInfo(DataInfo):
     DimensionData info schema
     """
 
-    dimension_data_id_column: str
+    dimension_id_column: str
 
 
 class SCDDataInfo(DataInfo):

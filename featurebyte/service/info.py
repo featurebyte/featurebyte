@@ -273,7 +273,7 @@ class InfoService(BaseService):
         data_dict = await self._get_data_info(data_document=dimension_data, verbose=verbose)
         return DimensionDataInfo(
             **data_dict,
-            dimension_data_id_column=dimension_data.dimension_data_id_column,
+            dimension_id_column=dimension_data.dimension_id_column,
         )
 
     async def get_scd_data_info(self, document_id: ObjectId, verbose: bool) -> SCDDataInfo:

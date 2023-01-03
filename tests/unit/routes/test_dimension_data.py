@@ -132,7 +132,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         expected_info_response = {
             "name": "sf_dimension_data",
             "record_creation_date_column": "created_at",
-            "dimension_data_id_column": "col_int",
+            "dimension_id_column": "col_int",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",

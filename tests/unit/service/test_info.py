@@ -161,7 +161,7 @@ async def test_get_dimension_data_info(info_service, dimension_data):
     expected_info = DimensionDataInfo(
         name="sf_dimension_data",
         status="DRAFT",
-        dimension_data_id_column="col_int",
+        dimension_id_column="col_int",
         record_creation_date_column="created_at",
         table_details=TableDetails(
             database_name="sf_database",
