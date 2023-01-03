@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import pandas as pd
 from sqlglot.expressions import Select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import SourceType, StrEnum
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -24,6 +24,18 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
+
+
+class AggregationType(StrEnum):
+    """
+    Enum for different aggregation types. Will be used as the dictionary key in a container for
+    aggregators held by FeatureExecutionPlan.
+    """
+
+    LATEST = "latest"
+    LOOKUP = "lookup"
+    WINDOW = "window"
+    ITEM = "item"
 
 
 @dataclass  # type: ignore[misc]
@@ -44,7 +56,8 @@ class AggregationSpec(ABC):
     @property
     @abstractmethod
     def agg_result_name(self) -> str:
-        """Column name of the aggregated result
+        """
+        Column name of the aggregated result
 
         Returns
         -------
@@ -52,16 +65,27 @@ class AggregationSpec(ABC):
             Column names of the aggregated result
         """
 
+    @property
+    @abstractmethod
+    def aggregation_type(self) -> AggregationType:
+        """
+        Aggregation type of this AggregationSpec
+
+        Returns
+        -------
+        AggregationType
+        """
+
 
 @dataclass
-class WindowAggregationSpec(AggregationSpec):
+class TileBasedAggregationSpec(AggregationSpec):
     """
     Window aggregation specification
     """
 
     # pylint: disable=too-many-instance-attributes
 
-    window: int
+    window: int | None
     frequency: int
     blind_spot: int
     time_modulo_frequency: int
@@ -72,6 +96,7 @@ class WindowAggregationSpec(AggregationSpec):
     merge_expr: str
     feature_name: str
     is_order_dependent: bool
+    tile_value_columns: list[str]
 
     @property
     def agg_result_name(self) -> str:
@@ -82,14 +107,22 @@ class WindowAggregationSpec(AggregationSpec):
         str
             Column names of the aggregated result
         """
+        if self.window is None:
+            return f"agg_{self.aggregation_id}"
         return f"agg_w{self.window}_{self.aggregation_id}"
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        if self.window is None:
+            return AggregationType.LATEST
+        return AggregationType.WINDOW
 
     @classmethod
     def from_groupby_query_node(
         cls,
         groupby_node: Node,
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> list[WindowAggregationSpec]:
+    ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
         Parameters
@@ -101,7 +134,7 @@ class WindowAggregationSpec(AggregationSpec):
 
         Returns
         -------
-        list[WindowAggregationSpec]
+        list[TileBasedAggregationSpec]
             List of AggregationSpec
         """
         assert isinstance(groupby_node, GroupbyNode)
@@ -114,9 +147,14 @@ class WindowAggregationSpec(AggregationSpec):
         serving_names = params["serving_names"]
         aggregation_specs = []
         aggregator = get_aggregator(params["agg_func"])
+        tile_value_columns = [
+            spec.tile_column_name
+            for spec in aggregator.tile(params["parent"], params["aggregation_id"])
+        ]
         for window, feature_name in zip(params["windows"], params["names"]):
             params = groupby_node.parameters.dict()
-            window = int(pd.Timedelta(window).total_seconds())
+            if window is not None:
+                window = int(pd.Timedelta(window).total_seconds())
             agg_spec = cls(
                 window=window,
                 frequency=params["frequency"],
@@ -131,6 +169,7 @@ class WindowAggregationSpec(AggregationSpec):
                 merge_expr=aggregator.merge(aggregation_id),
                 feature_name=feature_name,
                 is_order_dependent=aggregator.is_order_dependent,
+                tile_value_columns=tile_value_columns,
             )
             aggregation_specs.append(agg_spec)
 
@@ -161,6 +200,10 @@ class ItemAggregationSpec(AggregationSpec):
         # that uniquely identifies the aggregation, instead of directly using the feature_name.
         # Should be fixed when aggregation_id is added to the parameters of ItemGroupby query node.
         return self.feature_name
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.ITEM
 
     @classmethod
     def from_item_groupby_query_node(
@@ -214,6 +257,10 @@ class LookupSpec(AggregationSpec):
     def agg_result_name(self) -> str:
         name = f"{self.input_column_name}_{self.source_hash}"
         return name
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.LOOKUP
 
     @property
     def source_hash(self) -> str:

@@ -12,7 +12,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     FROM (
       SELECT
         TO_TIMESTAMP(
-          DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMP)) + tile_index * 3600
+          DATE_PART(EPOCH_SECOND, CAST('1970-01-01 00:15:00' AS TIMESTAMP)) + tile_index * 3600
         ) AS __FB_TILE_START_DATE_COLUMN,
         "cust_id",
         SUM("a") AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
@@ -22,7 +22,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           *,
           FLOOR(
             (
-              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMP))
+              DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('1970-01-01 00:15:00' AS TIMESTAMP))
             ) / 3600
           ) AS tile_index
         FROM (
@@ -40,7 +40,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             FROM "db"."public"."event_table"
           )
           WHERE
-            "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMP)
+            "ts" >= CAST('1970-01-01 00:15:00' AS TIMESTAMP)
             AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
         )
       )
@@ -61,7 +61,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       FROM (
         SELECT
           TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMP)) + tile_index * 3600
+            DATE_PART(EPOCH_SECOND, CAST('1970-01-01 00:15:00' AS TIMESTAMP)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS "__FB_ROW_NUMBER",
@@ -71,7 +71,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-01-20 09:15:00' AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('1970-01-01 00:15:00' AS TIMESTAMP))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -86,7 +86,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
               FROM "db"."public"."event_table"
             )
             WHERE
-              "ts" >= CAST('2022-01-20 09:15:00' AS TIMESTAMP)
+              "ts" >= CAST('1970-01-01 00:15:00' AS TIMESTAMP)
               AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
           )
         )
@@ -157,6 +157,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
+    REQ."agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338",
     REQ."membership_status_a18d6f89f8538bdb" AS "membership_status_a18d6f89f8538bdb",
     "T0"."cust_value_1_9b8bee3acf7d5bc7" AS "cust_value_1_9b8bee3acf7d5bc7",
     "T0"."cust_value_2_9b8bee3acf7d5bc7" AS "cust_value_2_9b8bee3acf7d5bc7",
@@ -168,40 +169,98 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
+      L."agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338",
       R."membership_status" AS "membership_status_a18d6f89f8538bdb"
     FROM (
       SELECT
         "__FB_KEY_COL",
         "__FB_LAST_TS",
         "POINT_IN_TIME",
-        "CUSTOMER_ID"
+        "CUSTOMER_ID",
+        "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
       FROM (
         SELECT
           "__FB_KEY_COL",
-          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
+          "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338",
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
             "POINT_IN_TIME" AS "__FB_TS_COL",
             "CUSTOMER_ID" AS "__FB_KEY_COL",
             NULL AS "__FB_EFFECTIVE_TS_COL",
+            2 AS "__FB_TS_TIE_BREAKER_COL",
             "POINT_IN_TIME" AS "POINT_IN_TIME",
-            "CUSTOMER_ID" AS "CUSTOMER_ID"
+            "CUSTOMER_ID" AS "CUSTOMER_ID",
+            "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
           FROM (
             SELECT
-              REQ."POINT_IN_TIME",
-              REQ."CUSTOMER_ID"
-            FROM REQUEST_TABLE AS REQ
+              REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+              REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
+              REQ."agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
+            FROM (
+              SELECT
+                L."POINT_IN_TIME" AS "POINT_IN_TIME",
+                L."CUSTOMER_ID" AS "CUSTOMER_ID",
+                R.value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338 AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
+              FROM (
+                SELECT
+                  "__FB_KEY_COL",
+                  "__FB_LAST_TS",
+                  "POINT_IN_TIME",
+                  "CUSTOMER_ID"
+                FROM (
+                  SELECT
+                    "__FB_KEY_COL",
+                    LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+                    "POINT_IN_TIME",
+                    "CUSTOMER_ID",
+                    "__FB_EFFECTIVE_TS_COL"
+                  FROM (
+                    SELECT
+                      FLOOR((
+                        DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+                      ) / 3600) AS "__FB_TS_COL",
+                      "CUSTOMER_ID" AS "__FB_KEY_COL",
+                      NULL AS "__FB_EFFECTIVE_TS_COL",
+                      0 AS "__FB_TS_TIE_BREAKER_COL",
+                      "POINT_IN_TIME" AS "POINT_IN_TIME",
+                      "CUSTOMER_ID" AS "CUSTOMER_ID"
+                    FROM (
+                      SELECT
+                        REQ."POINT_IN_TIME",
+                        REQ."CUSTOMER_ID"
+                      FROM REQUEST_TABLE AS REQ
+                    )
+                    UNION ALL
+                    SELECT
+                      "INDEX" AS "__FB_TS_COL",
+                      "cust_id" AS "__FB_KEY_COL",
+                      "INDEX" AS "__FB_EFFECTIVE_TS_COL",
+                      1 AS "__FB_TS_TIE_BREAKER_COL",
+                      NULL AS "POINT_IN_TIME",
+                      NULL AS "CUSTOMER_ID"
+                    FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+                  )
+                )
+                WHERE
+                  "__FB_EFFECTIVE_TS_COL" IS NULL
+              ) AS L
+              LEFT JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS R
+                ON L."__FB_LAST_TS" = R."INDEX" AND L."__FB_KEY_COL" = R."cust_id"
+            ) AS REQ
           )
           UNION ALL
           SELECT
             "event_timestamp" AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL",
             "event_timestamp" AS "__FB_EFFECTIVE_TS_COL",
+            1 AS "__FB_TS_TIE_BREAKER_COL",
             NULL AS "POINT_IN_TIME",
-            NULL AS "CUSTOMER_ID"
+            NULL AS "CUSTOMER_ID",
+            NULL AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
           FROM (
             SELECT
               "effective_ts" AS "effective_ts",
@@ -332,5 +391,6 @@ SELECT
     "cust_value_1_9b8bee3acf7d5bc7" + "cust_value_2_9b8bee3acf7d5bc7"
   ) AS "MY FEATURE",
   "membership_status_a18d6f89f8538bdb" AS "Current Membership Status",
-  "agg_w7776000_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "a_latest_value_past_90d"
+  "agg_w7776000_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "a_latest_value_past_90d",
+  "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "a_latest_value"
 FROM _FB_AGGREGATED AS AGG

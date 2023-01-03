@@ -278,7 +278,7 @@ def test_scd_join(global_graph, scd_join_node):
           FROM (
             SELECT
               "__FB_KEY_COL",
-              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
+              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
               "event_timestamp",
               "cust_id",
               "event_column_1_out",
@@ -289,6 +289,7 @@ def test_scd_join(global_graph, scd_join_node):
                 "event_timestamp" AS "__FB_TS_COL",
                 "cust_id" AS "__FB_KEY_COL",
                 NULL AS "__FB_EFFECTIVE_TS_COL",
+                2 AS "__FB_TS_TIE_BREAKER_COL",
                 "event_timestamp" AS "event_timestamp",
                 "cust_id" AS "cust_id",
                 "event_column_1" AS "event_column_1_out",
@@ -306,6 +307,7 @@ def test_scd_join(global_graph, scd_join_node):
                 "effective_timestamp" AS "__FB_TS_COL",
                 "cust_id" AS "__FB_KEY_COL",
                 "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
+                1 AS "__FB_TS_TIE_BREAKER_COL",
                 NULL AS "event_timestamp",
                 NULL AS "cust_id",
                 NULL AS "event_column_1_out",

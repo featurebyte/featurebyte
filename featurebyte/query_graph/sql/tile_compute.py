@@ -3,7 +3,7 @@ On-demand tile computation for feature preview
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Optional, cast
 
 import pandas as pd
 from sqlglot import expressions
@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.query_graph.sql.tile_util import update_maximum_window_size_dict
 
 
 class OnDemandTileComputePlan:
@@ -36,7 +37,7 @@ class OnDemandTileComputePlan:
     def __init__(self, point_in_time: str, source_type: SourceType):
         self.point_in_time = point_in_time
         self.processed_agg_ids: set[str] = set()
-        self.max_window_size_by_tile_id: dict[str, int] = {}
+        self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.tile_infos: list[TileGenSql] = []
         self.source_type = source_type
 
@@ -141,7 +142,7 @@ class OnDemandTileComputePlan:
         return tile_sqls
 
     def update_max_window_size(self, tile_info: TileGenSql) -> None:
-        """Update the maximum feature window size observed for each aggregation_id
+        """Update the maximum feature window size observed for each tile table
 
         Parameters
         ----------
@@ -149,15 +150,19 @@ class OnDemandTileComputePlan:
             Tile table information
         """
         tile_id = tile_info.tile_table_id
-        max_window = max(int(pd.Timedelta(x).total_seconds()) for x in tile_info.windows)
-        assert max_window % tile_info.frequency == 0
-        if (
-            tile_id not in self.max_window_size_by_tile_id
-            or max_window > self.max_window_size_by_tile_id[tile_id]
-        ):
-            self.max_window_size_by_tile_id[tile_id] = max_window
+        for window in tile_info.windows:
+            if window is not None:
+                window_size = int(pd.Timedelta(window).total_seconds())
+                assert window_size % tile_info.frequency == 0
+            else:
+                window_size = None
+            update_maximum_window_size_dict(
+                max_window_size_dict=self.max_window_size_by_tile_id,
+                key=tile_id,
+                window_size=window_size,
+            )
 
-    def get_max_window_size(self, tile_id: str) -> int:
+    def get_max_window_size(self, tile_id: str) -> Optional[int]:
         """Get the maximum feature window size for a given tile table id
 
         Parameters
@@ -167,7 +172,7 @@ class OnDemandTileComputePlan:
 
         Returns
         -------
-        int
+        Optional[int]
         """
         return self.max_window_size_by_tile_id[tile_id]
 
@@ -244,7 +249,7 @@ def compute_start_end_date_from_point_in_time(
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
-    num_tiles: int,
+    num_tiles: Optional[int],
 ) -> tuple[pd.Timestamp, pd.Timestamp]:
     """Compute start and end dates to fill in the placeholders in tile SQL template
 
@@ -273,9 +278,15 @@ def compute_start_end_date_from_point_in_time(
 
     # Compute start and end dates based on number of tiles required
     end_date_epoch_seconds = last_job_time_epoch_seconds - blind_spot
-    start_date_epoch_seconds = end_date_epoch_seconds - num_tiles * frequency
-    start_date = epoch_seconds_to_timestamp(start_date_epoch_seconds)
     end_date = epoch_seconds_to_timestamp(end_date_epoch_seconds)
+    if num_tiles is not None:
+        start_date_epoch_seconds = end_date_epoch_seconds - num_tiles * frequency
+        start_date = epoch_seconds_to_timestamp(start_date_epoch_seconds)
+    else:
+        # In this case, we need a timestamp that is earlier than all possible event timestamps and
+        # aligns with the tile boundary. This computes the earliest possible timestamp at around the
+        # beginning of epoch.
+        start_date = epoch_seconds_to_timestamp(time_modulo_frequency - blind_spot)
 
     return start_date, end_date
 
@@ -286,7 +297,7 @@ def get_tile_sql_from_point_in_time(
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
-    window: int,
+    window: Optional[int],
 ) -> Select:
     """Fill in start date and end date placeholders for template tile SQL
 
@@ -302,14 +313,17 @@ def get_tile_sql_from_point_in_time(
         Time modulo frequency in feature job setting
     blind_spot : int
         Blind spot in feature job setting
-    window : int
-        Window size
+    window : Optional[int]
+        Window size. If None, it means the feature requires unbounded window.
 
     Returns
     -------
     Select
     """
-    num_tiles = int(window // frequency)
+    if window:
+        num_tiles = int(window // frequency)
+    else:
+        num_tiles = None
     start_date, end_date = compute_start_end_date_from_point_in_time(
         point_in_time,
         frequency=frequency,

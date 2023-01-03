@@ -42,9 +42,9 @@ class TileGenSql:
         Job frequency. Needed for job scheduling.
     blind_spot : int
         Blind spot. Needed for job scheduling.
-    windows : list[int]
+    windows : list[str | None]
         List of window sizes. Not needed for job scheduling, but can be used for other purposes such
-        as determining the reuqired tiles to build on demand during preview.
+        as determining the required tiles to build on demand during preview.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -59,7 +59,7 @@ class TileGenSql:
     time_modulo_frequency: int
     frequency: int
     blind_spot: int
-    windows: list[str]
+    windows: list[str | None]
 
     @property
     def sql(self) -> str:

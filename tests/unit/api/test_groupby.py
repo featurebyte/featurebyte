@@ -291,8 +291,8 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
 @pytest.mark.parametrize(
     "missing_param, expected_error",
     [
-        ("windows", "windows is required and should be a list; got None"),
-        ("feature_names", "feature_names is required and should be a list; got None"),
+        ("windows", "windows is required and should be a non-empty list; got None"),
+        ("feature_names", "feature_names is required and should be a non-empty list; got None"),
         ("value_column", "value_column is required"),
         ("method", "method is required"),
     ],

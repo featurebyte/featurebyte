@@ -3,13 +3,13 @@ Utilities for SCD join / lookup
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
 from dataclasses import dataclass
 
 import pandas as pd
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -21,6 +21,12 @@ EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
 KEY_COL = "__FB_KEY_COL"
 LAST_TS = "__FB_LAST_TS"
 
+# Special column name and values used to handle ties in timestamps between main table and SCD table
+TS_TIE_BREAKER_COL = "__FB_TS_TIE_BREAKER_COL"
+TS_TIE_BREAKER_VALUE_SCD_TABLE = 1
+TS_TIE_BREAKER_VALUE_ALLOW_EXACT_MATCH = 2
+TS_TIE_BREAKER_VALUE_DISALLOW_EXACT_MATCH = 0
+
 
 @dataclass
 class Table:
@@ -28,11 +34,43 @@ class Table:
     Representation of a table to be used in SCD join
     """
 
-    expr: Select
-    timestamp_column: str
+    expr: str | Select
+    timestamp_column: str | Expression
     join_key: str
     input_columns: list[str]
     output_columns: list[str]
+
+    @property
+    def timestamp_column_expr(self) -> Expression:
+        """
+        Returns an expression for the timestamp column (return as is if it's already an expression,
+        else return the quoted column name)
+
+        Returns
+        -------
+        Expression
+        """
+        if isinstance(self.timestamp_column, str):
+            return quoted_identifier(self.timestamp_column)
+        return self.timestamp_column
+
+    def as_subquery(self, alias: Optional[str] = None) -> Expression:
+        """
+        Returns an expression that can be selected from (converted to subquery if required)
+
+        Parameters
+        ----------
+        alias: Optional[str]
+            Table alias, if specified.
+
+        Returns
+        -------
+        Expression
+        """
+        if isinstance(self.expr, str):
+            return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
+        assert isinstance(self.expr, Select)
+        return cast(Expression, self.expr.subquery(alias=alias))
 
 
 def get_scd_join_expr(
@@ -42,6 +80,8 @@ def get_scd_join_expr(
     adapter: BaseAdapter,
     select_expr: Optional[Select] = None,
     offset: Optional[str] = None,
+    allow_exact_match: bool = True,
+    quote_right_input_columns: bool = True,
 ) -> Select:
     """
     Construct a query to perform SCD join
@@ -65,6 +105,11 @@ def get_scd_join_expr(
         Partially constructed select expression, if any
     offset: Optional[str]
         Offset to apply when performing SCD join
+    allow_exact_match: bool
+        Whether to allow exact matching effective timestamps to be joined
+    quote_right_input_columns: bool
+        Whether to quote right table's input columns. Temporary and should be removed after
+        https://featurebyte.atlassian.net/browse/DEV-935
 
     Returns
     -------
@@ -82,7 +127,11 @@ def get_scd_join_expr(
             ],
             *[
                 alias_(
-                    get_qualified_column_identifier(input_col, "R"), alias=output_col, quoted=True
+                    get_qualified_column_identifier(
+                        input_col, "R", quote_column=quote_right_input_columns
+                    ),
+                    alias=output_col,
+                    quoted=True,
                 )
                 for input_col, output_col in zip(
                     right_table.input_columns, right_table.output_columns
@@ -91,11 +140,16 @@ def get_scd_join_expr(
         )
 
     left_view_with_last_ts_expr = augment_table_with_effective_timestamp(
-        left_table=left_table, right_table=right_table, adapter=adapter, offset=offset
+        left_table=left_table,
+        right_table=right_table,
+        adapter=adapter,
+        offset=offset,
+        allow_exact_match=allow_exact_match,
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
-    right_subquery = right_table.expr.subquery(alias="R")
+    right_subquery = right_table.as_subquery(alias="R")
+    assert isinstance(right_table.timestamp_column, str)
     join_conditions = [
         expressions.EQ(
             this=get_qualified_column_identifier(LAST_TS, "L"),
@@ -120,6 +174,7 @@ def augment_table_with_effective_timestamp(
     right_table: Table,
     adapter: BaseAdapter,
     offset: Optional[str],
+    allow_exact_match: bool = True,
 ) -> Select:
     """
     This constructs a query that calculates the corresponding SCD effective date for each row in the
@@ -171,6 +226,8 @@ def augment_table_with_effective_timestamp(
         Instance of BaseAdapter for engine specific sql generation
     offset: Optional[str]
         Offset to apply when performing SCD join
+    allow_exact_match: bool
+        Whether to allow exact matching effective timestamps to be joined
 
     Returns
     -------
@@ -181,17 +238,26 @@ def augment_table_with_effective_timestamp(
         offset_seconds = pd.Timedelta(offset).total_seconds()
         left_ts_col = adapter.dateadd_microsecond(
             make_literal_value(offset_seconds * 1e6 * -1),
-            quoted_identifier(left_table.timestamp_column),
+            left_table.timestamp_column_expr,
         )
     else:
-        left_ts_col = quoted_identifier(left_table.timestamp_column)
+        left_ts_col = left_table.timestamp_column_expr
 
-    # Left table. Set up three special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL
+    # Left table. Set up special columns: TS_COL, KEY_COL, EFFECTIVE_TS_COL and TS_TIE_BREAKER_COL
     left_view_with_ts_and_key = select(
         alias_(left_ts_col, alias=TS_COL, quoted=True),
         alias_(quoted_identifier(left_table.join_key), alias=KEY_COL, quoted=True),
         alias_(expressions.NULL, alias=EFFECTIVE_TS_COL, quoted=True),
-    ).from_(left_table.expr.subquery())
+        alias_(
+            make_literal_value(
+                TS_TIE_BREAKER_VALUE_ALLOW_EXACT_MATCH
+                if allow_exact_match
+                else TS_TIE_BREAKER_VALUE_DISALLOW_EXACT_MATCH
+            ),
+            alias=TS_TIE_BREAKER_COL,
+            quoted=True,
+        ),
+    ).from_(left_table.as_subquery())
 
     # Include all columns specified for the left table
     for input_col, output_col in zip(left_table.input_columns, left_table.output_columns):
@@ -199,17 +265,22 @@ def augment_table_with_effective_timestamp(
             alias_(quoted_identifier(input_col), alias=output_col, quoted=True)
         )
 
-    # Right table. Set up the same special columns: TS_COL, KEY_COL and EFFECTIVE_TS_COL. The
-    # ordering of the columns in the SELECT statement matters (must match the left table's).
+    # Right table. Set up the same special columns. The ordering of the columns in the SELECT
+    # statement matters (must match the left table's).
     right_ts_and_key = select(
-        alias_(quoted_identifier(right_table.timestamp_column), alias=TS_COL, quoted=True),
+        alias_(right_table.timestamp_column_expr, alias=TS_COL, quoted=True),
         alias_(quoted_identifier(right_table.join_key), alias=KEY_COL, quoted=True),
         alias_(
-            quoted_identifier(right_table.timestamp_column),
+            right_table.timestamp_column_expr,
             alias=EFFECTIVE_TS_COL,
             quoted=True,
         ),
-    ).from_(right_table.expr.subquery())
+        alias_(
+            make_literal_value(TS_TIE_BREAKER_VALUE_SCD_TABLE),
+            alias=TS_TIE_BREAKER_COL,
+            quoted=True,
+        ),
+    ).from_(right_table.as_subquery())
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
@@ -224,17 +295,16 @@ def augment_table_with_effective_timestamp(
         distinct=False,
     )
 
-    # Sorting additionally by EFFECTIVE_TS_COL allows exact matching when there are ties between
-    # left timestamp and right timestamp.
+    # Sorting additionally by TS_TIE_BREAKER_COL to respect the specified exact matching behaviour.
     #
-    # The default behaviour of this sort is NULL LAST, so extra rows from the left table (which
-    # have NULL as the EFFECTIVE_TS_COL) come after SCD rows in the right table when there are
-    # ties between dates. This way, LAG yields the exact matching date, instead of a previous
-    # effective date.
+    # When allow_exact_match=True and TS_COL ties, after the sorting in LAG, rows from the left
+    # table will come after SCD rows in the right table since left rows have a larger value for
+    # TS_TILE_BREAKER_VALUE (2) than right rows (always 1). This way, LAG yields the exact matching
+    # date, instead of a previous effective date. Vice versa for allow_exact_match=False.
     order = expressions.Order(
         expressions=[
             expressions.Ordered(this=quoted_identifier(TS_COL)),
-            expressions.Ordered(this=quoted_identifier(EFFECTIVE_TS_COL)),
+            expressions.Ordered(this=quoted_identifier(TS_TIE_BREAKER_COL)),
         ]
     )
     matched_effective_timestamp_expr = expressions.Window(

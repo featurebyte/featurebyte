@@ -395,7 +395,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         parent: Optional[InColumnStr]
         agg_func: AggFunc
         value_by: Optional[InColumnStr]
-        windows: List[str]
+        windows: List[Optional[str]]
         timestamp: InColumnStr
         blind_spot: int
         time_modulo_frequency: int

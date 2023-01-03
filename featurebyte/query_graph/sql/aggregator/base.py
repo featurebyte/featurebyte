@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_
+from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
@@ -176,6 +176,33 @@ class Aggregator(ABC):
             on=expressions.and_(*join_conditions),
         ).select(*agg_result_name_aliases)
         return updated_table_expr
+
+    @staticmethod
+    def _wrap_in_nested_query(table_expr: Select, columns: list[str]) -> Select:
+        """
+        Wrap table_expr in a nested query with a REQ alias
+
+        This is so that subsequent joins using other aggregators can work. To be called by
+        aggregators that perform aggregation using nested queries instead of using left joins.
+
+        Parameters
+        ----------
+        table_expr: Select
+            The table expression to be wrapped
+        columns: list[str]
+            Column names in the table
+
+        Returns
+        -------
+        Select
+        """
+        wrapped_table_expr = select(
+            *[
+                alias_(get_qualified_column_identifier(col, "REQ"), col, quoted=True)
+                for col in columns
+            ]
+        ).from_(table_expr.subquery(alias="REQ"))
+        return wrapped_table_expr
 
     @abstractmethod
     def get_common_table_expressions(

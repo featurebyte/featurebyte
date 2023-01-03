@@ -82,6 +82,35 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
     assert expr.sql(pretty=True) == expected_sql
 
 
+def test_construct_universe_sql__unbounded_latest(
+    global_graph, latest_value_without_window_feature_node
+):
+    """
+    Test constructing universe sql for groupby with category
+    """
+    plan = OnlineStoreUniversePlan(
+        global_graph,
+        latest_value_without_window_feature_node,
+        get_sql_adapter(SourceType.SNOWFLAKE),
+    )
+    expr, _ = plan.construct_online_store_universe()
+    expected_sql = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
+          "cust_id" AS "CUSTOMER_ID"
+        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+        WHERE
+          INDEX < FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          )
+        """
+    ).strip()
+    assert expr.sql(pretty=True) == expected_sql
+
+
 def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures):
     """
     Test constructing feature sql for online store

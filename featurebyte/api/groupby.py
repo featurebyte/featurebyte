@@ -194,7 +194,7 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str] = None,
         method: Optional[str] = None,
-        windows: Optional[List[str]] = None,
+        windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
@@ -209,8 +209,9 @@ class WindowAggregator(BaseAggregator):
             Column to be aggregated
         method: str
             Aggregation method
-        windows: List[str]
-            List of aggregation window sizes
+        windows: List[str | None]
+            List of aggregation window sizes. Use None to indicated unbounded window size (only
+            applicable to "latest" method)
         feature_names: List[str]
             Output feature names
         timestamp_column: Optional[str]
@@ -271,17 +272,19 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: Optional[str],
-        windows: Optional[list[str]],
+        windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
     ) -> None:
 
         self._validate_method_and_value_column(method=method, value_column=value_column)
 
-        if not isinstance(windows, list):
-            raise ValueError(f"windows is required and should be a list; got {windows}")
+        if not isinstance(windows, list) or len(windows) == 0:
+            raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
 
         if not isinstance(feature_names, list):
-            raise ValueError(f"feature_names is required and should be a list; got {feature_names}")
+            raise ValueError(
+                f"feature_names is required and should be a non-empty list; got {feature_names}"
+            )
 
         if len(windows) != len(feature_names):
             raise ValueError(
@@ -291,11 +294,24 @@ class WindowAggregator(BaseAggregator):
         if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
             raise ValueError("Window sizes or feature names contains duplicated value(s).")
 
+        number_of_unbounded_windows = len([w for w in windows if w is None])
+
+        if number_of_unbounded_windows > 0:
+
+            if method != AggFunc.LATEST:
+                raise ValueError('Unbounded window is only supported for the "latest" method')
+
+            if self.groupby.category is not None:
+                raise ValueError("category is not supported for aggregation with unbounded window")
+
+            if len(self.groupby.keys) > 1:
+                raise NotImplementedError("Composite keys not yet supported")
+
     def _prepare_node_parameters(
         self,
         value_column: Optional[str],
         method: Optional[str],
-        windows: Optional[list[str]],
+        windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
         value_by_column: Optional[str] = None,
@@ -471,7 +487,7 @@ class GroupBy:
         self,
         value_column: Optional[str] = None,
         method: Optional[str] = None,
-        windows: Optional[List[str]] = None,
+        windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
@@ -489,7 +505,8 @@ class GroupBy:
         method: str
             Aggregation method
         windows: List[str]
-            List of aggregation window sizes
+            List of aggregation window sizes. Use None to indicated unbounded window size (only
+            applicable to "latest" method)
         feature_names: List[str]
             Output feature names
         timestamp_column: Optional[str]

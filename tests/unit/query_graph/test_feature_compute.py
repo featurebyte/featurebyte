@@ -17,14 +17,14 @@ from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
     LookupSpec,
-    WindowAggregationSpec,
+    TileBasedAggregationSpec,
 )
 
 
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
-    agg_spec = WindowAggregationSpec(
+    agg_spec = TileBasedAggregationSpec(
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -38,6 +38,7 @@ def agg_spec_template_fixture():
         merge_expr="SUM(value)",
         feature_name="Amount (1d sum)",
         is_order_dependent=False,
+        tile_value_columns=["value"],
     )
     return agg_spec
 
@@ -217,12 +218,10 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
     )
     plan = planner.generate_plan([groupby_node])
     assert list(
-        plan.aggregators[
-            WindowAggregationSpec
-        ].window_aggregation_spec_set.get_grouped_aggregation_specs()
+        plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
     ) == [
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -239,10 +238,14 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 ),
                 feature_name="a_2h_average",
                 is_order_dependent=False,
+                tile_value_columns=[
+                    f"sum_value_avg_{groupby_node_aggregation_id}",
+                    f"count_value_avg_{groupby_node_aggregation_id}",
+                ],
             )
         ],
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -259,6 +262,10 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                 ),
                 feature_name="a_48h_average",
                 is_order_dependent=False,
+                tile_value_columns=[
+                    f"sum_value_avg_{groupby_node_aggregation_id}",
+                    f"count_value_avg_{groupby_node_aggregation_id}",
+                ],
             )
         ],
     ]
@@ -288,12 +295,10 @@ def test_feature_execution_planner__serving_names_mapping(
     )
     plan = planner.generate_plan([groupby_node])
     assert list(
-        plan.aggregators[
-            WindowAggregationSpec
-        ].window_aggregation_spec_set.get_grouped_aggregation_specs()
+        plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
     ) == [
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -310,10 +315,14 @@ def test_feature_execution_planner__serving_names_mapping(
                 ),
                 feature_name="a_2h_average",
                 is_order_dependent=False,
+                tile_value_columns=[
+                    f"sum_value_avg_{groupby_node_aggregation_id}",
+                    f"count_value_avg_{groupby_node_aggregation_id}",
+                ],
             )
         ],
         [
-            WindowAggregationSpec(
+            TileBasedAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -330,6 +339,10 @@ def test_feature_execution_planner__serving_names_mapping(
                 ),
                 feature_name="a_48h_average",
                 is_order_dependent=False,
+                tile_value_columns=[
+                    f"sum_value_avg_{groupby_node_aggregation_id}",
+                    f"count_value_avg_{groupby_node_aggregation_id}",
+                ],
             )
         ],
     ]
@@ -359,7 +372,7 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     plan = planner.generate_plan([order_size_feature_group_node])
 
     # Check item aggregation specs
-    item_aggregation_specs = plan.aggregators[ItemAggregationSpec].item_aggregation_specs
+    item_aggregation_specs = plan.aggregators["item"].item_aggregation_specs
     assert len(item_aggregation_specs) == 1
     spec_dict = asdict(item_aggregation_specs[0])
     agg_expr = spec_dict.pop("agg_expr")
@@ -405,7 +418,7 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     )
     nodes = list(projected_lookup_features)
     plan = planner.generate_plan(nodes)
-    aggregator = plan.aggregators[LookupSpec]
+    aggregator = plan.aggregators["lookup"]
 
     # Check aggregation results
     agg_results = aggregator.get_direct_lookups()
