@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import pandas as pd
 from sqlglot.expressions import Select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import SourceType, StrEnum
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -24,6 +24,18 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
+
+
+class AggregationType(StrEnum):
+    """
+    Enum for different aggregation types. Will be used as the dictionary key in a container for
+    aggregators held by FeatureExecutionPlan.
+    """
+
+    LATEST = "latest"
+    LOOKUP = "lookup"
+    WINDOW = "window"
+    ITEM = "item"
 
 
 @dataclass  # type: ignore[misc]
@@ -44,12 +56,24 @@ class AggregationSpec(ABC):
     @property
     @abstractmethod
     def agg_result_name(self) -> str:
-        """Column name of the aggregated result
+        """
+        Column name of the aggregated result
 
         Returns
         -------
         str
             Column names of the aggregated result
+        """
+
+    @property
+    @abstractmethod
+    def aggregation_type(self) -> AggregationType:
+        """
+        Aggregation type of this AggregationSpec
+
+        Returns
+        -------
+        AggregationType
         """
 
 
@@ -86,6 +110,12 @@ class TileBasedAggregationSpec(AggregationSpec):
         if self.window is None:
             return f"agg_{self.aggregation_id}"
         return f"agg_w{self.window}_{self.aggregation_id}"
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        if self.window is None:
+            return AggregationType.LATEST
+        return AggregationType.WINDOW
 
     @classmethod
     def from_groupby_query_node(
@@ -171,6 +201,10 @@ class ItemAggregationSpec(AggregationSpec):
         # Should be fixed when aggregation_id is added to the parameters of ItemGroupby query node.
         return self.feature_name
 
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.ITEM
+
     @classmethod
     def from_item_groupby_query_node(
         cls,
@@ -223,6 +257,10 @@ class LookupSpec(AggregationSpec):
     def agg_result_name(self) -> str:
         name = f"{self.input_column_name}_{self.source_hash}"
         return name
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.LOOKUP
 
     @property
     def source_hash(self) -> str:

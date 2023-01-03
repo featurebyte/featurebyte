@@ -23,6 +23,7 @@ from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
 from featurebyte.query_graph.sql.specs import (
+    AggregationType,
     FeatureSpec,
     ItemAggregationSpec,
     LookupSpec,
@@ -38,10 +39,10 @@ class FeatureExecutionPlan:
     def __init__(self, source_type: SourceType, is_online_serving: bool) -> None:
         aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
         self.aggregators = {
-            "latest": LatestAggregator(**aggregator_kwargs),
-            "lookup": LookupAggregator(**aggregator_kwargs),
-            "window": WindowAggregator(**aggregator_kwargs),
-            "item": ItemAggregator(**aggregator_kwargs),
+            AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
+            AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
+            AggregationType.WINDOW: WindowAggregator(**aggregator_kwargs),
+            AggregationType.ITEM: ItemAggregator(**aggregator_kwargs),
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
@@ -81,17 +82,7 @@ class FeatureExecutionPlan:
         aggregation_spec : AggregationSpec
             Aggregation specification
         """
-        key = None
-        if isinstance(aggregation_spec, TileBasedAggregationSpec):
-            if aggregation_spec.window is None:
-                key = "latest"
-            else:
-                key = "window"
-        elif isinstance(aggregation_spec, ItemAggregationSpec):
-            key = "item"
-        elif isinstance(aggregation_spec, LookupSpec):
-            key = "lookup"
-        assert key is not None
+        key = aggregation_spec.aggregation_type
         aggregator = self.aggregators[key]
         aggregator.update(aggregation_spec)  # type: ignore
 
