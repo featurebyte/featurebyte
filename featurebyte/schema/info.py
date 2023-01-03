@@ -20,6 +20,7 @@ from featurebyte.models.feature_list import (
     FeatureTypeFeatureCount,
 )
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
@@ -108,20 +109,12 @@ class DataBriefInfoList(FeatureByteBaseModel):
         return DataBriefInfoList(__root__=data_project.project(paginated_data))
 
 
-class EventDataBriefInfo(BaseBriefInfo):
-    """
-    EventData brief info schema
-    """
-
-    status: DataStatus
-
-
 class EventDataBriefInfoList(FeatureByteBaseModel):
     """
     Paginated list of event data brief info
     """
 
-    __root__: List[EventDataBriefInfo]
+    __root__: List[DataBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventDataBriefInfoList:
@@ -141,7 +134,7 @@ class EventDataBriefInfoList(FeatureByteBaseModel):
         return EventDataBriefInfoList(__root__=event_data_project.project(paginated_data))
 
 
-class EventDataColumnInfo(FeatureByteBaseModel):
+class DataColumnInfo(FeatureByteBaseModel):
     """
     EventDataColumnInfo for storing column information
 
@@ -151,25 +144,68 @@ class EventDataColumnInfo(FeatureByteBaseModel):
         Variable type of the column
     entity: str
         Entity name associated with the column
+    semantic: str
+        Semantic name associated with the column
     """
 
     name: StrictStr
     dtype: DBVarType
     entity: Optional[str] = Field(default=None)
+    semantic: Optional[str] = Field(default=None)
+    critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
 
 
-class EventDataInfo(EventDataBriefInfo, BaseInfo):
+class DataInfo(DataBriefInfo, BaseInfo):
+    """
+    Data info schema
+    """
+
+    record_creation_date_column: Optional[str]
+    table_details: TableDetails
+    entities: EntityBriefInfoList
+    semantics: List[str]
+    column_count: int
+    columns_info: Optional[List[DataColumnInfo]]
+
+
+class EventDataInfo(DataInfo):
     """
     EventData info schema
     """
 
     event_timestamp_column: str
-    record_creation_date_column: Optional[str]
-    table_details: TableDetails
+    event_id_column: str
     default_feature_job_setting: Optional[FeatureJobSetting]
-    entities: EntityBriefInfoList
-    column_count: int
-    columns_info: Optional[List[EventDataColumnInfo]]
+
+
+class ItemDataInfo(DataInfo):
+    """
+    ItemData info schema
+    """
+
+    event_id_column: str
+    item_id_column: str
+    event_data_name: str
+
+
+class DimensionDataInfo(DataInfo):
+    """
+    DimensionData info schema
+    """
+
+    dimension_id_column: str
+
+
+class SCDDataInfo(DataInfo):
+    """
+    Slow Changing Dimension Data info schema
+    """
+
+    natural_key_column: str
+    effective_timestamp_column: str
+    surrogate_key_column: Optional[str]
+    end_timestamp_column: Optional[str]
+    current_flag_column: Optional[str]
 
 
 class NamespaceInfo(BaseInfo):

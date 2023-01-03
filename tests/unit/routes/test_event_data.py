@@ -305,6 +305,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
         assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
         assert response_dict["columns_info"] is None
+        assert set(response_dict["semantics"]) == {"event_id", "event_timestamp"}
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}

@@ -3,7 +3,7 @@ SCDData API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -20,7 +20,9 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
+from featurebyte.schema.info import SCDDataInfo
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataList, SCDDataUpdate
 
 router = APIRouter(prefix="/scd_data")
@@ -113,3 +115,20 @@ async def list_scd_data_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{item_data_id}/info", response_model=SCDDataInfo)
+async def get_item_data_info(
+    request: Request,
+    item_data_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> SCDDataInfo:
+    """
+    Retrieve SCDData info
+    """
+    controller = request.state.app_container.scd_data_controller
+    info = await controller.get_info(
+        document_id=item_data_id,
+        verbose=verbose,
+    )
+    return cast(SCDDataInfo, info)

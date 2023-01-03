@@ -57,7 +57,7 @@ def get_dimension_data_model_fixture(snowflake_feature_store, dimension_columns_
         record_creation_date_column="created_at",
         created_at=arbitrary_test_date_time,
         status=DataStatus.PUBLISHED,
-        dimension_data_id_column="dimension_id",
+        dimension_id_column="dimension_id",
     )
 
 
@@ -131,7 +131,7 @@ def assert_type_error(exc_info: ExceptionInfo, expected_type: str):
 def test_incorrect_dimension_data_id_type_errors(expected_dimension_data_model):
     """Test type validation on dimension data id column"""
     # Update type to non str
-    expected_dimension_data_model["dimension_data_id_column"] = arbitrary_test_date_time
+    expected_dimension_data_model["dimension_id_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
         DimensionDataModel.parse_obj(expected_dimension_data_model)
     assert_type_error(exc_info, "str")

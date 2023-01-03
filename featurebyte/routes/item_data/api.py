@@ -3,7 +3,7 @@ ItemData API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -20,7 +20,9 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
+from featurebyte.schema.info import ItemDataInfo
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataList, ItemDataUpdate
 
 router = APIRouter(prefix="/item_data")
@@ -113,3 +115,20 @@ async def list_item_data_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{item_data_id}/info", response_model=ItemDataInfo)
+async def get_item_data_info(
+    request: Request,
+    item_data_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> ItemDataInfo:
+    """
+    Retrieve ItemData info
+    """
+    controller = request.state.app_container.item_data_controller
+    info = await controller.get_info(
+        document_id=item_data_id,
+        verbose=verbose,
+    )
+    return cast(ItemDataInfo, info)

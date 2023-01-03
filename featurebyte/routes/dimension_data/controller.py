@@ -5,10 +5,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from bson import ObjectId
+
 from featurebyte.enum import SemanticType
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.routes.common.base_data import BaseDataDocumentController
 from featurebyte.schema.dimension_data import DimensionDataList, DimensionDataUpdate
+from featurebyte.schema.info import DimensionDataInfo
 from featurebyte.service.dimension_data import DimensionDataService
 
 
@@ -29,3 +32,23 @@ class DimensionDataController(
         return {
             document.dimension_id_column: dimension_data_id,
         }
+
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> DimensionDataInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        DimensionDataInfo
+        """
+        info_document = await self.info_service.get_dimension_data_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document

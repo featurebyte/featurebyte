@@ -8,10 +8,11 @@ from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
+    DataBriefInfo,
+    DataColumnInfo,
+    DimensionDataInfo,
     EntityBriefInfo,
     EntityInfo,
-    EventDataBriefInfo,
-    EventDataColumnInfo,
     EventDataInfo,
     FeatureInfo,
     FeatureListBriefInfo,
@@ -19,6 +20,8 @@ from featurebyte.schema.info import (
     FeatureListNamespaceInfo,
     FeatureNamespaceInfo,
     FeatureStoreInfo,
+    ItemDataInfo,
+    SCDDataInfo,
 )
 from featurebyte.service.info import InfoService
 
@@ -72,6 +75,7 @@ async def test_get_event_data_info(info_service, event_data, entity):
         name="sf_event_data",
         status="DRAFT",
         event_timestamp_column="event_timestamp",
+        event_id_column="col_int",
         record_creation_date_column="created_at",
         table_details=TableDetails(
             database_name="sf_database",
@@ -80,6 +84,7 @@ async def test_get_event_data_info(info_service, event_data, entity):
         ),
         default_job_setting=None,
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
+        semantics=["event_timestamp"],
         column_count=9,
         columns_info=None,
         created_at=info.created_at,
@@ -92,15 +97,146 @@ async def test_get_event_data_info(info_service, event_data, entity):
         **{
             **expected_info.dict(),
             "columns_info": [
-                EventDataColumnInfo(name="col_int", dtype="INT", entity=None),
-                EventDataColumnInfo(name="col_float", dtype="FLOAT", entity=None),
-                EventDataColumnInfo(name="col_char", dtype="CHAR", entity=None),
-                EventDataColumnInfo(name="col_text", dtype="VARCHAR", entity=None),
-                EventDataColumnInfo(name="col_binary", dtype="BINARY", entity=None),
-                EventDataColumnInfo(name="col_boolean", dtype="BOOL", entity=None),
-                EventDataColumnInfo(name="event_timestamp", dtype="TIMESTAMP", entity=None),
-                EventDataColumnInfo(name="created_at", dtype="TIMESTAMP", entity=None),
-                EventDataColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
+                DataColumnInfo(name="col_int", dtype="INT"),
+                DataColumnInfo(name="col_float", dtype="FLOAT"),
+                DataColumnInfo(name="col_char", dtype="CHAR"),
+                DataColumnInfo(name="col_text", dtype="VARCHAR"),
+                DataColumnInfo(name="col_binary", dtype="BINARY"),
+                DataColumnInfo(name="col_boolean", dtype="BOOL"),
+                DataColumnInfo(
+                    name="event_timestamp", dtype="TIMESTAMP", semantic="event_timestamp"
+                ),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
+            ],
+        }
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_item_data_info(info_service, item_data, event_data):
+    """Test get_item_data_info"""
+    _ = event_data
+    info = await info_service.get_item_data_info(document_id=item_data.id, verbose=False)
+    expected_info = ItemDataInfo(
+        name="sf_item_data",
+        status="DRAFT",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_data_name="sf_event_data",
+        record_creation_date_column=None,
+        table_details=TableDetails(
+            database_name="sf_database",
+            schema_name="sf_schema",
+            table_name="sf_item_table",
+        ),
+        entities=[],
+        semantics=[],
+        column_count=5,
+        columns_info=None,
+        created_at=info.created_at,
+        updated_at=info.updated_at,
+    )
+    assert info == expected_info
+
+    info = await info_service.get_item_data_info(document_id=item_data.id, verbose=True)
+    assert info == ItemDataInfo(
+        **{
+            **expected_info.dict(),
+            "columns_info": [
+                DataColumnInfo(name="event_id_col", dtype="INT"),
+                DataColumnInfo(name="item_id_col", dtype="VARCHAR"),
+                DataColumnInfo(name="item_type", dtype="VARCHAR"),
+                DataColumnInfo(name="item_amount", dtype="FLOAT"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+            ],
+        }
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_dimension_data_info(info_service, dimension_data):
+    """Test get_dimension_data_info"""
+    info = await info_service.get_dimension_data_info(document_id=dimension_data.id, verbose=False)
+    expected_info = DimensionDataInfo(
+        name="sf_dimension_data",
+        status="DRAFT",
+        dimension_id_column="col_int",
+        record_creation_date_column="created_at",
+        table_details=TableDetails(
+            database_name="sf_database",
+            schema_name="sf_schema",
+            table_name="sf_dimension_table",
+        ),
+        entities=[],
+        semantics=[],
+        column_count=9,
+        columns_info=None,
+        created_at=info.created_at,
+        updated_at=info.updated_at,
+    )
+    assert info == expected_info
+
+    info = await info_service.get_dimension_data_info(document_id=dimension_data.id, verbose=True)
+    assert info == DimensionDataInfo(
+        **{
+            **expected_info.dict(),
+            "columns_info": [
+                DataColumnInfo(name="col_int", dtype="INT"),
+                DataColumnInfo(name="col_float", dtype="FLOAT"),
+                DataColumnInfo(name="col_char", dtype="CHAR"),
+                DataColumnInfo(name="col_text", dtype="VARCHAR"),
+                DataColumnInfo(name="col_binary", dtype="BINARY"),
+                DataColumnInfo(name="col_boolean", dtype="BOOL"),
+                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="cust_id", dtype="INT"),
+            ],
+        }
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_scd_data_info(info_service, scd_data):
+    """Test get_scd_data_info"""
+    info = await info_service.get_scd_data_info(document_id=scd_data.id, verbose=False)
+    expected_info = SCDDataInfo(
+        name="sf_scd_data",
+        status="DRAFT",
+        record_creation_date_column=None,
+        current_flag_column="col_char",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="event_timestamp",
+        end_timestamp_column="event_timestamp",
+        table_details=TableDetails(
+            database_name="sf_database",
+            schema_name="sf_schema",
+            table_name="sf_scd_table",
+        ),
+        entities=[],
+        semantics=[],
+        column_count=9,
+        columns_info=None,
+        created_at=info.created_at,
+        updated_at=info.updated_at,
+    )
+    assert info == expected_info
+
+    info = await info_service.get_scd_data_info(document_id=scd_data.id, verbose=True)
+    assert info == SCDDataInfo(
+        **{
+            **expected_info.dict(),
+            "columns_info": [
+                DataColumnInfo(name="col_int", dtype="INT"),
+                DataColumnInfo(name="col_float", dtype="FLOAT"),
+                DataColumnInfo(name="col_char", dtype="CHAR"),
+                DataColumnInfo(name="col_text", dtype="VARCHAR"),
+                DataColumnInfo(name="col_binary", dtype="BINARY"),
+                DataColumnInfo(name="col_boolean", dtype="BOOL"),
+                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="cust_id", dtype="INT"),
             ],
         }
     )
@@ -138,7 +274,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -235,7 +371,7 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
     expected_info = FeatureInfo(
         name="iet_entropy_24h",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -261,7 +397,7 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
     expected_info = FeatureNamespaceInfo(
         name="sum_30m",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -284,7 +420,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
     expected_info = FeatureListInfo(
         name="sf_feature_list",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -324,7 +460,7 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],

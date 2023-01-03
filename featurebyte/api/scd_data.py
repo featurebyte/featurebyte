@@ -3,12 +3,11 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import PrettyDict
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
@@ -92,33 +91,4 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
             effective_timestamp_column=effective_timestamp_column,
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
-        )
-
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
-        """
-        Provide basic info for SCD data.
-
-        Parameters
-        ----------
-        verbose: bool
-            This is a no-op for now. This will be used when we add more functionality to this funciton.
-
-        Returns
-        -------
-        Dict[str, Any]
-        """
-        return PrettyDict(
-            {
-                "name": self.name,
-                "record_creation_date_column": self.record_creation_date_column,
-                "updated_at": self.updated_at,
-                "status": self.status,
-                "entities": self.entity_ids,
-                "natural_key_column": self.natural_key_column,
-                "surrogate_key_column": self.surrogate_key_column,
-                "effective_timestamp_column": self.effective_timestamp_column,
-                "end_timestamp_column": self.end_timestamp_column,
-                "current_flag_column": self.current_flag_column,
-                "tabular_source": self.tabular_source,
-            }
         )

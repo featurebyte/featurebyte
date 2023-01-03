@@ -1,6 +1,7 @@
 """
 Tests for SCDData routes
 """
+from http import HTTPStatus
 from unittest import mock
 
 import pytest
@@ -123,3 +124,45 @@ class TestSCDDataApi(BaseDataApiTestSuite):
             "end_timestamp_column": "end_at",
             "current_flag": "current_value",
         }
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        expected_info_response = {
+            "name": "sf_scd_data",
+            "record_creation_date_column": None,
+            "current_flag_column": "col_char",
+            "effective_timestamp_column": "event_timestamp",
+            "end_timestamp_column": "event_timestamp",
+            "surrogate_key_column": "col_int",
+            "natural_key_column": "col_text",
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "sf_table",
+            },
+            "status": "DRAFT",
+            "entities": [],
+            "column_count": 9,
+        }
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict.items() > expected_info_response.items(), response_dict
+        assert "created_at" in response_dict
+        assert response_dict["columns_info"] is None
+        assert set(response_dict["semantics"]) == {"scd_surrogate_key_id", "scd_natural_key_id"}
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        verbose_response_dict = verbose_response.json()
+        assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
+        assert "created_at" in verbose_response_dict
+        assert verbose_response_dict["columns_info"] is not None

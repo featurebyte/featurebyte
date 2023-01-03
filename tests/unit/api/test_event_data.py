@@ -22,6 +22,7 @@ from featurebyte.exception import (
     TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 from tests.util.helper import patch_import_package
 
@@ -298,20 +299,81 @@ def test_info(saved_event_data, cust_id_entity):
     assert info_dict["updated_at"] is not None, info_dict["updated_at"]
     assert "created_at" in info_dict, info_dict
 
+    # update critical data info
+    saved_event_data.col_int.update_critical_data_info(
+        cleaning_operations=[MissingValueImputation(imputed_value=0)]
+    )
+
     verbose_info_dict = saved_event_data.info(verbose=True)
     assert verbose_info_dict.items() > expected_info.items(), info_dict
     assert verbose_info_dict["updated_at"] is not None, verbose_info_dict["updated_at"]
     assert "created_at" in verbose_info_dict, verbose_info_dict
     assert verbose_info_dict["columns_info"] == [
-        {"name": "col_int", "dtype": "INT", "entity": None},
-        {"name": "col_float", "dtype": "FLOAT", "entity": None},
-        {"name": "col_char", "dtype": "CHAR", "entity": None},
-        {"name": "col_text", "dtype": "VARCHAR", "entity": None},
-        {"name": "col_binary", "dtype": "BINARY", "entity": None},
-        {"name": "col_boolean", "dtype": "BOOL", "entity": None},
-        {"name": "event_timestamp", "dtype": "TIMESTAMP", "entity": None},
-        {"name": "created_at", "dtype": "TIMESTAMP", "entity": None},
-        {"name": "cust_id", "dtype": "INT", "entity": "customer"},
+        {
+            "name": "col_int",
+            "dtype": "INT",
+            "entity": None,
+            "semantic": "event_id",
+            "critical_data_info": {
+                "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+            },
+        },
+        {
+            "name": "col_float",
+            "dtype": "FLOAT",
+            "entity": None,
+            "semantic": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "col_char",
+            "dtype": "CHAR",
+            "entity": None,
+            "semantic": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "col_text",
+            "dtype": "VARCHAR",
+            "entity": None,
+            "semantic": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "col_binary",
+            "dtype": "BINARY",
+            "entity": None,
+            "semantic": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "col_boolean",
+            "dtype": "BOOL",
+            "entity": None,
+            "semantic": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "event_timestamp",
+            "dtype": "TIMESTAMP",
+            "entity": None,
+            "semantic": "event_timestamp",
+            "critical_data_info": None,
+        },
+        {
+            "name": "created_at",
+            "dtype": "TIMESTAMP",
+            "entity": None,
+            "semantic": None,
+            "critical_data_info": None,
+        },
+        {
+            "name": "cust_id",
+            "dtype": "INT",
+            "entity": "customer",
+            "semantic": None,
+            "critical_data_info": None,
+        },
     ]
 
 
