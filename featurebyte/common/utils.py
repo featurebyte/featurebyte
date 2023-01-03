@@ -200,7 +200,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
 
             # is col_name is None in type_conversions it should apply to the only column in the dataframe
             if not col_name:
-                col_name = dataframe.columns[0]
+                col_name = dataframe.columns[0]  # pylint: disable=no-member
 
             if dtype == DBVarType.TIMESTAMP_TZ:
                 dataframe[col_name] = dataframe[col_name].apply(_to_datetime)
