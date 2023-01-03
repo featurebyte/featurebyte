@@ -181,7 +181,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       FROM (
         SELECT
           "__FB_KEY_COL",
-          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
           "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338",
@@ -191,6 +191,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             "POINT_IN_TIME" AS "__FB_TS_COL",
             "CUSTOMER_ID" AS "__FB_KEY_COL",
             NULL AS "__FB_EFFECTIVE_TS_COL",
+            2 AS "__FB_TS_TIE_BREAKER_COL",
             "POINT_IN_TIME" AS "POINT_IN_TIME",
             "CUSTOMER_ID" AS "CUSTOMER_ID",
             "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
@@ -213,7 +214,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
                 FROM (
                   SELECT
                     "__FB_KEY_COL",
-                    LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
+                    LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
                     "POINT_IN_TIME",
                     "CUSTOMER_ID",
                     "__FB_EFFECTIVE_TS_COL"
@@ -221,9 +222,10 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
                     SELECT
                       FLOOR((
                         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-                      ) / 3600) - 1 AS "__FB_TS_COL",
+                      ) / 3600) AS "__FB_TS_COL",
                       "CUSTOMER_ID" AS "__FB_KEY_COL",
                       NULL AS "__FB_EFFECTIVE_TS_COL",
+                      0 AS "__FB_TS_TIE_BREAKER_COL",
                       "POINT_IN_TIME" AS "POINT_IN_TIME",
                       "CUSTOMER_ID" AS "CUSTOMER_ID"
                     FROM (
@@ -237,6 +239,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
                       "INDEX" AS "__FB_TS_COL",
                       "cust_id" AS "__FB_KEY_COL",
                       "INDEX" AS "__FB_EFFECTIVE_TS_COL",
+                      1 AS "__FB_TS_TIE_BREAKER_COL",
                       NULL AS "POINT_IN_TIME",
                       NULL AS "CUSTOMER_ID"
                     FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
@@ -254,6 +257,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             "event_timestamp" AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL",
             "event_timestamp" AS "__FB_EFFECTIVE_TS_COL",
+            1 AS "__FB_TS_TIE_BREAKER_COL",
             NULL AS "POINT_IN_TIME",
             NULL AS "CUSTOMER_ID",
             NULL AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"

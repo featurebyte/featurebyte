@@ -73,7 +73,7 @@ def test_latest_aggregator(agg_specs_no_window):
             FROM (
               SELECT
                 "__FB_KEY_COL",
-                LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_EFFECTIVE_TS_COL" NULLS LAST) AS "__FB_LAST_TS",
+                LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
                 "a",
                 "b",
                 "c",
@@ -82,9 +82,10 @@ def test_latest_aggregator(agg_specs_no_window):
                 SELECT
                   FLOOR((
                     DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-                  ) / 3600) - 1 AS "__FB_TS_COL",
+                  ) / 3600) AS "__FB_TS_COL",
                   "CUSTOMER_ID" AS "__FB_KEY_COL",
                   NULL AS "__FB_EFFECTIVE_TS_COL",
+                  0 AS "__FB_TS_TIE_BREAKER_COL",
                   "a" AS "a",
                   "b" AS "b",
                   "c" AS "c"
@@ -100,6 +101,7 @@ def test_latest_aggregator(agg_specs_no_window):
                   "INDEX" AS "__FB_TS_COL",
                   "cust_id" AS "__FB_KEY_COL",
                   "INDEX" AS "__FB_EFFECTIVE_TS_COL",
+                  1 AS "__FB_TS_TIE_BREAKER_COL",
                   NULL AS "a",
                   NULL AS "b",
                   NULL AS "c"

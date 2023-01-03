@@ -60,7 +60,6 @@ class LatestAggregator(Aggregator):
                 point_in_time_expr=quoted_identifier(point_in_time_column),
                 frequency=specs[0].frequency,
                 time_modulo_frequency=specs[0].time_modulo_frequency,
-                exclusive=False,
             )
             left_table = Table(
                 expr=table_expr,
@@ -90,6 +89,7 @@ class LatestAggregator(Aggregator):
                 right_table,
                 join_type="left",
                 adapter=self.adapter,
+                allow_exact_match=False,
                 quote_right_input_columns=False,
             )
             current_columns = current_columns + agg_result_names
