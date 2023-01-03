@@ -14,6 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
+from featurebyte.api.raw_data import RawAccessorMixin
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
@@ -98,7 +99,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         self.info = column_info
 
 
-class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
+class DataApiObject(RawAccessorMixin, AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
     """
