@@ -27,5 +27,5 @@ class DimensionDataController(
             name=SemanticType.DIMENSION_ID
         )
         return {
-            document.dimension_data_id_column: dimension_data_id,
+            document.dimension_id_column: dimension_data_id,
         }

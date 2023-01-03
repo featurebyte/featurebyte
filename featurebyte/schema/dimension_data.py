@@ -19,7 +19,7 @@ class DimensionDataCreate(DataCreate):
     """
 
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
-    dimension_data_id_column: StrictStr
+    dimension_id_column: StrictStr
 
 
 class DimensionDataList(PaginationMixin):

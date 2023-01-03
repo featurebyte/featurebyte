@@ -907,7 +907,7 @@ def snowflake_dimension_data_fixture(
     dimension_data = DimensionData.from_tabular_source(
         tabular_source=database_table,
         name=dimension_data_name,
-        dimension_data_id_column="item_id",
+        dimension_id_column="item_id",
     )
     dimension_data.save()
     dimension_data = DimensionData.get(dimension_data_name)

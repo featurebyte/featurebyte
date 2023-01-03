@@ -95,7 +95,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             "record_creation_date_column": "created_at",
             "status": "PUBLISHED",
             "user_id": str(user_id),
-            "dimension_data_id_column": "dimension_id",  # this value needs to match the column name used in test data
+            "dimension_id_column": "dimension_id",  # this value needs to match the column name used in test data
         }
         dimension_table_data = DimensionTableData(**dimension_data_dict)
         input_node = dimension_table_data.construct_input_node(
