@@ -15,7 +15,7 @@ from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import GetAttrMixin, ParentMixin
+from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
@@ -26,7 +26,7 @@ from featurebyte.query_graph.model.critical_data_info import CleaningOperation, 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 
 
-class DataColumn(FeatureByteBaseModel, ParentMixin):
+class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
     DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a data object (e.g. EventData)

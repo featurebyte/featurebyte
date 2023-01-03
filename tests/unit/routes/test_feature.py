@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
+from featurebyte.common.utils import dataframe_from_json
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -403,7 +404,7 @@ class TestFeatureApi(BaseApiTestSuite):
         mock_session.generate_session_unique_id = Mock(return_value="1")
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
-        assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
     def test_preview_missing_point_in_time(
         self, test_api_client_persistent, feature_preview_payload

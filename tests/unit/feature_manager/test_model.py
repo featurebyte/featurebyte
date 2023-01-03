@@ -11,7 +11,7 @@ def test_extended_feature_model__float_feature(float_feature):
         **float_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "fba233e0f502088c233315a322f4c51e939072c0"
+    aggregation_id = "072a1700018ba111c99ff5d80e934ef4dd5a9f85"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -60,7 +60,7 @@ def test_extended_feature_model__float_feature(float_feature):
             tile_sql=expected_sql,
             entity_column_names=["cust_id"],
             value_column_names=[f"value_sum_{aggregation_id}"],
-            tile_id="TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178",
+            tile_id="TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
             aggregation_id=f"sum_{aggregation_id}",
         )
     ]
@@ -73,7 +73,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
         **agg_per_category_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "919af24c701a98cef59de8e13ad34d1497ffba79"
+    aggregation_id = "4de8103894117c4d8ee4a327a63ff91a77981539"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -124,7 +124,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
             tile_sql=expected_sql,
             entity_column_names=["cust_id", "col_int"],
             value_column_names=[f"value_sum_{aggregation_id}"],
-            tile_id="TILE_F1800_M300_B600_B7C784DEE6D3D858F5B9C95AEBD48AAE9FB2565E",
+            tile_id="TILE_F1800_M300_B600_540E212D8EA456624A317D8F757B679EC5F9B65A",
             aggregation_id=f"sum_{aggregation_id}",
             category_column_name="col_int",
         )

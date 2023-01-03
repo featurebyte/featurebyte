@@ -4,7 +4,7 @@ FeatureList API routes
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import Any, Dict, Optional, Union, cast
 
 import json
 from http import HTTPStatus
@@ -148,17 +148,17 @@ async def get_feature_list_info(
     return cast(FeatureListInfo, info)
 
 
-@router.post("/preview", response_model=str)
+@router.post("/preview", response_model=Dict[str, Any])
 async def get_feature_list_preview(
     request: Request,
     featurelist_preview: FeatureListPreview,
-) -> str:
+) -> Dict[str, Any]:
     """
     Retrieve Feature preview
     """
     controller = request.state.app_container.feature_list_controller
     return cast(
-        str,
+        Dict[str, Any],
         await controller.preview(
             featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
         ),

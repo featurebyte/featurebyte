@@ -215,7 +215,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
 
     # generate query
     graph_interpreter = GraphInterpreter(query_graph=query_graph, source_type=SourceType.SNOWFLAKE)
-    output = graph_interpreter.construct_preview_sql(node_name=output_node.name, num_rows=10)
+    output, _ = graph_interpreter.construct_preview_sql(node_name=output_node.name, num_rows=10)
     assert (
         output
         == textwrap.dedent(

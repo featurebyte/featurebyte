@@ -198,6 +198,7 @@ class SCDJoin(TableNode):
             join_type=self.join_type,
             select_expr=select_expr,
             adapter=self.context.adapter,
+            convert_timestamps_to_utc=True,
         )
         return select_expr
 

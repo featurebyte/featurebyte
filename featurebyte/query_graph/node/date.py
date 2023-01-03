@@ -79,4 +79,4 @@ class DateAdd(BaseSeriesOutputNode):
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.TIMESTAMP
+        return inputs[0].columns[0].dtype

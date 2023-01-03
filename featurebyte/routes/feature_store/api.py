@@ -3,7 +3,7 @@ FeatureStore API routes
 """
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 from http import HTTPStatus
 
@@ -203,38 +203,57 @@ async def list_columns_in_database_table(
     return result
 
 
-@router.post("/preview", response_model=str)
-async def get_generic_preview(
+@router.post("/preview", response_model=Dict[str, Any])
+async def get_data_preview(
     request: Request,
     preview: FeatureStorePreview,
     limit: int = Query(default=10, gt=0, le=10000),
-) -> str:
+) -> Dict[str, Any]:
     """
-    Retrieve generic preview
+    Retrieve data preview for query graph node
     """
     controller = request.state.app_container.feature_store_controller
     return cast(
-        str,
+        Dict[str, Any],
         await controller.preview(
             preview=preview, limit=limit, get_credential=request.state.get_credential
         ),
     )
 
 
-@router.post("/sample", response_model=str)
-async def get_sample(
+@router.post("/sample", response_model=Dict[str, Any])
+async def get_data_sample(
     request: Request,
     sample: FeatureStoreSample,
     size: int = Query(default=10, gt=0, le=10000),
     seed: int = Query(default=1234),
-) -> str:
+) -> Dict[str, Any]:
     """
-    Retrieve generic preview
+    Retrieve data sample for query graph node
     """
     controller = request.state.app_container.feature_store_controller
     return cast(
-        str,
+        Dict[str, Any],
         await controller.sample(
+            sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
+        ),
+    )
+
+
+@router.post("/description", response_model=Dict[str, Any])
+async def get_data_description(
+    request: Request,
+    sample: FeatureStoreSample,
+    size: int = Query(default=0, gte=0, le=1000000),
+    seed: int = Query(default=1234),
+) -> Dict[str, Any]:
+    """
+    Retrieve data description for query graph node
+    """
+    controller = request.state.app_container.feature_store_controller
+    return cast(
+        Dict[str, Any],
+        await controller.describe(
             sample=sample, size=size, seed=seed, get_credential=request.state.get_credential
         ),
     )

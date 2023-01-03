@@ -87,14 +87,14 @@ def event_data_dict_fixture(snowflake_database_table):
             {
                 "entity_id": None,
                 "name": "event_timestamp",
-                "dtype": "TIMESTAMP",
+                "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
             },
             {
                 "entity_id": None,
                 "name": "created_at",
-                "dtype": "TIMESTAMP",
+                "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
             },
@@ -355,14 +355,14 @@ def test_info(saved_event_data, cust_id_entity):
         },
         {
             "name": "event_timestamp",
-            "dtype": "TIMESTAMP",
+            "dtype": "TIMESTAMP_TZ",
             "entity": None,
             "semantic": "event_timestamp",
             "critical_data_info": None,
         },
         {
             "name": "created_at",
-            "dtype": "TIMESTAMP",
+            "dtype": "TIMESTAMP_TZ",
             "entity": None,
             "semantic": None,
             "critical_data_info": None,
@@ -621,9 +621,7 @@ def test_update_record_creation_date_column__saved_object(saved_event_data):
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_data.update_record_creation_date_column("col_float")
-    expected_msg = (
-        "Column \"col_float\" is expected to have type(s): ['TIMESTAMP'] (type=value_error)"
-    )
+    expected_msg = "Column \"col_float\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
     assert expected_msg in str(exc.value)
 
 

@@ -535,7 +535,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         bool
         """
-        return self.dtype in (DBVarType.TIMESTAMP, DBVarType.DATE)
+        return self.dtype in (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE)
 
     @property
     def is_numeric(self) -> bool:

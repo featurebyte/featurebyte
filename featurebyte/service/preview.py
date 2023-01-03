@@ -3,15 +3,17 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, cast
+from typing import Any, AsyncGenerator, Tuple, cast
 
 import pandas as pd
 
-from featurebyte.common.utils import convert_dataframe_as_json
+from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
+from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
@@ -30,6 +32,7 @@ from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSa
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import BaseSession
 
 
 class PreviewService(BaseService):
@@ -44,7 +47,38 @@ class PreviewService(BaseService):
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.session_manager_service = session_manager_service
 
-    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
+    async def _get_feature_store_session(
+        self, graph: QueryGraph, node_name: str, feature_store_name: str, get_credential: Any
+    ) -> Tuple[FeatureStoreModel, BaseSession]:
+        """
+        Get feature store and session from a graph
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            Query graph to use
+        node_name: str
+            Name of node to use
+        feature_store_name: str
+            Name of feature store
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        Tuple[FeatureStoreModel, BaseSession]
+        """
+        feature_store_dict = graph.get_input_node(node_name).parameters.feature_store_details.dict()
+        feature_store = FeatureStoreModel(**feature_store_dict, name=feature_store_name)
+        session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store,
+            get_credential=get_credential,
+        )
+        return feature_store, session
+
+    async def preview(
+        self, preview: FeatureStorePreview, limit: int, get_credential: Any
+    ) -> dict[str, Any]:
         """
         Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
 
@@ -59,27 +93,24 @@ class PreviewService(BaseService):
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
         """
-        feature_store_dict = preview.graph.get_input_node(
-            preview.node_name
-        ).parameters.feature_store_details.dict()
-        feature_store = FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name)
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+        feature_store, session = await self._get_feature_store_session(
+            graph=preview.graph,
+            node_name=preview.node_name,
+            feature_store_name=preview.feature_store_name,
             get_credential=get_credential,
         )
-
-        preview_sql = GraphInterpreter(
+        preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
         ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
-        result = await db_session.execute_query(preview_sql)
-        return convert_dataframe_as_json(result)
+        result = await session.execute_query(preview_sql)
+        return dataframe_to_json(result, type_conversions)
 
     async def sample(
         self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
 
@@ -96,19 +127,16 @@ class PreviewService(BaseService):
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
         """
-        feature_store_dict = sample.graph.get_input_node(
-            sample.node_name
-        ).parameters.feature_store_details.dict()
-        feature_store = FeatureStoreModel(**feature_store_dict, name=sample.feature_store_name)
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+        feature_store, session = await self._get_feature_store_session(
+            graph=sample.graph,
+            node_name=sample.node_name,
+            feature_store_name=sample.feature_store_name,
             get_credential=get_credential,
         )
-
-        preview_sql = GraphInterpreter(
+        sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
         ).construct_sample_sql(
             node_name=sample.node_name,
@@ -118,10 +146,67 @@ class PreviewService(BaseService):
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
         )
-        result = await db_session.execute_query(preview_sql)
-        return convert_dataframe_as_json(result)
+        result = await session.execute_query(sample_sql)
+        return dataframe_to_json(result, type_conversions)
 
-    async def preview_feature(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
+    async def describe(
+        self, sample: FeatureStoreSample, size: int, seed: int, get_credential: Any
+    ) -> dict[str, Any]:
+        """
+        Sample a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature_store, session = await self._get_feature_store_session(
+            graph=sample.graph,
+            node_name=sample.node_name,
+            feature_store_name=sample.feature_store_name,
+            get_credential=get_credential,
+        )
+
+        describe_sql, type_conversions, row_names, columns = GraphInterpreter(
+            sample.graph, source_type=feature_store.type
+        ).construct_describe_sql(
+            node_name=sample.node_name,
+            num_rows=size,
+            seed=seed,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+        )
+        logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
+        result = await session.execute_query(describe_sql)
+        assert result is not None
+        result = pd.concat(
+            [
+                pd.DataFrame({column.name: [column.dtype] for column in columns}, index=["dtype"]),
+                pd.DataFrame(
+                    result.values.reshape(len(columns), -1).T,
+                    index=row_names,
+                    columns=[str(column.name) for column in columns],
+                ).dropna(axis=0, how="all"),
+            ],
+            axis=0,
+        )
+        return dataframe_to_json(result, type_conversions, skip_prepare=True)
+
+    async def preview_feature(
+        self, feature_preview: FeaturePreview, get_credential: Any
+    ) -> dict[str, Any]:
         """
         Preview a Feature
 
@@ -134,7 +219,7 @@ class PreviewService(BaseService):
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
 
         Raises
@@ -157,29 +242,25 @@ class PreviewService(BaseService):
             if col not in point_in_time_and_serving_name:
                 raise KeyError(f"Serving name not provided: {col}")
 
-        feature_store_dict = graph.get_input_node(
-            feature_preview.node_name
-        ).parameters.feature_store_details.dict()
-        feature_store = FeatureStoreModel(
-            **feature_store_dict, name=feature_preview.feature_store_name
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store,
+        feature_store, session = await self._get_feature_store_session(
+            graph=graph,
+            node_name=feature_preview.node_name,
+            feature_store_name=feature_preview.feature_store_name,
             get_credential=get_credential,
         )
         preview_sql = get_feature_preview_sql(
-            request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
+            request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
             point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
             source_type=feature_store.type,
         )
-        result = await db_session.execute_query(preview_sql)
-        return convert_dataframe_as_json(result)
+        result = await session.execute_query(preview_sql)
+        return dataframe_to_json(result)
 
     async def preview_featurelist(
         self, featurelist_preview: FeatureListPreview, get_credential: Any
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Preview a FeatureList
 
@@ -192,7 +273,7 @@ class PreviewService(BaseService):
 
         Returns
         -------
-        str
+        dict[str, Any]
             Dataframe converted to json string
 
         Raises
@@ -227,7 +308,7 @@ class PreviewService(BaseService):
             else:
                 result = result.merge(_result, on=group_join_keys)
 
-        return convert_dataframe_as_json(result)
+        return dataframe_to_json(result)
 
     async def get_historical_features(
         self,

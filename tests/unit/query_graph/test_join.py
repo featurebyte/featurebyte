@@ -286,7 +286,7 @@ def test_scd_join(global_graph, scd_join_node):
               "__FB_EFFECTIVE_TS_COL"
             FROM (
               SELECT
-                "event_timestamp" AS "__FB_TS_COL",
+                CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
                 "cust_id" AS "__FB_KEY_COL",
                 NULL AS "__FB_EFFECTIVE_TS_COL",
                 2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -304,7 +304,7 @@ def test_scd_join(global_graph, scd_join_node):
               )
               UNION ALL
               SELECT
-                "effective_timestamp" AS "__FB_TS_COL",
+                CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
                 "cust_id" AS "__FB_KEY_COL",
                 "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
                 1 AS "__FB_TS_TIE_BREAKER_COL",

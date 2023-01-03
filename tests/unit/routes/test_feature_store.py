@@ -1,14 +1,17 @@
 """
 Test for FeatureStore route
 """
+import copy
 from http import HTTPStatus
 from unittest.mock import Mock
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import CredentialsError
 from featurebyte.schema.feature_store import FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
@@ -270,7 +273,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         return FeatureStoreSample(
             feature_store_name=snowflake_feature_store.name,
             graph={
-                "edges": [],
+                "edges": [{"source": "input_1", "target": "project_1"}],
                 "nodes": [
                     {
                         "name": "input_1",
@@ -278,6 +281,32 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                         "parameters": {
                             "type": data_response_dict["type"],
                             "id": "6332fdb21e8f0eeccc414512",
+                            "columns": [
+                                {"name": "col_int", "dtype": "INT"},
+                                {"name": "col_float", "dtype": "FLOAT"},
+                                {"name": "col_char", "dtype": "CHAR"},
+                                {"name": "col_text", "dtype": "VARCHAR"},
+                                {"name": "col_binary", "dtype": "BINARY"},
+                                {"name": "col_boolean", "dtype": "BOOL"},
+                                {"name": "event_timestamp", "dtype": "TIMESTAMP"},
+                                {"name": "created_at", "dtype": "TIMESTAMP"},
+                                {"name": "cust_id", "dtype": "VARCHAR"},
+                            ],
+                            "table_details": {
+                                "database_name": "sf_database",
+                                "schema_name": "sf_schema",
+                                "table_name": "sf_table",
+                            },
+                            "feature_store_details": snowflake_feature_store.json_dict(),
+                            "timestamp_column": "event_timestamp",
+                            "id_column": "event_timestamp",
+                        },
+                        "type": "input",
+                    },
+                    {
+                        "name": "project_1",
+                        "output_type": "series",
+                        "parameters": {
                             "columns": [
                                 "col_int",
                                 "col_float",
@@ -288,26 +317,20 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                                 "event_timestamp",
                                 "created_at",
                                 "cust_id",
-                            ],
-                            "table_details": {
-                                "database_name": "sf_database",
-                                "schema_name": "sf_schema",
-                                "table_name": "sf_table",
-                            },
-                            "feature_store_details": snowflake_feature_store.json_dict(),
+                            ]
                         },
-                        "type": "input",
+                        "type": "project",
                     },
                 ],
             },
-            node_name="input_1",
+            node_name="project_1",
             from_timestamp="2012-11-24T11:00:00",
             to_timestamp="2019-11-24T11:00:00",
             timestamp_column="event_timestamp",
         ).json_dict()
 
     def test_sample_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test data preview (success)"""
+        """Test data sample (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
@@ -316,7 +339,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_session.generate_session_unique_id = Mock(return_value="1")
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
-        assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
         assert mock_session.execute_query.call_args[0][0].endswith(
             "WHERE\n  event_timestamp >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)\n  "
             "AND event_timestamp < CAST('2019-11-24T11:00:00' AS TIMESTAMP)\n"
@@ -324,7 +347,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         )
 
     def test_sample_422__no_timestamp_column(self, test_api_client_persistent, data_sample_payload):
-        """Test data preview no timestamp column"""
+        """Test data sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
             "/feature_store/sample",
@@ -349,7 +372,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     def test_sample_422__invalid_timestamp_range(
         self, test_api_client_persistent, data_sample_payload
     ):
-        """Test data preview no timestamp column"""
+        """Test data sample no timestamp column"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.post(
             "/feature_store/sample",
@@ -369,3 +392,153 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 }
             ]
         }
+
+    def test_description_200(
+        self, test_api_client_persistent, data_sample_payload, mock_get_session
+    ):
+        """Test data description (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame(
+            {
+                "col_float": [
+                    "FLOAT",
+                    5,
+                    1.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.256,
+                    0.00123,
+                    0,
+                    0.01,
+                    0.155,
+                    0.357,
+                    1.327,
+                ],
+                "col_text": [
+                    "VARCHAR",
+                    5,
+                    3.0,
+                    0.1,
+                    0.123,
+                    "a",
+                    5,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ],
+            },
+            index=[
+                "dtype",
+                "unique",
+                "%missing",
+                "%empty",
+                "entropy",
+                "top",
+                "freq",
+                "mean",
+                "std",
+                "min",
+                "25%",
+                "50%",
+                "75%",
+                "max",
+            ],
+        )
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = pd.DataFrame(
+            {
+                "a_unique": [5],
+                "a_%missing": [1.0],
+                "a_%empty": [np.nan],
+                "a_entropy": [np.nan],
+                "a_top": [np.nan],
+                "a_freq": [np.nan],
+                "a_mean": [0.256],
+                "a_std": [0.00123],
+                "a_min": [0],
+                "a_p25": [0.01],
+                "a_p50": [0.155],
+                "a_p75": [0.357],
+                "a_max": [1.327],
+                "a_min_offset": [np.nan],
+                "a_max_offset": [np.nan],
+                "b_unique": [5],
+                "b_%missing": [3.0],
+                "b_%empty": [0.1],
+                "b_entropy": [0.123],
+                "b_top": ["a"],
+                "b_freq": [5],
+                "b_mean": [np.nan],
+                "b_std": [np.nan],
+                "b_min": [np.nan],
+                "b_p25": [np.nan],
+                "b_p50": [np.nan],
+                "b_p75": [np.nan],
+                "b_max": [np.nan],
+                "b_min_offset": [np.nan],
+                "b_max_offset": [np.nan],
+            }
+        )
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        sample_payload = copy.deepcopy(data_sample_payload)
+        sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float", "col_text"]
+        response = test_api_client.post("/feature_store/description", json=sample_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
+
+    def test_description_200_numeric_only(
+        self, test_api_client_persistent, data_sample_payload, mock_get_session
+    ):
+        """Test data description with numeric columns only (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame(
+            {
+                "col_float": ["FLOAT", 20, 1.0, 0.256, 0.00123, 0, 0.01, 0.155, 0.357, 1.327],
+            },
+            index=[
+                "dtype",
+                "unique",
+                "%missing",
+                "mean",
+                "std",
+                "min",
+                "25%",
+                "50%",
+                "75%",
+                "max",
+            ],
+        )
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = pd.DataFrame(
+            {
+                "a_unique": [20],
+                "a_%missing": [1.0],
+                "a_%empty": [np.nan],
+                "a_entropy": [np.nan],
+                "a_top": [np.nan],
+                "a_freq": [np.nan],
+                "a_mean": [0.256],
+                "a_std": [0.00123],
+                "a_min": [0],
+                "a_p25": [0.01],
+                "a_p50": [0.155],
+                "a_p75": [0.357],
+                "a_max": [1.327],
+                "a_min_offset": [np.nan],
+                "a_max_offset": [np.nan],
+            }
+        )
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+        sample_payload = copy.deepcopy(data_sample_payload)
+        sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float"]
+        response = test_api_client.post("/feature_store/description", json=sample_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)

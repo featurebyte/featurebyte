@@ -13,7 +13,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr, StrictStr
 from typeguard import typechecked
 
-from featurebyte.common.utils import validate_datetime_input
+from featurebyte.common.utils import dataframe_from_json, validate_datetime_input
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
@@ -220,7 +220,7 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
-        return pd.read_json(response.json(), orient="table", convert_dates=False)
+        return dataframe_from_json(response.json())
 
     @property
     def timestamp_column(self) -> Optional[str]:
@@ -262,7 +262,7 @@ class SampleMixin:
         Raises
         ------
         RecordRetrievalException
-            Preview request failed
+            Sample request failed
         """
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
@@ -282,4 +282,55 @@ class SampleMixin:
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
-        return pd.read_json(response.json(), orient="table", convert_dates=False)
+        return dataframe_from_json(response.json())
+
+    @typechecked
+    def describe(
+        self: HasExtractPrunedGraphAndNode,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+    ) -> pd.DataFrame:
+        """
+        Describe transformed table/column
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Describe request failed
+        """
+        from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
+        to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
+
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = FeatureStoreSample(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=self.timestamp_column,
+        )
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/description?size={size}&seed={seed}", json=payload.json_dict()
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return dataframe_from_json(response.json())

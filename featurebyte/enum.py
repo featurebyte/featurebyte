@@ -121,6 +121,7 @@ class DBVarType(StrEnum):
     INT = "INT", "Integer column"
     TIME = "TIME", "Time column"
     TIMESTAMP = "TIMESTAMP", "Timestamp column"
+    TIMESTAMP_TZ = "TIMESTAMP_TZ", "Timestamp column with timezone offset"
     VARCHAR = "VARCHAR", "Variable-length string column"
     OBJECT = "OBJECT", "Mixed-type column"
     TIMEDELTA = "TIMEDELTA", "Time delta column"

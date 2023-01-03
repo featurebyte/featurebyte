@@ -45,7 +45,9 @@ class SCDDataModel(SCDTableData, DataModel):
         cls, value: Optional[str], values: dict[str, Any]
     ) -> Optional[str]:
         return DataModel.validate_column_exists(
-            column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
+            column_name=value,
+            values=values,
+            expected_types={DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ},
         )
 
     @validator("natural_key_column", "surrogate_key_column")

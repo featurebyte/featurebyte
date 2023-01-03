@@ -109,7 +109,7 @@ def test_getitem__list_of_str(snowflake_event_view):
 @pytest.mark.parametrize(
     "column, offset, expected_var_type",
     [
-        ("event_timestamp", None, DBVarType.TIMESTAMP),
+        ("event_timestamp", None, DBVarType.TIMESTAMP_TZ),
         ("col_float", 1, DBVarType.FLOAT),
         ("col_text", 2, DBVarType.VARCHAR),
     ],

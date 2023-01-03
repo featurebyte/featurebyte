@@ -797,7 +797,7 @@ def test_graph_interpreter_preview(graph, node_input):
     )
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    sql_code = interpreter.construct_preview_sql("assign_2")
+    sql_code = interpreter.construct_preview_sql("assign_2")[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -817,7 +817,7 @@ def test_graph_interpreter_preview(graph, node_input):
     ).strip()
     assert sql_code == expected
 
-    sql_code = interpreter.construct_preview_sql("add_1", 5)
+    sql_code = interpreter.construct_preview_sql("add_1", 5)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -871,7 +871,7 @@ def test_filter_node(graph, node_input):
         input_nodes=[proj_a, binary_node],
     )
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(filter_node.name)
+    sql_code = interpreter.construct_preview_sql(filter_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -890,7 +890,7 @@ def test_filter_node(graph, node_input):
     assert sql_code == expected
 
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(filter_series_node.name)
+    sql_code = interpreter.construct_preview_sql(filter_series_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -946,7 +946,7 @@ def test_multiple_filters(graph, node_input):
         input_nodes=[filter_node_1, binary_node_2],
     )
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(filter_node_2.name)
+    sql_code = interpreter.construct_preview_sql(filter_node_2.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -1000,7 +1000,7 @@ def test_filter_assign_project(graph, node_input):
         input_nodes=[assign_node],
     )
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(project_node.name)
+    sql_code = interpreter.construct_preview_sql(project_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -1040,7 +1040,7 @@ def test_project_multi_then_assign(graph, node_input):
         input_nodes=[project_node, proj_b],
     )
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(assign_node.name)
+    sql_code = interpreter.construct_preview_sql(assign_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -1088,7 +1088,7 @@ def test_conditional_assign__project_named(graph, node_input):
     )
 
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(projected_conditional.name)
+    sql_code = interpreter.construct_preview_sql(projected_conditional.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -1109,7 +1109,7 @@ def test_conditional_assign__project_named(graph, node_input):
     assert sql_code == expected
 
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(assign_node.name)
+    sql_code = interpreter.construct_preview_sql(assign_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -1141,7 +1141,7 @@ def test_isnull(graph, node_input):
         input_nodes=[proj_a],
     )
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_preview_sql(mask_node.name)
+    sql_code = interpreter.construct_preview_sql(mask_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT
@@ -1402,7 +1402,7 @@ def test_databricks_source(query_graph_with_groupby):
     interpreter = GraphInterpreter(graph, source_type=SourceType.DATABRICKS)
 
     # Check preview SQL
-    preview_sql = interpreter.construct_preview_sql(input_node.name)
+    preview_sql = interpreter.construct_preview_sql(input_node.name)[0]
     expected = textwrap.dedent(
         """
         SELECT

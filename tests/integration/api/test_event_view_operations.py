@@ -725,10 +725,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
     dt_df = event_view.preview(limit=limit)
     pandas_series = dt_df[column_name]
     for prop in properties:
-        if prop in {"week", "weekofyear"}:
-            series_prop = pandas_series.dt.isocalendar().week
-        else:
-            series_prop = getattr(pandas_series.dt, prop)
+        series_prop = pandas_series.apply(lambda x: getattr(x, prop))
         pd.testing.assert_series_equal(
             dt_df[f"dt_{prop}"],
             series_prop,
@@ -878,8 +875,8 @@ def check_day_of_week_counts(event_view, preview_param):
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "user id": 1,
-        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 9,\n  "1": 5\n}',
-        "DAY_OF_WEEK_ENTROPY_24h": 0.651756561172653,
+        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}',
+        "DAY_OF_WEEK_ENTROPY_24h": 0.830471712436292,
     }
 
 

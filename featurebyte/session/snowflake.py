@@ -6,9 +6,9 @@ from __future__ import annotations
 from typing import Any, OrderedDict
 
 import collections
+import datetime
 import json
 
-import numpy as np
 import pandas as pd
 from pydantic import Field
 from snowflake import connector
@@ -61,6 +61,10 @@ class SnowflakeSession(BaseSession):
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
         await SnowflakeSchemaInitializer(self).initialize()
+        # set timezone to UTC
+        await self.execute_query(
+            "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
+        )
 
     @property
     def schema_name(self) -> str:
@@ -184,11 +188,11 @@ class SnowflakeSession(BaseSession):
         await self.execute_query(
             f"""
             {create_command} {table_name}(
-                {schema}
+                {", ".join([f'"{colname}" {coltype}' for colname, coltype in schema])}
             )
             """
         )
-        dataframe = self._prep_dataframe_before_write_pandas(dataframe)
+        dataframe = self._prep_dataframe_before_write_pandas(dataframe, schema)
         write_pandas(self._connection, dataframe, table_name)
 
     @staticmethod
@@ -210,9 +214,12 @@ class SnowflakeSession(BaseSession):
         if snowflake_var_info["type"] in {
             SnowflakeDataType.TIMESTAMP_LTZ,
             SnowflakeDataType.TIMESTAMP_NTZ,
-            SnowflakeDataType.TIMESTAMP_TZ,
         }:
             return DBVarType.TIMESTAMP
+        if snowflake_var_info["type"] in {
+            SnowflakeDataType.TIMESTAMP_TZ,
+        }:
+            return DBVarType.TIMESTAMP_TZ
         raise ValueError(f"Not supported data type '{snowflake_var_info}'")
 
     async def list_table_schema(
@@ -233,7 +240,7 @@ class SnowflakeSession(BaseSession):
         return column_name_type_map
 
     @staticmethod
-    def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> str:
+    def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
 
         Parameters
@@ -243,31 +250,46 @@ class SnowflakeSession(BaseSession):
 
         Returns
         -------
-        str
+        list[tuple[str, str]]
         """
         schema = []
         for colname, dtype in dataframe.dtypes.to_dict().items():
-            if pd.api.types.is_datetime64_any_dtype(dataframe[colname]):
-                db_type = "DATETIME"
+
+            if isinstance(dataframe[colname].iloc[0], datetime.datetime):
+                if dataframe[colname].iloc[0].tzinfo:
+                    db_type = "TIMESTAMP_TZ"
+                else:
+                    db_type = "TIMESTAMP_NTZ"
+            elif pd.api.types.is_datetime64_any_dtype(dataframe[colname]):
+                if pd.api.types.is_datetime64tz_dtype(dataframe[colname]):
+                    db_type = "TIMESTAMP_TZ"
+                else:
+                    db_type = "TIMESTAMP_NTZ"
             elif pd.api.types.is_float_dtype(dtype):
                 db_type = "DOUBLE"
             elif pd.api.types.is_integer_dtype(dtype):
                 db_type = "INT"
             else:
                 db_type = "VARCHAR"
-            schema.append(f'"{colname}" {db_type}')
-        schema_str = ", ".join(schema)
-        return schema_str
+            schema.append((colname, db_type))
+        return schema
 
     @staticmethod
-    def _prep_dataframe_before_write_pandas(dataframe: pd.DataFrame) -> pd.DataFrame:
+    def _prep_dataframe_before_write_pandas(
+        dataframe: pd.DataFrame, schema: list[tuple[str, str]]
+    ) -> pd.DataFrame:
         # Ideally we should avoid making a copy, but so far the only way to get write_pandas() to
         # create DATETIME type columns in Snowflake for datetime columns in DataFrame is to specify
         # DATETIME type in the schema when creating table, and convert the dtype in DataFrame to
         # object before calling write_pandas(). A copy is made to prevent unintended side effects.
         dataframe = dataframe.copy()
-        for date_col in dataframe.select_dtypes(include=[np.datetime64]):
-            dataframe[date_col] = dataframe[date_col].astype(str)
+        for colname, coltype in schema:
+            if coltype in {"TIMESTAMP_NTZ", "TIMESTAMP_TZ"}:
+                dataframe[colname] = (
+                    dataframe[colname]
+                    .astype(str)
+                    .str.replace(r"(\+\d+):(\d+)", r" \1\2", regex=True)
+                )
         return dataframe
 
 

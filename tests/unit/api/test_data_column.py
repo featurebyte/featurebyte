@@ -137,8 +137,8 @@ def _check_event_data_with_critical_data_info(event_data):
           "col_text" AS "col_text",
           "col_binary" AS "col_binary",
           "col_boolean" AS "col_boolean",
-          "event_timestamp" AS "event_timestamp",
-          "created_at" AS "created_at",
+          CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+          CAST("created_at" AS VARCHAR) AS "created_at",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."sf_table"
         LIMIT 10

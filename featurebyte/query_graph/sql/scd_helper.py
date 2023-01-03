@@ -8,7 +8,7 @@ from typing import Literal, Optional, cast
 from dataclasses import dataclass
 
 import pandas as pd
-from sqlglot import expressions
+from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -82,6 +82,7 @@ def get_scd_join_expr(
     offset: Optional[str] = None,
     allow_exact_match: bool = True,
     quote_right_input_columns: bool = True,
+    convert_timestamps_to_utc: bool = True,
 ) -> Select:
     """
     Construct a query to perform SCD join
@@ -110,6 +111,8 @@ def get_scd_join_expr(
     quote_right_input_columns: bool
         Whether to quote right table's input columns. Temporary and should be removed after
         https://featurebyte.atlassian.net/browse/DEV-935
+    convert_timestamps_to_utc: bool
+        Whether timestamps should be converted to UTC for joins
 
     Returns
     -------
@@ -145,6 +148,7 @@ def get_scd_join_expr(
         adapter=adapter,
         offset=offset,
         allow_exact_match=allow_exact_match,
+        convert_timestamps_to_utc=convert_timestamps_to_utc,
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
@@ -169,12 +173,32 @@ def get_scd_join_expr(
     return select_expr
 
 
+def _convert_to_utc_ntz(col_expr: expressions.Expression) -> expressions.Expression:
+    """
+    Convert timestamp expression to UTC values and NTZ timestamps
+
+    Parameters
+    ----------
+    col_expr: expressions.Expression
+        Timestamp expression to convert
+
+    Returns
+    -------
+    expressions.Expression
+    """
+    utc_ts_expr = expressions.Anonymous(
+        this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), col_expr]
+    )
+    return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
+
+
 def augment_table_with_effective_timestamp(
     left_table: Table,
     right_table: Table,
     adapter: BaseAdapter,
     offset: Optional[str],
     allow_exact_match: bool = True,
+    convert_timestamps_to_utc: bool = True,
 ) -> Select:
     """
     This constructs a query that calculates the corresponding SCD effective date for each row in the
@@ -228,6 +252,8 @@ def augment_table_with_effective_timestamp(
         Offset to apply when performing SCD join
     allow_exact_match: bool
         Whether to allow exact matching effective timestamps to be joined
+    convert_timestamps_to_utc: bool
+        Whether timestamps should be converted to UTC for joins
 
     Returns
     -------
@@ -242,6 +268,10 @@ def augment_table_with_effective_timestamp(
         )
     else:
         left_ts_col = left_table.timestamp_column_expr
+    right_ts_col = right_table.timestamp_column_expr
+    if convert_timestamps_to_utc:
+        left_ts_col = _convert_to_utc_ntz(left_ts_col)
+        right_ts_col = _convert_to_utc_ntz(right_ts_col)
 
     # Left table. Set up special columns: TS_COL, KEY_COL, EFFECTIVE_TS_COL and TS_TIE_BREAKER_COL
     left_view_with_ts_and_key = select(
@@ -268,7 +298,7 @@ def augment_table_with_effective_timestamp(
     # Right table. Set up the same special columns. The ordering of the columns in the SELECT
     # statement matters (must match the left table's).
     right_ts_and_key = select(
-        alias_(right_table.timestamp_column_expr, alias=TS_COL, quoted=True),
+        alias_(right_ts_col, alias=TS_COL, quoted=True),
         alias_(quoted_identifier(right_table.join_key), alias=KEY_COL, quoted=True),
         alias_(
             right_table.timestamp_column_expr,

@@ -17,6 +17,7 @@ from featurebyte.api.data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -385,7 +386,7 @@ class Feature(
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return pd.read_json(result, orient="table", convert_dates=False)
+        return dataframe_from_json(result)
 
     @typechecked
     def create_new_version(self, feature_job_setting: FeatureJobSetting) -> Feature:

@@ -13,7 +13,11 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
-from featurebyte.common.utils import dataframe_from_arrow_stream, dataframe_to_arrow_bytes
+from featurebyte.common.utils import (
+    dataframe_from_arrow_stream,
+    dataframe_from_json,
+    dataframe_to_arrow_bytes,
+)
 from featurebyte.enum import SourceType
 from tests.unit.routes.base import BaseApiTestSuite
 
@@ -467,7 +471,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             f"{self.base_route}/preview", json=featurelist_preview_payload
         )
         assert response.status_code == HTTPStatus.OK
-        assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
     @pytest.fixture(name="featurelist_get_historical_features_payload")
     def featurelist_get_historical_features_payload_fixture(self, featurelist_feature_clusters):

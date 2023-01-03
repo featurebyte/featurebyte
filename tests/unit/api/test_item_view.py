@@ -107,8 +107,8 @@ def test_from_item_data__auto_join_columns(
         "item_id_col": "VARCHAR",
         "item_type": "VARCHAR",
         "item_amount": "FLOAT",
-        "created_at": "TIMESTAMP",
-        "event_timestamp": "TIMESTAMP",
+        "created_at": "TIMESTAMP_TZ",
+        "event_timestamp": "TIMESTAMP_TZ",
         "cust_id": "INT",
     }
     assert view_dict["column_lineage_map"] == {
@@ -126,13 +126,13 @@ def test_from_item_data__auto_join_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          L."event_timestamp" AS "event_timestamp",
+          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp",
           L."cust_id" AS "cust_id",
           R."event_id_col" AS "event_id_col",
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
-          R."created_at" AS "created_at"
+          CAST(R."created_at" AS VARCHAR) AS "created_at"
         FROM (
           SELECT
             "col_int" AS "col_int",
@@ -156,8 +156,7 @@ def test_from_item_data__auto_join_columns(
           FROM "sf_database"."sf_schema"."items_table"
         ) AS R
           ON L."col_int" = R."event_id_col"
-        LIMIT 10
-        """
+        LIMIT 10        """
     ).strip()
     assert preview_sql == expected_sql
 
@@ -279,8 +278,8 @@ def test_join_event_data_attributes__more_columns(
         "item_id_col": "VARCHAR",
         "item_type": "VARCHAR",
         "item_amount": "FLOAT",
-        "created_at": "TIMESTAMP",
-        "event_timestamp": "TIMESTAMP",
+        "created_at": "TIMESTAMP_TZ",
+        "event_timestamp": "TIMESTAMP_TZ",
         "cust_id": "INT",
         "col_float": "FLOAT",
     }
@@ -305,8 +304,8 @@ def test_join_event_data_attributes__more_columns(
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
-          R."created_at" AS "created_at",
-          R."event_timestamp" AS "event_timestamp",
+          CAST(R."created_at" AS VARCHAR) AS "created_at",
+          CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp",
           R."cust_id" AS "cust_id"
         FROM (
           SELECT
