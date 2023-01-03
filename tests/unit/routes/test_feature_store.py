@@ -393,8 +393,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ]
         }
 
-    def test_describe_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
-        """Test data describe (success)"""
+    def test_description_200(
+        self, test_api_client_persistent, data_sample_payload, mock_get_session
+    ):
+        """Test data description (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame(
@@ -487,14 +489,14 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float", "col_text"]
-        response = test_api_client.post("/feature_store/describe", json=sample_payload)
+        response = test_api_client.post("/feature_store/description", json=sample_payload)
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
 
-    def test_describe_200_numeric_only(
+    def test_description_200_numeric_only(
         self, test_api_client_persistent, data_sample_payload, mock_get_session
     ):
-        """Test data describe with numeric columns only (success)"""
+        """Test data description with numeric columns only (success)"""
         test_api_client, _ = test_api_client_persistent
 
         expected_df = pd.DataFrame(
@@ -537,6 +539,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float"]
-        response = test_api_client.post("/feature_store/describe", json=sample_payload)
+        response = test_api_client.post("/feature_store/description", json=sample_payload)
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)

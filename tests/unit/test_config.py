@@ -227,3 +227,11 @@ def test_write_creds__update_if_no_creds_exist():
         assert loaded_creds == cred
         # Assert existing configs are still there
         assert new_config.logging == initial_logging_settings
+
+
+def test_empty_configuration_file():
+    """
+    Test creating configuration from empty config file does not fail
+    """
+    with tempfile.NamedTemporaryFile() as file_handle:
+        Configurations(file_handle.name)

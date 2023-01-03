@@ -223,7 +223,7 @@ class GraphInterpreter:
 
     def _apply_type_conversions(
         self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
-    ) -> Tuple[expressions.Select, dict[str, DBVarType]]:
+    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """
         Apply type conversions for data retrieval
 
@@ -236,13 +236,13 @@ class GraphInterpreter:
 
         Returns
         -------
-        Tuple[expressions.Select, dict[str, DBVarType]]
+        Tuple[expressions.Select, dict[Optional[str], DBVarType]]
             SQL expression for data retrieval, column to apply conversion on resulting dataframe
         """
         # convert timestamp_ntz columns to string
         type_conversions = {}
         for column in columns:
-            if not column.name:
+            if not column.name and len(columns) > 1:
                 continue
             if column.dtype == DBVarType.TIMESTAMP_TZ:
                 type_conversions[column.name] = column.dtype
@@ -273,7 +273,7 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> Tuple[expressions.Select, dict[str, DBVarType]]:
+    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
         Parameters
@@ -293,7 +293,7 @@ class GraphInterpreter:
 
         Returns
         -------
-        Tuple[expressions.Select, dict[str, DBVarType]]
+        Tuple[expressions.Select, dict[Optional[str], DBVarType]]
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_graph, flat_node = self.flatten_graph(node_name=node_name)
@@ -350,7 +350,7 @@ class GraphInterpreter:
 
     def construct_preview_sql(
         self, node_name: str, num_rows: int = 10
-    ) -> Tuple[str, dict[str, DBVarType]]:
+    ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to preview data from a given node
 
         Parameters
@@ -362,7 +362,7 @@ class GraphInterpreter:
 
         Returns
         -------
-        Tuple[str, dict[str, DBVarType]]:
+        Tuple[str, dict[Optional[str], DBVarType]]:
             SQL code for preview and type conversions to apply on results
         """
         sql_tree, type_conversions = self._construct_sample_sql(node_name=node_name, num_rows=0)
@@ -379,7 +379,7 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> Tuple[str, dict[str, DBVarType]]:
+    ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
         Parameters
@@ -399,7 +399,7 @@ class GraphInterpreter:
 
         Returns
         -------
-        Tuple[str, dict[str, DBVarType]]:
+        Tuple[str, dict[Optional[str], DBVarType]]:
             SQL code for sample and type conversions to apply on results
         """
 
@@ -786,7 +786,7 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
-    ) -> Tuple[str, dict[str, DBVarType], List[str], List[ViewDataColumn]]:
+    ) -> Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]:
         """Construct SQL to describe data from a given node
 
         Parameters
@@ -806,7 +806,7 @@ class GraphInterpreter:
 
         Returns
         -------
-        Tuple[str, dict[str, DBVarType], List[str], List[ViewDataColumn]]
+        Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]
             SQL code, type conversions to apply on result, row names, columns
         """
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(

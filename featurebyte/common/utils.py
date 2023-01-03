@@ -125,7 +125,7 @@ def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
 
 def dataframe_to_json(
     dataframe: pd.DataFrame,
-    type_conversions: Optional[dict[str, DBVarType]] = None,
+    type_conversions: Optional[dict[Optional[str], DBVarType]] = None,
     skip_prepare: bool = False,
 ) -> dict[str, Any]:
     """
@@ -135,7 +135,7 @@ def dataframe_to_json(
     ----------
     dataframe: pd.DataFrame
         Dataframe object
-    type_conversions: Optional[dict[str, DBVarType]]
+    type_conversions: Optional[dict[Optional[str], DBVarType]]
         Conversions to apply on columns
     skip_prepare: bool
         Whether to skip dataframe preparation
@@ -194,9 +194,14 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
         return value
 
     dataframe = pd.read_json(values["data"], orient="table", convert_dates=False)
-    type_conversions: Optional[dict[str, DBVarType]] = values.get("type_conversions")
+    type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
     if type_conversions:
         for col_name, dtype in type_conversions.items():
+
+            # is col_name is None in type_conversions it should apply to the only column in the dataframe
+            if not col_name:
+                col_name = dataframe.columns[0]
+
             if dtype == DBVarType.TIMESTAMP_TZ:
                 dataframe[col_name] = dataframe[col_name].apply(_to_datetime)
             else:

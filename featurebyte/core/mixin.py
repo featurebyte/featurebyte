@@ -329,7 +329,7 @@ class SampleMixin:
         )
         client = Configurations().get_client()
         response = client.post(
-            url=f"/feature_store/describe?size={size}&seed={seed}", json=payload.json_dict()
+            url=f"/feature_store/description?size={size}&seed={seed}", json=payload.json_dict()
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)

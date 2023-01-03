@@ -240,7 +240,7 @@ async def get_data_sample(
     )
 
 
-@router.post("/describe", response_model=Dict[str, Any])
+@router.post("/description", response_model=Dict[str, Any])
 async def get_data_description(
     request: Request,
     sample: FeatureStoreSample,
