@@ -36,7 +36,6 @@ COMMON_SKIPPED_ATTRIBUTES = [
     "node_types_lineage",
     "pytype_dbtype_map",
     "node",
-    "column_lineage_map",
     "column_var_type_map",
     "inherited_columns",
     "protected_attributes",

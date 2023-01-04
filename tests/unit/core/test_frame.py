@@ -78,10 +78,6 @@ def test__getitem__list_of_str_key(dataframe):
         "parameters": {"columns": ["CUST_ID", "VALUE"]},
         "output_type": NodeOutputType.FRAME,
     }
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "project_1"),
-        "VALUE": ("input_1", "project_1"),
-    }
     assert sub_dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
@@ -110,14 +106,6 @@ def test__getitem__series_key(dataframe, bool_series):
         "type": NodeType.FILTER,
         "parameters": {},
         "output_type": NodeOutputType.FRAME,
-    }
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1"),
-        "PRODUCT_ACTION": ("input_1", "filter_1"),
-        "VALUE": ("input_1", "filter_1"),
-        "MASK": ("input_1", "filter_1"),
-        "TIMESTAMP": ("input_1", "filter_1"),
-        "PROMOTION_START_DATE": ("input_1", "filter_1"),
     }
     assert sub_dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
@@ -348,16 +336,6 @@ def test_multiple_statements(dataframe):
         "parameters": {"name": "vip_customer", "value": None},
         "output_type": NodeOutputType.FRAME,
     }
-    assert dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1"),
-        "PRODUCT_ACTION": ("input_1", "filter_1"),
-        "VALUE": ("input_1", "filter_1"),
-        "MASK": ("input_1", "filter_1"),
-        "TIMESTAMP": ("input_1", "filter_1"),
-        "PROMOTION_START_DATE": ("input_1", "filter_1"),
-        "amount": ("assign_1",),
-        "vip_customer": ("assign_2",),
-    }
     assert dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
@@ -414,14 +392,6 @@ def test_frame__dict(dataframe):
     sub_dataframe = filtered_dataframe[["VALUE", "CUST_ID"]]
     sub_dataframe_dict = sub_dataframe.dict()
     assert isinstance(unused_dataframe, Frame)
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1", "project_2"),
-        "VALUE": ("input_1", "filter_1", "project_2"),
-    }
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1", "project_2"),
-        "VALUE": ("input_1", "filter_1", "project_2"),
-    }
     assert sub_dataframe.row_index_lineage == ("input_1", "filter_2")
     sub_dataframe_dict["feature_store"] = dataframe.feature_store
     loaded_sub_dataframe = Frame.parse_obj(sub_dataframe_dict)

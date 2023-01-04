@@ -3,7 +3,7 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, List, Union
 
 import pandas as pd
 from pydantic import Field, root_validator
@@ -16,7 +16,6 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.util import append_to_lineage
 
 
 class BaseFrame(QueryObject, SampleMixin):
@@ -27,17 +26,9 @@ class BaseFrame(QueryObject, SampleMixin):
     ----------
     columns_info: List[ColumnInfo]
         List of column specifications that are contained in this frame.
-    column_lineage_map: Dict[str, Tuple[str, ...]]
-        Column lineage map tracks a mapping of a column name, to a tuple of node names that have caused the values in a
-        column to have changed. This could include situations where
-        - the number of rows are decreasing in a column due to a selection (eg. select col_a from table(col_a, col_b))
-        - changing the values through an assignment (eg. col["a"] = col["b"])
-        - we apply an operation to update the value (eg. col["a"] = col["a"] + 123)
-        This is used to help us optimize some logic to not create nodes unnecessarily.
     """
 
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
-    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -79,13 +70,6 @@ class BaseFrame(QueryObject, SampleMixin):
             global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
             values["graph"] = global_graph
             values["node_name"] = node_name_map[values["node_name"]]
-            if "column_lineage_map" in values:
-                column_lineage_map = {}
-                for col, lineage in values["column_lineage_map"].items():
-                    column_lineage_map[col] = tuple(
-                        node_name_map[node_name] for node_name in lineage
-                    )
-                values["column_lineage_map"] = column_lineage_map
         return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -94,12 +78,6 @@ class BaseFrame(QueryObject, SampleMixin):
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name
-            column_lineage_map = {}
-            for col, lineage in self.column_lineage_map.items():
-                column_lineage_map[col] = tuple(
-                    node_name_map[node_name] for node_name in lineage if node_name in node_name_map
-                )
-            new_object.column_lineage_map = column_lineage_map
 
             # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
             # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
@@ -178,29 +156,12 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         """
         self._check_any_missing_column(item)
         if isinstance(item, str):
-            # When single column projection happens, the last node of the Series lineage
-            # (`self.column_lineage_map[item][-1]`) is used rather than the DataFrame's last node (`self.node`).
-            # This is to prevent adding redundant project node to the graph when the value of the column does
-            # not change. Consider the following case if `self.node` is used:
-            # >>> df["c"] = df["b"]
-            # >>> b = df["b"]
-            # >>> dict(df.graph.edges)
-            # {
-            #     "input_1": ["project_1", "assign_1"],
-            #     "project_1": ["assign_1"],
-            #     "assign_1": ["project_2"]
-            # }
-            # Current implementation uses the last node of each lineage, it results in a simpler graph:
-            # >>> dict(df.graph.edges)
-            # {
-            #     "input_1": ["project_1", "assign_1"],
-            #     "project_1": ["assign_1"],
-            # }
+            op_struct = self.graph.extract_operation_structure(node=self.node)
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [item]},
                 node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
+                input_nodes=[self.graph.get_node_by_name(op_struct.get_column_node_name(item))],
             )
             output = self._series_class(
                 feature_store=self.feature_store,
@@ -219,30 +180,22 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            column_lineage_map = {}
-            for col in item:
-                column_lineage_map[col] = append_to_lineage(self.column_lineage_map[col], node.name)
             return type(self)(
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 columns_info=[col for col in self.columns_info if col.name in item],
                 node_name=node.name,
-                column_lineage_map=column_lineage_map,
                 **self._getitem_frame_params,
             )
         # item must be Series type
         node = self._add_filter_operation(
             item=self, mask=item, node_output_type=NodeOutputType.FRAME
         )
-        column_lineage_map = {}
-        for col, lineage in self.column_lineage_map.items():
-            column_lineage_map[col] = append_to_lineage(lineage, node.name)
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             columns_info=self.columns_info,
             node_name=node.name,
-            column_lineage_map=column_lineage_map,
             **self._getitem_frame_params,
         )
 
@@ -273,9 +226,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 input_nodes=[self.node, value.node],
             )
             self.columns_info.append(ColumnInfo(name=key, dtype=value.dtype))
-            self.column_lineage_map[key] = append_to_lineage(
-                self.column_lineage_map.get(key, tuple()), node.name
-            )
         else:
             node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
@@ -285,9 +235,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             )
             self.columns_info.append(
                 ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
-            )
-            self.column_lineage_map[key] = append_to_lineage(
-                self.column_lineage_map.get(key, tuple()), node.name
             )
 
         # update node_name

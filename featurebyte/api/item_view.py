@@ -11,11 +11,7 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.join_utils import (
-    combine_column_info_of_views,
-    join_column_lineage_map,
-    join_tabular_data_ids,
-)
+from featurebyte.api.join_utils import combine_column_info_of_views, join_tabular_data_ids
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
@@ -135,23 +131,13 @@ class ItemView(View, GroupByMixin):
             self.columns_info, self.event_view.columns_info, filter_set=set(columns)
         )
 
-        # Construct new column_lineage_map
-        joined_column_lineage_map = join_column_lineage_map(
-            self.column_lineage_map, self.event_view.column_lineage_map, columns, node.name
-        )
-
         # Construct new tabular_data_ids
         joined_tabular_data_ids = join_tabular_data_ids(
             self.tabular_data_ids, self.event_view.tabular_data_ids
         )
 
         # Update metadata
-        self._update_metadata(
-            node.name,
-            joined_columns_info,
-            joined_column_lineage_map,
-            joined_tabular_data_ids,
-        )
+        self._update_metadata(node.name, joined_columns_info, joined_tabular_data_ids)
 
     @property
     def timestamp_column(self) -> str:

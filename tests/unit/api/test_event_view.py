@@ -277,7 +277,6 @@ def get_empty_event_view_fixture(snowflake_feature_store):
                 ),
             ),
             tabular_data_ids=[],
-            column_lineage_map={},
             feature_store=snowflake_feature_store,
         )
 
@@ -584,21 +583,6 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
 
     join_feature_node_name = snowflake_event_view.node.name
     assert join_feature_node_name.startswith("join_feature")
-
-    original_lineage = (original_node_name,)
-    new_col_lineage = (non_time_based_feature.node.name,)
-    assert snowflake_event_view.column_lineage_map == {
-        "col_binary": original_lineage,
-        "col_boolean": original_lineage,
-        "col_char": original_lineage,
-        "col_float": original_lineage,
-        "col_int": original_lineage,
-        "col_text": original_lineage,
-        "created_at": original_lineage,
-        "cust_id": original_lineage,
-        "event_timestamp": original_lineage,
-        "new_col": new_col_lineage,
-    }
     assert snowflake_event_view.row_index_lineage == (original_node_name,)
 
     # assert graph node (excluding name since that can changed by graph pruning)
