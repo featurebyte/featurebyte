@@ -132,6 +132,24 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         """
         self._check_any_missing_column(item)
         if isinstance(item, str):
+            # When single column projection happens, the last node of the Series lineage
+            # (from the operation structure) is used rather than the DataFrame's last node (`self.node`).
+            # This is to prevent adding redundant project node to the graph when the value of the column does
+            # not change. Consider the following case if `self.node` is used:
+            # >>> df["c"] = df["b"]
+            # >>> b = df["b"]
+            # >>> dict(df.graph.edges)
+            # {
+            #     "input_1": ["project_1", "assign_1"],
+            #     "project_1": ["assign_1"],
+            #     "assign_1": ["project_2"]
+            # }
+            # Current implementation uses the last node of each lineage, it results in a simpler graph:
+            # >>> dict(df.graph.edges)
+            # {
+            #     "input_1": ["project_1", "assign_1"],
+            #     "project_1": ["assign_1"],
+            # }
             op_struct = self.graph.extract_operation_structure(node=self.node)
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
