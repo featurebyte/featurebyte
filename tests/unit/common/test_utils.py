@@ -56,7 +56,7 @@ def test_dataframe_to_json_no_column_name(data_to_convert):
     Test test_dataframe_to_json for single column without name in conversion
     """
     original_df, _ = data_to_convert
-    original_df = original_df[["b"]]
+    original_df = original_df[["b"]].copy()
     type_conversions = {None: DBVarType.TIMESTAMP_TZ}
     data = dataframe_to_json(original_df, type_conversions)
     output_df = dataframe_from_json(data)

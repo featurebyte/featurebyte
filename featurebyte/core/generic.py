@@ -8,11 +8,13 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 import json
 from abc import abstractmethod
 
-from pydantic import Field
+from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.algorithm import dfs_traversal
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -35,6 +37,12 @@ class QueryObject(FeatureByteBaseModel):
     node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(node_name={self.node_name})"
+
+    def __str__(self) -> str:
+        return repr(self)
 
     @property
     def node(self) -> Node:
@@ -59,11 +67,29 @@ class QueryObject(FeatureByteBaseModel):
         operation_structure = self.graph.extract_operation_structure(self.node)
         return operation_structure.row_index_lineage
 
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}(node_name={self.node_name})"
+    @property
+    def node_types_lineage(self) -> list[NodeType]:
+        """
+        Returns a list of node types that is part of the lineage of this QueryObject
 
-    def __str__(self) -> str:
-        return repr(self)
+        Returns
+        -------
+        list[NodeType]
+        """
+        out = []
+        pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
+        for node in dfs_traversal(pruned_graph, pruned_node):
+            out.append(node.type)
+        return out
+
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node_name"] = node_name_map[values["node_name"]]
+        return values
 
     def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
@@ -114,6 +140,20 @@ class QueryObject(FeatureByteBaseModel):
             deep=deep,
         )
 
+    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        if isinstance(self.graph, GlobalQueryGraph):
+            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+            new_object = self.copy()
+            new_object.node_name = mapped_node.name
+
+            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
+            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
+            # global one.
+            new_object.__dict__["graph"] = pruned_graph
+            return new_object.dict(*args, **kwargs)
+        return super().dict(*args, **kwargs)
+
     def json(
         self,
         *,
@@ -149,7 +189,7 @@ class QueryObject(FeatureByteBaseModel):
         dict_object = json.loads(json_object)
         if "graph" in dict_object:
             pruned_dict_object = self.dict()
-            for key in ["graph", "node_name", "column_lineage_map"]:
+            for key in ["graph", "node_name"]:
                 if key in dict_object:
                     dict_object[key] = pruned_dict_object[key]
             json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)

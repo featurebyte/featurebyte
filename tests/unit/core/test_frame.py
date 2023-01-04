@@ -78,10 +78,6 @@ def test__getitem__list_of_str_key(dataframe):
         "parameters": {"columns": ["CUST_ID", "VALUE"]},
         "output_type": NodeOutputType.FRAME,
     }
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "project_1"),
-        "VALUE": ("input_1", "project_1"),
-    }
     assert sub_dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
@@ -110,14 +106,6 @@ def test__getitem__series_key(dataframe, bool_series):
         "type": NodeType.FILTER,
         "parameters": {},
         "output_type": NodeOutputType.FRAME,
-    }
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1"),
-        "PRODUCT_ACTION": ("input_1", "filter_1"),
-        "VALUE": ("input_1", "filter_1"),
-        "MASK": ("input_1", "filter_1"),
-        "TIMESTAMP": ("input_1", "filter_1"),
-        "PROMOTION_START_DATE": ("input_1", "filter_1"),
     }
     assert sub_dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
@@ -155,7 +143,10 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    expected_msg = 'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); got bool instead'
+    expected_msg = (
+        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); '
+        "got bool instead"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -348,16 +339,6 @@ def test_multiple_statements(dataframe):
         "parameters": {"name": "vip_customer", "value": None},
         "output_type": NodeOutputType.FRAME,
     }
-    assert dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1"),
-        "PRODUCT_ACTION": ("input_1", "filter_1"),
-        "VALUE": ("input_1", "filter_1"),
-        "MASK": ("input_1", "filter_1"),
-        "TIMESTAMP": ("input_1", "filter_1"),
-        "PROMOTION_START_DATE": ("input_1", "filter_1"),
-        "amount": ("assign_1",),
-        "vip_customer": ("assign_2",),
-    }
     assert dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
@@ -414,14 +395,6 @@ def test_frame__dict(dataframe):
     sub_dataframe = filtered_dataframe[["VALUE", "CUST_ID"]]
     sub_dataframe_dict = sub_dataframe.dict()
     assert isinstance(unused_dataframe, Frame)
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1", "project_2"),
-        "VALUE": ("input_1", "filter_1", "project_2"),
-    }
-    assert sub_dataframe_dict["column_lineage_map"] == {
-        "CUST_ID": ("input_1", "filter_1", "project_2"),
-        "VALUE": ("input_1", "filter_1", "project_2"),
-    }
     assert sub_dataframe.row_index_lineage == ("input_1", "filter_2")
     sub_dataframe_dict["feature_store"] = dataframe.feature_store
     loaded_sub_dataframe = Frame.parse_obj(sub_dataframe_dict)
@@ -476,3 +449,27 @@ def test_frame__autocompletion(dataframe):
     """
     assert set(dataframe.columns).issubset(dir(dataframe))
     assert dataframe._ipython_key_completions_() == set(dataframe.columns)
+
+
+def test_frame__redundant_project_nodes_get_removed(dataframe):
+    """
+    Test project node get removed due to __getitem__ (by using operation_structure's node_name)
+    """
+    sub_df = dataframe[["CUST_ID", "VALUE"]]
+    cust_id = sub_df["CUST_ID"]
+
+    # check the parent node of the cust_id points to the input node but not project node
+    parent_nodes = sub_df.graph.backward_edges_map[cust_id.node_name]
+    assert len(parent_nodes) == 1
+    node = sub_df.graph.get_node_by_name(parent_nodes[0])
+    assert node.type == NodeType.INPUT
+
+    # check the pruned graph
+    graph = cust_id.dict()["graph"]
+    assert graph["edges"] == [{"source": "input_1", "target": "project_1"}]
+    assert graph["nodes"][1] == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["CUST_ID"]},
+    }

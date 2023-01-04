@@ -37,9 +37,13 @@ class ProxyInputNode(BaseNode):
         proxy_input_order = self.parameters.input_order
         operation_structure = global_state.proxy_input_operation_structures[proxy_input_order]
         return OperationStructure(
-            columns=[col.clone(node_names=[self.name]) for col in operation_structure.columns],
+            columns=[
+                col.clone(node_names=[self.name], node_name=self.name)
+                for col in operation_structure.columns
+            ],
             aggregations=[
-                agg.clone(node_names=[self.name]) for agg in operation_structure.aggregations
+                agg.clone(node_names=[self.name], node_name=self.name)
+                for agg in operation_structure.aggregations
             ],
             output_type=operation_structure.output_type,
             output_category=operation_structure.output_category,

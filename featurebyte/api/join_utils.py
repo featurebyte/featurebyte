@@ -1,14 +1,12 @@
 """
 Join utils class
 """
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set
 
 import copy
 
-from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.util import append_to_lineage
 
 
 def append_rsuffix_to_column_info(
@@ -147,94 +145,6 @@ def join_tabular_data_ids(
     List[PydanticObjectId]
     """
     return sorted(set(data_ids_a + data_ids_b))
-
-
-def join_column_lineage_map(
-    current_map: Dict[str, Tuple[str, ...]],
-    other_map: Dict[str, Tuple[str, ...]],
-    column_filter: List[str],
-    node_name: str,
-) -> Dict[str, Tuple[str, ...]]:
-    """
-    Joins the column lineage
-
-    Parameters
-    ----------
-    current_map: Dict[str, Tuple[str, ...]]
-        current view's column lineage map
-    other_map: Dict[str, Tuple[str, ...]]
-        other view's column lineage map
-    column_filter: List[str]
-        list of columns we want to filter the other_map on
-    node_name: str
-        name of the node
-
-    Returns
-    -------
-    Dict[str, Tuple[str, ...]]
-        joined column lineage map
-    """
-    joined_column_lineage_map = copy.deepcopy(current_map)
-    for col in column_filter:
-        if col in other_map:
-            joined_column_lineage_map[col] = other_map[col]
-        else:
-            logger.debug(f"col {col} not present in other_map, ignoring this column name.")
-    for col, lineage in joined_column_lineage_map.items():
-        joined_column_lineage_map[col] = append_to_lineage(lineage, node_name)
-    return joined_column_lineage_map
-
-
-def filter_join_key_from_column_lineage_map(
-    lineage_map: Dict[str, Tuple[str, ...]], join_key: str
-) -> Dict[str, Tuple[str, ...]]:
-    """
-    Filters out the join key from the column lineage map.
-
-    Parameters
-    ----------
-    lineage_map: Dict[str, Tuple[str, ...]]
-        lineage map to be filtered
-    join_key: str
-        join key
-
-    Returns
-    -------
-    Dict[str, Tuple[str, ...]]
-        filtered lineage map
-    """
-    if join_key not in lineage_map:
-        return lineage_map
-    copied_map = lineage_map.copy()
-    del copied_map[join_key]
-    return copied_map
-
-
-def update_column_lineage_map_with_suffix(
-    lineage_map: Dict[str, Tuple[str, ...]], rsuffix: Optional[str]
-) -> Dict[str, Tuple[str, ...]]:
-    """
-    Helper method to update the keys in a column lineage map with the rsuffix, if a suffix is provided.
-
-    Parameters
-    ----------
-    lineage_map: Dict[str, Tuple[str, ...]]
-        lineage map to be updated
-    rsuffix: Optional[str]
-        suffix to be appended on if provided
-
-    Returns
-    -------
-    Dict[str, Tuple[str, ...]]
-        updated lienage map
-    """
-    if not rsuffix:
-        return lineage_map
-    output = {}
-    for col, lineage in lineage_map.items():
-        new_col = f"{col}{rsuffix}"
-        output[new_col] = lineage
-    return output
 
 
 def is_column_name_in_columns(column_name: str, columns_info: List[ColumnInfo]) -> bool:

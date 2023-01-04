@@ -111,15 +111,6 @@ def test_from_item_data__auto_join_columns(
         "event_timestamp": "TIMESTAMP_TZ",
         "cust_id": "INT",
     }
-    assert view_dict["column_lineage_map"] == {
-        "event_id_col": ("input_2", "join_1"),
-        "item_id_col": ("input_2", "join_1"),
-        "item_type": ("input_2", "join_1"),
-        "item_amount": ("input_2", "join_1"),
-        "created_at": ("input_2", "join_1"),
-        "event_timestamp": ("input_1", "join_1"),
-        "cust_id": ("input_1", "join_1"),
-    }
 
     # Check preview SQL
     preview_sql = view.preview_sql()
@@ -202,16 +193,6 @@ def test_setitem__str_key_series_value(
         "parameters": {"name": "double_value", "value": None},
         "output_type": NodeOutputType.FRAME,
     }
-    assert snowflake_item_view.column_lineage_map == {
-        "event_timestamp": expected_lineage_event_data_columns,
-        "cust_id": expected_lineage_event_data_columns,
-        "event_id_col": expected_lineage_item_data_columns,
-        "item_id_col": expected_lineage_item_data_columns,
-        "item_type": expected_lineage_item_data_columns,
-        "item_amount": expected_lineage_item_data_columns,
-        "created_at": expected_lineage_item_data_columns,
-        "double_value": (snowflake_item_view.node.name,),
-    }
 
 
 def test_join_event_data_attributes__more_columns(
@@ -282,16 +263,6 @@ def test_join_event_data_attributes__more_columns(
         "event_timestamp": "TIMESTAMP_TZ",
         "cust_id": "INT",
         "col_float": "FLOAT",
-    }
-    assert view_dict["column_lineage_map"] == {
-        "event_id_col": ("input_2", "join_1", "join_2"),
-        "item_id_col": ("input_2", "join_1", "join_2"),
-        "item_type": ("input_2", "join_1", "join_2"),
-        "item_amount": ("input_2", "join_1", "join_2"),
-        "created_at": ("input_2", "join_1", "join_2"),
-        "event_timestamp": ("input_1", "join_1", "join_2"),
-        "cust_id": ("input_1", "join_1", "join_2"),
-        "col_float": ("input_1", "join_2"),
     }
 
     # Check preview SQL

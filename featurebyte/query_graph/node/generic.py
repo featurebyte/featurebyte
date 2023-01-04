@@ -149,6 +149,7 @@ class InputNode(BaseNode):
                     tabular_data_id=self.parameters.id,
                     tabular_data_type=self.parameters.type,
                     node_names={self.name},
+                    node_name=self.name,
                     dtype=column.dtype,
                 )
                 for column in self.parameters.columns
@@ -222,7 +223,11 @@ class FilterNode(BaseNode):
         if output_category == NodeOutputCategory.VIEW:
             other_node_names = {self.name}.union(mask_operation_info.all_node_names)
             node_kwargs["columns"] = [
-                col.clone(filter=True, node_names=col.node_names.union(other_node_names))
+                col.clone(
+                    filter=True,
+                    node_names=col.node_names.union(other_node_names),
+                    node_name=self.name,
+                )
                 for col in input_operation_info.columns
             ]
         else:
@@ -433,6 +438,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
+                node_name=node_name,
                 dtype=output_var_type,
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
@@ -496,6 +502,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 filter=any(col.filter for col in columns),
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
+                node_name=node_name,
                 dtype=output_var_type,
             )
         ]
@@ -574,6 +581,7 @@ class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
                 column=name_to_column[input_column_name],
                 groupby_type=self.type,
                 node_names={node_name}.union(other_node_names),
+                node_name=node_name,
                 filter=any(col.filter for col in columns),
                 dtype=name_to_column[input_column_name].dtype,
             )
@@ -615,12 +623,20 @@ class JoinNode(BaseNode):
         left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
         right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
         left_columns = {
-            col.name: col.clone(name=left_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
+            col.name: col.clone(
+                name=left_col_map[col.name],  # type: ignore
+                node_names=col.node_names.union([self.name]),
+                node_name=self.name,
+            )
             for col in inputs[0].columns
             if col.name in left_col_map
         }
         right_columns = {
-            col.name: col.clone(name=right_col_map[col.name], node_names=col.node_names.union([self.name]))  # type: ignore
+            col.name: col.clone(
+                name=right_col_map[col.name],  # type: ignore
+                node_names=col.node_names.union([self.name]),
+                node_name=self.name,
+            )
             for col in inputs[1].columns
             if col.name in right_col_map
         }
@@ -734,14 +750,18 @@ class AliasNode(BaseNode):
             last_col = input_operation_info.columns[-1]
             node_kwargs["columns"] = list(input_operation_info.columns)
             node_kwargs["columns"][-1] = last_col.clone(
-                name=new_name, node_names=last_col.node_names.union([self.name])
+                name=new_name,
+                node_names=last_col.node_names.union([self.name]),
+                node_name=self.name,
             )
         else:
             last_agg = input_operation_info.aggregations[-1]
             node_kwargs["columns"] = input_operation_info.columns
             node_kwargs["aggregations"] = list(input_operation_info.aggregations)
             node_kwargs["aggregations"][-1] = last_agg.clone(
-                name=new_name, node_names=last_agg.node_names.union([self.name])
+                name=new_name,
+                node_names=last_agg.node_names.union([self.name]),
+                node_name=self.name,
             )
 
         return OperationStructure(

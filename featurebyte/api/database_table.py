@@ -3,7 +3,7 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Tuple, Type
+from typing import Any, ClassVar, Type
 
 from abc import ABC
 from http import HTTPStatus
@@ -30,7 +30,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
     """
 
     node_name: str = Field(default_factory=str)
-    column_lineage_map: Dict[str, Tuple[str, ...]] = Field(default_factory=dict, exclude=True)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
     _table_data_class: ClassVar[Type[AllTableDataT]]
 
@@ -112,8 +111,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         super().__init__(**kwargs)
         _, node_name_map = GlobalQueryGraph().load(self.graph)
         self.node_name = node_name_map[self.node_name]
-        for col in self.columns:
-            self.column_lineage_map[col] = (self.node_name,)
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):

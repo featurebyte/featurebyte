@@ -86,18 +86,6 @@ class BaseViewTestSuite:
             "parameters": {"name": "double_value", "value": None},
             "output_type": NodeOutputType.FRAME,
         }
-        assert view_under_test.column_lineage_map == {
-            "col_binary": (source_node_name,),
-            "col_boolean": (source_node_name,),
-            "col_char": (source_node_name,),
-            "col_float": (source_node_name,),
-            "col_int": (source_node_name,),
-            "col_text": (source_node_name,),
-            "event_timestamp": (source_node_name,),
-            "created_at": (source_node_name,),
-            "cust_id": (source_node_name,),
-            "double_value": (view_under_test.node.name,),
-        }
 
     def test_setitem__override_protected_column(self, view_under_test):
         """

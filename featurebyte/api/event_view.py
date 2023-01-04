@@ -23,7 +23,6 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node.generic import InputNode
-from featurebyte.query_graph.util import append_to_lineage
 
 
 class EventViewColumn(LaggableViewColumn):
@@ -372,19 +371,10 @@ class EventView(View, GroupByMixin):
             )
         )
 
-        # Construct new column_lineage_map - only add on the new column name to the lineage map
-        updated_column_lineage_map = copy.deepcopy(self.column_lineage_map)
-        updated_column_lineage_map[new_column_name] = append_to_lineage(tuple(), feature.node.name)
-
         # Construct new tabular_data_ids
         joined_tabular_data_ids = join_tabular_data_ids(
             self.tabular_data_ids, feature.tabular_data_ids
         )
 
         # Update metadata
-        self._update_metadata(
-            node.name,
-            updated_columns_info,
-            updated_column_lineage_map,
-            joined_tabular_data_ids,
-        )
+        self._update_metadata(node.name, updated_columns_info, joined_tabular_data_ids)

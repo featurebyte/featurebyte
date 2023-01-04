@@ -43,7 +43,6 @@ class SimpleTestView(View):
     feature_store: FeatureStoreModel = FeatureStoreModel(
         name="random_featurestore", type=SourceType.TEST, details=TestDatabaseDetails()
     )
-    column_lineage_map: Dict[str, Tuple[str, ...]] = {}
 
     join_col = ""
 
@@ -75,27 +74,19 @@ def test_update_metadata(simple_test_view):
     # stub out some new values we want to update
     new_node_name = "new_node_name"
     new_cols_info = [ColumnInfo(name="colB", dtype=DBVarType.FLOAT)]
-    new_col_lineage_map = {"colX": ("a", "b")}
     new_joined_data_ids = [get_random_pydantic_object_id()]
 
     # verify that the initial state is not the updated state
     assert simple_test_view.node_name != new_node_name
     assert simple_test_view.columns_info != new_cols_info
-    assert simple_test_view.column_lineage_map != new_col_lineage_map
     assert simple_test_view.tabular_data_ids != new_joined_data_ids
 
     # update state
-    simple_test_view._update_metadata(
-        new_node_name,
-        new_cols_info,
-        new_col_lineage_map,
-        new_joined_data_ids,
-    )
+    simple_test_view._update_metadata(new_node_name, new_cols_info, new_joined_data_ids)
 
     # verify that state is updated
     assert simple_test_view.node_name == new_node_name
     assert simple_test_view.columns_info == new_cols_info
-    assert simple_test_view.column_lineage_map == new_col_lineage_map
     assert simple_test_view.tabular_data_ids == new_joined_data_ids
 
 
@@ -339,7 +330,6 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     current_view.node_name = input_node.name
     assert current_view.node_name == "input_1"
     assert current_view.columns_info == [col_info_a, col_info_b]
-    assert current_view.column_lineage_map == {}
     assert current_view.tabular_data_ids == []
 
     generic_input_node_params["node_params"]["columns"] = ["colC", "colD", "colE"]
@@ -352,7 +342,6 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     other_view.node_name = input_node.name
     assert other_view.node_name == "input_2"
     assert other_view.columns_info == [col_info_c, col_info_d, col_info_e]
-    assert other_view.column_lineage_map == {}
     assert other_view.tabular_data_ids == []
 
     # do the join
@@ -366,7 +355,6 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         ColumnInfo(name="colEsuffix", dtype=DBVarType.INT),
     ]
     assert current_view.node_name == "join_1"
-    assert current_view.column_lineage_map == {}
     assert current_view.tabular_data_ids == []
 
     # assert graph node

@@ -8,7 +8,7 @@ from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
 from functools import wraps
 
 import pandas as pd
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -19,9 +19,7 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 
 FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
 
@@ -761,45 +759,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_params={},
             **self.unary_op_series_params(),
         )
-
-    @property
-    def node_types_lineage(self) -> list[NodeType]:
-        """
-        Returns a list of node types that is part of the lineage of this Series
-
-        Returns
-        -------
-        list[NodeType]
-        """
-        out = []
-        series_dict = self.dict()
-        pruned_graph = QueryGraph(**series_dict["graph"])
-        pruned_node = pruned_graph.get_node_by_name(series_dict["node_name"])
-        for node in dfs_traversal(pruned_graph, pruned_node):
-            out.append(node.type)
-        return out
-
-    @root_validator
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node_name"] = node_name_map[values["node_name"]]
-        return values
-
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
-            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            new_object = self.copy()
-            new_object.node_name = mapped_node.name
-            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
-            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
-            # global one.
-            new_object.__dict__["graph"] = pruned_graph
-            return new_object.dict(*args, **kwargs)
-        return super().dict(*args, **kwargs)
 
     def copy(self, *args: Any, **kwargs: Any) -> Series:
         # Copying a Series should prevent it from modifying the parent Frame

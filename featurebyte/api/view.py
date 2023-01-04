@@ -3,19 +3,7 @@ View class
 """
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Type, TypeVar, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -32,11 +20,8 @@ from featurebyte.api.join_utils import (
     combine_column_info_of_views,
     filter_join_key_from_column,
     filter_join_key_from_column_info,
-    filter_join_key_from_column_lineage_map,
     is_column_name_in_columns,
-    join_column_lineage_map,
     join_tabular_data_ids,
-    update_column_lineage_map_with_suffix,
 )
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.core.frame import Frame
@@ -213,7 +198,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_source=data.tabular_source,
             columns_info=data.columns_info,
             node_name=data.node_name,
-            column_lineage_map={col.name: (data.node.name,) for col in data.columns_info},
             tabular_data_ids=[data.id],
             **kwargs,
         )
@@ -365,7 +349,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         self,
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
-        joined_column_lineage_map: Dict[str, Tuple[str, ...]],
         joined_tabular_data_ids: List[PydanticObjectId],
     ) -> None:
         """
@@ -377,14 +360,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             new node name
         joined_columns_info: List[ColumnInfo]
             joined columns info
-        joined_column_lineage_map: Dict[str, Tuple[str, ...]]
-            joined column lineage map
         joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
-        self.column_lineage_map = joined_column_lineage_map
         self.__dict__.update(
             {
                 "tabular_data_ids": joined_tabular_data_ids,
@@ -606,30 +586,13 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )
 
-        # Construct new column_lineage_map
-        filtered_lineage_map = filter_join_key_from_column_lineage_map(
-            other_view.column_lineage_map, right_on
-        )
-        updated_column_lineage_map_with_suffix = update_column_lineage_map_with_suffix(
-            filtered_lineage_map, rsuffix
-        )
-        columns = list(updated_column_lineage_map_with_suffix.keys())
-        joined_column_lineage_map = join_column_lineage_map(
-            self.column_lineage_map, updated_column_lineage_map_with_suffix, columns, node.name
-        )
-
         # Construct new tabular_data_ids
         joined_tabular_data_ids = join_tabular_data_ids(
             self.tabular_data_ids, other_view.tabular_data_ids
         )
 
         # Update metadata
-        self._update_metadata(
-            node.name,
-            joined_columns_info,
-            joined_column_lineage_map,
-            joined_tabular_data_ids,
-        )
+        self._update_metadata(node.name, joined_columns_info, joined_tabular_data_ids)
 
     @staticmethod
     def _validate_offset(offset: Optional[str]) -> None:
