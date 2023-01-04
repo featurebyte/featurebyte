@@ -358,16 +358,17 @@ class AppContainer:
         }
 
         # validate that there are no clashing names
-        seen_names = set()
-        for definitions in app_config.values():
-            for definition in definitions:
-                definition_name = definition["name"]
-                if definition_name in seen_names:
-                    raise ValueError(
-                        f"error creating dependency map. {definition_name} has been defined already. "
-                        "Consider changing the name of the dependency."
-                    )
-                seen_names.add(definition_name)
+        # TODO: (jevon.yeoh) add back later so that it can work with overrides in featurebyte-app
+        # seen_names = set()
+        # for definitions in app_config.values():
+        #     for definition in definitions:
+        #         definition_name = definition["name"]
+        #         if definition_name in seen_names:
+        #             raise ValueError(
+        #                 f"error creating dependency map. {definition_name} has been defined already. "
+        #                 "Consider changing the name of the dependency."
+        #             )
+        #         seen_names.add(definition_name)
 
         # build no dependency objects
         for item in app_config["no_dependency_objects"]:
