@@ -70,16 +70,14 @@ class QueryObject(FeatureByteBaseModel):
     @property
     def node_types_lineage(self) -> list[NodeType]:
         """
-        Returns a list of node types that is part of the lineage of this Series
+        Returns a list of node types that is part of the lineage of this QueryObject
 
         Returns
         -------
         list[NodeType]
         """
         out = []
-        series_dict = self.dict()
-        pruned_graph = QueryGraph(**series_dict["graph"])
-        pruned_node = pruned_graph.get_node_by_name(series_dict["node_name"])
+        pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out
