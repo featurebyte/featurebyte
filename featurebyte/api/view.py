@@ -38,6 +38,7 @@ from featurebyte.api.join_utils import (
     join_tabular_data_ids,
     update_column_lineage_map_with_suffix,
 )
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -137,11 +138,12 @@ class GroupByMixin:
     Mixin that provides groupby functionality to a View object
     """
 
+    __fbautodoc__ = FBAutoDoc(section=["View"])
+
     @typechecked
     def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
         """
-        Group View using a column or list of columns of the View object
-        Refer to [GroupBy](/reference/featurebyte.api.groupby.GroupBy/)
+        Group a view using one or more columns.
 
         Parameters
         ----------
@@ -155,6 +157,22 @@ class GroupByMixin:
         -------
         GroupBy
             a groupby object that contains information about the groups
+
+        See Also
+        --------
+        - [GroupBy](/reference/featurebyte.api.groupby.GroupBy/): GroupBy object
+        - [GroupBy.aggregate](/reference/featurebyte.api.groupby.GroupBy.aggregate/):
+        Create feature from grouped aggregates
+        - [GroupBy.aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/):
+        Create features from grouped aggregates over different time windows
+
+        Examples
+        --------
+        Create GroupBy object from an event view
+        >>> import featurebyte as fb
+        >>> transactions_view = fb.EventView.from_event_data(transactions_data)  # doctest: +SKIP
+        >>> transactions_view.groupby("AccountID")  # doctest: +SKIP
+        GroupBy(EventView(node.name=input_1), keys=['AccountID'])
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.groupby import GroupBy

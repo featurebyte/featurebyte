@@ -74,6 +74,36 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
         Returns
         -------
         FeatureStore
+
+        Examples
+        --------
+        Create a feature store housed in a Snowflake database
+
+        >>> import featurebyte as fb
+        >>> fb.FeatureStore.create(  # doctest: +SKIP
+        ...     name="Snowflake Feature Store",
+        ...     source_type=fb.SourceType.SNOWFLAKE,
+        ...     details=fb.SnowflakeDetails(
+        ...         account="xxx.us-central1.gcp",
+        ...         warehouse="COMPUTE_WH",
+        ...         database="FEATUREBYTE",
+        ...         sf_schema="FEATURESTORE",
+        ...     ),
+        ...     credentials=fb.Credential(
+        ...         name="Snowflake Feature Store",
+        ...         credential_type="USERNAME_PASSWORD",
+        ...         credential=fb.UsernamePasswordCredential(
+        ...             username="username",
+        ...             password="password"
+        ...         )
+        ...     )
+        ... )
+
+        List created feature stores
+        >>> fb.FeatureStore.list()  # doctest: +SKIP
+                              name       type              created_at
+        0  Snowflake Feature Store  snowflake 2023-01-04 12:16:51.811
+
         """
         # Construct object, and save to persistent layer.
         feature_store = FeatureStore(

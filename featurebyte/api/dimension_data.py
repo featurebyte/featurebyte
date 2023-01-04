@@ -46,7 +46,7 @@ class DimensionData(DimensionDataModel, DataApiObject):
         tabular_source: DatabaseTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            Event data name
+            Dimension data name
         dimension_id_column: str
             Dimension data ID column from the given tabular source
         record_creation_date_column: str

@@ -12,7 +12,8 @@ from enum import Enum
 from xml.etree import ElementTree as etree
 
 from docstring_parser import parse
-from docstring_parser.common import DocstringExample
+from docstring_parser.common import Docstring as BaseDocstring
+from docstring_parser.common import DocstringExample, DocstringMeta
 from markdown import Markdown
 from markdown.extensions import Extension
 from mkautodoc.extension import AutoDocProcessor, import_from_string, last_iter, trim_docstring
@@ -24,6 +25,24 @@ from featurebyte.logger import logger
 
 EMPTY_VALUE = inspect._empty
 NONE_TYPES = [None, "NoneType"]
+
+
+class Docstring(BaseDocstring):
+    """
+    Docstring with extended support
+    """
+
+    def __init__(self, docstring: BaseDocstring) -> None:
+        self.__dict__ = docstring.__dict__
+
+    @property
+    def see_also(self) -> Optional[DocstringMeta]:
+        """Return a list of information on function see also."""
+        see_also = [item for item in self.meta if item.args == ["see_also"]]
+        if not see_also:
+            return None
+        assert len(see_also) == 1
+        return see_also[0]
 
 
 def import_resource(resource_descriptor: str) -> Any:
@@ -139,6 +158,7 @@ class ResourceDetails(BaseModel):
     returns: ParameterDetails
     raises: Optional[List[ExceptionDetails]]
     examples: Optional[List[str]]
+    see_also: Optional[str]
 
     @property
     def resource(self) -> Any:
@@ -344,7 +364,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
 
         # process docstring
         docs = trim_docstring(getattr(resource, "__doc__", ""))
-        docstring = parse(docs)
+        docstring = Docstring(parse(docs))
 
         # get parameter description from docstring
         short_description = docstring.short_description
@@ -432,6 +452,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
             ),
             raises=raises,
             examples=[_format_example(example) for example in docstring.examples],
+            see_also=docstring.see_also.description if docstring.see_also else None,
         )
 
     def render_signature(self, elem: etree.Element, resource_details: ResourceDetails) -> None:
@@ -646,6 +667,10 @@ class FBAutoDocProcessor(AutoDocProcessor):
         if resource_details.examples:
             content = "\n".join(resource_details.examples)
             _render("Examples", content)
+
+        # populate see_also
+        if resource_details.see_also:
+            _render("See Also", resource_details.see_also)
 
     def render_members(
         self,

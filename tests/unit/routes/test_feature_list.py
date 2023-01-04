@@ -379,6 +379,30 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is True
 
+        # check serving endpoint populated in info
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        version = get_version()
+        expected_info_response = {
+            "name": "sf_feature_list",
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "default_version_mode": "AUTO",
+            "version_count": 1,
+            "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
+            "status": "DRAFT",
+            "feature_count": 1,
+            "version": {"this": version, "default": version},
+            "production_ready_fraction": {"this": 1.0, "default": 1.0},
+            "versions_info": None,
+            "deployed": True,
+            "serving_endpoint": "/feature_list/63a443938bcb22a73462595f/online_features",
+        }
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict.items() > expected_info_response.items(), response_dict
+
         # disable deployment
         response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": False})
         assert response.status_code == HTTPStatus.OK
@@ -404,6 +428,8 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
             "feature_count": 1,
             "version": {"this": version, "default": version},
             "production_ready_fraction": {"this": 0, "default": 0},
+            "deployed": False,
+            "serving_endpoint": None,
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

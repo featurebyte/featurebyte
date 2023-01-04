@@ -298,6 +298,8 @@ class FeatureListInfo(NamespaceInfo):
     version: VersionComparison
     production_ready_fraction: ProductionReadyFractionComparison
     versions_info: Optional[FeatureListBriefInfoList]
+    deployed: bool
+    serving_endpoint: Optional[str]
 
 
 class FeatureListNamespaceInfo(NamespaceInfo):

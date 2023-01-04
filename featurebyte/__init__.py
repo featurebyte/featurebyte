@@ -1,6 +1,4 @@
 """Python Library for FeatureOps"""
-from importlib import metadata as importlib_metadata
-
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity
@@ -13,32 +11,21 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.common.utils import get_version
+from featurebyte.config import Configurations
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc, SourceType
+from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails
-
-
-def get_version() -> str:
-    """
-    Retrieve module version
-
-    Returns
-    --------
-    str
-        Module version
-    """
-    try:
-        return str(importlib_metadata.version(__name__))
-    except importlib_metadata.PackageNotFoundError:  # pragma: no cover
-        return "unknown"
-
 
 version: str = get_version()
 
 
 __all__ = [
+    "Credential",
+    "Configurations",
     "DimensionData",
     "DimensionView",
     "Entity",
@@ -58,4 +45,5 @@ __all__ = [
     "AggFunc",
     "SourceType",
     "SnowflakeDetails",
+    "UsernamePasswordCredential",
 ]

@@ -19,7 +19,7 @@ async def test_get_credential():
     """
     Test get_credential works as expected
     """
-    config = Configurations("tests/fixtures/config.yaml")
+    config = Configurations("tests/fixtures/config/config.yaml")
     feature_store_name = list(config.credentials.keys())[0]
 
     with patch("featurebyte.utils.credential.Configurations") as mock_config:

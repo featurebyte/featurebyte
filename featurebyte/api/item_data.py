@@ -58,7 +58,7 @@ class ItemData(ItemDataModel, DataApiObject):
         tabular_source: DatabaseTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            Event data name
+            Item data name
         event_id_column: str
             Event ID column from the given tabular source
         item_id_column: str

@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import requests.exceptions
 
 from featurebyte.config import (
     DEFAULT_HOME_PATH,
@@ -26,7 +27,7 @@ def test_configurations():
     """
     Test creating configuration from config file
     """
-    config = Configurations("tests/fixtures/config.yaml")
+    config = Configurations("tests/fixtures/config/config.yaml")
 
     # one credential with db source as key
     assert len(config.credentials) == 1
@@ -61,6 +62,7 @@ def test_configurations():
             api_url="https://app2.featurebyte.com/api/v1",
             api_token="API_TOKEN_VALUE2",
         ),
+        Profile(name="invalid", api_url="http://invalid.endpoint:1234"),
     ]
 
 
@@ -69,7 +71,7 @@ def test_get_client_no_persistence_settings():
     Test getting client with no persistent settings
     """
     with pytest.raises(InvalidSettingsError) as exc_info:
-        Configurations("tests/fixtures/invalid_config.yaml").get_client()
+        Configurations("tests/fixtures/config/invalid_config.yaml").get_client()
     assert str(exc_info.value) == "No profile setting specified"
 
 
@@ -78,7 +80,7 @@ def test_get_client__success():
     Test getting client
     """
     # expect a local fastapi test client
-    client = Configurations("tests/fixtures/config.yaml").get_client()
+    client = Configurations("tests/fixtures/config/config.yaml").get_client()
     with patch.object(client, "request") as mock_request:
         mock_request.return_value.status_code = 200
         client.get("/user/me")
@@ -103,7 +105,7 @@ def test_logging_level_change():
     # fix core log level to 10
     logger._core.min_level = 10
 
-    config = Configurations("tests/fixtures/config.yaml")
+    config = Configurations("tests/fixtures/config/config.yaml")
     config.logging.level = 20
 
     # expect logging to adopt logging level specified in the config
@@ -115,7 +117,7 @@ def test_default_local_storage():
     """
     Test default local storage location if not specified
     """
-    config = Configurations("tests/fixtures/config_no_profile.yaml")
+    config = Configurations("tests/fixtures/config/config_no_profile.yaml")
     assert config.storage.local_path == Path(
         os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH))
     ).joinpath("data")
@@ -127,22 +129,50 @@ def test_use_profile(mock_requests_get):
     Test selecting profile for api service
     """
     mock_requests_get.return_value.status_code = 200
-    config_path = "tests/fixtures/config.yaml"
-    config = Configurations(config_path)
-    assert config.profile.name == "featurebyte1"
-    assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
+    with patch("featurebyte.config.get_home_path") as mock_get_home_path:
+        mock_get_home_path.return_value = Path("tests/fixtures/config")
+        config = Configurations()
+        assert config.profile.name == "featurebyte1"
+        assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
 
-    Configurations.use_profile("featurebyte2")
-    config = Configurations(config_path)
-    assert config.profile.name == "featurebyte2"
-    assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
+        Configurations.use_profile("featurebyte2")
+        config = Configurations()
+        assert config.profile.name == "featurebyte2"
+        assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
+
+
+def test_use_profile_non_existent():
+    """
+    Test use non-existent profile
+    """
+    with patch("featurebyte.config.get_home_path") as mock_get_home_path:
+        mock_get_home_path.return_value = Path("tests/fixtures/config")
+        with pytest.raises(InvalidSettingsError) as exc_info:
+            Configurations.use_profile("non-existent-profile")
+        assert str(exc_info.value) == "Profile not found: non-existent-profile"
+
+
+def test_use_profile_invalid_endpoint():
+    """
+    Test use non-existent profile
+    """
+    with patch("featurebyte.config.get_home_path") as mock_get_home_path:
+        mock_get_home_path.return_value = Path("tests/fixtures/config")
+        with patch("featurebyte.config.BaseAPIClient.request") as mock_request:
+            mock_request.side_effect = requests.exceptions.ConnectionError()
+            with pytest.raises(InvalidSettingsError) as exc_info:
+                Configurations.use_profile("invalid")
+            assert (
+                str(exc_info.value)
+                == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
+            )
 
 
 def test_write_creds__no_update_if_creds_exist():
     """
     Test write_creds function - no update expected if credentials exist in file
     """
-    config = Configurations("tests/fixtures/config.yaml")
+    config = Configurations("tests/fixtures/config/config.yaml")
     assert len(config.credentials) == 1
     feature_store_name = "Snowflake FeatureStøre"
     cred = Credential(
@@ -162,7 +192,7 @@ def test_write_creds__creds_for_other_feature_store_exists():
     Test write_creds function - no update when creds for another feature store exists.
     """
     with tempfile.NamedTemporaryFile(mode="w") as file_handle:
-        config_with_existing_feature_store = "tests/fixtures/config.yaml"
+        config_with_existing_feature_store = "tests/fixtures/config/config.yaml"
         config_file_name = file_handle.name
         shutil.copy2(config_with_existing_feature_store, config_file_name)
 
@@ -193,7 +223,7 @@ def test_write_creds__update_if_no_creds_exist():
     Test write_creds function - no update expected if credentials exist in file
     """
     with tempfile.NamedTemporaryFile(mode="w") as file_handle:
-        config_no_profile_file_name = "tests/fixtures/config_no_profile.yaml"
+        config_no_profile_file_name = "tests/fixtures/config/config_no_profile.yaml"
         config_file_name = file_handle.name
         shutil.copy2(config_no_profile_file_name, config_file_name)
         config = Configurations(config_file_name)

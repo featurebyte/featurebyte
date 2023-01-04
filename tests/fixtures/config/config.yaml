@@ -5,6 +5,8 @@ profile:
   - name: featurebyte2
     api_url: https://app2.featurebyte.com/api/v1
     api_token: API_TOKEN_VALUE2
+  - name: invalid
+    api_url: http://invalid.endpoint:1234
 
 logging:
   level: INFO

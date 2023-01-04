@@ -54,14 +54,14 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
         _id: Optional[ObjectId] = None,
     ) -> SlowlyChangingData:
         """
-        Create SCDData object from tabular source
+        Create SlowlyChangingData object from tabular source
 
         Parameters
         ----------
         tabular_source: DatabaseTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            SCD data name
+            SlowlyChanging data name
         natural_key_column: str
             Natural key column from the given tabular source
         effective_timestamp_column: str

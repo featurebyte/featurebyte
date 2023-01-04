@@ -539,6 +539,10 @@ class InfoService(BaseService):
                 "default": default_feature_list.readiness_distribution.derive_production_ready_fraction(),
             },
             versions_info=versions_info,
+            deployed=feature_list.deployed,
+            serving_endpoint=f"/feature_list/{feature_list.id}/online_features"
+            if feature_list.deployed
+            else None,
         )
 
     async def get_feature_list_namespace_info(

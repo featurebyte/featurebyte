@@ -114,7 +114,7 @@ def mock_api_client_fixture():
     """
     Mock Configurations.get_client to use test client
     """
-    with mock.patch("featurebyte.config.APIClient.request") as mock_request:
+    with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
         with TestClient(app) as client:
             mock_request.side_effect = client.request
             yield
