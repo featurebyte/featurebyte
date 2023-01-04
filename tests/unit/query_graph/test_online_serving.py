@@ -98,8 +98,9 @@ def test_construct_universe_sql__unbounded_latest(
         """
         SELECT DISTINCT
           CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
-          "cust_id" AS "CUSTOMER_ID"
-        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+          "cust_id" AS "CUSTOMER_ID",
+          "biz_id" AS "BUSINESS_ID"
+        FROM TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E
         WHERE
           INDEX < FLOOR(
             (

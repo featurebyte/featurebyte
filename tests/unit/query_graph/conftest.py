@@ -836,8 +836,8 @@ def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
 @pytest.fixture(name="latest_value_without_window_feature_node")
 def latest_value_without_window_feature_node_fixture(global_graph, input_node):
     node_params = {
-        "keys": ["cust_id"],
-        "serving_names": ["CUSTOMER_ID"],
+        "keys": ["cust_id", "biz_id"],
+        "serving_names": ["CUSTOMER_ID", "BUSINESS_ID"],
         "value_by": None,
         "parent": "a",
         "agg_func": "latest",
@@ -847,7 +847,7 @@ def latest_value_without_window_feature_node_fixture(global_graph, input_node):
         "timestamp": "ts",
         "names": ["a_latest_value"],
         "windows": [None],
-        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db"), ObjectId("637516ebc9c18f5a277a78dc")],
     }
     groupby_node = add_groupby_operation(global_graph, node_params, input_node)
     feature_node = global_graph.add_operation(
