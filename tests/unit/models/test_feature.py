@@ -130,6 +130,7 @@ def test_extract_operation_structure(feature_model_dict):
         "tabular_data_id": ObjectId(feature_model_dict["tabular_data_ids"][0]),
         "tabular_data_type": "event_data",
         "node_names": {"input_1"},
+        "node_name": "input_1",
     }
     expected_columns = [
         SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)
@@ -148,6 +149,7 @@ def test_extract_operation_structure(feature_model_dict):
             filter=False,
             groupby_type="groupby",
             node_names={"input_1", "groupby_1", "project_1"},
+            node_name="groupby_1",
             dtype="FLOAT",
         )
     ]

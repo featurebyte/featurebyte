@@ -4,8 +4,13 @@ Tests for classes defined in featurebyte/query_graph/node/metadata/operation.py
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn, SourceDataColumn
+from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.node.metadata.operation import (
+    DerivedDataColumn,
+    NodeOutputCategory,
+    OperationStructure,
+    SourceDataColumn,
+)
 
 
 @pytest.fixture(name="source_col1")
@@ -16,6 +21,7 @@ def source_col1_fixture():
         tabular_data_id=None,
         tabular_data_type="event_data",
         node_names={"input_1"},
+        node_name="input_1",
         dtype=DBVarType.FLOAT,
     )
 
@@ -28,6 +34,7 @@ def source_col2_fixture():
         tabular_data_id=None,
         tabular_data_type="event_data",
         node_names={"input_1"},
+        node_name="input_1",
         dtype=DBVarType.INT,
     )
 
@@ -117,6 +124,7 @@ def test_derived_data_column_create(
         columns=[source_col1, source_col2],
         transforms=[transform_add, transform_mul],
         node_names={"input_1", "add_1", "mul_1"},
+        node_name="mul_1",
         dtype=DBVarType.FLOAT,
     )
 
@@ -128,9 +136,10 @@ def test_insert_column():
         tabular_data_id=None,
         tabular_data_type="event_data",
         node_names={"input_1", "project_1"},
+        node_name="input_1",
         dtype=DBVarType.FLOAT,
     )
-    another_col1 = col1.clone(node_names={"input_1", "filter_1"}, filter=True)
+    another_col1 = col1.clone(node_names={"input_1", "filter_1"}, node_name="filter_1", filter=True)
     col_map = DerivedDataColumn.insert_column(
         DerivedDataColumn.insert_column({}, col1), another_col1
     )
@@ -138,6 +147,7 @@ def test_insert_column():
         "col1": {
             "name": "col1",
             "node_names": {"input_1", "project_1", "filter_1"},
+            "node_name": "filter_1",
             "tabular_data_id": None,
             "tabular_data_type": "event_data",
             "type": "source",
@@ -150,8 +160,14 @@ def test_insert_column():
 def test_data_column_clone_with_replacement(source_col1):
     """Test data column clone_with_replacement"""
     # case 1: when the node name found in the replace_node_name_map
+    op_struct = OperationStructure(
+        columns=[source_col1],
+        output_type=NodeOutputType.FRAME,
+        output_category=NodeOutputCategory.VIEW,
+        row_index_lineage=(source_col1.node_name,),
+    )
     output = source_col1.clone_without_internal_nodes(
-        proxy_node_name_map={"input_1": {"input_1", "project_1"}},
+        proxy_node_name_map={"input_1": op_struct},
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
@@ -159,13 +175,14 @@ def test_data_column_clone_with_replacement(source_col1):
         name=source_col1.name,
         tabular_data_id=source_col1.tabular_data_id,
         tabular_data_type=source_col1.tabular_data_type,
-        node_names={"input_1", "project_1"},
+        node_names={"input_1"},
+        node_name="input_1",
         dtype=DBVarType.FLOAT,
     )
 
     # case 2: when the node name not found in the replace_node_name_map
     output = source_col1.clone_without_internal_nodes(
-        proxy_node_name_map={"project_2": {"project_2"}},
+        proxy_node_name_map={"project_2": op_struct},
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
@@ -174,52 +191,46 @@ def test_data_column_clone_with_replacement(source_col1):
         tabular_data_id=source_col1.tabular_data_id,
         tabular_data_type=source_col1.tabular_data_type,
         node_names={"graph_1"},
+        node_name="graph_1",
         dtype=DBVarType.FLOAT,
     )
 
 
-def test_derived_data_column_clone_with_replacement(derived_col1):
-    """Test derived data column clone_with_replacement"""
-    # case 1: when all the node names found in the replace_node_name_map
-    assert derived_col1.node_names == {"input_1", "add_1"}
-    output = derived_col1.clone_without_internal_nodes(
-        proxy_node_name_map={"input_1": {"input_2"}, "add_1": {"add_2"}},
+def test_derived_data_column_clone_without_internal_nodes(source_col1, source_col2, derived_col1):
+    """Test derived data column clone_without_internal_nodes"""
+    # case 1: when all the node names found in the proxy_node_name_map
+    assert source_col1.node_names == {"input_1"}
+    op_struct = OperationStructure(
+        columns=[
+            source_col1.clone(node_names={"input_2"}, node_name="input_2"),
+            source_col2.clone(node_names={"input_2"}, node_name="input_2"),
+        ],
+        output_type=NodeOutputType.SERIES,
+        output_category=NodeOutputCategory.VIEW,
+        row_index_lineage=("input_2",),
+    )
+    output = source_col1.clone_without_internal_nodes(
+        proxy_node_name_map={"input_1": op_struct},
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
     assert output == {
-        "columns": [
-            {
-                "filter": False,
-                "name": "source_col1",
-                "node_names": {"input_2"},
-                "tabular_data_id": None,
-                "tabular_data_type": "event_data",
-                "type": "source",
-                "dtype": "FLOAT",
-            },
-            {
-                "filter": False,
-                "name": "source_col2",
-                "node_names": {"input_2"},
-                "tabular_data_id": None,
-                "tabular_data_type": "event_data",
-                "type": "source",
-                "dtype": "INT",
-            },
-        ],
-        "filter": False,
-        "name": "derived_col1",
-        "node_names": {"add_2", "input_2"},  # note that graph_1 is not included here
-        "transforms": ["add"],
-        "type": "derived",
+        "name": "source_col1",
+        "tabular_data_id": None,
+        "tabular_data_type": "event_data",
+        "type": "source",
         "dtype": "FLOAT",
+        "filter": False,
+        "node_names": {
+            "input_2"
+        },  # note that graph_1 is not included here and input_1 is replaced by input_2
+        "node_name": "input_2",
     }
 
     # case 2: when some node name found in the replace_node_name_map and some not found
     assert derived_col1.node_names == {"input_1", "add_1"}
     output = derived_col1.clone_without_internal_nodes(
-        proxy_node_name_map={"input_1": {"input_2"}},
+        proxy_node_name_map={"input_1": op_struct},
         graph_node_name="graph_1",
         graph_node_transform="graph",
     )
@@ -229,6 +240,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "filter": False,
                 "name": "source_col1",
                 "node_names": {"input_2"},
+                "node_name": "input_2",
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
@@ -238,6 +250,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "filter": False,
                 "name": "source_col2",
                 "node_names": {"input_2"},
+                "node_name": "input_2",
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
@@ -247,6 +260,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
         "filter": False,
         "name": "derived_col1",
         "node_names": {"input_2", "graph_1"},  # note that add_1 is removed
+        "node_name": "graph_1",
         "transforms": ["graph"],
         "type": "derived",
         "dtype": "FLOAT",
@@ -265,6 +279,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "filter": False,
                 "name": "source_col1",
                 "node_names": {"graph_1"},  # note that input_1 is replaced with graph_1
+                "node_name": "graph_1",
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
@@ -274,6 +289,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
                 "filter": False,
                 "name": "source_col2",
                 "node_names": {"graph_1"},  # note that input_1 is replaced with graph_1
+                "node_name": "graph_1",
                 "tabular_data_id": None,
                 "tabular_data_type": "event_data",
                 "type": "source",
@@ -283,6 +299,7 @@ def test_derived_data_column_clone_with_replacement(derived_col1):
         "filter": False,
         "name": "derived_col1",
         "node_names": {"graph_1"},
+        "node_name": "graph_1",
         "transforms": ["graph"],
         "type": "derived",
         "dtype": "FLOAT",

@@ -59,7 +59,7 @@ class OperationStructureExtractor(
             input_order = proxy_input_node.parameters.input_order
             proxy_input_node_name_map[proxy_input_node.name] = proxy_input_operation_structures[
                 input_order
-            ].all_node_names
+            ]
 
         # update node_names of the nested operation structure so that the internal node names (node names only
         # appears in the nested graph are removed)

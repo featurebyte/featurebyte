@@ -6,7 +6,7 @@ import pytest
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-def extract_column_parameters(input_node, other_node_names=None):
+def extract_column_parameters(input_node, other_node_names=None, node_name=None):
     """Extract common column parameters"""
     node_names = {input_node.name}
     if other_node_names:
@@ -17,6 +17,7 @@ def extract_column_parameters(input_node, other_node_names=None):
         "filter": False,
         "type": "source",
         "node_names": node_names,
+        "node_name": node_name or input_node.name,
     }
 
 
@@ -108,6 +109,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
             "filter": False,
             "type": "derived",
             "node_names": {"input_1", "add_1", "project_1", "project_2"},
+            "node_name": "add_1",
         }
     ]
     assert op_struct.columns == expected_derived_columns
@@ -154,6 +156,7 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
             "filter": False,
             "type": "derived",
             "node_names": {"input_1", "add_1", "assign_1", "project_1", "project_2"},
+            "node_name": "assign_1",
         },
     ]
     assert op_struct.columns == expected_columns + expected_derived_columns
@@ -180,7 +183,9 @@ def test_extract_operation__filter(graph_four_nodes):
 
     op_struct = graph.extract_operation_structure(node=filter_node)
     common_column_params = extract_column_parameters(
-        input_node, other_node_names={"input_1", "project_1", "eq_1", "filter_1"}
+        input_node,
+        other_node_names={"input_1", "project_1", "eq_1", "filter_1"},
+        node_name="filter_1",
     )
     expected_columns = [
         {"name": "column", "dtype": "FLOAT", **common_column_params, "filter": True}
@@ -241,6 +246,7 @@ def test_extract_operation__lag(global_graph, input_node):
             "filter": False,
             "type": "derived",
             "node_names": {"input_1", "lag_1", "project_1", "project_2", "project_3"},
+            "node_name": "lag_1",
         }
     ]
     assert op_struct.columns == expected_derived_columns
@@ -273,6 +279,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "filter": False,
         "type": "aggregation",
         "node_names": {"input_1", "groupby_1"},
+        "node_name": "groupby_1",
     }
     expected_columns = [
         {"name": "a", "dtype": "FLOAT", **common_column_params},
@@ -334,6 +341,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "filter": False,
         "name": "a_2h_average",
         "node_names": {"input_1", "eq_1", "filter_1", "project_3", "groupby_1"},
+        "node_name": "filter_1",
         "transforms": ["filter"],
         "type": "post_aggregation",
         "dtype": "FLOAT",
@@ -358,6 +366,7 @@ def order_id_source_data_fixture():
         "dtype": "INT",
         "filter": False,
         "node_names": {"input_1"},
+        "node_name": "input_1",
         "tabular_data_type": "item_data",
         "tabular_data_id": None,
         "type": "source",
@@ -383,6 +392,7 @@ def test_extract_operation__item_groupby(
             "filter": False,
             "groupby_type": "item_groupby",
             "node_names": {"input_1", "item_groupby_1"},
+            "node_name": "item_groupby_1",
         }
     ]
     assert op_struct.output_category == "feature"
@@ -405,10 +415,12 @@ def test_extract_operation__join_node(
     common_event_data_column_params = extract_column_parameters(
         event_data_input_node,
         other_node_names={"input_2", "join_1"},
+        node_name="join_1",
     )
     common_item_data_column_params = extract_column_parameters(
         item_data_input_node,
         other_node_names={"input_1", "join_1"},
+        node_name="join_1",
     )
     assert op_struct.columns == [
         {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
@@ -445,6 +457,7 @@ def test_extract_operation__join_double_aggregations(
         "filter": False,
         "type": "derived",
         "node_names": {"project_1", "item_groupby_1", "join_feature_1", "add_1", "input_1"},
+        "node_name": "join_feature_1",
         "dtype": "FLOAT",
     }
     assert op_struct.columns == [
@@ -481,6 +494,7 @@ def test_extract_operation__join_double_aggregations(
                 "project_1",
                 "groupby_1",
             },
+            "node_name": "groupby_1",
             "dtype": "FLOAT",
         }
     ]
@@ -513,12 +527,14 @@ def test_extract_operation__lookup_feature(
         {
             "filter": False,
             "node_names": {"input_1", "project_2", "add_1", "alias_1", "project_1", "lookup_1"},
+            "node_name": "alias_1",
             "name": "MY FEATURE",
             "transforms": ["add"],
             "columns": [
                 {
                     "filter": False,
                     "node_names": {"input_1", "project_1", "lookup_1"},
+                    "node_name": "lookup_1",
                     "name": "CUSTOMER ATTRIBUTE 1",
                     "method": None,
                     "groupby": ["cust_id"],
@@ -532,6 +548,7 @@ def test_extract_operation__lookup_feature(
                 {
                     "filter": False,
                     "node_names": {"input_1", "project_2", "lookup_1"},
+                    "node_name": "lookup_1",
                     "name": "CUSTOMER ATTRIBUTE 2",
                     "method": None,
                     "groupby": ["cust_id"],
@@ -578,6 +595,7 @@ def test_extract_operation__alias(global_graph, input_node):
         "filter": False,
         "type": "derived",
         "node_names": {"input_1", "project_1", "add_1"},
+        "node_name": "add_1",
         "dtype": "FLOAT",
     }
     assert op_struct.columns == [expected_derived_columns]
@@ -593,6 +611,7 @@ def test_extract_operation__alias(global_graph, input_node):
             **expected_derived_columns,
             "name": "some_value",
             "node_names": {"input_1", "project_1", "add_1", "alias_1"},
+            "node_name": "alias_1",
         }
     ]
     assert op_struct.row_index_lineage == ("input_1",)
@@ -634,6 +653,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "project_2",
             "project_3",
         },
+        "node_name": "assign_3",
         "dtype": "TIMESTAMP",
     }
     assert op_struct.columns == [expected_new_ts]
@@ -653,6 +673,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "type": "derived",
             "filter": False,
             "node_names": {"assign_2", "project_4"},
+            "node_name": "assign_2",
             "dtype": "INT",
         }
     ]
@@ -676,6 +697,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
             "type": "derived",
             "filter": False,
             "node_names": {"assign_2"},
+            "node_name": "assign_2",
         },
         expected_new_ts,
     ]
@@ -726,6 +748,7 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
                     "project_5",
                     "project_6",
                 },
+                "node_name": "assign_4",
                 "transforms": ["sub", "add"],
                 "type": "derived",
                 "dtype": "FLOAT",
