@@ -62,14 +62,15 @@ def extract_get_routes():
 def test_extract_get_routes(test_dir, update_fixtures):
     """This test is used to track the list of routes covered by backward compatibility checks"""
     fixture_path = os.path.join(test_dir, "fixtures/backward_compatibility/get_routes.txt")
-    with open(fixture_path) as fhandle:
-        expected_routes = sorted(line.strip() for line in fhandle.readlines())
-        assert sorted(extract_get_routes()) == expected_routes
-
     if update_fixtures:
         routes = extract_get_routes()
         with open(fixture_path, "w") as fhandle:
             fhandle.write("\n".join(sorted(routes)))
+        raise AssertionError(f"Fixture {fixture_path} updated, please set update_fixture to False")
+
+    with open(fixture_path) as fhandle:
+        expected_routes = sorted(line.strip() for line in fhandle.readlines())
+        assert sorted(extract_get_routes()) == expected_routes
 
 
 @pytest.mark.parametrize("route", extract_get_routes())
