@@ -411,7 +411,7 @@ def _key_cols_equality_conditions(right_table_join_keys: list[str]) -> list[expr
     """
     Get a list of equality conditions used for joining with scd view
 
-    (e.g. R."__FB_KEY_COL_0" = L."CUST_ID")
+    (e.g. L."__FB_KEY_COL_0" = R."CUST_ID")
 
     Parameters
     ----------
