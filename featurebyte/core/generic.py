@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 import json
 from abc import abstractmethod
 
-from pydantic import Field
+from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -64,6 +64,15 @@ class QueryObject(FeatureByteBaseModel):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node_name"] = node_name_map[values["node_name"]]
+        return values
 
     def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """

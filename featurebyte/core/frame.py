@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, List, Union
 
 import pandas as pd
-from pydantic import Field, root_validator
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
@@ -62,15 +62,6 @@ class BaseFrame(QueryObject, SampleMixin):
         list[str]
         """
         return list(self.column_var_type_map)
-
-    @root_validator()
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node_name"] = node_name_map[values["node_name"]]
-        return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):

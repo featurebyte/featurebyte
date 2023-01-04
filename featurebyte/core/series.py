@@ -8,7 +8,7 @@ from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
 from functools import wraps
 
 import pandas as pd
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -778,15 +778,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out
-
-    @root_validator
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node_name"] = node_name_map[values["node_name"]]
-        return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
