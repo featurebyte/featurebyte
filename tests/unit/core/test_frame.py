@@ -143,7 +143,10 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    expected_msg = 'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); got bool instead'
+    expected_msg = (
+        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); '
+        "got bool instead"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -446,3 +449,27 @@ def test_frame__autocompletion(dataframe):
     """
     assert set(dataframe.columns).issubset(dir(dataframe))
     assert dataframe._ipython_key_completions_() == set(dataframe.columns)
+
+
+def test_frame__redundant_project_nodes_get_removed(dataframe):
+    """
+    Test project node get removed due to __getitem__ (by using operation_structure's node_name)
+    """
+    sub_df = dataframe[["CUST_ID", "VALUE"]]
+    cust_id = sub_df["CUST_ID"]
+
+    # check the parent node of the cust_id points to the input node but not project node
+    parent_nodes = sub_df.graph.backward_edges_map[cust_id.node_name]
+    assert len(parent_nodes) == 1
+    node = sub_df.graph.get_node_by_name(parent_nodes[0])
+    assert node.type == NodeType.INPUT
+
+    # check the pruned graph
+    graph = cust_id.dict()["graph"]
+    assert graph["edges"] == [{"source": "input_1", "target": "project_1"}]
+    assert graph["nodes"][1] == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["CUST_ID"]},
+    }
