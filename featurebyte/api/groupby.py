@@ -304,9 +304,6 @@ class WindowAggregator(BaseAggregator):
             if self.groupby.category is not None:
                 raise ValueError("category is not supported for aggregation with unbounded window")
 
-            if len(self.groupby.keys) > 1:
-                raise NotImplementedError("Composite keys not yet supported")
-
     def _prepare_node_parameters(
         self,
         value_column: Optional[str],

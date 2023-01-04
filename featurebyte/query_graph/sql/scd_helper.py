@@ -36,7 +36,7 @@ class Table:
 
     expr: str | Select
     timestamp_column: str | Expression
-    join_key: str
+    join_keys: list[str]
     input_columns: list[str]
     output_columns: list[str]
 
@@ -159,11 +159,7 @@ def get_scd_join_expr(
             this=get_qualified_column_identifier(LAST_TS, "L"),
             expression=get_qualified_column_identifier(right_table.timestamp_column, "R"),
         ),
-        expressions.EQ(
-            this=get_qualified_column_identifier(KEY_COL, "L"),
-            expression=get_qualified_column_identifier(right_table.join_key, "R"),
-        ),
-    ]
+    ] + _key_cols_equality_conditions(right_table.join_keys)
 
     select_expr = select_expr.from_(left_subquery).join(
         right_subquery,
@@ -276,7 +272,7 @@ def augment_table_with_effective_timestamp(
     # Left table. Set up special columns: TS_COL, KEY_COL, EFFECTIVE_TS_COL and TS_TIE_BREAKER_COL
     left_view_with_ts_and_key = select(
         alias_(left_ts_col, alias=TS_COL, quoted=True),
-        alias_(quoted_identifier(left_table.join_key), alias=KEY_COL, quoted=True),
+        *_alias_join_keys_as_key_cols(left_table.join_keys),
         alias_(expressions.NULL, alias=EFFECTIVE_TS_COL, quoted=True),
         alias_(
             make_literal_value(
@@ -299,7 +295,7 @@ def augment_table_with_effective_timestamp(
     # statement matters (must match the left table's).
     right_ts_and_key = select(
         alias_(right_ts_col, alias=TS_COL, quoted=True),
-        alias_(quoted_identifier(right_table.join_key), alias=KEY_COL, quoted=True),
+        *_alias_join_keys_as_key_cols(right_table.join_keys),
         alias_(
             right_table.timestamp_column_expr,
             alias=EFFECTIVE_TS_COL,
@@ -337,13 +333,14 @@ def augment_table_with_effective_timestamp(
             expressions.Ordered(this=quoted_identifier(TS_TIE_BREAKER_COL)),
         ]
     )
+    num_join_keys = len(left_table.join_keys)
     matched_effective_timestamp_expr = expressions.Window(
         this=expressions.IgnoreNulls(
             this=expressions.Anonymous(
                 this="LAG", expressions=[quoted_identifier(EFFECTIVE_TS_COL)]
             ),
         ),
-        partition_by=[quoted_identifier(KEY_COL)],
+        partition_by=_key_cols_as_quoted_identifiers(num_join_keys),
         order=order,
     )
 
@@ -355,13 +352,13 @@ def augment_table_with_effective_timestamp(
 
     left_view_with_effective_timestamp_expr = (
         select(
-            quoted_identifier(KEY_COL),
+            *_key_cols_as_quoted_identifiers(num_join_keys),
             quoted_identifier(LAST_TS),
             *[quoted_identifier(col) for col in left_table.output_columns],
         )
         .from_(
             select(
-                quoted_identifier(KEY_COL),
+                *_key_cols_as_quoted_identifiers(num_join_keys),
                 alias_(matched_effective_timestamp_expr, alias=LAST_TS, quoted=True),
                 *[quoted_identifier(col) for col in left_table.output_columns],
                 quoted_identifier(EFFECTIVE_TS_COL),
@@ -373,3 +370,62 @@ def augment_table_with_effective_timestamp(
     )
 
     return left_view_with_effective_timestamp_expr
+
+
+def _alias_join_keys_as_key_cols(join_keys: list[str]) -> list[Expression]:
+    """
+    Alias join keys as internal key columns (e.g. "CUST_ID" AS "__FB_KEY_COL_0")
+
+    Parameters
+    ----------
+    join_keys: list[str]
+        List of join keys
+
+    Returns
+    -------
+    list[Expression]
+    """
+    return [
+        alias_(quoted_identifier(join_key), alias=f"{KEY_COL}_{i}", quoted=True)
+        for (i, join_key) in enumerate(join_keys)
+    ]
+
+
+def _key_cols_as_quoted_identifiers(num_join_keys: int) -> list[Expression]:
+    """
+    Get a list of quoted internal key columns (e.g. "__FB_KEY_COL_0")
+
+    Parameters
+    ----------
+    num_join_keys: int
+        Length of join keys
+
+    Returns
+    -------
+    list[Expression]
+    """
+    return [quoted_identifier(f"{KEY_COL}_{i}") for i in range(num_join_keys)]
+
+
+def _key_cols_equality_conditions(right_table_join_keys: list[str]) -> list[expressions.EQ]:
+    """
+    Get a list of equality conditions used for joining with scd view
+
+    (e.g. R."__FB_KEY_COL_0" = L."CUST_ID")
+
+    Parameters
+    ----------
+    right_table_join_keys: list[str]
+        Join keys in the right table, will be prefixed with table alias "R"
+
+    Returns
+    -------
+    list[expressions.EQ]
+    """
+    return [
+        expressions.EQ(
+            this=get_qualified_column_identifier(f"{KEY_COL}_{i}", "L"),
+            expression=get_qualified_column_identifier(join_key, "R"),
+        )
+        for (i, join_key) in enumerate(right_table_join_keys)
+    ]

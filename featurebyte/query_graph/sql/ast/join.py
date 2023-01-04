@@ -181,14 +181,14 @@ class SCDJoin(TableNode):
         left_table = Table(
             expr=cast(Select, self.left_node.sql),
             timestamp_column=self.left_timestamp_column,
-            join_key=self.left_on,
+            join_keys=[self.left_on],
             input_columns=self.left_input_columns,
             output_columns=self.left_output_columns,
         )
         right_table = Table(
             expr=cast(Select, self.right_node.sql),
             timestamp_column=self.right_timestamp_column,
-            join_key=self.right_on,
+            join_keys=[self.right_on],
             input_columns=self.right_input_columns,
             output_columns=self.right_output_columns,
         )
