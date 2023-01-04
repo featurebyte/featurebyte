@@ -269,7 +269,7 @@ def test_scd_join(global_graph, scd_join_node):
           R."membership_status" AS "latest_membership_status"
         FROM (
           SELECT
-            "__FB_KEY_COL",
+            "__FB_KEY_COL_0",
             "__FB_LAST_TS",
             "event_timestamp",
             "cust_id",
@@ -277,8 +277,8 @@ def test_scd_join(global_graph, scd_join_node):
             "event_column_2_out"
           FROM (
             SELECT
-              "__FB_KEY_COL",
-              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+              "__FB_KEY_COL_0",
+              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
               "event_timestamp",
               "cust_id",
               "event_column_1_out",
@@ -287,7 +287,7 @@ def test_scd_join(global_graph, scd_join_node):
             FROM (
               SELECT
                 CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
-                "cust_id" AS "__FB_KEY_COL",
+                "cust_id" AS "__FB_KEY_COL_0",
                 NULL AS "__FB_EFFECTIVE_TS_COL",
                 2 AS "__FB_TS_TIE_BREAKER_COL",
                 "event_timestamp" AS "event_timestamp",
@@ -305,7 +305,7 @@ def test_scd_join(global_graph, scd_join_node):
               UNION ALL
               SELECT
                 CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
-                "cust_id" AS "__FB_KEY_COL",
+                "cust_id" AS "__FB_KEY_COL_0",
                 "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
                 1 AS "__FB_TS_TIE_BREAKER_COL",
                 NULL AS "event_timestamp",
@@ -331,7 +331,7 @@ def test_scd_join(global_graph, scd_join_node):
             "membership_status" AS "membership_status"
           FROM "db"."public"."customer_profile_table"
         ) AS R
-          ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL" = R."cust_id"
+          ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected

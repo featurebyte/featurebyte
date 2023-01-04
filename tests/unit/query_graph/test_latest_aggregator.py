@@ -30,7 +30,7 @@ def test_get_required_serving_names(agg_specs_no_window):
     aggregator = LatestAggregator(source_type=SourceType.SNOWFLAKE)
     for spec in agg_specs_no_window:
         aggregator.update(spec)
-    assert aggregator.get_required_serving_names() == {"CUSTOMER_ID"}
+    assert aggregator.get_required_serving_names() == {"CUSTOMER_ID", "BUSINESS_ID"}
 
 
 def test_latest_aggregator(agg_specs_no_window):
@@ -56,24 +56,26 @@ def test_latest_aggregator(agg_specs_no_window):
           REQ."a" AS "a",
           REQ."b" AS "b",
           REQ."c" AS "c",
-          REQ."agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
+          REQ."agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0" AS "agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0"
         FROM (
           SELECT
             L."a" AS "a",
             L."b" AS "b",
             L."c" AS "c",
-            R.value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338 AS "agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"
+            R.value_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0 AS "agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0"
           FROM (
             SELECT
-              "__FB_KEY_COL",
+              "__FB_KEY_COL_0",
+              "__FB_KEY_COL_1",
               "__FB_LAST_TS",
               "a",
               "b",
               "c"
             FROM (
               SELECT
-                "__FB_KEY_COL",
-                LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+                "__FB_KEY_COL_0",
+                "__FB_KEY_COL_1",
+                LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0", "__FB_KEY_COL_1" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
                 "a",
                 "b",
                 "c",
@@ -83,7 +85,8 @@ def test_latest_aggregator(agg_specs_no_window):
                   FLOOR((
                     DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
                   ) / 3600) AS "__FB_TS_COL",
-                  "CUSTOMER_ID" AS "__FB_KEY_COL",
+                  "CUSTOMER_ID" AS "__FB_KEY_COL_0",
+                  "BUSINESS_ID" AS "__FB_KEY_COL_1",
                   NULL AS "__FB_EFFECTIVE_TS_COL",
                   0 AS "__FB_TS_TIE_BREAKER_COL",
                   "a" AS "a",
@@ -99,26 +102,29 @@ def test_latest_aggregator(agg_specs_no_window):
                 UNION ALL
                 SELECT
                   "INDEX" AS "__FB_TS_COL",
-                  "cust_id" AS "__FB_KEY_COL",
+                  "cust_id" AS "__FB_KEY_COL_0",
+                  "biz_id" AS "__FB_KEY_COL_1",
                   "INDEX" AS "__FB_EFFECTIVE_TS_COL",
                   1 AS "__FB_TS_TIE_BREAKER_COL",
                   NULL AS "a",
                   NULL AS "b",
                   NULL AS "c"
-                FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+                FROM TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E
               )
             )
             WHERE
               "__FB_EFFECTIVE_TS_COL" IS NULL
           ) AS L
-          LEFT JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS R
-            ON L."__FB_LAST_TS" = R."INDEX" AND L."__FB_KEY_COL" = R."cust_id"
+          LEFT JOIN TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E AS R
+            ON L."__FB_LAST_TS" = R."INDEX"
+            AND L."__FB_KEY_COL_0" = R."cust_id"
+            AND L."__FB_KEY_COL_1" = R."biz_id"
         ) AS REQ
         """
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected
 
-    assert result.column_names == ["agg_latest_088635a8a233d93984ceb9acdaa23eaa1460f338"]
+    assert result.column_names == ["agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0"]
     assert result.updated_index == 0
 
 

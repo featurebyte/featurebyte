@@ -14,21 +14,21 @@ WITH REQUEST_TABLE AS (
       R."membership_status" AS "membership_status_3babe9474034ffb9"
     FROM (
       SELECT
-        "__FB_KEY_COL",
+        "__FB_KEY_COL_0",
         "__FB_LAST_TS",
         "POINT_IN_TIME",
         "CUSTOMER_ID"
       FROM (
         SELECT
-          "__FB_KEY_COL",
-          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+          "__FB_KEY_COL_0",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS LAST, "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
           "POINT_IN_TIME",
           "CUSTOMER_ID",
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
             CAST(CONVERT_TIMEZONE('UTC', DATEADD(microsecond, -1209600000000.0, "POINT_IN_TIME")) AS TIMESTAMP) AS "__FB_TS_COL",
-            "CUSTOMER_ID" AS "__FB_KEY_COL",
+            "CUSTOMER_ID" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
             "POINT_IN_TIME" AS "POINT_IN_TIME",
@@ -42,7 +42,7 @@ WITH REQUEST_TABLE AS (
           UNION ALL
           SELECT
             CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
-            "cust_id" AS "__FB_KEY_COL",
+            "cust_id" AS "__FB_KEY_COL_0",
             "event_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
             NULL AS "POINT_IN_TIME",
@@ -66,7 +66,7 @@ WITH REQUEST_TABLE AS (
         "membership_status" AS "membership_status"
       FROM "db"."public"."customer_profile_table"
     ) AS R
-      ON L."__FB_LAST_TS" = R."event_timestamp" AND L."__FB_KEY_COL" = R."cust_id"
+      ON L."__FB_LAST_TS" = R."event_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
   ) AS REQ
 )
 SELECT
