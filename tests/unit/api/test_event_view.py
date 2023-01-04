@@ -268,7 +268,6 @@ def get_empty_event_view_fixture(snowflake_feature_store):
     def get_event_view():
         return EventView(
             columns_info=[],
-            row_index_lineage=[],
             node_name="input_1",
             tabular_source=TabularSource(
                 feature_store_id=PydanticObjectId(ObjectId()),
@@ -293,7 +292,6 @@ def get_empty_feature_fixture(snowflake_feature_store):
         return Feature(
             entity_ids=[],
             dtype=DBVarType.INT,
-            row_index_lineage=[],
             node_name="",
             tabular_source=TabularSource(
                 feature_store_id=PydanticObjectId(ObjectId()),
@@ -403,7 +401,6 @@ def get_feature_with_entity_ids(snowflake_feature_store):
         return Feature(
             entity_ids=entity_ids,
             dtype=DBVarType.INT,
-            row_index_lineage=[],
             node_name="input_1",
             tabular_source=TabularSource(
                 feature_store_id=PydanticObjectId(ObjectId()),

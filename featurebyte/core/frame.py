@@ -14,7 +14,6 @@ from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
@@ -62,20 +61,6 @@ class BaseFrame(QueryObject, SampleMixin):
         list[str]
         """
         return list(self.column_var_type_map)
-
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
-            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            new_object = self.copy()
-            new_object.node_name = mapped_node.name
-
-            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
-            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
-            # global one.
-            new_object.__dict__["graph"] = pruned_graph
-            return new_object.dict(*args, **kwargs)
-        return super().dict(*args, **kwargs)
 
 
 class Frame(BaseFrame, OpsMixin, GetAttrMixin):

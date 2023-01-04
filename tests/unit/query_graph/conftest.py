@@ -1052,5 +1052,4 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         },
         columns_info=columns_info,
         node_name=node.name,
-        row_index_lineage=(node.name,),
     )
