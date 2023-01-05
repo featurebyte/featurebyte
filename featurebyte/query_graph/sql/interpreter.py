@@ -323,7 +323,7 @@ class GraphInterpreter:
         if from_timestamp:
             filter_conditions.append(
                 expressions.GTE(
-                    this=timestamp_column,
+                    this=quoted_identifier(timestamp_column),
                     expression=make_literal_value(
                         from_timestamp.isoformat(), cast_as_timestamp=True
                     ),
@@ -332,7 +332,7 @@ class GraphInterpreter:
         if to_timestamp:
             filter_conditions.append(
                 expressions.LT(
-                    this=timestamp_column,
+                    this=quoted_identifier(timestamp_column),
                     expression=make_literal_value(to_timestamp.isoformat(), cast_as_timestamp=True),
                 )
             )

@@ -4,6 +4,7 @@ Read configurations from ini file
 from typing import Any, Dict, List, Optional, Union
 
 import os
+from http import HTTPStatus
 from pathlib import Path
 
 import requests
@@ -344,7 +345,7 @@ class Configurations:
         # test connection
         client = Configurations().get_client()
         response = client.get("/status")
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             raise InvalidSettingsError(
                 f"Service endpoint is inaccessible: {client.base_url}"
             ) from None
