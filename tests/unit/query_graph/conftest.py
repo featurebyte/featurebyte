@@ -456,6 +456,34 @@ def item_data_join_event_data_node_fixture(
     return node
 
 
+@pytest.fixture(name="item_data_joined_event_data_feature_node")
+def item_data_joined_event_data_feature_node_fixture(global_graph, item_data_join_event_data_node):
+    """
+    Fixture of a feature using item data joined with event data as input
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": "item_type",
+        "parent": None,
+        "agg_func": "count",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["item_type_count_30d"],
+        "windows": ["30d"],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, item_data_join_event_data_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["item_type_count_30d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="order_size_feature_group_node")
 def order_size_feature_group_node_fixture(global_graph, item_data_input_node):
     """
