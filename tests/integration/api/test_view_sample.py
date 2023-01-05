@@ -96,7 +96,7 @@ def test_item_view_sample_with_date_range(snowflake_item_data):
         "to_timestamp": "2001-10-14",
     }
     sample_df = item_view.sample(**sample_params)
-    assert sample_df.shape == (15, 6)
+    assert sample_df.shape == (15, 7)
     assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-10-10 18:58:16.000637+13:00")
     assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 01:50:48.000003+02:00")
 
