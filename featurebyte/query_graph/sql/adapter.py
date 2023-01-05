@@ -254,7 +254,7 @@ class SnowflakeAdapter(BaseAdapter):
             f"{category_col_casted} END"
         )
         object_agg_exprs = [
-            f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
+            f'OBJECT_AGG({category_filled_null}, TO_VARIANT({inner_alias}."{inner_agg_result_name}"))'
             f' AS "{agg_result_name}"'
             for inner_agg_result_name, agg_result_name in zip(
                 inner_agg_result_names, agg_result_names
