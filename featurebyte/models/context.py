@@ -5,21 +5,11 @@ from typing import List, Optional
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
-
-
-class TabularDataToColumnNamesMapping(FeatureByteBaseModel):
-    """
-    Tabular data to the column names mapping
-    """
-
-    tabular_data_id: PydanticObjectId
-    column_names: List[str]
 
 
 class ContextModel(FeatureByteBaseDocumentModel):
@@ -28,14 +18,11 @@ class ContextModel(FeatureByteBaseDocumentModel):
 
     entity_ids: List[PydanticObjectId]
         List of entity ids associated with this context
-    schema_at_inference: Optional[List[TabularDataToColumnNamesMapping]]
-        Schema of the context at inference time
     graph: Optional[QueryGraph]
         Graph to store the context view
     """
 
     entity_ids: List[PydanticObjectId]
-    schema_at_inference: Optional[List[TabularDataToColumnNamesMapping]]
     graph: Optional[QueryGraph]
 
     class Settings:
