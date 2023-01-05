@@ -9,6 +9,7 @@ from featurebyte.models.context import ContextModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.context import ContextCreate, ContextList, ContextUpdate
 from featurebyte.service.context import ContextService
+from featurebyte.service.tabular_data import DataService
 
 
 class ContextController(BaseDocumentController[ContextModel, ContextService, ContextList]):
@@ -18,6 +19,10 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
 
     paginated_document_class = ContextList
     document_update_schema_class = ContextUpdate
+
+    def __init__(self, service: ContextService, tabular_data_service: DataService):
+        super().__init__(service)
+        self.tabular_data_service = tabular_data_service
 
     async def create_context(self, data: ContextCreate) -> ContextModel:
         """

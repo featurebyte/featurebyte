@@ -206,7 +206,7 @@ app_container_config = {
         {
             "name": "context_controller",
             "clazz": ContextController,
-            "depends": ["context_service"],
+            "depends": ["context_service", "tabular_data_service"],
         },
         {
             "name": "entity_controller",
