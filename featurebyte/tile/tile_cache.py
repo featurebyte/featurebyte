@@ -484,7 +484,6 @@ class TileCache(ABC):
                 expressions.alias_(
                     last_tile_start_date_expr, InternalName.TILE_LAST_START_DATE.value
                 ),
-                expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
                 expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
             )
             .from_(tile_cache_working_table_name)
@@ -495,7 +494,10 @@ class TileCache(ABC):
         tile_compute_sql = cast(
             str,
             tile_info.sql_template.render(
-                {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
+                {
+                    InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
+                    InternalName.TILE_START_DATE_SQL_PLACEHOLDER: start_date_expr,
+                }
             ),
         )
         request = OnDemandTileComputeRequest(

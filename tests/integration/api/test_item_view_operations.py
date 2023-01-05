@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
+from featurebyte import FeatureList
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
@@ -37,7 +38,7 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
         assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
 
 
-def test_item_view_operations(item_data):
+def test_item_view_ops(item_data):
     """
     Test ItemView operations
     """
@@ -69,6 +70,26 @@ def test_item_view_operations(item_data):
         "user id": 1,
         "count_30d": '{\n  "TYPE_42": 2\n}',
     }
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"] * 10),
+            "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        }
+    )
+    feature_list = FeatureList([feature])
+    df_historical_features = feature_list.get_historical_features(df_training_events)
+    assert df_historical_features["count_30d"].tolist() == [
+        '{\n  "TYPE_42": 2\n}',
+        None,
+        None,
+        '{\n  "TYPE_42": 1\n}',
+        '{\n  "TYPE_42": 2\n}',
+        None,
+        '{\n  "TYPE_42": 5\n}',
+        '{\n  "TYPE_42": 5\n}',
+        '{\n  "TYPE_42": 3\n}',
+        None,
+    ]
 
     # Create a feature using aggregation without time window and preview it
     feature = item_view_filtered.groupby("order_id").aggregate(
@@ -151,3 +172,26 @@ def test_item_view_joined_with_dimension_view(
         joined_item_name = row["item_name_dimension"]
         joined_item_type = row["item_type_dimension"]
         assert_match(curr_item_id, joined_item_name, joined_item_type)
+
+    # check historical features
+    feature = (
+        item_view.groupby("USER ID", category="item_type_dimension")
+        .aggregate_over(
+            method="count",
+            windows=["30d"],
+            feature_names=["count_30d"],
+        )["count_30d"]
+        .cd.most_frequent()
+    )
+    feature.name = "most_frequent_item_type_30d"
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
+            "user id": [1, 2, 3, 4, 5],
+        }
+    )
+    feature_list = FeatureList([feature])
+    df_historical_features = feature_list.get_historical_features(df_training_events)
+    assert df_historical_features.sort_values("user id")[
+        "most_frequent_item_type_30d"
+    ].tolist() == ["type_47", "type_88", "type_53", "type_92", "type_12"]

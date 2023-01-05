@@ -165,14 +165,14 @@ class SelectedEntityBuildTileInputNode(InputNode):
     def sql(self) -> Expression:
 
         entity_table = InternalName.ENTITY_TABLE_NAME.value
-        start_date = InternalName.ENTITY_TABLE_START_DATE.value
+        start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
         end_date = InternalName.ENTITY_TABLE_END_DATE.value
 
         join_conditions = []
         for col in self.entity_columns:
             condition = parse_one(f'R."{col}" = {entity_table}."{col}"')
             join_conditions.append(condition)
-        join_conditions.append(parse_one(f'R."{self.timestamp}" >= {entity_table}.{start_date}'))
+        join_conditions.append(parse_one(f'R."{self.timestamp}" >= {start_date}'))
         join_conditions.append(parse_one(f'R."{self.timestamp}" < {entity_table}.{end_date}'))
         join_conditions_expr = expressions.and_(*join_conditions)
 
@@ -180,12 +180,12 @@ class SelectedEntityBuildTileInputNode(InputNode):
         result = (
             select()
             .with_(entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
-            .select("R.*", start_date)
+            .select("R.*")
             .from_(entity_table)
             .join(
                 table_sql,
                 join_alias="R",
-                join_type="left",
+                join_type="inner",
                 on=join_conditions_expr,
             )
         )
@@ -193,7 +193,10 @@ class SelectedEntityBuildTileInputNode(InputNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> SelectedEntityBuildTileInputNode | None:
-        if context.sql_type != SQLType.BUILD_TILE_ON_DEMAND:
+        if context.sql_type != SQLType.BUILD_TILE_ON_DEMAND or not is_event_data(
+            context.parameters
+        ):
+            # Filtering input data with a date range is only relevant for EventData
             return None
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]

@@ -9,6 +9,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
 @pytest.fixture(name="item_data_join_event_data_filtered_node")
@@ -118,6 +119,80 @@ def test_item_data_join_event_data_attributes_with_filter(
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
+
+
+def test_item_data_join_event_data_attributes_on_demand_tile_gen(
+    global_graph, item_data_joined_event_data_feature_node
+):
+    """
+    Test on-demand tile SQL generation for ItemView
+    """
+    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    groupby_node_name = global_graph.get_input_node_names(item_data_joined_event_data_feature_node)[
+        0
+    ]
+    groupby_node = global_graph.get_node_by_name(groupby_node_name)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
+    assert len(tile_gen_sqls) == 1
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          "item_type",
+          COUNT(*) AS value_count_7ae9b63c27e9f4f0a013cd6ec230f5a7a6b6fa62
+        FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+              ) / 3600
+            ) AS tile_index
+          FROM (
+            SELECT
+              L."order_method" AS "order_method",
+              R."order_id" AS "order_id",
+              R."item_id" AS "item_id",
+              R."item_name" AS "item_name",
+              R."item_type" AS "item_type"
+            FROM (
+              WITH __FB_ENTITY_TABLE_NAME AS (
+                __FB_ENTITY_TABLE_SQL_PLACEHOLDER
+              )
+              SELECT
+                R.*
+              FROM __FB_ENTITY_TABLE_NAME
+              INNER JOIN (
+                SELECT
+                  "ts" AS "ts",
+                  "cust_id" AS "cust_id",
+                  "order_id" AS "order_id",
+                  "order_method" AS "order_method"
+                FROM "db"."public"."event_table"
+              ) AS R
+                ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+                AND R."ts" >= __FB_START_DATE
+                AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+            ) AS L
+            INNER JOIN (
+              SELECT
+                "order_id" AS "order_id",
+                "item_id" AS "item_id",
+                "item_name" AS "item_name",
+                "item_type" AS "item_type"
+              FROM "db"."public"."item_table"
+            ) AS R
+              ON L."order_id" = R."order_id"
+          )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id",
+          "item_type"
+        """
+    ).strip()
+    assert tile_gen_sqls[0].sql == expected
 
 
 def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature_join_node):

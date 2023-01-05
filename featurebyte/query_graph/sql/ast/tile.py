@@ -41,11 +41,7 @@ class BuildTileNode(TableNode):
 
     @property
     def sql(self) -> Expression:
-        if self.is_on_demand:
-            start_date_expr = InternalName.ENTITY_TABLE_START_DATE
-        else:
-            start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
-
+        start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
         start_date_epoch = self.context.adapter.to_epoch_seconds(
             cast(Expression, parse_one(f"CAST({start_date_expr} AS TIMESTAMP)"))
         ).sql()
@@ -74,12 +70,6 @@ class BuildTileNode(TableNode):
         tile_start_date: str,
         input_tiled: expressions.Select,
     ) -> Expression:
-
-        if self.is_on_demand:
-            groupby_keys = keys + [InternalName.ENTITY_TABLE_START_DATE.value]
-        else:
-            groupby_keys = keys
-
         groupby_sql = (
             select(
                 f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
@@ -87,9 +77,8 @@ class BuildTileNode(TableNode):
                 *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
-            .group_by("tile_index", *groupby_keys)
+            .group_by("tile_index", *keys)
         )
-
         return groupby_sql
 
     def _get_tile_sql_order_dependent(
