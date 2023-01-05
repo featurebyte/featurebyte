@@ -172,3 +172,26 @@ def test_item_view_joined_with_dimension_view(
         joined_item_name = row["item_name_dimension"]
         joined_item_type = row["item_type_dimension"]
         assert_match(curr_item_id, joined_item_name, joined_item_type)
+
+    # check historical features
+    feature = (
+        item_view.groupby("USER ID", category="item_type_dimension")
+        .aggregate_over(
+            method="count",
+            windows=["30d"],
+            feature_names=["count_30d"],
+        )["count_30d"]
+        .cd.most_frequent()
+    )
+    feature.name = "most_frequent_item_type_30d"
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
+            "user id": [1, 2, 3, 4, 5],
+        }
+    )
+    feature_list = FeatureList([feature])
+    df_historical_features = feature_list.get_historical_features(df_training_events)
+    assert df_historical_features.sort_values("user id")[
+        "most_frequent_item_type_30d"
+    ].tolist() == ["type_47", "type_88", "type_53", "type_92", "type_12"]
