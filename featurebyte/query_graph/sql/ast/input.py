@@ -196,6 +196,7 @@ class SelectedEntityBuildTileInputNode(InputNode):
         if context.sql_type != SQLType.BUILD_TILE_ON_DEMAND or not is_event_data(
             context.parameters
         ):
+            # Filtering input data with a date range is only relevant for EventData
             return None
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]
