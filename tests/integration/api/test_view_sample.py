@@ -72,6 +72,7 @@ def test_item_view_sample(snowflake_item_data):
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "EVENT_TIMESTAMP",
+        "CUST_ID",
         "USER ID",
         "PRODUCT_ACTION",
         "order_id",
@@ -79,7 +80,7 @@ def test_item_view_sample(snowflake_item_data):
         "item_type",
     ]
 
-    assert sample_df.shape == (10, 6)
+    assert sample_df.shape == (10, 7)
     assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-03 23:45:53.000756+11:00")
     assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-12-09 06:37:22.000888+07:00")
 
@@ -96,7 +97,7 @@ def test_item_view_sample_with_date_range(snowflake_item_data):
         "to_timestamp": "2001-10-14",
     }
     sample_df = item_view.sample(**sample_params)
-    assert sample_df.shape == (15, 6)
+    assert sample_df.shape == (15, 7)
     assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-10-10 18:58:16.000637+13:00")
     assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 01:50:48.000003+02:00")
 

@@ -938,3 +938,18 @@ def test_add_feature(event_view, non_time_based_feature):
         "PRODUCT_ACTION": "purchase",
         "transaction_count_sum_24h": 130,
     }
+
+
+def test_latest_per_category_aggregation(event_view):
+    """
+    Test latest per category aggregation with value column of string type
+    """
+    feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(
+        value_column="PRODUCT_ACTION",
+        method="latest",
+        windows=["30d"],
+        feature_names=["LATEST_ACTION_DICT_30d"],
+    )
+    df = feature_group.preview({"POINT_IN_TIME": "2001-01-26", "cust_id": 545})
+    expected = '{\n  "1": "add",\n  "3": "purchase",\n  "5": "remove",\n  "8": "add",\n  "9": "purchase"\n}'
+    assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected

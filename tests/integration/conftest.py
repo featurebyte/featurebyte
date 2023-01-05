@@ -781,6 +781,16 @@ def product_action_entity_fixture():
     return entity
 
 
+@pytest.fixture(name="customer_entity", scope="session")
+def customer_entity_fixture():
+    """
+    Fixture for an Entity "Customer"
+    """
+    entity = Entity(name="Customer", serving_names=["cust_id"])
+    entity.save()
+    return entity
+
+
 @pytest.fixture(name="order_entity", scope="session")
 def order_entity_fixture():
     """
@@ -846,6 +856,7 @@ def create_transactions_event_data_from_feature_store(
     )
     event_data["USER ID"].as_entity("User")
     event_data["PRODUCT_ACTION"].as_entity("ProductAction")
+    event_data["CUST_ID"].as_entity("Customer")
     event_data.save()
     event_data = EventData.get(event_data_name)
     return event_data
@@ -857,10 +868,12 @@ def snowflake_event_data_fixture(
     snowflake_feature_store,
     user_entity,
     product_action_entity,
+    customer_entity,
 ):
     """Fixture for an EventData in integration tests"""
     _ = user_entity
     _ = product_action_entity
+    _ = customer_entity
     event_data = create_transactions_event_data_from_feature_store(
         snowflake_feature_store,
         database_name=snowflake_session.database,
@@ -960,10 +973,12 @@ def databricks_event_data_fixture(
     databricks_feature_store,
     user_entity,
     product_action_entity,
+    customer_entity,
 ):
     """Fixture for an EventData in integration tests"""
     _ = user_entity
     _ = product_action_entity
+    _ = customer_entity
     event_data = create_transactions_event_data_from_feature_store(
         databricks_feature_store,
         database_name=databricks_session.featurebyte_catalog,

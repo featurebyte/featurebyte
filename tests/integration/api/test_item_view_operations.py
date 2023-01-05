@@ -20,6 +20,7 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
     df_preview = item_view.preview(limit=50)
     assert df_preview.columns.tolist() == [
         "EVENT_TIMESTAMP",
+        "CUST_ID",
         "USER ID",
         "PRODUCT_ACTION",
         "order_id",
@@ -134,6 +135,7 @@ def test_item_view_joined_with_dimension_view(
         "item_id",
         "item_type",
         "EVENT_TIMESTAMP",
+        "CUST_ID",
         "USER ID",
         "PRODUCT_ACTION",
     ]
