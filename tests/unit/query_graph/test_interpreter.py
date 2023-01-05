@@ -304,7 +304,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 ):
     """Test tile building SQL with on-demand tile generation
 
-    Note that the input table query contains a left-join with an entity table to filter only data
+    Note that the input table query contains a inner-join with an entity table to filter only data
     belonging to specific entity IDs and date range
     """
     interpreter = GraphInterpreter(query_graph_with_groupby, SourceType.SNOWFLAKE)
@@ -319,9 +319,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("a") AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
           COUNT("a") AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
@@ -330,7 +328,7 @@ def test_graph_interpreter_on_demand_tile_gen(
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -338,10 +336,9 @@ def test_graph_interpreter_on_demand_tile_gen(
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
             )
             SELECT
-              R.*,
-              __FB_ENTITY_TABLE_START_DATE
+              R.*
             FROM __FB_ENTITY_TABLE_NAME
-            LEFT JOIN (
+            INNER JOIN (
               SELECT
                 "ts" AS "ts",
                 "cust_id" AS "cust_id",
@@ -353,14 +350,13 @@ def test_graph_interpreter_on_demand_tile_gen(
               FROM "db"."public"."event_table"
             ) AS R
               ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+              AND R."ts" >= __FB_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
         GROUP BY
           tile_index,
-          "cust_id",
-          __FB_ENTITY_TABLE_START_DATE
+          "cust_id"
         """
     ).strip()
     assert sql == expected_sql
@@ -503,18 +499,16 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
-          COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
+          SUM("a") AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
+          COUNT("a") AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
         FROM (
           SELECT
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -522,10 +516,9 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
             )
             SELECT
-              R.*,
-              __FB_ENTITY_TABLE_START_DATE
+              R.*
             FROM __FB_ENTITY_TABLE_NAME
-            LEFT JOIN (
+            INNER JOIN (
               SELECT
                 "ts" AS "ts",
                 "cust_id" AS "cust_id",
@@ -537,14 +530,13 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
               FROM "db"."public"."event_table"
             ) AS R
               ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+              AND R."ts" >= __FB_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
         GROUP BY
           tile_index,
-          "cust_id",
-          __FB_ENTITY_TABLE_START_DATE
+          "cust_id"
         """
     ).strip()
     assert sql == expected
@@ -575,17 +567,15 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "biz_id",
-          SUM("a") AS value_sum_{aggregation_id}
+          SUM("a") AS value_sum_ef6e0961ae987b3faf4e63668d8997850e840d9a
         FROM (
           SELECT
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -593,10 +583,9 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
               __FB_ENTITY_TABLE_SQL_PLACEHOLDER
             )
             SELECT
-              R.*,
-              __FB_ENTITY_TABLE_START_DATE
+              R.*
             FROM __FB_ENTITY_TABLE_NAME
-            LEFT JOIN (
+            INNER JOIN (
               SELECT
                 "ts" AS "ts",
                 "cust_id" AS "cust_id",
@@ -608,14 +597,13 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
               FROM "db"."public"."event_table"
             ) AS R
               ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+              AND R."ts" >= __FB_START_DATE
               AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
         GROUP BY
           tile_index,
-          "biz_id",
-          __FB_ENTITY_TABLE_START_DATE
+          "biz_id"
         """
     ).strip()
     assert sql == expected
