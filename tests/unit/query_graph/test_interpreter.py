@@ -4,6 +4,7 @@ This module contains the tests for the Query Graph Interpreter
 import textwrap
 from dataclasses import asdict
 
+import pandas as pd
 import pytest
 
 from featurebyte.enum import InternalName, SourceType
@@ -55,8 +56,9 @@ def node_input_fixture(graph):
     return node_input
 
 
-def test_graph_interpreter_super_simple(graph, node_input):
-    """Test using a simple query graph"""
+@pytest.fixture(name="simple_graph", scope="function")
+def simple_graph_fixture(graph, node_input):
+    """Simple graph"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -69,10 +71,16 @@ def test_graph_interpreter_super_simple(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
+    return graph, assign
+
+
+def test_graph_interpreter_super_simple(simple_graph):
+    """Test using a simple query graph"""
+    graph, node = simple_graph
     sql_graph = SQLOperationGraph(
         graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
     )
-    sql_tree = sql_graph.build(assign).sql
+    sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -1514,3 +1522,89 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
         """
     ).strip()
     assert tile_sql == expected
+
+
+def test_graph_interpreter_sample(simple_graph):
+    """Test graph sample"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    sql_code = interpreter.construct_sample_sql(node.name, num_rows=10, seed=1234)[0]
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        ORDER BY
+          RANDOM(1234)
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+
+def test_graph_interpreter_sample_date_range(simple_graph):
+    """Test graph sample with date range"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    sql_code = interpreter.construct_sample_sql(
+        node.name,
+        num_rows=10,
+        seed=10,
+        timestamp_column="ts",
+        from_timestamp=pd.to_datetime("2020-01-01"),
+        to_timestamp=pd.to_datetime("2020-01-03"),
+    )[0]
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        WHERE
+          "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMP)
+          AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMP)
+        ORDER BY
+          RANDOM(10)
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+
+def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
+    """Test graph sample with date range"""
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+
+    sql_code = interpreter.construct_sample_sql(
+        node.name,
+        num_rows=30,
+        seed=20,
+        timestamp_column=None,
+        from_timestamp=pd.to_datetime("2020-01-01"),
+        to_timestamp=pd.to_datetime("2020-01-03"),
+    )[0]
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" AS "a_copy"
+        FROM "db"."public"."event_table"
+        ORDER BY
+          RANDOM(20)
+        LIMIT 30
+        """
+    ).strip()
+    assert sql_code == expected
