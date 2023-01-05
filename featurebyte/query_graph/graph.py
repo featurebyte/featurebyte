@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, List, Literal, Tuple, TypedDict, cast
+from typing import Any, Callable, DefaultDict, Dict, List, Literal, Tuple, TypedDict, cast
 
 from collections import defaultdict
 
@@ -280,13 +280,13 @@ class GlobalQueryGraph(QueryGraph):
     nodes_map: Dict[str, Node] = Field(
         default_factory=GlobalGraphState.construct_getter_func("nodes_map"), exclude=True
     )
-    edges_map: Dict[str, List[str]] = Field(
+    edges_map: DefaultDict[str, List[str]] = Field(
         default_factory=GlobalGraphState.construct_getter_func("edges_map"), exclude=True
     )
-    backward_edges_map: Dict[str, List[str]] = Field(
+    backward_edges_map: DefaultDict[str, List[str]] = Field(
         default_factory=GlobalGraphState.construct_getter_func("backward_edges_map"), exclude=True
     )
-    node_type_counter: Dict[str, int] = Field(
+    node_type_counter: DefaultDict[str, int] = Field(
         default_factory=GlobalGraphState.construct_getter_func("node_type_counter"),
         exclude=True,
     )

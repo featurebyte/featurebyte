@@ -1,12 +1,12 @@
 """
 This model contains query graph internal model structures
 """
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Tuple
 
 import json
 from collections import defaultdict
 
-from pydantic import Field, root_validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -38,9 +38,9 @@ class QueryGraphModel(FeatureByteBaseModel):
     # non-serialized attributes (will be derived during deserialization)
     # NEVER store a non-serialized attributes that CAN'T BE DERIVED from serialized attributes
     nodes_map: Dict[str, Node] = Field(default_factory=dict, exclude=True)
-    edges_map: Dict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
-    backward_edges_map: Dict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
-    node_type_counter: Dict[str, int] = Field(default=defaultdict(int), exclude=True)
+    edges_map: DefaultDict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
+    backward_edges_map: DefaultDict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
+    node_type_counter: DefaultDict[str, int] = Field(default=defaultdict(int), exclude=True)
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
 
@@ -180,6 +180,20 @@ class QueryGraphModel(FeatureByteBaseModel):
             )
 
         return values
+
+    @validator("edges_map", "backward_edges_map")
+    @classmethod
+    def _make_default_dict_list(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        # make sure the output is default dict to list
+        updated_dict = defaultdict(list, value)
+        return updated_dict
+
+    @validator("node_type_counter")
+    @classmethod
+    def _make_default_dict_int(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        # make sure the output is default dict to int
+        updated_dict = defaultdict(int, value)
+        return updated_dict
 
     def get_node_by_name(self, node_name: str) -> Node:
         """

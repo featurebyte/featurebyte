@@ -14,12 +14,12 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.raw_data import RawAccessorMixin
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
+from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
@@ -27,7 +27,7 @@ from featurebyte.query_graph.model.critical_data_info import CleaningOperation, 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 
 
-class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
+class DataColumn(FeatureByteBaseModel, ParentMixin):
     """
     DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a data object (e.g. EventData)
@@ -99,9 +99,47 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         self.info = column_info
 
 
-class DataApiObject(RawAccessorMixin, AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
+class DataObject(AbstractTableDataFrame, GetAttrMixin):
     """
-    Base class for all Data objects
+    Base Data object class
+    """
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {"feature_store": self.feature_store}
+
+    @typechecked
+    def __getitem__(self, item: str) -> DataColumn:
+        """
+        Retrieve column from the table
+
+        Parameters
+        ----------
+        item: str
+            Column name
+
+        Returns
+        -------
+        DataColumn
+
+        Raises
+        ------
+        KeyError
+            when accessing non-exist column
+        """
+        info = None
+        for col in self.columns_info:
+            if col.name == item:
+                info = col
+        if info is None:
+            raise KeyError(f'Column "{item}" does not exist!')
+        output = DataColumn(info=info)
+        output.set_parent(self)
+        return output
+
+
+class DataApiObject(DataObject, SavableApiObject):
+    """
+    Base class for all Data API objects
     """
 
     _route = "/tabular_data"
@@ -111,6 +149,24 @@ class DataApiObject(RawAccessorMixin, AbstractTableDataFrame, SavableApiObject, 
     _list_foreign_keys = [
         ("columns_info.entity_id", Entity, "entities"),
     ]
+
+    @property
+    def raw(self) -> DataObject:
+        """
+        raw accessor object
+
+        Returns
+        -------
+        DataObject
+        """
+        pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
+        input_node = next(
+            pruned_graph.iterate_nodes(target_node=pruned_node, node_type=NodeType.INPUT)
+        )
+        obj_dict = self.json_dict()
+        obj_dict["graph"] = pruned_graph
+        obj_dict["node_name"] = input_node.name
+        return DataObject(**obj_dict, feature_store=self.feature_store)
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
@@ -214,38 +270,6 @@ class DataApiObject(RawAccessorMixin, AbstractTableDataFrame, SavableApiObject, 
                 f'{cls.__name__} ({existing_record["type"]}.name: "{name}") exists in saved record.',
             )
         raise RecordRetrievalException(response)
-
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {"feature_store": self.feature_store}
-
-    @typechecked
-    def __getitem__(self, item: str) -> DataColumn:
-        """
-        Retrieve column from the table
-
-        Parameters
-        ----------
-        item: str
-            Column name
-
-        Returns
-        -------
-        DataColumn
-
-        Raises
-        ------
-        KeyError
-            when accessing non-exist column
-        """
-        info = None
-        for col in self.columns_info:
-            if col.name == item:
-                info = col
-        if info is None:
-            raise KeyError(f'Column "{item}" does not exist!')
-        output = DataColumn(info=info)
-        output.set_parent(self)
-        return output
 
     def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
         previous_columns_info = self.columns_info

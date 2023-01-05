@@ -9,8 +9,6 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.api.data import DataColumn
-from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
@@ -19,7 +17,6 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
-    TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
@@ -240,6 +237,34 @@ class TestEventDataTestSuite(BaseDataTestSuite):
         "col_int",
         "cust_id",
     }
+    expected_data_sql = """
+    SELECT
+      CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("created_at" AS VARCHAR) AS "created_at",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
+    expected_raw_data_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("created_at" AS VARCHAR) AS "created_at",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
 
 
 def test_event_data__save__feature_store_not_saved_exception(snowflake_event_data):
