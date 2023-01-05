@@ -346,9 +346,7 @@ class Configurations:
         client = Configurations().get_client()
         response = client.get("/status")
         if response.status_code != HTTPStatus.OK:
-            raise InvalidSettingsError(
-                f"Service endpoint is inaccessible: {client.base_url}"
-            ) from None
+            raise InvalidSettingsError(f"Service endpoint is inaccessible: {client.base_url}")
         sdk_version = response.json()["sdk_version"]
         return {"remote sdk": sdk_version, "local sdk": get_version()}
 

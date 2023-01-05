@@ -319,25 +319,28 @@ class GraphInterpreter:
         )
 
         # apply timestamp filtering
-        filter_conditions: List[expressions.Expression] = []
-        if from_timestamp:
-            filter_conditions.append(
-                expressions.GTE(
-                    this=quoted_identifier(timestamp_column),
-                    expression=make_literal_value(
-                        from_timestamp.isoformat(), cast_as_timestamp=True
-                    ),
+        if timestamp_column:
+            filter_conditions: List[expressions.Expression] = []
+            if from_timestamp:
+                filter_conditions.append(
+                    expressions.GTE(
+                        this=quoted_identifier(timestamp_column),
+                        expression=make_literal_value(
+                            from_timestamp.isoformat(), cast_as_timestamp=True
+                        ),
+                    )
                 )
-            )
-        if to_timestamp:
-            filter_conditions.append(
-                expressions.LT(
-                    this=quoted_identifier(timestamp_column),
-                    expression=make_literal_value(to_timestamp.isoformat(), cast_as_timestamp=True),
+            if to_timestamp:
+                filter_conditions.append(
+                    expressions.LT(
+                        this=quoted_identifier(timestamp_column),
+                        expression=make_literal_value(
+                            to_timestamp.isoformat(), cast_as_timestamp=True
+                        ),
+                    )
                 )
-            )
-        if filter_conditions:
-            sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
+            if filter_conditions:
+                sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
 
         if num_rows > 0:
             # apply random sampling
