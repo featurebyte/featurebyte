@@ -80,7 +80,7 @@ def test_item_view_sample(snowflake_item_data):
         "item_type",
     ]
 
-    assert sample_df.shape == (10, 6)
+    assert sample_df.shape == (10, 7)
     assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-03 23:45:53.000756+11:00")
     assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-12-09 06:37:22.000888+07:00")
 
