@@ -104,10 +104,11 @@ def get_app() -> FastAPI:
         task_api,
         temp_data_api,
     ]
+    dependencies = _get_api_deps()
     for resource_api in resource_apis:
         _app.include_router(
             resource_api.router,
-            dependencies=[Depends(_get_api_deps())],
+            dependencies=[Depends(dependencies)],
             tags=[resource_api.router.prefix[1:]],
         )
 
