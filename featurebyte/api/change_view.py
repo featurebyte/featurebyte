@@ -185,7 +185,7 @@ class ChangeView(View, GroupByMixin):
 
     @classmethod
     @typechecked
-    def from_scd_data(
+    def from_slowly_changing_data(
         cls,
         scd_data: SlowlyChangingData,
         track_changes_column: str,
