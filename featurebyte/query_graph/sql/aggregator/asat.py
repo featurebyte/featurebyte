@@ -220,7 +220,11 @@ class AsAtAggregator(Aggregator):
                 for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
             ]
         )
+
+        # Only join records from the SCD table that are valid as at point in time
         record_validity_condition = expressions.and_(
+            # SCD.effective_timestamp_column <= REQ.POINT_IN_TIME; i.e. record became effective
+            # at or before point in time
             expressions.LTE(
                 this=get_qualified_column_identifier(
                     spec.parameters.effective_timestamp_column, "SCD"
@@ -228,12 +232,15 @@ class AsAtAggregator(Aggregator):
                 expression=get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ"),
             ),
             expressions.or_(
+                # SCD.end_timestamp_column > REQ.POINT_IN_TIME; i.e. record has not yet been
+                # invalidated as at the point in time, but will be at a future time
                 expressions.GT(
                     this=get_qualified_column_identifier(end_timestamp_column, "SCD"),
                     expression=get_qualified_column_identifier(
                         SpecialColumnName.POINT_IN_TIME, "REQ"
                     ),
                 ),
+                # SCD.end_timestamp_column IS NULL; i.e. record is current
                 expressions.Is(
                     this=get_qualified_column_identifier(end_timestamp_column, "SCD"),
                     expression=expressions.Null(),
