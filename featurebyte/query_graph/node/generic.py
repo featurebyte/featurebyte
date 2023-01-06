@@ -620,8 +620,11 @@ class JoinNode(BaseNode):
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         params = self.parameters
+        # construct input column name to output column name mapping for left & right columns
         left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
         right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
+
+        # construct input column name to output column mapping for left & right columns
         left_columns = {
             col.name: col.clone(
                 name=left_col_map[col.name],  # type: ignore
@@ -640,11 +643,14 @@ class JoinNode(BaseNode):
             for col in inputs[1].columns
             if col.name in right_col_map
         }
+
         if self.parameters.join_type == "left":
             row_index_lineage = inputs[0].row_index_lineage
         else:
             row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)
 
+        # construct left & right output columns, make sure the right columns names
+        # does not duplicate with left columns' name
         left_cols = [left_columns[col_name] for col_name in params.left_input_columns]
         left_col_names = set(col.name for col in left_cols)
         right_cols = [
@@ -652,6 +658,7 @@ class JoinNode(BaseNode):
             for col_name in params.right_input_columns
             if right_columns[col_name].name not in left_col_names
         ]
+
         return OperationStructure(
             columns=left_cols + right_cols,
             output_type=NodeOutputType.FRAME,
