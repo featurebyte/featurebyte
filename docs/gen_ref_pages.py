@@ -32,6 +32,7 @@ class CustomNav(Nav):
         "Data",
         "Entity",
         "Feature",
+        "FeatureGroup",
         "FeatureList",
         "FeatureStore",
         "Configurations",

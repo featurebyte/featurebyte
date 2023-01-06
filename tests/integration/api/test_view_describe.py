@@ -92,9 +92,9 @@ def test_item_view_describe(snowflake_item_data):
     item_view = ItemView.from_item_data(snowflake_item_data)
 
     describe_df = item_view.describe()
-    print(describe_df)
     assert describe_df.columns.tolist() == [
         "EVENT_TIMESTAMP",
+        "CUST_ID",
         "USER ID",
         "PRODUCT_ACTION",
         "order_id",
@@ -120,7 +120,7 @@ def test_item_view_describe(snowflake_item_data):
         "max TZ offset",
     ]
 
-    assert describe_df.shape == (16, 6)
+    assert describe_df.shape == (16, 7)
     assert describe_df.EVENT_TIMESTAMP["min"] == pd.to_datetime("2001-01-01 01:35:16.000223+01:00")
     assert describe_df.EVENT_TIMESTAMP["max"] == pd.to_datetime("2002-01-02 18:08:53.000960+22:00")
 

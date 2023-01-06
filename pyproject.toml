@@ -185,7 +185,7 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 
 [tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
 max-args = 10
-max-locals = 25
+max-locals = 20
 
 [tool.pylint.design]
 max-attributes = 8

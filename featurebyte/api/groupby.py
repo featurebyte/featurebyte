@@ -502,8 +502,21 @@ class GroupBy:
         method: str
             Aggregation method
         windows: List[str]
-            List of aggregation window sizes. Use None to indicated unbounded window size (only
-            applicable to "latest" method)
+            List of aggregation window sizes. Use `None` to indicated unbounded window size (only
+            applicable to "latest" method). Format of a window size is "{size}{unit}",
+            where size is a positive integer and unit is one of the following:
+
+            "ns": nanosecond
+            "us": microsecond
+            "ms": millisecond
+            "s": second
+            "m": minute
+            "h": hour
+            "d": day
+            "w": week
+
+            **Note**: Window sizes must be multiples of feature job frequency
+
         feature_names: List[str]
             Output feature names
         timestamp_column: Optional[str]
@@ -517,6 +530,23 @@ class GroupBy:
         Returns
         -------
         FeatureGroup
+
+        Examples
+        --------
+        >>> import featurebyte as fb
+        >>> features = cc_transactions.groupby("AccountID").aggregate_over(  # doctest: +SKIP
+        ...    "Amount",
+        ...    method=fb.AggFunc.SUM,
+        ...    windows=["7d", "30d"],
+        ...    feature_names=["Total spend 7d", "Total spend 30d"],
+        ... )
+        >>> features.feature_names  # doctest: +SKIP
+        ['Total spend 7d', 'Total spend 30d']
+
+        See Also
+        --------
+        - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/): FeatureGroup object
+        - [Feature](/reference/featurebyte.api.feature.Feature/): Feature object
         """
         return WindowAggregator(self).aggregate_over(
             value_column=value_column,
