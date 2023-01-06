@@ -24,6 +24,7 @@ class ContextModel(FeatureByteBaseDocumentModel):
 
     entity_ids: List[PydanticObjectId]
     graph: Optional[QueryGraph]
+    node_name: Optional[str]
 
     class Settings:
         """

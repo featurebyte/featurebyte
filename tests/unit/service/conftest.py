@@ -13,6 +13,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
+from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
@@ -22,6 +23,7 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.schema.scd_data import SCDDataCreate
+from featurebyte.service.context import ContextService
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.dimension_data import DimensionDataService
@@ -78,6 +80,12 @@ def entity_service_fixture(user, persistent):
 def semantic_service_fixture(user, persistent):
     """Semantic service"""
     return SemanticService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="context_service")
+def context_service_fixture(user, persistent):
+    """Context service"""
+    return ContextService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="event_data_service")
@@ -189,28 +197,47 @@ def deploy_service_fixture(app_container):
 
 
 @pytest_asyncio.fixture(name="feature_store")
-async def feature_store_fixture(test_dir, feature_store_service, user):
+async def feature_store_fixture(test_dir, feature_store_service):
     """FeatureStore model"""
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature_store = await feature_store_service.create_document(
-            data=FeatureStoreCreate(**payload, user_id=user.id)
+            data=FeatureStoreCreate(**payload)
         )
         return feature_store
 
 
+@pytest_asyncio.fixture(name="entity")
+async def entity_fixture(test_dir, entity_service):
+    """Entity model"""
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/entity.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        entity = await entity_service.create_document(data=EntityCreate(**payload))
+        return entity
+
+
+@pytest_asyncio.fixture(name="context")
+async def context_fixture(test_dir, context_service, feature_store, entity):
+    """Context model"""
+    _ = feature_store, entity
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/context.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        context = await context_service.create_document(data=ContextCreate(**payload))
+        return context
+
+
 @pytest_asyncio.fixture(name="event_data")
-async def event_data_fixture(test_dir, feature_store, event_data_service, semantic_service, user):
+async def event_data_fixture(test_dir, feature_store, event_data_service, semantic_service):
     """EventData model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
-        event_data = await event_data_service.create_document(
-            data=EventDataCreate(**payload, user_id=user.id)
-        )
+        event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
         event_timestamp = await semantic_service.get_or_create_document(
             name=SemanticType.EVENT_TIMESTAMP
         )
@@ -230,21 +257,19 @@ async def event_data_fixture(test_dir, feature_store, event_data_service, semant
 
 
 @pytest_asyncio.fixture(name="item_data")
-async def item_data_fixture(test_dir, feature_store, item_data_service, user):
+async def item_data_fixture(test_dir, feature_store, item_data_service):
     """ItemData model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_item_table"
-        item_data = await item_data_service.create_document(
-            data=ItemDataCreate(**payload, user_id=user.id)
-        )
+        item_data = await item_data_service.create_document(data=ItemDataCreate(**payload))
         return item_data
 
 
 @pytest_asyncio.fixture(name="dimension_data")
-async def dimension_data_fixture(test_dir, feature_store, dimension_data_service, user):
+async def dimension_data_fixture(test_dir, feature_store, dimension_data_service):
     """DimensionData model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/dimension_data.json")
@@ -253,33 +278,21 @@ async def dimension_data_fixture(test_dir, feature_store, dimension_data_service
         payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
         payload["columns_info"][0]["entity_id"] = str(ObjectId())
         item_data = await dimension_data_service.create_document(
-            data=DimensionDataCreate(**payload, user_id=user.id)
+            data=DimensionDataCreate(**payload)
         )
         return item_data
 
 
 @pytest_asyncio.fixture(name="scd_data")
-async def scd_data_fixture(test_dir, feature_store, scd_data_service, user):
+async def scd_data_fixture(test_dir, feature_store, scd_data_service):
     """SCDData model"""
     _ = feature_store
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/scd_data.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_scd_table"
-        scd_data = await scd_data_service.create_document(
-            data=SCDDataCreate(**payload, user_id=user.id)
-        )
+        scd_data = await scd_data_service.create_document(data=SCDDataCreate(**payload))
         return scd_data
-
-
-@pytest_asyncio.fixture(name="entity")
-async def entity_fixture(test_dir, entity_service, user):
-    """Entity model"""
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/entity.json")
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        entity = await entity_service.create_document(data=EntityCreate(**payload, user_id=user.id))
-        return entity
 
 
 @pytest_asyncio.fixture(name="feature")

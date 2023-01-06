@@ -81,7 +81,9 @@ class BaseDocumentService(
         _ = data
         return {}
 
-    async def create_document(self, data: DocumentCreateSchema) -> Document:
+    async def create_document(
+        self, data: DocumentCreateSchema, additional_parameters: Optional[Dict[str, Any]] = None
+    ) -> Document:
         """
         Create document at persistent
 
@@ -89,6 +91,8 @@ class BaseDocumentService(
         ----------
         data: DocumentCreateSchema
             Document creation payload object
+        additional_parameters: Optional[Dict[str, Any]]
+            Additional parameters that will be added to the document record
 
         Returns
         -------
@@ -107,9 +111,10 @@ class BaseDocumentService(
             document=document,
             document_class=self.document_class,
         )
+        other_params = additional_parameters or {}
         insert_id = await self.persistent.insert_one(
             collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
+            document={**document.dict(by_alias=True), **other_params},
             user_id=self.user.id,
         )
         assert insert_id == document.id

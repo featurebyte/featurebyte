@@ -38,10 +38,15 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     graph: Optional[QueryGraph]
     node_name: Optional[StrictStr]
 
-    @root_validator()
+    @root_validator(pre=True)
     @classmethod
     def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # check xor between graph & node_name
-        if bool(values["graph"]) != bool(values["node_name"]):
+        graph = values.get("graph")
+        node_name = values.get("node_name")
+        if bool(graph) != bool(node_name):
             raise ValueError("graph & node_name parameters must be specified together.")
+        if graph:
+            if node_name not in QueryGraph(**dict(graph)).nodes_map:
+                raise ValueError("node_name not exists in the graph.")
         return values

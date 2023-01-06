@@ -81,7 +81,6 @@ class FeatureListController(
             Feature list creation payload
 
         Returns
-
         -------
         FeatureListModel
             Newly created feature list object
