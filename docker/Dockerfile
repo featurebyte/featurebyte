@@ -35,7 +35,6 @@ COPY ./featurebyte     /app/featurebyte
 COPY ./docs            /app/docs
 COPY ./dist            /app/dist
 COPY ./mkdocs.yaml     /app/mkdocs.yaml
-COPY ./docker/docs.py  /app/
 
 # build docs
 RUN PYTHONPATH=$PWD:$PWD/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs build
