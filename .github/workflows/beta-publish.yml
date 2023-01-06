@@ -26,6 +26,7 @@ jobs:
       matrix:
         python-version: [ "3.8" ]
     steps:
+      - uses: actions/checkout@v3
       - name: Set Docker Image Ctx
         run: |
           export IMAGE_REPO=$(printf "%s-docker.pkg.dev/%s/%s/featurebyte-beta\n" $GCR_DOCKER_LOCATION $GCR_DOCKER_PROJECT_ID $GCR_DOCKER_REPO)
