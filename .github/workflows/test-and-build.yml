@@ -282,8 +282,8 @@ jobs:
         # => Convert ref/tags/ABC = :ref/tags/ABC
         # RUN: git push origin :ref/tags/ABC :ref/tags/BCD
         export ONE_MONTH_AGO_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags |\
-            awk "{ if (\$1 < $ONE_MONTH_AGO) print \$2; }" |\
-            sed -nE 's/refs\//:refs\//p')
+            awk -v "ONE_MONTH_AGO=$ONE_MONTH_AGO" '{ if ($1 < ONE_MONTH_AGO) print $2; }' |\
+            sed -nE 's/refs\//:refs\//p' | xargs)
 
         # Only push if there are tags to remove
         if [[ "${ONE_MONTH_AGO_TAGS}" != "" ]]; then
