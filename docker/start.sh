@@ -6,13 +6,11 @@ if which docker; then
   echo "Please install docker and/or add docker binary to your PATH"
 fi
 
-# Loads docker image into your docker daemon
-if docker images | grep featurebyte-beta; then
-  echo "featurebyte-beta image found"
-else
-  echo "loading featurebyte-beta into local docker daemon"
-  docker load -i ./featurebyte-beta.tar
-fi
+# Setting credentials to pull from featurebyte repository
+cat "beta_key.json.b64" | docker login -u "_json_key_base64" --password-stdin https://us-central1-docker.pkg.dev
+
+# Pulls image (This checks for image updates)
+docker compose pull
 
 # Starts service
 docker compose up
