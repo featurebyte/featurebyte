@@ -9,7 +9,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.scd_data import SlowlyChangingData
-from featurebyte.api.view import View, ViewColumn
+from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
@@ -25,7 +25,7 @@ class SlowlyChangingViewColumn(ViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-class SlowlyChangingView(View):
+class SlowlyChangingView(View, GroupByMixin):
     """
     SlowlyChangingView class
     """

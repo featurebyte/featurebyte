@@ -131,7 +131,7 @@ def item_data_input_node_fixture(global_graph, item_data_input_details):
 
 @pytest.fixture(name="scd_data_input_details")
 def scd_data_input_details_fixture(input_details):
-    """Similar to input_details but for an SlowlyChangingDimension table"""
+    """Similar to input_details but for an SlowlyChangingView table"""
     input_details = copy.deepcopy(input_details)
     input_details["table_details"]["table_name"] = "customer_profile_table"
     return input_details
@@ -139,7 +139,7 @@ def scd_data_input_details_fixture(input_details):
 
 @pytest.fixture(name="scd_data_input_node")
 def scd_data_input_node_fixture(global_graph, scd_data_input_details):
-    """Fixture of an SlowlyChangingDimension input node"""
+    """Fixture of an SlowlyChangingView input node"""
     node_params = {
         "type": "scd_data",
         "columns": [
@@ -889,6 +889,34 @@ def latest_value_without_window_feature_node_fixture(global_graph, input_node):
         node_params={"columns": ["a_latest_value"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="aggregate_asat_feature_node")
+def aggregate_asat_feature_node_fixture(global_graph, scd_data_input_node):
+    node_params = {
+        "keys": ["membership_status"],
+        "serving_names": ["MEMBERSHIP_STATUS"],
+        "value_by": None,
+        "parent": None,
+        "agg_func": "count",
+        "name": "asat_feature",
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "effective_timestamp_column": "effective_ts",
+        "natural_key_column": "cust_id",
+    }
+    aggregate_asat_node = global_graph.add_operation(
+        node_type=NodeType.AGGREGATE_AS_AT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[scd_data_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["asat_feature"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_asat_node.name)],
     )
     return feature_node
 

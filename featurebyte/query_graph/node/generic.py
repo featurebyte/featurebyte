@@ -390,26 +390,31 @@ class LagNode(BaseSeriesOutputNode):
         return inputs[0].series_output_dtype
 
 
+class BaseGroupbyParameters(BaseModel):
+    """Common parameters related to groupby operation"""
+
+    keys: List[InColumnStr]
+    parent: Optional[InColumnStr]
+    agg_func: AggFunc
+    value_by: Optional[InColumnStr]
+    serving_names: List[str]
+    entity_ids: Optional[List[PydanticObjectId]]
+
+
 class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """GroupbyNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(BaseGroupbyParameters):
         """Parameters"""
 
-        keys: List[InColumnStr]
-        parent: Optional[InColumnStr]
-        agg_func: AggFunc
-        value_by: Optional[InColumnStr]
         windows: List[Optional[str]]
         timestamp: InColumnStr
         blind_spot: int
         time_modulo_frequency: int
         frequency: int
         names: List[OutColumnStr]
-        serving_names: List[str]
         tile_id: Optional[str]
         aggregation_id: Optional[str]
-        entity_ids: Optional[List[PydanticObjectId]]
 
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
@@ -465,16 +470,10 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
 class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
 
-    class Parameters(BaseModel):
+    class Parameters(BaseGroupbyParameters):
         """Parameters"""
 
-        keys: List[InColumnStr]
-        parent: Optional[InColumnStr]
-        agg_func: AggFunc
-        value_by: Optional[InColumnStr]
         name: OutColumnStr
-        serving_names: List[str]
-        entity_ids: Optional[List[PydanticObjectId]]
 
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
@@ -512,6 +511,7 @@ class SCDBaseParameters(BaseModel):
     """Parameters common to SCD data"""
 
     effective_timestamp_column: InColumnStr
+    natural_key_column: Optional[InColumnStr]  # DEV-556: should be compulsory
     current_flag_column: Optional[InColumnStr]
     end_timestamp_column: Optional[InColumnStr]
 
@@ -749,6 +749,49 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             node_name=self.name,
             new_column_var_type=feature_operation_info.series_output_dtype,
         )
+
+
+class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
+    """Parameters for AggregateAsAtNode"""
+
+    name: OutColumnStr
+    offset: Optional[str]
+    backward: Optional[bool]
+
+
+class AggregateAsAtNode(GroupbyNodeOpStructMixin, BaseNode):
+    """AggregateAsAt class"""
+
+    type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
+    parameters: AggregateAsAtParameters
+
+    def _exclude_source_columns(self) -> List[str]:
+        return [str(key) for key in self.parameters.keys]
+
+    def _get_aggregations(
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_var_type: DBVarType,
+    ) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=self.parameters.name,
+                method=self.parameters.agg_func,
+                groupby=self.parameters.keys,
+                window=None,
+                category=None,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
+                groupby_type=self.type,
+                node_names={node_name}.union(other_node_names),
+                node_name=node_name,
+                dtype=output_var_type,
+            )
+        ]
 
 
 class AliasNode(BaseNode):

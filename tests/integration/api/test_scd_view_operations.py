@@ -276,3 +276,41 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
     ) & (scd_dataframe["User ID"] == user_id)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
+
+
+def test_aggregate_asat(scd_data, scd_dataframe):
+    """
+    Test aggregate_asat aggregation on SlowlyChangingView
+    """
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    feature = scd_view.groupby("User Status").aggregate_asat(
+        method="count", feature_name="Current Number of Users With This Status"
+    )
+
+    # check preview
+    df = feature.preview(
+        {
+            "POINT_IN_TIME": "2001-10-25 10:00:00",
+            "user_status": "STATUS_CODE_42",
+        }
+    )
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
+        "user_status": "STATUS_CODE_42",
+        "Current Number of Users With This Status": 1,
+    }
+    assert df.iloc[0].to_dict() == expected
+
+    # check historical features
+    feature_list = FeatureList([feature])
+    observations_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
+            "user_status": ["STATUS_CODE_47"] * 10,
+        }
+    )
+    expected = observations_set.copy()
+    expected["Current Number of Users With This Status"] = [0, 1, 2, 2, 1, 1, 0, 0, 0, 0]
+    df = feature_list.get_historical_features(observations_set)
+    df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    pd.testing.assert_frame_equal(df, expected)

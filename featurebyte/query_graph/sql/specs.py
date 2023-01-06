@@ -17,6 +17,8 @@ from featurebyte.enum import SourceType, StrEnum
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
+    AggregateAsAtNode,
+    AggregateAsAtParameters,
     GroupbyNode,
     ItemGroupbyNode,
     LookupNode,
@@ -36,6 +38,7 @@ class AggregationType(StrEnum):
     LOOKUP = "lookup"
     WINDOW = "window"
     ITEM = "item"
+    AS_AT = "as_at"
 
 
 @dataclass  # type: ignore[misc]
@@ -238,6 +241,114 @@ class ItemAggregationSpec(AggregationSpec):
             agg_expr=agg_expr,
         )
         return out
+
+
+@dataclass
+class AggregateAsAtSpec(AggregationSpec):
+    """
+    As-at aggregation specification
+    """
+
+    parameters: AggregateAsAtParameters
+    source_expr: Select
+
+    @property
+    def agg_result_name(self) -> str:
+        """Column name of the aggregated result
+
+        Returns
+        -------
+        str
+            Column name of the aggregated result
+        """
+        return f"{self.parameters.agg_func}_{self.parameters.parent}_{self.source_hash}"
+
+    @property
+    def aggregation_type(self) -> AggregationType:
+        return AggregationType.AS_AT
+
+    @property
+    def source_hash(self) -> str:
+        """
+        Returns a unique identifier derived from source_expr and parameters
+
+        Returns
+        -------
+        str
+        """
+        hasher = hashlib.shake_128()
+
+        # Input to be aggregated
+        params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
+
+        # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
+        parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
+        if parameters_dict.get("entity_ids") is not None:
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
+        params["parameters"] = parameters_dict
+
+        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
+        return hasher.hexdigest(8)
+
+    @classmethod
+    def _get_source_sql_expr(
+        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
+    ) -> Select:
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.builder import SQLOperationGraph
+        from featurebyte.query_graph.sql.common import SQLType
+
+        sql_node = SQLOperationGraph(
+            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
+        ).build(node)
+
+        return cast(Select, sql_node.sql)
+
+    @classmethod
+    def from_aggregate_asat_query_node(
+        cls,
+        node: Node,
+        source_expr: Optional[Select] = None,
+        graph: Optional[QueryGraphModel] = None,
+        source_type: Optional[SourceType] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
+    ) -> AggregateAsAtSpec:
+        """
+        Construct a list of LookupSpec given a lookup query graph node
+
+        Parameters
+        ----------
+        node: Node
+            Query graph node
+        source_expr: Optional[Select]
+            Select statement that represents the source to lookup from. If not provided, it will be
+            inferred from the node and graph.
+        graph: Optional[QueryGraphModel]
+            Query graph. Mandatory if source_expr is not provided
+        source_type: Optional[SourceType]
+            Source type information. Mandatory if source_expr is not provided
+        serving_names_mapping: Optional[dict[str, str]]
+            Serving names mapping
+
+        Returns
+        -------
+        list[LookupSpec]
+        """
+        assert isinstance(node, AggregateAsAtNode)
+
+        if source_expr is None:
+            assert graph is not None
+            assert source_type is not None
+            source_expr = cls._get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+
+        return AggregateAsAtSpec(
+            parameters=node.parameters,
+            source_expr=source_expr,
+            serving_names=node.parameters.serving_names,
+            serving_names_mapping=serving_names_mapping,
+        )
 
 
 @dataclass

@@ -102,6 +102,7 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
         "join_type": "left",
         "scd_parameters": {
             "left_timestamp_column": "event_timestamp",
+            "natural_key_column": "col_text",
             "effective_timestamp_column": "event_timestamp",
             "current_flag_column": "col_char",
             "end_timestamp_column": "event_timestamp",
@@ -130,6 +131,7 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
             "entity_id": cust_id_entity.id,
             "scd_parameters": {
                 "effective_timestamp_column": "event_timestamp",
+                "natural_key_column": "col_text",
                 "current_flag_column": "col_char",
                 "end_timestamp_column": "event_timestamp",
                 "offset": "7d",
@@ -177,6 +179,7 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
             "effective_timestamp_column": "event_timestamp",
             "current_flag_column": "col_char",
             "end_timestamp_column": "event_timestamp",
+            "natural_key_column": "col_text",
             "offset": None,
         },
     }

@@ -20,6 +20,7 @@ TS_COL = "__FB_TS_COL"
 EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
 KEY_COL = "__FB_KEY_COL"
 LAST_TS = "__FB_LAST_TS"
+END_TS = "__FB_END_TS"
 
 # Special column name and values used to handle ties in timestamps between main table and SCD table
 TS_TIE_BREAKER_COL = "__FB_TS_TIE_BREAKER_COL"
@@ -429,3 +430,46 @@ def _key_cols_equality_conditions(right_table_join_keys: list[str]) -> list[expr
         )
         for (i, join_key) in enumerate(right_table_join_keys)
     ]
+
+
+def augment_scd_table_with_end_timestamp(
+    table_expr: Select,
+    effective_timestamp_column: str,
+    natural_key_column: str,
+) -> Select:
+    """
+    Augment a given SCD table with end timestamp column (the timestamp when an SCD record becomes
+    ineffective because of the next SCD record)
+
+    Parameters
+    ----------
+    table_expr: Select
+        Select statement representing the SCD table
+    effective_timestamp_column: str
+        Effective timestamp column name
+    natural_key_column: str
+        Natural key column name
+
+    Returns
+    -------
+    Select
+    """
+
+    order = expressions.Order(
+        expressions=[
+            expressions.Ordered(this=quoted_identifier(effective_timestamp_column)),
+        ]
+    )
+    end_timestamp_expr = expressions.Window(
+        this=expressions.Anonymous(
+            this="LEAD", expressions=[quoted_identifier(effective_timestamp_column)]
+        ),
+        partition_by=[quoted_identifier(natural_key_column)],
+        order=order,
+    )
+    updated_table_expr = select(
+        "*",
+        alias_(end_timestamp_expr, alias=END_TS, quoted=True),
+    ).from_(table_expr.subquery())
+
+    return updated_table_expr

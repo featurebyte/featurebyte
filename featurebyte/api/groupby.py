@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -15,12 +15,14 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.common.model_util import validate_job_setting_parameters, validate_offset_string
 from featurebyte.common.typing import get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import AggFuncType, construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
@@ -352,6 +354,123 @@ class WindowAggregator(BaseAggregator):
         }
 
 
+class AsAtAggregator(BaseAggregator):
+    """
+    AsAtAggregator implements the aggregate_asat method for GroupBy
+    """
+
+    @property
+    def supported_views(self) -> List[Type[View]]:
+        return [SlowlyChangingView]
+
+    @property
+    def aggregation_method_name(self) -> str:
+        return "aggregate_asat"
+
+    @typechecked
+    def aggregate_asat(
+        self,
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        feature_name: Optional[str] = None,
+        offset: Optional[str] = None,
+        backward: bool = True,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
+    ) -> Feature:
+        """
+        Aggregate a column in SlowlyChangingView as at a point in time
+
+        Parameters
+        ----------
+        value_column: Optional[str]
+            Column to be aggregated
+        method: str
+            Aggregation method
+        feature_name: str
+            Output feature name
+        offset: Optional[str]
+            Optional offset to apply to the point in time column in the feature request. The
+            aggregation result will be as at the point in time adjusted by this offset.
+        backward: bool
+            Whether the offset should be applied backward or forward
+        fill_value: Optional[Union[int, float, str, bool]]
+            Value to fill if the value in the column is empty
+
+        Returns
+        -------
+        Feature
+        """
+        self._validate_parameters(
+            method=method,
+            value_column=value_column,
+            feature_name=feature_name,
+            offset=offset,
+        )
+
+        view = cast(SlowlyChangingView, self.view)
+        node_params = {
+            "keys": self.groupby.keys,
+            "parent": value_column,
+            "agg_func": method,
+            "value_by": self.groupby.category,
+            "name": feature_name,
+            "serving_names": self.groupby.serving_names,
+            "entity_ids": self.groupby.entity_ids,
+            "offset": offset,
+            "backward": backward,
+            **view._get_common_scd_parameters().dict(),  # pylint: disable=protected-access
+        }
+        groupby_node = self.view.graph.add_operation(
+            node_type=NodeType.AGGREGATE_AS_AT,
+            node_params=node_params,
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[self.view.node],
+        )
+
+        assert method is not None
+        assert feature_name is not None
+        agg_method = construct_agg_func(agg_func=method)
+
+        return self._project_feature_from_groupby_node(
+            agg_method=agg_method,
+            feature_name=feature_name,
+            groupby_node=groupby_node,
+            method=method,
+            value_column=value_column,
+            fill_value=fill_value,
+        )
+
+    def _validate_parameters(
+        self,
+        method: Optional[str],
+        feature_name: Optional[str],
+        value_column: Optional[str],
+        offset: Optional[str],
+    ) -> None:
+
+        self._validate_method_and_value_column(method=method, value_column=value_column)
+
+        if method == AggFunc.LATEST:
+            raise ValueError("latest aggregation method is not supported for aggregated_asat")
+
+        if feature_name is None:
+            raise ValueError("feature_name is required")
+
+        if self.groupby.category is not None:
+            raise ValueError("category is not supported for aggregate_asat")
+
+        view = cast(SlowlyChangingView, self.view)
+        for key in self.groupby.keys:
+            if key == view.natural_key_column:
+                raise ValueError(
+                    "Natural key column cannot be used as a groupby key in aggregate_asat"
+                )
+
+        if offset is not None:
+            validate_offset_string(offset)
+            raise NotImplementedError("offset support is not yet implemented")
+
+
 class SimpleAggregator(BaseAggregator):
     """
     SimpleAggregator implements the aggregate method for GroupBy
@@ -437,7 +556,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView],
+        obj: Union[EventView, ItemView, ChangeView, SlowlyChangingView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
@@ -555,6 +674,48 @@ class GroupBy:
             feature_names=feature_names,
             timestamp_column=timestamp_column,
             feature_job_setting=feature_job_setting,
+            fill_value=fill_value,
+        )
+
+    @typechecked
+    def aggregate_asat(
+        self,
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        feature_name: Optional[str] = None,
+        offset: Optional[str] = None,
+        backward: bool = True,
+        fill_value: Optional[Union[int, float, str, bool]] = None,
+    ) -> Feature:
+        """
+        Aggregate a column in SlowlyChangingView as at a point in time
+
+        Parameters
+        ----------
+        value_column: Optional[str]
+            Column to be aggregated
+        method: str
+            Aggregation method
+        feature_name: str
+            Output feature name
+        offset: Optional[str]
+            Optional offset to apply to the point in time column in the feature request. The
+            aggregation result will be as at the point in time adjusted by this offset.
+        backward: bool
+            Whether the offset should be applied backward or forward
+        fill_value: Optional[Union[int, float, str, bool]]
+            Value to fill if the value in the column is empty
+
+        Returns
+        -------
+        Feature
+        """
+        return AsAtAggregator(self).aggregate_asat(
+            value_column=value_column,
+            method=method,
+            feature_name=feature_name,
+            offset=offset,
+            backward=backward,
             fill_value=fill_value,
         )
 

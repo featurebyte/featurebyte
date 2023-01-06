@@ -207,24 +207,30 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT DISTINCT
     "order_id"
   FROM REQUEST_TABLE
+), "SCD_REQUEST_TABLE_MEMBERSHIP_STATUS" AS (
+  SELECT DISTINCT
+    "POINT_IN_TIME",
+    "MEMBERSHIP_STATUS"
+  FROM REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
     REQ."agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0" AS "agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0",
-    REQ."membership_status_a18d6f89f8538bdb" AS "membership_status_a18d6f89f8538bdb",
+    REQ."membership_status_fbfdb013880b3a67" AS "membership_status_fbfdb013880b3a67",
     "T0"."cust_value_1_9b8bee3acf7d5bc7" AS "cust_value_1_9b8bee3acf7d5bc7",
     "T0"."cust_value_2_9b8bee3acf7d5bc7" AS "cust_value_2_9b8bee3acf7d5bc7",
     "T1"."agg_w7200_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8" AS "agg_w7200_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8",
     "T2"."agg_w172800_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8" AS "agg_w172800_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8",
     "T3"."agg_w7776000_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "agg_w7776000_latest_088635a8a233d93984ceb9acdaa23eaa1460f338",
-    "T4"."order_size" AS "order_size"
+    "T4"."order_size" AS "order_size",
+    "T5"."count_None_73d3277c62d87bcc" AS "count_None_73d3277c62d87bcc"
   FROM (
     SELECT
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
       L."agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0" AS "agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0",
-      R."membership_status" AS "membership_status_a18d6f89f8538bdb"
+      R."membership_status" AS "membership_status_fbfdb013880b3a67"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -440,6 +446,37 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
       ON REQ."order_id" = ITEM_AGG."order_id"
   ) AS T4
     ON REQ."order_id" = T4."order_id"
+  LEFT JOIN (
+    SELECT
+      REQ."POINT_IN_TIME",
+      REQ."MEMBERSHIP_STATUS",
+      COUNT(*) AS "count_None_73d3277c62d87bcc"
+    FROM "SCD_REQUEST_TABLE_MEMBERSHIP_STATUS" AS REQ
+    INNER JOIN (
+      SELECT
+        *,
+        LEAD("effective_ts") OVER (PARTITION BY "cust_id" ORDER BY "effective_ts" NULLS LAST) AS "__FB_END_TS"
+      FROM (
+        SELECT
+          "effective_ts" AS "effective_ts",
+          "cust_id" AS "cust_id",
+          "membership_status" AS "membership_status"
+        FROM "db"."public"."customer_profile_table"
+      )
+    ) AS SCD
+      ON REQ."MEMBERSHIP_STATUS" = SCD."membership_status"
+      AND (
+        SCD."effective_ts" <= REQ."POINT_IN_TIME"
+        AND (
+          SCD."__FB_END_TS" > REQ."POINT_IN_TIME" OR SCD."__FB_END_TS" IS NULL
+        )
+      )
+    GROUP BY
+      REQ."POINT_IN_TIME",
+      REQ."MEMBERSHIP_STATUS"
+  ) AS T5
+    ON REQ."POINT_IN_TIME" = T5."POINT_IN_TIME"
+    AND REQ."MEMBERSHIP_STATUS" = T5."MEMBERSHIP_STATUS"
 )
 SELECT
   AGG."POINT_IN_TIME",
@@ -450,7 +487,8 @@ SELECT
   (
     "cust_value_1_9b8bee3acf7d5bc7" + "cust_value_2_9b8bee3acf7d5bc7"
   ) AS "MY FEATURE",
-  "membership_status_a18d6f89f8538bdb" AS "Current Membership Status",
+  "membership_status_fbfdb013880b3a67" AS "Current Membership Status",
   "agg_w7776000_latest_088635a8a233d93984ceb9acdaa23eaa1460f338" AS "a_latest_value_past_90d",
-  "agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0" AS "a_latest_value"
+  "agg_latest_bdf76e38d5a0186a5b23c57ce5e4f5d6549d3ab0" AS "a_latest_value",
+  "count_None_73d3277c62d87bcc" AS "asat_feature"
 FROM _FB_AGGREGATED AS AGG

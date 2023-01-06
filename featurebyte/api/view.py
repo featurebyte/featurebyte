@@ -24,7 +24,7 @@ from featurebyte.api.join_utils import (
     join_tabular_data_ids,
 )
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import parse_duration_string
+from featurebyte.common.model_util import validate_offset_string
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -616,13 +616,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def _validate_offset(offset: Optional[str]) -> None:
         # Validate offset is valid if provided
         if offset is not None:
-            try:
-                parse_duration_string(offset)
-            except ValueError as exc:
-                raise ValueError(
-                    "Failed to parse the offset parameter. An example of valid offset string is "
-                    f'"7d", got "{offset}". Error: {str(exc)}'
-                ) from exc
+            validate_offset_string(offset)
 
     def _project_feature_from_node(
         self,
