@@ -671,7 +671,7 @@ class GraphInterpreter:
         Returns
         -------
         Tuple[expressions.Select, List[str], List[ViewDataColumn]]
-            Select expression, row index, columns
+            Select expression, row indices, columns
         """
         columns_info = {
             column.name: column for column in columns if column.name or len(columns) == 1
@@ -824,7 +824,7 @@ class GraphInterpreter:
         Returns
         -------
         Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]
-            SQL code, type conversions to apply on result, row index, columns
+            SQL code, type conversions to apply on result, row indices, columns
         """
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
             self.query_graph.get_node_by_name(node_name)
@@ -839,12 +839,12 @@ class GraphInterpreter:
             timestamp_column=timestamp_column,
         )
 
-        sql_tree, row_index, columns = self._construct_stats_sql(
+        sql_tree, row_indices, columns = self._construct_stats_sql(
             sql_tree=sql_tree, columns=operation_structure.columns
         )
         return (
             sql_to_string(sql_tree, source_type=self.source_type),
             type_conversions,
-            row_index,
+            row_indices,
             columns,
         )
