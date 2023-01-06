@@ -3,6 +3,7 @@ Test FastAPI app
 """
 import os
 import time
+from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
@@ -19,7 +20,7 @@ async def test_get_credential():
     """
     Test get_credential works as expected
     """
-    config = Configurations("tests/fixtures/config.yaml")
+    config = Configurations("tests/fixtures/config/config.yaml")
     feature_store_name = list(config.credentials.keys())[0]
 
     with patch("featurebyte.utils.credential.Configurations") as mock_config:
@@ -46,3 +47,10 @@ def test_get_app__loading_time():
     get_app()
     elapsed_time = time.time() - start
     assert elapsed_time < 27
+
+
+def test_get_status():
+    """Test app get status"""
+    response = Configurations().get_client().get("/status")
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {"sdk_version": "unknown"}

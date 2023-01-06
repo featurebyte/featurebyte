@@ -1,3 +1,4 @@
+/status
 /dimension_data
 /entity
 /event_data

@@ -4,6 +4,7 @@ Read configurations from ini file
 from typing import Any, Dict, List, Optional, Union
 
 import os
+from http import HTTPStatus
 from pathlib import Path
 
 import requests
@@ -13,6 +14,7 @@ from pydantic.error_wrappers import ValidationError
 from requests import Response
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
@@ -104,7 +106,13 @@ class ProfileList(BaseModel):
     profiles: List[Profile]
 
 
-class APIClient(requests.Session):
+class BaseAPIClient(requests.Session):
+    """
+    Base Http client to facilitate testing
+    """
+
+
+class APIClient(BaseAPIClient):
     """
     Http client for accessing the FeatureByte Application API
     """
@@ -154,13 +162,23 @@ class APIClient(requests.Session):
         -------
         Response
             HTTP Response
+
+        Raises
+        ------
+        InvalidSettingsError
+            Invalid service endpoint
         """
-        return super().request(
-            method,
-            self.base_url + str(url),
-            *args,
-            **kwargs,
-        )
+        try:
+            return super().request(
+                method,
+                self.base_url + str(url),
+                *args,
+                **kwargs,
+            )
+        except requests.exceptions.ConnectionError:
+            raise InvalidSettingsError(
+                f"Service endpoint is inaccessible: {self.base_url}"
+            ) from None
 
 
 class Configurations:
@@ -171,6 +189,7 @@ class Configurations:
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(
         section=["Configurations"],
+        proxy_class="featurebyte.Configurations",
         skipped_members=["get_client"],
     )
 
@@ -285,16 +304,51 @@ class Configurations:
                         break
 
     @classmethod
-    def use_profile(cls, profile_name: str) -> None:
+    def use_profile(cls, profile_name: str) -> Dict[str, str]:
         """
-        Use a profile
+        Use a service profile specified in the configuration file.
 
         Parameters
         ----------
         profile_name: str
             Name of profile to use
+
+        Returns
+        -------
+        Dict[str, str]
+            Remote and local SDK versions
+
+        Raises
+        ------
+        InvalidSettingsError
+            Invalid service endpoint
+
+        Examples
+        --------
+        Content of configuration file at `~/.featurebyte/config.yaml`
+        ```
+        profile:
+          - name: featurebyte
+            api_url: https://app.featurebyte.com/api/v1
+            api_token: API_TOKEN_VALUE
+        ```
+        Use service profile `featurebyte`
+
+        >>> import featurebyte as fb
+        >>> fb.Configuration.use_profile("featurebyte")  # doctest: +SKIP
+        {'remote sdk': '0.1.0.dev368', 'local sdk': '0.1.0.dev368'}
         """
+        profile_names = [profile.name for profile in Configurations().profiles or []]
+        if profile_name not in profile_names:
+            raise InvalidSettingsError(f"Profile not found: {profile_name}")
         os.environ["FEATUREBYTE_PROFILE"] = profile_name
+        # test connection
+        client = Configurations().get_client()
+        response = client.get("/status")
+        if response.status_code != HTTPStatus.OK:
+            raise InvalidSettingsError(f"Service endpoint is inaccessible: {client.base_url}")
+        sdk_version = response.json()["sdk_version"]
+        return {"remote sdk": sdk_version, "local sdk": get_version()}
 
     def get_client(self) -> APIClient:
         """

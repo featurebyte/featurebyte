@@ -128,6 +128,8 @@ docs-serve:
 docs-build:
 	${DOCS_CMD} deploy --config-file mkdocs.yaml --update-aliases $(shell poetry version -s | grep -oP '^[0-9]+[.][0-9]+') latest
 
+docs-dev:
+	PYTHONPATH=$(PWD)/docs/extensions poetry run mkdocs serve --no-livereload
 
 #* Cleaning
 clean:

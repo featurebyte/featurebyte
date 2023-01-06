@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 
 from datetime import datetime
 from decimal import Decimal
+from importlib import metadata as importlib_metadata
 from io import BytesIO
 
 import pandas as pd
@@ -14,6 +15,21 @@ import pyarrow as pa
 from dateutil import parser
 
 from featurebyte.enum import DBVarType
+
+
+def get_version() -> str:
+    """
+    Retrieve module version
+
+    Returns
+    --------
+    str
+        Module version
+    """
+    try:
+        return str(importlib_metadata.version(__name__))
+    except importlib_metadata.PackageNotFoundError:  # pragma: no cover
+        return "unknown"
 
 
 def create_new_arrow_stream_writer(buffer: Any, schema: pa.Schema) -> pa.RecordBatchStreamWriter:

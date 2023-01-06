@@ -17,7 +17,7 @@ async def test_persist_credential(app_container):
     Test persist credential has an update as expected
     """
     with tempfile.NamedTemporaryFile(mode="w") as file_handle:
-        config_no_profile_file_name = "tests/fixtures/config_no_profile.yaml"
+        config_no_profile_file_name = "tests/fixtures/config/config_no_profile.yaml"
         config_file_name = file_handle.name
         shutil.copy2(config_no_profile_file_name, config_file_name)
         config = Configurations(config_file_name)

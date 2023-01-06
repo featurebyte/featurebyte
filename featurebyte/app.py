@@ -22,8 +22,10 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.tabular_data.api as tabular_data_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
+from featurebyte.common.utils import get_version
 from featurebyte.middleware import request_handler
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.schema import APIServiceStatus
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import ConfigCredentialProvider
 from featurebyte.utils.persistent import get_persistent
@@ -111,6 +113,18 @@ def get_app() -> FastAPI:
             dependencies=[Depends(dependencies)],
             tags=[resource_api.router.prefix[1:]],
         )
+
+    @_app.get("/status", description="Get API status.", response_model=APIServiceStatus)
+    async def get_status() -> APIServiceStatus:
+        """
+        Service alive health check
+
+        Returns
+        -------
+        APIServiceStatus
+            APIServiceStatus object
+        """
+        return APIServiceStatus(sdk_version=get_version())
 
     _app.middleware("http")(request_handler)
     return _app

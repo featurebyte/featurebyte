@@ -461,6 +461,8 @@ def test_info(saved_feature_list):
         "feature_count": 1,
         "version_count": 1,
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
+        "deployed": False,
+        "serving_endpoint": None,
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict

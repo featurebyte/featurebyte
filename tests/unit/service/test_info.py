@@ -432,6 +432,8 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         production_ready_fraction={"this": 0.0, "default": 0.0},
         created_at=feature_list_namespace.created_at,
         updated_at=None,
+        deployed=False,
+        serving_endpoint=None,
     )
     assert info == expected_info
 

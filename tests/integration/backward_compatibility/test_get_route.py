@@ -135,7 +135,7 @@ def config_fixture(test_api_client):
         with open(config_file_path, "w") as file_handle:
             file_handle.write(yaml.dump(config_dict))
             file_handle.flush()
-            with mock.patch("featurebyte.config.APIClient.request") as mock_request:
+            with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
                 mock_request.side_effect = test_api_client.request
                 yield Configurations(config_file_path=config_file_path)
 

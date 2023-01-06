@@ -2,6 +2,7 @@
 Test for FeatureStore route
 """
 import copy
+import textwrap
 from http import HTTPStatus
 from unittest.mock import Mock
 
@@ -340,10 +341,33 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
-        assert mock_session.execute_query.call_args[0][0].endswith(
-            "WHERE\n  event_timestamp >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)\n  "
-            "AND event_timestamp < CAST('2019-11-24T11:00:00' AS TIMESTAMP)\n"
-            "ORDER BY\n  RANDOM(1234)\nLIMIT 10"
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+            SELECT
+              "col_int"
+            FROM (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "created_at" AS "created_at",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
+            WHERE
+              "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
+              AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
+            ORDER BY
+              RANDOM(1234)
+            LIMIT 10
+            """
+            ).strip()
         )
 
     def test_sample_422__no_timestamp_column(self, test_api_client_persistent, data_sample_payload):
