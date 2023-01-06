@@ -345,28 +345,24 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
                 """
-            SELECT
-              "col_int"
-            FROM (
-              SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "col_char" AS "col_char",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."sf_table"
-            )
-            WHERE
-              "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
-              AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
-            ORDER BY
-              RANDOM(1234)
-            LIMIT 10
-            """
+                SELECT
+                  "col_int" AS "col_int",
+                  "col_float" AS "col_float",
+                  "col_char" AS "col_char",
+                  "col_text" AS "col_text",
+                  "col_binary" AS "col_binary",
+                  "col_boolean" AS "col_boolean",
+                  "event_timestamp" AS "event_timestamp",
+                  "created_at" AS "created_at",
+                  "cust_id" AS "cust_id"
+                FROM "sf_database"."sf_schema"."sf_table"
+                WHERE
+                  "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
+                  AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
+                ORDER BY
+                  RANDOM(1234)
+                LIMIT 10
+                """
             ).strip()
         )
 
