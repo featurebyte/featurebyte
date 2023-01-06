@@ -16,6 +16,7 @@ class TestContextApi(BaseApiTestSuite):
     class_name = "Context"
     base_route = "/context"
     payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/context.json")
+    unknown_id = ObjectId()
     create_conflict_payload_expected_detail_pairs = [
         (payload, f'Context (id: "{payload["_id"]}") already exists.')
     ]
@@ -29,7 +30,11 @@ class TestContextApi(BaseApiTestSuite):
                     "type": "value_error.missing",
                 }
             ],
-        )
+        ),
+        (
+            {**payload, "entity_ids": [str(unknown_id)]},
+            f'Entity (id: "{unknown_id}") not found. Please save the Entity object first.',
+        ),
     ]
     update_unprocessable_payload_expected_detail_pairs = [
         (
@@ -62,6 +67,16 @@ class TestContextApi(BaseApiTestSuite):
                 "update_unprocessable_payload_expected_detail",
                 self.update_unprocessable_payload_expected_detail_pairs,
             )
+
+    def setup_creation_route(self, api_client):
+        """Setup for post route"""
+        api_object_filename_pairs = [
+            ("entity", "entity"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
         """Payload generator to create multiple success response"""
