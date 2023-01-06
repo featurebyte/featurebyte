@@ -590,8 +590,8 @@ def item_data_join_event_data_with_renames_node_fixture(
         "right_on": "order_id",
         "left_input_columns": ["order_id", "order_method"],
         "left_output_columns": ["order_id", "order_method_left"],
-        "right_input_columns": ["item_type", "item_name"],
-        "right_output_columns": ["item_type_right", "item_name_right"],
+        "right_input_columns": ["order_id", "item_type", "item_name"],
+        "right_output_columns": ["order_id", "item_type_right", "item_name_right"],
         "join_type": "inner",
     }
     node = global_graph.add_operation(

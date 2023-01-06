@@ -644,11 +644,16 @@ class JoinNode(BaseNode):
             row_index_lineage = inputs[0].row_index_lineage
         else:
             row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)
+
+        left_cols = [left_columns[col_name] for col_name in params.left_input_columns]
+        left_col_names = set(col.name for col in left_cols)
+        right_cols = [
+            right_columns[col_name]
+            for col_name in params.right_input_columns
+            if right_columns[col_name].name not in left_col_names
+        ]
         return OperationStructure(
-            columns=(
-                [left_columns[col_name] for col_name in params.left_input_columns]
-                + [right_columns[col_name] for col_name in params.right_input_columns]
-            ),
+            columns=left_cols + right_cols,
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,
