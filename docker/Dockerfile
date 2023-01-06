@@ -17,7 +17,7 @@ RUN apt-get update && \
     apt-get clean
 
 # install poetry
-RUN pip install  poetry==1.3.1
+RUN pip install poetry==1.3.1
 
 # Copy project files
 WORKDIR /app
