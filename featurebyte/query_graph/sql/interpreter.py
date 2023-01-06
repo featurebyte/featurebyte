@@ -249,7 +249,8 @@ class GraphInterpreter:
 
         if type_conversions:
             for idx, col_expr in enumerate(sql_tree.expressions):
-                type_conversion = type_conversions.get(col_expr.alias)
+                col_name = col_expr.alias if col_expr.alias else col_expr.name
+                type_conversion = type_conversions.get(col_name)
                 if type_conversion == DBVarType.TIMESTAMP_TZ:
                     if isinstance(col_expr, expressions.Alias):
                         alias = col_expr.alias
@@ -633,9 +634,30 @@ class GraphInterpreter:
         )
         return stats_expressions
 
+    @staticmethod
+    def _is_dtype_supported(dtype: DBVarType, supported_dtypes: Optional[Set[DBVarType]]) -> bool:
+        """
+        Whether dtype is in supported dtypes
+
+        Parameters
+        ----------
+        dtype: DBVarType
+            DBVarType to check for support
+        supported_dtypes: Optional[Set[DBVarType]]
+            Set of DBVarType supported
+
+        Returns
+        -------
+        bool
+        """
+        if not supported_dtypes:
+            # If None all type are supported
+            return True
+        return dtype in supported_dtypes
+
     def _construct_stats_sql(
         self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
-    ) -> expressions.Select:
+    ) -> Tuple[expressions.Select, List[str], List[ViewDataColumn]]:
         """
         Construct sql to retrieve statistics for an SQL view
 
@@ -648,41 +670,32 @@ class GraphInterpreter:
 
         Returns
         -------
-        expressions.Select
+        Tuple[expressions.Select, List[str], List[ViewDataColumn]]
+            Select expression, row indices, columns
         """
+        columns_info = {
+            column.name: column for column in columns if column.name or len(columns) == 1
+        }
         cte_statements = [("data", sql_tree)]
-
-        def _is_dtype_supported(
-            dtype: DBVarType, supported_dtypes: Optional[Set[DBVarType]]
-        ) -> bool:
-            """
-            Whether dtype is in supported dtypes
-
-            Parameters
-            ----------
-            dtype: DBVarType
-                DBVarType to check for support
-            supported_dtypes: Optional[Set[DBVarType]]
-                Set of DBVarType supported
-
-            Returns
-            -------
-            bool
-            """
-            if not supported_dtypes:
-                # If None all type are supported
-                return True
-            return dtype in supported_dtypes
 
         # get modes
         stats_selections = []
         mode_selections = []
         entropy_tables = []
         final_selections = []
-        for column_idx, column in enumerate(columns):
-            assert column.name
-            col_expr = quoted_identifier(column.name)
-            if _is_dtype_supported(column.dtype, self.stats_expressions["top"][1]):
+        output_columns = []
+        for column_idx, col_expr in enumerate(sql_tree.expressions):
+            col_name = col_expr.alias or col_expr.name
+            column = columns_info[col_name]
+            output_columns.append(column)
+            col_expr = quoted_identifier(col_name)
+
+            # add dtype
+            final_selections.append(
+                expressions.alias_(make_literal_value(column.dtype), f"dtype__{column_idx}")
+            )
+
+            if self._is_dtype_supported(column.dtype, self.stats_expressions["top"][1]):
                 stats_func = self.stats_expressions["top"][0]
                 assert stats_func
                 # compute mode values
@@ -693,7 +706,7 @@ class GraphInterpreter:
                         quoted=True,
                     )
                 )
-            if _is_dtype_supported(column.dtype, self.stats_expressions["entropy"][1]):
+            if self._is_dtype_supported(column.dtype, self.stats_expressions["entropy"][1]):
                 # counts
                 cat_counts = (
                     expressions.select(
@@ -735,7 +748,7 @@ class GraphInterpreter:
             # stats
             for stats_name, (stats_func, supported_dtypes) in self.stats_expressions.items():
                 if stats_func:
-                    if _is_dtype_supported(column.dtype, supported_dtypes):
+                    if self._is_dtype_supported(column.dtype, supported_dtypes):
                         stats_selections.append(
                             expressions.alias_(
                                 stats_func(col_expr, column_idx),
@@ -779,7 +792,8 @@ class GraphInterpreter:
         sql_tree = construct_cte_sql(cte_statements).select(*final_selections).from_("stats")
         for table_name in entropy_tables:
             sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
-        return sql_tree
+
+        return sql_tree, ["dtype"] + list(self.stats_expressions.keys()), output_columns
 
     def construct_describe_sql(
         self,
@@ -810,7 +824,7 @@ class GraphInterpreter:
         Returns
         -------
         Tuple[str, dict[Optional[str], DBVarType], List[str], List[ViewDataColumn]]
-            SQL code, type conversions to apply on result, row names, columns
+            SQL code, type conversions to apply on result, row indices, columns
         """
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
             self.query_graph.get_node_by_name(node_name)
@@ -825,10 +839,12 @@ class GraphInterpreter:
             timestamp_column=timestamp_column,
         )
 
-        sql_tree = self._construct_stats_sql(sql_tree=sql_tree, columns=operation_structure.columns)
+        sql_tree, row_indices, columns = self._construct_stats_sql(
+            sql_tree=sql_tree, columns=operation_structure.columns
+        )
         return (
             sql_to_string(sql_tree, source_type=self.source_type),
             type_conversions,
-            list(self.stats_expressions.keys()),
-            operation_structure.columns,
+            row_indices,
+            columns,
         )

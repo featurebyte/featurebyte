@@ -638,11 +638,22 @@ class FBAutoDocProcessor(AutoDocProcessor):
             for param in resource_details.parameters:
                 param_name = param.name.replace("*", "\\*")
                 param_type = f": *{param.type}*" if param.type else ""
-                param_default = f"**default**: *{param.default}*\n" if param.default else ""
-                param_description = (
-                    f"\n>{param_default}{param.description}" if param.description else ""
+                param_default = (
+                    f"<div>**default**: *{param.default}*</div>\n"
+                    if param.default and param.default != "None"
+                    else ""
                 )
-                content += f"- **{param_name}**{param_type}{param_description}\n"
+                if param.description:
+                    # ignore line breaks added to keep within line limits
+                    formatted_description = re.sub(r"\n\b", " ", param.description)
+                    formatted_description = formatted_description.replace("\n", "<br/>")
+                else:
+                    formatted_description = ""
+                formatted_description = (
+                    f"<div>{formatted_description}</div>" if formatted_description else ""
+                )
+                param_description = f"{param_default}{formatted_description}"
+                content += f"\n- **{param_name}**{param_type}{param_description}\n"
             _render("Parameters", content)
 
         # Render returns:

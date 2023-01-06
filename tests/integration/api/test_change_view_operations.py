@@ -11,7 +11,7 @@ def test_change_view(scd_data):
     """
     Test change view operations
     """
-    change_view = ChangeView.from_scd_data(scd_data, "User Status")
+    change_view = ChangeView.from_slowly_changing_data(scd_data, "User Status")
 
     # assert initialization
     assert len(change_view.columns_info) == 4

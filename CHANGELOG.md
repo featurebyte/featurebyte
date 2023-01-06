@@ -22,6 +22,7 @@
 
 ### 🧰 Bug fixes 🧰
 
++ `changelog`: Fix error in item view describe()
 
 ## v0.0.0
 

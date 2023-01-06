@@ -306,7 +306,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                     },
                     {
                         "name": "project_1",
-                        "output_type": "series",
+                        "output_type": "frame",
                         "parameters": {
                             "columns": [
                                 "col_int",
@@ -345,28 +345,24 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
                 """
-            SELECT
-              "col_int"
-            FROM (
-              SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "col_char" AS "col_char",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."sf_table"
-            )
-            WHERE
-              "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
-              AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
-            ORDER BY
-              RANDOM(1234)
-            LIMIT 10
-            """
+                SELECT
+                  "col_int" AS "col_int",
+                  "col_float" AS "col_float",
+                  "col_char" AS "col_char",
+                  "col_text" AS "col_text",
+                  "col_binary" AS "col_binary",
+                  "col_boolean" AS "col_boolean",
+                  "event_timestamp" AS "event_timestamp",
+                  "created_at" AS "created_at",
+                  "cust_id" AS "cust_id"
+                FROM "sf_database"."sf_schema"."sf_table"
+                WHERE
+                  "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
+                  AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
+                ORDER BY
+                  RANDOM(1234)
+                LIMIT 10
+                """
             ).strip()
         )
 
@@ -478,6 +474,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = pd.DataFrame(
             {
+                "a_dtype": ["FLOAT"],
                 "a_unique": [5],
                 "a_%missing": [1.0],
                 "a_%empty": [np.nan],
@@ -493,6 +490,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "a_max": [1.327],
                 "a_min_offset": [np.nan],
                 "a_max_offset": [np.nan],
+                "b_dtype": ["VARCHAR"],
                 "b_unique": [5],
                 "b_%missing": [3.0],
                 "b_%empty": [0.1],
@@ -543,6 +541,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         mock_session = mock_get_session.return_value
         mock_session.execute_query.return_value = pd.DataFrame(
             {
+                "a_dtype": ["FLOAT"],
                 "a_unique": [20],
                 "a_%missing": [1.0],
                 "a_%empty": [np.nan],

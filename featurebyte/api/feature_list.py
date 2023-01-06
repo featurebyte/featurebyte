@@ -264,6 +264,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     FeatureGroup class
     """
 
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["FeatureGroup"], proxy_class="featurebyte.FeatureGroup")
+
     @typechecked
     def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
         # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
