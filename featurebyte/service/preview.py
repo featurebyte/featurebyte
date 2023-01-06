@@ -191,18 +191,12 @@ class PreviewService(BaseService):
         logger.debug("Execute describe SQL", extra={"describe_sql": describe_sql})
         result = await session.execute_query(describe_sql)
         assert result is not None
-        result = pd.concat(
-            [
-                pd.DataFrame({column.name: [column.dtype] for column in columns}, index=["dtype"]),
-                pd.DataFrame(
-                    result.values.reshape(len(columns), -1).T,
-                    index=row_names,
-                    columns=[str(column.name) for column in columns],
-                ).dropna(axis=0, how="all"),
-            ],
-            axis=0,
-        )
-        return dataframe_to_json(result, type_conversions, skip_prepare=True)
+        results = pd.DataFrame(
+            result.values.reshape(len(columns), -1).T,
+            index=row_names,
+            columns=[str(column.name) for column in columns],
+        ).dropna(axis=0, how="all")
+        return dataframe_to_json(results, type_conversions, skip_prepare=True)
 
     async def preview_feature(
         self, feature_preview: FeaturePreview, get_credential: Any
