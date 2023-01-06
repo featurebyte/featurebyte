@@ -427,18 +427,10 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
     return complex_feature_node, graph
 
 
-@pytest.fixture(name="item_data_join_event_data_node")
-def item_data_join_event_data_node_fixture(
-    global_graph,
-    item_data_input_node,
-    event_data_input_node,
-):
-    """
-    Fixture of a join node that joins EventData columns into ItemView. Result of:
-
-    item_view.join_event_data_attributes()
-    """
-    node_params = {
+@pytest.fixture(name="join_node_params")
+def join_node_params_fixture():
+    """Join node parameters fixture"""
+    return {
         "left_on": "order_id",
         "right_on": "order_id",
         "left_input_columns": ["order_method"],
@@ -447,9 +439,23 @@ def item_data_join_event_data_node_fixture(
         "right_output_columns": ["order_id", "item_id", "item_name", "item_type"],
         "join_type": "inner",
     }
+
+
+@pytest.fixture(name="item_data_join_event_data_node")
+def item_data_join_event_data_node_fixture(
+    global_graph,
+    item_data_input_node,
+    event_data_input_node,
+    join_node_params,
+):
+    """
+    Fixture of a join node that joins EventData columns into ItemView. Result of:
+
+    item_view.join_event_data_attributes()
+    """
     node = global_graph.add_operation(
         node_type=NodeType.JOIN,
-        node_params=node_params,
+        node_params=join_node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[event_data_input_node, item_data_input_node],
     )
