@@ -5,7 +5,7 @@ This module contains SQL operation related node classes
 from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Union
 from typing_extensions import Annotated
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -609,6 +609,28 @@ class JoinNode(BaseNode):
         join_type: Literal["left", "inner"]
         scd_parameters: Optional[SCDJoinParameters]
 
+        @validator(
+            "left_input_columns",
+            "right_input_columns",
+            "left_output_columns",
+            "right_output_columns",
+        )
+        @classmethod
+        def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
+            if len(values) != len(set(values)):
+                raise ValueError(f"Column names (values: {values}) must be unique!")
+            return values
+
+        @root_validator
+        @classmethod
+        def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+            duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
+                values.get("right_output_columns", [])
+            )
+            if duplicated_output_cols:
+                raise ValueError("Left and right output columns should not have common item(s).")
+            return values
+
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
@@ -620,8 +642,11 @@ class JoinNode(BaseNode):
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         params = self.parameters
+        # construct input column name to output column name mapping for left & right columns
         left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
         right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
+
+        # construct input column name to output column mapping for left & right columns
         left_columns = {
             col.name: col.clone(
                 name=left_col_map[col.name],  # type: ignore
@@ -640,15 +665,18 @@ class JoinNode(BaseNode):
             for col in inputs[1].columns
             if col.name in right_col_map
         }
+
         if self.parameters.join_type == "left":
             row_index_lineage = inputs[0].row_index_lineage
         else:
             row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)
+
+        # construct left & right output columns
+        left_cols = [left_columns[col_name] for col_name in params.left_input_columns]
+        right_cols = [right_columns[col_name] for col_name in params.right_input_columns]
+
         return OperationStructure(
-            columns=(
-                [left_columns[col_name] for col_name in params.left_input_columns]
-                + [right_columns[col_name] for col_name in params.right_input_columns]
-            ),
+            columns=left_cols + right_cols,
             output_type=NodeOutputType.FRAME,
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,

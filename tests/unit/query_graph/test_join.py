@@ -4,9 +4,11 @@ Tests for Join SQLNode
 import textwrap
 
 import pytest
+from pydantic import ValidationError
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -410,3 +412,30 @@ def test_scd_join(global_graph, scd_join_node):
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
+
+
+@pytest.mark.parametrize(
+    "param_name",
+    ["left_input_columns", "left_output_columns", "right_input_columns", "right_output_columns"],
+)
+def test_join_node_parameters_validation__duplicated_columns(param_name, join_node_params):
+    """Test join node parameter validation logic"""
+    with pytest.raises(ValidationError) as exc:
+        JoinNode(parameters={**join_node_params, param_name: ["a", "a"]})
+    expected_msg = "Column names (values: ['a', 'a']) must be unique! (type=value_error)"
+    assert expected_msg in str(exc.value)
+
+
+def test_join_node_parameters_validation__overlapped_columns(join_node_params):
+    """Test join node parameter validation logic"""
+    with pytest.raises(ValidationError) as exc:
+        JoinNode(
+            parameters={
+                **join_node_params,
+                "right_output_columns": join_node_params["left_output_columns"],
+            }
+        )
+    expected_msg = (
+        "Left and right output columns should not have common item(s). (type=value_error)"
+    )
+    assert expected_msg in str(exc.value)

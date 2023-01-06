@@ -432,6 +432,12 @@ class OperationStructure(BaseFrozenModel):
     row_index_lineage: Tuple[str, ...]
     is_time_based: bool = Field(default=False)
 
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        # make sure there is no duplicated column names
+        assert len(self.columns) == len(set(col.name for col in self.columns))
+        assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
+
     @property
     def series_output_dtype(self) -> DBVarType:
         """
