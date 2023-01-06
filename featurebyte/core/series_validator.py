@@ -271,11 +271,6 @@ def validate_series(input_series: SeriesT, other_series: SeriesT) -> None:
         series
     other_series: SeriesT
         series
-
-    Raises
-    ------
-    ValueError
-        raised when a series fails validation
     """
     _validate_entity(input_series, other_series)
     _validate_feature_type(input_series, other_series)
