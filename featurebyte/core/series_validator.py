@@ -5,14 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Tuple, TypeVar
 
+from featurebyte.enum import TableDataType
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.enum import NodeType
+
 if TYPE_CHECKING:
     from featurebyte.core.series import Series
 
     SeriesT = TypeVar("SeriesT", bound=Series)
-
-from featurebyte.enum import TableDataType
-from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import NodeType
 
 
 def _validate_entity_ids(entity_ids: List[PydanticObjectId]) -> None:
@@ -200,14 +200,8 @@ def _is_one_item_and_one_event(series_a: SeriesT, series_b: SeriesT) -> bool:
     """
     series_a_node_type = series_a.node.type
     series_b_node_type = series_b.node.type
-    at_least_one_item_data = (
-        series_a_node_type == TableDataType.ITEM_DATA
-        or series_b_node_type == TableDataType.ITEM_DATA
-    )
-    at_least_one_event_data = (
-        series_a_node_type == TableDataType.EVENT_DATA
-        or series_b_node_type == TableDataType.EVENT_DATA
-    )
+    at_least_one_item_data = TableDataType.ITEM_DATA in (series_a_node_type, series_b_node_type)
+    at_least_one_event_data = TableDataType.EVENT_DATA in (series_a_node_type, series_b_node_type)
     return at_least_one_event_data and at_least_one_item_data
 
 
