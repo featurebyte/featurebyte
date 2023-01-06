@@ -3,19 +3,14 @@ Test series validator module
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
-
 import pytest
 from bson import ObjectId
 
+from featurebyte.core.frame import Frame
 from featurebyte.core.series_validator import _are_series_both_of_type, _validate_entity_ids
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
-
-if TYPE_CHECKING:
-    from featurebyte.core.series import Series
-
-    SeriesT = TypeVar("SeriesT", bound=Series)
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 def test_validate_entity_ids():
@@ -46,14 +41,72 @@ def test_validate_entity():
     pass
 
 
-def test_are_series_both_of_type(int_series):
+@pytest.fixture(name="get_dataframe_with_type")
+def dataframe_fixture(global_graph, snowflake_feature_store):
+    """
+    Frame test fixture
+    """
+
+    def get_data_frame_with_type(table_data_type: TableDataType):
+        columns_info = [
+            {"name": "CUST_ID", "dtype": DBVarType.INT},
+            {"name": "PRODUCT_ACTION", "dtype": DBVarType.VARCHAR},
+            {"name": "VALUE", "dtype": DBVarType.FLOAT},
+            {"name": "MASK", "dtype": DBVarType.BOOL},
+            {"name": "TIMESTAMP_VALUE", "dtype": DBVarType.TIMESTAMP},
+        ]
+        node = global_graph.add_operation(
+            node_type=NodeType.INPUT,
+            node_params={
+                "type": table_data_type,
+                "columns": columns_info,
+                "timestamp": "VALUE",
+                "table_details": {
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "table_name": "transaction",
+                },
+                "feature_store_details": {
+                    "type": "snowflake",
+                    "details": {
+                        "database": "db",
+                        "sf_schema": "public",
+                        "account": "account",
+                        "warehouse": "warehouse",
+                    },
+                },
+            },
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[],
+        )
+        return Frame(
+            feature_store=snowflake_feature_store,
+            tabular_source={
+                "feature_store_id": snowflake_feature_store.id,
+                "table_details": {
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "table_name": "some_table_name",
+                },
+            },
+            columns_info=columns_info,
+            node_name=node.name,
+        )
+
+    return get_data_frame_with_type
+
+
+def test_are_series_both_of_type(get_dataframe_with_type):
     """
     Test _are_series_both_of_type
     """
-    # they are not of type SCD_DATA because the nodes do not have the right params
-    assert not _are_series_both_of_type(int_series, int_series, TableDataType.SCD_DATA)
-
-    # TODO
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+    assert not _are_series_both_of_type(event_series, item_series, TableDataType.ITEM_DATA)
+    assert not _are_series_both_of_type(item_series, event_series, TableDataType.ITEM_DATA)
+    assert _are_series_both_of_type(item_series, item_series, TableDataType.ITEM_DATA)
 
 
 def test_is_from_same_data():
