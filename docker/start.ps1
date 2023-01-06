@@ -4,12 +4,12 @@ if ((Get-Command "docker.exe" -ErrorAction SilentlyContinue) -eq $null) {
   Write-Host "Please install docker and/or configure docker cli to be on PATH"
 }
 
-# Loads docker image into your docker daemon
-if ((docker images | Select-String Pattern "featurebyte-beta" -ErrorAction SilentlyContinue).Line -eq $null) {
-  docker load -i .\featurebyte-beta.tar
-} else {
-  Write-Host "featurebyte-beta" already uploaded
-}
+# Setting credentials to pull from featurebyte repository
+Get-Content "beta_key.json.b64" | docker login -u "_json_key_base64" --password-stdin https://us-central1-docker.pkg.dev
 
-# Starts service
+# Pulls image (This checks for image updates)
+docker compose pull
+
+# Starts the service
+#    Ctrl+c to stop the service
 docker compose up
