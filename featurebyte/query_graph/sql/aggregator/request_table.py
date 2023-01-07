@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from typing import Tuple
 
-from sqlglot import expressions, select
+from sqlglot import expressions
+from sqlglot.expressions import select
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -19,7 +20,7 @@ class RequestTablePlan:
     Responsible for generating a processed request table with distinct serving names
     """
 
-    def __init__(self, is_time_aware) -> None:
+    def __init__(self, is_time_aware: bool):
         self.is_time_aware = is_time_aware
         self.request_table_names: dict[AggSpecEntityIDs, str] = {}
         self.agg_specs: dict[AggSpecEntityIDs, AggregationSpec] = {}
