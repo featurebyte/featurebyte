@@ -4,7 +4,10 @@ Test ContextService
 import pytest
 from bson import ObjectId
 
-from featurebyte.exception import DocumentNotFoundError
+from featurebyte.exception import DocumentNotFoundError, DocumentUpdateError
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 
 
@@ -97,8 +100,8 @@ def join_node_fixture():
         "parameters": {
             "left_on": "col_int",
             "right_on": "event_id_col",
-            "left_input_columns": ["event_timestamp", "cust_id", "col_int"],
-            "left_output_columns": ["event_timestamp", "cust_id", "event_id_col"],
+            "left_input_columns": ["event_timestamp", "cust_id"],
+            "left_output_columns": ["event_timestamp", "cust_id"],
             "right_input_columns": ["event_id_col", "item_type", "item_amount"],
             "right_output_columns": ["event_id_col", "item_type", "item_amount"],
             "join_type": "inner",
@@ -147,3 +150,68 @@ async def test_context_update__success(context_service, context, view_graph, joi
     )
     assert context.graph == view_graph
     assert context.node_name == join_node["name"]
+
+
+@pytest.mark.asyncio
+async def test_context_update__validation_error(context_service, context, view_graph, join_node):
+    """Check that context update validation"""
+    assert context.graph is None
+    query_graph = QueryGraph(**view_graph)
+
+    # case 1: context view is a series but not a frame
+    proj_node = query_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["event_timestamp"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[JoinNode(**join_node)],
+    )
+    with pytest.raises(DocumentUpdateError) as exc:
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(graph=query_graph, node_name=proj_node.name),
+        )
+    expected_error = "Context view must but a table but not a single column."
+    assert expected_error in str(exc.value)
+
+    # case 2: context view is a feature but not a view
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": "item_type",
+        "parent": None,
+        "agg_func": "count",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["item_type_count_30d"],
+        "windows": ["30d"],
+    }
+    groupby_node = query_graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[JoinNode(**join_node)],
+    )
+    with pytest.raises(DocumentUpdateError) as exc:
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(graph=query_graph, node_name=groupby_node.name),
+        )
+    expected_error = "Context view must be a view but not a feature."
+    assert expected_error in str(exc.value)
+
+    # case 3: context view has a missing entity
+    proj_node = query_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["event_timestamp"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[JoinNode(**join_node)],
+    )
+    with pytest.raises(DocumentUpdateError) as exc:
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(graph=query_graph, node_name=proj_node.name),
+        )
+    expected_error = "Entities ['customer'] not found in the context view."
+    assert expected_error in str(exc.value), exc
