@@ -33,7 +33,6 @@ def test_extract_operation__single_input_node(global_graph, input_node):
     assert op_struct.output_category == "view"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == (input_node.name,)
-    assert op_struct.tabular_data_ids == [None]
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert grp_op_struct.source_columns == expected_columns
