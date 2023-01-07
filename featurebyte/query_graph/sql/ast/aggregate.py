@@ -24,8 +24,9 @@ class Aggregate(TableNode):
     This node has two responsibilities:
 
     1. Serve as the source of aggregation (lookup, aggregate_asat, etc) when sql type is AGGREGATION
-    2. Construct post-aggregation expressions involving lookup features when sql type is
-       POST_AGGREGATION
+    2. Construct post-aggregation expressions when sql type is POST_AGGREGATION. This is a mapping
+       from feature name(s) to internal aggregation name(s) which can be determined from the
+       specific AggregationSpec instances.
 
     The heavy lifting of actual aggregation from the source is not done here but in the Aggregator.
     """

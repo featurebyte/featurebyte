@@ -137,7 +137,7 @@ def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without
             REQ."POINT_IN_TIME",
             REQ."serving_cust_id",
             SUM(SCD."value") AS "sum_value_cffc07d0b60086cc"
-          FROM "SCD_REQUEST_TABLE_serving_cust_id" AS REQ
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
               *,
@@ -175,7 +175,7 @@ def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without
         FROM REQUEST_TABLE
         """
     ).strip()
-    assert request_table_ctes[0][0] == '"SCD_REQUEST_TABLE_serving_cust_id"'
+    assert request_table_ctes[0][0] == '"REQUEST_TABLE_POINT_IN_TIME_serving_cust_id"'
     assert request_table_ctes[0][1].sql(pretty=True) == expected
 
 
@@ -204,7 +204,7 @@ def test_asat_aggregate_scd_table_with_end_timestamp(aggregation_spec_with_end_t
             REQ."POINT_IN_TIME",
             REQ."serving_cust_id",
             SUM(SCD."value") AS "sum_value_d9f27f309eb1beea"
-          FROM "SCD_REQUEST_TABLE_serving_cust_id" AS REQ
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
               *
@@ -257,7 +257,7 @@ def test_same_source_different_agg_funcs(aggregation_specs_same_source_different
             REQ."serving_cust_id",
             MIN(SCD."value") AS "min_value_d9f27f309eb1beea",
             MAX(SCD."value") AS "max_value_d9f27f309eb1beea"
-          FROM "SCD_REQUEST_TABLE_serving_cust_id" AS REQ
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
           INNER JOIN (
             SELECT
               *
@@ -309,7 +309,7 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
             REQ."POINT_IN_TIME",
             REQ."serving_key_1",
             SUM(SCD."value") AS "sum_value_e6b2e16bbba4cafd"
-          FROM "SCD_REQUEST_TABLE_serving_key_1" AS REQ
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_key_1" AS REQ
           INNER JOIN (
             SELECT
               *
@@ -332,7 +332,7 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
             REQ."POINT_IN_TIME",
             REQ."serving_key_2",
             SUM(SCD."value") AS "sum_value_d56300cbaf25cc59"
-          FROM "SCD_REQUEST_TABLE_serving_key_2" AS REQ
+          FROM "REQUEST_TABLE_POINT_IN_TIME_serving_key_2" AS REQ
           INNER JOIN (
             SELECT
               *

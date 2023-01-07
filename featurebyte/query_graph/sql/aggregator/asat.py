@@ -14,117 +14,11 @@ from featurebyte.query_graph.sql.aggregator.base import (
     Aggregator,
     LeftJoinableSubquery,
 )
-from featurebyte.query_graph.sql.aggregator.window import AggSpecEntityIDs
+from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 from featurebyte.query_graph.sql.groupby_helper import get_aggregation_expression
 from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_with_end_timestamp
 from featurebyte.query_graph.sql.specs import AggregateAsAtSpec
-
-
-class RequestTablePlan:
-    """
-    SQL generation for request table in SCD aggregation
-    """
-
-    def __init__(self) -> None:
-        self.request_table_names: dict[AggSpecEntityIDs, str] = {}
-        self.agg_specs: dict[AggSpecEntityIDs, AggregateAsAtSpec] = {}
-
-    def add_aggregation_spec(self, agg_spec: AggregateAsAtSpec) -> None:
-        """
-        Update state given an ItemAggregationSpec
-
-        Parameters
-        ----------
-        agg_spec: AggregateAsAtSpec
-            Aggregation specification
-        """
-        key = self.get_key(agg_spec)
-        request_table_name = f"SCD_REQUEST_TABLE_{'_'.join(agg_spec.serving_names)}"
-        self.request_table_names[key] = request_table_name
-        self.agg_specs[key] = agg_spec
-
-    def get_request_table_name(self, agg_spec: AggregateAsAtSpec) -> str:
-        """
-        Get the processed request table name corresponding to an aggregation spec
-
-        Parameters
-        ----------
-        agg_spec: AggregateAsAtSpec
-            Aggregation specification
-
-        Returns
-        -------
-        str
-        """
-        key = self.get_key(agg_spec)
-        return self.request_table_names[key]
-
-    @staticmethod
-    def get_key(agg_spec: AggregateAsAtSpec) -> AggSpecEntityIDs:
-        """
-        Get an internal key used to determine request table sharing
-
-        Parameters
-        ----------
-        agg_spec: AggregateAsAtSpec
-            Aggregation specification
-
-        Returns
-        -------
-        AggSpecEntityIDs
-        """
-        return tuple(agg_spec.serving_names)
-
-    def construct_request_table_ctes(
-        self,
-        request_table_name: str,
-    ) -> list[tuple[str, expressions.Select]]:
-        """
-        Construct SQL statements that build the processed request tables
-
-        Parameters
-        ----------
-        request_table_name : str
-            Name of request table to use
-
-        Returns
-        -------
-        list[tuple[str, expressions.Select]]
-        """
-        ctes = []
-        for key, table_name in self.request_table_names.items():
-            agg_spec = self.agg_specs[key]
-            request_table_expr = self.construct_request_table_expr(agg_spec, request_table_name)
-            ctes.append((quoted_identifier(table_name).sql(), request_table_expr))
-        return ctes
-
-    @staticmethod
-    def construct_request_table_expr(
-        agg_spec: AggregateAsAtSpec,
-        request_table_name: str,
-    ) -> expressions.Select:
-        """
-        Construct a Select statement that forms the processed request table
-
-        Parameters
-        ----------
-        agg_spec: AggregateAsAtSpec
-            Aggregation specification
-        request_table_name: str
-            Name of the original request table that is determined at runtime
-
-        Returns
-        -------
-        expressions.Select
-        """
-        quoted_serving_names = [quoted_identifier(x) for x in agg_spec.serving_names]
-        select_distinct_expr = (
-            select(quoted_identifier(SpecialColumnName.POINT_IN_TIME), *quoted_serving_names)
-            .distinct()
-            .from_(request_table_name)
-        )
-        return select_distinct_expr
 
 
 class AsAtAggregator(Aggregator):
@@ -136,7 +30,7 @@ class AsAtAggregator(Aggregator):
         super().__init__(*args, **kwargs)
         self.grouped_specs: dict[str, list[AggregateAsAtSpec]] = {}
         self.grouped_agg_result_names: dict[str, set[str]] = {}
-        self.request_table_plan = RequestTablePlan()
+        self.request_table_plan = RequestTablePlan(is_time_aware=True)
 
     def update(self, spec: AggregateAsAtSpec) -> None:
         """
