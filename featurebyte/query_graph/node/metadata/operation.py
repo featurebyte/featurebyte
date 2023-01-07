@@ -505,7 +505,7 @@ class OperationStructure(BaseFrozenModel):
         -------
         Set[Optional[PydanticObjectId]]
         """
-        return sorted(set(col.tabular_data_id for col in self.source_columns))
+        return list(set(col.tabular_data_id for col in self.source_columns))
 
     def get_column_node_name(self, column_name: str) -> str:
         """

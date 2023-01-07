@@ -103,6 +103,7 @@ class TestContextApi(BaseApiTestSuite):
     @pytest.fixture(name="input_event_data_node")
     def input_event_data_node_fixture(self):
         """Input event_data node of a graph"""
+        event_data_payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
         return {
             "name": "input_1",
             "type": "input",
@@ -128,7 +129,7 @@ class TestContextApi(BaseApiTestSuite):
                     },
                     "type": "snowflake",
                 },
-                "id": "6337f9651050ee7d5980660d",
+                "id": event_data_payload["_id"],
                 "id_column": "col_int",
                 "table_details": {
                     "database_name": "sf_database",
@@ -140,69 +141,11 @@ class TestContextApi(BaseApiTestSuite):
             },
         }
 
-    @pytest.fixture(name="input_item_data_node")
-    def input_item_data_node_fixture(self):
-        """Input item_data node of a graph"""
-        return {
-            "name": "input_2",
-            "type": "input",
-            "output_type": "frame",
-            "parameters": {
-                "columns": [
-                    {"dtype": "INT", "name": "event_id_col"},
-                    {"dtype": "VARCHAR", "name": "item_id_col"},
-                    {"dtype": "VARCHAR", "name": "item_type"},
-                    {"dtype": "FLOAT", "name": "item_amount"},
-                    {"dtype": "TIMESTAMP", "name": "created_at"},
-                ],
-                "feature_store_details": {
-                    "details": {
-                        "account": "sf_account",
-                        "database": "sf_database",
-                        "sf_schema": "sf_schema",
-                        "warehouse": "sf_warehouse",
-                    },
-                    "type": "snowflake",
-                },
-                "id": "6337f9651050ee7d5980662d",
-                "id_column": "item_id_col",
-                "event_data_id": "6337f9651050ee7d5980660d",
-                "event_id_column": "event_id_col",
-                "table_details": {
-                    "database_name": "sf_database",
-                    "schema_name": "sf_schema",
-                    "table_name": "items_table",
-                },
-                "type": "item_data",
-            },
-        }
-
-    @pytest.fixture(name="join_node")
-    def join_node_fixture(self):
-        """Join node of a graph"""
-        return {
-            "name": "join_1",
-            "type": "join",
-            "output_type": "frame",
-            "parameters": {
-                "left_on": "col_int",
-                "right_on": "event_id_col",
-                "left_input_columns": ["event_timestamp", "cust_id", "col_int"],
-                "left_output_columns": ["event_timestamp", "cust_id", "event_id_col"],
-                "right_input_columns": ["event_id_col", "item_type", "item_amount"],
-                "right_output_columns": ["event_id_col", "item_type", "item_amount"],
-                "join_type": "inner",
-                "scd_parameters": None,
-            },
-        }
-
     def test_update_200(
         self,
         create_success_response,
         test_api_client_persistent,
         input_event_data_node,
-        input_item_data_node,
-        join_node,
     ):
         """
         Test context update (success)
@@ -210,14 +153,8 @@ class TestContextApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         context_id = response_dict["_id"]
-        graph = {
-            "nodes": [input_event_data_node, input_item_data_node, join_node],
-            "edges": [
-                {"source": input_event_data_node["name"], "target": join_node["name"]},
-                {"source": input_item_data_node["name"], "target": join_node["name"]},
-            ],
-        }
-        payload = {"graph": graph, "node_name": join_node["name"]}
+        graph = {"nodes": [input_event_data_node], "edges": []}
+        payload = {"graph": graph, "node_name": input_event_data_node["name"]}
         response = test_api_client.patch(f"{self.base_route}/{context_id}", json=payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK

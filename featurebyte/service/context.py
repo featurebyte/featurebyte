@@ -60,6 +60,11 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
             Context view's operation structure to be validated
         context: ContextModel
             Context stored at the persistent
+
+        Raises
+        ------
+        DocumentUpdateError
+            When the context view is not a proper context view (frame, view and has all required entities)
         """
         data_service = DataService(user=self.user, persistent=self.persistent)
 
@@ -82,12 +87,20 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         # TODO: add entity id to operation structure column (DEV-957)
         found_entity_ids = set()
         for source_col in operation_structure.source_columns:
+            assert source_col.tabular_data_id is not None
             tabular_data = tabular_data_map[source_col.tabular_data_id]
             column_info = next(
-                col_info
-                for col_info in tabular_data.columns_info
-                if col_info.name == source_col.name
+                (
+                    col_info
+                    for col_info in tabular_data.columns_info
+                    if col_info.name == source_col.name
+                ),
+                None,
             )
+            if column_info is None:
+                raise DocumentUpdateError(
+                    f'Column "{source_col.name}" not found in table "{tabular_data.name}".'
+                )
             if column_info.entity_id:
                 found_entity_ids.add(column_info.entity_id)
 

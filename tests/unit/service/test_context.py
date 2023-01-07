@@ -7,7 +7,7 @@ from bson import ObjectId
 from featurebyte.exception import DocumentNotFoundError, DocumentUpdateError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.generic import JoinNode
+from featurebyte.query_graph.node.generic import InputNode, JoinNode
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 
 
@@ -90,6 +90,21 @@ def input_item_data_node_fixture(item_data, event_data):
     }
 
 
+@pytest.fixture(name="generic_table_node")
+def generic_table_node_fixture(input_event_data_node):
+    """Input generic table node"""
+    input_event_data_node["parameters"]["id"] = None
+    input_event_data_node["parameters"]["type"] = "generic"
+    return InputNode(**input_event_data_node).dict()
+
+
+@pytest.fixture(name="invalid_input_event_data_node")
+def invalid_input_event_data_node_fixture(input_event_data_node, item_data):
+    """Input generic table node"""
+    input_event_data_node["parameters"]["id"] = item_data.id
+    return input_event_data_node
+
+
 @pytest.fixture(name="join_node")
 def join_node_fixture():
     """Join node of a graph"""
@@ -122,6 +137,12 @@ def view_graph_fixture(input_event_data_node, input_item_data_node, join_node):
     }
 
 
+@pytest.fixture(name="generic_view_graph")
+def generic_view_graph_fixture(generic_table_node):
+    """View graph (generic table) fixture"""
+    return {"nodes": [generic_table_node]}
+
+
 def test_context_creation__success(context, entity, user):
     """Check that context fixture is created as expected"""
     assert context.entity_ids == [entity.id]
@@ -129,7 +150,7 @@ def test_context_creation__success(context, entity, user):
 
 
 @pytest.mark.asyncio
-async def test_context_creation__unknown_entity_ids(context_service, user):
+async def test_context_creation__unknown_entity_ids(context_service):
     """Check unknown entity ids throws error"""
     random_id = ObjectId()
     with pytest.raises(DocumentNotFoundError) as exc:
@@ -154,7 +175,7 @@ async def test_context_update__success(context_service, context, view_graph, joi
 
 @pytest.mark.asyncio
 async def test_context_update__validation_error(context_service, context, view_graph, join_node):
-    """Check that context update validation"""
+    """Check that context update validation error"""
     assert context.graph is None
     query_graph = QueryGraph(**view_graph)
 
@@ -215,3 +236,33 @@ async def test_context_update__validation_error(context_service, context, view_g
         )
     expected_error = "Entities ['customer'] not found in the context view."
     assert expected_error in str(exc.value), exc
+
+
+@pytest.mark.asyncio
+async def test_context_update__validation_error_unsaved_table(
+    context_service, context, generic_view_graph
+):
+    """Check that context update validation error due to unsaved table"""
+    with pytest.raises(DocumentUpdateError) as exc:
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(graph=generic_view_graph, node_name="input_1"),
+        )
+    expected_error = "Data record has not been stored at the persistent."
+    assert expected_error in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_context_update__validation_error_column_not_found(
+    context_service, context, invalid_input_event_data_node
+):
+    """Check that context update validation error due to column not found in the persisted data"""
+    with pytest.raises(DocumentUpdateError) as exc:
+        await context_service.update_document(
+            document_id=context.id,
+            data=ContextUpdate(
+                graph={"nodes": [invalid_input_event_data_node]}, node_name="input_1"
+            ),
+        )
+    expected_error = 'Column "col_int" not found in table "sf_item_data".'
+    assert expected_error in str(exc.value)
