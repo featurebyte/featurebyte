@@ -496,17 +496,6 @@ class OperationStructure(BaseFrozenModel):
         """
         return [col for col in self.columns if isinstance(col, SourceDataColumn)]
 
-    @property
-    def tabular_data_ids(self) -> List[Optional[PydanticObjectId]]:
-        """
-        List of tabular data IDs used in the operation structure
-
-        Returns
-        -------
-        Set[Optional[PydanticObjectId]]
-        """
-        return list(set(col.tabular_data_id for col in self.source_columns))
-
     def get_column_node_name(self, column_name: str) -> str:
         """
         Retrieve node_name based on given column

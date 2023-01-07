@@ -76,7 +76,10 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
 
         # check that tabular data document can be retrieved from the persistent
         tabular_data_map = {}
-        for tabular_data_id in operation_structure.tabular_data_ids:
+        tabular_data_ids = list(
+            set(col.tabular_data_id for col in operation_structure.source_columns)
+        )
+        for tabular_data_id in tabular_data_ids:
             if tabular_data_id is None:
                 raise DocumentUpdateError("Data record has not been stored at the persistent.")
             tabular_data_map[tabular_data_id] = await data_service.get_document(
