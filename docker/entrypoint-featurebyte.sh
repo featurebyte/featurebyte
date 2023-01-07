@@ -4,6 +4,7 @@ while ! nc -zvw10 mongo-rs 27022 1>/dev/null 2>&1; do echo "Waiting for upstream
 while ! nc -zvw10 mongo-rs 27021 1>/dev/null 2>&1; do echo "Waiting for upstream mongo2 to start"; sleep 2; done; echo "mongo2 listening"
 
 # perform database migration
+sleep 3 # To allow mongodb container to create replicaset if necessary
 echo "Performing migration"
 PYTHONPATH=$PWD python /scripts/migration.py >/dev/null 2>&1
 
