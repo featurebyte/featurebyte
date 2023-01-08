@@ -54,7 +54,7 @@ class BaseAggregator(ABC):
         -------
         View
         """
-        return self.groupby_obj.obj
+        return self.groupby_obj.view_obj
 
     @property
     def groupby(self) -> "GroupBy":
@@ -467,14 +467,14 @@ class GroupBy:
         if category is not None and category not in obj.columns:
             raise KeyError(f'Column "{category}" not found!')
 
-        self.obj = obj
+        self.view_obj = obj
         self.keys = keys_value
         self.category = category
         self.serving_names = serving_names
         self.entity_ids = entity_ids
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.obj}, keys={self.keys})"
+        return f"{type(self).__name__}({self.view_obj}, keys={self.keys})"
 
     def __str__(self) -> str:
         return repr(self)

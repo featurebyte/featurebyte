@@ -540,7 +540,7 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id")
     assert isinstance(grouped, GroupBy)
-    assert snowflake_event_view_with_entity.tabular_data_ids == grouped.obj.tabular_data_ids
+    assert snowflake_event_view_with_entity.tabular_data_ids == grouped.view_obj.tabular_data_ids
     yield grouped
 
 
@@ -550,7 +550,7 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
     FeatureList fixture
     """
     global_graph = GlobalQueryGraph()
-    assert id(global_graph.nodes) == id(grouped_event_view.obj.graph.nodes)
+    assert id(global_graph.nodes) == id(grouped_event_view.view_obj.graph.nodes)
     feature_group = grouped_event_view.aggregate_over(
         value_column="col_float",
         method="sum",
@@ -564,7 +564,7 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
     )
     assert isinstance(feature_group, FeatureGroup)
     for feature in feature_group.feature_objects.values():
-        assert grouped_event_view.obj.tabular_data_ids == feature.tabular_data_ids
+        assert grouped_event_view.view_obj.tabular_data_ids == feature.tabular_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
         assert feature.tabular_data_ids == [snowflake_event_data_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
