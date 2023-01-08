@@ -39,8 +39,8 @@ class SlowlyChangingView(View):
     _series_class = SlowlyChangingViewColumn
 
     natural_key_column: str = Field(allow_mutation=False)
-    surrogate_key_column: str = Field(allow_mutation=False)
     effective_timestamp_column: str = Field(allow_mutation=False)
+    surrogate_key_column: Optional[str] = Field(allow_mutation=False)
     end_timestamp_column: Optional[str] = Field(allow_mutation=False)
     current_flag_column: Optional[str] = Field(allow_mutation=False)
 
