@@ -17,6 +17,7 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.api.view import View
+from featurebyte.api.window_validator import validate_window
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_job_setting_parameters, validate_offset_string
 from featurebyte.common.typing import get_or_default
@@ -230,7 +231,11 @@ class WindowAggregator(BaseAggregator):
         """
 
         self._validate_parameters(
-            value_column=value_column, method=method, windows=windows, feature_names=feature_names
+            value_column=value_column,
+            method=method,
+            windows=windows,
+            feature_names=feature_names,
+            feature_job_setting=feature_job_setting,
         )
         self.view.validate_aggregation_parameters(
             groupby_obj=self.groupby,
@@ -276,6 +281,7 @@ class WindowAggregator(BaseAggregator):
         method: Optional[str],
         windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
+        feature_job_setting: Optional[Dict[str, str]],
     ) -> None:
 
         self._validate_method_and_value_column(method=method, value_column=value_column)
@@ -306,17 +312,12 @@ class WindowAggregator(BaseAggregator):
             if self.groupby.category is not None:
                 raise ValueError("category is not supported for aggregation with unbounded window")
 
-    def _prepare_node_parameters(
-        self,
-        value_column: Optional[str],
-        method: Optional[str],
-        windows: Optional[list[Optional[str]]],
-        feature_names: Optional[list[str]],
-        timestamp_column: Optional[str] = None,
-        value_by_column: Optional[str] = None,
-        feature_job_setting: Optional[dict[str, str]] = None,
-    ) -> dict[str, Any]:
+        if windows is not None:
+            frequency, _, _ = self._get_job_setting_params(feature_job_setting)
+            for window in windows:
+                validate_window(window, frequency)
 
+    def _get_job_setting_params(self, feature_job_setting: Optional[dict[str, str]]):
         feature_job_setting = feature_job_setting or {}
         frequency = feature_job_setting.get("frequency")
         time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
@@ -331,7 +332,22 @@ class WindowAggregator(BaseAggregator):
             raise ValueError(
                 "frequency, time_module_frequency and blind_spot parameters should not be None!"
             )
+        return frequency, time_modulo_frequency, blind_spot
 
+    def _prepare_node_parameters(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        windows: Optional[list[Optional[str]]],
+        feature_names: Optional[list[str]],
+        timestamp_column: Optional[str] = None,
+        value_by_column: Optional[str] = None,
+        feature_job_setting: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
+
+        frequency, time_modulo_frequency, blind_spot = self._get_job_setting_params(
+            feature_job_setting
+        )
         parsed_seconds = validate_job_setting_parameters(
             frequency=frequency,
             time_modulo_frequency=time_modulo_frequency,
