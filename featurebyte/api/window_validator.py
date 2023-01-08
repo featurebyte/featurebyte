@@ -4,29 +4,7 @@ Validate window parameter input.
 
 import pandas as pd
 
-
-def _is_valid_window_string(window: str) -> None:
-    """
-    Validates whether the window param is a valid duration string.
-
-    Possible values of a valid duration string are
-    - ‘W’, ‘D’, ‘T’, ‘S’, ‘L’, ‘U’, or ‘N’
-    - ‘days’ or ‘day’
-    - ‘hours’, ‘hour’, ‘hr’, or ‘h’
-    - ‘minutes’, ‘minute’, ‘min’, or ‘m’
-    - ‘seconds’, ‘second’, or ‘sec’
-    - ‘milliseconds’, ‘millisecond’, ‘millis’, or ‘milli’
-    - ‘microseconds’, ‘microsecond’, ‘micros’, or ‘micro’
-    - ‘nanoseconds’, ‘nanosecond’, ‘nanos’, ‘nano’, or ‘ns’.
-
-    Parameters
-    ----------
-    window: str
-        the window parameter string
-    """
-    # Call pd.timedelta to help us validate if the format is valid. If it's not, the function will error and raise a
-    # ValueError.
-    pd.Timedelta(window)
+from featurebyte.common.model_util import validate_offset_string
 
 
 def _is_window_multiple_of_feature_job_frequency(window: str, feature_job_frequency: str) -> None:
@@ -101,7 +79,7 @@ def validate_window(window: str, feature_job_frequency: str) -> None:
     feature_job_frequency: str
         feature job frequency
     """
-    _is_valid_window_string(window)
-    _is_valid_window_string(feature_job_frequency)
+    validate_offset_string(window)
+    validate_offset_string(feature_job_frequency)
     _is_window_multiple_of_feature_job_frequency(window, feature_job_frequency)
     _is_window_in_proper_range(window, feature_job_frequency)

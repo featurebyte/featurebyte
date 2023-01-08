@@ -4,35 +4,10 @@ Test window validator
 import pytest
 
 from featurebyte.api.window_validator import (
-    _is_valid_window_string,
     _is_window_in_proper_range,
     _is_window_multiple_of_feature_job_frequency,
     validate_window,
 )
-
-
-@pytest.mark.parametrize(
-    "window",
-    ["random_str", "7a", "7A"],
-)
-def test_is_valid_window_string__invalid(window):
-    """
-    Test _is_valid_window_string__invalid
-    """
-    with pytest.raises(ValueError) as exc:
-        _is_valid_window_string(window)
-    assert "unit abbreviation" in str(exc)
-
-
-@pytest.mark.parametrize(
-    "window",
-    ["100m", "100W", "100D", "100Y", "100T", "100S", "100L", "100L", "100U", "100N"],
-)
-def test_is_valid_window_string__valid(window):
-    """
-    Test _is_valid_window_string__valid
-    """
-    _is_valid_window_string(window)
 
 
 def test_is_window_in_proper_range():

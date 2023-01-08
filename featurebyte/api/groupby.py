@@ -3,9 +3,9 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, Union, cast
-
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import cast
 
 from typeguard import typechecked
 
@@ -318,7 +318,9 @@ class WindowAggregator(BaseAggregator):
                 if window is not None:
                     validate_window(window, frequency)
 
-    def _get_job_setting_params(self, feature_job_setting: Optional[dict[str, str]]):
+    def _get_job_setting_params(
+        self, feature_job_setting: Optional[dict[str, str]]
+    ) -> Tuple[str, str, str]:
         feature_job_setting = feature_job_setting or {}
         frequency = feature_job_setting.get("frequency")
         time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
