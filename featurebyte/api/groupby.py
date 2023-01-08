@@ -315,7 +315,8 @@ class WindowAggregator(BaseAggregator):
         if windows is not None:
             frequency, _, _ = self._get_job_setting_params(feature_job_setting)
             for window in windows:
-                validate_window(window, frequency)
+                if window is not None:
+                    validate_window(window, frequency)
 
     def _get_job_setting_params(self, feature_job_setting: Optional[dict[str, str]]):
         feature_job_setting = feature_job_setting or {}
