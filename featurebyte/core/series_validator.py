@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Tuple, TypeVar
 
-from featurebyte import Entity
+from featurebyte.api.entity import Entity
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
