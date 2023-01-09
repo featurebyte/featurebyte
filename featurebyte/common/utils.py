@@ -10,6 +10,7 @@ from decimal import Decimal
 from importlib import metadata as importlib_metadata
 from io import BytesIO
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 from dateutil import parser
@@ -163,6 +164,10 @@ def dataframe_to_json(
     """
     if not skip_prepare:
         prepare_dataframe_for_json(dataframe)
+
+    # convert infinity values to string as these gets converted to null
+    dataframe = dataframe.replace({np.inf: "inf", -np.inf: "-inf"})
+
     return {
         "data": dataframe.to_json(orient="table", date_unit="ns", double_precision=15),
         "type_conversions": type_conversions,

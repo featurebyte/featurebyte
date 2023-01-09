@@ -1,6 +1,7 @@
 """
 Test helper functions in featurebyte.common.utils
 """
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
@@ -63,3 +64,14 @@ def test_dataframe_to_json_no_column_name(data_to_convert):
     # timestamp column should be casted to datetime with tz offsets
     original_df["b"] = pd.to_datetime(original_df["b"])
     assert_frame_equal(output_df, original_df)
+
+
+def test_dataframe_to_json_infinite_values():
+    """
+    Test test_dataframe_to_json for single column without name in conversion
+    """
+    original_df = pd.DataFrame({"a": [1, 2, np.inf, -np.inf, np.nan]})
+    expected_df = pd.DataFrame({"a": [1, 2, "inf", "-inf", np.nan]})
+    data = dataframe_to_json(original_df, {})
+    output_df = dataframe_from_json(data)
+    assert_frame_equal(output_df, expected_df)

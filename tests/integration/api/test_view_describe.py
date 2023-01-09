@@ -79,7 +79,20 @@ def test_event_view_describe_with_date_range(snowflake_event_data):
     assert_series_equal(
         col_describe_df["AMOUNT"],
         describe_df["AMOUNT"][
-            ["dtype", "unique", "%missing", "mean", "std", "min", "25%", "50%", "75%", "max"]
+            [
+                "dtype",
+                "unique",
+                "%missing",
+                "top",
+                "freq",
+                "mean",
+                "std",
+                "min",
+                "25%",
+                "50%",
+                "75%",
+                "max",
+            ]
         ],
         check_dtype=False,
     )

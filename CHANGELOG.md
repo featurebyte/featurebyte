@@ -23,6 +23,7 @@
 ### 🧰 Bug fixes 🧰
 
 + `changelog`: Fix error in item view describe()
++ `changelog`: Fix infinite values showing up as nan in data / view describe
 
 ## v0.0.0
 
