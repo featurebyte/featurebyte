@@ -17,7 +17,7 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
-from featurebyte.core.util import series_binary_operation, series_unary_operation
+from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
@@ -46,6 +46,30 @@ def numeric_only(func: FuncT) -> FuncT:
         return func(self, *args, **kwargs)
 
     return wrapped  # type: ignore
+
+
+class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
+    """
+    Default series binary operator
+    """
+
+    def validate_inputs(self) -> None:
+        """
+        Validate the input series, and other parameter
+
+        Raises
+        ------
+        TypeError
+            If the other series has incompatible type
+        """
+        if isinstance(self.other, Series) and self.input_series.__class__ != self.other.__class__:
+            # Checking strict equality of types when both sides are Series is intentional. It is to
+            # handle cases such as when self is EventViewColumn and other is Feature - they are both
+            # Series but such operations are not allowed.
+            raise TypeError(
+                f"Operation between {self.input_series.__class__.__name__} and {self.other.__class__.__name__} is not"
+                " supported"
+            )
 
 
 class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
@@ -220,27 +244,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         Series
             output of the binary operation
-
-        Raises
-        ------
-        TypeError
-            If the other series has incompatible type
         """
         if isinstance(other, Series):
             binary_op_series_params = self.binary_op_series_params(other)
         else:
             binary_op_series_params = self.binary_op_series_params()
-        if isinstance(other, Series) and self.__class__ != other.__class__:
-            # Checking strict equality of types when both sides are Series is intentional. It is to
-            # handle cases such as when self is EventViewColumn and other is Feature - they are both
-            # Series but such operations are not allowed.
-            raise TypeError(
-                f"Operation between {self.__class__.__name__} and {other.__class__.__name__} is not"
-                " supported"
-            )
-        return series_binary_operation(
-            input_series=self,
-            other=other,
+        series_operator = DefaultSeriesBinaryOperator(self, other)
+        return series_operator.operate(
             node_type=node_type,
             output_var_type=output_var_type,
             right_op=right_op,
