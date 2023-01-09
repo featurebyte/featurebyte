@@ -511,7 +511,7 @@ class SCDBaseParameters(BaseModel):
     """Parameters common to SCD data"""
 
     effective_timestamp_column: InColumnStr
-    natural_key_column: Optional[InColumnStr]  # DEV-556: should be compulsory
+    natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
     current_flag_column: Optional[InColumnStr]
     end_timestamp_column: Optional[InColumnStr]
 
