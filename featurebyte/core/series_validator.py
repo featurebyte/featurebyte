@@ -269,7 +269,7 @@ def _get_event_data_id_of_item_series(item_series: SeriesT) -> PydanticObjectId:
     ):
         input_node = cast(InputNode, node)
         if input_node.parameters.type == TableDataType.ITEM_DATA:
-            return input_node.parameters.event_data_id
+            return input_node.parameters.event_data_id  # type: ignore
     raise ValueError("cannot find event data ID from item data")
 
 
