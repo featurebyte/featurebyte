@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -11,10 +11,17 @@ from typeguard import typechecked
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
-from featurebyte.api.join_utils import combine_column_info_of_views, join_tabular_data_ids
+from featurebyte.api.join_utils import (
+    append_rsuffix_to_column_info,
+    append_rsuffix_to_columns,
+    combine_column_info_of_views,
+    filter_join_key_from_column,
+    join_tabular_data_ids,
+)
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
+from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -53,10 +60,11 @@ class ItemView(View, GroupByMixin):
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_view: EventView = Field(allow_mutation=False)
+    timestamp_column_name: str = Field(allow_mutation=False)
 
     @classmethod
     @typechecked
-    def from_item_data(cls, item_data: ItemData) -> ItemView:
+    def from_item_data(cls, item_data: ItemData, event_suffix: Optional[str] = None) -> ItemView:
         """
         Construct an ItemView object
 
@@ -64,6 +72,8 @@ class ItemView(View, GroupByMixin):
         ----------
         item_data : ItemData
             ItemData object used to construct ItemView object
+        event_suffix : Optional[str]
+            A suffix to append on to the columns from the EventData
 
         Returns
         -------
@@ -79,13 +89,18 @@ class ItemView(View, GroupByMixin):
             event_data_id=item_data.event_data_id,
             default_feature_job_setting=item_data.default_feature_job_setting,
             event_view=event_view,
+            timestamp_column_name=event_view.timestamp_column,
         )
         item_view.join_event_data_attributes(
-            [event_view.timestamp_column] + event_view.entity_columns
+            [event_view.timestamp_column] + event_view.entity_columns, event_suffix=event_suffix
         )
         return item_view
 
-    def join_event_data_attributes(self, columns: list[str]) -> None:
+    def join_event_data_attributes(
+        self,
+        columns: list[str],
+        event_suffix: Optional[str] = None,
+    ) -> None:
         """
         Join additional attributes from the related EventData
 
@@ -93,11 +108,15 @@ class ItemView(View, GroupByMixin):
         ----------
         columns : list[str]
             List of column names to include from the EventData
+        event_suffix : Optional[str]
+            A suffix to append on to the columns from the EventData
 
         Raises
         ------
         ValueError
             If the any of the provided columns does not exist in the EventData
+        RepeatedColumnNamesError
+            raised when there are overlapping columns, but no event_suffix has been provided
         """
         for col in columns:
             if col not in self.event_view.columns:
@@ -109,9 +128,29 @@ class ItemView(View, GroupByMixin):
         right_output_columns = self.columns
 
         # EventData columns
-        left_on = self.event_view.event_id_column
-        left_input_columns = [col for col in columns if col not in self.columns]
-        left_output_columns = left_input_columns
+        left_on = cast(str, self.event_view.event_id_column)
+        # EventData's event_id_column will be excluded from the result since that would be same as
+        # ItemView's event_id_column. There is no need to specify event_suffix if the
+        # event_id_column is the only common column name between EventData and ItemView.
+        columns_excluding_event_id = filter_join_key_from_column(columns, left_on)
+        renamed_event_view_columns = append_rsuffix_to_columns(
+            columns_excluding_event_id, event_suffix
+        )
+        left_input_columns = []
+        left_output_columns = []
+        for input_col, output_col in zip(columns, renamed_event_view_columns):
+            if input_col == self.event_view.timestamp_column:
+                self.__dict__.update({"timestamp_column_name": output_col})
+            left_input_columns.append(input_col)
+            left_output_columns.append(output_col)
+
+        repeated_column_names = sorted(set(right_output_columns).intersection(left_output_columns))
+        if repeated_column_names:
+            raise RepeatedColumnNamesError(
+                f"Duplicate column names {repeated_column_names} found between EventData and"
+                f" ItemView. Consider setting the event_suffix parameter to disambiguate the"
+                f" resulting columns."
+            )
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -130,7 +169,9 @@ class ItemView(View, GroupByMixin):
 
         # Construct new columns_info
         joined_columns_info = combine_column_info_of_views(
-            self.columns_info, self.event_view.columns_info, filter_set=set(columns)
+            self.columns_info,
+            append_rsuffix_to_column_info(self.event_view.columns_info, rsuffix=event_suffix),
+            filter_set=set(renamed_event_view_columns),
         )
 
         # Construct new tabular_data_ids
@@ -149,7 +190,7 @@ class ItemView(View, GroupByMixin):
         Returns
         -------
         """
-        return self.event_view.timestamp_column
+        return self.timestamp_column_name
 
     @property
     def protected_attributes(self) -> list[str]:
@@ -183,6 +224,7 @@ class ItemView(View, GroupByMixin):
                 "event_data_id": self.event_data_id,
                 "default_feature_job_setting": self.default_feature_job_setting,
                 "event_view": self.event_view,
+                "timestamp_column_name": self.timestamp_column_name,
             }
         )
         return params

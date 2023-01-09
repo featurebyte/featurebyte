@@ -60,7 +60,7 @@ def test_from_item_data__auto_join_columns(
     """
     Test ItemView automatically joins timestamp column and entity columns from related EventData
     """
-    view = ItemView.from_item_data(snowflake_item_data)
+    view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
     view_dict = view.dict()
 
     # Check node is a join node which will make event timestamp and EventData entities available
@@ -72,8 +72,8 @@ def test_from_item_data__auto_join_columns(
         "parameters": {
             "left_on": "col_int",
             "right_on": "event_id_col",
-            "left_input_columns": ["cust_id"],
-            "left_output_columns": ["cust_id"],
+            "left_input_columns": ["event_timestamp", "cust_id"],
+            "left_output_columns": ["event_timestamp_event_table", "cust_id_event_table"],
             "right_input_columns": [
                 "event_id_col",
                 "item_id_col",
@@ -104,7 +104,8 @@ def test_from_item_data__auto_join_columns(
         "item_amount",
         "created_at",
         "event_timestamp",
-        "cust_id",
+        "event_timestamp_event_table",
+        "cust_id_event_table",
     ]
     assert view.dtypes.to_dict() == {
         "event_id_col": "INT",
@@ -113,7 +114,8 @@ def test_from_item_data__auto_join_columns(
         "item_amount": "FLOAT",
         "created_at": "TIMESTAMP_TZ",
         "event_timestamp": "TIMESTAMP_TZ",
-        "cust_id": "INT",
+        "event_timestamp_event_table": "TIMESTAMP_TZ",
+        "cust_id_event_table": "INT",
     }
 
     # Check preview SQL
@@ -121,7 +123,8 @@ def test_from_item_data__auto_join_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          L."cust_id" AS "cust_id",
+          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp_event_table",
+          L."cust_id" AS "cust_id_event_table",
           R."event_id_col" AS "event_id_col",
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
@@ -152,7 +155,8 @@ def test_from_item_data__auto_join_columns(
           FROM "sf_database"."sf_schema"."items_table"
         ) AS R
           ON L."col_int" = R."event_id_col"
-        LIMIT 10        """
+        LIMIT 10
+        """
     ).strip()
     assert preview_sql == expected_sql
 
@@ -161,7 +165,7 @@ def test_has_event_timestamp_column(snowflake_item_view):
     """
     Test that ItemView inherits the event timestamp column from EventView
     """
-    assert snowflake_item_view.timestamp_column == "event_timestamp"
+    assert snowflake_item_view.timestamp_column == "event_timestamp_event_table"
 
 
 def test_default_feature_job_setting(snowflake_item_view, snowflake_event_data):
@@ -230,7 +234,8 @@ def test_join_event_data_attributes__more_columns(
                 "item_amount",
                 "created_at",
                 "event_timestamp",
-                "cust_id",
+                "event_timestamp_event_table",
+                "cust_id_event_table",
             ],
             "right_output_columns": [
                 "event_id_col",
@@ -239,7 +244,8 @@ def test_join_event_data_attributes__more_columns(
                 "item_amount",
                 "created_at",
                 "event_timestamp",
-                "cust_id",
+                "event_timestamp_event_table",
+                "cust_id_event_table",
             ],
             "join_type": "inner",
             "scd_parameters": None,
@@ -256,7 +262,8 @@ def test_join_event_data_attributes__more_columns(
         "item_amount",
         "created_at",
         "event_timestamp",
-        "cust_id",
+        "event_timestamp_event_table",
+        "cust_id_event_table",
         "col_float",
     ]
     assert view.dtypes.to_dict() == {
@@ -266,7 +273,8 @@ def test_join_event_data_attributes__more_columns(
         "item_amount": "FLOAT",
         "created_at": "TIMESTAMP_TZ",
         "event_timestamp": "TIMESTAMP_TZ",
-        "cust_id": "INT",
+        "event_timestamp_event_table": "TIMESTAMP_TZ",
+        "cust_id_event_table": "INT",
         "col_float": "FLOAT",
     }
 
@@ -282,7 +290,8 @@ def test_join_event_data_attributes__more_columns(
           R."item_amount" AS "item_amount",
           CAST(R."created_at" AS VARCHAR) AS "created_at",
           CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp",
-          R."cust_id" AS "cust_id"
+          CAST(R."event_timestamp_event_table" AS VARCHAR) AS "event_timestamp_event_table",
+          R."cust_id_event_table" AS "cust_id_event_table"
         FROM (
           SELECT
             "col_int" AS "col_int",
@@ -298,7 +307,8 @@ def test_join_event_data_attributes__more_columns(
         ) AS L
         INNER JOIN (
           SELECT
-            L."cust_id" AS "cust_id",
+            L."event_timestamp" AS "event_timestamp_event_table",
+            L."cust_id" AS "cust_id_event_table",
             R."event_id_col" AS "event_id_col",
             R."item_id_col" AS "item_id_col",
             R."item_type" AS "item_type",
@@ -355,7 +365,7 @@ def test_item_view_groupby__item_data_column(snowflake_item_view):
         "frequency": "1h",
         "time_modulo_frequency": "30m",
     }
-    feature = snowflake_item_view.groupby("cust_id").aggregate_over(
+    feature = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         "item_amount",
         method="sum",
         windows=["24h"],
@@ -377,7 +387,7 @@ def test_item_view_groupby__event_data_column(snowflake_item_view):
     """
     snowflake_item_view.join_event_data_attributes(["col_float"])
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("cust_id").aggregate_over(
+        _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
             "col_float",
             method="sum",
             windows=["24h"],
@@ -396,7 +406,7 @@ def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
     snowflake_item_view["col_float_v2"] = (snowflake_item_view["col_float"] + 123) - 45
     snowflake_item_view["col_float_v3"] = (snowflake_item_view["col_float_v2"] * 678) / 90
     with pytest.raises(ValueError) as exc:
-        _ = snowflake_item_view.groupby("cust_id").aggregate_over(
+        _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
             "col_float_v2",
             method="sum",
             windows=["24h"],
@@ -420,7 +430,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view)
     snowflake_item_view["new_col"] = (
         snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
     )
-    _ = snowflake_item_view.groupby("cust_id").aggregate_over(
+    _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         "new_col",
         method="sum",
         windows=["24h"],
@@ -438,7 +448,7 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
         "frequency": "1h",
         "time_modulo_frequency": "30m",
     }
-    _ = snowflake_item_view.groupby("cust_id").aggregate_over(
+    _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         method="count",
         windows=["24h"],
         feature_names=["feature_name"],
@@ -451,7 +461,7 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
     snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
-    snowflake_item_view = ItemView.from_item_data(snowflake_item_data)
+    snowflake_item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
         method="count",
         feature_name="order_size",

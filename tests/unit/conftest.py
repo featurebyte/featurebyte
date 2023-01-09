@@ -596,7 +596,7 @@ def get_non_time_based_feature_fixture(snowflake_item_data):
     """
     snowflake_item_data.item_id_col.as_entity("customer")
     snowflake_item_data.item_id_column = "item_id_col"
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
     return item_view.groupby("item_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,

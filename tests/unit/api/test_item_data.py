@@ -67,6 +67,13 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
                 "semantic_id": None,
                 "critical_data_info": None,
             },
+            {
+                "dtype": "TIMESTAMP_TZ",
+                "entity_id": None,
+                "name": "event_timestamp",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
         ],
         "created_at": None,
         "event_data_id": ObjectId("6337f9651050ee7d5980660d"),
@@ -265,6 +272,7 @@ class TestItemDataTestSuite(BaseDataTestSuite):
         "item_type",
         "item_amount",
         "created_at",
+        "event_timestamp",
     }
 
 
