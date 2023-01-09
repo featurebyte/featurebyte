@@ -22,6 +22,8 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.core.series_validator import validate_entity, validate_series
+from featurebyte.core.util import SeriesBinaryOperator
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.event_data import FeatureJobSetting
@@ -110,6 +112,27 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
                 feature_list.data.apply(lambda data_list: data in data_list)
             ]
         return feature_list
+
+
+class FeatureSeriesBinaryOperator(SeriesBinaryOperator):
+    """
+    Series binary operator for features. Only applicable where the input series is a feature, and the target series
+    is also a feature.
+    """
+
+    def validate_inputs(self) -> None:
+        """
+        Validate inputs for feature binary operations.
+        """
+        super().validate_inputs()
+
+        # validate entities
+        input_feature = cast(Feature, self.input_series)
+        other_feature = cast(Feature, self.other)
+        validate_entity(input_feature, other_feature)
+
+        # validate series
+        validate_series(input_feature, other_feature)
 
 
 class Feature(
@@ -305,6 +328,23 @@ class Feature(
         """
         operation_structure = self.extract_operation_structure()
         return operation_structure.is_time_based
+
+    def get_series_binary_operator(
+        self, other: int | float | str | bool | Series
+    ) -> SeriesBinaryOperator:
+        """
+        Override to return FeatureSeriesBinaryOperator.
+
+        Parameters
+        ----------
+        other: int | float | str | bool | Series
+            right value of the binary operator
+
+        Returns
+        -------
+        SeriesBinaryOperator
+        """
+        return FeatureSeriesBinaryOperator(self, other)
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """

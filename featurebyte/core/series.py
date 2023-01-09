@@ -221,6 +221,23 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             var_type_lst = [var_type]
         return isinstance(item, Series) and any(item.dtype == var_type for var_type in var_type_lst)
 
+    def get_series_binary_operator(
+        self, other: int | float | str | bool | Series
+    ) -> SeriesBinaryOperator:
+        """
+        Get series binary operator.
+
+        Parameters
+        ----------
+        other: int | float | str | bool | Series
+            right value of the binary operator
+
+        Returns
+        -------
+        SeriesBinaryOperator
+        """
+        return DefaultSeriesBinaryOperator(self, other)
+
     def _binary_op(
         self,
         other: int | float | str | bool | Series,
@@ -254,7 +271,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             binary_op_series_params = self.binary_op_series_params(other)
         else:
             binary_op_series_params = self.binary_op_series_params()
-        series_operator = DefaultSeriesBinaryOperator(self, other)
+        series_operator = self.get_series_binary_operator(other)
         return series_operator.operate(
             node_type=node_type,
             output_var_type=output_var_type,

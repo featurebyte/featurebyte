@@ -3,8 +3,10 @@ Series validator module
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple, TypeVar
+from typing import TYPE_CHECKING, List, Tuple, TypeVar, cast
 
+from featurebyte import Feature
+from featurebyte.core.util import SeriesBinaryOperator
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
@@ -33,7 +35,7 @@ def _validate_entity_ids(entity_ids: List[PydanticObjectId]) -> None:
         raise ValueError(f"no, or multiple, entity IDs found for the feature - {entity_ids}")
 
 
-def _validate_entity(input_series: SeriesT, other_series: SeriesT) -> None:
+def validate_entity(input_feature: Feature, other_feature: Feature) -> None:
     """
     Validates that the entities are
     - either the same, or
@@ -41,18 +43,18 @@ def _validate_entity(input_series: SeriesT, other_series: SeriesT) -> None:
 
     Parameters
     ----------
-    input_series: SeriesT
-        series
-    other_series: SeriesT
-        series
+    input_feature: Feature
+        input feature
+    other_feature: Feature
+        other feature
 
     Raises
     ------
     ValueError
         raised when the series are not related entities
     """
-    input_entity_ids = input_series.entity_ids
-    other_entity_ids = other_series.entity_ids
+    input_entity_ids = input_feature.entity_ids
+    other_entity_ids = other_feature.entity_ids
     _validate_entity_ids(input_entity_ids)
     _validate_entity_ids(other_entity_ids)
 
@@ -273,5 +275,4 @@ def validate_series(input_series: SeriesT, other_series: SeriesT) -> None:
     other_series: SeriesT
         series
     """
-    _validate_entity(input_series, other_series)
     _validate_feature_type(input_series, other_series)
