@@ -8,6 +8,7 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
+from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -345,6 +346,15 @@ def test_join_event_data_attributes__more_columns(
         """
     ).strip()
     assert preview_sql == expected_sql
+
+
+def test_join_event_data_attributes__missing_required_event_suffix(snowflake_item_data):
+    """
+    Test when event_suffix is required but not provided
+    """
+    with pytest.raises(RepeatedColumnNamesError) as exc:
+        ItemView.from_item_data(snowflake_item_data)
+    assert "Duplicate column names ['event_timestamp'] found" in str(exc.value)
 
 
 def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
