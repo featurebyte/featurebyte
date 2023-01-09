@@ -34,7 +34,7 @@ class NodePruningExtractor(
 ):
     """NodePruningExtractor is used to prune the node parameters (remove redundant parameter values)."""
 
-    def _post_compute(
+    def _post_compute(  # type: ignore[override]
         self,
         branch_state: OperationStructureBranchState,
         global_state: NodePruningGlobalState,
@@ -74,7 +74,7 @@ class NodePruningExtractor(
             skip_post=skip_post,
         )
 
-    def extract(
+    def extract(  # type: ignore[override]
         self,
         node: Node,
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,

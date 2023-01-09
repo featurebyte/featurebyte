@@ -665,17 +665,17 @@ class JoinNode(BaseNode):
         (
             node_params["left_input_columns"],
             node_params["left_output_columns"],
-        ) = self._filter_columns(
-            self.parameters.left_input_columns,
-            self.parameters.left_output_columns,
+        ) = self._filter_columns(  # type: ignore[attr-defined]
+            self.parameters.left_input_columns,  # type: ignore[attr-defined]
+            self.parameters.left_output_columns,  # type: ignore[attr-defined]
             left_avail_columns,
         )
         (
             node_params["right_input_columns"],
             node_params["right_output_columns"],
-        ) = self._filter_columns(
-            self.parameters.right_input_columns,
-            self.parameters.right_output_columns,
+        ) = self._filter_columns(  # type: ignore[attr-defined]
+            self.parameters.right_input_columns,  # type: ignore[attr-defined]
+            self.parameters.right_output_columns,  # type: ignore[attr-defined]
             right_avail_columns,
         )
         return self.clone(parameters=node_params)
