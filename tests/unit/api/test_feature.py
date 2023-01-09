@@ -245,8 +245,8 @@ def saved_feature_fixture(
     # check the groupby node before feature is saved
     graph = QueryGraphModel(**float_feature.dict()["graph"])
     groupby_node = graph.nodes_map["groupby_1"]
-    assert groupby_node.parameters.names == ["sum_30m", "sum_2h", "sum_1d"]
-    assert groupby_node.parameters.windows == ["30m", "2h", "1d"]
+    assert groupby_node.parameters.names == ["sum_1d"]
+    assert groupby_node.parameters.windows == ["1d"]
 
     float_feature.save()
     assert float_feature.id == feature_id_before

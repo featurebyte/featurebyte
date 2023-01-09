@@ -20,15 +20,110 @@ from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
+class NodePruningGlobalState(OperationStructureInfo):
+    """NodePruningGlobalState class"""
+
+    # variables for extractor output
+    graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
+    node_name_map: NodeNameMap = Field(default_factory=dict)
+
+
+class NodePruningExtractor(
+    OperationStructureExtractor,
+    BaseGraphExtractor[GraphNodeNameMap, OperationStructureBranchState, NodePruningGlobalState],
+):
+    """NodePruningExtractor is used to prune the node parameters (remove redundant parameter values)."""
+
+    def _post_compute(
+        self,
+        branch_state: OperationStructureBranchState,
+        global_state: NodePruningGlobalState,
+        node: Node,
+        inputs: List[OperationStructure],
+        skip_post: bool,
+    ) -> OperationStructure:
+        input_op_structs = []
+        mapped_input_nodes = []
+        for input_node_name in self.graph.get_input_node_names(node):
+            input_op_structs.append(global_state.operation_structure_map[input_node_name])
+            mapped_input_node_name = global_state.node_name_map[input_node_name]
+            mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
+
+        if not isinstance(node, BaseGraphNode):
+            # prune the parameters if it is not the graph node
+            target_node_names = self.graph.edges_map[node.name]
+            target_nodes = [
+                self.graph.get_node_by_name(node_name) for node_name in target_node_names
+            ]
+            node = node.prune(
+                target_nodes=target_nodes, input_operation_structures=input_op_structs
+            )
+
+        node_pruned = global_state.graph.add_operation(
+            node_type=node.type,
+            node_params=node.parameters.dict(),
+            node_output_type=node.output_type,
+            input_nodes=mapped_input_nodes,
+        )
+        global_state.node_name_map[node.name] = node_pruned.name
+        return super()._post_compute(
+            branch_state=branch_state,
+            global_state=global_state,
+            node=node_pruned,
+            inputs=inputs,
+            skip_post=skip_post,
+        )
+
+    def extract(
+        self,
+        node: Node,
+        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        target_columns: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> GraphNodeNameMap:
+        state_params = {}
+        if proxy_input_operation_structures:
+            state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
+
+        if target_columns:
+            op_struct_info = OperationStructureExtractor(graph=self.graph).extract(
+                node=node, proxy_input_operation_structures=proxy_input_operation_structures
+            )
+            temp_node_name = "temp"
+
+            # subset the operation structure info by keeping only selected columns (using project node)
+            temp_node = ProjectNode(
+                name=temp_node_name,
+                parameters={"columns": target_columns},
+                output_type=NodeOutputType.FRAME,
+            )
+            node = node.prune(
+                target_nodes=[temp_node],
+                input_operation_structures=[
+                    op_struct_info.operation_structure_map[input_node_name]
+                    for input_node_name in self.graph.get_input_node_names(node=node)
+                ],
+            )
+
+        global_state = NodePruningGlobalState(**state_params)
+        super()._extract(
+            node=node,
+            branch_state=OperationStructureBranchState(),
+            global_state=global_state,
+            topological_order_map=self.graph.node_topological_order_map,
+        )
+        return global_state.graph, global_state.node_name_map
+
+
 class GraphPruningBranchState(BaseModel):
     """GraphPruningBranchState class"""
 
 
 class GraphPruningGlobalState(OperationStructureInfo):
-    """ "GraphPruningGlobalState class"""
+    """GraphPruningGlobalState class"""
 
     # variables to store some internal pruning info
-    node_names: Set[str]
+    node_names: Set[str]  # node names required for the graph output
 
     # variables for extractor output
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
@@ -41,7 +136,7 @@ class GraphPruningGlobalState(OperationStructureInfo):
 class GraphPruningExtractor(
     BaseGraphExtractor[GraphNodeNameMap, GraphPruningBranchState, GraphPruningGlobalState]
 ):
-    """GraphPruningExtractor class"""
+    """GraphPruningExtractor is used to prune the graph structure (remove redundant nodes)."""
 
     def _pre_compute(
         self,
@@ -104,10 +199,16 @@ class GraphPruningExtractor(
         output_node_name = cls._resolve_pruned_node_name(
             graph=nested_graph, node_name_map=node_name_map, node_name=output_node_name
         )
+        output_node = pruned_graph.get_node_by_name(output_node_name)
+        output_graph, pruned_node_name_map = NodePruningExtractor(graph=pruned_graph).extract(
+            node=output_node,
+            proxy_input_operation_structures=proxy_input_operation_structures,
+            target_columns=target_columns,
+        )
         return node.clone(
             parameters={
-                "graph": pruned_graph,
-                "output_node_name": node_name_map[output_node_name],
+                "graph": output_graph,
+                "output_node_name": pruned_node_name_map[output_node_name],
                 "type": node.parameters.type,
             }
         )
@@ -142,26 +243,21 @@ class GraphPruningExtractor(
         # add the node back to the pruned graph
         target_node_names = global_state.edges_map[node.name]
         target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
-        if global_state.aggressive:
-            if isinstance(node, BaseGraphNode):
-                proxy_input_operation_structures = [
-                    global_state.operation_structure_map[node_name]
-                    for node_name in self.graph.get_input_node_names(node=node)
-                ]
-                pruned_node = self._prune_nested_graph(
-                    node=node,
-                    target_nodes=target_nodes,
-                    proxy_input_operation_structures=proxy_input_operation_structures,
-                    aggressive=global_state.aggressive,
-                )
-            else:
-                pruned_node = node.prune(target_nodes=target_nodes)
-        else:
-            pruned_node = node
+        if global_state.aggressive and isinstance(node, BaseGraphNode):
+            proxy_input_operation_structures = [
+                global_state.operation_structure_map[node_name]
+                for node_name in self.graph.get_input_node_names(node=node)
+            ]
+            node = self._prune_nested_graph(
+                node=node,
+                target_nodes=target_nodes,
+                proxy_input_operation_structures=proxy_input_operation_structures,
+                aggressive=global_state.aggressive,
+            )
 
         node_pruned = global_state.graph.add_operation(
             node_type=node.type,
-            node_params=pruned_node.parameters.dict(),
+            node_params=node.parameters.dict(),
             node_output_type=node.output_type,
             input_nodes=mapped_input_nodes,
         )
@@ -189,7 +285,13 @@ class GraphPruningExtractor(
                 parameters={"columns": target_columns},
                 output_type=NodeOutputType.FRAME,
             )
-            node = node.prune([temp_node])
+            node = node.prune(
+                target_nodes=[temp_node],
+                input_operation_structures=[
+                    op_struct_info.operation_structure_map[input_node_name]
+                    for input_node_name in self.graph.get_input_node_names(node=node)
+                ],
+            )
             operation_structure = temp_node.derive_node_operation_info(
                 inputs=[operation_structure],
                 branch_state=OperationStructureBranchState(),

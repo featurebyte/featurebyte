@@ -183,18 +183,26 @@ class BaseNode(BaseModel):
         """
         return type(self)(**{**self.dict(), **kwargs})
 
-    def prune(self: NodeT, target_nodes: Sequence[NodeT]) -> NodeT:
+    def prune(
+        self: NodeT,
+        target_nodes: Sequence[NodeT],
+        input_operation_structures: List[OperationStructure],
+    ) -> NodeT:
         """
         Prune this node parameters based on target nodes
+
         Parameters
         ----------
         target_nodes: Sequence[BaseNode]
             List of target nodes
+        input_operation_structures: List[OperationStructure]
+            List of input operation structures
+
         Returns
         -------
         NodeT
         """
-        _ = target_nodes
+        _ = target_nodes, input_operation_structures
         return self
 
     @abstractmethod
