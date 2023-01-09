@@ -61,6 +61,9 @@ jobs:
           make install
           poetry build
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Setup Docker
         uses: docker/setup-buildx-action@v2
 
