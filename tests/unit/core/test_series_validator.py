@@ -6,10 +6,22 @@ from __future__ import annotations
 import pytest
 from bson import ObjectId
 
+from featurebyte import Entity
 from featurebyte.core.frame import Frame
-from featurebyte.core.series_validator import _are_series_both_of_type, _validate_entity_ids
+from featurebyte.core.series_validator import (
+    _are_series_both_of_type,
+    _both_are_lookup_features,
+    _get_event_and_item_data_series,
+    _is_from_same_data,
+    _is_one_item_and_one_event,
+    _is_parent_child,
+    _series_data_type,
+    _series_tabular_data_id,
+    _validate_entity_ids,
+)
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.entity import ParentEntity
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -33,11 +45,30 @@ def test_validate_entity_ids():
     _validate_entity_ids([object_id_1])
 
 
-def test_validate_entity():
+def test_is_parent_child():
     """
-    Test _validate_entity
+    Test _is_parent_child
     """
-    # TODO
+    entity_a = Entity(name="customer", serving_names=["cust_id"])
+    entity_b = Entity(name="user", serving_names=["user_id"])
+    assert not _is_parent_child(entity_a, entity_b)
+
+    parents = [
+        ParentEntity(
+            id=PydanticObjectId(ObjectId()),
+            data_type=TableDataType.EVENT_DATA,
+            data_id=entity_a.id,
+        )
+    ]
+    entity_c = Entity(name="customer child", serving_names=["child_id"], parents=parents)
+    assert _is_parent_child(entity_a, entity_c)
+    assert not _is_parent_child(entity_c, entity_a)
+
+
+def test_validate_entities():
+    """
+    Test validate entities
+    """
     pass
 
 
@@ -96,6 +127,29 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     return get_data_frame_with_type
 
 
+def test_series_data_type(get_dataframe_with_type):
+    """
+    Test _series_data_type
+    """
+    data_type = TableDataType.ITEM_DATA
+    item_df = get_dataframe_with_type(data_type)
+    item_series = item_df["CUST_ID"]
+    series_data_type = _series_data_type(item_series)
+    assert series_data_type == data_type
+
+
+def test_series_tabular_data_id(get_dataframe_with_type):
+    """
+    Test _series_tabular_data_id
+    """
+    data_type = TableDataType.ITEM_DATA
+    item_df = get_dataframe_with_type(data_type)
+    item_series = item_df["CUST_ID"]
+    series_data_id = _series_tabular_data_id(item_series)
+    # TODO: this is failing
+    assert series_data_id is not None
+
+
 def test_are_series_both_of_type(get_dataframe_with_type):
     """
     Test _are_series_both_of_type
@@ -109,35 +163,66 @@ def test_are_series_both_of_type(get_dataframe_with_type):
     assert _are_series_both_of_type(item_series, item_series, TableDataType.ITEM_DATA)
 
 
-def test_is_from_same_data():
+def test_is_from_same_data(get_dataframe_with_type):
     """
     Test _is_from_same_data
     """
-    # TODO
-    pass
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+    assert not _is_from_same_data(item_series, event_series)
+    # TODO: add test for lookup for tabular data IDs
 
 
-def test_both_are_lookup_features():
+def test_both_are_lookup_features(get_dataframe_with_type):
     """
     Test _both_are_lookup_features
     """
-    # TODO
-    pass
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    assert not _both_are_lookup_features(item_series, item_series)
+    # TODO: actually use lookup features
 
 
-def test_get_event_and_item_data():
+def test_get_event_and_item_data_series(get_dataframe_with_type):
     """
-    Test _get_event_and_item_data
+    Test _get_event_and_item_data_series
     """
-    # TODO
-    pass
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+    output_item_series, output_event_series = _get_event_and_item_data_series(
+        item_series, event_series
+    )
+    assert output_item_series == item_series
+    assert output_event_series == event_series
+
+    output_item_series, output_event_series = _get_event_and_item_data_series(
+        event_series, item_series
+    )
+    assert output_item_series == item_series
+    assert output_event_series == event_series
 
 
-def test_is_one_item_and_one_event():
+def test_is_one_item_and_one_event(get_dataframe_with_type):
     """
     Test _is_one_item_and_one_event
     """
-    # TODO
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+    assert _is_one_item_and_one_event(item_series, event_series)
+    assert _is_one_item_and_one_event(event_series, item_series)
+    assert not _is_one_item_and_one_event(item_series, item_series)
+
+
+def test_get_event_data_id_of_item_series():
+    """
+    Test _get_event_data_id_of_item_series
+    """
     pass
 
 
@@ -152,14 +237,6 @@ def test_item_data_and_event_data_are_related():
 def test_validate_feature_type():
     """
     Test _validate_feature_type
-    """
-    # TODO
-    pass
-
-
-def test_validate_series():
-    """
-    Test validate_series
     """
     # TODO
     pass

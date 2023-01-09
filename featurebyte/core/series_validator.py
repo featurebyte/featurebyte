@@ -91,7 +91,9 @@ def validate_entities(
     if _is_parent_child(input_entity, other_entity) or _is_parent_child(other_entity, input_entity):
         return
 
-    raise ValueError("entities are not the same type, and do not have a parent-child relationship")
+    raise ValueError(
+        f"entities {input_entity} and {other_entity} are not the same type, and do not have a parent-child relationship"
+    )
 
 
 def _series_data_type(input_series: SeriesT) -> TableDataType:
@@ -214,7 +216,9 @@ def _both_are_lookup_features(input_series: SeriesT, other_series: SeriesT) -> b
     return input_is_lookup and other_is_lookup
 
 
-def _get_event_and_item_data(series_a: SeriesT, series_b: SeriesT) -> Tuple[SeriesT, SeriesT]:
+def _get_event_and_item_data_series(
+    series_a: SeriesT, series_b: SeriesT
+) -> Tuple[SeriesT, SeriesT]:
     """
     Helper function to determine which series belongs to the item data, and which is the event data.
 
@@ -307,7 +311,9 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     """
     if not _is_one_item_and_one_event(input_series, other_series):
         return False
-    item_data_series, event_data_series = _get_event_and_item_data(input_series, other_series)
+    item_data_series, event_data_series = _get_event_and_item_data_series(
+        input_series, other_series
+    )
     event_data_id = _series_tabular_data_id(event_data_series)
     event_data_id_of_item_series = _get_event_data_id_of_item_series(item_data_series)
     return event_data_id == event_data_id_of_item_series

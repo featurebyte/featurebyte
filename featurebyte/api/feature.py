@@ -22,11 +22,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.core.series_validator import (
-    validate_entities,
-    validate_feature_type,
-    validate_series,
-)
+from featurebyte.core.series_validator import validate_entities, validate_feature_type
 from featurebyte.core.util import SeriesBinaryOperator
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
