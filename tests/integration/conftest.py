@@ -938,24 +938,34 @@ def snowflake_dimension_data_fixture(
     return dimension_data
 
 
-@pytest.fixture(name="snowflake_scd_data", scope="session")
-def snowflake_scd_data_fixture(
+@pytest.fixture(name="scd_data_tabular_source", scope="session")
+def get_scd_data_tabular_source_fixture(
     snowflake_session,
     snowflake_feature_store,
     scd_data_table_name,
-    user_entity,
 ):
     """
-    Fixture for a SlowlyChangingData in integration tests
+    Fixture for scd data tabular source
     """
     database_table = snowflake_feature_store.get_table(
         database_name=snowflake_session.database_name,
         schema_name=snowflake_session.sf_schema,
         table_name=scd_data_table_name,
     )
+    return database_table
+
+
+@pytest.fixture(name="snowflake_scd_data", scope="session")
+def snowflake_scd_data_fixture(
+    scd_data_tabular_source,
+    user_entity,
+):
+    """
+    Fixture for a SlowlyChangingData in integration tests
+    """
     name = "snowflake_scd_data"
     data = SlowlyChangingData.from_tabular_source(
-        tabular_source=database_table,
+        tabular_source=scd_data_tabular_source,
         name=name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
