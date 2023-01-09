@@ -21,7 +21,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from tests.util.helper import get_node
@@ -200,7 +200,19 @@ def test_feature_deserialization(
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
     float_feature_dict.pop("feature_namespace_id")
-    assert float_feature_dict == same_float_feature_dict
+
+    # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
+    # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
+    graph = QueryGraph(**float_feature_dict["graph"])
+    graph_with_unused_feat = QueryGraph(**same_float_feature_dict["graph"])
+    pruned_graph1, _ = graph.prune(
+        target_node=graph.get_node_by_name(float_feature_dict["node_name"]), aggressive=True
+    )
+    pruned_graph2, _ = graph_with_unused_feat.prune(
+        target_node=graph_with_unused_feat.get_node_by_name(same_float_feature_dict["node_name"]),
+        aggressive=True,
+    )
+    assert pruned_graph1 == pruned_graph2
 
 
 def test_feature_to_json(float_feature):
@@ -245,8 +257,8 @@ def saved_feature_fixture(
     # check the groupby node before feature is saved
     graph = QueryGraphModel(**float_feature.dict()["graph"])
     groupby_node = graph.nodes_map["groupby_1"]
-    assert groupby_node.parameters.names == ["sum_1d"]
-    assert groupby_node.parameters.windows == ["1d"]
+    assert groupby_node.parameters.names == ["sum_30m", "sum_2h", "sum_1d"]
+    assert groupby_node.parameters.windows == ["30m", "2h", "1d"]
 
     float_feature.save()
     assert float_feature.id == feature_id_before

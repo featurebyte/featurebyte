@@ -3,6 +3,7 @@ Test for graph pruning related logics
 """
 import os
 
+import pytest
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -190,17 +191,19 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[event_data_input_node, add_node],
     )
+    join_node_parameters = {
+        "left_on": "order_id",
+        "right_on": "order_id",
+        "left_input_columns": ["cust_id", "order_id", "order_method", "derived_col"],
+        "left_output_columns": ["cust_id", "order_id", "order_method", "derived_col"],
+        "right_input_columns": ["item_type", "item_name"],
+        "right_output_columns": ["item_type", "item_name"],
+        "join_type": "inner",
+        "scd_parameters": None,
+    }
     join_node = global_graph.add_operation(
         node_type=NodeType.JOIN,
-        node_params={
-            "left_on": "order_id",
-            "right_on": "order_id",
-            "left_input_columns": ["cust_id", "order_id", "order_method", "derived_col"],
-            "left_output_columns": ["cust_id", "order_id", "order_method", "derived_col"],
-            "right_input_columns": ["item_type", "item_name"],
-            "right_output_columns": ["item_type", "item_name"],
-            "join_type": "inner",
-        },
+        node_params=join_node_parameters,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, item_data_input_node],
     )
@@ -217,13 +220,8 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         input_node=join_node,
     )
 
-    # prune the graph & generate operation structure of the pruned graph
-    pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node)
-    pruned_graph = QueryGraph(**pruned_graph.json_dict())
-    pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
-
-    op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
-    assert op_struct.columns == [
+    # expected values
+    expected_op_struct_columns = [
         {
             "name": "item_type",
             "node_name": "join_1",
@@ -235,7 +233,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
             "filter": False,
         }
     ]
-    assert op_struct.aggregations == [
+    expected_op_struct_aggregations = [
         {
             "name": "item_type_count_30d",
             "category": "item_type",
@@ -251,6 +249,29 @@ def test_join_with_assign_node__join_node_parameters_pruning(
             "filter": False,
         }
     ]
+
+    # prune the graph & generate operation structure of the pruned graph
+    # check non-aggressive mode (all travelled nodes will be kept)
+    pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node, aggressive=False)
+    pruned_graph = QueryGraph(**pruned_graph.json_dict())
+    pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
+
+    op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
+    assert op_struct.columns == expected_op_struct_columns
+    assert op_struct.aggregations == expected_op_struct_aggregations
+
+    # check pruned join node
+    pruned_join_node = pruned_graph.get_node_by_name("join_1")
+    assert pruned_join_node.parameters == join_node_parameters
+
+    # check aggressive mode (node could be removed and is parameters could be pruned)
+    pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node, aggressive=True)
+    pruned_graph = QueryGraph(**pruned_graph.json_dict())
+    pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
+
+    op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
+    assert op_struct.columns == expected_op_struct_columns
+    assert op_struct.aggregations == expected_op_struct_aggregations
 
     # check pruned join node
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
