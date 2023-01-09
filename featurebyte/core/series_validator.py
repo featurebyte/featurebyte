@@ -293,7 +293,7 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
         return False
     item_data_series, event_data_series = _get_event_and_item_data(input_series, other_series)
     event_data_id = _series_tabular_data_id(event_data_series)
-    event_data_id_of_item_series = _get_event_data_id_of_item_series(event_data_series)
+    event_data_id_of_item_series = _get_event_data_id_of_item_series(item_data_series)
     return event_data_id == event_data_id_of_item_series
 
 
