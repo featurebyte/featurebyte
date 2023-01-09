@@ -57,6 +57,63 @@ def series_unary_operation(
     )
 
 
+class SeriesBinaryOperator:
+    """
+    Perform a binary operation between a Series, and another value.
+    """
+
+    def __init__(self, input_series: SeriesT, other: int | float | str | bool | SeriesT):
+        self.input_series = input_series
+        self.other = other
+
+    def validate_inputs(self) -> None:
+        """
+        Validate the input series, and other parameter.
+
+        Override this for any custom validation that is needed.
+        """
+        return
+
+    def operate(
+        self,
+        node_type: NodeType,
+        output_var_type: DBVarType,
+        right_op: bool = False,
+        additional_node_params: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> SeriesT:
+        """
+        Perform the series binary operation.
+
+        Parameters
+        ----------
+        node_type: NodeType
+            binary operator node type
+        output_var_type: DBVarType
+            output of the variable type
+        right_op: bool
+            whether the binary operation is from right object or not
+        additional_node_params: dict[str, Any] | None
+            additional parameters to include as node parameters
+        kwargs : Any
+            Other series parameters
+
+        Returns
+        -------
+        SeriesT
+        """
+        self.validate_inputs()
+        return series_binary_operation(
+            input_series=self.input_series,
+            other=self.other,
+            node_type=node_type,
+            output_var_type=output_var_type,
+            right_op=right_op,
+            additional_node_params=additional_node_params,
+            **kwargs,
+        )
+
+
 def series_binary_operation(
     input_series: SeriesT,
     other: int | float | str | bool | SeriesT,
