@@ -68,6 +68,25 @@ def _validate_entity(input_series: SeriesT, other_series: SeriesT) -> None:
     raise ValueError("entities are not the same type, and do not have a parent-child relationship")
 
 
+def _series_data_type(input_series: SeriesT) -> TableDataType:
+    """
+    Get table data type for series
+
+    Parameters
+    ----------
+    input_series: SeriesT
+        input series
+
+    Returns
+    -------
+    TableDataType
+        table data type
+    """
+    operation_structure = input_series.graph.extract_operation_structure(input_series.node)
+    # we only expect feature series to have a single column
+    return operation_structure.columns[0].tabular_data_type
+
+
 def _are_series_both_of_type(
     series_a: SeriesT, series_b: SeriesT, table_data_type: TableDataType
 ) -> bool:
@@ -88,13 +107,9 @@ def _are_series_both_of_type(
     bool
         True, if both series are of the same specified data type, False otherwise.
     """
-    if not hasattr(series_a.node.parameters, "type") or not hasattr(
-        series_b.node.parameters, "type"
-    ):
-        return False
     return (
-        series_a.node.parameters.type == table_data_type
-        and series_b.node.parameters.type == table_data_type
+        _series_data_type(series_a) == table_data_type
+        and _series_data_type(series_b) == table_data_type
     )
 
 
@@ -125,22 +140,6 @@ def _is_from_same_data(input_series: SeriesT, other_series: SeriesT) -> bool:
     return input_id == other_id
 
 
-def _is_series_a_lookup_feature(series: SeriesT) -> bool:
-    """
-    Checks if a series is a lookup feature. Does this by looking through all the nodes
-    in the related graph to see if there's a lookup node.
-    Parameters
-    ----------
-    series: SeriesT
-        series
-    Returns
-    -------
-    bool
-        True, if the series is a lookup feature, False otherwise
-    """
-    return any(node.type == NodeType.LOOKUP for node in series.graph.dict()["nodes"])
-
-
 def _both_are_lookup_features(input_series: SeriesT, other_series: SeriesT) -> bool:
     """
     Checks if the two series are lookup features
@@ -155,7 +154,9 @@ def _both_are_lookup_features(input_series: SeriesT, other_series: SeriesT) -> b
     bool
         True, if both are lookup features, False otherwise
     """
-    return _is_series_a_lookup_feature(input_series) and _is_series_a_lookup_feature(other_series)
+    input_is_lookup = NodeType.LOOKUP in input_series.node_types_lineage
+    other_is_lookup = NodeType.LOOKUP in other_series.node_types_lineage
+    return input_is_lookup and other_is_lookup
 
 
 def _get_event_and_item_data(series_a: SeriesT, series_b: SeriesT) -> Tuple[SeriesT, SeriesT]:
@@ -177,7 +178,7 @@ def _get_event_and_item_data(series_a: SeriesT, series_b: SeriesT) -> Tuple[Seri
     Tuple[SeriesT, SeriesT]
         (item data series, event data series)
     """
-    if series_a.node.type == TableDataType.ITEM_DATA:
+    if _series_data_type(series_a) == TableDataType.ITEM_DATA:
         return series_a, series_b
     return series_b, series_a
 
@@ -198,8 +199,8 @@ def _is_one_item_and_one_event(series_a: SeriesT, series_b: SeriesT) -> bool:
     bool
         True, if there's exactly one series that is from an item data, and one from an event data.
     """
-    series_a_node_type = series_a.node.type
-    series_b_node_type = series_b.node.type
+    series_a_node_type = _series_data_type(series_a)
+    series_b_node_type = _series_data_type(series_b)
     at_least_one_item_data = TableDataType.ITEM_DATA in (series_a_node_type, series_b_node_type)
     at_least_one_event_data = TableDataType.EVENT_DATA in (series_a_node_type, series_b_node_type)
     return at_least_one_event_data and at_least_one_item_data

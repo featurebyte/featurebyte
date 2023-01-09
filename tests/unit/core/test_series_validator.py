@@ -117,14 +117,6 @@ def test_is_from_same_data():
     pass
 
 
-def test_is_series_a_lookup_feature():
-    """
-    Test _is_series_a_lookup_feature
-    """
-    # TODO
-    pass
-
-
 def test_both_are_lookup_features():
     """
     Test _both_are_lookup_features
