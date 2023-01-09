@@ -146,7 +146,7 @@ class SlowlyChangingView(View, GroupByMixin):
             excluded_columns.append(self.current_flag_column)
         return excluded_columns
 
-    def _get_common_scd_parameters(self) -> SCDBaseParameters:
+    def get_common_scd_parameters(self) -> SCDBaseParameters:
         """
         Get parameters related to Slowly Changing Data (SCD)
 
@@ -174,7 +174,7 @@ class SlowlyChangingView(View, GroupByMixin):
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
-                **self._get_common_scd_parameters().dict(),
+                **self.get_common_scd_parameters().dict(),
             }
         }
 
@@ -182,6 +182,6 @@ class SlowlyChangingView(View, GroupByMixin):
         return {
             "scd_parameters": {
                 "offset": offset,
-                **self._get_common_scd_parameters().dict(),
+                **self.get_common_scd_parameters().dict(),
             }
         }

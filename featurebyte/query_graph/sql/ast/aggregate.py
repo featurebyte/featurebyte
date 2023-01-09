@@ -61,10 +61,10 @@ class Aggregate(TableNode):
             source_node=source_node,
         )
 
-    @classmethod
+    @staticmethod
     @abstractmethod
     def construct_columns_map(
-        cls, context: SQLNodeContext, source_node: TableNode
+        context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
         """
         Construct columns_map by instantiating the appropriate AggregationSpec
@@ -90,9 +90,9 @@ class Lookup(Aggregate):
 
     query_node_type = NodeType.LOOKUP
 
-    @classmethod
+    @staticmethod
     def construct_columns_map(
-        cls, context: SQLNodeContext, source_node: TableNode
+        context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
         # Create LookupSpec which determines the internal aggregated result names
         columns_map = {}
@@ -112,9 +112,9 @@ class AsAt(Aggregate):
 
     query_node_type = NodeType.AGGREGATE_AS_AT
 
-    @classmethod
+    @staticmethod
     def construct_columns_map(
-        cls, context: SQLNodeContext, source_node: TableNode
+        context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
         columns_map = {}
         spec = AggregateAsAtSpec.from_aggregate_asat_query_node(

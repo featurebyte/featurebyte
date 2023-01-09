@@ -418,7 +418,7 @@ class AsAtAggregator(BaseAggregator):
             "entity_ids": self.groupby.entity_ids,
             "offset": offset,
             "backward": backward,
-            **view._get_common_scd_parameters().dict(),  # pylint: disable=protected-access
+            **view.get_common_scd_parameters().dict(),
         }
         groupby_node = self.view.graph.add_operation(
             node_type=NodeType.AGGREGATE_AS_AT,
