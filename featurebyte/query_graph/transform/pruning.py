@@ -340,7 +340,16 @@ class GraphStructurePruningExtractor(
 
 
 class GraphPruningExtractor:
-    """GraphPruningExtractor is used to prune the graph structure (remove redundant nodes)."""
+    """
+    GraphPruningExtractor is used to prune the graph. There are 2 modes in graph pruning:
+    - non-aggressive: prune the query graph by doing a graph traversal and keeps all the travelled nodes
+    - aggressive: in addition to the graph traversal, further prune the graph by removing the nodes that does not
+      contribute to final output and prunes the node parameters by removing unused parameters.
+
+    For aggressive graph pruning, there are 2 major steps:
+    - graph structure pruning is performed first by removing useless graph node
+    - node parameter pruning is performed then to prune the node parameters on the structure-pruned graph
+    """
 
     def __init__(self, graph: QueryGraphT):
         self.graph = graph
