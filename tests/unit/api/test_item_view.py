@@ -53,7 +53,9 @@ class TestItemView(BaseViewTestSuite):
 
 
 def test_from_item_data__auto_join_columns(
-    snowflake_item_data, snowflake_event_data_id, snowflake_item_data_id
+    snowflake_item_data,
+    snowflake_event_data_id,
+    snowflake_item_data_id,
 ):
     """
     Test ItemView automatically joins timestamp column and entity columns from related EventData
@@ -70,14 +72,15 @@ def test_from_item_data__auto_join_columns(
         "parameters": {
             "left_on": "col_int",
             "right_on": "event_id_col",
-            "left_input_columns": ["event_timestamp", "cust_id"],
-            "left_output_columns": ["event_timestamp", "cust_id"],
+            "left_input_columns": ["cust_id"],
+            "left_output_columns": ["cust_id"],
             "right_input_columns": [
                 "event_id_col",
                 "item_id_col",
                 "item_type",
                 "item_amount",
                 "created_at",
+                "event_timestamp",
             ],
             "right_output_columns": [
                 "event_id_col",
@@ -85,6 +88,7 @@ def test_from_item_data__auto_join_columns(
                 "item_type",
                 "item_amount",
                 "created_at",
+                "event_timestamp",
             ],
             "join_type": "inner",
             "scd_parameters": None,
@@ -117,13 +121,13 @@ def test_from_item_data__auto_join_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp",
           L."cust_id" AS "cust_id",
           R."event_id_col" AS "event_id_col",
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
-          CAST(R."created_at" AS VARCHAR) AS "created_at"
+          CAST(R."created_at" AS VARCHAR) AS "created_at",
+          CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp"
         FROM (
           SELECT
             "col_int" AS "col_int",
@@ -143,7 +147,8 @@ def test_from_item_data__auto_join_columns(
             "item_id_col" AS "item_id_col",
             "item_type" AS "item_type",
             "item_amount" AS "item_amount",
-            "created_at" AS "created_at"
+            "created_at" AS "created_at",
+            "event_timestamp" AS "event_timestamp"
           FROM "sf_database"."sf_schema"."items_table"
         ) AS R
           ON L."col_int" = R."event_id_col"
@@ -293,13 +298,13 @@ def test_join_event_data_attributes__more_columns(
         ) AS L
         INNER JOIN (
           SELECT
-            L."event_timestamp" AS "event_timestamp",
             L."cust_id" AS "cust_id",
             R."event_id_col" AS "event_id_col",
             R."item_id_col" AS "item_id_col",
             R."item_type" AS "item_type",
             R."item_amount" AS "item_amount",
-            R."created_at" AS "created_at"
+            R."created_at" AS "created_at",
+            R."event_timestamp" AS "event_timestamp"
           FROM (
             SELECT
               "col_int" AS "col_int",
@@ -319,7 +324,8 @@ def test_join_event_data_attributes__more_columns(
               "item_id_col" AS "item_id_col",
               "item_type" AS "item_type",
               "item_amount" AS "item_amount",
-              "created_at" AS "created_at"
+              "created_at" AS "created_at",
+              "event_timestamp" AS "event_timestamp"
             FROM "sf_database"."sf_schema"."items_table"
           ) AS R
             ON L."col_int" = R."event_id_col"

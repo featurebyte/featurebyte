@@ -103,13 +103,15 @@ class ItemView(View, GroupByMixin):
             if col not in self.event_view.columns:
                 raise ValueError(f"Column does not exist in EventData: {col}")
 
-        left_on = self.event_view.event_id_column
-        left_input_columns = columns
-        left_output_columns = columns
-
+        # ItemData columns
         right_on = self.event_id_column
         right_input_columns = self.columns
         right_output_columns = self.columns
+
+        # EventData columns
+        left_on = self.event_view.event_id_column
+        left_input_columns = [col for col in columns if col not in self.columns]
+        left_output_columns = left_input_columns
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
