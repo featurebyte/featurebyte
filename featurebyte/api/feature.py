@@ -126,7 +126,7 @@ class FeatureSeriesBinaryOperator(SeriesBinaryOperator):
         """
         super().validate_inputs()
 
-        if isinstance(Series, self.other):
+        if isinstance(self.other, Series):
             # validate entities
             input_feature = cast(Feature, self.input_series)
             other_feature = cast(Feature, self.other)
