@@ -148,8 +148,8 @@ def _is_from_same_data(input_series: SeriesT, other_series: SeriesT) -> bool:
         return False
     input_node_parameters = input_series.node.parameters
     other_node_parameters = other_series.node.parameters
-    input_id = input_node_parameters.id
-    other_id = other_node_parameters.id
+    input_id = input_node_parameters.id  # type: ignore
+    other_id = other_node_parameters.id  # type: ignore
     return input_id == other_id
 
 
@@ -238,7 +238,7 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     if not _is_one_item_and_one_event(input_series, other_series):
         return False
     item_data, event_data = _get_event_and_item_data(input_series, other_series)
-    item_data_id = item_data.node.parameters.id
+    item_data_id = item_data.node.parameters.id  # type: ignore
     item_id_from_event_data = event_data.node.parameters.event_data_id
     return item_data_id == item_id_from_event_data
 
