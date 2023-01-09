@@ -5,9 +5,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Tuple, TypeVar
 
+from featurebyte import Entity
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 if TYPE_CHECKING:
     from featurebyte.core.series import Series
@@ -63,7 +65,14 @@ def validate_entities(
         return
 
     # Check if entities have a parent child relationship
-    # TODO:
+    input_entity = Entity.get_by_id(input_entity_id)
+    other_entity = Entity.get_by_id(other_entity_id)
+    input_entity_parent_ids = [entity.data_id for entity in input_entity.parents]
+    if other_entity_id in input_entity_parent_ids:
+        return
+    other_entity_parent_ids = [entity.data_id for entity in other_entity.parents]
+    if input_entity_id in other_entity_parent_ids:
+        return
 
     raise ValueError("entities are not the same type, and do not have a parent-child relationship")
 
@@ -84,7 +93,11 @@ def _series_data_type(input_series: SeriesT) -> TableDataType:
     """
     operation_structure = input_series.graph.extract_operation_structure(input_series.node)
     # we only expect feature series to have a single column
-    return operation_structure.columns[0].tabular_data_type
+    column_structure = operation_structure.columns[0]
+    if isinstance(column_structure, DerivedDataColumn):
+        return column_structure.columns[0].tabular_data_type
+    # column_structure is a SourceDataColumn
+    return column_structure.tabular_data_type
 
 
 def _are_series_both_of_type(
@@ -225,8 +238,8 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     if not _is_one_item_and_one_event(input_series, other_series):
         return False
     item_data, event_data = _get_event_and_item_data(input_series, other_series)
-    item_data_id = item_data.parameters.id
-    item_id_from_event_data = event_data.parameters.event_data_id
+    item_data_id = item_data.node.parameters.id
+    item_id_from_event_data = event_data.node.parameters.event_data_id
     return item_data_id == item_id_from_event_data
 
 
