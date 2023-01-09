@@ -100,8 +100,11 @@ beta-bundle:
 	# Copy dependencies over to bundled folder
 	cp docker/entrypoint-mongo.sh beta/entrypoint-mongo.sh
 	cp docker/docker-compose.yml  beta/docker-compose.yml
-	cp docker/start.sh            beta/start.sh
-	cp docker/start.ps1           beta/start.ps1
+	cp docker/start.py            beta/start.py
+
+	@test -s beta/creds.json.b64 || echo "Credential file is missing at beta/creds.json.b64"
+	@test -s beta/creds.json.b64 || echo 'create the file with contents: $$(echo "_json_base_64:$$(cat SERVICE_ACCOUNT_FILE | base64)" | base64)'
+	@test -s beta/creds.json.b64 || exit 1
 
 	# Compress with tar.gz and zip
 	tar czvf featurebyte_beta.tar.gz beta/

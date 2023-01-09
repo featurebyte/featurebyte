@@ -5,6 +5,7 @@ import subprocess
 
 def which(program):
     import os
+
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
@@ -33,7 +34,7 @@ def read_docker_creds():
 def edit_docker_cfg():
     # Check if file exists
     if not os.path.isfile(os.path.expanduser("~/.docker/config.json")):
-        with open(os.path.expanduser("~/.docker/config.json"), 'w') as file:
+        with open(os.path.expanduser("~/.docker/config.json"), "w") as file:
             file.write("{}")
 
     # Reading
@@ -51,17 +52,15 @@ def edit_docker_cfg():
         if "us-central1-docker.pkg.dev" in auths:
             print("credentials have been supplied")
         else:
-            auths["us-central1-docker.pkg.dev"] = {
-                "auth": read_docker_creds()
-            }
+            auths["us-central1-docker.pkg.dev"] = {"auth": read_docker_creds()}
         docker_cfg["auths"] = auths
 
     # Writing
-    with open(os.path.expanduser("~/.docker/config.json"), 'w') as docker_cfg_file:
+    with open(os.path.expanduser("~/.docker/config.json"), "w") as docker_cfg_file:
         json.dump(docker_cfg, docker_cfg_file, indent=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Check if docker exists
     if not which("docker"):
         print("You are missing docker.")
