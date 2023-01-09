@@ -77,6 +77,11 @@ jobs:
           file: docker/Dockerfile
           build-args: FEATUREBYTE_NP_PASSWORD=${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
           context: .
+          platforms: |
+            linux/amd64
+            linux/arm/v7
+            linux/arm64
+            darwin
           tags: |
             ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
             ${{ env.IMAGE_REPO }}:latest
