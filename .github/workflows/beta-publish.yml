@@ -44,6 +44,7 @@ jobs:
         with:
           path: .venv
           key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
