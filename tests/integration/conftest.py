@@ -944,6 +944,9 @@ def get_scd_data_tabular_source_fixture(
     snowflake_feature_store,
     scd_data_table_name,
 ):
+    """
+    Fixture for scd data tabular source
+    """
     database_table = snowflake_feature_store.get_table(
         database_name=snowflake_session.database_name,
         schema_name=snowflake_session.sf_schema,

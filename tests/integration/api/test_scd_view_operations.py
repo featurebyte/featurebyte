@@ -283,15 +283,12 @@ def snowflake_scd_data_fixture_with_minimal_cols(scd_data_tabular_source):
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    name = "snowflake_scd_data_with_minimal_cols"
-    data = SlowlyChangingData.from_tabular_source(
+    return SlowlyChangingData.from_tabular_source(
         tabular_source=scd_data_tabular_source,
-        name=name,
+        name="snowflake_scd_data_with_minimal_cols",
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
     )
-    data.save()
-    return data
 
 
 def test_scd_view__create_with_minimal_params(snowflake_scd_data_with_minimal_cols):
