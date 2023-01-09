@@ -313,7 +313,7 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     return event_data_id == event_data_id_of_item_series
 
 
-def _validate_feature_type(input_series: SeriesT, other_series: SeriesT) -> None:
+def validate_feature_type(input_series: SeriesT, other_series: SeriesT) -> None:
     """
     Validates that the features are
     - Lookup features (Create Lookup Features)
@@ -340,20 +340,3 @@ def _validate_feature_type(input_series: SeriesT, other_series: SeriesT) -> None
     ):
         return
     raise ValueError("features are not of the right type")
-
-
-def validate_series(input_series: SeriesT, other_series: SeriesT) -> None:
-    """
-    Validates series
-    entity -> how do we find this?
-    lookup feature -> can probably find inside the graph?
-    related event/item data -> this can be found via tabular source i'm guessing
-
-    Parameters
-    ----------
-    input_series: SeriesT
-        series
-    other_series: SeriesT
-        series
-    """
-    _validate_feature_type(input_series, other_series)

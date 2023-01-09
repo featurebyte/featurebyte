@@ -22,7 +22,11 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.core.series_validator import validate_entities, validate_series
+from featurebyte.core.series_validator import (
+    validate_entities,
+    validate_feature_type,
+    validate_series,
+)
 from featurebyte.core.util import SeriesBinaryOperator
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
@@ -133,7 +137,7 @@ class FeatureSeriesBinaryOperator(SeriesBinaryOperator):
             validate_entities(input_feature.entity_ids, other_feature.entity_ids)
 
             # validate series
-            validate_series(input_feature, other_feature)
+            validate_feature_type(input_feature, other_feature)
 
 
 class Feature(
