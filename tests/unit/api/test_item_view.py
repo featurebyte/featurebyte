@@ -366,6 +366,33 @@ def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
     assert str(exc.value) == "Column does not exist in EventData: non_existing_column"
 
 
+def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_data_same_event_id):
+    """
+    Test creating ItemView when ItemData has the same event_id_column as EventData
+    """
+    # No need to specify event_suffix
+    item_view = ItemView.from_item_data(snowflake_item_data_same_event_id)
+    assert item_view.timestamp_column == "event_timestamp"
+
+    view_dict = item_view.dict()
+    node_dict = get_node(view_dict["graph"], view_dict["node_name"])
+    assert node_dict == {
+        "name": "join_1",
+        "type": "join",
+        "output_type": "frame",
+        "parameters": {
+            "left_on": "col_int",
+            "right_on": "col_int",
+            "left_input_columns": ["event_timestamp", "cust_id"],
+            "left_output_columns": ["event_timestamp", "cust_id"],
+            "right_input_columns": ["col_int", "item_id_col", "created_at"],
+            "right_output_columns": ["col_int", "item_id_col", "created_at"],
+            "join_type": "inner",
+            "scd_parameters": None,
+        },
+    }
+
+
 def test_item_view_groupby__item_data_column(snowflake_item_view):
     """
     Test aggregating a column from ItemData using an EventData entity is allowed

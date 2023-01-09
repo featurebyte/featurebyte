@@ -138,7 +138,7 @@ class ItemView(View, GroupByMixin):
         )
         left_input_columns = []
         left_output_columns = []
-        for input_col, output_col in zip(columns, renamed_event_view_columns):
+        for input_col, output_col in zip(columns_excluding_event_id, renamed_event_view_columns):
             if input_col == self.event_view.timestamp_column:
                 self.__dict__.update({"timestamp_column_name": output_col})
             left_input_columns.append(input_col)
