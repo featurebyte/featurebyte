@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Tuple, TypeVar
 
-from featurebyte import Feature
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
@@ -34,7 +33,9 @@ def _validate_entity_ids(entity_ids: List[PydanticObjectId]) -> None:
         raise ValueError(f"no, or multiple, entity IDs found for the feature - {entity_ids}")
 
 
-def validate_entity(input_feature: Feature, other_feature: Feature) -> None:
+def validate_entities(
+    input_entity_ids: List[PydanticObjectId], other_entity_ids: List[PydanticObjectId]
+) -> None:
     """
     Validates that the entities are
     - either the same, or
@@ -42,18 +43,16 @@ def validate_entity(input_feature: Feature, other_feature: Feature) -> None:
 
     Parameters
     ----------
-    input_feature: Feature
-        input feature
-    other_feature: Feature
-        other feature
+    input_entity_ids: List[PydanticObjectId]
+        input entity IDs
+    other_entity_ids: List[PydanticObjectId]
+        other entity IDs
 
     Raises
     ------
     ValueError
         raised when the series are not related entities
     """
-    input_entity_ids = input_feature.entity_ids
-    other_entity_ids = other_feature.entity_ids
     _validate_entity_ids(input_entity_ids)
     _validate_entity_ids(other_entity_ids)
 
