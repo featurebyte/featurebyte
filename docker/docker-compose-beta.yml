@@ -15,7 +15,7 @@ services:
     hostname: featurebyte-server
     container_name: featurebyte-server
     depends_on: [mongo-rs]
-    image: featurebyte-beta:latest
+    image: us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-beta:latest
     volumes:
       - ~/.featurebyte:/app/.featurebyte
       - /tmp:/tmp

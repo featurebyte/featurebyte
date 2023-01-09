@@ -21,11 +21,12 @@ env:
 jobs:
   publish-beta:
     runs-on: ubuntu-20.04
-    timeout-minutes: 30
+    timeout-minutes: 300
     strategy:
       matrix:
         python-version: [ "3.8" ]
     steps:
+      - uses: actions/checkout@v3
       - name: Set Docker Image Ctx
         run: |
           export IMAGE_REPO=$(printf "%s-docker.pkg.dev/%s/%s/featurebyte-beta\n" $GCR_DOCKER_LOCATION $GCR_DOCKER_PROJECT_ID $GCR_DOCKER_REPO)
@@ -43,6 +44,7 @@ jobs:
         with:
           path: .venv
           key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
@@ -59,6 +61,9 @@ jobs:
           make install
           poetry build
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Setup Docker
         uses: docker/setup-buildx-action@v2
 
@@ -74,7 +79,11 @@ jobs:
         with:
           push: true
           file: docker/Dockerfile
+          build-args: FEATUREBYTE_NP_PASSWORD=${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
           context: .
+          platforms: |
+            linux/amd64
+            linux/arm64
           tags: |
             ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
             ${{ env.IMAGE_REPO }}:latest

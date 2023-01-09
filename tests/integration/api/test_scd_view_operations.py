@@ -314,3 +314,24 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     df = feature_list.get_historical_features(observations_set)
     df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
     pd.testing.assert_frame_equal(df, expected)
+
+
+@pytest.fixture(name="snowflake_scd_data_with_minimal_cols", scope="session")
+def snowflake_scd_data_fixture_with_minimal_cols(scd_data_tabular_source):
+    """
+    Fixture for a SlowlyChangingData in integration tests
+    """
+    return SlowlyChangingData.from_tabular_source(
+        tabular_source=scd_data_tabular_source,
+        name="snowflake_scd_data_with_minimal_cols",
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+    )
+
+
+def test_scd_view__create_with_minimal_params(snowflake_scd_data_with_minimal_cols):
+    """
+    Test SCD view creation with minimal params
+    """
+    # Able to create view
+    SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data_with_minimal_cols)
