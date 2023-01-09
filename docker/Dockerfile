@@ -1,4 +1,3 @@
-# Need to route to different cpu arch
 FROM python:3.8-slim
 
 ARG USER=fb_user
