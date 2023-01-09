@@ -3,10 +3,9 @@ Series validator module
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, List, Tuple, TypeVar
 
 from featurebyte import Feature
-from featurebyte.core.util import SeriesBinaryOperator
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
