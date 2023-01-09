@@ -36,6 +36,26 @@ def _validate_entity_ids(entity_ids: List[PydanticObjectId]) -> None:
         raise ValueError(f"no, or multiple, entity IDs found for the feature - {entity_ids}")
 
 
+def _is_parent_child(entity_a: Entity, entity_b: Entity) -> bool:
+    """
+    Helper function to determine if entity A is the parent of entity B.
+
+    Parameters
+    ----------
+    entity_a: Entity
+        entity
+    entity_b: Entity
+        entity
+
+    Returns
+    -------
+    bool
+        True if entity A is the parent of entity B.
+    """
+    entity_b_parent_ids = [entity.data_id for entity in entity_b.parents]
+    return entity_a.id in entity_b_parent_ids
+
+
 def validate_entities(
     input_entity_ids: List[PydanticObjectId], other_entity_ids: List[PydanticObjectId]
 ) -> None:
@@ -68,11 +88,7 @@ def validate_entities(
     # Check if entities have a parent child relationship
     input_entity = Entity.get_by_id(input_entity_id)
     other_entity = Entity.get_by_id(other_entity_id)
-    input_entity_parent_ids = [entity.data_id for entity in input_entity.parents]
-    if other_entity_id in input_entity_parent_ids:
-        return
-    other_entity_parent_ids = [entity.data_id for entity in other_entity.parents]
-    if input_entity_id in other_entity_parent_ids:
+    if _is_parent_child(input_entity, other_entity) or _is_parent_child(other_entity, input_entity):
         return
 
     raise ValueError("entities are not the same type, and do not have a parent-child relationship")
