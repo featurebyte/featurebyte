@@ -99,7 +99,7 @@ beta-bundle:
 	-mkdir beta
 	# Copy dependencies over to bundled folder
 	cp docker/entrypoint-mongo.sh beta/entrypoint-mongo.sh
-	cp docker/docker-compose.yml  beta/docker-compose.yml
+	cp docker/docker-compose-beta.yml  beta/docker-compose.yml
 	cp docker/start.py            beta/start.py
 
 	@test -s beta/creds.json.b64 || echo "Credential file is missing at beta/creds.json.b64"
