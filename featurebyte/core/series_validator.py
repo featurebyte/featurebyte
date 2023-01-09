@@ -3,12 +3,13 @@ Series validator module
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Tuple, TypeVar
+from typing import TYPE_CHECKING, List, Optional, Tuple, TypeVar, cast
 
 from featurebyte.api.entity import Entity
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 if TYPE_CHECKING:
@@ -93,11 +94,38 @@ def _series_data_type(input_series: SeriesT) -> TableDataType:
     """
     operation_structure = input_series.graph.extract_operation_structure(input_series.node)
     # we only expect feature series to have a single column
+    # maybe do assertion that there's only one.
+    # maybe add a unit test for this too
     column_structure = operation_structure.columns[0]
     if isinstance(column_structure, DerivedDataColumn):
         return column_structure.columns[0].tabular_data_type
     # column_structure is a SourceDataColumn
     return column_structure.tabular_data_type
+
+
+def _series_tabular_data_id(input_series: SeriesT) -> Optional[PydanticObjectId]:
+    """
+    Get table data ID for series
+
+    Parameters
+    ----------
+    input_series: SeriesT
+        input series
+
+    Returns
+    -------
+    Optional[PydanticObjectId]
+        tabular data id
+    """
+    operation_structure = input_series.graph.extract_operation_structure(input_series.node)
+    # we only expect feature series to have a single column
+    # maybe do assertion that there's only one.
+    # maybe add a unit test for this too
+    column_structure = operation_structure.columns[0]
+    if isinstance(column_structure, DerivedDataColumn):
+        return column_structure.columns[0].tabular_data_id
+    # column_structure is a SourceDataColumn
+    return column_structure.tabular_data_id
 
 
 def _are_series_both_of_type(
@@ -146,11 +174,9 @@ def _is_from_same_data(input_series: SeriesT, other_series: SeriesT) -> bool:
         input_series, other_series, TableDataType.ITEM_DATA
     ) and not _are_series_both_of_type(input_series, other_series, TableDataType.EVENT_DATA):
         return False
-    input_node_parameters = input_series.node.parameters
-    other_node_parameters = other_series.node.parameters
-    input_id = input_node_parameters.id  # type: ignore
-    other_id = other_node_parameters.id  # type: ignore
-    return input_id == other_id
+    input_tabular_id = _series_tabular_data_id(input_series)
+    other_tabular_id = _series_tabular_data_id(other_series)
+    return input_tabular_id == other_tabular_id
 
 
 def _both_are_lookup_features(input_series: SeriesT, other_series: SeriesT) -> bool:
@@ -219,6 +245,34 @@ def _is_one_item_and_one_event(series_a: SeriesT, series_b: SeriesT) -> bool:
     return at_least_one_event_data and at_least_one_item_data
 
 
+def _get_event_data_id_of_item_series(item_series: SeriesT) -> PydanticObjectId:
+    """
+    Get the event data ID associated of the item series.
+
+    Parameters
+    ----------
+    item_series: SeriesT
+        item series
+
+    Returns
+    -------
+    PydanticObjectId
+        event data ID
+
+    Raises
+    ------
+    ValueError
+        raised if an event data ID cannot be found
+    """
+    for node in item_series.graph.iterate_nodes(
+        target_node=item_series.node, node_type=NodeType.INPUT
+    ):
+        input_node = cast(InputNode, node)
+        if input_node.parameters.type == TableDataType.ITEM_DATA:
+            return input_node.parameters.event_data_id
+    raise ValueError("cannot find event data ID from item data")
+
+
 def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: SeriesT) -> bool:
     """
     Checks if the item and event data are related.
@@ -237,10 +291,10 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     """
     if not _is_one_item_and_one_event(input_series, other_series):
         return False
-    item_data, event_data = _get_event_and_item_data(input_series, other_series)
-    item_data_id = item_data.node.parameters.id  # type: ignore
-    item_id_from_event_data = event_data.node.parameters.event_data_id
-    return item_data_id == item_id_from_event_data
+    item_data_series, event_data_series = _get_event_and_item_data(input_series, other_series)
+    event_data_id = _series_tabular_data_id(event_data_series)
+    event_data_id_of_item_series = _get_event_data_id_of_item_series(event_data_series)
+    return event_data_id == event_data_id_of_item_series
 
 
 def _validate_feature_type(input_series: SeriesT, other_series: SeriesT) -> None:
