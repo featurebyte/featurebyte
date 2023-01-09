@@ -953,8 +953,6 @@ def get_scd_data_tabular_source_fixture(
     snowflake_session,
     snowflake_feature_store,
     scd_data_table_name,
-    user_entity,
-    status_entity,
 ):
     """
     Fixture for scd data tabular source

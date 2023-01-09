@@ -390,7 +390,19 @@ class AsAtAggregator(BaseAggregator):
             Output feature name
         offset: Optional[str]
             Optional offset to apply to the point in time column in the feature request. The
-            aggregation result will be as at the point in time adjusted by this offset.
+            aggregation result will be as at the point in time adjusted by this offset. Format of
+            offset is "{size}{unit}", where size is a positive integer and unit is one of the
+            following:
+
+            "ns": nanosecond
+            "us": microsecond
+            "ms": millisecond
+            "s": second
+            "m": minute
+            "h": hour
+            "d": day
+            "w": week
+
         backward: bool
             Whether the offset should be applied backward or forward
         fill_value: Optional[Union[int, float, str, bool]]
@@ -700,7 +712,19 @@ class GroupBy:
             Output feature name
         offset: Optional[str]
             Optional offset to apply to the point in time column in the feature request. The
-            aggregation result will be as at the point in time adjusted by this offset.
+            aggregation result will be as at the point in time adjusted by this offset. Format of
+            offset is "{size}{unit}", where size is a positive integer and unit is one of the
+            following:
+
+            "ns": nanosecond
+            "us": microsecond
+            "ms": millisecond
+            "s": second
+            "m": minute
+            "h": hour
+            "d": day
+            "w": week
+
         backward: bool
             Whether the offset should be applied backward or forward
         fill_value: Optional[Union[int, float, str, bool]]
@@ -709,6 +733,16 @@ class GroupBy:
         Returns
         -------
         Feature
+
+        Examples
+        --------
+        >>> import featurebyte as fb
+        >>> feature = credit_card_accounts.groupby("CustomerID").aggregate_asat(  # doctest: +SKIP
+        ...    method=fb.AggFunc.COUNT,
+        ...    feature_name="Number of Credit Cards",
+        ... )
+        >>> feature  # doctest: +SKIP
+        Feature[FLOAT](name=Number of Credit Cards, node_name=alias_1)
         """
         return AsAtAggregator(self).aggregate_asat(
             value_column=value_column,
