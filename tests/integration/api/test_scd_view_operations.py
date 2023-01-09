@@ -276,3 +276,27 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
     ) & (scd_dataframe["User ID"] == user_id)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
+
+
+@pytest.fixture(name="snowflake_scd_data_with_minimal_cols", scope="session")
+def snowflake_scd_data_fixture_with_minimal_cols(scd_data_tabular_source):
+    """
+    Fixture for a SlowlyChangingData in integration tests
+    """
+    name = "snowflake_scd_data_with_minimal_cols"
+    data = SlowlyChangingData.from_tabular_source(
+        tabular_source=scd_data_tabular_source,
+        name=name,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+    )
+    data.save()
+    return data
+
+
+def test_scd_view__create_with_minimal_params(snowflake_scd_data_with_minimal_cols):
+    """
+    Test SCD view creation with minimal params
+    """
+    # Able to create view
+    SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data_with_minimal_cols)
