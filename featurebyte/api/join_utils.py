@@ -102,7 +102,7 @@ def combine_column_info_of_views(
     """
     Combine two column info views.
 
-    If the filter_set provided is empty / not overridden, we'll not do any filtering.
+    If the filter_set is not provided, we'll not do any filtering.
 
     Parameters
     ----------
@@ -110,7 +110,7 @@ def combine_column_info_of_views(
         one list of columns
     columns_b: List[ColumnInfo]
         another list of columns
-    filter_set: Set[str]
+    filter_set: Optional[Set[str]]
         column names to filter columns_b on
 
     Returns
@@ -118,11 +118,10 @@ def combine_column_info_of_views(
     List[ColumnInfo]
         combined columns
     """
-    if filter_set is None:
-        filter_set = set()
     joined_columns_info = copy.deepcopy(columns_a)
+    columns_b = copy.deepcopy(columns_b)
     for column_info in columns_b:
-        if len(filter_set) == 0 or column_info.name in filter_set:
+        if filter_set is None or column_info.name in filter_set:
             joined_columns_info.append(column_info)
     return joined_columns_info
 

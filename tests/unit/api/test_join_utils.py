@@ -173,10 +173,6 @@ def test_combine_column_info_of_views():
     result = combine_column_info_of_views(columns_a, columns_b, filter_set={col1.name})
     assert result == [col1, col2, col3]
 
-    # test that passing an empty filter set doesn't perform any filtering
-    result = combine_column_info_of_views(columns_a, columns_b, filter_set=set())
-    assert result == [col1, col2, col3, col4, col5, col6]
-
 
 def test_is_column_name_in_columns():
     """
