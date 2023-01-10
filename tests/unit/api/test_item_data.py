@@ -286,6 +286,20 @@ class TestItemDataTestSuite(BaseDataTestSuite):
     FROM "sf_database"."sf_schema"."items_table"
     LIMIT 10
     """
+    expected_data_column_sql = """
+    SELECT
+      "event_id_col"
+    FROM (
+      SELECT
+        "event_id_col" AS "event_id_col",
+        "item_id_col" AS "item_id_col",
+        "item_type" AS "item_type",
+        "item_amount" AS "item_amount",
+        "created_at" AS "created_at"
+      FROM "sf_database"."sf_schema"."items_table"
+    )
+    LIMIT 10
+    """
 
 
 def test_item_data_column__as_entity(snowflake_item_data):

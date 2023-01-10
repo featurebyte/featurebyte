@@ -15,25 +15,32 @@ from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import GetAttrMixin, ParentMixin
+from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 
 
-class DataColumn(FeatureByteBaseModel, ParentMixin):
+class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
     DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a data object (e.g. EventData)
     """
 
     info: ColumnInfo
+
+    @property
+    def feature_store(self):
+        return self.parent.feature_store
 
     def _prepare_columns_info(self, column_info: ColumnInfo) -> List[ColumnInfo]:
         """
@@ -97,6 +104,45 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
             allow_update_local=True,
         )
         self.info = column_info
+
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
+        """
+        Extract pruned graph & node from the global query graph
+
+        Returns
+        -------
+        tuple[QueryGraphModel, Node]
+            QueryGraph & mapped Node object (within the pruned graph)
+        """
+        target_node = self.parent.node
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=target_node)
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
+        project_node = pruned_graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [self.info.name]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[mapped_node],
+        )
+        return pruned_graph, project_node
+
+    @typechecked
+    def preview_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the transformation output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        str
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 
 class DataObject(AbstractTableDataFrame, GetAttrMixin):

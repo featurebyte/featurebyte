@@ -29,8 +29,10 @@ def test_event_view_sample(snowflake_event_data):
     ]
 
     assert sample_df.shape == (10, 8)
-    assert sample_df.EVENT_TIMESTAMP.min() == pd.Timestamp("2001-01-06 03:42:00.000640+10:00")
+    expected_min_val = pd.Timestamp("2001-01-06 03:42:00.000640+10:00")
+    assert sample_df.EVENT_TIMESTAMP.min() == expected_min_val
     assert sample_df.EVENT_TIMESTAMP.max() == pd.Timestamp("2001-10-14 13:57:21.000525+06:00")
+    assert event_view.EVENT_TIMESTAMP.sample(size=10, seed=1234).min().iloc[0] == expected_min_val
 
 
 def test_event_view_sample_seed(snowflake_event_data):

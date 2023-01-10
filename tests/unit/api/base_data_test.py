@@ -31,6 +31,7 @@ class BaseDataTestSuite:
     col = ""
     expected_data_sql = ""
     expected_raw_data_sql = ""
+    expected_data_column_sql = ""
 
     @pytest.fixture(name="data_under_test")
     def get_data_under_test_fixture(
@@ -80,6 +81,15 @@ class BaseDataTestSuite:
 
         # when accessing the `columns` attribute, make sure we retrieve it properly
         assert set(data_under_test.columns) == self.expected_columns
+
+    def test_data_column_preview_sql(self, data_under_test):
+        """
+        Test preview data column
+        """
+        assert (
+            data_under_test[self.col].preview_sql()
+            == textwrap.dedent(self.expected_data_column_sql).strip()
+        )
 
     def test_imputed_data_and_raw_data_preview_sql(self, imputed_data_under_test):
         """
