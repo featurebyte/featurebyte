@@ -48,12 +48,16 @@ def numeric_only(func: FuncT) -> FuncT:
     return wrapped  # type: ignore
 
 
-class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
+class DefaultSeriesBinaryValidator:
     """
-    Default series binary operator
+    Default series binary validator.
     """
 
-    def validate_inputs(self) -> None:
+    def __init__(self, input_series: Series, other: int | float | str | bool | Series):
+        self.input_series = input_series
+        self.other = other
+
+    def validate(self):
         """
         Validate the input series, and other parameter
 
@@ -70,6 +74,22 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                 f"Operation between {self.input_series.__class__.__name__} and {self.other.__class__.__name__} is not"
                 " supported"
             )
+
+
+class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
+    """
+    Default series binary operator
+    """
+
+    def __init__(self, input_series: Series, other: int | float | str | bool | Series):
+        super().__init__(input_series, other)
+        self.validator = DefaultSeriesBinaryValidator(input_series, other)
+
+    def validate_inputs(self) -> None:
+        """
+        Validate the input series, and other parameter
+        """
+        self.validator.validate()
 
 
 class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):

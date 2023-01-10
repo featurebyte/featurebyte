@@ -21,7 +21,11 @@ from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.series import Series
+from featurebyte.core.series import (
+    DefaultSeriesBinaryOperator,
+    DefaultSeriesBinaryValidator,
+    Series,
+)
 from featurebyte.core.series_validator import validate_entities, validate_feature_type
 from featurebyte.core.util import SeriesBinaryOperator
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
@@ -120,11 +124,15 @@ class FeatureSeriesBinaryOperator(SeriesBinaryOperator):
     is also a feature.
     """
 
+    def __init__(self, input_series: Series, other: int | float | str | bool | Series):
+        super().__init__(input_series, other)
+        self.default_series_validator = DefaultSeriesBinaryValidator(input_series, other)
+
     def validate_inputs(self) -> None:
         """
         Validate inputs for feature binary operations.
         """
-        super().validate_inputs()
+        self.default_series_validator.validate()
 
         if isinstance(self.other, Series):
             # validate entities
