@@ -102,8 +102,9 @@ class QueryObject(FeatureByteBaseModel):
         tuple[QueryGraphModel, Node]
             QueryGraph & mapped Node object (within the pruned graph)
         """
+        # TODO: make aggression=True after optimizing operation structure runtime (DEV-974)
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node, aggressive=True
+            target_node=self.node, aggressive=False
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
