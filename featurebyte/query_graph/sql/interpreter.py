@@ -559,7 +559,14 @@ class GraphInterpreter:
         stats_expressions["entropy"] = (None, {DBVarType.CHAR, DBVarType.VARCHAR})
         stats_expressions["top"] = (
             lambda col_expr, _: expressions.Anonymous(this="MODE", expressions=[col_expr]),
-            {DBVarType.CHAR, DBVarType.VARCHAR},
+            {
+                DBVarType.FLOAT,
+                DBVarType.INT,
+                DBVarType.TIMESTAMP,
+                DBVarType.TIMESTAMP_TZ,
+                DBVarType.CHAR,
+                DBVarType.VARCHAR,
+            },
         )
         stats_expressions["freq"] = (
             lambda col_expr, column_idx: expressions.Anonymous(
@@ -574,7 +581,14 @@ class GraphInterpreter:
                     )
                 ],
             ),
-            {DBVarType.CHAR, DBVarType.VARCHAR},
+            {
+                DBVarType.FLOAT,
+                DBVarType.INT,
+                DBVarType.TIMESTAMP,
+                DBVarType.TIMESTAMP_TZ,
+                DBVarType.CHAR,
+                DBVarType.VARCHAR,
+            },
         )
         stats_expressions["mean"] = (
             lambda col_expr, _: expressions.Avg(

@@ -181,7 +181,10 @@ def test_api_object_repr(mock_configuration):
     with patch.object(ApiObject, "info") as mock_info:
         mock_info.return_value = "mock_info_result"
         item = ApiObject.get("item_1")
-        assert repr(item) == repr("mock_info_result")
+        assert (
+            repr(item)
+            == f"<featurebyte.api.api_object.ApiObject at {hex(id(item))}>\n'mock_info_result'"
+        )
 
 
 def test_api_object_list_empty():

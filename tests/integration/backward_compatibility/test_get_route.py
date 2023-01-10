@@ -11,7 +11,7 @@ import yaml
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
-from featurebyte.api.data import DataApiObject
+from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData

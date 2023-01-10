@@ -21,7 +21,7 @@ from featurebyte.api.api_object import (
     ConflictResolution,
     SavableApiObject,
 )
-from featurebyte.api.data import DataApiObject
+from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore

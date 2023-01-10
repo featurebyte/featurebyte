@@ -13,7 +13,7 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
-from featurebyte.api.data import DataApiObject
+from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc

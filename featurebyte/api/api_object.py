@@ -51,7 +51,11 @@ class ApiObjectProxy(lazy_object_proxy.Proxy):
     """
 
     def __repr__(self) -> str:
-        return repr(self.info())
+        return (
+            f"<{self.__class__.__module__}.{self.__class__.__name__} at {hex(id(self))}>"
+            + "\n"
+            + repr(self.info())
+        )
 
 
 class PrettyDict(Dict[str, Any]):
@@ -135,7 +139,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         Returns
         -------
         ApiObjectT
-            ApiObject object of the given event data name
+            Retrieved object with the specified name
         """
         return cast(ApiObjectT, ApiObjectProxy(partial(cls._get, name)))
 

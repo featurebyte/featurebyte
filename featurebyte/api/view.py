@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
 
-from featurebyte.api.data import DataApiObject
+from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup

@@ -193,7 +193,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     Test SCDData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.data.Configurations"):
+        with patch("featurebyte.api.base_data.Configurations"):
             SlowlyChangingData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_scd_data",

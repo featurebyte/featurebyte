@@ -11,7 +11,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte.api.data import DataColumn
+from featurebyte.api.base_data import DataColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.item_data import ItemData
 from featurebyte.enum import TableDataType
@@ -200,7 +200,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table_item_
     Test ItemData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.data.Configurations"):
+        with patch("featurebyte.api.base_data.Configurations"):
             ItemData.from_tabular_source(
                 tabular_source=snowflake_database_table_item_data,
                 name="sf_item_data",
@@ -367,10 +367,10 @@ def test_get_item_data(saved_item_data, snowflake_item_data):
     assert ItemData.get_by_id(id=loaded_data.id) == snowflake_item_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_event_data = ItemData.get("unknown_event_data")
+        lazy_event_data = ItemData.get("unknown_item_data")
         _ = lazy_event_data.name
     expected_msg = (
-        'ItemData (name: "unknown_event_data") not found. ' "Please save the ItemData object first."
+        'ItemData (name: "unknown_item_data") not found. ' "Please save the ItemData object first."
     )
     assert expected_msg in str(exc.value)
 
