@@ -987,14 +987,24 @@ def test_node_types_lineage(dataframe, float_series):
     dataframe["new_series_sub"] = float_series - 123
     new_series = dataframe["new_series_sub"]
     # only one "assign" and no "add" in the lineage
-    assert new_series.node_types_lineage == ["project", "assign", "input", "sub", "project"]
+    assert new_series.node_types_lineage == [
+        "project",
+        "assign",
+        "assign",
+        "input",
+        "add",
+        "project",
+        "sub",
+    ]
     assert new_series.astype(str).node_types_lineage == [
         "cast",
         "project",
         "assign",
+        "assign",
         "input",
-        "sub",
+        "add",
         "project",
+        "sub",
     ]
 
 
