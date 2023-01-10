@@ -3,6 +3,8 @@ Test series validator module
 """
 from __future__ import annotations
 
+from typing import Optional
+
 import pytest
 from bson import ObjectId
 
@@ -127,7 +129,9 @@ def dataframe_fixture(global_graph, snowflake_feature_store, event_data_id, tabu
     Frame test fixture
     """
 
-    def get_data_frame_with_type(table_data_type: TableDataType):
+    def get_data_frame_with_type(
+        table_data_type: TableDataType, data_id_to_use: Optional[PydanticObjectId] = tabular_data_id
+    ):
         columns_info = [
             {"name": "CUST_ID", "dtype": DBVarType.INT},
             {"name": "PRODUCT_ACTION", "dtype": DBVarType.VARCHAR},
@@ -138,7 +142,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store, event_data_id, tabu
         node = global_graph.add_operation(
             node_type=NodeType.INPUT,
             node_params={
-                "id": tabular_data_id,
+                "id": data_id_to_use,
                 "type": table_data_type,
                 "columns": columns_info,
                 "timestamp": "VALUE",
@@ -244,6 +248,7 @@ def test_both_are_lookup_features(get_dataframe_with_type):
     """
     item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
     item_series = item_df["CUST_ID"]
+    # TODO: finish this
     assert not _both_are_lookup_features(item_series, item_series)
 
 
@@ -302,20 +307,24 @@ def test_get_event_data_id_of_item_series__error(get_dataframe_with_type):
     assert "cannot find event data ID from series" in str(exc)
 
 
-def test_item_data_and_event_data_are_related(get_dataframe_with_type):
+def test_item_data_and_event_data_are_related(get_dataframe_with_type, event_data_id):
     """
     Test _item_data_and_event_data_are_related
     """
     item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
     item_series = item_df["CUST_ID"]
-    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
-    event_series = event_df["CUST_ID"]
 
+    # series both of item_data type should not be related here
     assert not _item_data_and_event_data_are_related(item_series, item_series)
-    # TODO: finish rest of tests
+
+    # one series from item data, and one from event data, where the item_data_id matches event_data's id
+    # should be related
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA, event_data_id)
+    event_series = event_df["CUST_ID"]
+    assert _item_data_and_event_data_are_related(item_series, event_series)
 
 
-def test_validate_feature_type(get_dataframe_with_type):
+def test_validate_feature_type(get_dataframe_with_type, event_data_id):
     """
     Test _validate_feature_type
     """
@@ -324,8 +333,10 @@ def test_validate_feature_type(get_dataframe_with_type):
     event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
     event_series = event_df["CUST_ID"]
 
-    # TODO: get one that passes
-
     with pytest.raises(ValueError) as exc:
         validate_feature_type(item_series, event_series)
     assert "features are not of the right type" in str(exc)
+
+    event_df_with_matching_id = get_dataframe_with_type(TableDataType.EVENT_DATA, event_data_id)
+    event_series_with_matching_id = event_df_with_matching_id["CUST_ID"]
+    validate_feature_type(item_series, event_series_with_matching_id)
