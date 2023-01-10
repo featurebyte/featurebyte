@@ -16,7 +16,7 @@ from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.query_graph.transform.pruning import GraphPruningExtractor
+from featurebyte.query_graph.transform.pruning import prune_query_graph
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 PRUNING_SENSITIVE_NODE_MAP: Dict[NodeType, Type[BaseNode]] = {}
@@ -157,7 +157,8 @@ def add_pruning_sensitive_operation(
     # create a temporary node & prune the graph before deriving additional parameters based on
     # the pruned graph
     temp_node = node_cls(name="temp", parameters=node_params)
-    pruned_graph, node_name_map = GraphPruningExtractor(graph=graph).extract(
+    pruned_graph, node_name_map, _ = prune_query_graph(
+        graph=graph,
         node=input_node,
         target_columns=temp_node.get_required_input_columns(),
         aggressive=True,
