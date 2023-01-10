@@ -91,8 +91,7 @@ class BaseViewTestSuite:
         """
         Test attempting to change a view's protected columns
         """
-        for column in self.protected_columns:
-            assert column in self.protected_columns
+        for column in view_under_test.protected_columns:
             with pytest.raises(ValueError) as exc:
                 view_under_test[column] = 1
             expected_msg = f"Column '{column}' cannot be modified!"

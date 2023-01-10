@@ -55,7 +55,8 @@ def expected_item_data_table_preview_query() -> str:
           "item_id_col" AS "item_id_col",
           "item_type" AS "item_type",
           "item_amount" AS "item_amount",
-          CAST("created_at" AS VARCHAR) AS "created_at"
+          CAST("created_at" AS VARCHAR) AS "created_at",
+          CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
         FROM "sf_database"."sf_schema"."items_table"
         LIMIT 10
         """
@@ -192,7 +193,7 @@ def snowflake_item_view_fixture(snowflake_item_data):
     """
     ItemView fixture
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
     yield item_view
 
 

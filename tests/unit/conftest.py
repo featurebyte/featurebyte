@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Common test fixtures used across unit test directories
 """
@@ -231,6 +232,21 @@ def mock_snowflake_execute_query():
                 },
                 {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
                 {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+                {
+                    "column_name": "event_timestamp",
+                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                },
+            ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table_same_event_id"': [
+                {
+                    "column_name": "col_int",
+                    "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                },
+                {
+                    "column_name": "item_id_col",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
             ],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."fixed_table"': [
                 {"column_name": "num", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
@@ -304,6 +320,21 @@ def snowflake_database_table_item_data_fixture(
     )
 
 
+@pytest.fixture(name="snowflake_database_table_item_data_same_event_id")
+def snowflake_database_table_item_data_same_event_id_fixture(
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store
+):
+    """
+    DatabaseTable object fixture for ItemData (same event_id_column with EventData)
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    yield snowflake_feature_store.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="items_table_same_event_id",
+    )
+
+
 @pytest.fixture(name="snowflake_dimension_data_id")
 def snowflake_dimension_data_id_fixture():
     """Snowflake dimension data ID"""
@@ -326,6 +357,12 @@ def snowflake_event_data_id_fixture():
 def snowflake_item_data_id_fixture():
     """Snowflake event data ID"""
     return ObjectId("6337f9651050ee7d5980662d")
+
+
+@pytest.fixture(name="snowflake_item_data_id_2")
+def snowflake_item_data_id_2_fixture():
+    """Snowflake event data ID"""
+    return ObjectId("6337f9651050ee7d5980662e")
 
 
 @pytest.fixture(name="snowflake_event_data")
@@ -395,6 +432,31 @@ def snowflake_item_data_fixture(
         item_id_column="item_id_col",
         event_data_name=snowflake_event_data.name,
         _id=snowflake_item_data_id,
+    )
+
+
+@pytest.fixture(name="snowflake_item_data_same_event_id")
+def snowflake_item_data_same_event_id_fixture(
+    snowflake_database_table_item_data_same_event_id,
+    mock_get_persistent,
+    snowflake_item_data_id_2,
+    snowflake_event_data,
+    snowflake_item_data,
+):
+    """
+    Snowflake ItemData object fixture (same event_id_column as EventData)
+    """
+    _ = mock_get_persistent
+    _ = snowflake_item_data
+    event_id_column = "col_int"
+    assert snowflake_event_data.event_id_column == event_id_column
+    yield ItemData.from_tabular_source(
+        tabular_source=snowflake_database_table_item_data_same_event_id,
+        name="sf_item_data_2",
+        event_id_column=event_id_column,
+        item_id_column="item_id_col",
+        event_data_name=snowflake_event_data.name,
+        _id=snowflake_item_data_id_2,
     )
 
 
@@ -592,7 +654,7 @@ def get_non_time_based_feature_fixture(snowflake_item_data):
     """
     snowflake_item_data.item_id_col.as_entity("customer")
     snowflake_item_data.item_id_column = "item_id_col"
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
     return item_view.groupby("item_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,
