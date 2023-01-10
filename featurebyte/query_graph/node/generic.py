@@ -2,7 +2,7 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator, validator
@@ -449,7 +449,13 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
 
-    def prune(self: NodeT, target_nodes: Sequence[NodeT]) -> NodeT:
+    def prune(
+        self: NodeT,
+        target_nodes: Sequence[NodeT],
+        input_operation_structures: List[OperationStructure],
+    ) -> NodeT:
+        _ = input_operation_structures
+
         # Only prune the groupby node if all the target output are the project node, this is to prevent
         # unexpected parameters pruning if groupby node output is used by other node like graph node.
         if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
@@ -634,6 +640,47 @@ class JoinNode(BaseNode):
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    @staticmethod
+    def _filter_columns(
+        input_columns: Sequence[str], output_columns: Sequence[str], available_columns: Set[str]
+    ) -> Tuple[List[str], List[str]]:
+        # filter input & output columns using the available columns
+        in_cols, out_cols = [], []
+        for in_col, out_col in zip(input_columns, output_columns):
+            if in_col in available_columns:
+                in_cols.append(in_col)
+                out_cols.append(out_col)
+        return in_cols, out_cols
+
+    def prune(
+        self: NodeT,
+        target_nodes: Sequence[NodeT],
+        input_operation_structures: List[OperationStructure],
+    ) -> NodeT:
+        # Prune the join node parameters by using the available columns. If the input column is not found in the
+        # input operation structure, remove it & its corresponding output column name from the join node parameters.
+        assert len(input_operation_structures) == 2
+        left_avail_columns = set(col.name for col in input_operation_structures[0].columns)
+        right_avail_columns = set(col.name for col in input_operation_structures[1].columns)
+        node_params = self.parameters.dict()
+        (
+            node_params["left_input_columns"],
+            node_params["left_output_columns"],
+        ) = self._filter_columns(  # type: ignore[attr-defined]
+            self.parameters.left_input_columns,  # type: ignore[attr-defined]
+            self.parameters.left_output_columns,  # type: ignore[attr-defined]
+            left_avail_columns,
+        )
+        (
+            node_params["right_input_columns"],
+            node_params["right_output_columns"],
+        ) = self._filter_columns(  # type: ignore[attr-defined]
+            self.parameters.right_input_columns,  # type: ignore[attr-defined]
+            self.parameters.right_output_columns,  # type: ignore[attr-defined]
+            right_avail_columns,
+        )
+        return self.clone(parameters=node_params)
 
     def _derive_node_operation_info(
         self,

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from unittest.mock import Mock
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
@@ -88,3 +89,21 @@ def add_groupby_operation(graph, groupby_node_params, input_node):
         input_nodes=[input_node],
     )
     return node
+
+
+def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
+    """
+    Check aggressively pruned graph of the left & right graphs
+    """
+    # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
+    # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
+    left_graph = QueryGraph(**dict(left_obj_dict["graph"]))
+    right_graph = QueryGraph(**dict(right_obj_dict["graph"]))
+    left_pruned_graph, _ = left_graph.prune(
+        target_node=left_graph.get_node_by_name(left_obj_dict["node_name"]), aggressive=True
+    )
+    right_pruned_graph, _ = right_graph.prune(
+        target_node=right_graph.get_node_by_name(right_obj_dict["node_name"]),
+        aggressive=True,
+    )
+    assert left_pruned_graph == right_pruned_graph

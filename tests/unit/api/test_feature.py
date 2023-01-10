@@ -21,10 +21,10 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from tests.util.helper import get_node
+from tests.util.helper import check_aggressively_pruned_graph, get_node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -200,7 +200,12 @@ def test_feature_deserialization(
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
     float_feature_dict.pop("feature_namespace_id")
-    assert float_feature_dict == same_float_feature_dict
+
+    # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
+    # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
+    check_aggressively_pruned_graph(
+        left_obj_dict=float_feature_dict, right_obj_dict=same_float_feature_dict
+    )
 
 
 def test_feature_to_json(float_feature):

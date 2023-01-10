@@ -90,5 +90,9 @@ class BaseGraphNode(BaseNode):
         # this should not be called as it should be handled at operation structure extractor level
         raise RuntimeError("BaseGroupNode._derive_node_operation_info should not be called!")
 
-    def prune(self: NodeT, target_nodes: Sequence[NodeT]) -> NodeT:
+    def prune(
+        self: NodeT,
+        target_nodes: Sequence[NodeT],
+        input_operation_structures: List[OperationStructure],
+    ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")

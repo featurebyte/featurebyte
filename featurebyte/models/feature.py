@@ -239,7 +239,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         tuple[QueryGraph, Node]
             Pruned graph and node
         """
-        pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
+        pruned_graph, node_name_map = self.graph.prune(target_node=self.node, aggressive=True)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 

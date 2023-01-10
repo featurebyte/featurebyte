@@ -16,7 +16,7 @@ from featurebyte.query_graph.node.base import NodeT
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
-from featurebyte.query_graph.transform.pruning import GraphPruningExtractor
+from featurebyte.query_graph.transform.pruning import prune_query_graph
 from featurebyte.query_graph.transform.reconstruction import GraphReconstructionTransformer
 
 
@@ -70,7 +70,7 @@ class QueryGraph(QueryGraphModel):
         op_struct_info = OperationStructureExtractor(graph=self).extract(node=node)
         return op_struct_info.operation_structure_map[node.name]
 
-    def prune(self, target_node: Node, aggressive: bool = False) -> GraphNodeNameMap:
+    def prune(self, target_node: Node, aggressive: bool) -> GraphNodeNameMap:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -95,7 +95,10 @@ class QueryGraph(QueryGraphModel):
         GraphNodeNameMap
             Tuple of pruned graph & its node name mapping
         """
-        return GraphPruningExtractor(graph=self).extract(node=target_node, aggressive=aggressive)
+        pruned_graph, node_name_map, _ = prune_query_graph(
+            graph=self, node=target_node, aggressive=aggressive
+        )
+        return pruned_graph, node_name_map
 
     def reconstruct(
         self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool
