@@ -98,7 +98,7 @@ def validate_entities(
 
 def _series_data_type_and_tabular_id(
     input_series: SeriesT,
-) -> Tuple[TableDataType, Optional[PydanticObjectId]]:
+) -> Tuple[TableDataType, PydanticObjectId]:
     """
     Get table data type and tabular ID
 
@@ -117,9 +117,13 @@ def _series_data_type_and_tabular_id(
     column_structure = operation_structure.columns[0]
     if isinstance(column_structure, DerivedDataColumn):
         column = column_structure.columns[0]
-        return column.tabular_data_type, column.tabular_data_id
+        tabular_data_id = column.tabular_data_id
+        assert tabular_data_id is not None
+        return column.tabular_data_type, tabular_data_id
     # column_structure is a SourceDataColumn
-    return column_structure.tabular_data_type, column_structure.tabular_data_id
+    tabular_data_id = column_structure.tabular_data_type
+    assert tabular_data_id is not None
+    return column_structure.tabular_data_type, tabular_data_id
 
 
 def _are_series_both_of_type(
