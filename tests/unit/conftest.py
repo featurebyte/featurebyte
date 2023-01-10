@@ -413,6 +413,7 @@ def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
 
 @pytest.fixture(name="snowflake_item_data")
 def snowflake_item_data_fixture(
+    snowflake_feature_store,
     snowflake_database_table_item_data,
     mock_get_persistent,
     snowflake_item_data_id,
@@ -422,6 +423,8 @@ def snowflake_item_data_fixture(
     Snowflake ItemData object fixture
     """
     _ = mock_get_persistent
+    if not snowflake_feature_store.saved:
+        snowflake_feature_store.save()
     snowflake_event_data.save()
     yield ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,

@@ -48,7 +48,6 @@ def display_html_in_notebook(html_content: str) -> None:
 
     if is_notebook():
         # pylint: disable=import-outside-toplevel
-        from IPython.core.display import HTML  # pylint: disable=import-error
-        from IPython.display import display  # pylint: disable=import-error
+        from IPython.display import HTML, display  # pylint: disable=import-error
 
         display(HTML(html_content), metadata=dict(isolated=True))
