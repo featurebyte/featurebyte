@@ -21,6 +21,15 @@ def extract_column_parameters(input_node, other_node_names=None, node_name=None)
     }
 
 
+def to_dict(obj):
+    """Convert object to dict form for more readable pytest assert reporting"""
+    if isinstance(obj, list):
+        return [to_dict(x) for x in obj]
+    if hasattr(obj, "dict"):
+        return obj.dict()
+    return obj
+
+
 def test_extract_operation__single_input_node(global_graph, input_node):
     """Test extract_operation_structure: single input node"""
     op_struct = global_graph.extract_operation_structure(node=input_node)
@@ -569,6 +578,43 @@ def test_extract_operation__lookup_feature(
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("lookup_1",)
+
+
+def test_extract_operation__aggregate_asat_feature(
+    global_graph,
+    aggregate_asat_feature_node,
+    scd_data_input_node,
+):
+    """Test extract_operation_structure: features derived from aggregate_asat"""
+
+    op_struct = global_graph.extract_operation_structure(node=aggregate_asat_feature_node)
+    common_data_params = extract_column_parameters(scd_data_input_node)
+    expected_columns = [
+        {"name": "effective_ts", "dtype": "TIMESTAMP", **common_data_params},
+        {"name": "cust_id", "dtype": "INT", **common_data_params},
+    ]
+    expected_aggregations = [
+        {
+            "name": "asat_feature",
+            "dtype": "FLOAT",
+            "filter": False,
+            "node_names": {"input_1", "project_1", "aggregate_as_at_1"},
+            "node_name": "aggregate_as_at_1",
+            "method": "count",
+            "groupby": ["membership_status"],
+            "window": None,
+            "category": None,
+            "type": "aggregation",
+            "column": None,
+            "aggregation_type": "aggregate_as_at",
+        }
+    ]
+
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("aggregate_as_at_1",)
 
 
 def test_extract_operation__alias(global_graph, input_node):
