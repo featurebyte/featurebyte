@@ -524,7 +524,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                     "dtype": "FLOAT",
                 },
                 "filter": False,
-                "groupby": ["cust_id"],
+                "keys": ["cust_id"],
                 "aggregation_type": "groupby",
                 "method": "avg",
                 "name": "a_2h_average",

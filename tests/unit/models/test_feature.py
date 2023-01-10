@@ -141,7 +141,7 @@ def test_extract_operation_structure(feature_model_dict):
         AggregationColumn(
             name="sum_30m",
             method="sum",
-            groupby=["cust_id"],
+            keys=["cust_id"],
             window="30m",
             category=None,
             type="aggregation",
