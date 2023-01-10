@@ -378,7 +378,7 @@ class InfoService(BaseService):
                     agg_col.column, None
                 ),  # for count aggregation, column is None
                 "function": agg_col.method,
-                "groupby": agg_col.groupby,
+                "keys": agg_col.keys,
                 "window": agg_col.window,
                 "category": agg_col.category,
                 "filter": agg_col.filter,

@@ -339,14 +339,14 @@ class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
     method: Optional[AggFunc]
-    groupby: List[str]
+    keys: List[str]
     window: Optional[str]
     category: Optional[str]
     type: Literal[FeatureDataColumnType.AGGREGATION] = Field(
         FeatureDataColumnType.AGGREGATION, const=True
     )
     column: Optional[ViewDataColumn]
-    groupby_type: Literal[
+    aggregation_type: Literal[
         NodeType.GROUPBY, NodeType.ITEM_GROUPBY, NodeType.LOOKUP, NodeType.AGGREGATE_AS_AT
     ]
 

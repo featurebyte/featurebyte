@@ -263,7 +263,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
                 "name": "sum_30m",
                 "column": "Input0",
                 "function": "sum",
-                "groupby": ["cust_id"],
+                "keys": ["cust_id"],
                 "window": "30m",
                 "category": None,
                 "filter": False,
@@ -313,7 +313,7 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
     info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
     common_agg_parameters = {
         "filter": False,
-        "groupby": ["cust_id"],
+        "keys": ["cust_id"],
         "category": None,
         "window": "24h",
         "function": "sum",
