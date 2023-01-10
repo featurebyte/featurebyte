@@ -123,53 +123,58 @@ def _series_data_type_and_tabular_id(
 
 
 def _are_series_both_of_type(
-    series_a: SeriesT, series_b: SeriesT, table_data_type: TableDataType
+    type_a: TableDataType, type_b: TableDataType, target_type: TableDataType
 ) -> bool:
     """
-    Helper method to check if both series are of the same type
+    Helper function to determine if both types are of a particular target type
 
-    Parameters
-    ----------
-    series_a: SeriesT
-        series
-    series_b: SeriesT
-        series
-    table_data_type: TableDataType
-        data type that we want to check if both series are the type of
+    type_a: TableDataType
+        type a
+    type_b: TableDataType
+        type b
+    target_type: TableDataType
+        target type
 
     Returns
     -------
     bool
-        True, if both series are of the same specified data type, False otherwise.
+        True if both the types are of the target type
     """
-    series_a_data_type, _ = _series_data_type_and_tabular_id(series_a)
-    series_b_data_type, _ = _series_data_type_and_tabular_id(series_b)
-    return series_a_data_type == table_data_type and series_b_data_type == table_data_type
+    return type_a == type_b and type_a == target_type
 
 
-def _is_from_same_data(input_series: SeriesT, other_series: SeriesT) -> bool:
+def _is_from_same_data(
+    input_series_data_type: TableDataType,
+    other_series_data_type: TableDataType,
+    input_series_tabular_data_id: PydanticObjectId,
+    other_series_tabular_data_id: PydanticObjectId,
+) -> bool:
     """
-    Checks if the two series are from the same item data or event data
+    Helper function to determine if both series are from the same data.
 
     Parameters
     ----------
-    input_series: SeriesT
-        series
-    other_series: SeriesT
-        series
+    input_series_data_type: TableDataType
+        input series data type
+    other_series_data_type: TableDataType
+        other series data type
+    input_series_tabular_data_id: PydanticObjectId
+        input series tabular data id
+    other_series_tabular_data_id: PydanticObjectId
+        other series tabular data ID
 
     Returns
     -------
     bool
-        True, if both are from the same item data or event data, False otherwise
+        True if both series are from the same data
     """
     if not _are_series_both_of_type(
-        input_series, other_series, TableDataType.ITEM_DATA
-    ) and not _are_series_both_of_type(input_series, other_series, TableDataType.EVENT_DATA):
+        input_series_data_type, other_series_data_type, TableDataType.ITEM_DATA
+    ) and not _are_series_both_of_type(
+        input_series_data_type, other_series_data_type, TableDataType.EVENT_DATA
+    ):
         return False
-    _, input_tabular_id = _series_data_type_and_tabular_id(input_series)
-    _, other_tabular_id = _series_data_type_and_tabular_id(other_series)
-    return input_tabular_id == other_tabular_id
+    return input_series_tabular_data_id == other_series_tabular_data_id
 
 
 def _both_are_lookup_features(input_series: SeriesT, other_series: SeriesT) -> bool:
@@ -192,7 +197,7 @@ def _both_are_lookup_features(input_series: SeriesT, other_series: SeriesT) -> b
 
 
 def _get_event_and_item_data_series(
-    series_a: SeriesT, series_b: SeriesT
+    series_a_data_type: TableDataType, series_a: SeriesT, series_b: SeriesT
 ) -> Tuple[SeriesT, SeriesT]:
     """
     Helper function to determine which series belongs to the item data, and which is the event data.
@@ -212,13 +217,14 @@ def _get_event_and_item_data_series(
     Tuple[SeriesT, SeriesT]
         (item data series, event data series)
     """
-    series_a_data_type, _ = _series_data_type_and_tabular_id(series_a)
     if series_a_data_type == TableDataType.ITEM_DATA:
         return series_a, series_b
     return series_b, series_a
 
 
-def _is_one_item_and_one_event(series_a: SeriesT, series_b: SeriesT) -> bool:
+def _is_one_item_and_one_event(
+    series_a_node_type: TableDataType, series_b_node_type: TableDataType
+) -> bool:
     """
     Helper function to determine if exactly one series is from an item data, and one is from an event data.
 
@@ -234,8 +240,6 @@ def _is_one_item_and_one_event(series_a: SeriesT, series_b: SeriesT) -> bool:
     bool
         True, if there's exactly one series that is from an item data, and one from an event data.
     """
-    series_a_node_type, _ = _series_data_type_and_tabular_id(series_a)
-    series_b_node_type, _ = _series_data_type_and_tabular_id(series_b)
     at_least_one_item_data = TableDataType.ITEM_DATA in (series_a_node_type, series_b_node_type)
     at_least_one_event_data = TableDataType.EVENT_DATA in (series_a_node_type, series_b_node_type)
     return at_least_one_event_data and at_least_one_item_data
@@ -269,7 +273,12 @@ def _get_event_data_id_of_item_series(item_series: SeriesT) -> PydanticObjectId:
     raise ValueError("cannot find event data ID from series")
 
 
-def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: SeriesT) -> bool:
+def _item_data_and_event_data_are_related(
+    input_series_type: TableDataType,
+    other_series_type: TableDataType,
+    input_series: SeriesT,
+    other_series: SeriesT,
+) -> bool:
     """
     Checks if the item and event data are related.
 
@@ -285,10 +294,10 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     bool
         True, if item and event data are related, False otherwise
     """
-    if not _is_one_item_and_one_event(input_series, other_series):
+    if not _is_one_item_and_one_event(input_series_type, other_series_type):
         return False
     item_data_series, event_data_series = _get_event_and_item_data_series(
-        input_series, other_series
+        input_series_type, input_series, other_series
     )
     _, event_data_id = _series_data_type_and_tabular_id(event_data_series)
     event_data_id_of_item_series = _get_event_data_id_of_item_series(item_data_series)
@@ -315,10 +324,23 @@ def validate_feature_type(input_series: SeriesT, other_series: SeriesT) -> None:
     ValueError
         raised when a series fails validation
     """
+    input_series_data_type, input_series_tabular_data_id = _series_data_type_and_tabular_id(
+        input_series
+    )
+    other_series_data_type, other_series_tabular_data_id = _series_data_type_and_tabular_id(
+        other_series
+    )
     if (
         _both_are_lookup_features(input_series, other_series)
-        or _is_from_same_data(input_series, other_series)
-        or _item_data_and_event_data_are_related(input_series, other_series)
+        or _is_from_same_data(
+            input_series_data_type,
+            other_series_data_type,
+            input_series_tabular_data_id,
+            other_series_tabular_data_id,
+        )
+        or _item_data_and_event_data_are_related(
+            input_series_data_type, other_series_data_type, input_series, other_series
+        )
     ):
         return
     raise ValueError("features are not of the right type")

@@ -11,7 +11,6 @@ from bson import ObjectId
 from featurebyte import Entity
 from featurebyte.core.frame import Frame
 from featurebyte.core.series_validator import (
-    _are_series_both_of_type,
     _both_are_lookup_features,
     _get_event_and_item_data_series,
     _get_event_data_id_of_item_series,
@@ -185,29 +184,33 @@ def test_series_data_type_and_tabular_id(get_dataframe_with_type, tabular_data_i
     assert tabular_id == tabular_data_id
 
 
-def test_are_series_both_of_type(get_dataframe_with_type):
-    """
-    Test _are_series_both_of_type
-    """
-    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
-    item_series = item_df["CUST_ID"]
-    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
-    event_series = event_df["CUST_ID"]
-    assert not _are_series_both_of_type(event_series, item_series, TableDataType.ITEM_DATA)
-    assert not _are_series_both_of_type(item_series, event_series, TableDataType.ITEM_DATA)
-    assert _are_series_both_of_type(item_series, item_series, TableDataType.ITEM_DATA)
-
-
 def test_is_from_same_data(get_dataframe_with_type):
     """
     Test _is_from_same_data
     """
-    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
-    item_series = item_df["CUST_ID"]
-    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
-    event_series = event_df["CUST_ID"]
-    assert not _is_from_same_data(item_series, event_series)
-    assert _is_from_same_data(item_series, item_series)
+    arbitrary_object_id_a = PydanticObjectId(ObjectId())
+    # different data types returns False
+    assert not _is_from_same_data(
+        TableDataType.ITEM_DATA,
+        TableDataType.EVENT_DATA,
+        arbitrary_object_id_a,
+        arbitrary_object_id_a,
+    )
+    arbitrary_object_id_b = PydanticObjectId(ObjectId())
+    # same data type, different object ID returns False
+    assert not _is_from_same_data(
+        TableDataType.ITEM_DATA,
+        TableDataType.ITEM_DATA,
+        arbitrary_object_id_a,
+        arbitrary_object_id_b,
+    )
+    # same data type, same object ID returns True
+    assert _is_from_same_data(
+        TableDataType.ITEM_DATA,
+        TableDataType.ITEM_DATA,
+        arbitrary_object_id_a,
+        arbitrary_object_id_a,
+    )
 
 
 def test_both_are_lookup_features(get_dataframe_with_type, snowflake_dimension_view_with_entity):
@@ -232,29 +235,25 @@ def test_get_event_and_item_data_series(get_dataframe_with_type):
     event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
     event_series = event_df["CUST_ID"]
     output_item_series, output_event_series = _get_event_and_item_data_series(
-        item_series, event_series
+        TableDataType.ITEM_DATA, item_series, event_series
     )
     assert output_item_series == item_series
     assert output_event_series == event_series
 
     output_item_series, output_event_series = _get_event_and_item_data_series(
-        event_series, item_series
+        TableDataType.EVENT_DATA, event_series, item_series
     )
     assert output_item_series == item_series
     assert output_event_series == event_series
 
 
-def test_is_one_item_and_one_event(get_dataframe_with_type):
+def test_is_one_item_and_one_event():
     """
     Test _is_one_item_and_one_event
     """
-    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
-    item_series = item_df["CUST_ID"]
-    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
-    event_series = event_df["CUST_ID"]
-    assert _is_one_item_and_one_event(item_series, event_series)
-    assert _is_one_item_and_one_event(event_series, item_series)
-    assert not _is_one_item_and_one_event(item_series, item_series)
+    assert _is_one_item_and_one_event(TableDataType.ITEM_DATA, TableDataType.EVENT_DATA)
+    assert _is_one_item_and_one_event(TableDataType.EVENT_DATA, TableDataType.ITEM_DATA)
+    assert not _is_one_item_and_one_event(TableDataType.ITEM_DATA, TableDataType.ITEM_DATA)
 
 
 def test_get_event_data_id_of_item_series__no_error(get_dataframe_with_type, event_data_id):
@@ -286,13 +285,17 @@ def test_item_data_and_event_data_are_related(get_dataframe_with_type, event_dat
     item_series = item_df["CUST_ID"]
 
     # series both of item_data type should not be related here
-    assert not _item_data_and_event_data_are_related(item_series, item_series)
+    assert not _item_data_and_event_data_are_related(
+        TableDataType.ITEM_DATA, TableDataType.ITEM_DATA, item_series, item_series
+    )
 
     # one series from item data, and one from event data, where the item_data_id matches event_data's id
     # should be related
     event_df = get_dataframe_with_type(TableDataType.EVENT_DATA, event_data_id)
     event_series = event_df["CUST_ID"]
-    assert _item_data_and_event_data_are_related(item_series, event_series)
+    assert _item_data_and_event_data_are_related(
+        TableDataType.ITEM_DATA, TableDataType.EVENT_DATA, item_series, event_series
+    )
 
 
 def test_validate_feature_type(get_dataframe_with_type, event_data_id):
