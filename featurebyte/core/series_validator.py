@@ -128,6 +128,8 @@ def _are_series_both_of_type(
     """
     Helper function to determine if both types are of a particular target type
 
+    Parameters
+    ----------
     type_a: TableDataType
         type a
     type_b: TableDataType
@@ -230,9 +232,9 @@ def _is_one_item_and_one_event(
 
     Parameters
     ----------
-    series_a: SeriesT
+    series_a_node_type: TableDataType
         series
-    series_b: SeriesT
+    series_b_node_type: TableDataType
         series
 
     Returns
@@ -284,6 +286,10 @@ def _item_data_and_event_data_are_related(
 
     Parameters
     ----------
+    input_series_type: TableDataType
+        input series type
+    other_series_type: TableDataType
+        other series type
     input_series: SeriesT
         series
     other_series: SeriesT
