@@ -658,6 +658,8 @@ class JoinNode(BaseNode):
         target_nodes: Sequence[NodeT],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
+        # Prune the join node parameters by using the available columns. If the input column is not found in the
+        # input operation structure, remove it & its corresponding output column name from the join node parameters.
         assert len(input_operation_structures) == 2
         left_avail_columns = set(col.name for col in input_operation_structures[0].columns)
         right_avail_columns = set(col.name for col in input_operation_structures[1].columns)
