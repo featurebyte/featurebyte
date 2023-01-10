@@ -256,6 +256,17 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
+@pytest.fixture(name="preview_param")
+def preview_paarm_fixture():
+    """
+    Fixture for preview params
+    """
+    return {
+        "POINT_IN_TIME": "2001-01-02 10:00:00",
+        "user id": 1,
+    }
+
+
 def test_event_view_ops(event_view, transaction_data_upper_case):
     """
     Test operations that can be performed on an EventView before creating features
@@ -294,19 +305,42 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
-def test_feature_operations(event_view, feature_group, feature_group_per_category):
+def test_feature_ops__preview_unassigned_feature(feature_group, preview_param):
     """
-    Test operations on Feature objects
+    Test preview feature
     """
-    source_type = event_view.feature_store.type
-    count_dict_supported = source_type == SourceType.SNOWFLAKE
+    new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    df_feature_preview = new_feature.preview(preview_param)
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "Unnamed": 0.2142857143,
+        },
+    )
 
-    preview_param = {
-        "POINT_IN_TIME": "2001-01-02 10:00:00",
-        "user id": 1,
-    }
 
-    # preview count features
+def test_feature_ops__preview_one_feature(feature_group, preview_param):
+    """
+    Test preview one feature only
+    """
+    # preview one feature only
+    df_feature_preview = feature_group["COUNT_2h"].preview(preview_param)
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_2h": 3,
+        },
+    )
+
+
+def test_feature_ops__preview_count_feature(feature_group, preview_param):
+    """
+    Preview count feature
+    """
     df_feature_preview = feature_group.preview(preview_param)
     assert_feature_preview_output_equal(
         df_feature_preview,
@@ -317,6 +351,33 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "COUNT_24h": 14,
         },
     )
+
+
+def test_feature_ops__assign_new_feature_and_preview(feature_group, preview_param):
+    """
+    Test assign new feature and preview
+    """
+    new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_group["COUNT_2h / COUNT_24h"] = new_feature
+    df_feature_preview = feature_group.preview(preview_param)
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_2h": 3,
+            "COUNT_24h": 14,
+            "COUNT_2h / COUNT_24h": 0.21428599999999998,
+        },
+    )
+
+
+def test_feature_operations(event_view, feature_group, feature_group_per_category, preview_param):
+    """
+    Test operations on Feature objects
+    """
+    source_type = event_view.feature_store.type
+    count_dict_supported = source_type == SourceType.SNOWFLAKE
 
     if count_dict_supported:
         # preview count per category features
@@ -334,44 +395,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
         }
 
-    # preview one feature only
-    df_feature_preview = feature_group["COUNT_2h"].preview(preview_param)
-    assert_feature_preview_output_equal(
-        df_feature_preview,
-        {
-            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
-            "COUNT_2h": 3,
-        },
-    )
-
-    # preview a not-yet-assigned feature
-    new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    df_feature_preview = new_feature.preview(preview_param)
-    assert_feature_preview_output_equal(
-        df_feature_preview,
-        {
-            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
-            "Unnamed": 0.2142857143,
-        },
-    )
-
     run_test_conditional_assign_feature(feature_group)
-
-    # assign new feature and preview again
-    feature_group["COUNT_2h / COUNT_24h"] = new_feature
-    df_feature_preview = feature_group.preview(preview_param)
-    assert_feature_preview_output_equal(
-        df_feature_preview,
-        {
-            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
-            "COUNT_2h": 3,
-            "COUNT_24h": 14,
-            "COUNT_2h / COUNT_24h": 0.21428599999999998,
-        },
-    )
 
     # check casting on feature
     df_feature_preview = (

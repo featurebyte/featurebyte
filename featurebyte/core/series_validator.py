@@ -114,7 +114,6 @@ def _series_data_type_and_tabular_id(
     """
     operation_structure = input_series.graph.extract_operation_structure(input_series.node)
     # we only expect feature series to have a single column
-    assert len(operation_structure.columns) == 1
     column_structure = operation_structure.columns[0]
     if isinstance(column_structure, DerivedDataColumn):
         column = column_structure.columns[0]
