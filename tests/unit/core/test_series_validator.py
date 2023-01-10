@@ -8,7 +8,7 @@ from typing import Optional
 import pytest
 from bson import ObjectId
 
-from featurebyte import Entity
+from featurebyte import DimensionView, Entity
 from featurebyte.core.frame import Frame
 from featurebyte.core.series_validator import (
     _are_series_both_of_type,
@@ -134,23 +134,19 @@ def dataframe_fixture(global_graph, snowflake_feature_store, event_data_id, tabu
     ):
         columns_info = [
             {"name": "CUST_ID", "dtype": DBVarType.INT},
-            {"name": "PRODUCT_ACTION", "dtype": DBVarType.VARCHAR},
-            {"name": "VALUE", "dtype": DBVarType.FLOAT},
-            {"name": "MASK", "dtype": DBVarType.BOOL},
-            {"name": "TIMESTAMP_VALUE", "dtype": DBVarType.TIMESTAMP},
         ]
+        table_details = {
+            "database_name": "db",
+            "schema_name": "public",
+            "table_name": "transaction",
+        }
         node = global_graph.add_operation(
             node_type=NodeType.INPUT,
             node_params={
                 "id": data_id_to_use,
                 "type": table_data_type,
                 "columns": columns_info,
-                "timestamp": "VALUE",
-                "table_details": {
-                    "database_name": "db",
-                    "schema_name": "public",
-                    "table_name": "transaction",
-                },
+                "table_details": table_details,
                 "feature_store_details": {
                     "type": "snowflake",
                     "details": {
@@ -165,31 +161,14 @@ def dataframe_fixture(global_graph, snowflake_feature_store, event_data_id, tabu
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[],
         )
-        lookup_node = global_graph.add_operation(
-            node_type=NodeType.LOOKUP,
-            node_params={
-                "columns": columns_info,
-                "input_column_names": ["CUST_ID"],
-                "feature_names": ["random_feature"],
-                "entity_column": "customer",
-                "serving_name": "serving_name",
-                "entity_id": PydanticObjectId(ObjectId()),
-            },
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[node],
-        )
         return Frame(
             feature_store=snowflake_feature_store,
             tabular_source={
                 "feature_store_id": snowflake_feature_store.id,
-                "table_details": {
-                    "database_name": "db",
-                    "schema_name": "public",
-                    "table_name": "some_table_name",
-                },
+                "table_details": table_details,
             },
             columns_info=columns_info,
-            node_name=lookup_node.name,
+            node_name=node.name,
         )
 
     return get_data_frame_with_type
@@ -242,13 +221,16 @@ def test_is_from_same_data(get_dataframe_with_type):
     assert _is_from_same_data(item_series, item_series)
 
 
-def test_both_are_lookup_features(get_dataframe_with_type):
+def test_both_are_lookup_features(get_dataframe_with_type, snowflake_dimension_view_with_entity):
     """
     Test _both_are_lookup_features
     """
+    # Create a lookup feature
+    feature = snowflake_dimension_view_with_entity["col_float"].as_feature("FloatFeature")
+    assert _both_are_lookup_features(feature, feature)
+
     item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
     item_series = item_df["CUST_ID"]
-    # TODO: finish this
     assert not _both_are_lookup_features(item_series, item_series)
 
 

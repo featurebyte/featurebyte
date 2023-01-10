@@ -15,7 +15,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
+from featurebyte import DimensionView, FeatureJobSetting, ItemView, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -392,6 +392,16 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
     )
     assert dimension_data.node.parameters.id == dimension_data.id
     yield dimension_data
+
+
+@pytest.fixture
+def snowflake_dimension_view_with_entity(snowflake_dimension_data, cust_id_entity):
+    """
+    Fixture of a DimensionView with entity tagged
+    """
+    snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
+    view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    return view
 
 
 @pytest.fixture(name="snowflake_scd_data")

@@ -43,16 +43,6 @@ def test_get_join_column(snowflake_dimension_view):
     assert column == "col_int"
 
 
-@pytest.fixture
-def snowflake_dimension_view_with_entity(snowflake_dimension_data, cust_id_entity):
-    """
-    Fixture of a DimensionView with entity tagged
-    """
-    snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    view = DimensionView.from_dimension_data(snowflake_dimension_data)
-    return view
-
-
 def test_as_features__invalid_column_names(snowflake_dimension_view):
     """
     Test as_features() with invalid number of feature names provided
