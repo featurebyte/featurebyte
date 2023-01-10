@@ -37,10 +37,11 @@ def validate_window(window: str, feature_job_frequency: str) -> None:
             f"window provided {window} needs to be greater than the feature_job_frequency {feature_job_frequency}"
         )
 
-    upper_bound_timerange_secs = pd.Timedelta("100y").seconds
+    # arbitrary upper bound of 365 days
+    upper_bound_timerange_secs = 365 * 24 * 60 * 60
     if window_secs > upper_bound_timerange_secs:
         raise ValueError(
-            "window needs to be less than 100y. Please specify a different time window."
+            f"window {window} needs to be less than 365 days. Please specify a different time window."
         )
 
     time_mod = window_secs % feature_job_frequency_secs
