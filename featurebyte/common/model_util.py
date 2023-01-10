@@ -38,6 +38,29 @@ def parse_duration_string(duration_string: str, minimum_seconds: int = 0) -> int
     return duration_total_seconds
 
 
+def validate_offset_string(offset_string: str) -> None:
+    """
+    Verify offset string is valid
+
+    Parameters
+    ----------
+    offset_string: str
+        Offset string
+
+    Raises
+    ------
+    ValueError
+        If the specified offset string is invalid
+    """
+    try:
+        parse_duration_string(offset_string)
+    except ValueError as exc:
+        raise ValueError(
+            "Failed to parse the offset parameter. An example of valid offset string is "
+            f'"7d", got "{offset_string}". Error: {str(exc)}'
+        ) from exc
+
+
 @typechecked
 def validate_job_setting_parameters(
     frequency: str, time_modulo_frequency: str, blind_spot: str

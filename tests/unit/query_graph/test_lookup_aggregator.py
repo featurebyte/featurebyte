@@ -149,6 +149,7 @@ def test_lookup_aggregator__offline_scd_only(
             "entity_column": "cust_id",
             "scd_parameters": SCDLookupParameters(
                 effective_timestamp_column="event_timestamp",
+                natural_key_column="cust_id",
                 current_flag_column="is_record_current",
                 end_timestamp_column=None,
                 offset=None,
@@ -182,6 +183,7 @@ def test_lookup_aggregator__online_with_current_flag(
             "entity_column": "cust_id",
             "scd_parameters": SCDLookupParameters(
                 effective_timestamp_column="event_timestamp",
+                natural_key_column="cust_id",
                 current_flag_column="is_record_current",
                 end_timestamp_column=None,
                 offset=None,
@@ -191,13 +193,13 @@ def test_lookup_aggregator__online_with_current_flag(
 
     direct_lookups = aggregator.get_direct_lookups()
     assert len(direct_lookups) == 1
-    assert direct_lookups[0].column_names == ["membership_status_a18d6f89f8538bdb"]
+    assert direct_lookups[0].column_names == ["membership_status_fbfdb013880b3a67"]
     assert direct_lookups[0].join_keys == ["CUSTOMER_ID"]
     expected_sql = textwrap.dedent(
         """
         SELECT
           "cust_id" AS "CUSTOMER_ID",
-          "membership_status" AS "membership_status_a18d6f89f8538bdb"
+          "membership_status" AS "membership_status_fbfdb013880b3a67"
         FROM (
           SELECT
             "effective_ts" AS "effective_ts",
@@ -243,6 +245,7 @@ def test_lookup_aggregator__online_without_current_flag(
             "entity_column": "cust_id",
             "scd_parameters": SCDLookupParameters(
                 effective_timestamp_column="event_timestamp",
+                natural_key_column="cust_id",
                 current_flag_column=None,
                 end_timestamp_column=None,
                 offset=None,
@@ -279,6 +282,7 @@ def test_lookup_aggregator__online_with_offset(
             "entity_column": "cust_id",
             "scd_parameters": SCDLookupParameters(
                 effective_timestamp_column="event_timestamp",
+                natural_key_column="cust_id",
                 current_flag_column="is_record_current",
                 end_timestamp_column=None,
                 offset="14d",

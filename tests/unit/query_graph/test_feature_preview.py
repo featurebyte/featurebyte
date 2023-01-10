@@ -309,6 +309,32 @@ def test_get_feature_preview_sql__latest_aggregation_no_window(
     )
 
 
+def test_get_feature_preview_sql__aggregate_asat(
+    global_graph,
+    aggregate_asat_feature_node,
+    update_fixtures,
+):
+    """
+    Test case for preview SQL for aggregate as at feature
+    """
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=[aggregate_asat_feature_node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_aggregate_asat.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 def test_get_feature_preview_sql__all_types(
     global_graph,
     mixed_point_in_time_and_item_aggregations,
@@ -316,6 +342,7 @@ def test_get_feature_preview_sql__all_types(
     scd_lookup_feature_node,
     latest_value_aggregation_feature_node,
     latest_value_without_window_feature_node,
+    aggregate_asat_feature_node,
     update_fixtures,
 ):
     """
@@ -335,6 +362,7 @@ def test_get_feature_preview_sql__all_types(
         scd_lookup_feature_node,
         latest_value_aggregation_feature_node,
         latest_value_without_window_feature_node,
+        aggregate_asat_feature_node,
     ]
     preview_sql = get_feature_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,

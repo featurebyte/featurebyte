@@ -15,12 +15,12 @@ WITH REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."CUSTOMER_ID",
-    "T0"."membership_status_a18d6f89f8538bdb" AS "membership_status_a18d6f89f8538bdb"
+    "T0"."membership_status_fbfdb013880b3a67" AS "membership_status_fbfdb013880b3a67"
   FROM REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS REQ
   LEFT JOIN (
     SELECT
       "cust_id" AS "CUSTOMER_ID",
-      "membership_status" AS "membership_status_a18d6f89f8538bdb"
+      "membership_status" AS "membership_status_fbfdb013880b3a67"
     FROM (
       SELECT
         "effective_ts" AS "effective_ts",
@@ -35,5 +35,5 @@ WITH REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
 )
 SELECT
   AGG."CUSTOMER_ID",
-  "membership_status_a18d6f89f8538bdb" AS "Current Membership Status"
+  "membership_status_fbfdb013880b3a67" AS "Current Membership Status"
 FROM _FB_AGGREGATED AS AGG

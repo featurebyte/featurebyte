@@ -7,13 +7,13 @@ from typing import cast
 
 from dataclasses import dataclass
 
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
-from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.groupby_helper import get_aggregation_expression
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
 
@@ -46,7 +46,7 @@ class ItemGroupby(TableNode):
         if context.sql_type == SQLType.POST_AGGREGATION:
             return None
         parameters = context.parameters
-        agg_expr = cls.get_agg_expr(
+        agg_expr = get_aggregation_expression(
             agg_func=parameters["agg_func"], input_column=parameters["parent"]
         )
         columns_map = {}
@@ -63,51 +63,6 @@ class ItemGroupby(TableNode):
             output_name=output_name,
         )
         return node
-
-    @classmethod
-    def get_agg_expr(cls, agg_func: AggFunc, input_column: str) -> Expression:
-        """
-        Convert an AggFunc and input column name to a SQL expression to be used in GROUP BY
-
-        Parameters
-        ----------
-        agg_func : AggFunc
-            Aggregation function
-        input_column : str
-            Input column name
-
-        Returns
-        -------
-        Expression
-        """
-        agg_func_sql_mapping = {
-            AggFunc.SUM: "SUM",
-            AggFunc.AVG: "AVG",
-            AggFunc.MIN: "MIN",
-            AggFunc.MAX: "MAX",
-            AggFunc.STD: "STDDEV",
-        }
-        expr: Expression
-        if agg_func in agg_func_sql_mapping:
-            assert input_column is not None
-            sql_func = agg_func_sql_mapping[agg_func]
-            expr = expressions.Anonymous(
-                this=sql_func, expressions=[quoted_identifier(input_column)]
-            )
-        else:
-            if agg_func == AggFunc.COUNT:
-                expr = cast(Expression, parse_one("COUNT(*)"))
-            else:
-                # Must be NA_COUNT
-                assert agg_func == AggFunc.NA_COUNT
-                assert input_column is not None
-                expr_is_null = expressions.Is(
-                    this=quoted_identifier(input_column), expression=expressions.NULL
-                )
-                expr = expressions.Sum(
-                    this=expressions.Cast(this=expr_is_null, to=parse_one("INTEGER"))
-                )
-        return expr
 
 
 @dataclass

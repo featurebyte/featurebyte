@@ -13,113 +13,9 @@ from featurebyte.query_graph.sql.aggregator.base import (
     Aggregator,
     LeftJoinableSubquery,
 )
-from featurebyte.query_graph.sql.aggregator.window import AggSpecEntityIDs
+from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
-
-
-class NonTimeAwareRequestTablePlan:
-    """SQL generation for request table in non-time aware aggregations
-
-    In non-time aware aggregations such as ItemData groupby, the feature value can be determined by
-    entity columns. The point in time is irrelevant.
-    """
-
-    def __init__(self) -> None:
-        self.request_table_names: dict[AggSpecEntityIDs, str] = {}
-        self.agg_specs: dict[AggSpecEntityIDs, ItemAggregationSpec] = {}
-
-    def add_aggregation_spec(self, agg_spec: ItemAggregationSpec) -> None:
-        """
-        Update state given an ItemAggregationSpec
-
-        Parameters
-        ----------
-        agg_spec: ItemAggregationSpec
-            ItemAggregationSpec object
-        """
-        key = self.get_key(agg_spec)
-        request_table_name = f"REQUEST_TABLE_{'_'.join(agg_spec.serving_names)}"
-        self.request_table_names[key] = request_table_name
-        self.agg_specs[key] = agg_spec
-
-    def get_request_table_name(self, agg_spec: ItemAggregationSpec) -> str:
-        """
-        Get the processed request table name corresponding to an aggregation spec
-
-        Parameters
-        ----------
-        agg_spec: ItemAggregationSpec
-            ItemAggregationSpec object
-
-        Returns
-        -------
-        str
-        """
-        key = self.get_key(agg_spec)
-        return self.request_table_names[key]
-
-    @staticmethod
-    def get_key(agg_spec: ItemAggregationSpec) -> AggSpecEntityIDs:
-        """
-        Get an internal key used to determine request table sharing
-
-        Parameters
-        ----------
-        agg_spec: ItemAggregationSpec
-            ItemAggregationSpec object
-
-        Returns
-        -------
-        AggSpecEntityIDs
-        """
-        return tuple(agg_spec.serving_names)
-
-    def construct_request_table_ctes(
-        self,
-        request_table_name: str,
-    ) -> list[tuple[str, expressions.Select]]:
-        """
-        Construct SQL statements that build the processed request tables
-
-        Parameters
-        ----------
-        request_table_name : str
-            Name of request table to use
-
-        Returns
-        -------
-        list[tuple[str, expressions.Select]]
-        """
-        ctes = []
-        for key, table_name in self.request_table_names.items():
-            agg_spec = self.agg_specs[key]
-            request_table_expr = self.construct_request_table_expr(agg_spec, request_table_name)
-            ctes.append((quoted_identifier(table_name).sql(), request_table_expr))
-        return ctes
-
-    @staticmethod
-    def construct_request_table_expr(
-        agg_spec: ItemAggregationSpec,
-        request_table_name: str,
-    ) -> expressions.Select:
-        """
-        Construct a Select statement that forms the processed request table
-
-        Parameters
-        ----------
-        agg_spec: ItemAggregationSpec
-            ItemAggregationSpec object
-        request_table_name: str
-            Name of the original request table that is determined at runtime
-
-        Returns
-        -------
-        expressions.Select
-        """
-        quoted_serving_names = [quoted_identifier(x) for x in agg_spec.serving_names]
-        select_distinct_expr = select(*quoted_serving_names).distinct().from_(request_table_name)
-        return select_distinct_expr
 
 
 class ItemAggregator(Aggregator):
@@ -131,9 +27,7 @@ class ItemAggregator(Aggregator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.item_aggregation_specs: list[ItemAggregationSpec] = []
-        self.non_time_aware_request_table_plan: NonTimeAwareRequestTablePlan = (
-            NonTimeAwareRequestTablePlan()
-        )
+        self.non_time_aware_request_table_plan = RequestTablePlan(is_time_aware=False)
 
     def get_required_serving_names(self) -> set[str]:
         """

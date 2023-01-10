@@ -346,7 +346,9 @@ class AggregationColumn(BaseDataColumn):
         FeatureDataColumnType.AGGREGATION, const=True
     )
     column: Optional[ViewDataColumn]
-    groupby_type: Literal[NodeType.GROUPBY, NodeType.ITEM_GROUPBY, NodeType.LOOKUP]
+    groupby_type: Literal[
+        NodeType.GROUPBY, NodeType.ITEM_GROUPBY, NodeType.LOOKUP, NodeType.AGGREGATE_AS_AT
+    ]
 
     def __hash__(self) -> int:
         col_dict = self.dict()

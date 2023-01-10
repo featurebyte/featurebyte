@@ -9,14 +9,13 @@ import pytest
 from sqlglot import select
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.sql.aggregator.item import NonTimeAwareRequestTablePlan
+from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.specs import (
     FeatureSpec,
     ItemAggregationSpec,
-    LookupSpec,
     TileBasedAggregationSpec,
 )
 
@@ -196,7 +195,7 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
     """
     Test NonTimeAwareRequestTablePlan
     """
-    plan = NonTimeAwareRequestTablePlan()
+    plan = RequestTablePlan(is_time_aware=False)
     plan.add_aggregation_spec(item_agg_spec)
     assert plan.get_request_table_name(item_agg_spec) == "REQUEST_TABLE_OID"
     ctes = plan.construct_request_table_ctes(REQUEST_TABLE_NAME)

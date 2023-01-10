@@ -44,6 +44,7 @@ class NodeType(StrEnum):
     FILTER = "filter"
     GROUPBY = "groupby"
     ITEM_GROUPBY = "item_groupby"
+    AGGREGATE_AS_AT = "aggregate_as_at"
     LOOKUP = "lookup"
     JOIN = "join"
     JOIN_FEATURE = "join_feature"

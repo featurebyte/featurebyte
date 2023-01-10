@@ -811,6 +811,16 @@ def item_entity_fixture():
     return entity
 
 
+@pytest.fixture(name="status_entity", scope="session")
+def status_entity_fixture():
+    """
+    Fixture for an Entity "UserStatus"
+    """
+    entity = Entity(name="UserStatus", serving_names=["user_status"])
+    entity.save()
+    return entity
+
+
 def create_transactions_event_data_from_feature_store(
     feature_store, database_name, schema_name, table_name, event_data_name
 ):
@@ -959,6 +969,7 @@ def get_scd_data_tabular_source_fixture(
 def snowflake_scd_data_fixture(
     scd_data_tabular_source,
     user_entity,
+    status_entity,
 ):
     """
     Fixture for a SlowlyChangingData in integration tests
@@ -974,6 +985,7 @@ def snowflake_scd_data_fixture(
     data.save()
     data = SlowlyChangingData.get(name)
     data["User ID"].as_entity(user_entity.name)
+    data["User Status"].as_entity(status_entity.name)
     return data
 
 
