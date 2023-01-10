@@ -9,6 +9,7 @@ from bson import json_util
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import construct_node
+from featurebyte.query_graph.transform.pruning import prune_query_graph
 from tests.util.helper import add_groupby_operation
 
 
@@ -275,7 +276,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
 
     # check pruned join node
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
-    assert pruned_join_node.parameters == {
+    expected_pruned_join_node_params = {
         "join_type": "inner",
         "left_input_columns": ["cust_id", "order_id", "order_method"],
         "left_on": "order_id",
@@ -285,3 +286,14 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_output_columns": ["item_type", "item_name"],
         "scd_parameters": None,
     }
+    assert pruned_join_node.parameters == expected_pruned_join_node_params
+
+    # check pruning using target columns
+    pruned_graph, _, _ = prune_query_graph(
+        graph=global_graph,
+        node=join_node,
+        target_columns=groupby_node.get_required_input_columns(),
+        aggressive=True,
+    )
+    pruned_join_node = pruned_graph.get_node_by_name("join_1")
+    assert pruned_join_node.parameters == expected_pruned_join_node_params
