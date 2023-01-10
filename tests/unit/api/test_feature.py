@@ -360,7 +360,7 @@ def test_feature_name__set_name_when_unnamed(float_feature):
     assert new_feature.name is None
     assert new_feature.node.dict(exclude={"name": True}) == {
         "type": "add",
-        "parameters": {"value": 1234},
+        "parameters": {"value": 1234, "right_op": False},
         "output_type": "series",
     }
     old_node_name = new_feature.node.name

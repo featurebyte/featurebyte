@@ -354,7 +354,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "33d7045ac1aea1e0a20f32ca16f997f220f5cbc8"
+    assert aggregation_id == "833762b783166cd0980c65b9e3f3c7c6b9dcd489"
     return aggregation_id
 
 

@@ -329,8 +329,8 @@ def test_graph_interpreter_on_demand_tile_gen(
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
-          COUNT("a") AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
+          SUM("a") AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
+          COUNT("a") AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
         FROM (
           SELECT
             *,
@@ -402,7 +402,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "4175f93da804be8506df45531ac006c24741d02b"
+    aggregation_id = "658906478ded8ef60deb5e8aca90f8ef7d06c2c6"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -509,8 +509,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
-          COUNT("a") AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
+          SUM("a") AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
+          COUNT("a") AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
         FROM (
           SELECT
             *,
@@ -550,7 +550,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "ef6e0961ae987b3faf4e63668d8997850e840d9a"
+    aggregation_id = "875069c3061f4fbb8c0e49a0a927676315f07a46"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info.sql
@@ -577,7 +577,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "biz_id",
-          SUM("a") AS value_sum_ef6e0961ae987b3faf4e63668d8997850e840d9a
+          SUM("a") AS value_sum_875069c3061f4fbb8c0e49a0a927676315f07a46
         FROM (
           SELECT
             *,
@@ -1421,8 +1421,8 @@ def test_databricks_source(query_graph_with_groupby):
         SELECT
           TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           `cust_id`,
-          SUM(`a`) AS sum_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8,
-          COUNT(`a`) AS count_value_avg_33d7045ac1aea1e0a20f32ca16f997f220f5cbc8
+          SUM(`a`) AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
+          COUNT(`a`) AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
         FROM (
           SELECT
             *,

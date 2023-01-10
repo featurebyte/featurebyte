@@ -111,7 +111,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         "name": "add_1",
         "type": "add",
         "output_type": "series",
-        "parameters": {"value": None},
+        "parameters": {"value": None, "right_op": False},
     }
     assert graph_node.output_node == expected_nested_node
     assert graph_node.parameters.graph == {
@@ -429,7 +429,7 @@ def test_flatten_nested_graph(
                 "name": "add_1",
                 "type": "add",
                 "output_type": "series",
-                "parameters": {"value": 10},
+                "parameters": {"value": 10, "right_op": False},
             },
         ],
     }
