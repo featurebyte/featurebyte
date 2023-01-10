@@ -372,9 +372,18 @@ def test_feature_ops__assign_new_feature_and_preview(feature_group, preview_para
     )
 
 
-def test_feature_operations(event_view, feature_group, feature_group_per_category, preview_param):
+def test_feature_operations__test_conditional_assign(feature_group):
     """
-    Test operations on Feature objects
+    Test conditional assign
+    """
+    run_test_conditional_assign_feature(feature_group)
+
+
+def test_feature_ops__count_dict_feature_preview(
+    event_view, feature_group_per_category, preview_param
+):
+    """
+    Test count dict feature preview
     """
     source_type = event_view.feature_store.type
     count_dict_supported = source_type == SourceType.SNOWFLAKE
@@ -395,9 +404,11 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
         }
 
-    run_test_conditional_assign_feature(feature_group)
 
-    # check casting on feature
+def test_feature_operations__casting_on_feature(feature_group, preview_param):
+    """
+    Test casting on feature
+    """
     df_feature_preview = (
         (feature_group["COUNT_2h"].astype(int) + 1).astype(float).preview(preview_param)
     )
@@ -409,6 +420,14 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "Unnamed": 4.0,
         },
     )
+
+
+def test_feature_operations(event_view, feature_group, feature_group_per_category, preview_param):
+    """
+    Test operations on Feature objects
+    """
+    source_type = event_view.feature_store.type
+    count_dict_supported = source_type == SourceType.SNOWFLAKE
 
     special_feature = create_feature_with_filtered_event_view(event_view)
     if source_type == SourceType.SNOWFLAKE:
