@@ -485,6 +485,17 @@ class OperationStructure(BaseFrozenModel):
             node_names.update(aggregation.node_names)
         return node_names
 
+    @property
+    def source_columns(self) -> List[SourceDataColumn]:
+        """
+        List of source columns used in the operation structure
+
+        Returns
+        -------
+        List[SourceDataColumn]
+        """
+        return [col for col in self.columns if isinstance(col, SourceDataColumn)]
+
     def get_column_node_name(self, column_name: str) -> str:
         """
         Retrieve node_name based on given column

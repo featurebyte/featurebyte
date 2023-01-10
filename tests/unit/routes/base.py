@@ -25,9 +25,7 @@ class BaseApiTestSuite:
     # class variables to be set at metaclass
     base_route = None
     class_name = None
-    payload_filename = None
     payload = None
-    has_update_method = True
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
     list_unprocessable_params_expected_detail_pairs = [

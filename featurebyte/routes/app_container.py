@@ -4,6 +4,7 @@ Container for Controller objects to enable Dependency Injection
 from typing import Any, Dict
 
 from featurebyte.persistent import Persistent
+from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.dimension_data.controller import DimensionDataController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
@@ -21,6 +22,7 @@ from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.tabular_data.controller import TabularDataController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.service.context import ContextService
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
@@ -115,6 +117,10 @@ app_container_config = {
     # These services only require the user, and persistent dependencies.
     "services": [
         {
+            "name": "context_service",
+            "clazz": ContextService,
+        },
+        {
             "name": "entity_service",
             "clazz": EntityService,
         },
@@ -197,6 +203,11 @@ app_container_config = {
     ],
     # Controllers can depend on any object defined above.
     "controllers": [
+        {
+            "name": "context_controller",
+            "clazz": ContextController,
+            "depends": ["context_service"],
+        },
         {
             "name": "entity_controller",
             "clazz": EntityController,
