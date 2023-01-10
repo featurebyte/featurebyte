@@ -1,7 +1,7 @@
 """
 This module contains graph pruning related classes.
 """
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -164,6 +164,7 @@ class NodeParametersPruningExtractor(
             # For the graph node, the pruning happens in GraphStructurePruningExtractor.
             # Prepare target nodes (nodes that consider current node as an input node) & input operation
             # structures to the node. Use these 2 info to perform the actual node parameters pruning.
+            target_nodes: Sequence[Node]
             if node.name == global_state.target_node_name and global_state.target_columns:
                 # create a temporary project node if
                 # - current node name equals to target_node_name
@@ -209,7 +210,7 @@ class NodeParametersPruningExtractor(
         target_columns: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
-        state_params = {"target_node_name": node.name}
+        state_params: Dict[str, Any] = {"target_node_name": node.name}
         if proxy_input_operation_structures:
             state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
 
