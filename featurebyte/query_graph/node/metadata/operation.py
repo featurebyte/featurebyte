@@ -24,7 +24,7 @@ from bson import json_util
 from pydantic import BaseModel, Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -49,20 +49,11 @@ class FeatureDataColumnType(StrEnum):
     POST_AGGREGATION = "post_aggregation"
 
 
-class BaseFrozenModel(BaseModel):
-    """BaseFrozenModel class"""
-
-    class Config:
-        """Config class"""
-
-        frozen = True
-
-
 BaseColumnT = TypeVar("BaseColumnT", bound="BaseColumn")
 BaseDerivedColumnT = TypeVar("BaseDerivedColumnT", bound="BaseDerivedColumn")
 
 
-class BaseColumn(BaseFrozenModel):
+class BaseColumn(FeatureByteBaseModel):
     """
     BaseColumn class
 
@@ -401,7 +392,7 @@ FeatureDataColumn = Annotated[
 ]
 
 
-class GroupOperationStructure(BaseFrozenModel):
+class GroupOperationStructure(FeatureByteBaseModel):
     """GroupOperationStructure class"""
 
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
@@ -424,7 +415,7 @@ class GroupOperationStructure(BaseFrozenModel):
         return list(set(data_ids))
 
 
-class OperationStructure(BaseFrozenModel):
+class OperationStructure(FeatureByteBaseModel):
     """NodeOperationStructure class"""
 
     columns: List[ViewDataColumn] = Field(default_factory=list)
