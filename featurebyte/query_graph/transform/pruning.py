@@ -129,6 +129,8 @@ class NodeParametersPruningGlobalState(OperationStructureInfo):
     # variables for extractor output
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: NodeNameMap = Field(default_factory=dict)
+    target_columns: Optional[List[str]] = Field(default=None)
+    target_node_name: str
 
 
 class NodeParametersPruningExtractor(
@@ -162,10 +164,23 @@ class NodeParametersPruningExtractor(
             # For the graph node, the pruning happens in GraphStructurePruningExtractor.
             # Prepare target nodes (nodes that consider current node as an input node) & input operation
             # structures to the node. Use these 2 info to perform the actual node parameters pruning.
-            target_node_names = self.graph.edges_map[node.name]
-            target_nodes = [
-                self.graph.get_node_by_name(node_name) for node_name in target_node_names
-            ]
+            if node.name == global_state.target_node_name and global_state.target_columns:
+                # create a temporary project node if
+                # - current node name equals to target_node_name
+                # - target_columns is not empty
+                target_nodes = [
+                    ProjectNode(
+                        name="temp",
+                        parameters={"columns": global_state.target_columns},
+                        output_type=NodeOutputType.FRAME,
+                    )
+                ]
+            else:
+                target_node_names = self.graph.edges_map[node.name]
+                target_nodes = [
+                    self.graph.get_node_by_name(node_name) for node_name in target_node_names
+                ]
+
             node = node.prune(
                 target_nodes=target_nodes, input_operation_structures=input_op_structs
             )
@@ -193,31 +208,12 @@ class NodeParametersPruningExtractor(
         target_columns: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
-        state_params = {}
+        state_params = {"target_node_name": node.name}
         if proxy_input_operation_structures:
             state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
 
         if target_columns:
-            op_struct_info = OperationStructureExtractor(graph=self.graph).extract(
-                node=node,
-                proxy_input_operation_structures=proxy_input_operation_structures,
-                target_columns=target_columns,
-            )
-            temp_node_name = "temp"
-
-            # subset the operation structure info by keeping only selected columns (using project node)
-            temp_node = ProjectNode(
-                name=temp_node_name,
-                parameters={"columns": target_columns},
-                output_type=NodeOutputType.FRAME,
-            )
-            node = node.prune(
-                target_nodes=[temp_node],
-                input_operation_structures=[
-                    op_struct_info.operation_structure_map[input_node_name]
-                    for input_node_name in self.graph.get_input_node_names(node=node)
-                ],
-            )
+            state_params["target_columns"] = target_columns
 
         global_state = NodeParametersPruningGlobalState(**state_params)
         super()._extract(
