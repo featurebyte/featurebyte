@@ -1,6 +1,8 @@
 """
 Unit test for Feature & FeatureList classes
 """
+from typing import cast
+
 from datetime import datetime
 from unittest.mock import patch
 
@@ -654,13 +656,55 @@ def test_is_time_based(saved_feature):
         assert not saved_feature.is_time_based
 
 
-def test_feature_series_binary_operator__default_series_validator_called(saved_feature):
+@pytest.fixture(name="mocked_default_validator")
+def mocked_default_validator_fixture():
+    """
+    Get mocked_default_validator
+    """
+    with patch("featurebyte.api.feature.DefaultSeriesBinaryValidator") as mocked_default_validator:
+        yield mocked_default_validator
+
+
+@pytest.fixture(name="mocked_validate_feature_type")
+def mocked_validate_feature_type_fixture():
+    """
+    Get mocked_validate_feature_type
+    """
+    with patch("featurebyte.api.feature.validate_feature_type") as mocked_validate_feature_type:
+        yield mocked_validate_feature_type
+
+
+@pytest.fixture(name="mocked_validate_entities")
+def mocked_validate_entities_fixture():
+    """
+    Get mocked_validate_entities
+    """
+    with patch("featurebyte.api.feature.validate_entities") as mocked_validate_entities:
+        yield mocked_validate_entities
+
+
+def test_feature_series_binary_operator__validators_called(
+    saved_feature, mocked_default_validator, mocked_validate_feature_type, mocked_validate_entities
+):
     """
     test feature series binary operator
     """
-    with patch("featurebyte.api.feature.DefaultSeriesBinaryValidator") as mocked_default_validator:
-        operator = FeatureSeriesBinaryOperator(
-            saved_feature, saved_feature, mocked_default_validator
-        )
-        operator.validate_inputs()
+    operator = FeatureSeriesBinaryOperator(saved_feature, saved_feature, mocked_default_validator)
+    operator.validate_inputs()
     assert mocked_default_validator.validate.call_count == 1
+    assert mocked_validate_feature_type.call_count == 1
+    assert mocked_validate_entities.call_count == 1
+
+
+def test_feature_series_binary_operator__validators_not_called(
+    saved_feature, mocked_default_validator, mocked_validate_feature_type, mocked_validate_entities
+):
+    """
+    test feature series binary operator
+    """
+    # validators aren't called when the other input is not a series
+    operator = FeatureSeriesBinaryOperator(saved_feature, False, mocked_default_validator)
+    operator.validate_inputs()
+    assert mocked_default_validator.validate.call_count == 1
+    assert mocked_validate_feature_type.call_count == 0
+    assert mocked_validate_entities.call_count == 0
