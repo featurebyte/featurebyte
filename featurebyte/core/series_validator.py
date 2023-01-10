@@ -121,7 +121,7 @@ def _series_data_type_and_tabular_id(
         assert tabular_data_id is not None
         return column.tabular_data_type, tabular_data_id
     # column_structure is a SourceDataColumn
-    tabular_data_id = column_structure.tabular_data_type
+    tabular_data_id = column_structure.tabular_data_id
     assert tabular_data_id is not None
     return column_structure.tabular_data_type, tabular_data_id
 
