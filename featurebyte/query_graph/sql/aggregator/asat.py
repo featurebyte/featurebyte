@@ -145,7 +145,7 @@ class AsAtAggregator(Aggregator):
 
         groupby_keys = [get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")] + [
             get_qualified_column_identifier(serving_name, "REQ")
-            for serving_name in spec.parameters.serving_names
+            for serving_name in spec.serving_names
         ]
         agg_exprs = [
             alias_(
