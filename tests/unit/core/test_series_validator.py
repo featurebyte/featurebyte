@@ -19,8 +19,7 @@ from featurebyte.core.series_validator import (
     _is_one_item_and_one_event,
     _is_parent_child,
     _item_data_and_event_data_are_related,
-    _series_data_type,
-    _series_tabular_data_id,
+    _series_data_type_and_tabular_id,
     _validate_entity_ids,
     validate_entities,
     validate_feature_type,
@@ -174,26 +173,16 @@ def dataframe_fixture(global_graph, snowflake_feature_store, event_data_id, tabu
     return get_data_frame_with_type
 
 
-def test_series_data_type(get_dataframe_with_type):
+def test_series_data_type_and_tabular_id(get_dataframe_with_type, tabular_data_id):
     """
-    Test _series_data_type
+    Test _series_data_type_and_tabular_id
     """
     data_type = TableDataType.ITEM_DATA
     item_df = get_dataframe_with_type(data_type)
     item_series = item_df["CUST_ID"]
-    series_data_type = _series_data_type(item_series)
+    series_data_type, tabular_id = _series_data_type_and_tabular_id(item_series)
     assert series_data_type == data_type
-
-
-def test_series_tabular_data_id(get_dataframe_with_type, tabular_data_id):
-    """
-    Test _series_tabular_data_id
-    """
-    data_type = TableDataType.ITEM_DATA
-    item_df = get_dataframe_with_type(data_type)
-    item_series = item_df["CUST_ID"]
-    series_data_id = _series_tabular_data_id(item_series)
-    assert series_data_id == tabular_data_id
+    assert tabular_id == tabular_data_id
 
 
 def test_are_series_both_of_type(get_dataframe_with_type):

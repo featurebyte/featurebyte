@@ -96,9 +96,11 @@ def validate_entities(
     )
 
 
-def _series_data_type(input_series: SeriesT) -> TableDataType:
+def _series_data_type_and_tabular_id(
+    input_series: SeriesT,
+) -> Tuple[TableDataType, Optional[PydanticObjectId]]:
     """
-    Get table data type for series
+    Get table data type and tabular ID
 
     Parameters
     ----------
@@ -107,43 +109,18 @@ def _series_data_type(input_series: SeriesT) -> TableDataType:
 
     Returns
     -------
-    TableDataType
-        table data type
+    Tuple[TableDataType, Optional[PydanticObjectId]]
+        table data type and tabular ID
     """
     operation_structure = input_series.graph.extract_operation_structure(input_series.node)
     # we only expect feature series to have a single column
-    # maybe do assertion that there's only one.
-    # maybe add a unit test for this too
+    assert len(operation_structure.columns) == 1
     column_structure = operation_structure.columns[0]
     if isinstance(column_structure, DerivedDataColumn):
-        return column_structure.columns[0].tabular_data_type
+        column = column_structure.columns[0]
+        return column.tabular_data_type, column.tabular_data_id
     # column_structure is a SourceDataColumn
-    return column_structure.tabular_data_type
-
-
-def _series_tabular_data_id(input_series: SeriesT) -> Optional[PydanticObjectId]:
-    """
-    Get table data ID for series
-
-    Parameters
-    ----------
-    input_series: SeriesT
-        input series
-
-    Returns
-    -------
-    Optional[PydanticObjectId]
-        tabular data id
-    """
-    operation_structure = input_series.graph.extract_operation_structure(input_series.node)
-    # we only expect feature series to have a single column
-    # maybe do assertion that there's only one.
-    # maybe add a unit test for this too
-    column_structure = operation_structure.columns[0]
-    if isinstance(column_structure, DerivedDataColumn):
-        return column_structure.columns[0].tabular_data_id
-    # column_structure is a SourceDataColumn
-    return column_structure.tabular_data_id
+    return column_structure.tabular_data_type, column_structure.tabular_data_id
 
 
 def _are_series_both_of_type(
@@ -166,10 +143,9 @@ def _are_series_both_of_type(
     bool
         True, if both series are of the same specified data type, False otherwise.
     """
-    return (
-        _series_data_type(series_a) == table_data_type
-        and _series_data_type(series_b) == table_data_type
-    )
+    series_a_data_type, _ = _series_data_type_and_tabular_id(series_a)
+    series_b_data_type, _ = _series_data_type_and_tabular_id(series_b)
+    return series_a_data_type == table_data_type and series_b_data_type == table_data_type
 
 
 def _is_from_same_data(input_series: SeriesT, other_series: SeriesT) -> bool:
@@ -192,8 +168,8 @@ def _is_from_same_data(input_series: SeriesT, other_series: SeriesT) -> bool:
         input_series, other_series, TableDataType.ITEM_DATA
     ) and not _are_series_both_of_type(input_series, other_series, TableDataType.EVENT_DATA):
         return False
-    input_tabular_id = _series_tabular_data_id(input_series)
-    other_tabular_id = _series_tabular_data_id(other_series)
+    _, input_tabular_id = _series_data_type_and_tabular_id(input_series)
+    _, other_tabular_id = _series_data_type_and_tabular_id(other_series)
     return input_tabular_id == other_tabular_id
 
 
@@ -237,7 +213,8 @@ def _get_event_and_item_data_series(
     Tuple[SeriesT, SeriesT]
         (item data series, event data series)
     """
-    if _series_data_type(series_a) == TableDataType.ITEM_DATA:
+    series_a_data_type, _ = _series_data_type_and_tabular_id(series_a)
+    if series_a_data_type == TableDataType.ITEM_DATA:
         return series_a, series_b
     return series_b, series_a
 
@@ -258,8 +235,8 @@ def _is_one_item_and_one_event(series_a: SeriesT, series_b: SeriesT) -> bool:
     bool
         True, if there's exactly one series that is from an item data, and one from an event data.
     """
-    series_a_node_type = _series_data_type(series_a)
-    series_b_node_type = _series_data_type(series_b)
+    series_a_node_type, _ = _series_data_type_and_tabular_id(series_a)
+    series_b_node_type, _ = _series_data_type_and_tabular_id(series_b)
     at_least_one_item_data = TableDataType.ITEM_DATA in (series_a_node_type, series_b_node_type)
     at_least_one_event_data = TableDataType.EVENT_DATA in (series_a_node_type, series_b_node_type)
     return at_least_one_event_data and at_least_one_item_data
@@ -314,7 +291,7 @@ def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: S
     item_data_series, event_data_series = _get_event_and_item_data_series(
         input_series, other_series
     )
-    event_data_id = _series_tabular_data_id(event_data_series)
+    _, event_data_id = _series_data_type_and_tabular_id(event_data_series)
     event_data_id_of_item_series = _get_event_data_id_of_item_series(item_data_series)
     return event_data_id == event_data_id_of_item_series
 
