@@ -418,7 +418,19 @@ def test_item_view_groupby__item_data_column(snowflake_item_view):
     ]
 
 
-def test_item_view_groupby__event_data_column(snowflake_item_view):
+@pytest.fixture(name="groupby_feature_job_setting")
+def get_groupby_feature_job_setting_fixture():
+    """
+    Fixture for feature job setting
+    """
+    return {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
+
+
+def test_item_view_groupby__event_data_column(snowflake_item_view, groupby_feature_job_setting):
     """
     Test aggregating an EventData column using EventData entity is not allowed
     """
@@ -429,13 +441,16 @@ def test_item_view_groupby__event_data_column(snowflake_item_view):
             method="sum",
             windows=["24h"],
             feature_names=["item_amount_sum_24h"],
+            feature_job_setting=groupby_feature_job_setting,
         )["item_amount_sum_24h"]
     assert str(exc.value) == (
         "Columns imported from EventData and their derivatives should be aggregated in EventView"
     )
 
 
-def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
+def test_item_view_groupby__event_data_column_derived(
+    snowflake_item_view, groupby_feature_job_setting
+):
     """
     Test aggregating a column derived from EventData column using EventData entity is not allowed
     """
@@ -448,21 +463,19 @@ def test_item_view_groupby__event_data_column_derived(snowflake_item_view):
             method="sum",
             windows=["24h"],
             feature_names=["item_amount_sum_24h"],
+            feature_job_setting=groupby_feature_job_setting,
         )["item_amount_sum_24h"]
     assert str(exc.value) == (
         "Columns imported from EventData and their derivatives should be aggregated in EventView"
     )
 
 
-def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view):
+def test_item_view_groupby__event_data_column_derived_mixed(
+    snowflake_item_view, groupby_feature_job_setting
+):
     """
     Test aggregating a column derived from both EventData and ItemData is allowed
     """
-    feature_job_setting = {
-        "blind_spot": "30m",
-        "frequency": "1h",
-        "time_modulo_frequency": "30m",
-    }
     snowflake_item_view.join_event_data_attributes(["col_float"])
     snowflake_item_view["new_col"] = (
         snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
@@ -472,7 +485,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(snowflake_item_view)
         method="sum",
         windows=["24h"],
         feature_names=["feature_name"],
-        feature_job_setting=feature_job_setting,
+        feature_job_setting=groupby_feature_job_setting,
     )["feature_name"]
 
 
