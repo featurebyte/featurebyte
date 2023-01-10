@@ -8,7 +8,7 @@ from typing import Optional
 import pytest
 from bson import ObjectId
 
-from featurebyte import DimensionView, Entity
+from featurebyte import Entity
 from featurebyte.core.frame import Frame
 from featurebyte.core.series_validator import (
     _are_series_both_of_type,
