@@ -436,7 +436,7 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
             AggregationColumn(
                 name=name,
                 method=self.parameters.agg_func,
-                groupby=self.parameters.keys,
+                keys=self.parameters.keys,
                 window=window,
                 category=self.parameters.value_by,
                 column=col_name_map.get(self.parameters.parent),
@@ -494,7 +494,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
             AggregationColumn(
                 name=self.parameters.name,
                 method=self.parameters.agg_func,
-                groupby=self.parameters.keys,
+                keys=self.parameters.keys,
                 window=None,
                 category=None,
                 column=col_name_map.get(self.parameters.parent),
@@ -575,7 +575,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
             AggregationColumn(
                 name=feature_name,
                 method=None,
-                groupby=[self.parameters.entity_column],
+                keys=[self.parameters.entity_column],
                 window=None,
                 category=None,
                 column=name_to_column[input_column_name],
@@ -781,7 +781,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
             AggregationColumn(
                 name=self.parameters.name,
                 method=self.parameters.agg_func,
-                groupby=self.parameters.keys,
+                keys=self.parameters.keys,
                 window=None,
                 category=None,
                 column=col_name_map.get(self.parameters.parent),

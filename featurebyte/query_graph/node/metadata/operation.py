@@ -339,7 +339,7 @@ class AggregationColumn(BaseDataColumn):
     """Aggregation column"""
 
     method: Optional[AggFunc]
-    groupby: List[str]
+    keys: List[str]
     window: Optional[str]
     category: Optional[str]
     type: Literal[FeatureDataColumnType.AGGREGATION] = Field(

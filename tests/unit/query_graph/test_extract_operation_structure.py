@@ -280,7 +280,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     op_struct = graph.extract_operation_structure(node=groupby_node)
     common_column_params = extract_column_parameters(input_node)
     common_aggregation_params = {
-        "groupby": ["cust_id"],
+        "keys": ["cust_id"],
         "method": "avg",
         "column": {"name": "a", "dtype": "FLOAT", **common_column_params},
         "category": None,
@@ -297,14 +297,14 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         {"name": "a_2h_average", "dtype": "FLOAT", "window": "2h", **common_aggregation_params},
         {"name": "a_48h_average", "dtype": "FLOAT", "window": "48h", **common_aggregation_params},
     ]
-    assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == expected_aggregations
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == ("groupby_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == expected_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == expected_aggregations
     assert grp_op_struct.post_aggregation is None
@@ -325,8 +325,8 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "node_names": {"input_1", "groupby_1", "project_3"},
         "dtype": "FLOAT",
     }
-    assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == [expected_aggregation]
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == [expected_aggregation]
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("groupby_1",)
@@ -355,12 +355,12 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "type": "post_aggregation",
         "dtype": "FLOAT",
     }
-    assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == [expected_filtered_aggregation]
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == [expected_filtered_aggregation]
     assert op_struct.row_index_lineage == ("groupby_1", "filter_1")
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == expected_columns
+    assert to_dict(grp_op_struct.source_columns) == expected_columns
     assert grp_op_struct.derived_columns == []
     assert grp_op_struct.aggregations == [expected_aggregation]
     assert grp_op_struct.post_aggregation == expected_filtered_aggregation
@@ -387,14 +387,14 @@ def test_extract_operation__item_groupby(
 ):
     """Test extract_operation_structure: item groupby"""
     op_struct = global_graph.extract_operation_structure(node=order_size_feature_group_node)
-    assert op_struct.columns == [order_id_source_data]
-    assert op_struct.aggregations == [
+    assert to_dict(op_struct.columns) == [order_id_source_data]
+    assert to_dict(op_struct.aggregations) == [
         {
             "name": "order_size",
             "dtype": "FLOAT",
             "category": None,
             "column": None,
-            "groupby": ["order_id"],
+            "keys": ["order_id"],
             "method": "count",
             "type": "aggregation",
             "window": None,
@@ -431,7 +431,7 @@ def test_extract_operation__join_node(
         other_node_names={"input_1", "join_1"},
         node_name="join_1",
     )
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {"name": "order_id", "dtype": "INT", **common_event_data_column_params},
         {"name": "order_method_left", "dtype": "VARCHAR", **common_event_data_column_params},
         {"name": "item_type_right", "dtype": "VARCHAR", **common_item_data_column_params},
@@ -486,7 +486,7 @@ def test_extract_operation__join_double_aggregations(
     expected_aggregations = [
         {
             "name": "order_size_30d_avg",
-            "groupby": ["cust_id"],
+            "keys": ["cust_id"],
             "method": "avg",
             "window": "30d",
             "category": None,
@@ -507,14 +507,14 @@ def test_extract_operation__join_double_aggregations(
             "dtype": "FLOAT",
         }
     ]
-    assert op_struct.columns == [order_size_column]
-    assert op_struct.aggregations == expected_aggregations
+    assert to_dict(op_struct.columns) == [order_size_column]
+    assert to_dict(op_struct.aggregations) == expected_aggregations
     assert op_struct.row_index_lineage == ("groupby_1",)
 
     grp_op_struct = op_struct.to_group_operation_structure()
-    assert grp_op_struct.source_columns == [order_id_source_data]
-    assert grp_op_struct.derived_columns == [order_size_column]
-    assert grp_op_struct.aggregations == expected_aggregations
+    assert to_dict(grp_op_struct.source_columns) == [order_id_source_data]
+    assert to_dict(grp_op_struct.derived_columns) == [order_size_column]
+    assert to_dict(grp_op_struct.aggregations) == expected_aggregations
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("groupby_1",)
 
@@ -546,7 +546,7 @@ def test_extract_operation__lookup_feature(
                     "node_name": "lookup_1",
                     "name": "CUSTOMER ATTRIBUTE 1",
                     "method": None,
-                    "groupby": ["cust_id"],
+                    "keys": ["cust_id"],
                     "window": None,
                     "category": None,
                     "type": "aggregation",
@@ -560,7 +560,7 @@ def test_extract_operation__lookup_feature(
                     "node_name": "lookup_1",
                     "name": "CUSTOMER ATTRIBUTE 2",
                     "method": None,
-                    "groupby": ["cust_id"],
+                    "keys": ["cust_id"],
                     "window": None,
                     "category": None,
                     "type": "aggregation",
@@ -573,8 +573,8 @@ def test_extract_operation__lookup_feature(
             "dtype": "FLOAT",
         }
     ]
-    assert op_struct.columns == expected_columns
-    assert op_struct.aggregations == expected_aggregations
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("lookup_1",)
@@ -601,7 +601,7 @@ def test_extract_operation__aggregate_asat_feature(
             "node_names": {"input_1", "project_1", "aggregate_as_at_1"},
             "node_name": "aggregate_as_at_1",
             "method": "count",
-            "groupby": ["membership_status"],
+            "keys": ["membership_status"],
             "window": None,
             "category": None,
             "type": "aggregation",
@@ -644,7 +644,7 @@ def test_extract_operation__alias(global_graph, input_node):
         "node_name": "add_1",
         "dtype": "FLOAT",
     }
-    assert op_struct.columns == [expected_derived_columns]
+    assert to_dict(op_struct.columns) == [expected_derived_columns]
     alias_node = global_graph.add_operation(
         node_type=NodeType.ALIAS,
         node_params={"name": "some_value"},
@@ -652,7 +652,7 @@ def test_extract_operation__alias(global_graph, input_node):
         input_nodes=[add_node],
     )
     op_struct = global_graph.extract_operation_structure(node=alias_node)
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {
             **expected_derived_columns,
             "name": "some_value",
@@ -702,7 +702,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
         "node_name": "assign_3",
         "dtype": "TIMESTAMP",
     }
-    assert op_struct.columns == [expected_new_ts]
+    assert to_dict(op_struct.columns) == [expected_new_ts]
     assert op_struct.row_index_lineage == ("input_1",)
 
     # assign_2 is not included in the lineage as `dataframe["diff"] = 123` does not affect
@@ -711,7 +711,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
     assert graph.get_node_by_name("assign_3").parameters == {"name": "NEW_TIMESTAMP", "value": None}
     # check on constant value assignment
     op_struct = graph.extract_operation_structure(node=dataframe["diff"].node)
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {
             "name": "diff",
             "columns": [],
@@ -729,7 +729,7 @@ def test_extract_operation__complicated_assignment_case_1(dataframe):
     # check frame
     op_struct = graph.extract_operation_structure(node=dataframe.node)
     expected_new_ts["node_names"].remove("project_3")
-    assert op_struct.columns == [
+    assert to_dict(op_struct.columns) == [
         {"name": "CUST_ID", "dtype": "INT", **common_data_column_params},
         {"name": "PRODUCT_ACTION", "dtype": "VARCHAR", **common_data_column_params},
         {"name": "VALUE", "dtype": "FLOAT", **common_data_column_params},
