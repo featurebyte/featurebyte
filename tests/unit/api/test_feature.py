@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import Feature, FeatureNamespace
+from featurebyte.api.feature import Feature, FeatureNamespace, FeatureSeriesBinaryOperator
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
@@ -654,8 +654,13 @@ def test_is_time_based(saved_feature):
         assert not saved_feature.is_time_based
 
 
-def test_feature_series_binary_operator():
+def test_feature_series_binary_operator__default_series_validator_called(saved_feature):
     """
     test feature series binary operator
     """
-    pass
+    with patch("featurebyte.api.feature.DefaultSeriesBinaryValidator") as mocked_default_validator:
+        operator = FeatureSeriesBinaryOperator(
+            saved_feature, saved_feature, mocked_default_validator
+        )
+        operator.validate_inputs()
+    assert mocked_default_validator.validate.call_count == 1

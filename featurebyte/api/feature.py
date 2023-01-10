@@ -120,9 +120,14 @@ class FeatureSeriesBinaryOperator(SeriesBinaryOperator):
     is also a feature.
     """
 
-    def __init__(self, input_series: Series, other: int | float | str | bool | Series):
+    def __init__(
+        self,
+        input_series: Series,
+        other: int | float | str | bool | Series,
+        default_series_validator: DefaultSeriesBinaryValidator,
+    ):
         super().__init__(input_series, other)
-        self.default_series_validator = DefaultSeriesBinaryValidator(input_series, other)
+        self.default_series_validator = default_series_validator
 
     def validate_inputs(self) -> None:
         """
@@ -349,7 +354,8 @@ class Feature(
         -------
         SeriesBinaryOperator
         """
-        return FeatureSeriesBinaryOperator(self, other)
+        default_series_binary_validator = DefaultSeriesBinaryValidator(self, other)
+        return FeatureSeriesBinaryOperator(self, other, default_series_binary_validator)
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """

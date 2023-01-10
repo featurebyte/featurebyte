@@ -57,7 +57,7 @@ class DefaultSeriesBinaryValidator:
         self.input_series = input_series
         self.other = other
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validate the input series, and other parameter
 
