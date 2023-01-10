@@ -209,6 +209,8 @@ def _get_event_and_item_data_series(
 
     Parameters
     ----------
+    series_a_data_type: TableDataType
+        series data type
     series_a: SeriesT
         series
     series_b: SeriesT
