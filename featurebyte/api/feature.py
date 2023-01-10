@@ -141,7 +141,7 @@ class FeatureSeriesBinaryOperator(SeriesBinaryOperator):
             other_feature = cast(Feature, self.other)
             validate_entities(input_feature.entity_ids, other_feature.entity_ids)
 
-            # validate series
+            # validate feature type
             validate_feature_type(input_feature, other_feature)
 
 
