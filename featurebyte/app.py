@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+import uvicorn
 from fastapi import Depends, FastAPI, Request
 
 import featurebyte.routes.context.api as context_api
@@ -133,3 +134,8 @@ def get_app() -> FastAPI:
 
 
 app = get_app()
+
+
+if __name__ == "__main__":
+    # for debugging the api service
+    uvicorn.run(app, host="0.0.0.0", port=8000)

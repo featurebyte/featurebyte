@@ -417,13 +417,11 @@ def snowflake_item_data_fixture(
     mock_get_persistent,
     snowflake_item_data_id,
     snowflake_event_data,
-    snowflake_feature_store,
 ):
     """
     Snowflake ItemData object fixture
     """
     _ = mock_get_persistent
-    snowflake_feature_store.save(conflict_resolution="retrieve")
     snowflake_event_data.save()
     yield ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,

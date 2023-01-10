@@ -4,7 +4,7 @@ Base View test suite
 
 import pytest
 
-from featurebyte.api.data import DataColumn
+from featurebyte.api.base_data import DataColumn
 from featurebyte.enum import StrEnum
 
 

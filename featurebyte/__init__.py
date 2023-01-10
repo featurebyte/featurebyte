@@ -1,5 +1,5 @@
 """Python Library for FeatureOps"""
-from featurebyte.api.data import DataApiObject as Data
+from featurebyte.api.data import Data
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.entity import Entity

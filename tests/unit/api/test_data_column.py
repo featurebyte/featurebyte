@@ -6,7 +6,7 @@ import textwrap
 import pytest
 
 from featurebyte import Entity, EventView
-from featurebyte.api.data import DataColumn
+from featurebyte.api.base_data import DataColumn
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import (

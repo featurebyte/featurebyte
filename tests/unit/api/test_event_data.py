@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.api.data import DataColumn
+from featurebyte.api.base_data import DataColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.enum import TableDataType
@@ -179,7 +179,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     Test EventData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.data.Configurations"):
+        with patch("featurebyte.api.base_data.Configurations"):
             EventData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_event_data",

@@ -188,6 +188,23 @@ def snowflake_item_data_fixture(
     yield item_data
 
 
+@pytest.fixture(name="saved_item_data")
+def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data):
+    """
+    Saved ItemData fixture
+    """
+    previous_id = snowflake_item_data.id
+    assert snowflake_item_data.saved is False
+    snowflake_item_data.save()
+    assert snowflake_item_data.saved is True
+    assert snowflake_item_data.id == previous_id
+    assert snowflake_item_data.status == DataStatus.DRAFT
+    assert isinstance(snowflake_item_data.created_at, datetime)
+    assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
+
+    yield snowflake_item_data
+
+
 @pytest.fixture(name="snowflake_item_view")
 def snowflake_item_view_fixture(snowflake_item_data):
     """

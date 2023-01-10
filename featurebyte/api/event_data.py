@@ -8,7 +8,7 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.data import DataApiObject
+from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import display_html_in_notebook
