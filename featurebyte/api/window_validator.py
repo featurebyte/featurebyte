@@ -2,8 +2,6 @@
 Validate window parameter input.
 """
 
-import pandas as pd
-
 from featurebyte.common.model_util import parse_duration_string
 
 

@@ -23,8 +23,8 @@ def test_validate_window__in_proper_range():
 
     # greater than upper bound should error
     with pytest.raises(ValueError) as exc:
-        validate_window("101y", "15m")
-    assert "window needs to be less than 100y" in str(exc)
+        validate_window("366d", "15m")
+    assert "window 366d needs to be less than 365 days" in str(exc)
 
 
 def test_validates_window__not_multiple_of_feature_job_frequency():
