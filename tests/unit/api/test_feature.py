@@ -534,11 +534,8 @@ def test_create_new_version__error(float_feature):
 
 def test_composite_features(snowflake_event_data_with_entity):
     """Test composite features' property"""
-    entity = Entity(name="binary", serving_names=["col_binary"])
-    entity.save()
-
     # make col_binary as an entity column
-    snowflake_event_data_with_entity.col_binary.as_entity("binary")
+    snowflake_event_data_with_entity.col_binary.as_entity("customer")
 
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
     feature_job_setting = {
