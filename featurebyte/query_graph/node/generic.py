@@ -28,7 +28,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
     ViewDataColumn,
 )
-from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
+from featurebyte.query_graph.node.mixin import AggregationOpStructMixin
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.util import append_to_lineage
 
@@ -401,7 +401,7 @@ class BaseGroupbyParameters(BaseModel):
     entity_ids: Optional[List[PydanticObjectId]]
 
 
-class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
+class GroupbyNode(AggregationOpStructMixin, BaseNode):
     """GroupbyNode class"""
 
     class Parameters(BaseGroupbyParameters):
@@ -441,7 +441,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 category=self.parameters.value_by,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
-                groupby_type=self.type,
+                aggregation_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 dtype=output_var_type,
@@ -467,7 +467,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         return self
 
 
-class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
+class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
 
     class Parameters(BaseGroupbyParameters):
@@ -499,7 +499,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
                 category=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
-                groupby_type=self.type,
+                aggregation_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 dtype=output_var_type,
@@ -536,7 +536,7 @@ class SCDLookupParameters(SCDBaseParameters):
     offset: Optional[str]
 
 
-class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
+class LookupNode(AggregationOpStructMixin, BaseNode):
     """LookupNode class"""
 
     class Parameters(BaseModel):
@@ -579,7 +579,7 @@ class LookupNode(GroupbyNodeOpStructMixin, BaseNode):
                 window=None,
                 category=None,
                 column=name_to_column[input_column_name],
-                groupby_type=self.type,
+                aggregation_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 filter=any(col.filter for col in columns),
@@ -759,7 +759,7 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     backward: Optional[bool]
 
 
-class AggregateAsAtNode(GroupbyNodeOpStructMixin, BaseNode):
+class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     """AggregateAsAt class"""
 
     type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
@@ -786,7 +786,7 @@ class AggregateAsAtNode(GroupbyNodeOpStructMixin, BaseNode):
                 category=None,
                 column=col_name_map.get(self.parameters.parent),
                 filter=any(col.filter for col in columns),
-                groupby_type=self.type,
+                aggregation_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 dtype=output_var_type,

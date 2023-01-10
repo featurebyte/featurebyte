@@ -346,7 +346,7 @@ class AggregationColumn(BaseDataColumn):
         FeatureDataColumnType.AGGREGATION, const=True
     )
     column: Optional[ViewDataColumn]
-    groupby_type: Literal[
+    aggregation_type: Literal[
         NodeType.GROUPBY, NodeType.ITEM_GROUPBY, NodeType.LOOKUP, NodeType.AGGREGATE_AS_AT
     ]
 

@@ -19,8 +19,8 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 
 
-class GroupbyNodeOpStructMixin:
-    """GroupbyNodeOpStructMixin class"""
+class AggregationOpStructMixin:
+    """AggregationOpStructMixin class"""
 
     name: str
     type: NodeType

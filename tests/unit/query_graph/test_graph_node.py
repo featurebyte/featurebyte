@@ -525,7 +525,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
                 },
                 "filter": False,
                 "groupby": ["cust_id"],
-                "groupby_type": "groupby",
+                "aggregation_type": "groupby",
                 "method": "avg",
                 "name": "a_2h_average",
                 "node_names": {"input_1", "graph_1", "project_1"},
