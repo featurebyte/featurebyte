@@ -3,7 +3,7 @@ Series validator module
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, List, Tuple, TypeVar, cast
 
 from featurebyte.api.entity import Entity
 from featurebyte.enum import TableDataType
@@ -109,7 +109,7 @@ def _series_data_type_and_tabular_id(
 
     Returns
     -------
-    Tuple[TableDataType, Optional[PydanticObjectId]]
+    Tuple[TableDataType, PydanticObjectId]
         table data type and tabular ID
     """
     operation_structure = input_series.graph.extract_operation_structure(input_series.node)
