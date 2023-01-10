@@ -70,7 +70,7 @@ class QueryGraph(QueryGraphModel):
         op_struct_info = OperationStructureExtractor(graph=self).extract(node=node)
         return op_struct_info.operation_structure_map[node.name]
 
-    def prune(self, target_node: Node, aggressive: bool = False) -> GraphNodeNameMap:
+    def prune(self, target_node: Node, aggressive: bool) -> GraphNodeNameMap:
         """
         Prune the query graph and return the pruned graph & mapped node.
 

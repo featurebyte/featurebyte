@@ -951,7 +951,7 @@ def query_graph_single_node(
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    pruned_graph, node_name_map = global_graph.prune(target_node=node_input)
+    pruned_graph, node_name_map = global_graph.prune(target_node=node_input, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_input.name])
     assert mapped_node.name == "input_1"
     graph_dict = global_graph.dict()
@@ -990,7 +990,7 @@ def query_graph_two_nodes(graph_single_node):
         input_nodes=[node_input],
     )
 
-    pruned_graph, node_name_map = graph.prune(target_node=node_proj)
+    pruned_graph, node_name_map = graph.prune(target_node=node_proj, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_proj.name])
     assert mapped_node.name == "project_1"
     graph_dict = graph.dict()
@@ -1015,7 +1015,7 @@ def query_graph_three_nodes(graph_two_nodes):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=node_eq)
+    pruned_graph, node_name_map = graph.prune(target_node=node_eq, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_eq.name])
     assert mapped_node.name == "eq_1"
     graph_dict = graph.dict()
@@ -1043,7 +1043,7 @@ def query_graph_four_nodes(graph_three_nodes):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, node_eq],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=node_filter)
+    pruned_graph, node_name_map = graph.prune(target_node=node_filter, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_filter.name])
     assert mapped_node.name == "filter_1"
     graph_dict = graph.dict()

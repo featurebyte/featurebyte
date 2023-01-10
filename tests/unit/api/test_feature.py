@@ -24,7 +24,7 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from tests.util.helper import get_node
+from tests.util.helper import check_aggressively_pruned_graph, get_node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -203,16 +203,9 @@ def test_feature_deserialization(
 
     # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
     # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
-    graph = QueryGraph(**float_feature_dict["graph"])
-    graph_with_unused_feat = QueryGraph(**same_float_feature_dict["graph"])
-    pruned_graph1, _ = graph.prune(
-        target_node=graph.get_node_by_name(float_feature_dict["node_name"]), aggressive=True
+    check_aggressively_pruned_graph(
+        left_obj_dict=float_feature_dict, right_obj_dict=same_float_feature_dict
     )
-    pruned_graph2, _ = graph_with_unused_feat.prune(
-        target_node=graph_with_unused_feat.get_node_by_name(same_float_feature_dict["node_name"]),
-        aggressive=True,
-    )
-    assert pruned_graph1 == pruned_graph2
 
 
 def test_feature_to_json(float_feature):

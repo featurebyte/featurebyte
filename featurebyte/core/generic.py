@@ -77,7 +77,7 @@ class QueryObject(FeatureByteBaseModel):
         list[NodeType]
         """
         out = []
-        pruned_graph, pruned_node = self.extract_pruned_graph_and_node(aggressive=True)
+        pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out
@@ -91,26 +91,19 @@ class QueryObject(FeatureByteBaseModel):
             values["node_name"] = node_name_map[values["node_name"]]
         return values
 
-    def extract_pruned_graph_and_node(
-        self, aggressive: bool = False
-    ) -> tuple[QueryGraphModel, Node]:
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
 
         Parameters
         ----------
-        aggressive: bool
-            Whether to perform aggressive pruning. Non-aggressive pruning will keep all the travelled nodes.
-            For aggressive pruning, node will be removed if it does not contribute to the final output and node
-            parameters will be pruned if it is not needed.
-
         Returns
         -------
         tuple[QueryGraphModel, Node]
             QueryGraph & mapped Node object (within the pruned graph)
         """
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node, aggressive=aggressive
+            target_node=self.node, aggressive=True
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
@@ -153,7 +146,7 @@ class QueryObject(FeatureByteBaseModel):
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(target_node=self.node)
+            pruned_graph, node_name_map = self.graph.prune(target_node=self.node, aggressive=False)
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node_name = mapped_node.name

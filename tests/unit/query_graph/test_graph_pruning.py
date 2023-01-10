@@ -67,7 +67,7 @@ def test_prune__redundant_project_nodes(dataframe):
     _ = dataframe["CUST_ID"]
     _ = dataframe["VALUE"]
     mask = dataframe["MASK"]
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=mask.node)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=mask.node, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[mask.node.name])
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
     assert pruned_graph.nodes_map["project_1"].parameters.columns == ["MASK"]
@@ -82,7 +82,7 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     dataframe["requiredB"] = dataframe["VALUE"] + 10
     dataframe["target"] = dataframe["requiredA"] * dataframe["requiredB"]
     target_node = dataframe["target"].node
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node, aggressive=True)
     assert pruned_graph.edges_map == {
         "input_1": ["project_1", "assign_1", "project_2"],
         "project_1": ["div_1"],
@@ -114,7 +114,7 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     dataframe["requiredA"] = dataframe["CUST_ID"] / 10
     dataframe["requiredB"] = dataframe["requiredA"] + 10
     dataframe["target"] = dataframe["requiredB"] * 10
-    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node)
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=dataframe.node, aggressive=True)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges_map == {
         "input_1": ["project_1", "assign_1"],
@@ -146,7 +146,7 @@ def test_prune__item_view_join_event_view(test_dir):
 
     # check that assign node not get pruned
     target_node = query_graph.get_node_by_name("join_2")
-    pruned_graph, _ = query_graph.prune(target_node=target_node)
+    pruned_graph, _ = query_graph.prune(target_node=target_node, aggressive=True)
     assert "assign_1" in pruned_graph.nodes_map
 
 
