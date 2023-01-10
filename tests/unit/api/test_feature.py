@@ -652,3 +652,10 @@ def test_is_time_based(saved_feature):
             is_time_based=False,
         )
         assert not saved_feature.is_time_based
+
+
+def test_feature_series_binary_operator():
+    """
+    test feature series binary operator
+    """
+    pass
