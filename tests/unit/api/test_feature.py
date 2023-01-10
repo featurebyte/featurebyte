@@ -9,19 +9,15 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_list import FeatureGroup
-from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.entity import ParentEntity
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph

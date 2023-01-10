@@ -12,12 +12,16 @@ from featurebyte.core.series_validator import (
     _are_series_both_of_type,
     _both_are_lookup_features,
     _get_event_and_item_data_series,
+    _get_event_data_id_of_item_series,
     _is_from_same_data,
     _is_one_item_and_one_event,
     _is_parent_child,
+    _item_data_and_event_data_are_related,
     _series_data_type,
     _series_tabular_data_id,
     _validate_entity_ids,
+    validate_entities,
+    validate_feature_type,
 )
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
@@ -49,31 +53,76 @@ def test_is_parent_child():
     """
     Test _is_parent_child
     """
-    entity_a = Entity(name="customer", serving_names=["cust_id"])
-    entity_b = Entity(name="user", serving_names=["user_id"])
+    object_id_a = PydanticObjectId(ObjectId())
+    object_id_b = PydanticObjectId(ObjectId())
+    entity_a = Entity(id=object_id_a, name="customer", serving_names=["cust_id"])
+    entity_b = Entity(id=object_id_b, name="user", serving_names=["user_id"])
     assert not _is_parent_child(entity_a, entity_b)
 
     parents = [
         ParentEntity(
-            id=PydanticObjectId(ObjectId()),
+            id=entity_a.id,
             data_type=TableDataType.EVENT_DATA,
-            data_id=entity_a.id,
+            data_id=PydanticObjectId(ObjectId()),
         )
     ]
-    entity_c = Entity(name="customer child", serving_names=["child_id"], parents=parents)
+    object_id_c = PydanticObjectId(ObjectId())
+    entity_c = Entity(
+        id=object_id_c, name="customer child", serving_names=["child_id"], parents=parents
+    )
     assert _is_parent_child(entity_a, entity_c)
     assert not _is_parent_child(entity_c, entity_a)
 
 
-def test_validate_entities():
+@pytest.mark.asyncio
+async def test_validate_entities(app_container):
     """
     Test validate entities
     """
-    pass
+    entity_a = Entity(name="customer", serving_names=["cust_id"])
+    entity_b = Entity(name="user", serving_names=["user_id"])
+    entity_c = Entity(name="customer child", serving_names=["child_id"])
+    entity_a.save()
+    entity_b.save()
+    entity_c.save()
+
+    updated_entity_c = await app_container.entity_relationship_service.add_relationship(
+        parent=ParentEntity(
+            id=entity_a.id, data_id=PydanticObjectId(ObjectId()), data_type=TableDataType.EVENT_DATA
+        ),
+        child_id=entity_c.id,
+    )
+
+    # same entity ID is valid
+    validate_entities([entity_a.id], [entity_a.id])
+
+    # parent child relationship is valid
+    validate_entities([entity_a.id], [updated_entity_c.id])
+
+    # no parent-child relationship, and not same ID, should throw error
+    with pytest.raises(ValueError) as exc:
+        validate_entities([entity_a.id], [entity_b.id])
+    assert "do not have a parent-child relationship" in str(exc)
+
+
+@pytest.fixture(name="event_data_id")
+def event_data_id_fixture():
+    """
+    Get event data id
+    """
+    return PydanticObjectId(ObjectId("6332f9651050ee7d12311111"))
+
+
+@pytest.fixture(name="tabular_data_id")
+def tabular_data_id_fixture():
+    """
+    Get tabular_data_id
+    """
+    return PydanticObjectId(ObjectId("6332f9651050ee7d12322222"))
 
 
 @pytest.fixture(name="get_dataframe_with_type")
-def dataframe_fixture(global_graph, snowflake_feature_store):
+def dataframe_fixture(global_graph, snowflake_feature_store, event_data_id, tabular_data_id):
     """
     Frame test fixture
     """
@@ -89,6 +138,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         node = global_graph.add_operation(
             node_type=NodeType.INPUT,
             node_params={
+                "id": tabular_data_id,
                 "type": table_data_type,
                 "columns": columns_info,
                 "timestamp": "VALUE",
@@ -106,9 +156,23 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
                         "warehouse": "warehouse",
                     },
                 },
+                "event_data_id": event_data_id,
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[],
+        )
+        lookup_node = global_graph.add_operation(
+            node_type=NodeType.LOOKUP,
+            node_params={
+                "columns": columns_info,
+                "input_column_names": ["CUST_ID"],
+                "feature_names": ["random_feature"],
+                "entity_column": "customer",
+                "serving_name": "serving_name",
+                "entity_id": PydanticObjectId(ObjectId()),
+            },
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[node],
         )
         return Frame(
             feature_store=snowflake_feature_store,
@@ -121,7 +185,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
                 },
             },
             columns_info=columns_info,
-            node_name=node.name,
+            node_name=lookup_node.name,
         )
 
     return get_data_frame_with_type
@@ -138,7 +202,7 @@ def test_series_data_type(get_dataframe_with_type):
     assert series_data_type == data_type
 
 
-def test_series_tabular_data_id(get_dataframe_with_type):
+def test_series_tabular_data_id(get_dataframe_with_type, tabular_data_id):
     """
     Test _series_tabular_data_id
     """
@@ -146,8 +210,7 @@ def test_series_tabular_data_id(get_dataframe_with_type):
     item_df = get_dataframe_with_type(data_type)
     item_series = item_df["CUST_ID"]
     series_data_id = _series_tabular_data_id(item_series)
-    # TODO: this is failing
-    # assert series_data_id is not None
+    assert series_data_id == tabular_data_id
 
 
 def test_are_series_both_of_type(get_dataframe_with_type):
@@ -172,7 +235,7 @@ def test_is_from_same_data(get_dataframe_with_type):
     event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
     event_series = event_df["CUST_ID"]
     assert not _is_from_same_data(item_series, event_series)
-    # TODO: add test for lookup for tabular data IDs
+    assert _is_from_same_data(item_series, item_series)
 
 
 def test_both_are_lookup_features(get_dataframe_with_type):
@@ -182,7 +245,6 @@ def test_both_are_lookup_features(get_dataframe_with_type):
     item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
     item_series = item_df["CUST_ID"]
     assert not _both_are_lookup_features(item_series, item_series)
-    # TODO: actually use lookup features
 
 
 def test_get_event_and_item_data_series(get_dataframe_with_type):
@@ -219,24 +281,51 @@ def test_is_one_item_and_one_event(get_dataframe_with_type):
     assert not _is_one_item_and_one_event(item_series, item_series)
 
 
-def test_get_event_data_id_of_item_series():
+def test_get_event_data_id_of_item_series__no_error(get_dataframe_with_type, event_data_id):
     """
     Test _get_event_data_id_of_item_series
     """
-    pass
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    actual_event_data_id = _get_event_data_id_of_item_series(item_series)
+    assert actual_event_data_id == event_data_id
 
 
-def test_item_data_and_event_data_are_related():
+def test_get_event_data_id_of_item_series__error(get_dataframe_with_type):
+    """
+    Test _get_event_data_id_of_item_series - error if series is not item data
+    """
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+    with pytest.raises(ValueError) as exc:
+        _get_event_data_id_of_item_series(event_series)
+    assert "cannot find event data ID from series" in str(exc)
+
+
+def test_item_data_and_event_data_are_related(get_dataframe_with_type):
     """
     Test _item_data_and_event_data_are_related
     """
-    # TODO
-    pass
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+
+    assert not _item_data_and_event_data_are_related(item_series, item_series)
+    # TODO: finish rest of tests
 
 
-def test_validate_feature_type():
+def test_validate_feature_type(get_dataframe_with_type):
     """
     Test _validate_feature_type
     """
-    # TODO
-    pass
+    item_df = get_dataframe_with_type(TableDataType.ITEM_DATA)
+    item_series = item_df["CUST_ID"]
+    event_df = get_dataframe_with_type(TableDataType.EVENT_DATA)
+    event_series = event_df["CUST_ID"]
+
+    # TODO: get one that passes
+
+    with pytest.raises(ValueError) as exc:
+        validate_feature_type(item_series, event_series)
+    assert "features are not of the right type" in str(exc)

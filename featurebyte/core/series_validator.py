@@ -52,7 +52,7 @@ def _is_parent_child(entity_a: Entity, entity_b: Entity) -> bool:
     bool
         True if entity A is the parent of entity B.
     """
-    entity_b_parent_ids = [entity.data_id for entity in entity_b.parents]
+    entity_b_parent_ids = [entity.id for entity in entity_b.parents]
     return entity_a.id in entity_b_parent_ids
 
 
@@ -290,7 +290,7 @@ def _get_event_data_id_of_item_series(item_series: SeriesT) -> PydanticObjectId:
         input_node = cast(InputNode, node)
         if input_node.parameters.type == TableDataType.ITEM_DATA:
             return input_node.parameters.event_data_id  # type: ignore
-    raise ValueError("cannot find event data ID from item data")
+    raise ValueError("cannot find event data ID from series")
 
 
 def _item_data_and_event_data_are_related(input_series: SeriesT, other_series: SeriesT) -> bool:
