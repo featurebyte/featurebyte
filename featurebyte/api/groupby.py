@@ -3,9 +3,9 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Tuple, Type, Union, cast
+
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
-from typing import cast
 
 from typeguard import typechecked
 
