@@ -14,6 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
@@ -31,6 +32,9 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
     DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a data object (e.g. EventData)
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
 
     info: ColumnInfo
 
@@ -91,16 +95,17 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
 
         Examples
         --------
-        Add following imputation rules to a data column
-        - impute missing value with 0
-        - impute value less than 0 to 0
+
+        Add missing value imputation & negative value imputation operations to a data column
 
         >>> import featurebyte as fb
         >>> event_data = fb.EventData.get("Credit Card Transactions")  # doctest: +SKIP
         >>> event_data["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
         ...    cleaning_operations=[
         ...        fb.MissingValueImputation(imputed_value=0),
-        ...        fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
+        ...        fb.ValueBeyondEndpointImputation(
+        ...            type="less_than", end_point=0, imputed_value=0
+        ...        ),
         ...    ]
         ... )
         """
