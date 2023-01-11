@@ -171,6 +171,23 @@ class BaseAdapter:
         str
         """
 
+    @classmethod
+    @abstractmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        """
+        Gets the keys for an object of a dictionary expression.
+
+        Parameters
+        ----------
+        dictionary_expression: Expression
+            the Expression that should get a dictionary
+
+        Returns
+        -------
+        Expression
+            expression that returns the object keys
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -279,6 +296,10 @@ class SnowflakeAdapter(BaseAdapter):
         # to VARIANT since it can hold any data types
         return cls.SnowflakeOnlineStoreColumnType.VARIANT
 
+    @classmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        return expressions.Anonymous(this="OBJECT_KEYS", expressions=[dictionary_expression])
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -360,6 +381,10 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
         raise NotImplementedError()
 
 

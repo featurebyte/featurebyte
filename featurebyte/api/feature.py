@@ -16,12 +16,14 @@ from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.feature_type import FeatureType
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.event_data import FeatureJobSetting
@@ -480,4 +482,58 @@ class Feature(
         return cast(
             str,
             response.json(),
+        )
+
+    @staticmethod
+    def get_feature_type(feature: Feature) -> FeatureType:
+        """
+        Get the type of a feature
+
+        Parameters
+        ----------
+        feature: Feature
+            feature to check
+        Returns
+        -------
+        FeatureType
+            feature type
+        """
+        if feature.dtype == DBVarType.OBJECT:
+            return FeatureType.DICTIONARY
+        if NodeType.LOOKUP in feature.node_types_lineage:
+            return FeatureType.LOOKUP
+        return FeatureType.UNKNOWN
+
+    @staticmethod
+    def _validate_feature_type(feature: Feature, feature_type: FeatureType) -> None:
+        """
+        Validates whether a feature is of a particular feature type.
+        Parameters
+        ----------
+        feature: Feature
+            feature
+        feature_type: FeatureType
+            feature type we want to assert against
+        Raises
+        ------
+        ValueError
+            raised when the feature is not of the specified feature type
+        """
+        current_feature_type = Feature.get_feature_type(feature)
+        if current_feature_type != feature_type:
+            raise ValueError(f"feature {feature.name} is not of the type {feature_type} ")
+
+    @typechecked
+    def isin(self, feature: Feature, right_op: bool = False) -> Feature:
+        """
+        Identify if the lookup feature value is in the keys of the dictionary
+        lookup_feature.isin(dictionary_feature)
+        """
+        Feature._validate_feature_type(self, FeatureType.LOOKUP)
+        Feature._validate_feature_type(feature, FeatureType.DICTIONARY)
+        return self._binary_op(
+            other=feature,
+            node_type=NodeType.IS_IN_DICT,
+            output_var_type=DBVarType.BOOL,
+            right_op=right_op,
         )
