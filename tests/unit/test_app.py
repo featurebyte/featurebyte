@@ -53,4 +53,4 @@ def test_get_status():
     """Test app get status"""
     response = Configurations().get_client().get("/status")
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {"sdk_version": "unknown"}
+    assert response.json() == {"sdk_version": "0.1.0"}
