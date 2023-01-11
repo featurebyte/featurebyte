@@ -28,7 +28,7 @@ def get_version() -> str:
         Module version
     """
     try:
-        return str(importlib_metadata.version(__name__))
+        return str(importlib_metadata.version("featurebyte"))
     except importlib_metadata.PackageNotFoundError:  # pragma: no cover
         return "unknown"
 
