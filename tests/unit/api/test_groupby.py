@@ -530,3 +530,21 @@ def test__fill_feature_update_value_non_count_features(test_aggregator_and_count
     assert_edges_updated_with_conditional(original_edges, filled_edges)
     node = get_node_from_feature(filled_feature, "conditional_2")
     assert node["parameters"]["value"] == value_to_update
+
+
+def test__fill_value_not_allowed_with_category(snowflake_event_view_with_entity):
+    """
+    Test fill_value not allowed when category is specified
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id", category="col_int").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            fill_value=0,
+            windows=["30m"],
+            feature_names=["feat_30m"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    assert str(exc.value) == "fill_value is not supported for aggregation per category"
