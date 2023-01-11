@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Union, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
@@ -173,3 +173,21 @@ async def get_feature_sql(
         str,
         await controller.sql(feature_sql=feature_sql),
     )
+
+
+@router.get("/{feature_id}/feature_job_logs", response_model=Dict[str, Any])
+async def get_feature_job_logs(
+    request: Request,
+    feature_id: PydanticObjectId,
+    hour_limit: int = Query(default=24, gt=0, le=2400),
+) -> Dict[str, Any]:
+    """
+    Retrieve feature job status
+    """
+    controller = request.state.app_container.feature_controller
+    result = await controller.get_feature_job_logs(
+        feature_id=feature_id,
+        hour_limit=hour_limit,
+        get_credential=request.state.get_credential,
+    )
+    return cast(Dict[str, Any], result)

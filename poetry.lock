@@ -4,7 +4,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit"]
 
 [metadata]
-content-hash = "c9803679af577b1892f83aaf04be0043ddaead088b951f6d101cfe693a2529ec"
+content-hash = "dbcec7a4760d3f60614819e4e19b547309d10d238a2d88833e2167835fef8384"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
 
@@ -1079,6 +1079,21 @@ version = "0.5.0"
 
 [package.extras]
 test = ["Cython (>=0.29.24,<0.30.0)"]
+
+[[package]]
+category = "main"
+description = "Python humanize utilities"
+files = [
+    {file = "humanize-4.4.0-py3-none-any.whl", hash = "sha256:8830ebf2d65d0395c1bd4c79189ad71e023f277c2c7ae00f263124432e6f2ffa"},
+    {file = "humanize-4.4.0.tar.gz", hash = "sha256:efb2584565cc86b7ea87a977a15066de34cdedaf341b11c851cfcfd2b964779c"},
+]
+name = "humanize"
+optional = false
+python-versions = ">=3.7"
+version = "4.4.0"
+
+[package.extras]
+tests = ["freezegun", "pytest", "pytest-cov"]
 
 [[package]]
 category = "dev"

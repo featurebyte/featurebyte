@@ -1,10 +1,11 @@
 """
 Tests for Feature route
 """
+import textwrap
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -456,4 +457,71 @@ class TestFeatureApi(BaseApiTestSuite):
         assert response.json().endswith(
             'SELECT\n  "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
+        )
+
+    @patch(
+        "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._get_current_time"
+    )
+    def test_get_feature_job_logs_200(
+        self,
+        mock_get_current_time,
+        test_api_client_persistent,
+        create_success_response,
+        mock_get_session,
+    ):
+        """Test get feature job logs"""
+        mock_get_current_time.return_value = datetime(2022, 1, 2, 10, 0, 0)
+        test_api_client, _ = test_api_client_persistent
+        featurelist = create_success_response.json()
+        feature_list_id = featurelist["_id"]
+
+        job_logs = pd.DataFrame(
+            {
+                "SESSION_ID": ["SID"] * 4,
+                "TILE_ID": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"] * 4,
+                "CREATED_AT": pd.to_datetime(
+                    [
+                        "2020-01-02 18:00:00",
+                        "2020-01-02 18:01:00",
+                        "2020-01-02 18:02:00",
+                        "2020-01-02 18:03:00",
+                    ]
+                ),
+                "STATUS": ["STARTED", "MONITORED", "GENERATED", "COMPLETED"],
+            }
+        )
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = job_logs
+        response = test_api_client.get(f"{self.base_route}/{feature_list_id}/feature_job_logs")
+        assert response.status_code == HTTPStatus.OK
+        expected_df = pd.DataFrame(
+            {
+                "SESSION_ID": ["SID"],
+                "tile_id": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"],
+                "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"]),
+                "STARTED": pd.to_datetime(["2020-01-02 18:00:00"]),
+                "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00"]),
+                "QUEUE_DURATION": [1500.0],
+                "COMPUTE_DURATION": [180.0],
+                "TOTAL_DURATION": [1680.0],
+            }
+        )
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+            SELECT
+              "SESSION_ID",
+              "CREATED_AT",
+              "TILE_ID",
+              "STATUS"
+            FROM TILE_JOB_MONITOR
+            WHERE
+              "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
+              AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
+              AND "TILE_ID" IN ('TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178')
+              AND "TILE_TYPE" = 'ONLINE'
+            """
+            ).strip()
         )

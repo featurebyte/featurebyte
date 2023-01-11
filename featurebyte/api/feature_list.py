@@ -3,7 +3,7 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Tuple, Union, cast
 
 import collections
 import time
@@ -23,7 +23,7 @@ from featurebyte.api.api_object import (
 )
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
-from featurebyte.api.feature import Feature
+from featurebyte.api.feature import Feature, FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -40,6 +40,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
@@ -51,6 +52,7 @@ from featurebyte.models.feature_list import (
     FeatureListStatus,
     FeatureReadinessDistribution,
 )
+from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -391,7 +393,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
         return feature_lists
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
+class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJobMixin):
     """
     FeatureList class
 
@@ -426,6 +428,12 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
+
+    def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
+        return [
+            (str(feature.name), ExtendedFeatureModel(**feature.dict()).tile_specs)
+            for feature in self.feature_objects.values()
+        ]
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -607,6 +615,26 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     @classmethod
     def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
         return FeatureListNamespace.list(*args, **kwargs)
+
+    def list_features(
+        self, entity: Optional[str] = None, data: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        List features in the feature list
+
+        Parameters
+        ----------
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of features
+        """
+        return Feature.list_versions(feature_list_id=self.id, entity=entity, data=data)
 
     @typechecked
     def get_historical_features_sql(

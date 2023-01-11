@@ -21,6 +21,7 @@
 + `changelog`: Include serving endpoint information in FeatureList.info()
 + `changelog`: Added FeatureJobSettingAnalysis api to list and retrieve job setting analysis
 + `changelog`: Added support to download feature job setting analysis report as pdf
++ `changelog`: Added feature / featurelist get_feature_jobs_status() and list_features() for featurelist
 
 ### 🧰 Bug fixes 🧰
 

@@ -111,6 +111,7 @@ app_container_config = {
             "clazz": FeatureStoreWarehouseService,
             "extra_deps": [
                 "session_manager_service",
+                "feature_store_service",
             ],
         },
     ],
@@ -263,6 +264,7 @@ app_container_config = {
                 "preview_service",
                 "version_service",
                 "info_service",
+                "feature_store_warehouse_service",
             ],
         },
         {
@@ -276,6 +278,8 @@ app_container_config = {
                 "version_service",
                 "info_service",
                 "online_serving_service",
+                "feature_store_warehouse_service",
+                "feature_service",
             ],
         },
         {

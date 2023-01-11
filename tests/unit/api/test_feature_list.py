@@ -906,3 +906,45 @@ def test_feature_list_constructor():
     with pytest.raises(TypeError) as exc:
         FeatureList([])
     assert "missing a required argument: 'name'" in str(exc.value)
+
+
+def test_list_features(saved_feature_list, float_feature):
+    """
+    Test list_features
+    """
+    feature_version_list = saved_feature_list.list_features()
+    float_feature.save(conflict_resolution="retrieve")
+    assert_frame_equal(
+        feature_version_list,
+        pd.DataFrame(
+            {
+                "name": [float_feature.name],
+                "version": [float_feature.version.to_str()],
+                "dtype": [float_feature.dtype],
+                "readiness": [float_feature.readiness],
+                "online_enabled": [float_feature.online_enabled],
+                "data": [["sf_event_data"]],
+                "entities": [["customer"]],
+                "created_at": [float_feature.created_at],
+            }
+        ),
+    )
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_get_feature_jobs_status(mock_execute_query, saved_feature_list, update_fixtures):
+    """
+    Test get_feature_jobs_status
+    """
+    job_logs = pd.read_csv("tests/fixtures/feature_job_status/job_logs.csv")
+    job_logs["CREATED_AT"] = pd.to_datetime(job_logs["CREATED_AT"])
+    mock_execute_query.return_value = job_logs
+    job_status_result = saved_feature_list.get_feature_jobs_status(job_history_window=24)
+
+    fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
+    if update_fixtures:
+        job_status_result.job_session_logs.to_parquet(fixture_path)
+        raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
+    else:
+        expected_session_logs = pd.read_parquet(fixture_path)
+        assert_frame_equal(job_status_result.job_session_logs, expected_session_logs)

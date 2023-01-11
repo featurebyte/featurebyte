@@ -18,6 +18,7 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     TooRecentPointInTimeError,
 )
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -34,8 +35,10 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.info import FeatureListInfo
 from featurebyte.service.deploy import DeployService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.preview import PreviewService
@@ -60,6 +63,8 @@ class FeatureListController(
         version_service: VersionService,
         info_service: InfoService,
         online_serving_service: OnlineServingService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
+        feature_service: FeatureService,
     ):
         super().__init__(service)
         self.feature_readiness_service = feature_readiness_service
@@ -68,6 +73,8 @@ class FeatureListController(
         self.version_service = version_service
         self.info_service = info_service
         self.online_serving_service = online_serving_service
+        self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.feature_service = feature_service
 
     async def create_feature_list(
         self, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
@@ -370,3 +377,40 @@ class FeatureListController(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
         return result
+
+    async def get_feature_job_logs(
+        self, feature_list_id: ObjectId, hour_limit: int, get_credential: Any
+    ) -> dict[str, Any]:
+        """
+        Retrieve data preview for query graph node
+
+        Parameters
+        ----------
+        feature_list_id: ObjectId
+            FeatureList Id
+        hour_limit: int
+            Limit in hours on the job history to fetch
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature_list = await self.service.get_document(feature_list_id)
+        assert feature_list.feature_clusters
+        assert len(feature_list.feature_clusters) == 1
+
+        features = []
+        async for doc in self.feature_service.list_documents_iterator(
+            query_filter={"_id": {"$in": feature_list.feature_ids}}
+        ):
+            features.append(ExtendedFeatureModel(**doc))
+
+        return await self.feature_store_warehouse_service.get_feature_job_logs(
+            feature_store_id=feature_list.feature_clusters[0].feature_store_id,
+            features=features,
+            hour_limit=hour_limit,
+            get_credential=get_credential,
+        )
