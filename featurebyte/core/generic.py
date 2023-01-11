@@ -77,7 +77,7 @@ class QueryObject(FeatureByteBaseModel):
         list[NodeType]
         """
         out = []
-        pruned_graph, pruned_node = self.extract_pruned_graph_and_node(aggressive=True)
+        pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out
@@ -91,21 +91,9 @@ class QueryObject(FeatureByteBaseModel):
             values["node_name"] = node_name_map[values["node_name"]]
         return values
 
-    def extract_pruned_graph_and_node(
-        self, aggressive: bool = False
-    ) -> tuple[QueryGraphModel, Node]:
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
-
-        Parameters
-        ----------
-        aggressive: bool
-            Flag to enable aggressive mode. When the `aggressive` is True, those prunable nodes
-            may get removed if they do not contribute to the target node output. In addition,
-            all the node parameters will get pruned based on the output of the node. When the
-            `aggressive` is False, a graph traversal from the target node to the input node
-            is performed, all the traversed nodes will be kept without any modification on the
-            node parameters.
 
         Returns
         -------
@@ -114,7 +102,7 @@ class QueryObject(FeatureByteBaseModel):
         """
         # TODO: make aggression=True after optimizing operation structure runtime (DEV-974)
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=self.node, aggressive=aggressive
+            target_node=self.node, aggressive=True
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
