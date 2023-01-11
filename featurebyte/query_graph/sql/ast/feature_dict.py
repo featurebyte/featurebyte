@@ -4,6 +4,8 @@ Feature dictionary node operators
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from sqlglot import Expression, expressions
 
 from featurebyte.query_graph.enum import NodeType
@@ -11,15 +13,15 @@ from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext,
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 
 
+@dataclass
 class IsInDictionaryNode(ExpressionNode):
     """
     Is in dictionary node
     """
 
-    lookup_feature_node: TableNode
-    target_dictionary_node: TableNode
-
-    query_node_type: NodeType.IS_IN_DICT
+    lookup_feature_node: ExpressionNode
+    target_dictionary_node: ExpressionNode
+    query_node_type = NodeType.IS_IN_DICT
 
     @property
     def sql(self) -> Expression:
