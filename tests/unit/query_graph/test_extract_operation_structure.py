@@ -805,3 +805,56 @@ def test_extract_operation__complicated_assignment_case_2(dataframe):
         "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
+
+
+def test_extract_operation_structure__groupby_on_event_timestamp_columns(
+    query_graph_and_assign_node, groupby_node_params
+):
+    """Test extract operation structure with groupby on event timestamp column"""
+    graph, assign_node = query_graph_and_assign_node
+    groupby_node_params["parent"] = groupby_node_params["timestamp"]
+    groupby_node_params["agg_func"] = "latest"
+    groupby_node = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params=groupby_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    op_struct = graph.extract_operation_structure(node=groupby_node)
+    common_agg_params = {
+        "aggregation_type": "groupby",
+        "category": None,
+        "column": {
+            "dtype": "TIMESTAMP",
+            "filter": False,
+            "name": "ts",
+            "node_name": "input_1",
+            "node_names": {"input_1"},
+            "tabular_data_id": None,
+            "tabular_data_type": "event_data",
+            "type": "source",
+        },
+        "dtype": "TIMESTAMP",
+        "filter": False,
+        "keys": ["cust_id"],
+        "method": "latest",
+        "node_name": "groupby_1",
+        "node_names": {"groupby_1", "input_1"},
+        "type": "aggregation",
+    }
+    assert op_struct.columns == [
+        {
+            "dtype": "TIMESTAMP",
+            "filter": False,
+            "name": "ts",
+            "node_name": "input_1",
+            "node_names": {"input_1"},
+            "tabular_data_id": None,
+            "tabular_data_type": "event_data",
+            "type": "source",
+        }
+    ]
+    assert op_struct.aggregations == [
+        {"name": "a_2h_average", "window": "2h", **common_agg_params},
+        {"name": "a_48h_average", "window": "48h", **common_agg_params},
+    ]

@@ -91,6 +91,16 @@ class AggregationOpStructMixin:
         input_operation_info = inputs[0]
         lineage_columns = set(self.get_required_input_columns())  # type: ignore
         wanted_columns = lineage_columns.difference(self._exclude_source_columns())
+        has_agg_func = getattr(self.parameters, "agg_func", None)
+        parent_column = None
+        if has_agg_func and self.parameters.parent:
+            parent_column = next(
+                (col for col in input_operation_info.columns if col.name == self.parameters.parent),
+                None,
+            )
+            if parent_column:
+                wanted_columns.add(parent_column.name)
+
         other_node_names = set()
         columns = []
         for col in input_operation_info.columns:
@@ -117,9 +127,6 @@ class AggregationOpStructMixin:
         # prepare output variable type
         if getattr(self.parameters, "agg_func", None):
             aggregation_func_obj = construct_agg_func(self.parameters.agg_func)
-            parent_column = next(
-                (col for col in columns if col.name == self.parameters.parent), None
-            )
             input_var_type = parent_column.dtype if parent_column else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=getattr(self.parameters, "category", None)
