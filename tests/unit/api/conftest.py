@@ -171,11 +171,13 @@ def snowflake_item_data_fixture(
     snowflake_item_data_id,
     saved_event_data,
     cust_id_entity,
+    arbitrary_default_feature_job_setting,
 ):
     """
     Snowflake ItemData object fixture (using config object)
     """
     _ = mock_get_persistent
+    saved_event_data.update_default_feature_job_setting(arbitrary_default_feature_job_setting)
     saved_event_data["cust_id"].as_entity(cust_id_entity.name)
     item_data = ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
@@ -242,17 +244,15 @@ def snowflake_change_view(snowflake_scd_data):
 
 
 @pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(snowflake_event_data, config):
+def snowflake_event_view_fixture(
+    snowflake_event_data, config, arbitrary_default_feature_job_setting
+):
     """
     EventData object fixture
     """
     _ = config
     snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s",
-            frequency="6m",
-            time_modulo_frequency="3m",
-        )
+        feature_job_setting=arbitrary_default_feature_job_setting
     )
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     yield event_view

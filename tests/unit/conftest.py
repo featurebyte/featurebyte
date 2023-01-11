@@ -491,16 +491,24 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     yield snowflake_event_data
 
 
+@pytest.fixture(name="arbitrary_default_feature_job_setting")
+def arbitrary_default_feature_job_setting_fixture():
+    """
+    Get arbitrary default feature job setting
+    """
+    return FeatureJobSetting(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m")
+
+
 @pytest.fixture(name="snowflake_event_data_with_entity_and_feature_job")
-def snowflake_event_data_with_entity_and_feature_job_fixture(snowflake_event_data, cust_id_entity):
+def snowflake_event_data_with_entity_and_feature_job_fixture(
+    snowflake_event_data, cust_id_entity, arbitrary_default_feature_job_setting
+):
     """
     Entity fixture that sets cust_id in snowflake_event_data as an Entity
     """
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
-        )
+        feature_job_setting=arbitrary_default_feature_job_setting
     )
     yield snowflake_event_data
 
