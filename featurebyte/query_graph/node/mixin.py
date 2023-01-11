@@ -94,6 +94,8 @@ class AggregationOpStructMixin:
         has_agg_func = getattr(self.parameters, "agg_func", None)
         parent_column = None
         if has_agg_func and self.parameters.parent:
+            # always add parent column back to wanted_columns
+            # fix the case when it is in self._exclude_source_columns()
             parent_column = next(
                 (col for col in input_operation_info.columns if col.name == self.parameters.parent),
                 None,
