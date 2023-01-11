@@ -114,6 +114,9 @@ class OperationStructureExtractor(
         inputs: List[OperationStructure],
         skip_post: bool,
     ) -> OperationStructure:
+        if node.name in global_state.operation_structure_map:
+            return global_state.operation_structure_map[node.name]
+
         if isinstance(node, BaseGraphNode):
             operation_structure = self._derive_nested_graph_operation_structure(
                 node=node,
