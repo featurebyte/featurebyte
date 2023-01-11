@@ -820,14 +820,7 @@ def test_graph_interpreter_preview(graph, node_input):
           (
             "a" + "b"
           )
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b"
-          FROM "db"."public"."event_table"
-        )
+        FROM "db"."public"."event_table"
         LIMIT 5
         """
     ).strip()
@@ -891,18 +884,11 @@ def test_filter_node(graph, node_input):
         """
         SELECT
           "a"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b"
-          FROM "db"."public"."event_table"
-          WHERE
-            (
-              "b" = 123
-            )
-        )
+        FROM "db"."public"."event_table"
+        WHERE
+          (
+            "b" = 123
+          )
         LIMIT 10
         """
     ).strip()
@@ -1088,17 +1074,10 @@ def test_conditional_assign__project_named(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          "a"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            CASE WHEN (
-              "a" = -999
-            ) THEN 0 ELSE "a" END AS "a",
-            "b" AS "b"
-          FROM "db"."public"."event_table"
-        )
+          CASE WHEN (
+            "a" = -999
+          ) THEN 0 ELSE "a" END AS "a"
+        FROM "db"."public"."event_table"
         LIMIT 10
         """
     ).strip()
@@ -1142,14 +1121,7 @@ def test_isnull(graph, node_input):
         """
         SELECT
           "a" IS NULL
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b"
-          FROM "db"."public"."event_table"
-        )
+        FROM "db"."public"."event_table"
         LIMIT 10
         """
     ).strip()

@@ -301,7 +301,7 @@ def test_derived_expression_from_join_node(global_graph, derived_expression_from
         ) AS R
           ON L."order_id" = R."order_id"
         """
-    )
+    ).strip()
     assert sql_tree.sql(pretty=True) == expected
 
 
