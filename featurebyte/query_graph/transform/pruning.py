@@ -153,6 +153,12 @@ class NodeParametersPruningExtractor(
         inputs: List[OperationStructure],
         skip_post: bool,
     ) -> OperationStructure:
+        if node.name in global_state.node_name_map:
+            # if node.name can be found in global_state.node_name_map, it means the node has been inserted
+            # into the reconstructed graph.
+            pruned_node_name = global_state.node_name_map[node.name]
+            return global_state.operation_structure_map[pruned_node_name]
+
         input_op_structs = []
         mapped_input_nodes = []
         for input_node_name in self.graph.get_input_node_names(node):
@@ -326,6 +332,11 @@ class GraphStructurePruningExtractor(
         skip_post: bool,
     ) -> None:
         if skip_post:
+            # this implies that the node should be pruned, will not be inserted into the new graph.
+            return
+
+        if node.name in global_state.node_name_map:
+            # this implies that the node has been inserted into the new graph.
             return
 
         # construction of the pruned graph
