@@ -43,7 +43,7 @@ class BaseNode(BaseModel):
     name: str
     type: NodeType
     output_type: NodeOutputType
-    parameters: BaseNodeParameters
+    parameters: BaseModel
 
     class Config:
         """Model configuration"""
