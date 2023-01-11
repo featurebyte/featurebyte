@@ -246,8 +246,8 @@ jobs:
         poetry publish --build -r featurebyte_np --username='_json_key_base64' --password='${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}'
 
         # Tagging dev version
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "featurebyte[bot]"
+        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
         git tag "${PUBLISH_VERSION}"
         git push origin "${PUBLISH_VERSION}"
 
@@ -271,8 +271,8 @@ jobs:
     - name: 'Delete old tags'
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "featurebyte[bot]"
+        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
 
         # Delete old tags more than a month old
         export ONE_MONTH_AGO=$(date --date="-30days" +%Y-%m-%d)

@@ -29,15 +29,8 @@ RUN poetry config virtualenvs.create false && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 
-# copy featurebyte and featurebyte package
-COPY ./featurebyte     /app/featurebyte
-COPY ./docs            /app/docs
+# copy featurebyte
 COPY ./dist            /app/dist
-COPY ./mkdocs.yaml     /app/mkdocs.yaml
-COPY ./docker/docs.py  /app/
-
-# build docs
-RUN PYTHONPATH=$PWD:$PWD/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs build
 
 RUN pip install jupyterlab && \
     pip install --no-index -f /app/dist featurebyte && \
