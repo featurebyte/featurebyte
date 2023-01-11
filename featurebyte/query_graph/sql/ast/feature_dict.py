@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions
 
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 
 
