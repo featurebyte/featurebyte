@@ -418,6 +418,7 @@ class GroupOperationStructure(FeatureByteBaseModel):
 class OperationStructure(FeatureByteBaseModel):
     """NodeOperationStructure class"""
 
+    # columns refers to the input columns used to create the current node.
     columns: List[ViewDataColumn] = Field(default_factory=list)
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     output_type: NodeOutputType

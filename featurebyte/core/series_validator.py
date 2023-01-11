@@ -156,7 +156,8 @@ def _is_from_same_data(
     other_series_tabular_data_id: PydanticObjectId,
 ) -> bool:
     """
-    Helper function to determine if both series are from the same data.
+    Helper function to determine if both series are from the same data, and if the series are both of ItemData, or
+    EventData types.
 
     Parameters
     ----------
