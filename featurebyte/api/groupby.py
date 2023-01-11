@@ -167,9 +167,17 @@ class BaseAggregator(ABC):
         Returns
         -------
         Feature
+
+        Raises
+        ------
+        ValueError
+            If both fill_value and category parameters are specified
         """
-        # Count features should be 0 instead of NaN when there are no records
+        if fill_value is not None and self.groupby.category is not None:
+            raise ValueError("fill_value is not supported for aggregation per category")
+
         if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
+            # Count features should be 0 instead of NaN when there are no records
             value_to_fill = get_or_default(fill_value, 0)
             feature.fillna(value_to_fill)
             feature.name = feature_name

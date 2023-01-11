@@ -199,6 +199,19 @@ def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
     ]
 
 
+def test__setitem__conditional_assign_dictionary_feature(count_per_category_feature):
+    """
+    Test conditional assign on a dictionary feature
+    """
+    with pytest.raises(ValueError) as exc:
+        count_per_category_feature[count_per_category_feature.isnull()] = 0
+    node_name = count_per_category_feature.node_name
+    assert str(exc.value) == (
+        f"Conditionally updating 'Feature[OBJECT](name=counts_1d, node_name={node_name})' of type"
+        f" OBJECT is not supported!"
+    )
+
+
 def test__setitem__row_index_not_aligned(int_series, bool_series):
     """
     Test conditional assignment using non-aligned series

@@ -133,32 +133,40 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         """
         return {}
 
-    @staticmethod
-    def _is_assignment_valid(left_dbtype: DBVarType, right_value: Any) -> bool:
+    def _assert_assignment_valid(self, value: Any) -> None:
         """
-        Check whether the right value python builtin type can be assigned to left value database type.
+        Assert that the given python builtin type can be assigned based on self's database type.
 
         Parameters
         ----------
-        left_dbtype: DBVarType
-            target database variable type
-        right_value: Any
-            value to be assigned to the left object
+        value: Any
+            value to be assigned to self during conditional assignment
 
-        Returns
-        -------
-        bool
-            whether the assignment operation is valid in terms of variable type
+        Raises
+        ------
+        ValueError
+            When the assignment is not valid
         """
+        # Always fine to update value as missing
+        if is_scalar_nan(value):
+            return
+
+        # Otherwise, the validity is based on DBVarType
         valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
             DBVarType.BOOL: (bool,),
             DBVarType.INT: (int, float),
             DBVarType.FLOAT: (int, float),
-            DBVarType.CHAR: (),
             DBVarType.VARCHAR: (str,),
-            DBVarType.DATE: (),
         }
-        return isinstance(right_value, valid_assignment_map[left_dbtype])
+        accepted_types = valid_assignment_map.get(self.dtype)
+        if accepted_types is None:
+            raise ValueError(
+                f"Conditionally updating '{self}' of type {self.dtype} is not supported!"
+            )
+        if not isinstance(value, accepted_types):
+            raise ValueError(
+                f"Conditionally updating '{self}' with value '{value}' is not supported!"
+            )
 
     @typechecked
     def __setitem__(self, key: Series, value: Union[int, float, str, bool, None]) -> None:
@@ -166,10 +174,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
-        if not self._is_assignment_valid(self.dtype, value) and not is_scalar_nan(value):
-            raise ValueError(
-                f"Conditionally updating '{self}' with value '{value}' is not supported!"
-            )
+        self._assert_assignment_valid(value)
 
         node = self.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
