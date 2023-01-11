@@ -962,7 +962,7 @@ def test_is_in_dictionary(event_view):
     Test is in dictionary
     """
     # get lookup feature
-    lookup_feature = event_view["CUST_ID"].as_feature("Transaction ID")
+    lookup_feature = event_view["USER ID"].as_feature("user")
 
     # get dictionary feature
     feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(

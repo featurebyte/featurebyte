@@ -528,6 +528,18 @@ class Feature(
         """
         Identify if the lookup feature value is in the keys of the dictionary
         lookup_feature.isin(dictionary_feature)
+
+        Parameters
+        ----------
+        feature: Feature
+            feature
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Feature
+            new feature
         """
         Feature._validate_feature_type(self, FeatureType.LOOKUP)
         Feature._validate_feature_type(feature, FeatureType.DICTIONARY)
