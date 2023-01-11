@@ -560,6 +560,7 @@ class GraphInterpreter:
         stats_expressions["top"] = (
             lambda col_expr, _: expressions.Anonymous(this="MODE", expressions=[col_expr]),
             {
+                DBVarType.BOOL,
                 DBVarType.FLOAT,
                 DBVarType.INT,
                 DBVarType.TIMESTAMP,
@@ -582,6 +583,7 @@ class GraphInterpreter:
                 ],
             ),
             {
+                DBVarType.BOOL,
                 DBVarType.FLOAT,
                 DBVarType.INT,
                 DBVarType.TIMESTAMP,
