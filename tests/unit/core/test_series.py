@@ -301,17 +301,19 @@ def test_logical_operators(bool_series, int_series):
 
 
 def _check_node_equality(
-    left_node, right_node, exclude, has_value_params=False, expected_value=None
+    left_node, right_node, exclude, has_value_params=False, has_right_op=False, expected_value=None
 ):
     """
     Check left node & right node equality
     """
     left_node_dict = left_node.dict(exclude=exclude)
     assert left_node_dict == right_node.dict(exclude=exclude)
+    parameters = left_node_dict["parameters"]
     if has_value_params:
-        parameters = left_node_dict["parameters"]
         assert "value" in parameters
         assert parameters["value"] == expected_value
+    if has_right_op:
+        assert "right_op" in parameters
 
 
 def test_relational_operators__series_other(bool_series, int_series, float_series, varchar_series):
@@ -530,6 +532,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         construct_node(name="add_2", type=NodeType.ADD, parameters={"value": 1.23}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=1.23,
     )
     _check_node_equality(
@@ -537,6 +540,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         construct_node(name="sub_2", type=NodeType.SUB, parameters={"value": 1}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=1,
     )
     _check_node_equality(
@@ -544,6 +548,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         construct_node(name="mul_2", type=NodeType.MUL, parameters={"value": 2}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=2,
     )
     _check_node_equality(
@@ -551,6 +556,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         construct_node(name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=2.34,
     )
     _check_node_equality(
@@ -560,6 +566,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value="hello",
     )
     _check_node_equality(
@@ -567,6 +574,7 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         construct_node(name="mod_2", type=NodeType.MOD, parameters={"value": 3}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=3,
     )
 
@@ -595,6 +603,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=1.23,
     )
     _check_node_equality(
@@ -604,6 +613,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=1,
     )
     _check_node_equality(
@@ -613,6 +623,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=2,
     )
     _check_node_equality(
@@ -622,6 +633,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=2.34,
     )
     _check_node_equality(
@@ -634,6 +646,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value="abc",
     )
     _check_node_equality(
@@ -646,6 +659,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        has_right_op=True,
         expected_value=1234,
     )
 

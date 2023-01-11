@@ -24,6 +24,17 @@ NODE_TYPES = []
 NodeT = TypeVar("NodeT", bound="BaseNode")
 
 
+class BaseNodeParameters(BaseModel):
+    """
+    BaseNodeParameters class
+    """
+
+    class Config:
+        """Model configuration"""
+
+        extra = "forbid"
+
+
 class BaseNode(BaseModel):
     """
     BaseNode class
@@ -33,6 +44,11 @@ class BaseNode(BaseModel):
     type: NodeType
     output_type: NodeOutputType
     parameters: BaseModel
+
+    class Config:
+        """Model configuration"""
+
+        extra = "forbid"
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -321,34 +337,43 @@ class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
+class SingleValueNodeParameters(BaseNodeParameters):
+    """SingleValueNodeParameters"""
+
+    value: Optional[Any]
+
+
+class ValueWithRightOpNodeParameters(SingleValueNodeParameters):
+    """ValueWithRightOpNodeParameters"""
+
+    right_op: bool = Field(default=False)
+
+
 class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output & contain a single scalar parameter"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Any]
-
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: Parameters
+    parameters: SingleValueNodeParameters
 
 
-class BinaryLogicalOpMixin(BaseSeriesOutputWithAScalarParamNode):
-    """BinaryLogicalOpMixin class"""
-
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
-
-
-class BinaryRelationalOpMixin(BaseSeriesOutputWithAScalarParamNode):
-    """BinaryRelationalOpMixin class"""
+class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
+    """BinaryLogicalOpNode class"""
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
 
-class BinaryArithmeticOpMixin(SeriesOutputNodeOpStructMixin):
-    """BinaryArithmeticOpMixin class"""
+class BinaryRelationalOpNode(BaseSeriesOutputWithAScalarParamNode):
+    """BinaryRelationalOpNode class"""
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.BOOL
+
+
+class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
+    """BinaryArithmeticOpNode class"""
+
+    parameters: ValueWithRightOpNodeParameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         input_var_types = {inp.series_output_dtype for inp in inputs}

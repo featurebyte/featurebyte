@@ -837,6 +837,7 @@ def check_numeric_operations(event_view, limit=100):
     event_view["AMOUNT_INT_MOD_5"] = event_view["AMOUNT"].astype(int) % 5
     event_view["AMOUNT_LOG"] = (event_view["AMOUNT"] + 1).log()
     event_view["AMOUNT_LOG_EXP"] = event_view["AMOUNT_LOG"].exp()
+    event_view["ONE_MINUS_AMOUNT"] = 1 - event_view["AMOUNT"]
     df = event_view.preview(limit=limit)
 
     pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["AMOUNT"] * (-1)).abs(), check_names=False)
@@ -855,6 +856,7 @@ def check_numeric_operations(event_view, limit=100):
     pd.testing.assert_series_equal(
         df["AMOUNT_LOG_EXP"], np.exp(np.log(df["AMOUNT"] + 1)), check_names=False
     )
+    pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["AMOUNT"], check_names=False)
 
 
 def check_day_of_week_counts(event_view, preview_param):

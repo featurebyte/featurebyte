@@ -10,86 +10,86 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithAScalarParamNode,
-    BinaryArithmeticOpMixin,
-    BinaryLogicalOpMixin,
-    BinaryRelationalOpMixin,
+    BinaryArithmeticOpNode,
+    BinaryLogicalOpNode,
+    BinaryRelationalOpNode,
 )
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 
 
-class AndNode(BinaryLogicalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class AndNode(BinaryLogicalOpNode):
     """AndNode class"""
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
 
-class OrNode(BinaryLogicalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class OrNode(BinaryLogicalOpNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
 
 
-class EqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class EqualNode(BinaryRelationalOpNode):
     """EqualNode class"""
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
 
-class NotEqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class NotEqualNode(BinaryRelationalOpNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
 
 
-class GreaterThanNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class GreaterThanNode(BinaryRelationalOpNode):
     """GreaterThanNode class"""
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
 
 
-class GreaterEqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class GreaterEqualNode(BinaryRelationalOpNode):
     """GreaterEqualNode class"""
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
 
 
-class LessThanNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class LessThanNode(BinaryRelationalOpNode):
     """LessThanNode class"""
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
 
 
-class LessEqualNode(BinaryRelationalOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class LessEqualNode(BinaryRelationalOpNode):
     """LessEqualNode class"""
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
 
 
-class AddNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class AddNode(BinaryArithmeticOpNode):
     """AddNode class"""
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
 
-class SubtractNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class SubtractNode(BinaryArithmeticOpNode):
     """SubtractNode class"""
 
     type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
 
 
-class MultiplyNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class MultiplyNode(BinaryArithmeticOpNode):
     """MultiplyNode class"""
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
 
-class DivideNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class DivideNode(BinaryArithmeticOpNode):
     """DivideNode class"""
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
 
-class ModuloNode(BinaryArithmeticOpMixin, BaseSeriesOutputWithAScalarParamNode):
+class ModuloNode(BinaryArithmeticOpNode):
     """ModuloNode class"""
 
     type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)

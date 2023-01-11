@@ -11,6 +11,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithAScalarParamNode,
+    ValueWithRightOpNodeParameters,
 )
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 
@@ -128,6 +129,7 @@ class ConcatNode(BaseSeriesOutputWithAScalarParamNode):
     """ConcatNode class"""
 
     type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)
+    parameters: ValueWithRightOpNodeParameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
