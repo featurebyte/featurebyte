@@ -24,6 +24,7 @@
 
 + `changelog`: Fix error in item view describe()
 + `changelog`: Fix infinite values showing up as nan in data / view describe
++ `changelog`: Fix automated feature job settings update failure when timestamps contain timezone
 
 ## v0.0.0
 

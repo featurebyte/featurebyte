@@ -844,13 +844,13 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 category = "main"
 description = "Free utilities from FeatureByte"
 files = [
-    {file = "featurebyte_freeware-0.1.8a1-py3-none-any.whl", hash = "sha256:c0cee54262ccf50fcf85bb8a44ad5a2d2adad7e6541317b897ec6b59298388f7"},
-    {file = "featurebyte_freeware-0.1.8a1.tar.gz", hash = "sha256:a4308e5430edf757de6bc5b853a1bff994b7c37345e8b36dfa160c6d0eafe40f"},
+    {file = "featurebyte_freeware-0.1.8-py3-none-any.whl", hash = "sha256:1965925750557694de261fc484ecbf0fb3fb67f5508a4c89078edecf7f181db7"},
+    {file = "featurebyte_freeware-0.1.8.tar.gz", hash = "sha256:e95f5483a8ef6cdc153f0bbbf1a7c5184631983df7f2c49945c063c4f629c750"},
 ]
 name = "featurebyte-freeware"
 optional = true
 python-versions = ">=3.8,<3.11"
-version = "0.1.8a1"
+version = "0.1.8"
 
 [package.dependencies]
 Jinja2 = ">=3.1.2,<4.0.0"
@@ -1492,7 +1492,6 @@ packaging = ">=20.0"
 pillow = ">=6.2.0"
 pyparsing = ">=2.2.1"
 python-dateutil = ">=2.7"
-setuptools_scm = ">=7"
 
 [[package]]
 category = "dev"
@@ -3177,28 +3176,6 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 
 [[package]]
 category = "main"
-description = "the blessed package to manage your versions by scm tags"
-files = [
-    {file = "setuptools_scm-7.1.0-py3-none-any.whl", hash = "sha256:73988b6d848709e2af142aa48c986ea29592bbcfca5375678064708205253d8e"},
-    {file = "setuptools_scm-7.1.0.tar.gz", hash = "sha256:6c508345a771aad7d56ebff0e70628bf2b0ec7573762be9960214730de278f27"},
-]
-name = "setuptools-scm"
-optional = true
-python-versions = ">=3.7"
-version = "7.1.0"
-
-[package.dependencies]
-packaging = ">=20.0"
-setuptools = "*"
-tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
-typing-extensions = "*"
-
-[package.extras]
-test = ["pytest (>=6.2)", "virtualenv (>20)"]
-toml = ["setuptools (>=42)"]
-
-[[package]]
-category = "main"
 description = "Python 2 and 3 compatibility utilities"
 files = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
@@ -3430,7 +3407,7 @@ version = "0.20.1"
 tomlkit = ">=0.8.0"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "A lil' TOML parser"
 files = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
