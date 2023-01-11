@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -20,7 +20,7 @@ from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import validate_job_setting_parameters, validate_offset_string
+from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
