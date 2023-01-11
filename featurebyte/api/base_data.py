@@ -108,6 +108,20 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         ...        ),
         ...    ]
         ... )
+
+        Check the column info to confirm that critical data info is updated
+
+        >>> event_data["AMOUNT"].info.dict()  # doctest: +SKIP
+        {'critical_data_info': {'cleaning_operations': [{'imputed_value': 0,
+                                                 'type': 'missing'},
+                                                {'end_point': 0,
+                                                 'imputed_value': 0,
+                                                 'type': 'less_than'}]},
+         'dtype': 'FLOAT',
+         'entity_id': None,
+         'name': 'Discount',
+         'semantic_id': None}
+
         """
         critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
         column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})
