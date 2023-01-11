@@ -41,6 +41,26 @@ def item_data_join_event_data_filtered_node_fixture(global_graph, item_data_join
     return filtered_node
 
 
+@pytest.fixture
+def derived_expression_from_join_node(global_graph, item_data_join_event_data_node):
+    """
+    ExpressionNode derived from a join node
+    """
+    project_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["item_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(item_data_join_event_data_node.name)],
+    )
+    add_node = global_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_node],
+    )
+    return add_node
+
+
 def test_item_data_join_event_data_attributes(global_graph, item_data_join_event_data_node):
     """
     Test SQL generation for ItemData joined with EventData
@@ -242,6 +262,42 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
             GROUP BY
               "order_id"
           )
+        ) AS R
+          ON L."order_id" = R."order_id"
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
+def test_derived_expression_from_join_node(global_graph, derived_expression_from_join_node):
+    """
+    Test derived expression from join node
+    """
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
+    sql_tree = sql_graph.build(derived_expression_from_join_node).sql_standalone
+    expected = textwrap.dedent(
+        """
+        SELECT
+          (
+            R."item_id" + 123
+          )
+        FROM (
+          SELECT
+            "ts" AS "ts",
+            "cust_id" AS "cust_id",
+            "order_id" AS "order_id",
+            "order_method" AS "order_method"
+          FROM "db"."public"."event_table"
+        ) AS L
+        INNER JOIN (
+          SELECT
+            "order_id" AS "order_id",
+            "item_id" AS "item_id",
+            "item_name" AS "item_name",
+            "item_type" AS "item_type"
+          FROM "db"."public"."item_table"
         ) AS R
           ON L."order_id" = R."order_id"
         """

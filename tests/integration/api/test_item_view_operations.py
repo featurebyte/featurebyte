@@ -53,6 +53,10 @@ def test_item_view_ops(item_data):
     df = item_view_filtered.preview(500)
     assert (df["item_type_upper"] == "TYPE_42").all()
 
+    # Test previewing a temporary column
+    df = (item_view_filtered["item_type_upper"] + "_ABC").preview()
+    assert (df.iloc[:, 0] == "TYPE_42_ABC").all()
+
     # Join additional columns from EventData
     item_view_filtered.join_event_data_attributes(["SESSION_ID"])
     df = item_view_filtered.preview(500)

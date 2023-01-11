@@ -913,16 +913,7 @@ def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
           (
             CONCAT("PRODUCT_ACTION", {expected_literal})
           )
-        FROM (
-          SELECT
-            "CUST_ID" AS "CUST_ID",
-            "PRODUCT_ACTION" AS "PRODUCT_ACTION",
-            "VALUE" AS "VALUE",
-            "MASK" AS "MASK",
-            "TIMESTAMP" AS "TIMESTAMP",
-            "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
-          FROM "db"."public"."transaction"
-        )
+        FROM "db"."public"."transaction"
         LIMIT 10
         """
         ).strip()

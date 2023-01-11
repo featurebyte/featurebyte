@@ -8,12 +8,11 @@ from typing import Any, Optional, cast
 from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, select
+from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
 
 
 @dataclass
@@ -50,10 +49,7 @@ class Project(ExpressionNode):
 
     @property
     def sql_standalone(self) -> Expression:
-        # This is overridden to bypass self.sql - the column expression would have been evaluated in
-        # self.table_node.sql_nested already, and the expression must not be evaluated again.
-        # Instead, simply select the column name from the nested query.
-        return select(quoted_identifier(self.column_name)).from_(self.table_node.sql_nested())
+        return self.table_node.get_sql_for_expression(self.sql, alias=self.column_name)
 
 
 @dataclass

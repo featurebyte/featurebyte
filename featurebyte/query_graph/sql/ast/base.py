@@ -150,18 +150,31 @@ class TableNode(SQLNode, ABC):
     @property
     def sql(self) -> Expression:
 
-        # QUALIFY clause
-        if self.qualify_condition is not None:
-            qualify_expr = expressions.Qualify(this=self.qualify_condition)
-            select_expr = expressions.Select(qualify=qualify_expr)
-        else:
-            select_expr = select()
+        select_expr = self.get_select_statement_without_columns()
 
         # SELECT clause
         for column_name, column_expr in self.columns_map.items():
             select_expr = select_expr.select(
                 expressions.alias_(column_expr, quoted_identifier(column_name))
             )
+
+        return select_expr
+
+    def get_select_statement_without_columns(self) -> Select:
+        """
+        Construct a Select statement for this table but without the columns
+
+        Returns
+        -------
+        Select
+        """
+
+        # QUALIFY clause
+        if self.qualify_condition is not None:
+            qualify_expr = expressions.Qualify(this=self.qualify_condition)
+            select_expr = expressions.Select(qualify=qualify_expr)
+        else:
+            select_expr = select()
 
         # FROM clause
         select_expr = self.from_query_impl(select_expr)
@@ -202,6 +215,26 @@ class TableNode(SQLNode, ABC):
         """
         sql = cast(expressions.Subqueryable, self.sql)
         return cast(expressions.Expression, sql.subquery())
+
+    def get_sql_for_expression(self, expr: Expression, alias: Optional[str] = None) -> Expression:
+        """
+        Construct a Select statement using expr within the context of this table
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression
+        alias: Optional[str]
+            Alias of the expression
+
+        Returns
+        -------
+        Select
+        """
+        select_expr = self.get_select_statement_without_columns()
+        if alias is not None:
+            expr = expressions.alias_(expr, alias=alias, quoted=True)
+        return select_expr.select(expr)
 
     def assign_column(self, column_name: str, node: ExpressionNode) -> None:
         """Performs an assignment and update column_name's expression
@@ -320,7 +353,7 @@ class ExpressionNode(SQLNode, ABC):
         Expression
             A sqlglot Expression object
         """
-        return select(self.sql).from_(self.table_node.sql_nested())
+        return self.table_node.get_sql_for_expression(self.sql)
 
 
 def has_window_function(expression: Expression) -> bool:
