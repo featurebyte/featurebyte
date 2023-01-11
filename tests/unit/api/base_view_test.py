@@ -54,24 +54,19 @@ class BaseViewTestSuite:
         return view_type_map[self.view_type]
 
     @pytest.fixture(name="data_under_test")
-    def get_data_under_test_fixture(
-        self,
-        snowflake_item_data,
-        snowflake_event_data,
-        snowflake_dimension_data,
-        snowflake_scd_data,
-    ):
+    def get_data_under_test_fixture(self, request):
         data_type_map = {
-            ViewType.DIMENSION_VIEW: snowflake_dimension_data,
-            ViewType.EVENT_VIEW: snowflake_event_data,
-            ViewType.ITEM_VIEW: snowflake_item_data,
-            ViewType.SLOWLY_CHANGING_VIEW: snowflake_scd_data,
+            ViewType.DIMENSION_VIEW: "snowflake_dimension_data",
+            ViewType.EVENT_VIEW: "snowflake_event_data",
+            ViewType.ITEM_VIEW: "snowflake_item_data",
+            ViewType.SLOWLY_CHANGING_VIEW: "snowflake_scd_data",
         }
         if self.view_type not in data_type_map:
             pytest.fail(
                 f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
             )
-        return data_type_map[self.view_type]
+        data_name = data_type_map[self.view_type]
+        return request.getfixturevalue(data_name)
 
     def test_setitem__str_key_series_value(self, view_under_test):
         """
