@@ -22,6 +22,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import (
     DisguisedValueImputation,
     MissingValueImputation,
+    StringValueImputation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
@@ -58,4 +59,5 @@ __all__ = [
     "DisguisedValueImputation",
     "UnexpectedValueImputation",
     "ValueBeyondEndpointImputation",
+    "StringValueImputation",
 ]
