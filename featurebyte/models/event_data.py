@@ -7,7 +7,7 @@ from typing import Any, ClassVar, Dict, Optional, Tuple, Type
 
 from datetime import datetime
 
-from pydantic import root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.enum import DBVarType
@@ -50,9 +50,15 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureJobSetting", "")
 
-    blind_spot: str
-    frequency: str
-    time_modulo_frequency: str
+    # variables passed in by users
+    blind_spot: str = Field(allow_mutation=False)
+    frequency: str = Field(allow_mutation=False)
+    time_modulo_frequency: str = Field(allow_mutation=False)
+
+    # internal fields
+    blind_spot_secs: int = Field(allow_mutation=True, default=0)
+    frequency_secs: int = Field(allow_mutation=True, default=0)
+    time_modulo_frequency_secs: int = Field(allow_mutation=True, default=0)
 
     @root_validator(pre=True)
     @classmethod
@@ -69,11 +75,14 @@ class FeatureJobSetting(FeatureByteBaseModel):
         dict
         """
         _ = cls
-        validate_job_setting_parameters(
+        frequency_secs, time_mod_frequency_secs, blind_spot_secs = validate_job_setting_parameters(
             frequency=values["frequency"],
             time_modulo_frequency=values["time_modulo_frequency"],
             blind_spot=values["blind_spot"],
         )
+        values["frequency_secs"] = frequency_secs
+        values["time_modulo_frequency_secs"] = time_mod_frequency_secs
+        values["blind_spot_secs"] = blind_spot_secs
         return values
 
     def to_seconds(self) -> Dict[str, Any]:
@@ -83,12 +92,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
         -------
         Dict[str, Any]
         """
-        freq, time_mod_freq, blind_spot = validate_job_setting_parameters(
-            frequency=self.frequency,
-            time_modulo_frequency=self.time_modulo_frequency,
-            blind_spot=self.blind_spot,
-        )
-        return {"frequency": freq, "time_modulo_frequency": time_mod_freq, "blind_spot": blind_spot}
+        return {
+            "frequency": self.frequency_secs,
+            "time_modulo_frequency": self.time_modulo_frequency_secs,
+            "blind_spot": self.blind_spot_secs,
+        }
 
 
 class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
