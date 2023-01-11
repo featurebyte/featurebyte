@@ -166,6 +166,11 @@ class BaseAggregator(ABC):
         Returns
         -------
         Feature
+
+        Raises
+        ------
+        ValueError
+            If both fill_value and category parameters are specified
         """
         if fill_value is not None and self.groupby.category is not None:
             raise ValueError("fill_value is not supported for aggregation per category")
