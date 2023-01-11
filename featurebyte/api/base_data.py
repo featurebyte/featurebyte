@@ -14,6 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
@@ -31,6 +32,9 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
     DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
     parent, which is a data object (e.g. EventData)
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["Column"])
 
     info: ColumnInfo
 
@@ -88,6 +92,36 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         ----------
         cleaning_operations: List[CleaningOperation]
             List of cleaning operations to be applied on the column
+
+        Examples
+        --------
+
+        Add missing value imputation & negative value imputation operations to a data column
+
+        >>> import featurebyte as fb
+        >>> event_data = fb.EventData.get("Credit Card Transactions")  # doctest: +SKIP
+        >>> event_data["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...        fb.ValueBeyondEndpointImputation(
+        ...            type="less_than", end_point=0, imputed_value=0
+        ...        ),
+        ...    ]
+        ... )
+
+        Check the column info to confirm that critical data info is updated
+
+        >>> event_data["AMOUNT"].info.dict()  # doctest: +SKIP
+        {'critical_data_info': {'cleaning_operations': [{'imputed_value': 0,
+                                                 'type': 'missing'},
+                                                {'end_point': 0,
+                                                 'imputed_value': 0,
+                                                 'type': 'less_than'}]},
+         'dtype': 'FLOAT',
+         'entity_id': None,
+         'name': 'Discount',
+         'semantic_id': None}
+
         """
         critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
         column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})

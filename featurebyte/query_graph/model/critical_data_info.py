@@ -258,23 +258,86 @@ class IsStringCondition(BaseCondition):
 
 
 class MissingValueImputation(MissingValueCondition, BaseImputeOperation):
-    """Impute missing value"""
+    """
+    MissingValueImputation class is used to impute the missing value of a data column.
+
+    imputed_value: Optional[Union[int, float, str, bool]]
+        Value to replace missing value
+
+    Examples
+    --------
+    Create an imputation rule to replace missing value with 0
+
+    >>> MissingValueImputation(imputed_value=0) # doctest: +SKIP
+    """
 
 
 class DisguisedValueImputation(DisguisedValueCondition, BaseImputeOperation):
-    """Impute disguised values"""
+    """
+    DisguisedValueImputation class is used to impute the disguised missing value of a data column.
+
+    disguised_values: List[Optional[Union[int, float, str, bool]]]
+        List of disguised missing values
+    imputed_value: Optional[Union[int, float, str, bool]]
+        Value to replace disguised missing value
+
+    Examples
+    --------
+    Create an imputation rule to replace -999 with 0
+
+    >>> DisguisedValueImputation(disguised_values=-999, imputed_value=0) # doctest: +SKIP
+    """
 
 
 class UnexpectedValueImputation(UnexpectedValueCondition, BaseImputeOperation):
-    """Impute unexpected values"""
+    """
+    UnexpectedValueImputation class is used to impute the unexpected value of a data column
+
+    expected_values: List[Optional[Union[int, float, str, bool]]]
+        List of expected values, values not in expected value will be imputed
+    imputed_value: Optional[Union[int, float, str, bool]]
+        Value to replace unexpected value
+
+    Examples
+    --------
+    Create an imputation rule to replace value other than "buy" or "sell" to "missing"
+
+    >>> UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
+    """
 
 
 class ValueBeyondEndpointImputation(BoundaryCondition, BaseImputeOperation):
-    """Impute values by specifying boundary"""
+    """
+    ValueBeyondEndpointImputation class is used to impute the value exceed a specified endpoint
+
+    type: Literal["less_than", "less_than_or_equal", "greater_than", "greater_than_or_equal"]
+        Boundary type
+    end_point: Union[int, float]
+        End point
+    imputed_value: Optional[Union[int, float, str, bool]]
+        Value to replace value outside the end point boundary
+
+    Examples
+    --------
+    Create an imputation rule to replace value less than 0 to 0
+
+    >>> ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
+    """
 
 
 class StringValueImputation(IsStringCondition, BaseImputeOperation):
-    """Impute is string value"""
+    """
+    StringValueImputation class is used to impute those value which is string type
+
+    imputed_value: Optional[Union[int, float, str, bool]]
+        Value to replace string value
+
+    Examples
+    --------
+    Create an imputation rule to replace string value with 0
+
+    >>> StringValueImputation(imputed_value=0) # doctest: +SKIP
+    """
 
 
 if TYPE_CHECKING:

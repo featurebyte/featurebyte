@@ -32,6 +32,7 @@ class BaseNodeParameters(BaseModel):
     class Config:
         """Model configuration"""
 
+        # cause validation to fail if extra attributes are included (https://docs.pydantic.dev/usage/model_config/)
         extra = "forbid"
 
 
