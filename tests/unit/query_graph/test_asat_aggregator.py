@@ -60,6 +60,18 @@ def aggregation_spec_with_end_timestamp(
 
 
 @pytest.fixture
+def aggregation_spec_with_serving_names_mapping(
+    aggregate_as_at_node_parameters_with_end_timestamp, scd_table_sql
+):
+    return AggregateAsAtSpec(
+        serving_names=["serving_cust_id"],
+        serving_names_mapping={"serving_cust_id": "new_serving_cust_id"},
+        parameters=aggregate_as_at_node_parameters_with_end_timestamp,
+        source_expr=scd_table_sql,
+    )
+
+
+@pytest.fixture
 def aggregation_specs_same_source_different_agg_funcs(
     aggregate_as_at_node_parameters_with_end_timestamp,
     scd_table_sql,
@@ -223,6 +235,57 @@ def test_asat_aggregate_scd_table_with_end_timestamp(aggregation_spec_with_end_t
         ) AS T0
           ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
           AND REQ."serving_cust_id" = T0."serving_cust_id"
+        """
+    ).strip()
+    assert result.updated_table_expr.sql(pretty=True) == expected
+
+
+def test_asat_aggregate_scd_table_with_serving_names_mapping(
+    aggregation_spec_with_serving_names_mapping,
+):
+    """
+    Test AsAtAggregator handles serving names mapping properly (new_serving_cust_id is referenced
+    instead of the original serving_cust_id)
+    """
+    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator.update(aggregation_spec_with_serving_names_mapping)
+
+    result = aggregator.update_aggregation_table_expr(
+        select("a", "b", "c").from_("REQUEST_TABLE"), "POINT_INT_TIME", ["a", "b", "c"], 0
+    )
+
+    expected = textwrap.dedent(
+        """
+        SELECT
+          a,
+          b,
+          c,
+          "T0"."sum_value_d9f27f309eb1beea" AS "sum_value_d9f27f309eb1beea"
+        FROM REQUEST_TABLE
+        LEFT JOIN (
+          SELECT
+            REQ."POINT_IN_TIME",
+            REQ."new_serving_cust_id",
+            SUM(SCD."value") AS "sum_value_d9f27f309eb1beea"
+          FROM "REQUEST_TABLE_POINT_IN_TIME_new_serving_cust_id" AS REQ
+          INNER JOIN (
+            SELECT
+              *
+            FROM SCD_TABLE
+          ) AS SCD
+            ON REQ."new_serving_cust_id" = SCD."cust_id"
+            AND (
+              SCD."effective_ts" <= REQ."POINT_IN_TIME"
+              AND (
+                SCD."end_ts" > REQ."POINT_IN_TIME" OR SCD."end_ts" IS NULL
+              )
+            )
+          GROUP BY
+            REQ."POINT_IN_TIME",
+            REQ."new_serving_cust_id"
+        ) AS T0
+          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+          AND REQ."new_serving_cust_id" = T0."new_serving_cust_id"
         """
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected
