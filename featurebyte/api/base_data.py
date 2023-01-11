@@ -88,6 +88,21 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         ----------
         cleaning_operations: List[CleaningOperation]
             List of cleaning operations to be applied on the column
+
+        Examples
+        --------
+        Add following imputation rules to a data column
+        - impute missing value with 0
+        - impute value less than 0 to 0
+
+        >>> import featurebyte as fb
+        >>> event_data = fb.EventData.get("Credit Card Transactions")  # doctest: +SKIP
+        >>> event_data["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
+        ...    cleaning_operations=[
+        ...        fb.MissingValueImputation(imputed_value=0),
+        ...        fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
+        ...    ]
+        ... )
         """
         critical_data_info = CriticalDataInfo(cleaning_operations=cleaning_operations)
         column_info = ColumnInfo(**{**self.info.dict(), "critical_data_info": critical_data_info})
