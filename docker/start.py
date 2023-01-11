@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 
 
 def which(program):
@@ -31,15 +32,25 @@ def read_docker_creds():
     return data
 
 
+def restore_docker_cfg():
+    with open(os.path.expanduser("~/.docker/config.json.old"), "rb") as backup_file:
+        with open(os.path.expanduser("~/.docker/config.json"), "wb") as file:
+            file.write(backup_file.read())
+
+
 def edit_docker_cfg():
     # Check if file exists
     if not os.path.isfile(os.path.expanduser("~/.docker/config.json")):
         with open(os.path.expanduser("~/.docker/config.json"), "w") as file:
             file.write("{}")
+    else:
+        with open(os.path.expanduser("~/.docker/config.json.old"), "wb") as backup_file:
+            with open(os.path.expanduser("~/.docker/config.json"), "rb") as file:
+                backup_file.write(file.read())
 
     # Reading
     with open(os.path.expanduser("~/.docker/config.json")) as docker_cfg_file:
-        docker_cfg = json.load(docker_cfg_file)
+        docker_cfg: dict = json.load(docker_cfg_file)
 
         # Config parsing
         #    This is required for windows as by default windows credential helper
@@ -48,6 +59,12 @@ def edit_docker_cfg():
             auths = docker_cfg["auths"]
         else:
             auths = {}
+
+        # Removing conflicting credential helper
+        if "credsStore" in docker_cfg:
+            docker_cfg.pop("credsStore")
+        if "credStore" in docker_cfg:
+            docker_cfg.pop("credStore")
 
         if "us-central1-docker.pkg.dev" in auths:
             print("credentials have been supplied")
@@ -68,7 +85,7 @@ if __name__ == "__main__":
         print("Please install docker or configure your path variable")
 
     # Add Config value
-    print("# Checking docker configuration")
+    print("# Setting docker configuration")
     edit_docker_cfg()
 
     # Delete old deployment
@@ -78,6 +95,10 @@ if __name__ == "__main__":
     # Pulling new image
     print("# Pulling new image")
     subprocess.run("docker compose pull".split(" "))
+
+    # Reverting docker credentials
+    print("# Setting docker configuration")
+    restore_docker_cfg()
 
     # Starting it up
     print("# Starting server")
