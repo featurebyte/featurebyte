@@ -11,6 +11,7 @@ from featurebyte.common.utils import (
     dataframe_from_json,
     dataframe_to_arrow_bytes,
     dataframe_to_json,
+    get_version,
 )
 from featurebyte.enum import DBVarType
 
@@ -75,3 +76,10 @@ def test_dataframe_to_json_infinite_values():
     data = dataframe_to_json(original_df, {})
     output_df = dataframe_from_json(data)
     assert_frame_equal(output_df, expected_df)
+
+
+def test_get_version():
+    """
+    Test get_version
+    """
+    assert get_version() == "0.1.0"
