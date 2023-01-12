@@ -283,7 +283,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
     def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
         previous_columns_info = self.columns_info
         super().update(update_payload=update_payload, allow_update_local=allow_update_local)
-        if self.columns_info != previous_columns_info:
+        if allow_update_local and self.columns_info != previous_columns_info:
             # update the global query graph if there is any changes in columns_info
             _, inserted_node = self.construct_graph_and_node(
                 feature_store_details=self.feature_store.get_feature_store_details(),

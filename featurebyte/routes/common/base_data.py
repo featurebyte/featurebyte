@@ -15,7 +15,7 @@ from featurebyte.models.item_data import ItemDataModel
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
-from featurebyte.schema.tabular_data import DataUpdate
+from featurebyte.schema.tabular_data import DataServiceUpdate, DataUpdate
 from featurebyte.service.data_update import DataDocumentService, DataUpdateService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.event_data import EventDataService
@@ -39,7 +39,7 @@ class BaseDataDocumentController(
     BaseDataDocumentController for API routes
     """
 
-    document_update_schema_class: Type[DataUpdate]
+    document_update_schema_class: Type[DataServiceUpdate]
 
     def __init__(
         self,
@@ -134,16 +134,17 @@ class BaseDataDocumentController(
             await self.data_update_service.update_columns_info(
                 service=self.service,
                 document_id=document_id,
-                data=data,  # type: ignore
+                data=self.document_update_schema_class(**data.dict()),  # type: ignore
             )
 
         if data.status:
             await self.data_update_service.update_data_status(
                 service=self.service,
                 document_id=document_id,
-                data=data,  # type: ignore
+                data=self.document_update_schema_class(**data.dict()),  # type: ignore
             )
 
+        # update other parameters
         update_dict = data.dict(exclude={"status": True, "columns_info": True}, exclude_none=True)
         if update_dict:
             await self.service.update_document(

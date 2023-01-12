@@ -13,11 +13,11 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataModel, DataStatus
 from featurebyte.persistent import Persistent
-from featurebyte.schema.dimension_data import DimensionDataUpdate
+from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityServiceUpdate
-from featurebyte.schema.event_data import EventDataUpdate
-from featurebyte.schema.item_data import ItemDataUpdate
-from featurebyte.schema.scd_data import SCDDataUpdate
+from featurebyte.schema.event_data import EventDataServiceUpdate
+from featurebyte.schema.item_data import ItemDataServiceUpdate
+from featurebyte.schema.scd_data import SCDDataServiceUpdate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
@@ -28,7 +28,9 @@ from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 
 DataDocumentService = Union[EventDataService, ItemDataService, DimensionDataService, SCDDataService]
-DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate, DimensionDataUpdate, SCDDataUpdate]
+DataServiceUpdateSchema = Union[
+    EventDataServiceUpdate, ItemDataServiceUpdate, DimensionDataServiceUpdate, SCDDataServiceUpdate
+]
 
 
 class DataUpdateService(BaseService):
@@ -44,7 +46,7 @@ class DataUpdateService(BaseService):
 
     @staticmethod
     async def update_data_status(
-        service: DataDocumentService, document_id: ObjectId, data: DataUpdateSchema
+        service: DataDocumentService, document_id: ObjectId, data: DataServiceUpdateSchema
     ) -> None:
         """
         Update data status
@@ -55,7 +57,7 @@ class DataUpdateService(BaseService):
             Data service object
         document_id: ObjectId
             Document ID
-        data: DataUpdateSchema
+        data: DataServiceUpdateSchema
             Data upload payload
 
         Raises
@@ -85,7 +87,7 @@ class DataUpdateService(BaseService):
 
     @staticmethod
     async def _validate_column_info_id_field_values(
-        data: DataUpdateSchema,
+        data: DataServiceUpdateSchema,
         field_name: str,
         service: Union[EntityService, SemanticService],
         field_class_name: str,
@@ -118,7 +120,7 @@ class DataUpdateService(BaseService):
             )
 
     async def update_columns_info(
-        self, service: DataDocumentService, document_id: ObjectId, data: DataUpdateSchema
+        self, service: DataDocumentService, document_id: ObjectId, data: DataServiceUpdateSchema
     ) -> None:
         """
         Update data columns info
@@ -129,7 +131,7 @@ class DataUpdateService(BaseService):
             Data service object
         document_id: ObjectId
             Document ID
-        data: DataUpdateSchema
+        data: DataServiceUpdateSchema
             Data upload payload
         """
         document = await service.get_document(document_id=document_id)
@@ -174,7 +176,7 @@ class DataUpdateService(BaseService):
                 await self.update_entity_data_references(document, data)
 
     async def update_entity_data_references(
-        self, document: DataModel, data: DataUpdateSchema
+        self, document: DataModel, data: DataServiceUpdateSchema
     ) -> None:
         """
         Update data columns info
@@ -183,7 +185,7 @@ class DataUpdateService(BaseService):
         ----------
         document: DataModel
             DataModel object
-        data: DataUpdateSchema
+        data: DataServiceUpdateSchema
             Data upload payload
         """
         if not data.columns_info:

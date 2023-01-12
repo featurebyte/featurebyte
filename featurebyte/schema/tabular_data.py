@@ -29,14 +29,21 @@ class DataCreate(FeatureByteBaseModel):
     record_creation_date_column: Optional[StrictStr]
 
 
-class DataUpdate(BaseDocumentServiceUpdateSchema):
+class DataUpdate(FeatureByteBaseModel):
     """
-    DataService update schema
+    Update data payload schema
     """
 
     columns_info: Optional[List[ColumnInfo]]
     status: Optional[DataStatus]
     record_creation_date_column: Optional[StrictStr]
+
+
+class DataServiceUpdate(DataUpdate, BaseDocumentServiceUpdateSchema):
+    """
+    DataService update schema
+    """
+
     graph: Optional[QueryGraphModel]
     node_name: Optional[str]
 

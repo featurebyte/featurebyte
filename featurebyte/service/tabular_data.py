@@ -9,12 +9,12 @@ from bson import ObjectId
 
 from featurebyte.models.feature_store import DataModel as BaseDataModel
 from featurebyte.models.tabular_data import TabularDataModel
-from featurebyte.schema.tabular_data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
 from featurebyte.service.mixin import Document, DocumentCreateSchema
 
 
-class DataService(BaseDocumentService[BaseDataModel, DataCreate, DataUpdate]):
+class DataService(BaseDocumentService[BaseDataModel, DataCreate, DataServiceUpdate]):
     """
     DataService class
     """

@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.routes.common.base_data import BaseDataDocumentController
-from featurebyte.schema.event_data import EventDataList, EventDataUpdate
+from featurebyte.schema.event_data import EventDataList, EventDataServiceUpdate
 from featurebyte.schema.info import EventDataInfo
 from featurebyte.service.event_data import EventDataService
 
@@ -23,7 +23,7 @@ class EventDataController(
     """
 
     paginated_document_class = EventDataList
-    document_update_schema_class = EventDataUpdate
+    document_update_schema_class = EventDataServiceUpdate
 
     async def _get_column_semantic_map(self, document: EventDataModel) -> dict[str, Any]:
         event_timestamp = await self.semantic_service.get_or_create_document(

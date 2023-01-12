@@ -10,13 +10,13 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import ConstructGraphMixin, DataStatus
 from featurebyte.models.persistent import QueryFilter
-from featurebyte.schema.tabular_data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document
 
 DocumentCreate = TypeVar("DocumentCreate", bound=DataCreate)
-DocumentUpdate = TypeVar("DocumentUpdate", bound=DataUpdate)
+DocumentUpdate = TypeVar("DocumentUpdate", bound=DataServiceUpdate)
 
 
 class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, DocumentUpdate]):

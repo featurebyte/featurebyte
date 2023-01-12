@@ -10,7 +10,7 @@ from bson import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.routes.common.base_data import BaseDataDocumentController
-from featurebyte.schema.dimension_data import DimensionDataList, DimensionDataUpdate
+from featurebyte.schema.dimension_data import DimensionDataList, DimensionDataServiceUpdate
 from featurebyte.schema.info import DimensionDataInfo
 from featurebyte.service.dimension_data import DimensionDataService
 
@@ -23,7 +23,7 @@ class DimensionDataController(
     """
 
     paginated_document_class = DimensionDataList
-    document_update_schema_class = DimensionDataUpdate
+    document_update_schema_class = DimensionDataServiceUpdate
 
     async def _get_column_semantic_map(self, document: DimensionDataModel) -> dict[str, Any]:
         dimension_data_id = await self.semantic_service.get_or_create_document(

@@ -10,7 +10,7 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import TableDataType
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.tabular_data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate, DataUpdate
 
 
 class DimensionDataCreate(DataCreate):
@@ -32,5 +32,11 @@ class DimensionDataList(PaginationMixin):
 
 class DimensionDataUpdate(DataUpdate):
     """
-    DimensionData Update Schema
+    DimensionData update payload schema
+    """
+
+
+class DimensionDataServiceUpdate(DataServiceUpdate):
+    """
+    DimensionData service update schema
     """
