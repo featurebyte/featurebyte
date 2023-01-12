@@ -3,7 +3,7 @@ util.py contains common functions used across different classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Sequence, TypeVar, Union
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -62,7 +62,11 @@ class SeriesBinaryOperator:
     Perform a binary operation between a Series, and another value.
     """
 
-    def __init__(self, input_series: SeriesT, other: int | float | str | bool | SeriesT):
+    def __init__(
+        self,
+        input_series: SeriesT,
+        other: int | float | str | bool | SeriesT | Sequence[Union[int, float, str, bool]],
+    ):
         self.input_series = input_series
         self.other = other
 
@@ -116,7 +120,7 @@ class SeriesBinaryOperator:
 
 def series_binary_operation(
     input_series: SeriesT,
-    other: int | float | str | bool | SeriesT,
+    other: int | float | str | bool | SeriesT | Sequence[Union[int, float, str, bool]],
     node_type: NodeType,
     output_var_type: DBVarType,
     right_op: bool = False,

@@ -223,7 +223,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     def _binary_op(
         self,
-        other: int | float | str | bool | Series,
+        other: int | float | str | bool | Series | Sequence[Union[int, float, str, bool]],
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
@@ -838,5 +838,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=NodeType.IS_IN,
             output_var_type=DBVarType.BOOL,
             right_op=right_op,
+            additional_node_params={"values": other},
         )
         return self
