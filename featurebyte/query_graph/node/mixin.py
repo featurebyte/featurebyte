@@ -80,7 +80,7 @@ class AggregationOpStructMixin:
         List of excluded column names
         """
 
-    def _get_parent_column(self, columns: List[ViewDataColumn]) -> Optional[ViewDataColumn]:
+    def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         """
         Get the data column used for aggregation
 
@@ -93,12 +93,14 @@ class AggregationOpStructMixin:
         -------
         Optional[ViewDataColumn]
         """
-        parent_column = None
+        parent_columns = None
         if isinstance(self.parameters, BaseGroupbyParameters) and self.parameters.parent:
             parent_column = next(
                 (col for col in columns if col.name == self.parameters.parent), None
             )
-        return parent_column
+            if parent_column:
+                parent_columns = [parent_column]
+        return parent_columns
 
     def _get_agg_func(self) -> Optional[str]:
         """
@@ -138,10 +140,10 @@ class AggregationOpStructMixin:
         input_operation_info = inputs[0]
         lineage_columns = set(self.get_required_input_columns())  # type: ignore
         wanted_columns = lineage_columns.difference(self._exclude_source_columns())
-        parent_column = self._get_parent_column(input_operation_info.columns)
+        parent_columns = self._get_parent_columns(input_operation_info.columns)
         agg_func = self._get_agg_func()
-        if parent_column:
-            wanted_columns.add(parent_column.name)
+        if parent_columns:
+            wanted_columns.update([parent_column.name for parent_column in parent_columns])
 
         other_node_names = set()
         columns = []
@@ -169,7 +171,7 @@ class AggregationOpStructMixin:
         # prepare output variable type
         if agg_func:
             aggregation_func_obj = construct_agg_func(agg_func)
-            input_var_type = parent_column.dtype if parent_column else columns[0].dtype
+            input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=getattr(self.parameters, "category", None)
             )
