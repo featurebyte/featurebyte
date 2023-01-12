@@ -399,7 +399,7 @@ def test_validate_join__no_overlapping_columns():
     assert "Unable to automatically find a default join column key" in str(exc_info)
 
     # no overlap should have no error with suffix, since we'll use primary keys to join
-    base_view._validate_join(view_without_overlap, rsuffix="suffix")
+    base_view._validate_join(view_without_overlap, on="colA", rsuffix="suffix")
 
 
 def test_validate_join__one_overlapping_column():
@@ -467,10 +467,6 @@ def test_validate_join__check_on_column():
     )
     base_view = SimpleTestView(columns_info=[col_info_a, col_info_b], join_col=col_info_a.name)
     other_view = SimpleTestView(columns_info=[col_info_c], join_col=col_info_c.name)
-
-    # no `on` provided, should have no error in this method. However, this will still throw an error down the line
-    # when we try to get_join_keys since the other join key column is not present in the calling view.
-    base_view._validate_join(other_view, rsuffix="_suffix")
 
     # `on` provided for column in calling view should have no error
     base_view._validate_join(other_view, on=col_info_a.name, rsuffix="_suffix")

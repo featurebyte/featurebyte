@@ -513,21 +513,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             raised when the on column provided, is not present in the columns
         """
         # Validate whether there are overlapping column names
-        if rsuffix == "":
-            left_join_key, _ = self._get_join_keys(other_view, on)
-            current_column_names = {col.name for col in self.columns_info}
-            repeated_column_names = []
-            for other_col in other_view.columns_info:
-                # Raise an error if the name is repeated, but it is not a join key
-                if other_col.name in current_column_names and other_col.name != left_join_key:
-                    repeated_column_names.append(other_col.name)
-            if len(repeated_column_names) > 0:
-                raise RepeatedColumnNamesError(
-                    f"Duplicate column names {repeated_column_names} found between the "
-                    "calling view, and the target view.\nTo resolve this error, do consider "
-                    "setting the rsuffix parameter in `join()` to disambiguate the "
-                    "resulting columns in the joined view."
-                )
+        left_join_key, _ = self._get_join_keys(other_view, on)
+        current_column_names = {col.name for col in self.columns_info}
+        repeated_column_names = []
+        for other_col in append_rsuffix_to_column_info(other_view.columns_info, rsuffix):
+            # Raise an error if the name is repeated, but it is not a join key
+            if other_col.name in current_column_names and other_col.name != left_join_key:
+                repeated_column_names.append(other_col.name)
+        if len(repeated_column_names) > 0:
+            raise RepeatedColumnNamesError(
+                f"Duplicate column names {repeated_column_names} found between the "
+                "calling view, and the target view.\nTo resolve this error, do consider "
+                "setting the rsuffix parameter in `join()` to disambiguate the "
+                "resulting columns in the joined view."
+            )
 
         # Validate whether the join column provided is present in the columns
         if on is not None:
