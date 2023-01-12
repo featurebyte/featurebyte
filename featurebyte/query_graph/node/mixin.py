@@ -1,13 +1,17 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from abc import abstractmethod
 
+from pydantic import BaseModel
+
 from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
+from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -17,6 +21,17 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureInfo,
     ViewDataColumn,
 )
+
+
+class BaseGroupbyParameters(BaseModel):
+    """Common parameters related to groupby operation"""
+
+    keys: List[InColumnStr]
+    parent: Optional[InColumnStr]
+    agg_func: AggFunc
+    value_by: Optional[InColumnStr]
+    serving_names: List[str]
+    entity_ids: Optional[List[PydanticObjectId]]
 
 
 class AggregationOpStructMixin:
@@ -65,6 +80,38 @@ class AggregationOpStructMixin:
         List of excluded column names
         """
 
+    def _get_parent_column(self, columns: List[ViewDataColumn]) -> Optional[ViewDataColumn]:
+        """
+        Get the data column used for aggregation
+
+        Parameters
+        ----------
+        columns: List[ViewDataColumn]
+            List of input columns
+
+        Returns
+        -------
+        Optional[ViewDataColumn]
+        """
+        parent_column = None
+        if isinstance(self.parameters, BaseGroupbyParameters) and self.parameters.parent:
+            parent_column = next(
+                (col for col in columns if col.name == self.parameters.parent), None
+            )
+        return parent_column
+
+    def _get_agg_func(self) -> Optional[str]:
+        """
+        Retrieve agg_func from the parameters
+
+        Returns
+        -------
+        Optional[str]
+        """
+        if isinstance(self.parameters, BaseGroupbyParameters):
+            return self.parameters.agg_func
+        return None
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -91,17 +138,10 @@ class AggregationOpStructMixin:
         input_operation_info = inputs[0]
         lineage_columns = set(self.get_required_input_columns())  # type: ignore
         wanted_columns = lineage_columns.difference(self._exclude_source_columns())
-        has_agg_func = getattr(self.parameters, "agg_func", None)
-        parent_column = None
-        if has_agg_func and self.parameters.parent:
-            # always add parent column back to wanted_columns
-            # fix the case when it is in self._exclude_source_columns()
-            parent_column = next(
-                (col for col in input_operation_info.columns if col.name == self.parameters.parent),
-                None,
-            )
-            if parent_column:
-                wanted_columns.add(parent_column.name)
+        parent_column = self._get_parent_column(input_operation_info.columns)
+        agg_func = self._get_agg_func()
+        if parent_column:
+            wanted_columns.add(parent_column.name)
 
         other_node_names = set()
         columns = []
@@ -112,7 +152,7 @@ class AggregationOpStructMixin:
                 columns.append(col)
 
         columns = [col for col in input_operation_info.columns if col.name in wanted_columns]
-        if not wanted_columns and getattr(self.parameters, "agg_func", None) == AggFunc.COUNT:
+        if not wanted_columns and agg_func == AggFunc.COUNT:
             # for groupby aggregation, the wanted columns is empty
             # in this case, take the first column from input operation info
             columns = input_operation_info.columns[:1]
@@ -127,8 +167,8 @@ class AggregationOpStructMixin:
             output_category = NodeOutputCategory.VIEW
 
         # prepare output variable type
-        if getattr(self.parameters, "agg_func", None):
-            aggregation_func_obj = construct_agg_func(self.parameters.agg_func)
+        if agg_func:
+            aggregation_func_obj = construct_agg_func(agg_func)
             input_var_type = parent_column.dtype if parent_column else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=getattr(self.parameters, "category", None)

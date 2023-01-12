@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.enum import AggFunc, DBVarType, TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
@@ -28,7 +28,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
     ViewDataColumn,
 )
-from featurebyte.query_graph.node.mixin import AggregationOpStructMixin
+from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.util import append_to_lineage
 
@@ -388,17 +388,6 @@ class LagNode(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
-
-
-class BaseGroupbyParameters(BaseModel):
-    """Common parameters related to groupby operation"""
-
-    keys: List[InColumnStr]
-    parent: Optional[InColumnStr]
-    agg_func: AggFunc
-    value_by: Optional[InColumnStr]
-    serving_names: List[str]
-    entity_ids: Optional[List[PydanticObjectId]]
 
 
 class GroupbyNode(AggregationOpStructMixin, BaseNode):
