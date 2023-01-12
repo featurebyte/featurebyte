@@ -9,13 +9,14 @@ import pytest
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
 from tests.util.helper import get_lagged_series_pandas
 
 
-def calculate_feature_ground_truth(
+def calculate_aggregate_over_ground_truth(
     df,
     point_in_time,
     utc_event_timestamps,
@@ -30,7 +31,7 @@ def calculate_feature_ground_truth(
     category=None,
 ):
     """
-    Reference implementation for feature calculation that is as simple as possible
+    Reference implementation for aggregate_over that is as simple as possible
     """
     if variable_column_name is None:
         # take any column because it doesn't matter
@@ -74,8 +75,43 @@ def calculate_feature_ground_truth(
     return out
 
 
+def calculate_aggregate_asat_ground_truth(
+    df,
+    point_in_time,
+    effective_timestamp_column,
+    natural_key_column_name,
+    entity_column_name,
+    entity_value,
+    variable_column_name,
+    agg_func,
+):
+    """
+    Reference implementation for aggregate_asat
+    """
+    if variable_column_name is None:
+        # take any column because it doesn't matter
+        variable_column_name = df.columns[0]
+
+    df = df[df[effective_timestamp_column] <= point_in_time]
+
+    def _extract_current_record(sub_df):
+        latest_effective_timestamp = sub_df[effective_timestamp_column].max()
+        latest_sub_df = sub_df[sub_df[effective_timestamp_column] == latest_effective_timestamp]
+        if latest_sub_df.shape[0] == 0:
+            return None
+        assert latest_sub_df.shape[0] == 1
+        return latest_sub_df.iloc[0]
+
+    df_current = df.groupby(natural_key_column_name).apply(_extract_current_record)
+
+    df_filtered = df_current[df_current[entity_column_name] == entity_value]
+    out = agg_func(df_filtered[variable_column_name])
+
+    return out
+
+
 @pytest.fixture(scope="session")
-def training_events(transaction_data_upper_case):
+def observation_set(transaction_data_upper_case):
 
     # Sample training time points from historical data
     df = transaction_data_upper_case
@@ -99,26 +135,56 @@ def training_events(transaction_data_upper_case):
     return df
 
 
-def get_expected_feature_values(training_events, feature_name, **kwargs):
+@pytest.fixture(scope="session")
+def scd_observation_set(scd_dataframe):
+
+    num_rows = 1000
+    point_in_time_values = pd.date_range(
+        scd_dataframe["Effective Timestamp"].min(),
+        scd_dataframe["Effective Timestamp"].max(),
+        periods=num_rows,
+    ).floor("h")
+
+    rng = np.random.RandomState(0)
+    df = pd.DataFrame(
+        {
+            "POINT_IN_TIME": point_in_time_values,
+            "User Status": rng.choice(scd_dataframe["User Status"].unique(), num_rows),
+        }
+    )
+    # only TZ-naive timestamps in UTC supported for point-in-time
+    df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
+    return df
+
+
+def get_expected_feature_values(kind, observation_set, feature_name, **kwargs):
     """
-    Calculate the expected feature values given training_events and feature parameters
+    Calculate the expected feature values given observation_set and feature parameters
     """
+    assert kind in {"aggregate_over", "aggregate_asat"}
 
     expected_output = defaultdict(list)
 
-    for _, row in training_events.iterrows():
+    for _, row in observation_set.iterrows():
         entity_value = row[kwargs["entity_column_name"]]
         point_in_time = row["POINT_IN_TIME"]
-        val = calculate_feature_ground_truth(
-            point_in_time=point_in_time,
-            entity_value=entity_value,
-            **kwargs,
-        )
+        if kind == "aggregate_over":
+            val = calculate_aggregate_over_ground_truth(
+                point_in_time=point_in_time,
+                entity_value=entity_value,
+                **kwargs,
+            )
+        else:
+            val = calculate_aggregate_asat_ground_truth(
+                point_in_time=point_in_time,
+                entity_value=entity_value,
+                **kwargs,
+            )
         expected_output["POINT_IN_TIME"].append(point_in_time)
         expected_output[kwargs["entity_column_name"]].append(entity_value)
         expected_output[feature_name].append(val)
 
-    df_expected = pd.DataFrame(expected_output, index=training_events.index)
+    df_expected = pd.DataFrame(expected_output, index=observation_set.index)
     return df_expected
 
 
@@ -234,14 +300,14 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
-def test_aggregation(
+def test_aggregate_over(
     transaction_data_upper_case,
-    training_events,
+    observation_set,
     event_data,
     config,
 ):
     """
-    Test that aggregation produces correct feature values
+    Test that aggregate_over produces correct feature values
     """
 
     # Test cases listed here. This is written this way instead of parametrized test is so that all
@@ -311,7 +377,7 @@ def test_aggregation(
     )
 
     features = []
-    df_expected_all = [training_events]
+    df_expected_all = [observation_set]
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
     utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(
         None
@@ -341,7 +407,8 @@ def test_aggregation(
         else:
             window_size = None
         df_expected = get_expected_feature_values(
-            training_events,
+            "aggregate_over",
+            observation_set,
             feature_name,
             df=df,
             entity_column_name=entity_column_name,
@@ -366,7 +433,7 @@ def test_aggregation(
 
     tic = time.time()
     df_historical_features = feature_list.get_historical_features(
-        training_events,
+        observation_set,
         serving_names_mapping={"user id": "USER ID"},
     )
     elapsed_historical = time.time() - tic
@@ -381,3 +448,75 @@ def test_aggregation(
     ).reset_index(drop=True)
 
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
+
+
+def test_aggregate_asat(
+    scd_dataframe,
+    scd_observation_set,
+    scd_data,
+    config,
+):
+    """
+    Test that aggregate_asat produces correct feature values
+    """
+    feature_parameters = [
+        (None, "count", "asat_count", lambda x: len(x)),
+    ]
+
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    entity_column_name = "User Status"
+    effective_timestamp_column = "Effective Timestamp"
+
+    features = []
+    df_expected_all = [scd_observation_set]
+
+    scd_dataframe = scd_dataframe.copy()
+    scd_dataframe[effective_timestamp_column] = pd.to_datetime(
+        scd_dataframe[effective_timestamp_column], utc=True
+    ).dt.tz_localize(None)
+
+    for (
+        variable_column_name,
+        agg_name,
+        feature_name,
+        agg_func_callable,
+    ) in feature_parameters:
+
+        feature = scd_view.groupby(entity_column_name).aggregate_asat(
+            method=agg_name,
+            value_column=variable_column_name,
+            feature_name=feature_name,
+        )
+        features.append(feature)
+
+        df_expected = get_expected_feature_values(
+            "aggregate_asat",
+            scd_observation_set,
+            feature_name,
+            df=scd_dataframe,
+            effective_timestamp_column=effective_timestamp_column,
+            natural_key_column_name="User ID",
+            entity_column_name=entity_column_name,
+            variable_column_name=variable_column_name,
+            agg_func=agg_func_callable,
+        )[[feature_name]]
+
+        df_expected_all.append(df_expected)
+
+    df_expected = pd.concat(df_expected_all, axis=1)
+    feature_list = FeatureList(features)
+
+    # Check historical features
+    df_historical_features = feature_list.get_historical_features(
+        scd_observation_set,
+        serving_names_mapping={"user_status": "User Status"},
+    )
+
+    df_expected = df_expected.sort_values(["POINT_IN_TIME", entity_column_name]).reset_index(
+        drop=True
+    )
+    df_historical_features = df_historical_features.sort_values(
+        ["POINT_IN_TIME", entity_column_name]
+    ).reset_index(drop=True)
+
+    fb_assert_frame_equal(df_historical_features, df_expected, [])
