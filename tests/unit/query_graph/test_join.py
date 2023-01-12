@@ -159,7 +159,9 @@ def test_item_data_join_event_data_attributes_on_demand_tile_gen(
     expected = textwrap.dedent(
         """
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "item_type",
           COUNT(*) AS value_count_7ae9b63c27e9f4f0a013cd6ec230f5a7a6b6fa62
@@ -168,7 +170,7 @@ def test_item_data_join_event_data_attributes_on_demand_tile_gen(
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (

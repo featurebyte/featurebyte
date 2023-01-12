@@ -1,6 +1,6 @@
 WITH REQUEST_TABLE AS (
   SELECT
-    CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
+    CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
     'C1' AS "CUSTOMER_ID"
 ), "REQUEST_TABLE_POINT_IN_TIME_MEMBERSHIP_STATUS" AS (
   SELECT DISTINCT
@@ -22,7 +22,7 @@ WITH REQUEST_TABLE AS (
     INNER JOIN (
       SELECT
         *,
-        LEAD("effective_ts") OVER (PARTITION BY "cust_id" ORDER BY "effective_ts" NULLS LAST) AS "__FB_END_TS"
+        LEAD("effective_ts") OVER (PARTITION BY "cust_id" ORDER BY "effective_ts") AS "__FB_END_TS"
       FROM (
         SELECT
           "effective_ts" AS "effective_ts",

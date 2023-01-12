@@ -357,8 +357,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                   "cust_id" AS "cust_id"
                 FROM "sf_database"."sf_schema"."sf_table"
                 WHERE
-                  "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
-                  AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
+                  "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
+                  AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
                 ORDER BY
                   RANDOM(1234)
                 LIMIT 10

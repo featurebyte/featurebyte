@@ -15,7 +15,9 @@ def test_extended_feature_model__float_feature(float_feature):
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 1800
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
@@ -23,7 +25,7 @@ def test_extended_feature_model__float_feature(float_feature):
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 1800
             ) AS tile_index
           FROM (
@@ -43,8 +45,8 @@ def test_extended_feature_model__float_feature(float_feature):
               FROM "sf_database"."sf_schema"."sf_table"
             )
             WHERE
-              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
           )
         )
         GROUP BY
@@ -77,16 +79,18 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 1800
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "col_int",
-          SUM("col_float") AS value_sum_{aggregation_id}
+          SUM("col_float") AS value_sum_4de8103894117c4d8ee4a327a63ff91a77981539
         FROM (
           SELECT
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 1800
             ) AS tile_index
           FROM (
@@ -106,8 +110,8 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
               FROM "sf_database"."sf_schema"."sf_table"
             )
             WHERE
-              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
           )
         )
         GROUP BY

@@ -327,7 +327,9 @@ def test_graph_interpreter_on_demand_tile_gen(
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("a") AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
           COUNT("a") AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
@@ -336,7 +338,7 @@ def test_graph_interpreter_on_demand_tile_gen(
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -406,7 +408,9 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     expected_sql = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "product_type",
           SUM("a") AS sum_value_avg_{aggregation_id},
@@ -416,7 +420,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -434,8 +438,8 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
               FROM "db"."public"."event_table"
             )
             WHERE
-              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+              "ts" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
           )
         )
         GROUP BY
@@ -507,7 +511,9 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("a") AS sum_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489,
           COUNT("a") AS count_value_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489
@@ -516,7 +522,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -575,7 +581,9 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "biz_id",
           SUM("a") AS value_sum_875069c3061f4fbb8c0e49a0a927676315f07a46
         FROM (
@@ -583,7 +591,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -677,7 +685,9 @@ def test_graph_interpreter_snowflake(graph):
     expected = textwrap.dedent(
         f"""
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
           COUNT(*) AS value_count_fc1ac0d8922166006b45c682224593ed1d15c3c6
         FROM (
@@ -685,7 +695,7 @@ def test_graph_interpreter_snowflake(graph):
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -698,8 +708,8 @@ def test_graph_interpreter_snowflake(graph):
               FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
             )
             WHERE
-              "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)
+              "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
           )
         )
         GROUP BY
@@ -719,7 +729,7 @@ def test_graph_interpreter_snowflake(graph):
         f"""
         SELECT
           TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP)) + tile_index * 3600
+            DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMPNTZ)) + tile_index * 3600
           ) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
           COUNT(*) AS value_count_fc1ac0d8922166006b45c682224593ed1d15c3c6
@@ -728,7 +738,7 @@ def test_graph_interpreter_snowflake(graph):
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP))
+                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMPNTZ))
               ) / 3600
             ) AS tile_index
           FROM (
@@ -741,8 +751,8 @@ def test_graph_interpreter_snowflake(graph):
               FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
             )
             WHERE
-              "SERVER_TIMESTAMP" >= CAST('2022-04-18 00:00:00' AS TIMESTAMP)
-              AND "SERVER_TIMESTAMP" < CAST('2022-04-19 00:00:00' AS TIMESTAMP)
+              "SERVER_TIMESTAMP" >= CAST('2022-04-18 00:00:00' AS TIMESTAMPNTZ)
+              AND "SERVER_TIMESTAMP" < CAST('2022-04-19 00:00:00' AS TIMESTAMPNTZ)
           )
         )
         GROUP BY
@@ -1448,16 +1458,18 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
           value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
         FROM (
           SELECT
-            TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+            TO_TIMESTAMP(
+              DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+            ) AS __FB_TILE_START_DATE_COLUMN,
             "cust_id",
-            ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC) AS value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
+            ROW_NUMBER() OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
+            FIRST_VALUE("a") OVER (PARTITION BY tile_index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_088635a8a233d93984ceb9acdaa23eaa1460f338
           FROM (
             SELECT
               *,
               FLOOR(
                 (
-                  DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))
+                  DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
                 ) / 3600
               ) AS tile_index
             FROM (
@@ -1472,8 +1484,8 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
                 FROM "db"."public"."event_table"
               )
               WHERE
-                "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+                "ts" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
             )
           )
         )
@@ -1530,8 +1542,8 @@ def test_graph_interpreter_sample_date_range(simple_graph):
           "a" AS "a_copy"
         FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMP)
-          AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMP)
+          "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMPNTZ)
+          AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMPNTZ)
         ORDER BY
           RANDOM(10)
         LIMIT 10
