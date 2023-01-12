@@ -127,9 +127,7 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view_wit
             windows=["30m", "1h", "2h"],
             feature_names=["feat_30m", "feat_1h", "feat_2h"],
         )
-    assert "frequency, time_module_frequency and blind_spot parameters should not be None!" in str(
-        exc.value
-    )
+    assert "must be str; got NoneType instead" in str(exc.value)
 
 
 def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):

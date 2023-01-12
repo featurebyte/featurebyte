@@ -3,12 +3,13 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
 from abc import ABC, abstractmethod
 
 from typeguard import typechecked
 
+from featurebyte import FeatureJobSetting
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
@@ -19,7 +20,7 @@ from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import validate_job_setting_parameters, validate_offset_string
+from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
@@ -321,14 +322,14 @@ class WindowAggregator(BaseAggregator):
                 raise ValueError("category is not supported for aggregation with unbounded window")
 
         if windows is not None:
-            frequency, _, _ = self._get_job_setting_params(feature_job_setting)
+            parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
             for window in windows:
                 if window is not None:
-                    validate_window(window, frequency)
+                    validate_window(window, parsed_feature_job_setting.frequency)
 
     def _get_job_setting_params(
         self, feature_job_setting: Optional[dict[str, str]]
-    ) -> Tuple[str, str, str]:
+    ) -> FeatureJobSetting:
         feature_job_setting = feature_job_setting or {}
         frequency = feature_job_setting.get("frequency")
         time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
@@ -339,11 +340,11 @@ class WindowAggregator(BaseAggregator):
             time_modulo_frequency = time_modulo_frequency or default_setting.time_modulo_frequency
             blind_spot = blind_spot or default_setting.blind_spot
 
-        if frequency is None or time_modulo_frequency is None or blind_spot is None:
-            raise ValueError(
-                "frequency, time_module_frequency and blind_spot parameters should not be None!"
-            )
-        return frequency, time_modulo_frequency, blind_spot
+        return FeatureJobSetting(
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
 
     def _prepare_node_parameters(
         self,
@@ -356,15 +357,7 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[dict[str, str]] = None,
     ) -> dict[str, Any]:
 
-        frequency, time_modulo_frequency, blind_spot = self._get_job_setting_params(
-            feature_job_setting
-        )
-        parsed_seconds = validate_job_setting_parameters(
-            frequency=frequency,
-            time_modulo_frequency=time_modulo_frequency,
-            blind_spot=blind_spot,
-        )
-        frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
+        parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
         return {
             "keys": self.groupby.keys,
             "parent": value_column,
@@ -372,9 +365,9 @@ class WindowAggregator(BaseAggregator):
             "value_by": value_by_column,
             "windows": windows,
             "timestamp": timestamp_column or self.view.timestamp_column,
-            "blind_spot": blind_spot_seconds,
-            "time_modulo_frequency": time_modulo_frequency_seconds,
-            "frequency": frequency_seconds,
+            "blind_spot": parsed_feature_job_setting.blind_spot_seconds,
+            "time_modulo_frequency": parsed_feature_job_setting.time_modulo_frequency_seconds,
+            "frequency": parsed_feature_job_setting.frequency_seconds,
             "names": feature_names,
             "serving_names": self.groupby.serving_names,
             "entity_ids": self.groupby.entity_ids,
