@@ -1,17 +1,19 @@
 """
-Databricks Tile Generate Job Script
+Databricks Tile Generate entity tracking Job Script
 """
 
 import argparse
 
 from pyspark.sql import SparkSession
 
+spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+
+
 if __name__ == "__main__":
-    spark = SparkSession.builder.appName("TileGenerateEntityTracking").getOrCreate()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("featurebyte_database", type=str)
-    parser.add_argument("tile_last_start_date_coulmn", type=str)
+    parser.add_argument("tile_last_start_date_column", type=str)
     parser.add_argument("entity_column_names", type=str)
     parser.add_argument("tile_id", type=str)
     parser.add_argument("entity_table", type=str)
@@ -19,13 +21,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     featurebyte_database = args.featurebyte_database
-    tile_last_start_date_coulmn = args.tile_last_start_date_coulmn
+    tile_last_start_date_column = args.tile_last_start_date_column
     entity_column_names = args.entity_column_names
-    tile_id = args.tile_id
+    tile_id = args.tile_id.upper()
     entity_table = args.entity_table
 
     print("featurebyte_database: ", featurebyte_database)
-    print("tile_last_start_date_coulmn: ", tile_last_start_date_coulmn)
+    print("tile_last_start_date_column: ", tile_last_start_date_column)
     print("entity_column_names: ", entity_column_names)
     print("tile_id: ", tile_id)
     print("entity_table: ", entity_table)
@@ -47,19 +49,20 @@ if __name__ == "__main__":
     print("entity_insert_cols_str: ", entity_insert_cols_str)
     print("entity_filter_cols_str: ", entity_filter_cols_str)
 
-    merge_sql = f"""
-        merge into {tracking_table_name} a using {entity_table} b
-            on {entity_filter_cols_str}
-            when matched then
-                update set a.{tile_last_start_date_coulmn} = b.{tile_last_start_date_coulmn}
-            when not matched then
-                insert ({entity_column_names}, {tile_last_start_date_coulmn})
-                    values ({entity_insert_cols_str}, b.{tile_last_start_date_coulmn})
-    """
-    print("merge_sql:", merge_sql)
-
     # create table or insert new records or update existing records
     if not tracking_table_exist:
-        spark.sql(f"create table {tracking_table_name} as SELECT * FROM {entity_table}")
+        create_sql = f"create table {tracking_table_name} as SELECT * FROM {entity_table}"
+        print("create_sql: ", create_sql)
+        spark.sql(create_sql)
     else:
+        merge_sql = f"""
+            merge into {tracking_table_name} a using {entity_table} b
+                on {entity_filter_cols_str}
+                when matched then
+                    update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
+                when not matched then
+                    insert ({entity_column_names}, {tile_last_start_date_column})
+                        values ({entity_insert_cols_str}, b.{tile_last_start_date_column})
+        """
+        print("merge_sql: ", merge_sql)
         spark.sql(merge_sql)

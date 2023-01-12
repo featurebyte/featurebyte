@@ -55,14 +55,17 @@ $$
 
     value_filter_cols = []
     value_select_cols = []
+    value_insert_cols = []
     for (const [i, element] of existing_value_columns.split(",").entries()) {
         value_filter_cols.push(element + " != OLD_"+ element)
         value_filter_cols.push("(" + element + " IS NOT NULL AND OLD_" + element + " IS NULL)")
         value_select_cols.push("b." + element + " as OLD_" + element)
+        value_insert_cols.push("OLD_" + element)
 
     }
     value_filter_cols_str = value_filter_cols.join(" OR ")
     value_select_cols_str = value_select_cols.join(" , ")
+    value_insert_cols_str = value_insert_cols.join(" , ")
 
     //replace SQL template with start and end date strings for tile generation sql
     var new_tile_sql = `
@@ -111,7 +114,7 @@ $$
         // monitor table already exists, insert new records
         var insert_sql = `
             insert into ${monitor_table_name}
-                (${TILE_START_DATE_COLUMN}, INDEX, ${ENTITY_COLUMN_NAMES}, ${existing_value_columns}, EXPECTED_CREATED_AT, CREATED_AT)
+                (${TILE_START_DATE_COLUMN}, INDEX, ${ENTITY_COLUMN_NAMES}, ${existing_value_columns}, ${value_insert_cols_str}, TILE_TYPE, EXPECTED_CREATED_AT, CREATED_AT)
                 ${compare_sql}
         `
         snowflake.execute({sqlText: insert_sql})
