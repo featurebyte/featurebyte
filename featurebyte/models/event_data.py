@@ -9,7 +9,7 @@ from datetime import datetime
 
 from pydantic import Field, root_validator, validator
 
-from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
@@ -55,11 +55,6 @@ class FeatureJobSetting(FeatureByteBaseModel):
     frequency: str = Field(allow_mutation=False)
     time_modulo_frequency: str = Field(allow_mutation=False)
 
-    # internal fields
-    blind_spot_secs: int = Field(allow_mutation=True, default=0)
-    frequency_secs: int = Field(allow_mutation=True, default=0)
-    time_modulo_frequency_secs: int = Field(allow_mutation=True, default=0)
-
     @root_validator(pre=True)
     @classmethod
     def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -75,15 +70,33 @@ class FeatureJobSetting(FeatureByteBaseModel):
         dict
         """
         _ = cls
-        frequency_secs, time_mod_frequency_secs, blind_spot_secs = validate_job_setting_parameters(
+        validate_job_setting_parameters(
             frequency=values["frequency"],
             time_modulo_frequency=values["time_modulo_frequency"],
             blind_spot=values["blind_spot"],
         )
-        values["frequency_secs"] = frequency_secs
-        values["time_modulo_frequency_secs"] = time_mod_frequency_secs
-        values["blind_spot_secs"] = blind_spot_secs
         return values
+
+    @property
+    def frequency_seconds(self) -> int:
+        """
+        Get frequency in seconds
+        """
+        return parse_duration_string(self.frequency, minimum_seconds=60)
+
+    @property
+    def time_modulo_frequency_seconds(self) -> int:
+        """
+        Get time modulo frequency in seconds
+        """
+        return parse_duration_string(self.time_modulo_frequency)
+
+    @property
+    def blind_spot_seconds(self) -> int:
+        """
+        Get blind spot in seconds
+        """
+        return parse_duration_string(self.blind_spot)
 
     def to_seconds(self) -> Dict[str, Any]:
         """Convert job settings format using seconds as time unit
@@ -93,9 +106,9 @@ class FeatureJobSetting(FeatureByteBaseModel):
         Dict[str, Any]
         """
         return {
-            "frequency": self.frequency_secs,
-            "time_modulo_frequency": self.time_modulo_frequency_secs,
-            "blind_spot": self.blind_spot_secs,
+            "frequency": self.frequency_seconds,
+            "time_modulo_frequency": self.time_modulo_frequency_seconds,
+            "blind_spot": self.blind_spot_seconds,
         }
 
 
