@@ -113,7 +113,9 @@ class ViewColumn(Series, SampleMixin):
         input_column_name = cast(ProjectNode.Parameters, self.node.parameters).columns[0]
         view = cast(View, view[[input_column_name]])
         feature = view.as_features(
-            [feature_name], offset=offset, as_feature_column=input_column_name
+            [input_column_name],
+            [feature_name],
+            offset=offset,
         )[feature_name]
         return cast(Feature, feature)
 
@@ -660,71 +662,42 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
         return feature
 
-    def _get_as_features_excluded_columns(self) -> List[str]:
-        """
-        Get a list of columns in the View that should not be considered as feature columns when
-        as_features() is called.
-
-        For example, when as_features() is called this way,
-
-        view[["A", "B", "C"]].as_features(["FeatureA", "FeatureB", "FeatureC"])
-
-        the View object might have additional inherited columns such as the join key. Such columns
-        should not become made a Feature. But not all inherited columns should be excluded
-        automatically because that can include columns such as entity columns which are
-        valid features.
-
-        If it is desired to use excluded columns as features, that can be done using the
-        ViewColumn's as_feature method.
-
-        Returns
-        -------
-        List[str]
-            List of columns that should not be made a Feature in as_features()
-        """
-        return [self.get_join_column()]
-
     def _validate_as_features_input_columns(
-        self, feature_names: list[str], as_feature_column: Optional[str]
-    ) -> list[str]:
+        self,
+        column_names: list[str],
+        feature_names: list[str],
+    ) -> None:
 
-        special_columns = set(self._get_as_features_excluded_columns())
-        if as_feature_column is not None:
-            special_columns.discard(as_feature_column)
+        if len(column_names) == 0:
+            raise ValueError("column_names is empty")
 
-        input_column_names = [
-            column.name for column in self.columns_info if column.name not in special_columns
-        ]
+        for column in column_names:
+            if column not in self.columns:
+                raise ValueError(f"Column '{column}' not found")
 
-        if len(input_column_names) == 0:
+        if len(set(feature_names)) != len(feature_names):
+            raise ValueError("feature_names contains duplicated value(s)")
+
+        if len(feature_names) != len(column_names):
             raise ValueError(
-                "None of the selected columns can be converted to Features. Consider calling"
-                " ViewColumn's as_feature method to create Features one at a time."
+                f"Length of feature_names ({len(feature_names)}) should be the same as column_names"
+                f" ({len(column_names)})"
             )
-
-        if len(feature_names) != len(input_column_names):
-            input_column_names_str = ", ".join(sorted(input_column_names))
-            raise ValueError(
-                f"Length of feature_names should be {len(input_column_names)}, got"
-                f" {len(feature_names)} (columns to be converted to features are:"
-                f" {input_column_names_str}). Consider selecting columns before calling"
-                " as_features."
-            )
-
-        return input_column_names
 
     def _get_input_node_for_lookup_node(self) -> Node:
         """
-        Get the node before any projection to be used as the input node for the lookup node in
-        as_features(). Removing redundant projections allows joins to be shared for lookup
-        operations using the same source.
+        Get the node before any projection(s) to be used as the input node for the lookup node in
+        as_features(). The view before such projection(s) must also have those columns and can be
+        used as the input instead. Removing redundant projections allows joins to be shared for
+        lookup operations using the same source.
 
-        self.node is typically a Project node due to the way as_features() is called:
+        Example:
 
-        view[["A", "B", "C"]].as_features(["FeatureA", "FeatureB", "FeatureC"])
+        features_ab = view[columns].as_features(["a", "b"], ["FeatureA", "FeatureB"])
+        features_c = view.as_features(["c"], ["FeatureC"])
 
-        The view before that projection must also have those columns and can be used as the input
-        instead.
+        When features_ab and features_c are materialised in the same feature list, they can be
+        retrieved using the same join query.
 
         Returns
         -------
@@ -743,22 +716,21 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     @typechecked
     def as_features(
         self,
+        column_names: List[str],
         feature_names: List[str],
         offset: Optional[str] = None,
-        as_feature_column: Optional[str] = None,
     ) -> FeatureGroup:
         """
         Create lookup features directly from the columns in the View
 
         Parameters
         ----------
-        feature_names: list[str]
-            Feature names
-        offset: str
+        column_names: List[str]
+            Column names to be used to create the features
+        feature_names: List[str]
+            Feature names corresponding to column_names
+        offset: Optional[str]
             When specified, retrieve feature values as of this offset prior to the point-in-time
-        as_feature_column: Optional[str]
-            When specified, override the default columns exclusion rule for this column name. Used
-            internally by as_feature to support creating lookup features using special columns.
 
         Raises
         ------
@@ -768,10 +740,20 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns
         -------
         FeatureGroup
+
+        Examples
+        --------
+        >>> import featurebyte as fb
+        >>> features = dimension_view.as_features(  # doctest: +SKIP
+        ...    column_names=["column_a", "column_b"],
+        ...    feature_names=["Feature A", "Feature B"],
+        ... )
+        >>> features.feature_names  # doctest: +SKIP
+        ['Feature A', 'Feature B']
         """
-        # Input column names
-        input_column_names = self._validate_as_features_input_columns(
-            feature_names=feature_names, as_feature_column=as_feature_column
+        self._validate_as_features_input_columns(
+            column_names=column_names,
+            feature_names=feature_names,
         )
 
         self._validate_offset(offset)
@@ -791,7 +773,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         # Set up Lookup node
         additional_params = self._get_as_feature_parameters(offset=offset)
         lookup_node_params = {
-            "input_column_names": input_column_names,
+            "input_column_names": column_names,
             "feature_names": feature_names,
             "entity_column": entity_column,
             "serving_name": serving_name,
@@ -806,7 +788,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             input_nodes=[input_node],
         )
         features = []
-        for input_column_name, feature_name in zip(input_column_names, feature_names):
+        for input_column_name, feature_name in zip(column_names, feature_names):
             feature = self._project_feature_from_node(
                 node=lookup_node,
                 feature_name=feature_name,

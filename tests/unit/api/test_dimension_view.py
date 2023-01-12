@@ -55,21 +55,32 @@ def snowflake_dimension_view_with_entity(snowflake_dimension_data, cust_id_entit
 
 def test_as_features__invalid_column_names(snowflake_dimension_view):
     """
+    Test as_features() with a missing input column name
+    """
+    with pytest.raises(ValueError) as exc:
+        snowflake_dimension_view.as_features(["non_existing_col"], ["feature_name"])
+    assert str(exc.value) == "Column 'non_existing_col' not found"
+
+
+def test_as_features__empty_column_names(snowflake_dimension_view):
+    """
     Test as_features() with invalid number of feature names provided
     """
     with pytest.raises(ValueError) as exc:
-        snowflake_dimension_view.as_features(["col_float"])
-    assert "Length of feature_names should be 8, got 1" in str(exc.value)
+        snowflake_dimension_view.as_features([], [])
+    assert str(exc.value) == "column_names is empty"
 
 
-def test_as_features__all_special_columns(snowflake_dimension_view_with_entity):
+def test_as_features__duplicate_feature_names(snowflake_dimension_view):
     """
-    Test as_features() when only special columns are selected
+    Test as_features() with duplicate values in feature_names
     """
     with pytest.raises(ValueError) as exc:
-        # col_int is the primary key column of this view
-        snowflake_dimension_view_with_entity[["col_int"]].as_features(["IntFeature"])
-    assert "None of the selected columns can be converted to Features" in str(exc.value)
+        snowflake_dimension_view.as_features(
+            column_names=["col_float", "col_text"],
+            feature_names=["FloatFeature", "FloatFeature"],
+        )
+    assert str(exc.value) == "feature_names contains duplicated value(s)"
 
 
 def test_as_features__primary_key_not_entity(snowflake_dimension_view):
@@ -77,28 +88,26 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view):
     Test as_features() when the primary key in not an entity
     """
     with pytest.raises(ValueError) as exc:
-        snowflake_dimension_view[["col_float", "col_char"]].as_features(["col_float", "col_char"])
+        snowflake_dimension_view.as_features(["col_float", "col_char"], ["col_float", "col_char"])
     assert str(exc.value) == 'Column "col_int" is not an entity!'
 
 
-@pytest.mark.parametrize("include_entity", [False, True])
-def test_as_features__primary_key_not_required(
-    snowflake_dimension_view_with_entity, cust_id_entity, include_entity
-):
+def test_as_features__with_primary_key_column(snowflake_dimension_view_with_entity, cust_id_entity):
     """
-    Test calling as_features() on a subset with / without entity column works correctly
+    Test calling as_features() when including primary column works correctly
     """
     # Set entity
     view = snowflake_dimension_view_with_entity
+    entity_column = "col_int"
+    assert entity_column in view.entity_columns
 
     # Select columns for as_features
-    columns = ["col_float", "col_char"]
-    if include_entity:
-        columns = ["col_int"] + columns
-    feature_names = ["FloatFeature", "CharFeature"]
+    columns = [entity_column, "col_float", "col_char"]
+    feature_names = ["IntFeature", "FloatFeature", "CharFeature"]
 
-    feature_group = view[columns].as_features(feature_names)
-    assert feature_group.feature_names == ["FloatFeature", "CharFeature"]
+    feature_group = view.as_features(columns, feature_names)
+    assert feature_group.feature_names == ["IntFeature", "FloatFeature", "CharFeature"]
+    assert feature_group["IntFeature"].dtype == DBVarType.INT
     assert feature_group["FloatFeature"].dtype == DBVarType.FLOAT
     assert feature_group["CharFeature"].dtype == DBVarType.CHAR
 
@@ -121,8 +130,8 @@ def test_as_features__primary_key_not_required(
         "type": "lookup",
         "output_type": "frame",
         "parameters": {
-            "input_column_names": ["col_float", "col_char"],
-            "feature_names": ["FloatFeature", "CharFeature"],
+            "input_column_names": ["col_int", "col_float", "col_char"],
+            "feature_names": ["IntFeature", "FloatFeature", "CharFeature"],
             "entity_column": "col_int",
             "serving_name": "cust_id",
             "entity_id": cust_id_entity.id,
@@ -139,7 +148,7 @@ def test_as_features__offset_provided_but_ignored(
     """
     # offset ignored but should not have error
     view = snowflake_dimension_view_with_entity
-    _ = view[["col_float", "col_char"]].as_features(["col_float", "col_char"], offset="7d")
+    _ = view.as_features(["col_float", "col_char"], ["col_float", "col_char"], offset="7d")
 
 
 def test_as_feature__not_supported(snowflake_dimension_view_with_entity):
@@ -206,8 +215,8 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
     view = snowflake_dimension_view_with_entity
     feature_1 = view["col_float"].as_feature("FloatFeature")
     feature_2 = view[["col_float", "col_char"]]["col_char"].as_feature("CharFeature")
-    feature_3_and_4 = view[["col_binary", "col_boolean"]].as_features(
-        ["BinaryFeature", "BoolFeature"]
+    feature_3_and_4 = view.as_features(
+        ["col_binary", "col_boolean"], ["BinaryFeature", "BoolFeature"]
     )
     feature_list = FeatureList([feature_1, feature_2, feature_3_and_4])
     feature_list_sql = feature_list.sql

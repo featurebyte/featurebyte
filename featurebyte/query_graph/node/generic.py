@@ -558,6 +558,10 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
+        parent_columns = [col for col in columns if col.name in self.parameters.input_column_names]
+        return parent_columns
+
     def _get_aggregations(
         self,
         columns: List[ViewDataColumn],
