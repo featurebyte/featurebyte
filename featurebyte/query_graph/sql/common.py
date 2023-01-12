@@ -86,7 +86,7 @@ def get_qualified_column_identifier(
     return expr
 
 
-def get_dialect_from_source_type(source_type: SourceType) -> str | None:
+def get_dialect_from_source_type(source_type: SourceType) -> str:
     """
     Get the dialect name given SourceType
 
@@ -97,11 +97,13 @@ def get_dialect_from_source_type(source_type: SourceType) -> str | None:
 
     Returns
     -------
-    str | None
+    str
     """
-    dialect = None
     if source_type == SourceType.DATABRICKS:
         dialect = "spark"
+    else:
+        assert source_type == SourceType.SNOWFLAKE
+        dialect = "snowflake"
     return dialect
 
 

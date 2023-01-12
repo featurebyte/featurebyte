@@ -94,37 +94,29 @@ def test_replace_expression(
         (
             lambda s: s.str.pad(width=10, side="left", fillchar="-"),
             """
-            CASE
-              WHEN LENGTH("PRODUCT_ACTION") >= 10
-              THEN "PRODUCT_ACTION"
-              ELSE LPAD(\"PRODUCT_ACTION\", 10, '-')
-            END
+            IFF(LENGTH("PRODUCT_ACTION") >= 10, "PRODUCT_ACTION", LPAD("PRODUCT_ACTION", 10, '-'))
             """,
         ),
         (
             lambda s: s.str.pad(width=9, side="right", fillchar="-"),
             """
-            CASE
-              WHEN LENGTH("PRODUCT_ACTION") >= 9
-              THEN "PRODUCT_ACTION"
-              ELSE RPAD(\"PRODUCT_ACTION\", 9, '-')
-            END
+            IFF(LENGTH("PRODUCT_ACTION") >= 9, "PRODUCT_ACTION", RPAD(\"PRODUCT_ACTION\", 9, '-'))
             """,
         ),
         (
             lambda s: s.str.pad(width=8, side="both", fillchar="-"),
             """
-            CASE
-              WHEN LENGTH("PRODUCT_ACTION") >= 8
-              THEN "PRODUCT_ACTION"
-              ELSE RPAD(
+            IFF(
+              LENGTH("PRODUCT_ACTION") >= 8,
+              "PRODUCT_ACTION",
+              RPAD(
                 LPAD("PRODUCT_ACTION", 8 - CEIL((
                   8 - LENGTH("PRODUCT_ACTION")
                 ) / 2), '-'),
                 8,
                 '-'
               )
-            END
+            )
             """,
         ),
     ],
