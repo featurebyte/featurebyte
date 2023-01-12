@@ -254,7 +254,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             "data_type": "event_data",
             "id": feature_namespace.tabular_data_ids[0],
         },
-        "column_names": {
+        "input_columns": {
             "Input0": {"data": "sf_event_data", "column_name": "col_float", "semantic": None}
         },
         "derived_columns": {},
@@ -324,7 +324,7 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
             "data_type": "event_data",
             "id": feature_iet.tabular_data_ids[0],
         },
-        "column_names": {
+        "input_columns": {
             "Input0": {
                 "data": "sf_event_data",
                 "column_name": "event_timestamp",

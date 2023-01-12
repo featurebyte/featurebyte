@@ -724,9 +724,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ----------
         column_names: List[str]
             Column names to be used to create the features
-        feature_names: list[str]
+        feature_names: List[str]
             Feature names corresponding to column_names
-        offset: str
+        offset: Optional[str]
             When specified, retrieve feature values as of this offset prior to the point-in-time
 
         Raises
@@ -737,6 +737,16 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         Returns
         -------
         FeatureGroup
+
+        Examples
+        --------
+        >>> import featurebyte as fb
+        >>> features = dimension_view.as_features(  # doctest: +SKIP
+        ...    column_names=["column_a", "column_b"],
+        ...    feature_names=["Feature A", "Feature B"],
+        ... )
+        >>> features.feature_names  # doctest: +SKIP
+        ['Feature A', 'Feature B']
         """
         self._validate_as_features_input_columns(
             column_names=column_names,

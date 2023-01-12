@@ -395,7 +395,7 @@ class InfoService(BaseService):
         main_data = self._get_main_data(tabular_data_list.data)
         return {
             "main_data": {"name": main_data.name, "data_type": main_data.type, "id": main_data.id},
-            "column_names": source_columns,
+            "input_columns": source_columns,
             "derived_columns": derived_columns,
             "aggregations": aggregation_columns,
             "post_aggregation": post_aggregation,
