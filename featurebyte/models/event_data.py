@@ -80,6 +80,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
     def frequency_seconds(self) -> int:
         """
         Get frequency in seconds
+
+        Returns
+        -------
+        int
+            frequency in seconds
         """
         return parse_duration_string(self.frequency, minimum_seconds=60)
 
@@ -87,6 +92,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
     def time_modulo_frequency_seconds(self) -> int:
         """
         Get time modulo frequency in seconds
+
+        Returns
+        -------
+        int
+            time modulo frequency in seconds
         """
         return parse_duration_string(self.time_modulo_frequency)
 
@@ -94,6 +104,11 @@ class FeatureJobSetting(FeatureByteBaseModel):
     def blind_spot_seconds(self) -> int:
         """
         Get blind spot in seconds
+
+        Returns
+        -------
+        int
+            blind spot in seconds
         """
         return parse_duration_string(self.blind_spot)
 
