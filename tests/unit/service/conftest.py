@@ -16,7 +16,7 @@ from featurebyte.enum import SemanticType
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate
-from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
+from featurebyte.schema.event_data import EventDataCreate, EventDataServiceUpdate
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
@@ -250,7 +250,7 @@ async def event_data_fixture(test_dir, feature_store, event_data_service, semant
 
         event_data = await event_data_service.update_document(
             document_id=event_data.id,
-            data=EventDataUpdate(columns_info=columns_info),
+            data=EventDataServiceUpdate(columns_info=columns_info),
             return_document=True,
         )
         return event_data

@@ -8,11 +8,11 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.schema.dimension_data import DimensionDataUpdate
+from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
-from featurebyte.schema.event_data import EventDataUpdate
-from featurebyte.schema.item_data import ItemDataUpdate
-from featurebyte.schema.scd_data import SCDDataUpdate
+from featurebyte.schema.event_data import EventDataServiceUpdate
+from featurebyte.schema.item_data import ItemDataServiceUpdate
+from featurebyte.schema.scd_data import SCDDataServiceUpdate
 
 
 @pytest.mark.asyncio
@@ -34,7 +34,7 @@ async def test_update_data_status(
     """Test update_data_status"""
     # setup event data status for testing
     await event_data_service.update_document(
-        document_id=event_data.id, data=EventDataUpdate(status=from_status)
+        document_id=event_data.id, data=EventDataServiceUpdate(status=from_status)
     )
     doc = await event_data_service.get_document(document_id=event_data.id)
     assert doc.status == from_status
@@ -42,7 +42,7 @@ async def test_update_data_status(
         await data_update_service.update_data_status(
             service=event_data_service,
             document_id=event_data.id,
-            data=EventDataUpdate(status=to_status),
+            data=EventDataServiceUpdate(status=to_status),
         )
         doc = await event_data_service.get_document(document_id=event_data.id)
         assert doc.status == (to_status or from_status)
@@ -51,7 +51,7 @@ async def test_update_data_status(
             await data_update_service.update_data_status(
                 service=event_data_service,
                 document_id=event_data.id,
-                data=EventDataUpdate(status=to_status),
+                data=EventDataServiceUpdate(status=to_status),
             )
         assert f"Invalid status transition from {from_status} to {to_status}" in str(exc.value)
 
@@ -82,7 +82,7 @@ async def test_update_columns_info(
     await data_update_service.update_columns_info(
         service=event_data_service,
         document_id=event_data.id,
-        data=EventDataUpdate(columns_info=columns_info),
+        data=EventDataServiceUpdate(columns_info=columns_info),
     )
 
     # check the updated column info
@@ -101,7 +101,7 @@ async def test_update_columns_info(
     await data_update_service.update_columns_info(
         service=event_data_service,
         document_id=event_data.id,
-        data=EventDataUpdate(columns_info=columns_info),
+        data=EventDataServiceUpdate(columns_info=columns_info),
     )
     new_entity = await entity_service.get_document(document_id=new_entity.id)
     assert new_entity.tabular_data_ids == [other_data_id, event_data.id]
@@ -112,7 +112,7 @@ async def test_update_columns_info(
     await data_update_service.update_columns_info(
         service=event_data_service,
         document_id=event_data.id,
-        data=EventDataUpdate(columns_info=columns_info),
+        data=EventDataServiceUpdate(columns_info=columns_info),
     )
     new_entity = await entity_service.get_document(document_id=new_entity.id)
     assert new_entity.tabular_data_ids == [other_data_id]
@@ -125,7 +125,7 @@ async def test_update_columns_info(
         await data_update_service.update_columns_info(
             service=event_data_service,
             document_id=event_data.id,
-            data=EventDataUpdate(columns_info=columns_info),
+            data=EventDataServiceUpdate(columns_info=columns_info),
         )
 
     expected_msg = f"Entity IDs ['{unknown_id}'] not found for columns ['col_int']"
@@ -138,7 +138,7 @@ async def test_update_columns_info(
         await data_update_service.update_columns_info(
             service=event_data_service,
             document_id=event_data.id,
-            data=EventDataUpdate(columns_info=columns_info),
+            data=EventDataServiceUpdate(columns_info=columns_info),
         )
 
     expected_msg = f"Semantic IDs ['{unknown_id}'] not found for columns ['col_int']"
@@ -163,7 +163,7 @@ async def test_update_columns_info__critical_data_info(
     await data_update_service.update_columns_info(
         service=event_data_service,
         document_id=event_data.id,
-        data=EventDataUpdate(columns_info=columns_info),
+        data=EventDataServiceUpdate(columns_info=columns_info),
     )
 
     # check the updated document
@@ -217,10 +217,10 @@ async def test_update_columns_info__critical_data_info(
 @pytest.mark.parametrize(
     "fixture_name,update_class,primary_key_column",
     [
-        ("snowflake_event_data", EventDataUpdate, "event_id_column"),
-        ("snowflake_scd_data", SCDDataUpdate, "surrogate_key_column"),
-        ("snowflake_item_data", ItemDataUpdate, "item_id_column"),
-        ("snowflake_dimension_data", DimensionDataUpdate, "dimension_id_column"),
+        ("snowflake_event_data", EventDataServiceUpdate, "event_id_column"),
+        ("snowflake_scd_data", SCDDataServiceUpdate, "surrogate_key_column"),
+        ("snowflake_item_data", ItemDataServiceUpdate, "item_id_column"),
+        ("snowflake_dimension_data", DimensionDataServiceUpdate, "dimension_id_column"),
     ],
 )
 async def test_update_entity_data_references(

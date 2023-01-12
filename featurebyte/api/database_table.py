@@ -17,7 +17,6 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
@@ -106,11 +105,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
             values["node_name"] = node.name
 
         return values
-
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-        _, node_name_map = GlobalQueryGraph().load(self.graph)
-        self.node_name = node_name_map[self.node_name]
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):

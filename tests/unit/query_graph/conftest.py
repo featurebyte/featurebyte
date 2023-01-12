@@ -1115,3 +1115,34 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         columns_info=columns_info,
         node_name=node.name,
     )
+
+
+@pytest.fixture(name="query_graph_and_assign_node_with_cdi")
+def query_graph_and_assign_node_with_cdi_fixture(global_graph, input_node):
+    """Fixture of a query with some operations ready to run groupby (contains graph node)"""
+    # pylint: disable=duplicate-code
+    proj_a = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    proj_b = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    sum_node = global_graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a, proj_b],
+    )
+    assign_node = global_graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "c"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node, sum_node],
+    )
+    return global_graph, assign_node

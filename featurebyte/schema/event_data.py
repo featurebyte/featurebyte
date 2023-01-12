@@ -8,9 +8,10 @@ from typing import List, Literal, Optional
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.tabular_data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate, DataUpdate
 
 
 class EventDataCreate(DataCreate):
@@ -32,9 +33,21 @@ class EventDataList(PaginationMixin):
     data: List[EventDataModel]
 
 
-class EventDataUpdate(DataUpdate):
+class EventDataUpdateMixin(FeatureByteBaseModel):
     """
-    EventData Update Schema
+    EventData specific update schema
     """
 
     default_feature_job_setting: Optional[FeatureJobSetting]
+
+
+class EventDataUpdate(EventDataUpdateMixin, DataUpdate):
+    """
+    EventData update payload schema
+    """
+
+
+class EventDataServiceUpdate(EventDataUpdateMixin, DataServiceUpdate):
+    """
+    EventData service update schema
+    """

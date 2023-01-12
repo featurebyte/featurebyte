@@ -8,9 +8,10 @@ from typing import List, Literal, Optional
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import TableDataType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.tabular_data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate, DataUpdate
 
 
 class SCDDataCreate(DataCreate):
@@ -34,10 +35,22 @@ class SCDDataList(PaginationMixin):
     data: List[SCDDataModel]
 
 
-class SCDDataUpdate(DataUpdate):
+class SCDDataUpdateMixin(FeatureByteBaseModel):
     """
-    SCDData Update Schema
+    SCDData specific update schema
     """
 
     end_timestamp_column: Optional[StrictStr]
     current_flag_column: Optional[StrictStr]
+
+
+class SCDDataUpdate(SCDDataUpdateMixin, DataUpdate):
+    """
+    SCDData update payload schema
+    """
+
+
+class SCDDataServiceUpdate(SCDDataUpdateMixin, DataServiceUpdate):
+    """
+    SCDData service update schema
+    """

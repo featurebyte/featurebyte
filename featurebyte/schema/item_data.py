@@ -9,7 +9,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.schema.tabular_data import DataCreate, DataUpdate
+from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate, DataUpdate
 
 
 class ItemDataCreate(DataCreate):
@@ -33,5 +33,11 @@ class ItemDataList(PaginationMixin):
 
 class ItemDataUpdate(DataUpdate):
     """
-    ItemData update schema
+    ItemData update payload schema
+    """
+
+
+class ItemDataServiceUpdate(DataServiceUpdate):
+    """
+    ItemData service update schema
     """

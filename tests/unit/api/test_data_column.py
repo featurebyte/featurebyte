@@ -7,6 +7,7 @@ import pytest
 
 from featurebyte import Entity, EventView
 from featurebyte.api.base_data import DataColumn
+from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import (
@@ -96,7 +97,7 @@ def test_data_column__as_entity__saved__entity_not_found_exception(saved_event_d
 
 
 def _check_event_data_with_critical_data_info(event_data):
-    """ "Check critical data info"""
+    """ "Check update critical data info"""
     # check that event data node type is INPUT when there's no critical data info
     assert event_data.node.type == NodeType.INPUT
     node_name_before = event_data.node_name
@@ -114,6 +115,14 @@ def _check_event_data_with_critical_data_info(event_data):
     assert event_data.node.type == NodeType.INPUT
     assert event_data.node_name == node_name_before
 
+    if event_data.saved:
+        # check that node name still input node type as there is no critical data info
+        config = Configurations()
+        client = config.get_client()
+        response = client.get(f"/event_data/{event_data.id}")
+        response_dict = response.json()
+        assert response_dict["node_name"].startswith("input")
+
     # update critical data info with some cleaning operations
     event_data.col_int.update_critical_data_info(
         cleaning_operations=[
@@ -121,6 +130,15 @@ def _check_event_data_with_critical_data_info(event_data):
             ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
         ]
     )
+
+    if event_data.saved:
+        # check that output node is a graph node after critical data info get updated
+        config = Configurations()
+        client = config.get_client()
+        response = client.get(f"/event_data/{event_data.id}")
+        response_dict = response.json()
+        assert response_dict["node_name"].startswith("graph")
+
     assert event_data.node.type == NodeType.GRAPH
     expected_query = textwrap.dedent(
         """
@@ -150,11 +168,35 @@ def _check_event_data_with_critical_data_info(event_data):
     assert event_view.preview_sql() == expected_query
 
 
+def _check_remove_critical_data_info(event_data):
+    """ "Check remove critical data info"""
+    assert event_data.node.type == NodeType.GRAPH
+    event_data.col_boolean.update_critical_data_info(cleaning_operations=[])
+    event_data.col_int.update_critical_data_info(cleaning_operations=[])
+    for column_info in event_data.columns_info:
+        if column_info.critical_data_info:
+            assert not column_info.critical_data_info.cleaning_operations
+        else:
+            assert column_info.critical_data_info is None
+
+    if event_data.saved:
+        # check that output node is an input node after all critical data info get moved
+        config = Configurations()
+        client = config.get_client()
+        response = client.get(f"/event_data/{event_data.id}")
+        response_dict = response.json()
+        assert response_dict["node_name"].startswith("input")
+
+    assert event_data.node.type == NodeType.INPUT
+
+
 def test_data_column__update_critical_data_info(snowflake_event_data):
     """Test update critical data info of a data column"""
     _check_event_data_with_critical_data_info(snowflake_event_data)
+    _check_remove_critical_data_info(snowflake_event_data)
 
 
 def test_data_column__update_critical_data_info__saved_data(saved_event_data):
     """Test update critical data info of a saved data column"""
     _check_event_data_with_critical_data_info(saved_event_data)
+    _check_remove_critical_data_info(saved_event_data)
