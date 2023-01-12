@@ -50,10 +50,9 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     __fbautodoc_proxy_class__: Tuple[str, str] = ("featurebyte.FeatureJobSetting", "")
 
-    # variables passed in by users
-    blind_spot: str = Field(allow_mutation=False)
-    frequency: str = Field(allow_mutation=False)
-    time_modulo_frequency: str = Field(allow_mutation=False)
+    blind_spot: str
+    frequency: str
+    time_modulo_frequency: str
 
     @root_validator(pre=True)
     @classmethod
