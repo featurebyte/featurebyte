@@ -808,8 +808,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Returns
         -------
-        Feature
-            new feature
+        Series
+            updated series
         """
         self.isin_validation(other)
 
