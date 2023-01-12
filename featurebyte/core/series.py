@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union
 
 from functools import wraps
 
@@ -779,3 +779,59 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         # Copying a Series should prevent it from modifying the parent Frame
         kwargs.pop("deep", None)
         return super().copy(*args, **kwargs, deep=True)
+
+    def isin_validation(self, other: Union[Series, Sequence[Union[bool, int, float, str]]]) -> None:
+        """
+        Optional validation that can be added by subclasses if needed.
+
+        Parameters
+        ----------
+        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+            other input to check whether the current series is in
+        """
+        return
+
+    @typechecked
+    def isin(
+        self, other: Union[Series, Sequence[Union[bool, int, float, str]]], right_op: bool = False
+    ) -> Series:
+        """
+        Identify if the lookup feature value is in the keys of the dictionary
+        lookup_feature.isin(dictionary_feature)
+
+        Parameters
+        ----------
+        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+            other input to check whether the current series is in
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Feature
+            new feature
+        """
+        self.isin_validation(other)
+
+        # convert to dictionary keys if the other input is a series.
+        other_series = other
+        if isinstance(other, Series):
+            if other.dtype != DBVarType.OBJECT:
+                raise ValueError(
+                    "we can only operate on other series if the other series is a dictionary series."
+                )
+            other_series = series_unary_operation(
+                input_series=other,
+                node_type=NodeType.DICTIONARY_KEYS,
+                output_var_type=DBVarType.ARRAY,
+                node_params={},
+            )
+
+        # perform the is in check when the other series is an array
+        self._binary_op(
+            other=other_series,
+            node_type=NodeType.IS_IN,
+            output_var_type=DBVarType.BOOL,
+            right_op=right_op,
+        )
+        return self

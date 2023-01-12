@@ -48,7 +48,6 @@ class NodeType(StrEnum):
     LOOKUP = "lookup"
     JOIN = "join"
     JOIN_FEATURE = "join_feature"
-    IS_IN_DICT = "is_in_dict"
 
     # other operations
     ASSIGN = "assign"
@@ -56,7 +55,7 @@ class NodeType(StrEnum):
     ALIAS = "alias"
     IS_NULL = "is_null"
     CAST = "cast"
-    IS_IN = "is_in"  # SQL generation has not been implemented
+    IS_IN = "is_in"
     IS_STRING = "is_string"  # SQL generation has not been implemented
 
     # string operations
@@ -79,6 +78,7 @@ class NodeType(StrEnum):
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"
     COSINE_SIMILARITY = "cosine_similarity"
+    DICTIONARY_KEYS = "dictionary_keys"
 
     # window functions related operations
     LAG = "lag"

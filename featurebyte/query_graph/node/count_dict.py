@@ -45,3 +45,12 @@ class CosineSimilarityNode(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
+
+
+class DictionaryKeysNode(BaseSeriesOutputNode):
+    """Dictionary keys node class"""
+
+    type: Literal[NodeType.DICTIONARY_KEYS] = Field(NodeType.DICTIONARY_KEYS, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.ARRAY

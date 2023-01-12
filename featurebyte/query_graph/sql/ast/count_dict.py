@@ -60,3 +60,27 @@ class CountDictTransformNode(ExpressionNode):
             include_missing=parameters.get("include_missing", True),
         )
         return sql_node
+
+
+@dataclass
+class DictionaryKeysNode(ExpressionNode):
+    """Node converting dictionary keys into an array"""
+
+    dictionary_feature_node: ExpressionNode
+    query_node_type = NodeType.DICTIONARY_KEYS
+
+    @property
+    def sql(self) -> Expression:
+        output_expr = expressions.Anonymous(
+            this="OBJECT_KEYS", expressions=[self.dictionary_feature_node.sql]
+        )
+        return output_expr
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> DictionaryKeysNode:
+        table_node, input_expr_node, _ = prepare_unary_input_nodes(context)
+        return DictionaryKeysNode(
+            context=context,
+            table_node=table_node,
+            dictionary_feature_node=input_expr_node,
+        )

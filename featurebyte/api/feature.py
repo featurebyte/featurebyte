@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
 
 import time
 from http import HTTPStatus
@@ -484,68 +484,20 @@ class Feature(
             response.json(),
         )
 
-    @staticmethod
-    def get_feature_type(feature: Feature) -> FeatureType:
+    def isin_validation(self, other: Union[Series, Sequence[Union[bool, int, float, str]]]) -> None:
         """
-        Get the type of a feature
+        Validates whether a feature is a lookup feature
 
         Parameters
         ----------
-        feature: Feature
-            feature to check
-        Returns
-        -------
-        FeatureType
-            feature type
-        """
-        if feature.dtype == DBVarType.OBJECT:
-            return FeatureType.DICTIONARY
-        if NodeType.LOOKUP in feature.node_types_lineage:
-            return FeatureType.LOOKUP
-        return FeatureType.UNKNOWN
+        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+            other
 
-    @staticmethod
-    def _validate_feature_type(feature: Feature, feature_type: FeatureType) -> None:
-        """
-        Validates whether a feature is of a particular feature type.
-        Parameters
-        ----------
-        feature: Feature
-            feature
-        feature_type: FeatureType
-            feature type we want to assert against
         Raises
         ------
         ValueError
-            raised when the feature is not of the specified feature type
+            raised when the feature is not a lookup feature
         """
-        current_feature_type = Feature.get_feature_type(feature)
-        if current_feature_type != feature_type:
-            raise ValueError(f"feature {feature.name} is not of the type {feature_type} ")
-
-    @typechecked
-    def isin(self, feature: Feature, right_op: bool = False) -> Feature:
-        """
-        Identify if the lookup feature value is in the keys of the dictionary
-        lookup_feature.isin(dictionary_feature)
-
-        Parameters
-        ----------
-        feature: Feature
-            feature
-        right_op: bool
-            right op
-
-        Returns
-        -------
-        Feature
-            new feature
-        """
-        Feature._validate_feature_type(self, FeatureType.LOOKUP)
-        Feature._validate_feature_type(feature, FeatureType.DICTIONARY)
-        return self._binary_op(
-            other=feature,
-            node_type=NodeType.IS_IN_DICT,
-            output_var_type=DBVarType.BOOL,
-            right_op=right_op,
-        )
+        if NodeType.LOOKUP in self.node_types_lineage:
+            return
+        raise ValueError(f"feature {self.name} is not a lookup feature.")
