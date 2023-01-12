@@ -169,6 +169,7 @@ async def test_update_columns_info__critical_data_info(
     # check the updated document
     updated_doc = await event_data_service.get_document(document_id=event_data.id)
     assert updated_doc.columns_info == columns_info
+    assert updated_doc.node_name == "graph_1"
     assert updated_doc.graph.nodes[0] == event_data_doc["graph"]["nodes"][0]
     assert updated_doc.graph.nodes[1].parameters == {
         "graph": {
@@ -211,6 +212,18 @@ async def test_update_columns_info__critical_data_info(
         "output_node_name": "assign_1",
         "type": "cleaning",
     }
+
+    # test remove critical data info
+    columns_info[0]["critical_data_info"] = {"cleaning_operations": []}
+    await data_update_service.update_columns_info(
+        service=event_data_service,
+        document_id=event_data.id,
+        data=EventDataServiceUpdate(columns_info=columns_info),
+    )
+    # check the updated document
+    updated_doc = await event_data_service.get_document(document_id=event_data.id)
+    assert updated_doc.columns_info == columns_info
+    assert updated_doc.node_name == "input_1"
 
 
 @pytest.mark.asyncio
