@@ -22,8 +22,9 @@ def test_dimension_lookup_features(dimension_data):
     }
 
     # Test multiple lookup features
-    feature_group = dimension_view[["item_name", "item_type"]].as_features(
-        ["ItemNameFeature", "ItemTypeFeature"]
+    feature_group = dimension_view.as_features(
+        column_names=["item_name", "item_type"],
+        feature_names=["ItemNameFeature", "ItemTypeFeature"],
     )
     df = feature_group.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "item_id": "item_42"})
     assert df.iloc[0].to_dict() == {
