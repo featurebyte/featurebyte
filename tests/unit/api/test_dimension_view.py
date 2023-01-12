@@ -8,7 +8,7 @@ import pytest
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import DBVarType
-from featurebyte.exception import JoinViewMismatchError
+from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
 
@@ -41,6 +41,24 @@ def test_get_join_column(snowflake_dimension_view):
     column = snowflake_dimension_view.get_join_column()
     # col_int is the dimension_data_id_key column name used when creating this view fixture
     assert column == "col_int"
+
+
+def test_join_same_rsuffix_multiple_times(snowflake_dimension_view):
+    """
+    Test scenario where rsuffix didn't help to resolve repeated columns issue
+    """
+    original_columns = snowflake_dimension_view.columns[:]
+    other_view = snowflake_dimension_view[["col_text"]]
+
+    snowflake_dimension_view.join(other_view, rsuffix="_y")
+    assert snowflake_dimension_view.columns == original_columns + ["col_text_y"]
+
+    with pytest.raises(RepeatedColumnNamesError) as exc:
+        snowflake_dimension_view.join(other_view, rsuffix="_y")
+    assert "Duplicate column names ['col_text_y'] found" in str(exc.value)
+
+    snowflake_dimension_view.join(other_view, rsuffix="_z")
+    assert snowflake_dimension_view.columns == original_columns + ["col_text_y", "col_text_z"]
 
 
 @pytest.fixture
