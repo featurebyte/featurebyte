@@ -22,15 +22,9 @@ class IsInNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        # array_contains(to_variant(joined.character), object_keys(joined.object1)) as is_in_feature
-        input_to_variant_expr = expressions.Anonymous(
-            this="TO_VARIANT", expressions=[self.input_series_expression_node.sql]
+        return self.context.adapter.in_array(
+            self.input_series_expression_node.sql, self.array_expression_node.sql
         )
-        output_expr = expressions.Anonymous(
-            this="ARRAY_CONTAINS",
-            expressions=[input_to_variant_expr, self.array_expression_node.sql],
-        )
-        return output_expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> IsInNode:

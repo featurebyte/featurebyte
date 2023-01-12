@@ -71,10 +71,7 @@ class DictionaryKeysNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="OBJECT_KEYS", expressions=[self.dictionary_feature_node.sql]
-        )
-        return output_expr
+        return self.context.adapter.object_keys(self.dictionary_feature_node.sql)
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> DictionaryKeysNode:

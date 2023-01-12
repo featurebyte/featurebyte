@@ -188,6 +188,25 @@ class BaseAdapter:
             expression that returns the object keys
         """
 
+    @classmethod
+    @abstractmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        """
+        Checks whether the input is inside an array.
+
+        Parameters
+        ----------
+        input_expression: Expression
+            input expression
+        array_expression: Expression
+            array expression
+
+        Returns
+        -------
+        Expression
+            expression that checks whether the input is in the array
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -300,6 +319,17 @@ class SnowflakeAdapter(BaseAdapter):
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
         return expressions.Anonymous(this="OBJECT_KEYS", expressions=[dictionary_expression])
 
+    @classmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        input_to_variant_expr = expressions.Anonymous(
+            this="TO_VARIANT", expressions=[input_expression]
+        )
+        output_expr = expressions.Anonymous(
+            this="ARRAY_CONTAINS",
+            expressions=[input_to_variant_expr, array_expression],
+        )
+        return output_expr
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -385,6 +415,10 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
         raise NotImplementedError()
 
 
