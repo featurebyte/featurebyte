@@ -810,6 +810,11 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         Series
             updated series
+
+        Raises
+        ------
+        ValueError
+            raised when the other input is not a dictionary series
         """
         self.isin_validation(other)
 
