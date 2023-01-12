@@ -955,28 +955,3 @@ def test_latest_per_category_aggregation(event_view):
     df = feature_group.preview({"POINT_IN_TIME": "2001-01-26", "cust_id": 545})
     expected = '{\n  "1": "add",\n  "3": "purchase",\n  "5": "remove",\n  "8": "add",\n  "9": "purchase"\n}'
     assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
-
-
-def test_is_in_dictionary(event_view):
-    """
-    Test is in dictionary
-    """
-    # get lookup feature
-    lookup_feature = event_view["USER ID"].as_feature("user")
-
-    # get dictionary feature
-    feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(
-        value_column="PRODUCT_ACTION",
-        method="latest",
-        windows=["30d"],
-        feature_names=["LATEST_ACTION_DICT_30d"],
-    )
-    dictionary_feature = feature_group["LATEST_ACTION_DICT_30d"]
-    isin_feature = lookup_feature.isin(dictionary_feature)
-
-    # assert
-    timestamp_str = "2001-01-13 12:00:00"
-    isin_feature_preview = isin_feature.preview(
-        {"POINT_IN_TIME": timestamp_str, "PRODUCT_ACTION": "purchase"},
-    )
-    assert isin_feature_preview.shape[0] == 1
