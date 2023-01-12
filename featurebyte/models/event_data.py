@@ -7,7 +7,7 @@ from typing import Any, ClassVar, Dict, Optional, Tuple, Type
 
 from datetime import datetime
 
-from pydantic import Field, root_validator, validator
+from pydantic import root_validator, validator
 
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
 from featurebyte.enum import DBVarType
