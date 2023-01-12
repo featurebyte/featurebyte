@@ -71,6 +71,18 @@ def test_as_features__empty_column_names(snowflake_dimension_view):
     assert str(exc.value) == "column_names is empty"
 
 
+def test_as_features__duplicate_feature_names(snowflake_dimension_view):
+    """
+    Test as_features() with duplicate values in feature_names
+    """
+    with pytest.raises(ValueError) as exc:
+        snowflake_dimension_view.as_features(
+            column_names=["col_float", "col_text"],
+            feature_names=["FloatFeature", "FloatFeature"],
+        )
+    assert str(exc.value) == "feature_names contains duplicated value(s)"
+
+
 def test_as_features__primary_key_not_entity(snowflake_dimension_view):
     """
     Test as_features() when the primary key in not an entity

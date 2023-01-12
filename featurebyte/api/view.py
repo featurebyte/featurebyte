@@ -675,6 +675,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             if column not in self.columns:
                 raise ValueError(f"Column '{column}' not found")
 
+        if len(set(feature_names)) != len(feature_names):
+            raise ValueError("feature_names contains duplicated value(s)")
+
         if len(feature_names) != len(column_names):
             raise ValueError(
                 f"Length of feature_names ({len(feature_names)}) should be the same as column_names"
