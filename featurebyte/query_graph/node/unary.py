@@ -2,7 +2,7 @@
 This module contains unary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence, Union
+from typing import List, Literal, Optional, Sequence, Union
 
 from pydantic import BaseModel, Field
 
@@ -112,7 +112,7 @@ class IsInNode(BaseSeriesOutputNode):
     class Parameters(BaseModel):
         """Parameters"""
 
-        values: Sequence[Union[bool, int, float, str]]
+        value: Optional[Sequence[Union[bool, int, float, str]]]
 
     type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
     parameters: Parameters

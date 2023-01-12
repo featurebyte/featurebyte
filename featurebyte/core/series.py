@@ -830,14 +830,19 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 node_type=NodeType.DICTIONARY_KEYS,
                 output_var_type=DBVarType.ARRAY,
                 node_params={},
+                **other.unary_op_series_params(),
             )
 
         # perform the is in check when the other series is an array
-        self._binary_op(
+        additional_node_params = {}
+        # we only need to assign value if we have been passed in a sequence.
+        if not isinstance(other, Series):
+            additional_node_params["value"] = other
+
+        return self._binary_op(
             other=other_series,
             node_type=NodeType.IS_IN,
             output_var_type=DBVarType.BOOL,
             right_op=right_op,
-            additional_node_params={"values": other},
+            additional_node_params=additional_node_params,
         )
-        return self

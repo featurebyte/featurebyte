@@ -310,10 +310,10 @@ class FeatureExecutionPlanner:
             # Feature involves non-time-aware aggregations
             for item_groupby_node in item_groupby_nodes:
                 self.parse_and_update_specs_from_item_groupby(item_groupby_node)
-        elif lookup_nodes:
+        if lookup_nodes:
             for lookup_node in lookup_nodes:
                 self.parse_and_update_specs_from_lookup(lookup_node)
-        else:
+        if asat_nodes:
             for asat_node in asat_nodes:
                 self.parse_and_update_specs_from_asat(asat_node)
         self.update_feature_specs(node)
