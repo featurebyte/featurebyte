@@ -228,6 +228,11 @@ class PreviewService(BaseService):
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
+        # convert point in time to tz-naive UTC
+        point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
+        ).tz_localize(None)
+
         serving_names = []
         for node in graph.iterate_nodes(target_node=feature_node, node_type=NodeType.GROUPBY):
             serving_names.extend(cast(GroupbyNode, node).parameters.serving_names)

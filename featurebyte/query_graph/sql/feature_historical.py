@@ -56,6 +56,16 @@ def validate_historical_requests_point_in_time(training_events: pd.DataFrame) ->
             training_events[SpecialColumnName.POINT_IN_TIME]
         )
 
+    # convert point in time with timezone to UTC
+    if (
+        isinstance(training_events[SpecialColumnName.POINT_IN_TIME].iloc[0], datetime.datetime)
+        and training_events[SpecialColumnName.POINT_IN_TIME].iloc[0].tzinfo
+    ) or pd.api.types.is_datetime64tz_dtype(training_events[SpecialColumnName.POINT_IN_TIME]):
+        training_events = training_events.copy()
+        training_events[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+            training_events[SpecialColumnName.POINT_IN_TIME], utc=True
+        ).dt.tz_localize(None)
+
     # Latest point in time must be older than 48 hours
     latest_point_in_time = training_events[SpecialColumnName.POINT_IN_TIME].max()
     recency = datetime.datetime.now() - latest_point_in_time

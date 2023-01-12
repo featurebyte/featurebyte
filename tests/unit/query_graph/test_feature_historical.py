@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pandas as pd
 import pytest
 from freezegun import freeze_time
+from pandas.testing import assert_frame_equal
 
 from featurebyte import exception
 from featurebyte.api.feature_store import FeatureStore
@@ -15,6 +16,7 @@ from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
     get_historical_features_sql,
+    validate_historical_requests_point_in_time,
 )
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -188,3 +190,25 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, update
         "tests/fixtures/expected_historical_requests_with_mapping.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_validate_historical_requests_point_in_time():
+    """Test validate_historical_requests_point_in_time work with timestamps that contain timezone"""
+    original_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2020-01-01T10:00:00+08:00", freq="D", periods=10),
+        }
+    )
+    training_events = original_training_events.copy()
+
+    # this should not fail and convert point-in-time values to UTC
+    validated_training_events = validate_historical_requests_point_in_time(training_events)
+    expected_df = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2020-01-01T02:00:00", freq="D", periods=10),
+        }
+    )
+    assert_frame_equal(validated_training_events, expected_df)
+
+    # training_events should not be modified
+    assert_frame_equal(training_events, original_training_events)

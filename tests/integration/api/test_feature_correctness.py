@@ -120,9 +120,6 @@ def observation_set(transaction_data_upper_case):
     df = df.sample(1000, replace=False, random_state=0).reset_index(drop=True)
     df.rename({"EVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
 
-    # only TZ-naive timestamps in UTC supported for point-in-time
-    df["POINT_IN_TIME"] = pd.to_datetime(df["POINT_IN_TIME"], utc=True).dt.tz_localize(None)
-
     # Add random spikes to point in time of some rows
     rng = np.random.RandomState(0)
     spike_mask = rng.randint(0, 2, len(df)).astype(bool)
@@ -285,6 +282,12 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     """
     Check correctness of feature preview result
     """
+    # expect point-in-time to be converted to UTC without timezone
+    df_expected = df_expected.copy()
+    df_expected["POINT_IN_TIME"] = pd.to_datetime(
+        df_expected["POINT_IN_TIME"], utc=True
+    ).dt.tz_localize(None)
+
     tic = time.time()
     sampled_points = df_expected.sample(n=n_points, random_state=0)
     for _, preview_time_point in sampled_points.iterrows():
@@ -446,6 +449,11 @@ def test_aggregate_over(
     df_historical_features = df_historical_features.sort_values(
         ["POINT_IN_TIME", entity_column_name]
     ).reset_index(drop=True)
+
+    # expect point-in-time to be converted to UTC without timezone
+    df_expected["POINT_IN_TIME"] = pd.to_datetime(
+        df_expected["POINT_IN_TIME"], utc=True
+    ).dt.tz_localize(None)
 
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
