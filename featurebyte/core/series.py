@@ -789,6 +789,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         other: Union[Series, Sequence[Union[bool, int, float, str]]]
             other input to check whether the current series is in
         """
+        _ = other
         return
 
     @typechecked
