@@ -341,7 +341,7 @@ class Feature(
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         feature_dict = self.dict()
         feature_dict["graph"] = pruned_graph
-        feature_dict["node"] = mapped_node
+        feature_dict["node_name"] = mapped_node.name
         return FeatureModel(**feature_dict)
 
     @typechecked
