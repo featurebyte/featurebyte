@@ -206,6 +206,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         Returns
         -------
         Select
+            Expression representing the source table
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.query_graph.sql.builder import SQLOperationGraph

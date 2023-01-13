@@ -10,8 +10,8 @@ from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
-    Aggregator,
     LeftJoinableSubquery,
+    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
@@ -19,7 +19,7 @@ from featurebyte.query_graph.sql.groupby_helper import get_aggregation_expressio
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
 
-class ItemAggregator(Aggregator):
+class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
     """
     ItemAggregator is responsible for SQL generation for aggregation without time windows from
     ItemView
@@ -27,8 +27,6 @@ class ItemAggregator(Aggregator):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.grouped_specs: dict[str, list[ItemAggregationSpec]] = {}
-        self.grouped_agg_result_names: dict[str, set[str]] = {}
         self.non_time_aware_request_table_plan = RequestTablePlan(is_time_aware=False)
 
     def get_required_serving_names(self) -> set[str]:
@@ -45,29 +43,17 @@ class ItemAggregator(Aggregator):
                 out.update(spec.serving_names)
         return out
 
-    def update(self, spec: ItemAggregationSpec) -> None:
+    def update(self, aggregation_spec: ItemAggregationSpec) -> None:
         """
         Update internal state to account for the given ItemAggregationSpec
 
         Parameters
         ----------
-        spec: ItemAggregationSpec
+        aggregation_spec: ItemAggregationSpec
             Aggregation specification
         """
-        key = spec.source_hash
-
-        if key not in self.grouped_specs:
-            self.grouped_agg_result_names[key] = set()
-            self.grouped_specs[key] = []
-
-        if spec.agg_result_name in self.grouped_agg_result_names[key]:
-            # Skip updating if the spec produces a result that was seen before.
-            return
-
-        self.grouped_agg_result_names[key].add(spec.agg_result_name)
-        self.grouped_specs[key].append(spec)
-
-        self.non_time_aware_request_table_plan.add_aggregation_spec(spec)
+        super().update(aggregation_spec)
+        self.non_time_aware_request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def _get_aggregation_subquery(
         self,

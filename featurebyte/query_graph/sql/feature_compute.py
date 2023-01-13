@@ -14,7 +14,6 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.aggregator.base import Aggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
@@ -33,6 +32,10 @@ from featurebyte.query_graph.sql.specs import (
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
+AggregatorType = Union[
+    LatestAggregator, LookupAggregator, WindowAggregator, ItemAggregator, AsAtAggregator
+]
+
 
 class FeatureExecutionPlan:
     """Responsible for constructing the SQL to compute features by aggregating tiles"""
@@ -41,7 +44,7 @@ class FeatureExecutionPlan:
 
     def __init__(self, source_type: SourceType, is_online_serving: bool) -> None:
         aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
-        self.aggregators = {
+        self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
             AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
             AggregationType.WINDOW: WindowAggregator(**aggregator_kwargs),
@@ -65,7 +68,7 @@ class FeatureExecutionPlan:
             out.update(aggregator.get_required_serving_names())
         return out
 
-    def iter_aggregators(self) -> Iterable[Aggregator]:
+    def iter_aggregators(self) -> Iterable[AggregatorType]:
         """Iterate over all the aggregators
 
         Yields

@@ -289,7 +289,7 @@ class TileBasedAggregationSpecSet:
             yield agg_specs
 
 
-class WindowAggregator(Aggregator):
+class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
     """
     WindowAggregator is responsible for SQL generation for aggregation with time windows
 

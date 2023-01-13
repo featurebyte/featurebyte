@@ -3,6 +3,8 @@ Base class for aggregation SQL generators
 """
 from __future__ import annotations
 
+from typing import Any, Generic, TypeVar
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -12,6 +14,12 @@ from sqlglot.expressions import Select, alias_, select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.specs import AggregationSpec, NonTileBasedAggregationSpec
+
+AggregationSpecT = TypeVar("AggregationSpecT", bound=AggregationSpec)
+NonTileBasedAggregationSpecT = TypeVar(
+    "NonTileBasedAggregationSpecT", bound=NonTileBasedAggregationSpec
+)
 
 
 @dataclass
@@ -36,7 +44,7 @@ class LeftJoinableSubquery:
     join_keys: list[str]
 
 
-class Aggregator(ABC):
+class Aggregator(Generic[AggregationSpecT], ABC):
     """
     Base class of all aggregators
     """
@@ -54,6 +62,17 @@ class Aggregator(ABC):
         Returns
         -------
         set[str]
+        """
+
+    @abstractmethod
+    def update(self, aggregation_spec: AggregationSpecT) -> None:
+        """
+        Update internal states given an AggregationSpec
+
+        Parameters
+        ----------
+        aggregation_spec: AggregationSpecT
+            Aggregation specification
         """
 
     @abstractmethod
@@ -224,3 +243,37 @@ class Aggregator(ABC):
             List of common table expressions as tuples. The first element of the tuple is the name
             of the CTE and the second element is the corresponding sql expression.
         """
+
+
+class NonTileBasedAggregator(Aggregator[NonTileBasedAggregationSpecT], ABC):
+    """
+    Aggregators that do not use tiles
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.grouped_specs: dict[str, list[NonTileBasedAggregationSpecT]] = {}
+        self.grouped_agg_result_names: dict[str, set[str]] = {}
+
+    def update(self, aggregation_spec: NonTileBasedAggregationSpecT) -> None:
+        """
+        Update internal state to account for the given ItemAggregationSpec
+
+        Parameters
+        ----------
+        aggregation_spec: NonTileBasedAggregationSpecT
+            Aggregation specification
+        """
+
+        key = aggregation_spec.source_hash
+
+        if key not in self.grouped_specs:
+            self.grouped_agg_result_names[key] = set()
+            self.grouped_specs[key] = []
+
+        if aggregation_spec.agg_result_name in self.grouped_agg_result_names[key]:
+            # Skip updating if the spec produces a result that was seen before.
+            return
+
+        self.grouped_agg_result_names[key].add(aggregation_spec.agg_result_name)
+        self.grouped_specs[key].append(aggregation_spec)

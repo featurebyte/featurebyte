@@ -56,6 +56,9 @@ def aggregation_specs(aggregation_spec_order_size, aggregation_spec_max_item_pri
 
 
 def test_item_aggregation(aggregation_specs):
+    """
+    Test ItemAggregator
+    """
 
     aggregator = ItemAggregator(source_type=SourceType.SNOWFLAKE)
     for spec in aggregation_specs:
