@@ -31,6 +31,7 @@ from featurebyte.query_graph.sql.specs import (
     LookupSpec,
     TileBasedAggregationSpec,
 )
+from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
 
 class FeatureExecutionPlan:
@@ -266,7 +267,7 @@ class FeatureExecutionPlanner:
         is_online_serving: bool,
         serving_names_mapping: dict[str, str] | None = None,
     ):
-        self.graph = graph
+        self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
         self.plan = FeatureExecutionPlan(source_type, is_online_serving)
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
@@ -285,7 +286,9 @@ class FeatureExecutionPlanner:
         FeatureExecutionPlan
         """
         for node in nodes:
-            self.process_node(node)
+            # map the input node to the node inside the flattened graph (self.graph)
+            mapped_node = self.graph.get_node_by_name(self.node_name_map[node.name])
+            self.process_node(mapped_node)
         return self.plan
 
     def process_node(self, node: Node) -> None:

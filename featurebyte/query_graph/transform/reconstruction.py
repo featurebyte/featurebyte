@@ -7,7 +7,6 @@ from abc import abstractmethod
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -15,6 +14,7 @@ from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
+from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
@@ -157,25 +157,23 @@ def add_pruning_sensitive_operation(
     # create a temporary node & prune the graph before deriving additional parameters based on
     # the pruned graph
     temp_node = node_cls(name="temp", parameters=node_params)
-    pruned_graph, node_name_map, _ = prune_query_graph(
+    pruned_graph, _, pruned_input_node_name = prune_query_graph(
         graph=graph,
         node=input_node,
         target_columns=temp_node.get_required_input_columns(),
         aggressive=True,
     )
-    pruned_input_node_name = None
-    for node in dfs_traversal(graph, input_node):
-        if pruned_input_node_name is None and node.name in node_name_map:
-            # as the input node could be pruned in the pruned graph, traverse the graph to find a valid input
-            pruned_input_node_name = node_name_map[node.name]
 
-    assert isinstance(pruned_input_node_name, str)
+    # flatten the pruned graph before further operations
+    flat_graph, node_name_map = GraphFlatteningTransformer(graph=pruned_graph).transform()
+    mapped_input_node_name = node_name_map[pruned_input_node_name]
+
     additional_parameters = node_cls.derive_parameters_post_prune(
         graph=graph,
         input_node=input_node,
         temp_node=temp_node,
-        pruned_graph=pruned_graph,
-        pruned_input_node_name=pruned_input_node_name,
+        pruned_graph=flat_graph,
+        pruned_input_node_name=mapped_input_node_name,
     )
 
     # insert the node by including the derived parameters (e.g. tile_id, aggregation_id, etc)

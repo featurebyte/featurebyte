@@ -212,3 +212,23 @@ def test_validate_historical_requests_point_in_time():
 
     # training_events should not be modified
     assert_frame_equal(training_events, original_training_events)
+
+
+def test_get_historical_feature_sql__with_missing_value_imputation(
+    query_graph_with_cleaning_ops_and_groupby, update_fixtures
+):
+    """Test SQL code generated for historical features constructed with missing value imputation"""
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    graph, node = query_graph_with_cleaning_ops_and_groupby
+    sql = get_historical_features_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        request_table_columns=request_table_columns,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_historical_requests_with_missing_value_imputation.sql",
+        update_fixture=update_fixtures,
+    )

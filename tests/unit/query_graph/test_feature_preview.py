@@ -376,3 +376,26 @@ def test_get_feature_preview_sql__all_types(
         "tests/fixtures/expected_preview_sql_all_types.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_feature_preview_sql__with_missing_value_imputation(
+    query_graph_with_cleaning_ops_and_groupby, update_fixtures
+):
+    """Test generated preview SQL is as expected (missing value imputation on column "a")"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph, node = query_graph_with_cleaning_ops_and_groupby
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_with_missing_value_imputation.sql",
+        update_fixture=update_fixtures,
+    )

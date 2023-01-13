@@ -282,6 +282,22 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     assert groupby_node.parameters.aggregation_id == aggregation_id
 
 
+def test_query_graph__add_groupby_operation_with_graph_node(
+    query_graph_with_cleaning_ops_graph_node, groupby_node_params
+):
+    """Test add groupby operation with graph node"""
+    graph, graph_node = query_graph_with_cleaning_ops_graph_node
+    assert "tile_id" not in groupby_node_params
+    assert "aggregation_id" not in groupby_node_params
+    groupby_node = add_pruning_sensitive_operation(
+        graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=graph_node
+    )
+    tile_id = "TILE_F3600_M1800_B900_B0C4FEC926625091C00D634AF8F7D03EA464918C"
+    aggregation_id = "sum_aca8e1c2bca28b4e16e7267f1bbafa698b125c03"
+    assert groupby_node.parameters.tile_id == tile_id
+    assert groupby_node.parameters.aggregation_id == aggregation_id
+
+
 def test_query_graph__representation():
     """Test the graph can be represented properly without throwing exceptions"""
     graph = QueryGraph()
