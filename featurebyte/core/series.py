@@ -595,7 +595,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Parameters
         ----------
-        other : Union[int, float, str, bool]
+        other: Scalar
             Value to replace missing values
         """
         self[self.isnull()] = other
