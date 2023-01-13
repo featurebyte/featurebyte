@@ -16,7 +16,11 @@ from featurebyte.api.feature_list import (
     FeatureList,
     FeatureListNamespace,
 )
-from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    ObjectHasBeenSavedError,
+    RecordRetrievalException,
+)
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -868,3 +872,28 @@ def test_list_filter(saved_feature_list):
 
     feature_lists = FeatureList.list(data="other_data", entity="customer")
     assert feature_lists.shape[0] == 0
+
+
+def test_save_feature_group(saved_feature_list):
+    """Test feature group saving"""
+    float_feature = saved_feature_list["sum_1d"]
+    feature_group = FeatureGroup([])
+    for idx in range(5):
+        feature_group[f"feat_{idx}"] = float_feature + idx
+
+    # check that features in feature group not saved
+    for feature in feature_group.feature_objects.values():
+        assert feature.saved is False
+
+    # save feature group
+    feature_group.save()
+
+    for feature in feature_group.feature_objects.values():
+        assert feature.saved is True
+
+    # check that object has been saved error is thrown
+    with pytest.raises(ObjectHasBeenSavedError):
+        feature_group.save()
+
+    # check that "retrieve" conflict resolution works properly
+    feature_group.save(conflict_resolution="retrieve")

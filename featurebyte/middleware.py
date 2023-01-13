@@ -17,6 +17,7 @@ from featurebyte.exception import (
     DocumentNotFoundError,
     FeatureStoreSchemaCollisionError,
     NoFeatureStorePresentError,
+    QueryNotSupportedError,
 )
 from featurebyte.logger import logger
 
@@ -164,7 +165,7 @@ ExecutionContext.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESS
 ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 ExecutionContext.register(
-    NotImplementedError,
+    QueryNotSupportedError,
     handle_status_code=HTTPStatus.NOT_IMPLEMENTED,
     handle_message="Query not supported.",
 )

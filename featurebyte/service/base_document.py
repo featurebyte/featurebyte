@@ -12,7 +12,11 @@ import pandas as pd
 from bson.objectid import ObjectId
 
 from featurebyte.common.dict_util import get_field_path_value
-from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentConflictError,
+    DocumentNotFoundError,
+    QueryNotSupportedError,
+)
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     UniqueConstraintResolutionSignature,
@@ -229,17 +233,25 @@ class BaseDocumentService(
         -------
         dict[str, Any]
             List of documents fulfilled the filtering condition
+
+        Raises
+        ------
+        QueryNotSupportedError
+            If the persistent query is not supported
         """
         query_filter = self._construct_list_query_filter(**kwargs)
-        docs, total = await self.persistent.find(
-            collection_name=self.collection_name,
-            query_filter=query_filter,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            page=page,
-            page_size=page_size,
-            user_id=self.user.id,
-        )
+        try:
+            docs, total = await self.persistent.find(
+                collection_name=self.collection_name,
+                query_filter=query_filter,
+                sort_by=sort_by,
+                sort_dir=sort_dir,
+                page=page,
+                page_size=page_size,
+                user_id=self.user.id,
+            )
+        except NotImplementedError as exc:
+            raise QueryNotSupportedError from exc
         return {"page": page, "page_size": page_size, "total": total, "data": list(docs)}
 
     async def list_documents_iterator(
