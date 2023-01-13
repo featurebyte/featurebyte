@@ -529,7 +529,7 @@ class SavableApiObject(ApiObject):
         RecordCreationException
             When fail to save the new object (general failure)
         """
-        if self.saved:
+        if self.saved and conflict_resolution == "raise":
             raise ObjectHasBeenSavedError(
                 f'{type(self).__name__} (id: "{self.id}") has been saved before.'
             )

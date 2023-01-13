@@ -357,6 +357,11 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     expected_msg = f'Feature (id: "{float_feature.id}") has been saved before.'
     assert expected_msg in str(exc.value)
 
+    # check that saving a saved feature twice won't throw ObjectHasBeenSavedError
+    feature_id = saved_feature.id
+    saved_feature.save(conflict_resolution="retrieve")
+    assert saved_feature.id == feature_id
+
 
 def test_feature_name__set_name_when_unnamed(float_feature):
     """
