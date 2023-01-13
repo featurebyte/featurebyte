@@ -17,6 +17,7 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
+from featurebyte.core.types import Scalar, ScalarSequence
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -223,7 +224,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     def _binary_op(
         self,
-        other: int | float | str | bool | Series | Sequence[Union[int, float, str, bool]],
+        other: int | float | str | bool | Series | ScalarSequence,
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
@@ -588,7 +589,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return ~self.isnull()
 
     @typechecked
-    def fillna(self, other: Union[int, float, str, bool]) -> None:
+    def fillna(self, other: Scalar) -> None:
         """
         Replace missing values with the provided value in-place
 
@@ -794,9 +795,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         _ = other
 
     @typechecked
-    def isin(
-        self, other: Union[Series, Sequence[Union[bool, int, float, str]]], right_op: bool = False
-    ) -> Series:
+    def isin(self, other: Union[Series, ScalarSequence], right_op: bool = False) -> Series:
         """
         Identify if values in a series is in another series, or a pre-defined sequence.
 
