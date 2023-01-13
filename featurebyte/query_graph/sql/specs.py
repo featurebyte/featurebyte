@@ -21,6 +21,7 @@ from featurebyte.query_graph.node.generic import (
     AggregateAsAtParameters,
     GroupbyNode,
     ItemGroupbyNode,
+    ItemGroupbyParameters,
     LookupNode,
     SCDLookupParameters,
 )
@@ -180,6 +181,66 @@ class TileBasedAggregationSpec(AggregationSpec):
 
 
 @dataclass
+class NonTileBasedAggregationSpec(AggregationSpec):
+    """
+    Represents an aggregation that is performed directly on the source without tile based
+    pre-aggregation
+    """
+
+    @classmethod
+    def get_source_sql_expr(
+        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
+    ) -> Select:
+        """
+        Get the expression of the input view to be aggregated
+
+        Parameters
+        ----------
+        graph: QueryGraphModel
+            Query graph
+        node: Node
+            Query graph node
+        source_type: SourceType
+            Source type information
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.builder import SQLOperationGraph
+        from featurebyte.query_graph.sql.common import SQLType
+
+        sql_node = SQLOperationGraph(
+            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
+        ).build(node)
+
+        return cast(Select, sql_node.sql)
+
+    @property
+    def source_hash(self) -> str:
+        """
+        Get a hash that uniquely identifies the source an aggregation (for the purpose of grouping
+        aggregations that can be performed in the same subquery)
+
+        Returns
+        -------
+        str
+        """
+        hasher = hashlib.shake_128()
+        params = self.get_source_hash_parameters()
+        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
+        return hasher.hexdigest(8)
+
+    @abstractmethod
+    def get_source_hash_parameters(self) -> dict[str, Any]:
+        """
+        Get parameters that uniquely identifies the source of an aggregation (for the purpose of
+        grouping aggregations that can be performed in the same subquery)
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+
+
+@dataclass
 class ItemAggregationSpec(AggregationSpec):
     """
     Non-time aware aggregation specification
@@ -244,7 +305,7 @@ class ItemAggregationSpec(AggregationSpec):
 
 
 @dataclass
-class AggregateAsAtSpec(AggregationSpec):
+class AggregateAsAtSpec(NonTileBasedAggregationSpec):
     """
     As-at aggregation specification
     """
@@ -267,17 +328,7 @@ class AggregateAsAtSpec(AggregationSpec):
     def aggregation_type(self) -> AggregationType:
         return AggregationType.AS_AT
 
-    @property
-    def source_hash(self) -> str:
-        """
-        Returns a unique identifier derived from source_expr and parameters
-
-        Returns
-        -------
-        str
-        """
-        hasher = hashlib.shake_128()
-
+    def get_source_hash_parameters(self) -> dict[str, Any]:
         # Input to be aggregated
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
 
@@ -289,22 +340,7 @@ class AggregateAsAtSpec(AggregationSpec):
             ]
         params["parameters"] = parameters_dict
 
-        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
-        return hasher.hexdigest(8)
-
-    @classmethod
-    def _get_source_sql_expr(
-        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
-    ) -> Select:
-        # pylint: disable=import-outside-toplevel
-        from featurebyte.query_graph.sql.builder import SQLOperationGraph
-        from featurebyte.query_graph.sql.common import SQLType
-
-        sql_node = SQLOperationGraph(
-            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
-        ).build(node)
-
-        return cast(Select, sql_node.sql)
+        return params
 
     @classmethod
     def from_aggregate_asat_query_node(
@@ -341,7 +377,7 @@ class AggregateAsAtSpec(AggregationSpec):
         if source_expr is None:
             assert graph is not None
             assert source_type is not None
-            source_expr = cls._get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
 
         return AggregateAsAtSpec(
             parameters=node.parameters,
@@ -352,7 +388,7 @@ class AggregateAsAtSpec(AggregationSpec):
 
 
 @dataclass
-class LookupSpec(AggregationSpec):
+class LookupSpec(NonTileBasedAggregationSpec):
     """
     LookupSpec contains all information required to generate sql for a lookup feature
     """
@@ -373,37 +409,14 @@ class LookupSpec(AggregationSpec):
     def aggregation_type(self) -> AggregationType:
         return AggregationType.LOOKUP
 
-    @property
-    def source_hash(self) -> str:
-        """
-        Returns a unique identifier derived from source_expr and entity column
-
-        Returns
-        -------
-        str
-        """
-        hasher = hashlib.shake_128()
+    def get_source_hash_parameters(self) -> dict[str, Any]:
         params: dict[str, Any] = {
             "source_expr": self.source_expr.sql(),
             "entity_column": self.entity_column,
         }
         if self.scd_parameters is not None:
             params["scd_parameters"] = self.scd_parameters.dict()
-        hasher.update(json.dumps(params, sort_keys=True).encode("utf-8"))
-        return hasher.hexdigest(8)
-
-    @classmethod
-    def _get_source_sql_expr(
-        cls, graph: QueryGraphModel, node: Node, source_type: SourceType
-    ) -> Select:
-        # pylint: disable=import-outside-toplevel
-        from featurebyte.query_graph.sql.builder import SQLOperationGraph
-        from featurebyte.query_graph.sql.common import SQLType
-
-        sql_node = SQLOperationGraph(
-            graph, sql_type=SQLType.AGGREGATION, source_type=source_type
-        ).build(node)
-        return cast(Select, sql_node.sql)
+        return params
 
     @classmethod
     def from_lookup_query_node(
@@ -440,7 +453,7 @@ class LookupSpec(AggregationSpec):
         if source_expr is None:
             assert graph is not None
             assert source_type is not None
-            source_expr = cls._get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
 
         params = node.parameters
         specs = []
