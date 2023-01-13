@@ -21,7 +21,7 @@ from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_offset_string
-from featurebyte.common.typing import get_or_default
+from featurebyte.common.typing import OptionalScalar, get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -121,7 +121,7 @@ class BaseAggregator(ABC):
         groupby_node: Node,
         method: str,
         value_column: Optional[str],
-        fill_value: Optional[Union[int, float, str, bool]],
+        fill_value: OptionalScalar,
     ) -> Feature:
 
         # value_column is None for count-like aggregation method
@@ -149,7 +149,7 @@ class BaseAggregator(ABC):
         feature: Feature,
         method: str,
         feature_name: str,
-        fill_value: Optional[Union[int, float, str, bool]],
+        fill_value: OptionalScalar,
     ) -> Feature:
         """
         Fill feature values as needed.
@@ -162,7 +162,7 @@ class BaseAggregator(ABC):
             aggregation method
         feature_name: str
             feature name
-        fill_value: Optional[Union[int, float, str, bool]],
+        fill_value: OptionalScalar,
             value to fill
 
         Returns
@@ -210,7 +210,7 @@ class WindowAggregator(BaseAggregator):
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
-        fill_value: Optional[Union[int, float, str, bool]] = None,
+        fill_value: OptionalScalar = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -231,7 +231,7 @@ class WindowAggregator(BaseAggregator):
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
-        fill_value: Optional[Union[int, float, str, bool]]
+        fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
         Returns
@@ -395,7 +395,7 @@ class AsAtAggregator(BaseAggregator):
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,
-        fill_value: Optional[Union[int, float, str, bool]] = None,
+        fill_value: OptionalScalar = None,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
@@ -425,7 +425,7 @@ class AsAtAggregator(BaseAggregator):
 
         backward: bool
             Whether the offset should be applied backward or forward
-        fill_value: Optional[Union[int, float, str, bool]]
+        fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
         Returns
@@ -521,7 +521,7 @@ class SimpleAggregator(BaseAggregator):
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
-        fill_value: Optional[Union[int, float, str, bool]] = None,
+        fill_value: OptionalScalar = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -534,7 +534,7 @@ class SimpleAggregator(BaseAggregator):
             Aggregation method
         feature_name: str
             Output feature name
-        fill_value: Optional[Union[int, float, str, bool]]
+        fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
         Returns
@@ -639,7 +639,7 @@ class GroupBy:
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
-        fill_value: Optional[Union[int, float, str, bool]] = None,
+        fill_value: OptionalScalar = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -675,7 +675,7 @@ class GroupBy:
         feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
-        fill_value: Optional[Union[int, float, str, bool]]
+        fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
         Returns
@@ -717,7 +717,7 @@ class GroupBy:
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,
-        fill_value: Optional[Union[int, float, str, bool]] = None,
+        fill_value: OptionalScalar = None,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
@@ -747,7 +747,7 @@ class GroupBy:
 
         backward: bool
             Whether the offset should be applied backward or forward
-        fill_value: Optional[Union[int, float, str, bool]]
+        fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
         Returns
@@ -779,7 +779,7 @@ class GroupBy:
         value_column: Optional[str] = None,
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
-        fill_value: Optional[Union[int, float, str, bool]] = None,
+        fill_value: OptionalScalar = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -794,7 +794,7 @@ class GroupBy:
             Aggregation method
         feature_name: Optional[str]
             Output feature name
-        fill_value: Optional[Union[int, float, str, bool]]
+        fill_value: OptionalScalar
             Value to fill if the value in the column is empty
 
         Returns
