@@ -9,7 +9,6 @@ import dateutil.parser
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("TileManagement").getOrCreate()
-spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_registry.py")
 spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_monitor.py")
 spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_generate.py")
 spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_schedule_online_store.py")
@@ -147,22 +146,22 @@ if __name__ == "__main__":
 
     for spec in step_specs:
         new_args = copy.deepcopy(vars(args))
-        new_args.update(spec["data"])
+        new_args.update(spec["data"])  # type: ignore[call-overload]
 
         try:
             print(f"Calling {spec['name']}\n")
             print(f"new_args: {new_args}\n")
-            spec["trigger"](new_args)
+            spec["trigger"](new_args)  # type: ignore[operator]
             print(f"End of calling {spec['name']}\n")
         except Exception as e:
             message = str(e).replace("'", "")
-            ex_insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["fail"]).replace(
+            ex_insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["fail"]).replace(  # type: ignore[index]
                 "<MESSAGE>", message
             )
             print("fail_insert_sql: ", ex_insert_sql)
             spark.sql(ex_insert_sql)
             raise e
-        insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["success"]).replace(
+        insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["success"]).replace(  # type: ignore[index]
             "<MESSAGE>", ""
         )
         print("success_insert_sql: ", insert_sql)

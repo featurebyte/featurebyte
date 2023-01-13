@@ -61,12 +61,12 @@ job_spec = {
 #
 # print("**reset result: ", result)
 
-job_spec2 = copy.deepcopy(job_spec)
-job_spec2["schedule"]["quartz_cron_expression"] = "15 * * * * ?"
-job_spec2["schedule"]["pause_status"] = "PAUSED"
-
-update_job_spec = {"job_id": 379919337018178, "new_settings": job_spec2}
-
-result = jobs_api.reset_job(json=update_job_spec)
-
-print("**reset result: ", result)
+# job_spec2 = copy.deepcopy(job_spec)
+# job_spec2["schedule"]["quartz_cron_expression"] = "15 * * * * ?"
+# job_spec2["schedule"]["pause_status"] = "PAUSED"
+#
+# update_job_spec = {"job_id": 379919337018178, "new_settings": job_spec2}
+#
+# result = jobs_api.reset_job(json=update_job_spec)
+#
+# print("**reset result: ", result)

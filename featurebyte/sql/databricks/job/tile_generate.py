@@ -6,13 +6,16 @@ from typing import Any, Dict
 
 import argparse
 
-import tile_registry
 from pyspark.sql import SparkSession
 
+spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_registry.py")
 
-def main(args: Dict[str, Any]):
+import tile_registry
 
-    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+
+def main(args: Dict[str, Any]) -> None:
+
     featurebyte_database = args["featurebyte_database"]
     sql = args["sql"]
     tile_start_date_column = args["tile_start_date_column"]

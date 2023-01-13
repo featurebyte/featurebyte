@@ -8,7 +8,7 @@ import argparse
 from pyspark.sql import SparkSession
 
 
-def main(args: Dict[str, Any]):
+def main(args: Dict[str, Any]) -> None:
     spark = SparkSession.builder.appName("TileManagement").getOrCreate()
 
     featurebyte_database = args["featurebyte_database"]
