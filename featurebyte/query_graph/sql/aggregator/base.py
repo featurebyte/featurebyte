@@ -247,7 +247,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
 
 class NonTileBasedAggregator(Aggregator[NonTileBasedAggregationSpecT], ABC):
     """
-    Aggregators that do not use tiles
+    Inherited by Aggregators that do not use tiles. Responsible for grouping aggregations that can
+    be performed in the same subquery.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
