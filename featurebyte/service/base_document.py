@@ -233,6 +233,11 @@ class BaseDocumentService(
         -------
         dict[str, Any]
             List of documents fulfilled the filtering condition
+
+        Raises
+        ------
+        QueryNotSupportedError
+            If the persistent query is not supported
         """
         query_filter = self._construct_list_query_filter(**kwargs)
         try:
