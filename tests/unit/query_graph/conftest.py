@@ -8,8 +8,9 @@ from bson import ObjectId
 
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.node.schema import TableDetails
 from tests.util.helper import add_groupby_operation
@@ -1115,3 +1116,47 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         columns_info=columns_info,
         node_name=node.name,
     )
+
+
+@pytest.fixture(name="query_graph_with_cleaning_ops_graph_node")
+def query_graph_with_cleaning_ops_graph_node_fixture(global_graph, input_node):
+    """Fixture of a query with some operations ready to run groupby"""
+    graph_node, proxy_input_nodes = GraphNode.create(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    proj_node = graph_node.output_node
+    is_null_node = graph_node.add_operation(
+        node_type=NodeType.IS_NULL,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_node],
+    )
+    cond_node = graph_node.add_operation(
+        node_type=NodeType.CONDITIONAL,
+        node_params={"value": 0},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_node, is_null_node],
+    )
+    graph_node.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "a", "value": None},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[proxy_input_nodes[0], cond_node],
+    )
+    inserted_graph_node = global_graph.add_node(graph_node, [input_node])
+    return global_graph, inserted_graph_node
+
+
+@pytest.fixture(name="query_graph_with_cleaning_ops_and_groupby")
+def query_graph_with_cleaning_ops_and_groupby_fixture(
+    query_graph_with_cleaning_ops_graph_node, groupby_node_params
+):
+    """Fixture of a query graph (with cleaning operations) and a groupby operation"""
+    graph, graph_node = query_graph_with_cleaning_ops_graph_node
+    node_params = groupby_node_params
+    groupby_node = add_groupby_operation(graph, node_params, graph_node)
+    return graph, groupby_node
