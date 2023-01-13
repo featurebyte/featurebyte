@@ -7,13 +7,13 @@ import argparse
 
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("TileManagement").getOrCreate()
-spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_registry.py")
-
-import tile_registry
-
 
 def main(args: Dict[str, Any]) -> None:
+
+    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+    spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_registry.py")
+
+    import tile_registry
 
     featurebyte_database = args["featurebyte_database"]
     monitor_sql = args["monitor_sql"]

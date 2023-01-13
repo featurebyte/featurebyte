@@ -8,16 +8,16 @@ from datetime import datetime, timedelta
 import dateutil.parser
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("TileManagement").getOrCreate()
-spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_monitor.py")
-spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_generate.py")
-spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_schedule_online_store.py")
-
-import tile_generate
-import tile_monitor
-import tile_schedule_online_store
-
 if __name__ == "__main__":
+
+    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+    spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_monitor.py")
+    spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_generate.py")
+    spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_schedule_online_store.py")
+
+    import tile_generate
+    import tile_monitor
+    import tile_schedule_online_store
 
     parser = argparse.ArgumentParser()
     parser.add_argument("featurebyte_database", type=str)
