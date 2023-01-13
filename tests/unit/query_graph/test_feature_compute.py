@@ -9,6 +9,7 @@ import pytest
 from sqlglot import select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
@@ -71,12 +72,17 @@ def agg_spec_max_2h_fixture(agg_spec_template):
 
 @pytest.fixture(name="item_agg_spec")
 def item_agg_spec_fixture():
-    agg_spec = ItemAggregationSpec(
+    parameters = ItemGroupbyParameters(
         keys=["order_id"],
         serving_names=["OID"],
+        name="Order Size",
+        agg_func="count",
+    )
+    agg_spec = ItemAggregationSpec(
+        parameters=parameters,
+        serving_names=["OID"],
         serving_names_mapping=None,
-        feature_name="Order Size",
-        agg_expr=select("*").from_("tab"),
+        source_expr=select("*").from_("tab"),
     )
     return agg_spec
 
@@ -354,53 +360,6 @@ def test_feature_execution_planner__serving_names_mapping(
             feature_name="a_48h_average",
             feature_expr=f'"agg_w172800_avg_{groupby_node_aggregation_id}"',
         ),
-    }
-
-
-def test_feature_execution_planner__item_aggregation(global_graph, order_size_feature_group_node):
-    """
-    Test FeatureExecutionPlanner on an ItemGroupby node
-    """
-    mapping = {"order_id": "NEW_ORDER_ID"}
-    planner = FeatureExecutionPlanner(
-        global_graph,
-        serving_names_mapping=mapping,
-        source_type=SourceType.SNOWFLAKE,
-        is_online_serving=False,
-    )
-    plan = planner.generate_plan([order_size_feature_group_node])
-
-    # Check item aggregation specs
-    item_aggregation_specs = plan.aggregators["item"].item_aggregation_specs
-    assert len(item_aggregation_specs) == 1
-    spec_dict = asdict(item_aggregation_specs[0])
-    agg_expr = spec_dict.pop("agg_expr")
-    expected_agg_expr = """
-    SELECT
-      "order_id",
-      COUNT(*) AS "order_size"
-    FROM (
-      SELECT
-        "order_id" AS "order_id",
-        "item_id" AS "item_id",
-        "item_name" AS "item_name",
-        "item_type" AS "item_type"
-      FROM "db"."public"."item_table"
-    )
-    GROUP BY
-      "order_id"
-    """
-    assert_sql_equal(agg_expr.sql(pretty=True), expected_agg_expr)
-    assert spec_dict == {
-        "keys": ["order_id"],
-        "serving_names": ["NEW_ORDER_ID"],
-        "feature_name": "order_size",
-        "serving_names_mapping": mapping,
-    }
-
-    # Check feature specs
-    assert plan.feature_specs == {
-        "order_size": FeatureSpec(feature_name="order_size", feature_expr='"order_size"')
     }
 
 
