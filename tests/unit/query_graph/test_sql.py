@@ -11,7 +11,11 @@ from sqlglot import parse_one
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
-from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode, DictionaryKeysNode
+from featurebyte.query_graph.sql.ast.count_dict import (
+    CountDictTransformNode,
+    DictionaryKeysNode,
+    GetValueFromDictionaryNode,
+)
 from featurebyte.query_graph.sql.ast.datetime import (
     DateAddNode,
     DateDiffNode,
@@ -299,6 +303,22 @@ def test_dictionary_keys_node(input_node):
         )
     )
     assert node.sql.sql() == "OBJECT_KEYS(cd_val)"
+
+
+def test_get_value_node(input_node):
+    """
+    Test get value node
+    """
+    dictionary_node = make_str_expression_node(table_node=input_node, expr="dictionary")
+    lookup_node = make_str_expression_node(table_node=input_node, expr="lookup")
+    node = GetValueFromDictionaryNode.build(
+        make_context(
+            node_type=NodeType.GET_VALUE,
+            parameters={},
+            input_sql_nodes=[dictionary_node, lookup_node],
+        )
+    )
+    assert node.sql.sql() == "GET(dictionary, lookup)"
 
 
 def test_is_in_node(input_node):

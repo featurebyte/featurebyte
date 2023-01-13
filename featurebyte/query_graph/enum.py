@@ -57,6 +57,7 @@ class NodeType(StrEnum):
     CAST = "cast"
     IS_IN = "is_in"
     IS_STRING = "is_string"  # SQL generation has not been implemented
+    GET_VALUE = "get_value"
 
     # string operations
     LENGTH = "length"
