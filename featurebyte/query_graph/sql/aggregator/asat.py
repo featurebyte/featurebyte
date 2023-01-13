@@ -42,13 +42,6 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
         super().update(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
-    def get_required_serving_names(self) -> set[str]:
-        out = set()
-        for specs in self.grouped_specs.values():
-            for spec in specs:
-                out.update(spec.serving_names)
-        return out
-
     def update_aggregation_table_expr(
         self,
         table_expr: Select,

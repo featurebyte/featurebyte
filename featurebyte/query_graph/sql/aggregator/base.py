@@ -53,8 +53,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         self.source_type = source_type
         self.adapter = get_sql_adapter(source_type)
         self.is_online_serving = is_online_serving
+        self.required_serving_names: set[str] = set()
 
-    @abstractmethod
     def get_required_serving_names(self) -> set[str]:
         """
         Get the set of required serving names
@@ -63,6 +63,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         -------
         set[str]
         """
+        return self.required_serving_names.copy()
 
     @abstractmethod
     def update(self, aggregation_spec: AggregationSpecT) -> None:
@@ -74,6 +75,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         aggregation_spec: AggregationSpecT
             Aggregation specification
         """
+        self.required_serving_names.update(aggregation_spec.serving_names)
 
     @abstractmethod
     def update_aggregation_table_expr(
@@ -265,6 +267,7 @@ class NonTileBasedAggregator(Aggregator[NonTileBasedAggregationSpecT], ABC):
         aggregation_spec: NonTileBasedAggregationSpecT
             Aggregation specification
         """
+        super().update(aggregation_spec)
 
         key = aggregation_spec.source_hash
 

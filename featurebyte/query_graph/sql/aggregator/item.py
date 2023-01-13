@@ -29,20 +29,6 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         super().__init__(*args, **kwargs)
         self.non_time_aware_request_table_plan = RequestTablePlan(is_time_aware=False)
 
-    def get_required_serving_names(self) -> set[str]:
-        """
-        Get the set of required serving names
-
-        Returns
-        -------
-        set[str]
-        """
-        out = set()
-        for specs in self.grouped_specs.values():
-            for spec in specs:
-                out.update(spec.serving_names)
-        return out
-
     def update(self, aggregation_spec: ItemAggregationSpec) -> None:
         """
         Update internal state to account for the given ItemAggregationSpec

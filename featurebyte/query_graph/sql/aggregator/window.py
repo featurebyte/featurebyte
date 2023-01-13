@@ -315,23 +315,10 @@ class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
         aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
+        super().update(aggregation_spec)
         assert aggregation_spec.window is not None
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
-
-    def get_required_serving_names(self) -> set[str]:
-        """
-        Get the set of required serving names
-
-        Returns
-        -------
-        set[str]
-        """
-        out = set()
-        for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
-            for agg_spec in agg_specs:
-                out.update(agg_spec.serving_names)
-        return out
 
     def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,

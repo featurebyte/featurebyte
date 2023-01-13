@@ -34,14 +34,9 @@ class LatestAggregator(Aggregator[TileBasedAggregationSpec]):
         aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
+        super().update(aggregation_spec)
         assert aggregation_spec.window is None
         self.specs_set.add_aggregation_spec(aggregation_spec)
-
-    def get_required_serving_names(self) -> set[str]:
-        out = set()
-        for specs in self.specs_set.get_grouped_aggregation_specs():
-            out.update(specs[0].serving_names)
-        return out
 
     def update_aggregation_table_expr(
         self,
