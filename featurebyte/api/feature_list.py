@@ -206,6 +206,9 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         Returns
         -------
         pd.DataFrame
+            Materialized historical features.
+
+            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
 
         Raises
         ------
@@ -594,7 +597,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Parameters
         ----------
         training_events : pd.DataFrame
-            Training events DataFrame
+            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
@@ -639,7 +643,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Parameters
         ----------
         training_events : pd.DataFrame
-            Training events DataFrame
+            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
@@ -648,11 +653,25 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Returns
         -------
         pd.DataFrame
+            Materialized historical features.
+
+            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
 
         Raises
         ------
         RecordRetrievalException
             Get historical features request failed
+
+        Examples
+        --------
+        Prepare dataframe with POINT_IN_TIME and serving names columns
+        >>> df = pd.DataFrame({  # doctest: +SKIP
+        ...     "POINT_IN_TIME": pd.date_range(start="2017-04-15", end="2017-04-30"),
+        ...     "ACCOUNTID": "f501bd26-7ffa-4746-9da2-7124b93f22fe"
+        ... })
+
+        Retrieve materialized historical features
+        >>> feature_list.get_historical_features(df)  # doctest: +SKIP
         """
         payload = FeatureListGetHistoricalFeatures(
             feature_clusters=self._get_feature_clusters(),

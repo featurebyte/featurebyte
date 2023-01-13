@@ -361,6 +361,9 @@ class Feature(
         Returns
         -------
         pd.DataFrame
+            Materialized historical features.
+
+            **Note**: `POINT_IN_TIME` values will be converted to UTC time.
 
         Raises
         ------
