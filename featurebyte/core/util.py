@@ -3,7 +3,7 @@ util.py contains common functions used across different classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from featurebyte.common.typing import ScalarSequence
 from featurebyte.enum import DBVarType
