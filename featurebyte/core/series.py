@@ -821,15 +821,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         --------
         Check to see if the feature values are of values [1, 2, 3]
 
-        >>> lookup_feature.isin([1, 2, 3])
+        >>> lookup_feature.isin([1, 2, 3]) # doctest: +SKIP
 
         Check to see if a lookup feature values are the keys of a dictionary feature
 
-        >>> lookup_feature.isin(dictionary_feature)
+        >>> lookup_feature.isin(dictionary_feature) # doctest: +SKIP
 
         Check to see if the values in a series are of values [True, False]
 
-        >>> series.isin([True, False])
+        >>> series.isin([True, False]) # doctest: +SKIP
         """
         self.validate_isin_operation(other)
 
