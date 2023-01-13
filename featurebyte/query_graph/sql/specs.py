@@ -180,7 +180,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         return aggregation_specs
 
 
-@dataclass
+@dataclass  # type: ignore[misc]
 class NonTileBasedAggregationSpec(AggregationSpec):
     """
     Represents an aggregation that is performed directly on the source without tile based
@@ -202,6 +202,10 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph node
         source_type: SourceType
             Source type information
+
+        Returns
+        -------
+        Select
         """
         # pylint: disable=import-outside-toplevel
         from featurebyte.query_graph.sql.builder import SQLOperationGraph
@@ -241,15 +245,13 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
 
 @dataclass
-class ItemAggregationSpec(AggregationSpec):
+class ItemAggregationSpec(NonTileBasedAggregationSpec):
     """
     Non-time aware aggregation specification
     """
 
-    keys: list[str]
-    serving_names: list[str]
-    feature_name: str
-    agg_expr: Select | None
+    parameters: ItemGroupbyParameters
+    source_expr: Select
 
     @property
     def agg_result_name(self) -> str:
@@ -260,21 +262,30 @@ class ItemAggregationSpec(AggregationSpec):
         str
             Column name of the aggregated result
         """
-        # Note: Ideally, this internal aggregated result name should be based on a unique identifier
-        # that uniquely identifies the aggregation, instead of directly using the feature_name.
-        # Should be fixed when aggregation_id is added to the parameters of ItemGroupby query node.
-        return self.feature_name
+        return f"{self.parameters.agg_func}_{self.parameters.parent}_{self.source_hash}"
 
     @property
     def aggregation_type(self) -> AggregationType:
         return AggregationType.ITEM
 
+    def get_source_hash_parameters(self) -> dict[str, Any]:
+        params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
+        parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
+        if parameters_dict.get("entity_ids") is not None:
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
+        params["parameters"] = parameters_dict
+        return params
+
     @classmethod
     def from_item_groupby_query_node(
         cls,
         node: Node,
-        agg_expr: Select | None = None,
-        serving_names_mapping: dict[str, str] | None = None,
+        source_expr: Optional[Select] = None,
+        graph: Optional[QueryGraphModel] = None,
+        source_type: Optional[SourceType] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
     ) -> ItemAggregationSpec:
         """Construct a ItemAggregationSpec object given a query graph node
 
@@ -282,24 +293,32 @@ class ItemAggregationSpec(AggregationSpec):
         ----------
         node : Node
             Query graph node
-        agg_expr : Select | None
-            The item groupby aggregation expression
-        serving_names_mapping : dict[str, str]
-            Mapping from original serving name to new serving name
+        source_expr: Optional[Select]
+            Select statement that represents the source to lookup from. If not provided, it will be
+            inferred from the node and graph.
+        graph: Optional[QueryGraphModel]
+            Query graph. Mandatory if source_expr is not provided
+        source_type: Optional[SourceType]
+            Source type information. Mandatory if source_expr is not provided
+        serving_names_mapping: Optional[dict[str, str]]
+            Serving names mapping
 
         Returns
         -------
         ItemAggregationSpec
         """
         assert isinstance(node, ItemGroupbyNode)
-        params = node.parameters.dict()
-        serving_names = params["serving_names"]
+
+        if source_expr is None:
+            assert graph is not None
+            assert source_type is not None
+            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+
         out = ItemAggregationSpec(
-            keys=params["keys"],
-            serving_names=serving_names,
+            serving_names=node.parameters.serving_names,
             serving_names_mapping=serving_names_mapping,
-            feature_name=params["name"],
-            agg_expr=agg_expr,
+            parameters=node.parameters,
+            source_expr=source_expr,
         )
         return out
 
