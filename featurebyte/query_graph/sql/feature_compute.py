@@ -350,9 +350,9 @@ class FeatureExecutionPlanner:
             self.graph, SQLType.AGGREGATION, source_type=self.source_type
         ).build(node)
         agg_expr = sql_node.sql
-        agg_spec = ItemAggregationSpec.from_item_groupby_query_node(
+        agg_spec = ItemAggregationSpec.from_query_graph_node(
             node, agg_expr, serving_names_mapping=self.serving_names_mapping
-        )
+        )[0]
         self.plan.add_aggregation_spec(agg_spec)
 
     def parse_and_update_specs_from_lookup(self, node: Node) -> None:
@@ -363,7 +363,7 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        agg_specs = LookupSpec.from_lookup_query_node(
+        agg_specs = LookupSpec.from_query_graph_node(
             node,
             graph=self.graph,
             source_type=self.source_type,
@@ -380,12 +380,12 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        spec = AggregateAsAtSpec.from_aggregate_asat_query_node(
+        spec = AggregateAsAtSpec.from_query_graph_node(
             node,
             graph=self.graph,
             source_type=self.source_type,
             serving_names_mapping=self.serving_names_mapping,
-        )
+        )[0]
         self.plan.add_aggregation_spec(spec)
 
     def update_feature_specs(self, node: Node) -> None:

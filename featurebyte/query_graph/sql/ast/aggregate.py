@@ -99,7 +99,7 @@ class Lookup(Aggregate):
     ) -> dict[str, Expression]:
         # Create LookupSpec which determines the internal aggregated result names
         columns_map = {}
-        specs = LookupSpec.from_lookup_query_node(
+        specs = LookupSpec.from_query_graph_node(
             context.query_node, source_expr=cast(Select, source_node.sql)
         )
         for spec in specs:
@@ -120,9 +120,9 @@ class AsAt(Aggregate):
         context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
         columns_map = {}
-        spec = AggregateAsAtSpec.from_aggregate_asat_query_node(
+        spec = AggregateAsAtSpec.from_query_graph_node(
             context.query_node, source_expr=cast(Select, source_node.sql)
-        )
+        )[0]
         feature_name = cast(str, spec.parameters.name)
         columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
         return columns_map
@@ -141,9 +141,9 @@ class Item(Aggregate):
         context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
         columns_map = {}
-        spec = ItemAggregationSpec.from_item_groupby_query_node(
+        spec = ItemAggregationSpec.from_query_graph_node(
             context.query_node, source_expr=cast(Select, source_node.sql)
-        )
+        )[0]
         feature_name = cast(str, spec.parameters.name)
         columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
         return columns_map

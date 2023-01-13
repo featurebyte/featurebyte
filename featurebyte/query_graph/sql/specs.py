@@ -3,7 +3,7 @@ Module for data structures that describe different types of aggregations that fo
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 import hashlib
 import json
@@ -27,6 +27,10 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
 from featurebyte.query_graph.sql.tiling import get_aggregator
+
+NonTileBasedAggregationSpecT = TypeVar(
+    "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
+)
 
 
 class AggregationType(StrEnum):
@@ -244,6 +248,66 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         dict[str, Any]
         """
 
+    @classmethod
+    @abstractmethod
+    def construct_specs(
+        cls: Type[NonTileBasedAggregationSpecT],
+        node: Node,
+        source_expr: Select,
+        serving_names_mapping: Optional[dict[str, str]],
+    ) -> list[NonTileBasedAggregationSpecT]:
+        """
+        Construct the list of specifications
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+        source_expr: Select
+            Select statement that represents the source for aggregation
+        serving_names_mapping: Optional[dict[str, str]]
+            Serving names mapping
+        """
+
+    @classmethod
+    def from_query_graph_node(
+        cls: Type[NonTileBasedAggregationSpecT],
+        node: Node,
+        source_expr: Optional[Select] = None,
+        graph: Optional[QueryGraphModel] = None,
+        source_type: Optional[SourceType] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
+    ) -> list[NonTileBasedAggregationSpecT]:
+        """Construct NonTileBasedAggregationSpec objects given a query graph node
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+        source_expr: Optional[Select]
+            Select statement that represents the source for aggregation
+        graph: Optional[QueryGraphModel]
+            Query graph. Mandatory if source_expr is not provided
+        source_type: Optional[SourceType]
+            Source type information. Mandatory if source_expr is not provided
+        serving_names_mapping: Optional[dict[str, str]]
+            Serving names mapping
+
+        Returns
+        -------
+        NonTileBasedAggregationSpecT
+        """
+        if source_expr is None:
+            assert graph is not None
+            assert source_type is not None
+            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
+
+        return cls.construct_specs(
+            node=node,
+            source_expr=source_expr,
+            serving_names_mapping=serving_names_mapping,
+        )
+
 
 @dataclass
 class ItemAggregationSpec(NonTileBasedAggregationSpec):
@@ -280,48 +344,21 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         return params
 
     @classmethod
-    def from_item_groupby_query_node(
+    def construct_specs(
         cls,
         node: Node,
-        source_expr: Optional[Select] = None,
-        graph: Optional[QueryGraphModel] = None,
-        source_type: Optional[SourceType] = None,
-        serving_names_mapping: Optional[dict[str, str]] = None,
-    ) -> ItemAggregationSpec:
-        """Construct a ItemAggregationSpec object given a query graph node
-
-        Parameters
-        ----------
-        node : Node
-            Query graph node
-        source_expr: Optional[Select]
-            Select statement that represents the source to lookup from. If not provided, it will be
-            inferred from the node and graph.
-        graph: Optional[QueryGraphModel]
-            Query graph. Mandatory if source_expr is not provided
-        source_type: Optional[SourceType]
-            Source type information. Mandatory if source_expr is not provided
-        serving_names_mapping: Optional[dict[str, str]]
-            Serving names mapping
-
-        Returns
-        -------
-        ItemAggregationSpec
-        """
+        source_expr: Select,
+        serving_names_mapping: Optional[dict[str, str]],
+    ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
-
-        if source_expr is None:
-            assert graph is not None
-            assert source_type is not None
-            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
-
-        out = ItemAggregationSpec(
-            serving_names=node.parameters.serving_names,
-            serving_names_mapping=serving_names_mapping,
-            parameters=node.parameters,
-            source_expr=source_expr,
-        )
-        return out
+        return [
+            ItemAggregationSpec(
+                serving_names=node.parameters.serving_names,
+                serving_names_mapping=serving_names_mapping,
+                parameters=node.parameters,
+                source_expr=source_expr,
+            )
+        ]
 
 
 @dataclass
@@ -363,48 +400,21 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
         return params
 
     @classmethod
-    def from_aggregate_asat_query_node(
+    def construct_specs(
         cls,
         node: Node,
-        source_expr: Optional[Select] = None,
-        graph: Optional[QueryGraphModel] = None,
-        source_type: Optional[SourceType] = None,
+        source_expr: Select,
         serving_names_mapping: Optional[dict[str, str]] = None,
-    ) -> AggregateAsAtSpec:
-        """
-        Construct a list of LookupSpec given a lookup query graph node
-
-        Parameters
-        ----------
-        node: Node
-            Query graph node
-        source_expr: Optional[Select]
-            Select statement that represents the source to lookup from. If not provided, it will be
-            inferred from the node and graph.
-        graph: Optional[QueryGraphModel]
-            Query graph. Mandatory if source_expr is not provided
-        source_type: Optional[SourceType]
-            Source type information. Mandatory if source_expr is not provided
-        serving_names_mapping: Optional[dict[str, str]]
-            Serving names mapping
-
-        Returns
-        -------
-        list[LookupSpec]
-        """
+    ) -> list[AggregateAsAtSpec]:
         assert isinstance(node, AggregateAsAtNode)
-
-        if source_expr is None:
-            assert graph is not None
-            assert source_type is not None
-            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
-
-        return AggregateAsAtSpec(
-            parameters=node.parameters,
-            source_expr=source_expr,
-            serving_names=node.parameters.serving_names,
-            serving_names_mapping=serving_names_mapping,
-        )
+        return [
+            AggregateAsAtSpec(
+                parameters=node.parameters,
+                source_expr=source_expr,
+                serving_names=node.parameters.serving_names,
+                serving_names_mapping=serving_names_mapping,
+            )
+        ]
 
 
 @dataclass
@@ -439,42 +449,13 @@ class LookupSpec(NonTileBasedAggregationSpec):
         return params
 
     @classmethod
-    def from_lookup_query_node(
+    def construct_specs(
         cls,
         node: Node,
-        source_expr: Optional[Select] = None,
-        graph: Optional[QueryGraphModel] = None,
-        source_type: Optional[SourceType] = None,
-        serving_names_mapping: Optional[dict[str, str]] = None,
+        source_expr: Select,
+        serving_names_mapping: Optional[dict[str, str]],
     ) -> list[LookupSpec]:
-        """
-        Construct a list of LookupSpec given a lookup query graph node
-
-        Parameters
-        ----------
-        node: Node
-            Query graph node
-        source_expr: Optional[Select]
-            Select statement that represents the source to lookup from. If not provided, it will be
-            inferred from the node and graph.
-        graph: Optional[QueryGraphModel]
-            Query graph. Mandatory if source_expr is not provided
-        source_type: Optional[SourceType]
-            Source type information. Mandatory if source_expr is not provided
-        serving_names_mapping: Optional[dict[str, str]]
-            Serving names mapping
-
-        Returns
-        -------
-        list[LookupSpec]
-        """
         assert isinstance(node, LookupNode)
-
-        if source_expr is None:
-            assert graph is not None
-            assert source_type is not None
-            source_expr = cls.get_source_sql_expr(graph=graph, node=node, source_type=source_type)
-
         params = node.parameters
         specs = []
         for input_column_name, feature_name in zip(params.input_column_names, params.feature_names):
