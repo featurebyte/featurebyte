@@ -10,6 +10,14 @@ from tests.integration.api.feature_preview_utils import (
 )
 
 
+@pytest.fixture(name="item_type_dimension_lookup_feature_and_view")
+def item_type_dimension_lookup_feature_and_view_fixture(dimension_view):
+    """
+    Get item type dimension lookup feature, and dimension view
+    """
+    return dimension_view["item_type"].as_feature("ItemTypeFeature"), dimension_view
+
+
 @pytest.fixture(name="item_type_dimension_lookup_feature")
 def item_type_dimension_lookup_feature_fixture(dimension_view):
     """
@@ -91,6 +99,31 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
         "lookup_is_in_dictionary": True,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
+
+
+def test_get_value_from_dictionary__validation_fails(
+    item_type_dimension_lookup_feature, event_data
+):
+    """
+    Test validation will cause errors when features are not of the correct type.
+    """
+    # get dictionary feature
+    event_view = EventView.from_event_data(event_data)
+    feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(
+        value_column="PRODUCT_ACTION",
+        method="latest",
+        windows=["30d"],
+        feature_names=["LATEST_ACTION_DICT_30d"],
+    )
+    dictionary_feature = feature_group["LATEST_ACTION_DICT_30d"]
+
+    with pytest.raises(ValueError) as exc:
+        item_type_dimension_lookup_feature.get_value(item_type_dimension_lookup_feature)
+    assert "not a dictionary feature" in str(exc)
+
+    with pytest.raises(ValueError) as exc:
+        dictionary_feature.get_value(dictionary_feature)
+    assert "not a lookup feature" in str(exc)
 
 
 def test_get_value_from_dictionary__target_is_lookup_feature(

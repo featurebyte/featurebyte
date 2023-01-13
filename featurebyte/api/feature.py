@@ -18,11 +18,13 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.event_data import FeatureJobSetting
@@ -486,6 +488,43 @@ class Feature(
             response.json(),
         )
 
+    @staticmethod
+    def _is_lookup_feature(feature: Feature) -> None:
+        """
+        Checks to see if a feature is a lookup feature.
+
+        Parameters
+        ----------
+        feature: Feature
+            feature
+
+        Raises
+        ------
+        ValueError
+            raised if the feature is not a lookup feature
+        """
+        if NodeType.LOOKUP in feature.node_types_lineage:
+            return
+        raise ValueError(f"feature {feature.name} is not a lookup feature.")
+
+    @staticmethod
+    def _is_dictionary_feature(dtype: DBVarType) -> None:
+        """
+        Checks if the feature provided is a dictionary feature.
+
+        Parameters
+        ----------
+        dtype: DBVarType
+            dtype of the feature
+
+        Raises
+        ------
+        ValueError
+            raised when the feature is not a dictionary feature
+        """
+        if dtype != DBVarType.OBJECT:
+            raise ValueError("feature is not a dictionary feature. Unable to perform operation.")
+
     def validate_isin_operation(
         self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
     ) -> None:
@@ -498,3 +537,40 @@ class Feature(
             other
         """
         assert_is_lookup_feature(self.node_types_lineage)
+
+    def get_value(
+        self,
+        key: Union[Scalar, Feature],
+        right_op: bool = False,
+    ) -> Series:
+        """
+        Get the value in a dictionary feature, based on the value in the lookup feature.
+
+        Parameters
+        ----------
+        key: Union[Scalar, Feature]
+            key to lookup the value for
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Series
+            new feature
+        """
+        Feature._is_dictionary_feature(self.dtype)
+        if isinstance(key, Feature):
+            Feature._is_lookup_feature(key)
+
+        additional_node_params = {}
+        # we only need to assign value if we have been passed in a sequence.
+        if not isinstance(key, Series):
+            additional_node_params["value"] = key
+
+        return self._binary_op(
+            other=key,
+            node_type=NodeType.GET_VALUE,
+            output_var_type=self.dtype,
+            right_op=right_op,
+            additional_node_params=additional_node_params,
+        )
