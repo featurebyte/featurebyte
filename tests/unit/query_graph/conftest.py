@@ -6,6 +6,7 @@ import copy
 import pytest
 from bson import ObjectId
 
+from featurebyte import MissingValueImputation, ValueBeyondEndpointImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -1128,24 +1129,15 @@ def query_graph_with_cleaning_ops_graph_node_fixture(global_graph, input_node):
         input_nodes=[input_node],
         graph_node_type=GraphNodeType.CLEANING,
     )
-    proj_node = graph_node.output_node
-    is_null_node = graph_node.add_operation(
-        node_type=NodeType.IS_NULL,
-        node_params={},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_node],
-    )
-    cond_node = graph_node.add_operation(
-        node_type=NodeType.CONDITIONAL,
-        node_params={"value": 0},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_node, is_null_node],
+    operation = MissingValueImputation(imputed_value=0)
+    node_op = operation.add_cleaning_operation(
+        graph_node=graph_node, input_node=graph_node.output_node
     )
     graph_node.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "a", "value": None},
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[proxy_input_nodes[0], cond_node],
+        input_nodes=[proxy_input_nodes[0], node_op],
     )
     inserted_graph_node = global_graph.add_node(graph_node, [input_node])
     return global_graph, inserted_graph_node
