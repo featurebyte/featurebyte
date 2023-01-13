@@ -57,6 +57,12 @@ class ResponseException(Exception):
         return self.response.status_code
 
 
+class QueryNotSupportedError(NotImplementedError):
+    """
+    Raise when the persistent query is not supported
+    """
+
+
 class RecordCreationException(ResponseException):
     """
     General failure during creating an object to persistent layer
