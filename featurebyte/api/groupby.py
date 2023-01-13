@@ -162,7 +162,7 @@ class BaseAggregator(ABC):
             aggregation method
         feature_name: str
             feature name
-        fill_value: OptionalScalar,
+        fill_value: OptionalScalar
             value to fill
 
         Returns
