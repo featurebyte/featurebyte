@@ -780,7 +780,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         kwargs.pop("deep", None)
         return super().copy(*args, **kwargs, deep=True)
 
-    def isin_validation(self, other: Union[Series, Sequence[Union[bool, int, float, str]]]) -> None:
+    def validate_isin_operation(
+        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+    ) -> None:
         """
         Optional validation that can be added by subclasses if needed.
 
@@ -796,8 +798,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         self, other: Union[Series, Sequence[Union[bool, int, float, str]]], right_op: bool = False
     ) -> Series:
         """
-        Identify if the lookup feature value is in the keys of the dictionary
-        lookup_feature.isin(dictionary_feature)
+        Identify if values in a series is in another series, or a pre-defined sequence.
 
         Parameters
         ----------
@@ -815,8 +816,22 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         ------
         ValueError
             raised when the other input is not a dictionary series
+
+        Examples
+        --------
+        Check to see if the feature values are of values [1, 2, 3]
+
+        >>> lookup_feature.isin([1, 2, 3])
+
+        Check to see if a lookup feature values are the keys of a dictionary feature
+
+        >>> lookup_feature.isin(dictionary_feature)
+
+        Check to see if the values in a series are of values [True, False]
+
+        >>> series.isin([True, False])
         """
-        self.isin_validation(other)
+        self.validate_isin_operation(other)
 
         # convert to dictionary keys if the other input is a series.
         other_series = other

@@ -482,7 +482,9 @@ class Feature(
             response.json(),
         )
 
-    def isin_validation(self, other: Union[Series, Sequence[Union[bool, int, float, str]]]) -> None:
+    def validate_isin_operation(
+        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+    ) -> None:
         """
         Validates whether a feature is a lookup feature
 
