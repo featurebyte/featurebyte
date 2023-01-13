@@ -1,25 +1,26 @@
 """
 Databricks Tile Registry Job Script
 """
+from typing import Any, Dict
+
 import argparse
 
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("TileManagement").getOrCreate()
 
+def main(args: Dict[str, Any]):
+    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
 
-def main(args):
-
-    featurebyte_database = args.featurebyte_database
-    sql = args.sql
-    tile_modulo_frequency_second = args.tile_modulo_frequency_second
-    blind_spot_second = args.blind_spot_second
-    frequency_minute = args.frequency_minute
-    entity_column_names = args.entity_column_names
-    value_column_names = args.value_column_names
-    tile_id = args.tile_id.upper()
-    table_name = args.table_name
-    table_exist = args.table_exist
+    featurebyte_database = args["featurebyte_database"]
+    sql = args["sql"]
+    tile_modulo_frequency_second = args["tile_modulo_frequency_second"]
+    blind_spot_second = args["blind_spot_second"]
+    frequency_minute = args["frequency_minute"]
+    entity_column_names = args["entity_column_names"]
+    value_column_names = args["value_column_names"]
+    tile_id = args["tile_id"].upper()
+    table_name = args["table_name"]
+    table_exist = args["table_exist"]
 
     print("featurebyte_database: ", featurebyte_database)
     print("sql: ", sql)
@@ -113,4 +114,4 @@ if __name__ == "__main__":
     parser.add_argument("table_exist", type=str)
 
     args = parser.parse_args()
-    main(args)
+    main(vars(args))

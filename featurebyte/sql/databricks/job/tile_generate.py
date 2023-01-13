@@ -2,30 +2,29 @@
 Databricks Tile Generate Job Script
 """
 
+from typing import Any, Dict
+
 import argparse
 
+import tile_registry
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("TileManagement").getOrCreate()
-spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_registry.py")
 
-import tile_registry
+def main(args: Dict[str, Any]):
 
-
-def main(args):
-
-    featurebyte_database = args.featurebyte_database
-    sql = args.sql
-    tile_start_date_column = args.tile_start_date_column
-    tile_last_start_date_column = args.tile_last_start_date_column
-    tile_modulo_frequency_second = args.tile_modulo_frequency_second
-    blind_spot_second = args.blind_spot_second
-    frequency_minute = args.frequency_minute
-    entity_column_names = args.entity_column_names
-    value_column_names = args.value_column_names
-    tile_id = args.tile_id.upper()
-    tile_type = args.tile_type
-    last_tile_start_str = args.last_tile_start_str
+    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+    featurebyte_database = args["featurebyte_database"]
+    sql = args["sql"]
+    tile_start_date_column = args["tile_start_date_column"]
+    tile_last_start_date_column = args["tile_last_start_date_column"]
+    tile_modulo_frequency_second = args["tile_modulo_frequency_second"]
+    blind_spot_second = args["blind_spot_second"]
+    frequency_minute = args["frequency_minute"]
+    entity_column_names = args["entity_column_names"]
+    value_column_names = args["value_column_names"]
+    tile_id = args["tile_id"].upper()
+    tile_type = args["tile_type"]
+    last_tile_start_str = args["last_tile_start_str"]
 
     print("featurebyte_database: ", featurebyte_database)
     print("sql: ", sql)
@@ -49,9 +48,9 @@ def main(args):
 
     tile_sql = sql.replace("'", "''")
 
-    args.sql = tile_sql
-    args.table_name = tile_id
-    args.table_exist = tile_table_exist_flag
+    args["sql"] = tile_sql
+    args["table_name"] = tile_id
+    args["table_exist"] = tile_table_exist_flag
 
     print("\n\nCalling tile_registry.main\n")
     tile_registry.main(args)
@@ -141,4 +140,4 @@ if __name__ == "__main__":
     parser.add_argument("last_tile_start_str", type=str)
 
     args = parser.parse_args()
-    main(args)
+    main(vars(args))

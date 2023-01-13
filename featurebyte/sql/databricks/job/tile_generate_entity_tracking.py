@@ -6,10 +6,9 @@ import argparse
 
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("TileManagement").getOrCreate()
-
-
 if __name__ == "__main__":
+
+    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("featurebyte_database", type=str)

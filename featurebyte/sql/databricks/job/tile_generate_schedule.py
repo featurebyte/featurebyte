@@ -2,12 +2,14 @@
 Databricks Tile Monitor Job Script
 """
 import argparse
+import copy
 from datetime import datetime, timedelta
 
 import dateutil.parser
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("TileManagement").getOrCreate()
+spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_registry.py")
 spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_monitor.py")
 spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_generate.py")
 spark.sparkContext.addPyFile("dbfs:/FileStore/newudfs/tile_schedule_online_store.py")
@@ -102,65 +104,66 @@ if __name__ == "__main__":
     tile_end_ts_str = tile_end_ts.strftime("%Y-%m-%d %H:%M:%S")
     monitor_tile_end_ts_str = monitor_end_ts.strftime("%Y-%m-%d %H:%M:%S")
 
-    print("\n\nCalling tile_monitor.main\n")
-    try:
-        monitor_input_sql = sql.replace(
-            f"{tile_start_date_placeholder}", "''" + tile_start_ts_str + "''"
-        ).replace(f"{tile_end_date_placeholder}", "''" + monitor_tile_end_ts_str + "''")
-        print("monitor_input_sql: ", monitor_input_sql)
-        args.monitor_sql = monitor_input_sql
-        tile_monitor.main(args)
-        print("\nEnd of calling tile_monitor.main\n\n")
-    except Exception as e:
-        message = str(e).replace("'", "")
-        ex_insert_sql = audit_insert_sql.replace("<STATUS>", "MONITORED_FAILED").replace(
-            "<MESSAGE>", message
+    monitor_input_sql = sql.replace(
+        f"{tile_start_date_placeholder}", "''" + tile_start_ts_str + "''"
+    ).replace(f"{tile_end_date_placeholder}", "''" + monitor_tile_end_ts_str + "''")
+
+    generate_input_sql = sql.replace(
+        f"{tile_start_date_placeholder}", "''" + tile_start_ts_str + "''"
+    ).replace(f"{tile_end_date_placeholder}", "''" + tile_end_ts_str + "''")
+
+    last_tile_start_ts = tile_end_ts - timedelta(minutes=frequency_minute)
+    last_tile_start_str = last_tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
+
+    step_specs = [
+        {
+            "name": "tile_monitor",
+            "data": {"monitor_sql": monitor_input_sql},
+            "trigger": tile_monitor.main,
+            "status": {
+                "fail": "MONITORED_FAILED",
+                "success": "MONITORED",
+            },
+        },
+        {
+            "name": "tile_generate",
+            "data": {"sql": generate_input_sql, "last_tile_start_str": last_tile_start_str},
+            "trigger": tile_generate.main,
+            "status": {
+                "fail": "GENERATED_FAILED",
+                "success": "GENERATED",
+            },
+        },
+        {
+            "name": "tile_online_store",
+            "data": {"job_schedule_ts_str": job_schedule_ts},
+            "trigger": tile_schedule_online_store.main,
+            "status": {
+                "fail": "ONLINE_STORE_FAILED",
+                "success": "COMPLETED",
+            },
+        },
+    ]
+
+    for spec in step_specs:
+        new_args = copy.deepcopy(vars(args))
+        new_args.update(spec["data"])
+
+        try:
+            print(f"Calling {spec['name']}\n")
+            print(f"new_args: {new_args}\n")
+            spec["trigger"](new_args)
+            print(f"End of calling {spec['name']}\n")
+        except Exception as e:
+            message = str(e).replace("'", "")
+            ex_insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["fail"]).replace(
+                "<MESSAGE>", message
+            )
+            print("fail_insert_sql: ", ex_insert_sql)
+            spark.sql(ex_insert_sql)
+            raise e
+        insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["success"]).replace(
+            "<MESSAGE>", ""
         )
-        print("ex_insert_sql: ", ex_insert_sql)
-        spark.sql(ex_insert_sql)
-        raise e
-    insert_sql = audit_insert_sql.replace("<STATUS>", "MONITORED").replace("<MESSAGE>", "")
-    print("insert_sql: ", insert_sql)
-    spark.sql(insert_sql)
-
-    print("\n\nCalling tile_generate.main\n")
-    try:
-        generate_input_sql = sql.replace(
-            f"{tile_start_date_placeholder}", "''" + tile_start_ts_str + "''"
-        ).replace(f"{tile_end_date_placeholder}", "''" + tile_end_ts_str + "''")
-
-        last_tile_start_ts = tile_end_ts - timedelta(minutes=frequency_minute)
-        last_tile_start_ts_str = last_tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
-
-        args.sql = generate_input_sql
-        args.last_tile_start_str = last_tile_start_ts_str
-        tile_generate.main(args)
-        print("\nEnd of calling tile_generate.main\n\n")
-    except Exception as e:
-        message = str(e).replace("'", "")
-        ex_insert_sql = audit_insert_sql.replace("<STATUS>", "GENERATED_FAILED").replace(
-            "<MESSAGE>", message
-        )
-        print("ex_insert_sql: ", ex_insert_sql)
-        spark.sql(ex_insert_sql)
-        raise e
-    insert_sql = audit_insert_sql.replace("<STATUS>", "GENERATED").replace("<MESSAGE>", "")
-    print("insert_sql: ", insert_sql)
-    spark.sql(insert_sql)
-
-    print("\n\nCalling tile_schedule_online_store.main\n")
-    try:
-        args.job_schedule_ts_str = job_schedule_ts
-        tile_schedule_online_store.main(args)
-        print("\nEnd of calling tile_schedule_online_store.main\n\n")
-    except Exception as e:
-        message = str(e).replace("'", "")
-        ex_insert_sql = audit_insert_sql.replace("<STATUS>", "ONLINE_STORE_FAILED").replace(
-            "<MESSAGE>", message
-        )
-        print("ex_insert_sql: ", ex_insert_sql)
-        spark.sql(ex_insert_sql)
-        raise e
-    insert_sql = audit_insert_sql.replace("<STATUS>", "COMPLETED").replace("<MESSAGE>", "")
-    print("insert_sql: ", insert_sql)
-    spark.sql(insert_sql)
+        print("success_insert_sql: ", insert_sql)
+        spark.sql(insert_sql)

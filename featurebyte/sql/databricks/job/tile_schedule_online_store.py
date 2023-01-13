@@ -2,18 +2,20 @@
 Databricks Tile Generate online store Job Script
 """
 
+from typing import Any, Dict
+
 import argparse
 
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("TileManagement").getOrCreate()
 
+def main(args: Dict[str, Any]):
 
-def main(args):
+    spark = SparkSession.builder.appName("TileManagement").getOrCreate()
 
-    featurebyte_database = args.featurebyte_database
-    tile_id = args.tile_id.upper()
-    job_schedule_ts_str = args.job_schedule_ts_str
+    featurebyte_database = args["featurebyte_database"]
+    tile_id = args["tile_id"].upper()
+    job_schedule_ts_str = args["job_schedule_ts_str"]
 
     print("featurebyte_database: ", featurebyte_database)
     print("tile_id: ", tile_id)
@@ -98,4 +100,4 @@ if __name__ == "__main__":
     parser.add_argument("job_schedule_ts_str", type=str)
 
     args = parser.parse_args()
-    main(args)
+    main(vars(args))
