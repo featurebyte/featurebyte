@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
 
 import time
 from http import HTTPStatus
@@ -481,3 +481,23 @@ class Feature(
             str,
             response.json(),
         )
+
+    def validate_isin_operation(
+        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+    ) -> None:
+        """
+        Validates whether a feature is a lookup feature
+
+        Parameters
+        ----------
+        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+            other
+
+        Raises
+        ------
+        ValueError
+            raised when the feature is not a lookup feature
+        """
+        if NodeType.LOOKUP in self.node_types_lineage:
+            return
+        raise ValueError(f"feature {self.name} is not a lookup feature.")

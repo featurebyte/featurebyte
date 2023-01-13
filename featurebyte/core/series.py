@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union
 
 from functools import wraps
 
@@ -223,7 +223,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     def _binary_op(
         self,
-        other: int | float | str | bool | Series,
+        other: int | float | str | bool | Series | Sequence[Union[int, float, str, bool]],
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
@@ -779,3 +779,85 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         # Copying a Series should prevent it from modifying the parent Frame
         kwargs.pop("deep", None)
         return super().copy(*args, **kwargs, deep=True)
+
+    def validate_isin_operation(
+        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+    ) -> None:
+        """
+        Optional validation that can be added by subclasses if needed.
+
+        Parameters
+        ----------
+        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+            other input to check whether the current series is in
+        """
+        _ = other
+
+    @typechecked
+    def isin(
+        self, other: Union[Series, Sequence[Union[bool, int, float, str]]], right_op: bool = False
+    ) -> Series:
+        """
+        Identify if values in a series is in another series, or a pre-defined sequence.
+
+        Parameters
+        ----------
+        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+            other input to check whether the current series is in
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Series
+            updated series
+
+        Raises
+        ------
+        ValueError
+            raised when the other input is not a dictionary series
+
+        Examples
+        --------
+        Check to see if the feature values are of values [1, 2, 3]
+
+        >>> lookup_feature.isin([1, 2, 3]) # doctest: +SKIP
+
+        Check to see if a lookup feature values are the keys of a dictionary feature
+
+        >>> lookup_feature.isin(dictionary_feature) # doctest: +SKIP
+
+        Check to see if the values in a series are of values [True, False]
+
+        >>> series.isin([True, False]) # doctest: +SKIP
+        """
+        self.validate_isin_operation(other)
+
+        # convert to dictionary keys if the other input is a series.
+        other_series = other
+        if isinstance(other, Series):
+            if other.dtype != DBVarType.OBJECT:
+                raise ValueError(
+                    "we can only operate on other series if the other series is a dictionary series."
+                )
+            other_series = series_unary_operation(
+                input_series=other,
+                node_type=NodeType.DICTIONARY_KEYS,
+                output_var_type=DBVarType.ARRAY,
+                node_params={},
+                **other.unary_op_series_params(),
+            )
+
+        # perform the is in check when the other series is an array
+        additional_node_params = {}
+        # we only need to assign value if we have been passed in a sequence.
+        if not isinstance(other, Series):
+            additional_node_params["value"] = other
+
+        return self._binary_op(
+            other=other_series,
+            node_type=NodeType.IS_IN,
+            output_var_type=DBVarType.BOOL,
+            right_op=right_op,
+            additional_node_params=additional_node_params,
+        )

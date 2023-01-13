@@ -11,7 +11,7 @@ from sqlglot import parse_one
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
-from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode
+from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode, DictionaryKeysNode
 from featurebyte.query_graph.sql.ast.datetime import (
     DateAddNode,
     DateDiffNode,
@@ -26,6 +26,7 @@ from featurebyte.query_graph.sql.ast.generic import (
     resolve_project_node,
 )
 from featurebyte.query_graph.sql.ast.input import InputNode
+from featurebyte.query_graph.sql.ast.is_in import IsInNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
 from featurebyte.query_graph.sql.builder import SQLNodeContext
@@ -281,6 +282,41 @@ def test_count_dict_transform(parameters, expected, input_node):
         )
     )
     assert node.sql.sql() == expected
+
+
+def test_dictionary_keys_node(input_node):
+    """
+    Test dictionary keys node
+    """
+    column = make_str_expression_node(table_node=input_node, expr="cd_val")
+    node = DictionaryKeysNode.build(
+        make_context(
+            node_type=NodeType.DICTIONARY_KEYS,
+            parameters={},
+            input_sql_nodes=[column],
+        )
+    )
+    assert node.sql.sql() == "OBJECT_KEYS(cd_val)"
+
+
+def test_is_in_node(input_node):
+    """
+    Test is in node
+    """
+    input_series_expr_str = "cd_val"
+    input_expr_node = make_str_expression_node(table_node=input_node, expr=input_series_expr_str)
+    array_expr_str = "ARRAY(1, 2, 3)"
+    array_expr_node = make_str_expression_node(table_node=input_node, expr=array_expr_str)
+    node = IsInNode.build(
+        make_context(
+            node_type=NodeType.IS_IN,
+            parameters={},
+            input_sql_nodes=[input_expr_node, array_expr_node],
+        )
+    )
+    assert (
+        node.sql.sql() == f"ARRAY_CONTAINS(TO_VARIANT({input_series_expr_str}), {array_expr_str})"
+    )
 
 
 @pytest.mark.parametrize(
