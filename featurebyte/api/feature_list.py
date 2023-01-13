@@ -289,6 +289,22 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         # sanity check: make sure we don't copy global query graph
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
+    @typechecked
+    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+        """
+        Save features within a FeatureGroup object to the persistent. Conflict could be triggered when the feature
+        being saved has violated uniqueness check at the persistent (for example, same ID has been used by another
+        record stored at the persistent).
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" raises error when then counters conflict error (default)
+            "retrieve" handle conflict error by retrieving the object with the same name
+        """
+        for feature_name in self.feature_names:
+            self[feature_name].save(conflict_resolution=conflict_resolution)
+
 
 class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
     """
