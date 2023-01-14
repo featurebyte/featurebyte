@@ -51,8 +51,34 @@ def aggregation_spec_max_item_price(item_table_sql):
 
 
 @pytest.fixture
-def aggregation_specs(aggregation_spec_order_size, aggregation_spec_max_item_price):
-    return [aggregation_spec_order_size, aggregation_spec_max_item_price]
+def aggregation_spec_with_category(item_table_sql):
+    params = ItemGroupbyParameters(
+        keys=["order_id"],
+        serving_names=["serving_order_id"],
+        value_by="item_type",
+        parent="price",
+        agg_func="max",
+        name="max_item_price_by_type",
+    )
+    return ItemAggregationSpec(
+        serving_names=["serving_order_id"],
+        serving_names_mapping={"serving_order_id": "new_serving_order_id"},
+        parameters=params,
+        source_expr=item_table_sql,
+    )
+
+
+@pytest.fixture
+def aggregation_specs(
+    aggregation_spec_order_size,
+    aggregation_spec_max_item_price,
+    aggregation_spec_with_category,
+):
+    return [
+        aggregation_spec_order_size,
+        aggregation_spec_max_item_price,
+        aggregation_spec_with_category,
+    ]
 
 
 def test_item_aggregation(aggregation_specs):

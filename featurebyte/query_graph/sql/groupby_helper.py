@@ -5,11 +5,24 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
+from dataclasses import dataclass
+
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression
+from sqlglot.expressions import Expression, Select, alias_
 
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.sql.common import quoted_identifier
+
+
+@dataclass
+class GroupbyColumn:
+    """
+    Represents a set of parameters that produces one output column in a groupby statement
+    """
+
+    agg_func: AggFunc
+    parent: Optional[str]
+    result_name: str
 
 
 def get_aggregation_expression(
@@ -61,3 +74,26 @@ def get_aggregation_expression(
                 this=expressions.Cast(this=expr_is_null, to=parse_one("INTEGER"))
             )
     return expr
+
+
+def get_groupby_expr(
+    input_expr: Select,
+    groupby_keys: list[Expression],
+    groupby_columns: list[GroupbyColumn],
+) -> Select:
+
+    agg_exprs = [
+        alias_(
+            get_aggregation_expression(
+                agg_func=column.agg_func,
+                input_column=column.parent,
+            ),
+            alias=column.result_name,
+            quoted=True,
+        )
+        for column in groupby_columns
+    ]
+
+    groupby_expr = input_expr.select(*groupby_keys, *agg_exprs).group_by(*groupby_keys)
+
+    return groupby_expr
