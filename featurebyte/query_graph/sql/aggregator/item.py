@@ -15,7 +15,7 @@ from featurebyte.query_graph.sql.aggregator.base import (
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
-from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, get_groupby_expr
+from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
 
@@ -84,22 +84,35 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
             )
         )
 
-        groupby_keys = [
-            get_qualified_column_identifier(serving_name, "REQ")
-            for serving_name in spec.serving_names
-        ]
         groupby_columns = [
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
-                parent=s.parameters.parent,
+                parent_expr=get_qualified_column_identifier(s.parameters.parent, "ITEM"),
                 result_name=s.agg_result_name,
             )
             for s in agg_specs
         ]
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(serving_name, "REQ"),
+                name=serving_name,
+            )
+            for serving_name in spec.serving_names
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "ITEM"),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
         item_aggregate_expr = get_groupby_expr(
             input_expr=groupby_input_expr,
             groupby_keys=groupby_keys,
             groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
         )
 
         return LeftJoinableSubquery(

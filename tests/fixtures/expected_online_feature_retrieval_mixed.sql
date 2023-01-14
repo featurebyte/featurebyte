@@ -20,7 +20,7 @@ WITH MY_REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS (
   FROM MY_REQUEST_TABLE_POST_FEATURE_STORE_LOOKUP AS REQ
   LEFT JOIN (
     SELECT
-      REQ."order_id",
+      REQ."order_id" AS "order_id",
       COUNT(*) AS "count_None_99a214e3edd7fa51"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (

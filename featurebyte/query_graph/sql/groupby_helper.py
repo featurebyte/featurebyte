@@ -11,6 +11,7 @@ from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_
 
 from featurebyte.enum import AggFunc
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier
 
 
@@ -21,8 +22,21 @@ class GroupbyColumn:
     """
 
     agg_func: AggFunc
-    parent: Optional[str]
+    parent_expr: Optional[Expression]
     result_name: str
+
+
+@dataclass
+class GroupbyKey:
+    """
+    Represents a groupby key
+    """
+
+    expr: Expression
+    name: str
+
+    def get_alias(self) -> Expression:
+        return alias_(self.expr, self.name, quoted=True)
 
 
 def get_aggregation_expression(
@@ -78,22 +92,50 @@ def get_aggregation_expression(
 
 def get_groupby_expr(
     input_expr: Select,
-    groupby_keys: list[Expression],
+    groupby_keys: list[GroupbyKey],
     groupby_columns: list[GroupbyColumn],
+    value_by: Optional[GroupbyKey],
+    adapter: BaseAdapter,
 ) -> Select:
 
-    agg_exprs = [
-        alias_(
-            get_aggregation_expression(
-                agg_func=column.agg_func,
-                input_column=column.parent,
-            ),
-            alias=column.result_name,
-            quoted=True,
+    if value_by is None:
+        agg_exprs = [
+            alias_(
+                get_aggregation_expression(
+                    agg_func=column.agg_func,
+                    input_column=column.parent_expr,
+                ),
+                alias=column.result_name,
+                quoted=True,
+            )
+            for column in groupby_columns
+        ]
+        groupby_expr = input_expr.select(
+            *[alias_(k.expr, alias=k.name, quoted=True) for k in groupby_keys], *agg_exprs
+        ).group_by(*[k.expr for k in groupby_keys])
+    else:
+        inner_agg_exprs = [
+            alias_(
+                get_aggregation_expression(
+                    agg_func=column.agg_func,
+                    input_column=column.parent_expr,
+                ),
+                alias=column.result_name + "_inner",
+                quoted=True,
+            )
+            for column in groupby_columns
+        ]
+        inner_groupby_expr = input_expr.select(
+            *([k.get_alias() for k in groupby_keys] + [value_by.get_alias()]),
+            *inner_agg_exprs,
+        ).group_by(*([k.expr for k in groupby_keys] + [value_by.expr]))
+        groupby_expr = adapter.construct_key_value_aggregation_sql(
+            point_in_time_column=None,
+            serving_names=[k.name for k in groupby_keys],
+            value_by=value_by.name,
+            agg_result_names=[col.result_name for col in groupby_columns],
+            inner_agg_result_names=[col.result_name + "_inner" for col in groupby_columns],
+            inner_agg_expr=inner_groupby_expr,
         )
-        for column in groupby_columns
-    ]
-
-    groupby_expr = input_expr.select(*groupby_keys, *agg_exprs).group_by(*groupby_keys)
 
     return groupby_expr

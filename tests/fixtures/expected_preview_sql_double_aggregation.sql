@@ -54,7 +54,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
               "order_id"
             FROM (
               SELECT
-                "order_id",
+                "order_id" AS "order_id",
                 COUNT(*) AS "order_size"
               FROM (
                 SELECT

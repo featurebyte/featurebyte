@@ -47,7 +47,7 @@ def test_item_groupby_sql_node(global_graph, item_data_input_node, parent, agg_f
     expected = textwrap.dedent(
         f"""
         SELECT
-          "order_id",
+          "order_id" AS "order_id",
           {expected_expr} AS "feature_name"
         FROM (
           SELECT

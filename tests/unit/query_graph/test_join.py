@@ -251,7 +251,7 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
             "order_id"
           FROM (
             SELECT
-              "order_id",
+              "order_id" AS "order_id",
               COUNT(*) AS "order_size"
             FROM (
               SELECT
@@ -361,7 +361,7 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                 "order_id"
               FROM (
                 SELECT
-                  "order_id",
+                  "order_id" AS "order_id",
                   COUNT(*) AS "order_size"
                 FROM (
                   SELECT

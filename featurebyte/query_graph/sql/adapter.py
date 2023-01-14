@@ -99,7 +99,7 @@ class BaseAdapter:
     @abstractmethod
     def construct_key_value_aggregation_sql(
         cls,
-        point_in_time_column: str,
+        point_in_time_column: Optional[str],
         serving_names: list[str],
         value_by: str,
         agg_result_names: list[str],
@@ -136,7 +136,7 @@ class BaseAdapter:
 
         Parameters
         ----------
-        point_in_time_column : str
+        point_in_time_column : Optional[str]
             Point in time column name
         serving_names : list[str]
             List of serving name columns
@@ -266,7 +266,7 @@ class SnowflakeAdapter(BaseAdapter):
     @classmethod
     def construct_key_value_aggregation_sql(
         cls,
-        point_in_time_column: str,
+        point_in_time_column: Optional[str],
         serving_names: list[str],
         value_by: str,
         agg_result_names: list[str],
@@ -276,7 +276,10 @@ class SnowflakeAdapter(BaseAdapter):
 
         inner_alias = "INNER_"
 
-        outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
+        if point_in_time_column:
+            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
+        else:
+            outer_group_by_keys = []
         for serving_name in serving_names:
             outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
 
@@ -339,7 +342,7 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def construct_key_value_aggregation_sql(
         cls,
-        point_in_time_column: str,
+        point_in_time_column: Optional[str],
         serving_names: list[str],
         value_by: str,
         agg_result_names: list[str],
