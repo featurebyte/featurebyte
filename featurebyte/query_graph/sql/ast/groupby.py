@@ -56,7 +56,9 @@ class ItemGroupby(TableNode):
         groupby_columns = [
             GroupbyColumn(
                 agg_func=parameters["agg_func"],
-                parent_expr=quoted_identifier(parameters["parent"]),
+                parent_expr=(
+                    quoted_identifier(parameters["parent"]) if parameters["parent"] else None
+                ),
                 result_name=output_name,
             )
         ]

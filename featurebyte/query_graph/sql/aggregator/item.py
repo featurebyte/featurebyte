@@ -58,6 +58,7 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         """
         spec = agg_specs[0]
 
+        # Construct input to be aggregated using GROUP BY
         request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(spec)
         join_condition = expressions.and_(
             *[
@@ -84,10 +85,15 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
             )
         )
 
+        # Construct GROUP BY expression using groupby_helper
         groupby_columns = [
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
-                parent_expr=get_qualified_column_identifier(s.parameters.parent, "ITEM"),
+                parent_expr=(
+                    get_qualified_column_identifier(s.parameters.parent, "ITEM")
+                    if s.parameters.parent
+                    else None
+                ),
                 result_name=s.agg_result_name,
             )
             for s in agg_specs
