@@ -1,8 +1,9 @@
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
-from featurebyte import FeatureList
+from featurebyte import EventView, FeatureList
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
@@ -37,6 +38,64 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
             mask &= expected_joined_event_item_dataframe[col] == row[col]
         matched = expected_joined_event_item_dataframe[mask]
         assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
+
+
+@pytest.fixture
+def item_aggregate_with_category_features(item_data):
+    """
+    Fixture for a FeatureList with features derived from item aggregation per category
+    """
+    item_view = ItemView.from_item_data(item_data)
+    feature = item_view.groupby("order_id", category="item_type").aggregate(
+        method="count", feature_name="my_item_feature"
+    )
+    most_frequent_feature = feature.cd.most_frequent()
+    most_frequent_feature.name = "most_frequent_item_type"
+    entropy_feature = feature.cd.entropy()
+    entropy_feature.name = "item_type_entropy"
+    return FeatureList([most_frequent_feature, entropy_feature])
+
+
+def test_item_aggregation_with_category(item_aggregate_with_category_features, event_data):
+    """
+    Test ItemView.groupby(..., category=...).aggregate() feature
+    """
+    # check preview
+    df = item_aggregate_with_category_features.preview(
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+            "order_id": "T42",
+        }
+    )
+    assert df.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+        "order_id": "T42",
+        "most_frequent_item_type": "type_13",
+        "item_type_entropy": 0.6931471805599451,
+    }
+
+    # check historical features
+    df = item_aggregate_with_category_features.get_historical_features(
+        pd.DataFrame(
+            {
+                "POINT_IN_TIME": ["2001-11-15 10:00:00"] * 3,
+                "order_id": [f"T{i}" for i in range(3)],
+            }
+        )
+    )
+    df = df.sort_values("order_id")
+    assert df["most_frequent_item_type"].tolist() == ["type_18", "type_40", "type_42"]
+    np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 2.19722458, 2.07944154])
+
+    # check add_feature (note added feature value is the same as the preview above)
+    event_view = EventView.from_event_data(event_data)
+    event_view.add_feature(
+        "most_frequent_item_type",
+        item_aggregate_with_category_features["most_frequent_item_type"],
+        "TRANSACTION_ID",
+    )
+    df = event_view[event_view["TRANSACTION_ID"] == "T42"].preview()
+    assert df.iloc[0]["most_frequent_item_type"] == "type_13"
 
 
 def test_item_view_ops(item_data):

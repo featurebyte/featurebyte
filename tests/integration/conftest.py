@@ -900,6 +900,7 @@ def snowflake_item_data_fixture(
     snowflake_feature_store,
     snowflake_event_data,
     order_entity,
+    item_entity,
 ):
     """Fixture for an ItemData in integration tests"""
     database_table = snowflake_feature_store.get_table(
@@ -918,6 +919,7 @@ def snowflake_item_data_fixture(
     item_data.save()
     item_data = ItemData.get(item_data_name)
     item_data["order_id"].as_entity(order_entity.name)
+    item_data["item_id"].as_entity(item_entity.name)
     return item_data
 
 

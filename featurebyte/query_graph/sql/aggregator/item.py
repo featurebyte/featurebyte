@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from sqlglot import expressions
-from sqlglot.expressions import Select, alias_, select
+from sqlglot.expressions import Select, select
 
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
@@ -15,7 +15,7 @@ from featurebyte.query_graph.sql.aggregator.base import (
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
-from featurebyte.query_graph.sql.groupby_helper import get_aggregation_expression
+from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
 
@@ -58,6 +58,7 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         """
         spec = agg_specs[0]
 
+        # Construct input to be aggregated using GROUP BY
         request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(spec)
         join_condition = expressions.and_(
             *[
@@ -68,28 +69,8 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
                 for serving_name, key in zip(spec.serving_names, spec.parameters.keys)
             ]
         )
-        groupby_keys = [
-            get_qualified_column_identifier(serving_name, "REQ")
-            for serving_name in spec.serving_names
-        ]
-        agg_exprs = [
-            alias_(
-                get_aggregation_expression(
-                    agg_func=s.parameters.agg_func,
-                    input_column=(
-                        get_qualified_column_identifier(s.parameters.parent, "ITEM")
-                        if s.parameters.parent
-                        else None
-                    ),
-                ),
-                alias=s.agg_result_name,
-                quoted=True,
-            )
-            for s in agg_specs
-        ]
-
-        item_aggregate_expr = (
-            select(*groupby_keys, *agg_exprs)
+        groupby_input_expr = (
+            select()
             .from_(
                 expressions.Table(
                     this=quoted_identifier(request_table_name),
@@ -102,7 +83,42 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
                 join_alias="ITEM",
                 on=join_condition,
             )
-            .group_by(*groupby_keys)
+        )
+
+        # Construct GROUP BY expression using groupby_helper
+        groupby_columns = [
+            GroupbyColumn(
+                agg_func=s.parameters.agg_func,
+                parent_expr=(
+                    get_qualified_column_identifier(s.parameters.parent, "ITEM")
+                    if s.parameters.parent
+                    else None
+                ),
+                result_name=s.agg_result_name,
+            )
+            for s in agg_specs
+        ]
+        groupby_keys = [
+            GroupbyKey(
+                expr=get_qualified_column_identifier(serving_name, "REQ"),
+                name=serving_name,
+            )
+            for serving_name in spec.serving_names
+        ]
+        value_by = (
+            GroupbyKey(
+                expr=get_qualified_column_identifier(spec.parameters.value_by, "ITEM"),
+                name=spec.parameters.value_by,
+            )
+            if spec.parameters.value_by
+            else None
+        )
+        item_aggregate_expr = get_groupby_expr(
+            input_expr=groupby_input_expr,
+            groupby_keys=groupby_keys,
+            groupby_columns=groupby_columns,
+            value_by=value_by,
+            adapter=self.adapter,
         )
 
         return LeftJoinableSubquery(
