@@ -223,7 +223,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     def _binary_op(
         self,
-        other: int | float | str | bool | Series | ScalarSequence,
+        other: Scalar | Series | ScalarSequence,
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
@@ -234,7 +234,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Parameters
         ----------
-        other: int | float | str | bool | Series
+        other: Scalar | Series | ScalarSequence
             right value of the binary operator
         node_type: NodeType
             binary operator node type
