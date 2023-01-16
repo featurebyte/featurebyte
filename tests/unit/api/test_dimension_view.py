@@ -236,7 +236,7 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
     feature_3_and_4 = view.as_features(
         ["col_binary", "col_boolean"], ["BinaryFeature", "BoolFeature"]
     )
-    feature_list = FeatureList([feature_1, feature_2, feature_3_and_4])
+    feature_list = FeatureList([feature_1, feature_2, feature_3_and_4], name="my_feature_list")
     feature_list_sql = feature_list.sql
     assert (
         feature_list_sql

@@ -516,6 +516,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
             values["readiness_distribution"] = cls.derive_readiness_distribution(features)
         return values
 
+    @typechecked
+    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
+        super().__init__(items=items, name=name, **kwargs)
+
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
         """
