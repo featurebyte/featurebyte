@@ -183,10 +183,12 @@ class CountDictAccessor:
         if not isinstance(key, feature_clazz):
             additional_node_params["value"] = key
 
-        return self._feature_obj._binary_op(  # pylint: disable=protected-access
+        response = self._feature_obj._binary_op(  # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_VALUE,
             output_var_type=self._feature_obj.dtype,
             right_op=right_op,
             additional_node_params=additional_node_params,
         )
+        assert isinstance(response, feature_clazz)
+        return response
