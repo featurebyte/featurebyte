@@ -3,11 +3,13 @@ This module contains count_dict accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from typeguard import typechecked
 
+from featurebyte.api.feature_validation_util import is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.typing import Scalar
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -73,7 +75,7 @@ class CountDictAccessor:
     def __init__(self, obj: Feature):
         if obj.dtype != DBVarType.OBJECT:
             raise AttributeError("Can only use .cd accessor with count per category features")
-        self._obj = obj
+        self._feature_obj = obj
 
     def _make_operation(
         self,
@@ -85,11 +87,11 @@ class CountDictAccessor:
         if additional_params is not None:
             node_params.update(additional_params)
         return series_unary_operation(
-            input_series=self._obj,
+            input_series=self._feature_obj,
             node_type=NodeType.COUNT_DICT_TRANSFORM,
             output_var_type=output_var_type,
             node_params=node_params,
-            **self._obj.unary_op_series_params(),
+            **self._feature_obj.unary_op_series_params(),
         )
 
     def entropy(self) -> Feature:
@@ -145,9 +147,46 @@ class CountDictAccessor:
         -------
         Feature
         """
-        series_operator = CountDictSeriesOperator(self._obj, other)
+        series_operator = CountDictSeriesOperator(self._feature_obj, other)
         return series_operator.operate(
             node_type=NodeType.COSINE_SIMILARITY,
             output_var_type=DBVarType.FLOAT,
-            **self._obj.binary_op_series_params(),
+            **self._feature_obj.binary_op_series_params(),
+        )
+
+    def get_value(
+        self,
+        key: Union[Scalar, Feature],
+        right_op: bool = False,
+    ) -> Feature:
+        """
+        Get the value in a dictionary feature, based on the value in the lookup feature.
+
+        Parameters
+        ----------
+        key: Union[Scalar, Feature]
+            key to lookup the value for
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Feature
+            new feature
+        """
+        feature_type = type(self._feature_obj)
+        if isinstance(key, feature_type):
+            is_lookup_feature(key)
+
+        additional_node_params = {}
+        # we only need to assign value if we have been passed in a sequence.
+        if not isinstance(key, feature_type):
+            additional_node_params["value"] = key
+
+        return self._feature_obj._binary_op(
+            other=key,
+            node_type=NodeType.GET_VALUE,
+            output_var_type=self._feature_obj.dtype,
+            right_op=right_op,
+            additional_node_params=additional_node_params,
         )

@@ -117,12 +117,12 @@ def test_get_value_from_dictionary__validation_fails(
     )
     dictionary_feature = feature_group["LATEST_ACTION_DICT_30d"]
 
-    with pytest.raises(ValueError) as exc:
-        item_type_dimension_lookup_feature.get_value(item_type_dimension_lookup_feature)
-    assert "not a dictionary feature" in str(exc)
+    with pytest.raises(AttributeError) as exc:
+        item_type_dimension_lookup_feature.cd.get_value(item_type_dimension_lookup_feature)
+    assert "Can only use .cd accessor with count per category features" in str(exc)
 
     with pytest.raises(ValueError) as exc:
-        dictionary_feature.get_value(dictionary_feature)
+        dictionary_feature.cd.get_value(dictionary_feature)
     assert "not a lookup feature" in str(exc)
 
 
@@ -140,7 +140,7 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
     )
 
     # perform get_value
-    get_value_feature = dictionary_feature.get_value(item_type_dimension_lookup_feature)
+    get_value_feature = dictionary_feature.cd.get_value(item_type_dimension_lookup_feature)
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_count_value_from_dictionary"
 
@@ -173,8 +173,8 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     )
     dictionary_feature = feature_group[feature_name]
 
-    # perform is in
-    get_value_feature = dictionary_feature.get_value("detail")
+    # perform get_value
+    get_value_feature = dictionary_feature.cd.get_value("detail")
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_value_in_dictionary"
 
