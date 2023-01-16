@@ -131,7 +131,7 @@ class AsAt(Aggregate):
 @dataclass
 class Item(Aggregate):
     """
-    AsAt SQLNode
+    Item SQLNode
     """
 
     query_node_type = NodeType.ITEM_GROUPBY

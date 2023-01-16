@@ -65,7 +65,6 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         """
         return self.required_serving_names.copy()
 
-    @abstractmethod
     def update(self, aggregation_spec: AggregationSpecT) -> None:
         """
         Update internal states given an AggregationSpec
@@ -76,6 +75,19 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             Aggregation specification
         """
         self.required_serving_names.update(aggregation_spec.serving_names)
+        self.additional_update(aggregation_spec)
+
+    @abstractmethod
+    def additional_update(self, aggregation_spec: AggregationSpecT) -> None:
+        """
+        Additional updates to internal states specific to different aggregators. To be overridden by
+        sub-classes
+
+        Parameters
+        ----------
+        aggregation_spec: AggregationSpecT
+            Aggregation specification
+        """
 
     @abstractmethod
     def update_aggregation_table_expr(
@@ -260,7 +272,7 @@ class NonTileBasedAggregator(Aggregator[NonTileBasedAggregationSpecT], ABC):
 
     def update(self, aggregation_spec: NonTileBasedAggregationSpecT) -> None:
         """
-        Update internal state to account for the given ItemAggregationSpec
+        Update internal states to account for aggregation_spec
 
         Parameters
         ----------

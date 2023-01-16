@@ -30,7 +30,7 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
         super().__init__(*args, **kwargs)
         self.request_table_plan = RequestTablePlan(is_time_aware=True)
 
-    def update(self, aggregation_spec: AggregateAsAtSpec) -> None:
+    def additional_update(self, aggregation_spec: AggregateAsAtSpec) -> None:
         """
         Update internal states to account for aggregation spec
 
@@ -39,7 +39,6 @@ class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
         aggregation_spec: AggregateAsAtSpec
             Aggregation spec
         """
-        super().update(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def update_aggregation_table_expr(

@@ -306,7 +306,7 @@ class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
             source_type=self.source_type
         )
 
-    def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
+    def additional_update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
         Update internal state to account for a WindowAggregationSpec
 
@@ -315,7 +315,6 @@ class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
         aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
-        super().update(aggregation_spec)
         assert aggregation_spec.window is not None
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)

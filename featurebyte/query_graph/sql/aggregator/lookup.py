@@ -36,6 +36,9 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
         for specs in self.grouped_specs.values():
             yield from specs
 
+    def additional_update(self, aggregation_spec: LookupSpec) -> None:
+        pass
+
     def iterate_grouped_lookup_specs(self, is_scd: bool) -> Iterable[list[LookupSpec]]:
         """
         Iterate over groups of LookupSpec filtering by time awareness. All the LookupSpecs in a

@@ -25,7 +25,7 @@ class LatestAggregator(Aggregator[TileBasedAggregationSpec]):
         super().__init__(*args, **kwargs)
         self.specs_set = TileBasedAggregationSpecSet()
 
-    def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
+    def additional_update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
         Update internal states given a TileBasedAggregationSpec
 
@@ -34,7 +34,6 @@ class LatestAggregator(Aggregator[TileBasedAggregationSpec]):
         aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
-        super().update(aggregation_spec)
         assert aggregation_spec.window is None
         self.specs_set.add_aggregation_spec(aggregation_spec)
 

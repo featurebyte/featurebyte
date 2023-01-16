@@ -29,7 +29,7 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         super().__init__(*args, **kwargs)
         self.non_time_aware_request_table_plan = RequestTablePlan(is_time_aware=False)
 
-    def update(self, aggregation_spec: ItemAggregationSpec) -> None:
+    def additional_update(self, aggregation_spec: ItemAggregationSpec) -> None:
         """
         Update internal state to account for the given ItemAggregationSpec
 
@@ -38,7 +38,6 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         aggregation_spec: ItemAggregationSpec
             Aggregation specification
         """
-        super().update(aggregation_spec)
         self.non_time_aware_request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def _get_aggregation_subquery(
