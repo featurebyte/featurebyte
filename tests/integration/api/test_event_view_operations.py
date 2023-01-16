@@ -413,10 +413,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     if count_dict_supported:
         features.append(feature_group_per_category["COUNT_BY_ACTION_24h"])
 
-    feature_list_combined = FeatureList(
-        features,
-        name="My FeatureList",
-    )
+    feature_list_combined = FeatureList(features, name="My FeatureList")
     feature_group_combined = feature_list_combined[feature_list_combined.feature_names]
     df_feature_preview = feature_group_combined.preview(preview_param)
     expected_amount_sum_24h = 582.14

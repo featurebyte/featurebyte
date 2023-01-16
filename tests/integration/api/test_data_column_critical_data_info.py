@@ -77,7 +77,9 @@ def test_event_data_update_critical_data_info(event_data):
     df_training_events = pd.DataFrame(
         {"POINT_IN_TIME": pd.to_datetime(["2001-01-14 00:00:00"]), "cust_id": [938]}
     )
-    hist_feat = FeatureList([feature_group]).get_historical_features(df_training_events)
+    hist_feat = FeatureList([feature_group], name="feature_list").get_historical_features(
+        df_training_events
+    )
     pd.testing.assert_frame_equal(feat_preview_df, hist_feat, check_dtype=False)
 
     # remove critical data info
@@ -127,7 +129,9 @@ def test_item_data_update_critical_data_info(item_data):
             "order_id": ["T236", "T236"],
         }
     )
-    hist_feat = FeatureList([feature, window_feature]).get_historical_features(df_training_events)
+    hist_feat = FeatureList([feature, window_feature], name="feature_list").get_historical_features(
+        df_training_events
+    )
     assert list(hist_feat.columns) == [
         "POINT_IN_TIME",
         "user id",
