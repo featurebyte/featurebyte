@@ -66,11 +66,27 @@ class BuildTileNode(TableNode):
         return self._get_tile_sql_order_independent(keys, tile_start_date, input_tiled)
 
     def _get_input_filtered_within_date_range(self) -> Select:
+        """
+        Construct sql to filter input data to be within a date range. Only data within this range
+        will be used to calculate tiles.
+
+        Returns
+        -------
+        Select
+        """
         if self.is_on_demand:
             return self._get_input_filtered_within_date_range_on_demand()
         return self._get_input_filtered_within_date_range_scheduled()
 
     def _get_input_filtered_within_date_range_scheduled(self) -> Select:
+        """
+        Construct sql with placeholders for start and end dates to be filled in by the scheduled
+        tile computation jobs
+
+        Returns
+        -------
+        Select
+        """
         select_expr = select("*").from_(self.input_node.sql_nested())
         timestamp = quoted_identifier(self.timestamp).sql()
         start_cond = (
@@ -81,7 +97,20 @@ class BuildTileNode(TableNode):
         return select_expr
 
     def _get_input_filtered_within_date_range_on_demand(self) -> Select:
+        """
+        Construct sql to filter the data used when building tiles for selected entities only
 
+        The selected entities are expected to be available in an "entity table". It can be injected
+        as a subquery by replacing the placeholder InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.
+
+        Entity table is expected to have these columns:
+        * entity column(s)
+        * InternalName.ENTITY_TABLE_END_DATE
+
+        Returns
+        -------
+        Select
+        """
         entity_table = InternalName.ENTITY_TABLE_NAME.value
         start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
         end_date = InternalName.ENTITY_TABLE_END_DATE.value

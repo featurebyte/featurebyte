@@ -166,24 +166,17 @@ def test_graph_interpreter_multi_assign(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          *
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            (
-              "a" + "b"
-            ) AS "c",
-            (
-              "a" + "b"
-            ) AS "c2"
-          FROM "db"."public"."event_table"
-        )
-        WHERE
-          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          (
+            "a" + "b"
+          ) AS "c",
+          (
+            "a" + "b"
+          ) AS "c2"
+        FROM "db"."public"."event_table"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -231,21 +224,14 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
     expected = textwrap.dedent(
         f"""
         SELECT
-          *
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            (
-              {expected_expr}
-            ) AS "a2"
-          FROM "db"."public"."event_table"
-        )
-        WHERE
-          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          (
+            {expected_expr}
+          ) AS "a2"
+        FROM "db"."public"."event_table"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -1181,6 +1167,34 @@ def test_window_function(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[filtered_input_node, lagged_a],
     )
+    node_params = {
+        "keys": ["cust_id"],
+        "value_by": None,
+        "parent": "prev_a",
+        "agg_func": "count",
+        "time_modulo_frequency": 600,
+        "frequency": 3600,
+        "blind_spot": 1,
+        "timestamp": "ts",
+        "windows": ["1d"],
+        "serving_names": ["cust_id"],
+        "names": ["feature_name"],
+    }
+    groupby_node = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            **node_params,
+            "tile_id": get_tile_table_identifier(
+                row_index_lineage_hash="deadbeef1234", parameters=node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
+                transformations_hash=graph.node_name_to_ref[assign_node.name],
+                parameters=node_params,
+            ),
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
     sql_graph = SQLOperationGraph(
         graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
     )
@@ -1188,26 +1202,66 @@ def test_window_function(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          *
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
-          FROM "db"."public"."event_table"
-          WHERE
-            (
-              "a" > 1000
-            )
-        )
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
+        FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+          (
+            "a" > 1000
+          )
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
+
+    # check generated sql for building tiles
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    tile_gen_sql = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
+          ) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          COUNT(*) AS value_count_7857b056f366bf32a56563964923dbf1f4c4f931
+        FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
+              ) / 3600
+            ) AS tile_index
+          FROM (
+            SELECT
+              *
+            FROM (
+              SELECT
+                "ts" AS "ts",
+                "cust_id" AS "cust_id",
+                "a" AS "a",
+                "b" AS "b",
+                LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+              FROM "db"."public"."event_table"
+              WHERE
+                (
+                  "a" > 1000
+                )
+            )
+            WHERE
+              "ts" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+          )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id"
+        """
+    ).strip()
+    assert tile_gen_sql[0].sql == expected
 
 
 def test_window_function__as_filter(graph, node_input):
@@ -1335,38 +1389,6 @@ def test_window_function__multiple_filters(graph, node_input):
           (
             LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
           )
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
-
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
-    )
-    sql_tree = sql_graph.build(filtered_node_2).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          *
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
-          FROM "db"."public"."event_table"
-          WHERE
-            (
-              "a" = 123
-            )
-          QUALIFY
-            (
-              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
-            )
-        )
-        WHERE
-          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected

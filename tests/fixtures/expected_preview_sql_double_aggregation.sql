@@ -26,14 +26,14 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           ) AS tile_index
         FROM (
           SELECT
-            L."ts" AS "ts",
-            L."cust_id" AS "cust_id",
-            L."order_id" AS "order_id",
-            L."order_method" AS "order_method",
-            R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
+            *
           FROM (
             SELECT
-              *
+              L."ts" AS "ts",
+              L."cust_id" AS "cust_id",
+              L."order_id" AS "order_id",
+              L."order_method" AS "order_method",
+              R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
             FROM (
               SELECT
                 "ts" AS "ts",
@@ -41,34 +41,34 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
                 "order_id" AS "order_id",
                 "order_method" AS "order_method"
               FROM "db"."public"."event_table"
-            )
-            WHERE
-              "ts" >= CAST('2022-03-21 09:15:00' AS TIMESTAMPNTZ)
-              AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
-          ) AS L
-          LEFT JOIN (
-            SELECT
-              (
-                "order_size" + 123
-              ) AS "__FB_TEMP_FEATURE_NAME",
-              "order_id"
-            FROM (
+            ) AS L
+            LEFT JOIN (
               SELECT
-                "order_id" AS "order_id",
-                COUNT(*) AS "order_size"
+                (
+                  "order_size" + 123
+                ) AS "__FB_TEMP_FEATURE_NAME",
+                "order_id"
               FROM (
                 SELECT
                   "order_id" AS "order_id",
-                  "item_id" AS "item_id",
-                  "item_name" AS "item_name",
-                  "item_type" AS "item_type"
-                FROM "db"."public"."item_table"
+                  COUNT(*) AS "order_size"
+                FROM (
+                  SELECT
+                    "order_id" AS "order_id",
+                    "item_id" AS "item_id",
+                    "item_name" AS "item_name",
+                    "item_type" AS "item_type"
+                  FROM "db"."public"."item_table"
+                )
+                GROUP BY
+                  "order_id"
               )
-              GROUP BY
-                "order_id"
-            )
-          ) AS R
-            ON L."order_id" = R."order_id"
+            ) AS R
+              ON L."order_id" = R."order_id"
+          )
+          WHERE
+            "ts" >= CAST('2022-03-21 09:15:00' AS TIMESTAMPNTZ)
+            AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMPNTZ)
         )
       )
       GROUP BY
