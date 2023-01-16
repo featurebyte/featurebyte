@@ -214,7 +214,7 @@ class SnowflakeAdapter(BaseAdapter):
     Helper class to generate Snowflake specific SQL expressions
     """
 
-    class SnowflakeOnlineStoreColumnType(StrEnum):
+    class SnowflakeDataType(StrEnum):
         """
         Possible column types in Snowflake online store tables
         """
@@ -312,18 +312,18 @@ class SnowflakeAdapter(BaseAdapter):
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
         mapping = {
-            DBVarType.INT: cls.SnowflakeOnlineStoreColumnType.FLOAT,
-            DBVarType.FLOAT: cls.SnowflakeOnlineStoreColumnType.FLOAT,
-            DBVarType.VARCHAR: cls.SnowflakeOnlineStoreColumnType.VARCHAR,
-            DBVarType.OBJECT: cls.SnowflakeOnlineStoreColumnType.OBJECT,
-            DBVarType.TIMESTAMP: cls.SnowflakeOnlineStoreColumnType.TIMESTAMP_NTZ,
-            DBVarType.TIMESTAMP_TZ: cls.SnowflakeOnlineStoreColumnType.TIMESTAMP_TZ,
+            DBVarType.INT: cls.SnowflakeDataType.FLOAT,
+            DBVarType.FLOAT: cls.SnowflakeDataType.FLOAT,
+            DBVarType.VARCHAR: cls.SnowflakeDataType.VARCHAR,
+            DBVarType.OBJECT: cls.SnowflakeDataType.OBJECT,
+            DBVarType.TIMESTAMP: cls.SnowflakeDataType.TIMESTAMP_NTZ,
+            DBVarType.TIMESTAMP_TZ: cls.SnowflakeDataType.TIMESTAMP_TZ,
         }
         if dtype in mapping:
             return mapping[dtype]
         # Currently we don't expect features or tiles to be of any other types than above.
         # Otherwise, default to VARIANT since it can hold any data types
-        return cls.SnowflakeOnlineStoreColumnType.VARIANT
+        return cls.SnowflakeDataType.VARIANT
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
