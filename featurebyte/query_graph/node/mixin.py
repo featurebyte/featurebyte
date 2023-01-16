@@ -1,9 +1,8 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Optional, Set, cast
-
 from abc import abstractmethod
+from typing import Any, Dict, List, Optional, Set
 
 from pydantic import BaseModel
 
@@ -112,7 +111,7 @@ class AggregationOpStructMixin:
                 parent_columns = [parent_column]
         return parent_columns
 
-    def _get_agg_func(self) -> Optional[str]:
+    def _get_agg_func(self) -> Optional[AggFunc]:
         """
         Retrieve agg_func from the parameters
 
@@ -180,7 +179,7 @@ class AggregationOpStructMixin:
 
         # prepare output variable type
         if agg_func:
-            aggregation_func_obj = construct_agg_func(cast(AggFunc, agg_func))
+            aggregation_func_obj = construct_agg_func(agg_func)
             input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=self.parameters.value_by
