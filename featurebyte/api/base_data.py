@@ -240,6 +240,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
                 return cls(
                     **data.json_dict(),
                     feature_store=tabular_source.feature_store,
+                    _validate_schema=True,
                 )
             existing_record = response_dict["data"][0]
             raise DuplicatedRecordException(
