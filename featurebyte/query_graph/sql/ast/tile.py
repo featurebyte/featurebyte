@@ -140,13 +140,12 @@ class BuildTileNode(TableNode):
 
     @staticmethod
     def _get_parent_dtype(parent_column_name: str, context: SQLNodeContext) -> DBVarType:
-        input_node = context.input_sql_nodes[0]
-        input_op_struct = (
+        op_struct = (
             OperationStructureExtractor(graph=context.graph)
-            .extract(node=input_node.context.query_node)
-            .operation_structure_map[input_node.context.query_node.name]
+            .extract(node=context.query_node)
+            .operation_structure_map[context.query_node.name]
         )
-        return next(col for col in input_op_struct.columns if col.name == parent_column_name).dtype
+        return next(col for col in op_struct.columns if col.name == parent_column_name).dtype
 
     @classmethod
     def make_build_tile_node(cls, context: SQLNodeContext, is_on_demand: bool) -> BuildTileNode:
