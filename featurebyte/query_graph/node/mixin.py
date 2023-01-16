@@ -170,6 +170,7 @@ class AggregationOpStructMixin:
 
         # prepare output variable type
         if agg_func:
+            assert isinstance(agg_func, AggFunc)
             aggregation_func_obj = construct_agg_func(agg_func)
             input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(

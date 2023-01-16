@@ -268,6 +268,7 @@ class WindowAggregator(BaseAggregator):
         )
         assert isinstance(feature_names, list)
         assert method is not None
+        assert isinstance(method, AggFunc)
         agg_method = construct_agg_func(agg_func=method)
 
         items = []
@@ -461,6 +462,7 @@ class AsAtAggregator(BaseAggregator):
 
         assert method is not None
         assert feature_name is not None
+        assert isinstance(method, AggFunc)
         agg_method = construct_agg_func(agg_func=method)
 
         return self._project_feature_from_groupby_node(
@@ -565,6 +567,7 @@ class SimpleAggregator(BaseAggregator):
 
         assert method is not None
         assert feature_name is not None
+        assert isinstance(method, AggFunc)
         agg_method = construct_agg_func(agg_func=method)
         feature = self._project_feature_from_groupby_node(
             agg_method=agg_method,

@@ -176,7 +176,7 @@ else:
     AggFuncType = Annotated[Union[tuple(AGG_FUNCS)], Field(discriminator="type")]
 
 
-def construct_agg_func(agg_func: str) -> AggFuncType:
+def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     """
     Construct agg method object based on agg_func enum value
 
