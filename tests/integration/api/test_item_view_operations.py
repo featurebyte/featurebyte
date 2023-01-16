@@ -53,7 +53,7 @@ def item_aggregate_with_category_features(item_data):
     most_frequent_feature.name = "most_frequent_item_type"
     entropy_feature = feature.cd.entropy()
     entropy_feature.name = "item_type_entropy"
-    return FeatureList([most_frequent_feature, entropy_feature])
+    return FeatureList([most_frequent_feature, entropy_feature], name="feature_list")
 
 
 def test_item_aggregation_with_category(item_aggregate_with_category_features, event_data):
