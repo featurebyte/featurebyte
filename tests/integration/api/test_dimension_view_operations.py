@@ -1,27 +1,17 @@
 """
 Integration tests related to DimensionView
 """
-import pandas as pd
 
 from featurebyte import EventView
-from featurebyte.api.dimension_view import DimensionView
+from tests.integration.api.feature_preview_utils import (
+    convert_preview_param_dict_to_feature_preview_resp,
+)
 
 
-def convert_preview_param_dict_to_feature_preview_resp(input_dict):
-    """
-    Helper function to convert preview param dict to feature preview response
-    """
-    output_dict = input_dict
-    output_dict["POINT_IN_TIME"] = pd.Timestamp(input_dict["POINT_IN_TIME"])
-    return output_dict
-
-
-def test_dimension_lookup_features(dimension_data):
+def test_dimension_lookup_features(dimension_view):
     """
     Test lookup features from DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
-
     # Test single lookup feature
     feature = dimension_view["item_type"].as_feature("ItemTypeFeature")
     preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "item_id": "item_42"}
@@ -44,12 +34,11 @@ def test_dimension_lookup_features(dimension_data):
     }
 
 
-def test_is_in_dictionary__target_is_dictionary_feature(dimension_data, event_data):
+def test_is_in_dictionary__target_is_dictionary_feature(dimension_view, event_data):
     """
     Test is in dictionary
     """
     # get lookup feature
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
     lookup_feature = dimension_view["item_type"].as_feature("ItemTypeFeature")
 
     # get dictionary feature
@@ -76,11 +65,10 @@ def test_is_in_dictionary__target_is_dictionary_feature(dimension_data, event_da
     }
 
 
-def test_is_in_dictionary__target_is_array(dimension_data):
+def test_is_in_dictionary__target_is_array(dimension_view):
     """
     Test is in array
     """
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
     lookup_feature = dimension_view["item_type"].as_feature("ItemTypeFeature")
 
     # perform is in check
