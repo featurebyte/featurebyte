@@ -964,14 +964,14 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
         windows=["2h"],
         feature_names=["COUNT_2h"],
     )
-    feature_list_1 = FeatureList([feature_group_1])
+    feature_list_1 = FeatureList([feature_group_1], name="feature_list_1")
     feature_group_2 = event_view.groupby("USER ID").aggregate_over(
         value_column="EVENT_TIMESTAMP",
         method="latest",
         windows=["7d"],
         feature_names=["LATEST_EVENT_TIMESTAMP_BY_USER"],
     )
-    feature_list_2 = FeatureList([feature_group_2])
+    feature_list_2 = FeatureList([feature_group_2], name="feature_list_2")
 
     def _get_tile_table_id(feature_obj):
         return ExtendedFeatureModel(**feature_obj.dict()).tile_specs[0].tile_id
