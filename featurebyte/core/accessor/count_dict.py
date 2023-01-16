@@ -7,7 +7,11 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from typeguard import typechecked
 
+<<<<<<< HEAD
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
+=======
+from featurebyte.api.feature_validation_util import is_lookup_feature
+>>>>>>> b8be27cd (mv to cd)
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
