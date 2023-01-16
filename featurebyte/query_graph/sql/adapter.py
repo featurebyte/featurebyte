@@ -157,9 +157,10 @@ class BaseAdapter:
 
     @classmethod
     @abstractmethod
-    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
         """
-        Get the database specific type name given a Feature's DBVarType for online store purpose
+        Get the database specific type name given a DBVarType when creating tables on the data
+        warehouse (e.g. tile tables, online store tables)
 
         Parameters
         ----------
@@ -309,7 +310,7 @@ class SnowflakeAdapter(BaseAdapter):
         return agg_expr
 
     @classmethod
-    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
         mapping = {
             DBVarType.INT: cls.SnowflakeOnlineStoreColumnType.FLOAT,
             DBVarType.FLOAT: cls.SnowflakeOnlineStoreColumnType.FLOAT,
@@ -320,8 +321,8 @@ class SnowflakeAdapter(BaseAdapter):
         }
         if dtype in mapping:
             return mapping[dtype]
-        # Currently we don't expect features to be of any other types than above. Otherwise, default
-        # to VARIANT since it can hold any data types
+        # Currently we don't expect features or tiles to be of any other types than above.
+        # Otherwise, default to VARIANT since it can hold any data types
         return cls.SnowflakeOnlineStoreColumnType.VARIANT
 
     @classmethod
@@ -419,7 +420,7 @@ class DatabricksAdapter(BaseAdapter):
         return output_expr
 
     @classmethod
-    def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
         raise NotImplementedError()
 
     @classmethod

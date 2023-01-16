@@ -18,4 +18,4 @@ def test_get_online_store_type_from_dtype(dtype, expected):
     """
     Test get_online_store_type_from_dtype for SnowflakeAdapter
     """
-    assert SnowflakeAdapter.get_online_store_type_from_dtype(dtype) == expected
+    assert SnowflakeAdapter.get_physical_type_from_dtype(dtype) == expected

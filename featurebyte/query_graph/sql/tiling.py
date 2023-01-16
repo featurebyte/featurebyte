@@ -217,7 +217,7 @@ class LatestValueAggregator(OrderDependentAggregator):
             TileSpec(
                 f'FIRST_VALUE("{col.name}")',
                 f"value_{agg_id}",
-                self.adapter.get_online_store_type_from_dtype(col.dtype),
+                self.adapter.get_physical_type_from_dtype(col.dtype),
             ),
         ]
 
