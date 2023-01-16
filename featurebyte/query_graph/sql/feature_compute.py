@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Type, Union
 
 from sqlglot import expressions
 from sqlglot.expressions import select
@@ -14,7 +14,6 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.aggregator.base import Aggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
@@ -25,13 +24,19 @@ from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
+    AggregationSpec,
     AggregationType,
     FeatureSpec,
     ItemAggregationSpec,
     LookupSpec,
+    NonTileBasedAggregationSpec,
     TileBasedAggregationSpec,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
+
+AggregatorType = Union[
+    LatestAggregator, LookupAggregator, WindowAggregator, ItemAggregator, AsAtAggregator
+]
 
 
 class FeatureExecutionPlan:
@@ -41,7 +46,7 @@ class FeatureExecutionPlan:
 
     def __init__(self, source_type: SourceType, is_online_serving: bool) -> None:
         aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
-        self.aggregators = {
+        self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
             AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
             AggregationType.WINDOW: WindowAggregator(**aggregator_kwargs),
@@ -65,7 +70,7 @@ class FeatureExecutionPlan:
             out.update(aggregator.get_required_serving_names())
         return out
 
-    def iter_aggregators(self) -> Iterable[Aggregator]:
+    def iter_aggregators(self) -> Iterable[AggregatorType]:
         """Iterate over all the aggregators
 
         Yields
@@ -77,9 +82,7 @@ class FeatureExecutionPlan:
 
     def add_aggregation_spec(
         self,
-        aggregation_spec: Union[
-            TileBasedAggregationSpec, ItemAggregationSpec, LookupSpec, AggregateAsAtSpec
-        ],
+        aggregation_spec: AggregationSpec,
     ) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
@@ -343,14 +346,7 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        sql_node = SQLOperationGraph(
-            self.graph, SQLType.AGGREGATION, source_type=self.source_type
-        ).build(node)
-        agg_expr = sql_node.sql
-        agg_spec = ItemAggregationSpec.from_item_groupby_query_node(
-            node, agg_expr, serving_names_mapping=self.serving_names_mapping
-        )
-        self.plan.add_aggregation_spec(agg_spec)
+        self.get_non_tiling_specs_and_update_plan(ItemAggregationSpec, node)
 
     def parse_and_update_specs_from_lookup(self, node: Node) -> None:
         """Update FeatureExecutionPlan with a lookup query node
@@ -360,14 +356,7 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        agg_specs = LookupSpec.from_lookup_query_node(
-            node,
-            graph=self.graph,
-            source_type=self.source_type,
-            serving_names_mapping=self.serving_names_mapping,
-        )
-        for agg_spec in agg_specs:
-            self.plan.add_aggregation_spec(agg_spec)
+        self.get_non_tiling_specs_and_update_plan(LookupSpec, node)
 
     def parse_and_update_specs_from_asat(self, node: Node) -> None:
         """Update FeatureExecutionPlan with a AggregateAsAt node
@@ -377,13 +366,29 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        spec = AggregateAsAtSpec.from_aggregate_asat_query_node(
+        self.get_non_tiling_specs_and_update_plan(AggregateAsAtSpec, node)
+
+    def get_non_tiling_specs_and_update_plan(
+        self, spec_cls: Type[NonTileBasedAggregationSpec], node: Node
+    ) -> None:
+        """
+        Update FeatureExecutionPlan with a node that produces NonTileBasedAggregationSpec
+
+        Parameters
+        ----------
+        node: Node
+            Query graph node
+        spec_cls: Type[NonTileBasedAggregationSpec]
+            Aggregation specification class
+        """
+        agg_specs = spec_cls.from_query_graph_node(
             node,
             graph=self.graph,
             source_type=self.source_type,
             serving_names_mapping=self.serving_names_mapping,
         )
-        self.plan.add_aggregation_spec(spec)
+        for agg_spec in agg_specs:
+            self.plan.add_aggregation_spec(agg_spec)
 
     def update_feature_specs(self, node: Node) -> None:
         """Update FeatureExecutionPlan with a query graph node

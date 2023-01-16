@@ -11,8 +11,8 @@ from sqlglot.expressions import Select, alias_, select
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
-    Aggregator,
     LeftJoinableSubquery,
+    NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
@@ -21,46 +21,25 @@ from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_wit
 from featurebyte.query_graph.sql.specs import AggregateAsAtSpec
 
 
-class AsAtAggregator(Aggregator):
+class AsAtAggregator(NonTileBasedAggregator[AggregateAsAtSpec]):
     """
     AsAtAggregation is responsible for generating SQL for as at aggregation
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.grouped_specs: dict[str, list[AggregateAsAtSpec]] = {}
-        self.grouped_agg_result_names: dict[str, set[str]] = {}
         self.request_table_plan = RequestTablePlan(is_time_aware=True)
 
-    def update(self, spec: AggregateAsAtSpec) -> None:
+    def additional_update(self, aggregation_spec: AggregateAsAtSpec) -> None:
         """
         Update internal states to account for aggregation spec
 
         Parameters
         ----------
-        spec: AggregateAsAtSpec
+        aggregation_spec: AggregateAsAtSpec
             Aggregation spec
         """
-        key = spec.source_hash
-
-        if key not in self.grouped_specs:
-            self.grouped_agg_result_names[key] = set()
-            self.grouped_specs[key] = []
-
-        if spec.agg_result_name in self.grouped_agg_result_names[key]:
-            # Skip updating if the spec produces a result that was seen before.
-            return
-
-        self.grouped_agg_result_names[key].add(spec.agg_result_name)
-        self.grouped_specs[key].append(spec)
-        self.request_table_plan.add_aggregation_spec(spec)
-
-    def get_required_serving_names(self) -> set[str]:
-        out = set()
-        for specs in self.grouped_specs.values():
-            for spec in specs:
-                out.update(spec.serving_names)
-        return out
+        self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def update_aggregation_table_expr(
         self,

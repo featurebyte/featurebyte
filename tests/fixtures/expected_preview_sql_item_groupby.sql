@@ -94,7 +94,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     REQ."CUSTOMER_ID",
     "T0"."agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
     "T1"."agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
-    "T2"."order_size" AS "order_size"
+    "T2"."count_None_99a214e3edd7fa51" AS "count_None_99a214e3edd7fa51"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -136,25 +136,20 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME" AND REQ."CUSTOMER_ID" = T1."CUSTOMER_ID"
   LEFT JOIN (
     SELECT
-      ITEM_AGG."order_size" AS "order_size",
-      REQ."order_id" AS "order_id"
+      REQ."order_id",
+      COUNT(*) AS "count_None_99a214e3edd7fa51"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
-        "order_id",
-        COUNT(*) AS "order_size"
-      FROM (
-        SELECT
-          "order_id" AS "order_id",
-          "item_id" AS "item_id",
-          "item_name" AS "item_name",
-          "item_type" AS "item_type"
-        FROM "db"."public"."item_table"
-      )
-      GROUP BY
-        "order_id"
-    ) AS ITEM_AGG
-      ON REQ."order_id" = ITEM_AGG."order_id"
+        "order_id" AS "order_id",
+        "item_id" AS "item_id",
+        "item_name" AS "item_name",
+        "item_type" AS "item_type"
+      FROM "db"."public"."item_table"
+    ) AS ITEM
+      ON REQ."order_id" = ITEM."order_id"
+    GROUP BY
+      REQ."order_id"
   ) AS T2
     ON REQ."order_id" = T2."order_id"
 )
@@ -163,5 +158,5 @@ SELECT
   AGG."CUSTOMER_ID",
   "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "a_2h_average",
   "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "a_48h_average",
-  "order_size" AS "order_size"
+  "count_None_99a214e3edd7fa51" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

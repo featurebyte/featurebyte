@@ -289,7 +289,7 @@ class TileBasedAggregationSpecSet:
             yield agg_specs
 
 
-class WindowAggregator(Aggregator):
+class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
     """
     WindowAggregator is responsible for SQL generation for aggregation with time windows
 
@@ -306,7 +306,7 @@ class WindowAggregator(Aggregator):
             source_type=self.source_type
         )
 
-    def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
+    def additional_update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
         Update internal state to account for a WindowAggregationSpec
 
@@ -318,20 +318,6 @@ class WindowAggregator(Aggregator):
         assert aggregation_spec.window is not None
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
-
-    def get_required_serving_names(self) -> set[str]:
-        """
-        Get the set of required serving names
-
-        Returns
-        -------
-        set[str]
-        """
-        out = set()
-        for agg_specs in self.window_aggregation_spec_set.get_grouped_aggregation_specs():
-            for agg_spec in agg_specs:
-                out.update(agg_spec.serving_names)
-        return out
 
     def construct_aggregation_sql(  # pylint: disable=too-many-arguments
         self,

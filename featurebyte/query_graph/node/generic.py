@@ -462,17 +462,18 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
         return self
 
 
+class ItemGroupbyParameters(BaseGroupbyParameters):
+    """ItemGroupbyNode parameters"""
+
+    name: OutColumnStr
+
+
 class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
 
-    class Parameters(BaseGroupbyParameters):
-        """Parameters"""
-
-        name: OutColumnStr
-
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: ItemGroupbyParameters
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]

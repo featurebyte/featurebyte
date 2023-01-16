@@ -19,7 +19,7 @@ def dimension_lookup_specs(global_graph, lookup_node):
     """
     Fixture for a list of LookupSpec derived from lookup_node
     """
-    return LookupSpec.from_lookup_query_node(
+    return LookupSpec.from_query_graph_node(
         lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
@@ -31,7 +31,7 @@ def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node):
     """
     Fixture for a list of LookupSpec derived from SCD lookup
     """
-    return LookupSpec.from_lookup_query_node(
+    return LookupSpec.from_query_graph_node(
         scd_lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
@@ -43,7 +43,7 @@ def scd_lookup_specs_without_current_flag(global_graph, scd_lookup_without_curre
     """
     Fixture for a list of LookupSpec derived from SCD lookup without current flag column
     """
-    return LookupSpec.from_lookup_query_node(
+    return LookupSpec.from_query_graph_node(
         scd_lookup_without_current_flag_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
@@ -55,7 +55,7 @@ def scd_lookup_specs_with_offset(global_graph, scd_offset_lookup_node):
     """
     Fixture for a list of LookupSpec derived from SCD lookup with offset
     """
-    return LookupSpec.from_lookup_query_node(
+    return LookupSpec.from_query_graph_node(
         scd_offset_lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,

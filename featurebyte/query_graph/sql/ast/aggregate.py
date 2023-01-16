@@ -3,7 +3,7 @@ Module for aggregation related sql generation
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Optional, cast
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -13,7 +13,7 @@ from sqlglot.expressions import Expression, Select
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
-from featurebyte.query_graph.sql.specs import AggregateAsAtSpec, LookupSpec
+from featurebyte.query_graph.sql.specs import AggregateAsAtSpec, ItemAggregationSpec, LookupSpec
 
 
 @dataclass  # type: ignore[misc]
@@ -38,7 +38,10 @@ class Aggregate(TableNode):
         return self.source_node.sql
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> Aggregate:
+    def build(cls, context: SQLNodeContext) -> Optional[Aggregate]:
+
+        if context.sql_type not in {SQLType.AGGREGATION, SQLType.POST_AGGREGATION}:
+            return None
 
         # Should have only one input
         input_sql_nodes = context.input_sql_nodes
@@ -96,7 +99,7 @@ class Lookup(Aggregate):
     ) -> dict[str, Expression]:
         # Create LookupSpec which determines the internal aggregated result names
         columns_map = {}
-        specs = LookupSpec.from_lookup_query_node(
+        specs = LookupSpec.from_query_graph_node(
             context.query_node, source_expr=cast(Select, source_node.sql)
         )
         for spec in specs:
@@ -117,9 +120,30 @@ class AsAt(Aggregate):
         context: SQLNodeContext, source_node: TableNode
     ) -> dict[str, Expression]:
         columns_map = {}
-        spec = AggregateAsAtSpec.from_aggregate_asat_query_node(
+        spec = AggregateAsAtSpec.from_query_graph_node(
             context.query_node, source_expr=cast(Select, source_node.sql)
-        )
+        )[0]
+        feature_name = cast(str, spec.parameters.name)
+        columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
+        return columns_map
+
+
+@dataclass
+class Item(Aggregate):
+    """
+    Item SQLNode
+    """
+
+    query_node_type = NodeType.ITEM_GROUPBY
+
+    @staticmethod
+    def construct_columns_map(
+        context: SQLNodeContext, source_node: TableNode
+    ) -> dict[str, Expression]:
+        columns_map = {}
+        spec = ItemAggregationSpec.from_query_graph_node(
+            context.query_node, source_expr=cast(Select, source_node.sql)
+        )[0]
         feature_name = cast(str, spec.parameters.name)
         columns_map[feature_name] = quoted_identifier(spec.agg_result_name)
         return columns_map

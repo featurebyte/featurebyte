@@ -16,7 +16,7 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
 
 
-class LatestAggregator(Aggregator):
+class LatestAggregator(Aggregator[TileBasedAggregationSpec]):
     """
     LatestAggregator is responsible for SQL generation for latest value aggregation without a window
     """
@@ -25,23 +25,17 @@ class LatestAggregator(Aggregator):
         super().__init__(*args, **kwargs)
         self.specs_set = TileBasedAggregationSpecSet()
 
-    def update(self, spec: TileBasedAggregationSpec) -> None:
+    def additional_update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         """
         Update internal states given a TileBasedAggregationSpec
 
         Parameters
         ----------
-        spec: TileBasedAggregationSpec
+        aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
-        assert spec.window is None
-        self.specs_set.add_aggregation_spec(spec)
-
-    def get_required_serving_names(self) -> set[str]:
-        out = set()
-        for specs in self.specs_set.get_grouped_aggregation_specs():
-            out.update(specs[0].serving_names)
-        return out
+        assert aggregation_spec.window is None
+        self.specs_set.add_aggregation_spec(aggregation_spec)
 
     def update_aggregation_table_expr(
         self,
