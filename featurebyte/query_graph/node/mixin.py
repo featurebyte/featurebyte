@@ -1,7 +1,7 @@
 """
 This module contains mixins used in node classes
 """
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 from abc import abstractmethod
 
@@ -170,7 +170,7 @@ class AggregationOpStructMixin:
 
         # prepare output variable type
         if agg_func:
-            aggregation_func_obj = construct_agg_func(agg_func)
+            aggregation_func_obj = construct_agg_func(cast(AggFunc, agg_func))
             input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=getattr(self.parameters, "category", None)
