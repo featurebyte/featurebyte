@@ -160,6 +160,9 @@ class TileBasedAggregationSpec(AggregationSpec):
         aggregation_specs = []
         aggregator = get_aggregator(params["agg_func"], adapter=adapter)
         if params["parent"]:
+            # Note: here, we only need to retrive tile column names. Ideally the dtype should be set
+            # as the parent column's dtype, but in this case a dummy dtype is passed since that
+            # doesn't affect the tile column names.
             parent_column = InputColumn(name=params["parent"], dtype=DBVarType.FLOAT)
         else:
             parent_column = None
