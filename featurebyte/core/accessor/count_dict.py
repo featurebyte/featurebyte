@@ -195,7 +195,6 @@ class CountDictAccessor:
         # construct operation structure of the get value node output
         op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
-
         response = self._feature_obj._binary_op(  # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_VALUE,
