@@ -116,7 +116,7 @@ def get_groupby_expr(
     groupby_columns: list[GroupbyColumn]
         List of GroupbyColumn objects specifying the aggregation details (agg_func, input / output
         names)
-    value_by: Optional[GropubyKey]
+    value_by: Optional[GroupbyKey]
         Optional category parameter
     adapter: BaseAdapter
         Adapter for generating engine specific expressions
