@@ -182,7 +182,7 @@ def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
 
     Parameters
     ----------
-    agg_func: str
+    agg_func: AggFunc
         Aggregation method
 
     Returns
