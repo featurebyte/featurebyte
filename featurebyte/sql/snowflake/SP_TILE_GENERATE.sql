@@ -1,15 +1,16 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(
-    SQL varchar,
-    TILE_START_DATE_COLUMN varchar,
-    TILE_LAST_START_DATE_COLUMN varchar,
-    TIME_MODULO_FREQUENCY_SECOND float,
-    BLIND_SPOT_SECOND float,
-    FREQUENCY_MINUTE float,
-    ENTITY_COLUMN_NAMES varchar,
-    VALUE_COLUMN_NAMES varchar,
-    TILE_ID varchar,
-    TILE_TYPE varchar,
-    LAST_TILE_START_STR varchar
+    SQL VARCHAR,
+    TILE_START_DATE_COLUMN VARCHAR,
+    TILE_LAST_START_DATE_COLUMN VARCHAR,
+    TIME_MODULO_FREQUENCY_SECOND FLOAT,
+    BLIND_SPOT_SECOND FLOAT,
+    FREQUENCY_MINUTE FLOAT,
+    ENTITY_COLUMN_NAMES VARCHAR,
+    VALUE_COLUMN_NAMES VARCHAR,
+    VALUE_COLUMN_TYPES VARCHAR,
+    TILE_ID VARCHAR,
+    TILE_TYPE VARCHAR,
+    LAST_TILE_START_STR VARCHAR
 )
 returns string
 language javascript
@@ -33,7 +34,7 @@ $$
 
 
     var tile_sql = SQL.replaceAll("'", "''")
-    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_id}', '${tile_exist}')`})
+    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_id}', '${tile_exist}')`})
 
     //replace SQL template with start and end date strings for tile generation sql
     tile_sql = `

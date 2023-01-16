@@ -62,6 +62,7 @@ def test_extended_feature_model__float_feature(float_feature):
             tile_sql=expected_sql,
             entity_column_names=["cust_id"],
             value_column_names=[f"value_sum_{aggregation_id}"],
+            value_column_types=["FLOAT"],
             tile_id="TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
             aggregation_id=f"sum_{aggregation_id}",
         )
@@ -128,6 +129,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
             tile_sql=expected_sql,
             entity_column_names=["cust_id", "col_int"],
             value_column_names=[f"value_sum_{aggregation_id}"],
+            value_column_types=["FLOAT"],
             tile_id="TILE_F1800_M300_B600_540E212D8EA456624A317D8F757B679EC5F9B65A",
             aggregation_id=f"sum_{aggregation_id}",
             category_column_name="col_int",
