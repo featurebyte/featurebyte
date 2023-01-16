@@ -118,7 +118,7 @@ def mock_api_client_fixture():
     with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
         with TestClient(app) as client:
             mock_request.side_effect = client.request
-            yield
+            yield mock_request
 
 
 @pytest.fixture(name="storage")

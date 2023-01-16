@@ -124,7 +124,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
     @classmethod
     def _get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
-        return cls(**cls._get_object_dict_by_name(name=name), **cls._get_init_params(), saved=True)
+        return cls(
+            **cls._get_object_dict_by_name(name=name),
+            **cls._get_init_params(),
+            saved=True,
+            _validate_schema=True,
+        )
 
     @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
@@ -160,7 +165,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             Deserialized object
         """
-        return cls(**object_dict, **cls._get_init_params(), saved=True)
+        return cls(**object_dict, **cls._get_init_params(), saved=True, _validate_schema=True)
 
     @classmethod
     def _get_by_id(
@@ -552,7 +557,12 @@ class SavableApiObject(ApiObject):
             object_dict = self._get_object_dict_by_name(name=self.name)
         else:
             object_dict = response.json()
-        type(self).__init__(self, **object_dict, **self._get_init_params_from_object(), saved=True)
+        type(self).__init__(
+            self,
+            **object_dict,
+            **self._get_init_params_from_object(),
+            saved=True,
+        )
 
     @staticmethod
     def post_async_task(route: str, payload: dict[str, Any], delay: float = 3.0) -> dict[str, Any]:
