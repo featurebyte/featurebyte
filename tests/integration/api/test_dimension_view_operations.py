@@ -10,14 +10,6 @@ from tests.integration.api.feature_preview_utils import (
 )
 
 
-@pytest.fixture(name="item_type_dimension_lookup_feature_and_view")
-def item_type_dimension_lookup_feature_and_view_fixture(dimension_view):
-    """
-    Get item type dimension lookup feature, and dimension view
-    """
-    return dimension_view["item_type"].as_feature("ItemTypeFeature"), dimension_view
-
-
 @pytest.fixture(name="item_type_dimension_lookup_feature")
 def item_type_dimension_lookup_feature_fixture(dimension_view):
     """
