@@ -174,13 +174,13 @@ class CountDictAccessor:
         Feature
             new feature
         """
-        feature_type = type(self._feature_obj)
-        if isinstance(key, feature_type):
-            is_lookup_feature(key)
+        feature_clazz = type(self._feature_obj)
+        if isinstance(key, feature_clazz):
+            is_lookup_feature(key.node_types_lineage)
 
         additional_node_params = {}
         # we only need to assign value if we have been passed in a sequence.
-        if not isinstance(key, feature_type):
+        if not isinstance(key, feature_clazz):
             additional_node_params["value"] = key
 
         return self._feature_obj._binary_op(
