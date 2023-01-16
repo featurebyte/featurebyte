@@ -2,6 +2,8 @@
 Tests for featurebyte.query_graph.feature_common
 """
 
+from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 
 
@@ -12,7 +14,9 @@ def test_aggregation_spec__from_groupby_query_node(
     Test constructing list of AggregationSpec from groupby query graph node
     """
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node)
+    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+        groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
+    )
     expected_agg_specs = [
         TileBasedAggregationSpec(
             window=7200,
@@ -73,7 +77,9 @@ def test_aggregation_spec__override_serving_names(
         "CUSTOMER_ID": "NEW_CUST_ID",
     }
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        groupby_node, serving_names_mapping=serving_names_mapping
+        groupby_node,
+        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        serving_names_mapping=serving_names_mapping,
     )
     expected_agg_specs = [
         TileBasedAggregationSpec(
