@@ -179,7 +179,7 @@ class CountDictAccessor:
             is_lookup_feature(key.node_types_lineage)
 
         additional_node_params = {}
-        # we only need to assign value if we have been passed in a sequence.
+        # We only need to assign value if we have been passed in a single scalar value.
         if not isinstance(key, feature_clazz):
             additional_node_params["value"] = key
 
