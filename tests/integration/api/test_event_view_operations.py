@@ -981,11 +981,15 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
     )
 
     # This request triggers tile table creation
-    observations_set = pd.DataFrame({"POINT_IN_TIME": ["2022-04-01"], "user id": 1})
+    observations_set = pd.DataFrame({"POINT_IN_TIME": ["2001-01-02 10:00:00"], "user id": 1})
     _ = feature_list_1.get_historical_features(observations_set)
 
     # This request causes the tile values corresponding to latest event timestamp to be added to the
     # same tile table
     df = feature_list_2.get_historical_features(observations_set)
 
-    assert df.columns == ["LATEST_EVENT_TIMESTAMP_BY_USER"]
+    assert df.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "user id": 1,
+        "LATEST_EVENT_TIMESTAMP_BY_USER": pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC"),
+    }
