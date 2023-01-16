@@ -187,7 +187,10 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         List[FeatureCluster]
         """
-        return FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features))
+        return cast(
+            List[FeatureCluster],
+            FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features)),
+        )
 
     @typechecked
     def preview(
