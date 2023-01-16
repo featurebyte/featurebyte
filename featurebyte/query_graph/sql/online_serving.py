@@ -142,7 +142,7 @@ class OnlineStoreUniversePlan:
         """
         groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
         for groupby_node in groupby_nodes:
-            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node)
+            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node, self.adapter)
             for agg_spec in agg_specs:
                 tile_id = agg_spec.tile_table_id
                 update_maximum_window_size_dict(

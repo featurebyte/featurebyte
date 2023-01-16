@@ -219,8 +219,10 @@ class SnowflakeAdapter(BaseAdapter):
         """
 
         FLOAT = "FLOAT"
-        VARCHAR = "VARCHAR"
         OBJECT = "OBJECT"
+        TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
+        TIMESTAMP_TZ = "TIMESTAMP_TZ"
+        VARCHAR = "VARCHAR"
         VARIANT = "VARIANT"
 
     @classmethod
@@ -308,12 +310,16 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def get_online_store_type_from_dtype(cls, dtype: DBVarType) -> str:
-        if dtype in {DBVarType.INT, DBVarType.FLOAT}:
-            return cls.SnowflakeOnlineStoreColumnType.FLOAT
-        if dtype == DBVarType.VARCHAR:
-            return cls.SnowflakeOnlineStoreColumnType.VARCHAR
-        if dtype == DBVarType.OBJECT:
-            return cls.SnowflakeOnlineStoreColumnType.OBJECT
+        mapping = {
+            DBVarType.INT: cls.SnowflakeOnlineStoreColumnType.FLOAT,
+            DBVarType.FLOAT: cls.SnowflakeOnlineStoreColumnType.FLOAT,
+            DBVarType.VARCHAR: cls.SnowflakeOnlineStoreColumnType.VARCHAR,
+            DBVarType.OBJECT: cls.SnowflakeOnlineStoreColumnType.OBJECT,
+            DBVarType.TIMESTAMP: cls.SnowflakeOnlineStoreColumnType.TIMESTAMP_NTZ,
+            DBVarType.TIMESTAMP_TZ: cls.SnowflakeOnlineStoreColumnType.TIMESTAMP_TZ,
+        }
+        if dtype in mapping:
+            return mapping[dtype]
         # Currently we don't expect features to be of any other types than above. Otherwise, default
         # to VARIANT since it can hold any data types
         return cls.SnowflakeOnlineStoreColumnType.VARIANT

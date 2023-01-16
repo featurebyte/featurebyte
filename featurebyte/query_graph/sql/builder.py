@@ -180,6 +180,7 @@ class SQLOperationGraph:
         sql_node: Any = None
         sql_node_classes = NODE_REGISTRY.get_sql_node_classes(node_type)
         context = SQLNodeContext(
+            graph=self.query_graph,
             query_node=cur_node,
             sql_type=self.sql_type,
             source_type=self.source_type,

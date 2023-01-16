@@ -275,6 +275,7 @@ class FeatureExecutionPlanner:
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
         self.is_online_serving = is_online_serving
+        self.adapter = get_sql_adapter(source_type)
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -333,7 +334,7 @@ class FeatureExecutionPlanner:
             Groupby query node
         """
         agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-            groupby_node, serving_names_mapping=self.serving_names_mapping
+            groupby_node, self.adapter, serving_names_mapping=self.serving_names_mapping
         )
         for agg_spec in agg_specs:
             self.plan.add_aggregation_spec(agg_spec)

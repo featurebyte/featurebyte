@@ -3,10 +3,30 @@ This module contains helpers related to tiling-based aggregation functions
 """
 from __future__ import annotations
 
+from typing import Optional
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from featurebyte.enum import AggFunc
+from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.query_graph.sql.adapter import BaseAdapter
+
+
+@dataclass
+class InputColumn:
+    """
+    Represents an input column to be aggregated
+
+    Parameters
+    ----------
+    name: str
+        Column name
+    dtype: DBVarType
+        Variable type
+    """
+
+    name: str
+    dtype: DBVarType
 
 
 @dataclass
@@ -23,6 +43,7 @@ class TileSpec:
 
     tile_expr: str
     tile_column_name: str
+    tile_column_type: str
 
 
 class TilingAggregator(ABC):
@@ -32,20 +53,22 @@ class TilingAggregator(ABC):
     and how the tiles should be merged.
     """
 
+    def __init__(self, adapter: BaseAdapter):
+        self.adapter = adapter
+
     @property
     @abstractmethod
     def is_order_dependent(self) -> bool:
         """Whether the aggregation depends on the ordering of values in the data"""
 
-    @staticmethod
     @abstractmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         """Construct the expressions required for computing tiles
 
         Parameters
         ----------
-        col : str
-            Name of the column to be aggregated
+        col : Optional[InputColumn]
+            Column to be aggregated
         agg_id : str
             Aggregation id that uniquely identifies an aggregation (hash of any parameters that can
             affect aggregation result). To be used to construct a unique column name in the tile
@@ -91,10 +114,9 @@ class OrderDependentAggregator(TilingAggregator, ABC):
 class CountAggregator(OrderIndependentAggregator):
     """Aggregator that computes the row count"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         _ = col
-        return [TileSpec("COUNT(*)", f"value_{agg_id}")]
+        return [TileSpec("COUNT(*)", f"value_{agg_id}", "FLOAT")]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -104,11 +126,11 @@ class CountAggregator(OrderIndependentAggregator):
 class AvgAggregator(OrderIndependentAggregator):
     """Aggregator that computes the average"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
         tile_specs = [
-            TileSpec(f'SUM("{col}")', f"sum_value_{agg_id}"),
-            TileSpec(f'COUNT("{col}")', f"count_value_{agg_id}"),
+            TileSpec(f'SUM("{col.name}")', f"sum_value_{agg_id}", "FLOAT"),
+            TileSpec(f'COUNT("{col.name}")', f"count_value_{agg_id}", "FLOAT"),
         ]
         return tile_specs
 
@@ -120,9 +142,9 @@ class AvgAggregator(OrderIndependentAggregator):
 class SumAggregator(OrderIndependentAggregator):
     """Aggregator that computes the sum"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
-        return [TileSpec(f'SUM("{col}")', f"value_{agg_id}")]
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        return [TileSpec(f'SUM("{col.name}")', f"value_{agg_id}", "FLOAT")]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -132,9 +154,9 @@ class SumAggregator(OrderIndependentAggregator):
 class MinAggregator(OrderIndependentAggregator):
     """Aggregator that computes the minimum value"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
-        return [TileSpec(f'MIN("{col}")', f"value_{agg_id}")]
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        return [TileSpec(f'MIN("{col.name}")', f"value_{agg_id}", "FLOAT")]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -144,9 +166,9 @@ class MinAggregator(OrderIndependentAggregator):
 class MaxAggregator(OrderIndependentAggregator):
     """Aggregator that computes the maximum value"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
-        return [TileSpec(f'MAX("{col}")', f"value_{agg_id}")]
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        return [TileSpec(f'MAX("{col.name}")', f"value_{agg_id}", "FLOAT")]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -156,9 +178,9 @@ class MaxAggregator(OrderIndependentAggregator):
 class NACountAggregator(OrderIndependentAggregator):
     """Aggregator that counts the number of missing values"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
-        return [TileSpec(f'SUM(CAST("{col}" IS NULL AS INTEGER))', f"value_{agg_id}")]
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
+        return [TileSpec(f'SUM(CAST("{col.name}" IS NULL AS INTEGER))', f"value_{agg_id}", "FLOAT")]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -168,12 +190,12 @@ class NACountAggregator(OrderIndependentAggregator):
 class StdAggregator(OrderIndependentAggregator):
     """Aggregator that computes the standard deviation"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
         return [
-            TileSpec(f'SUM("{col}" * "{col}")', f"sum_value_squared_{agg_id}"),
-            TileSpec(f'SUM("{col}")', f"sum_value_{agg_id}"),
-            TileSpec(f'COUNT("{col}")', f"count_value_{agg_id}"),
+            TileSpec(f'SUM("{col.name}" * "{col.name}")', f"sum_value_squared_{agg_id}", "FLOAT"),
+            TileSpec(f'SUM("{col.name}")', f"sum_value_{agg_id}", "FLOAT"),
+            TileSpec(f'COUNT("{col.name}")', f"count_value_{agg_id}", "FLOAT"),
         ]
 
     @staticmethod
@@ -189,10 +211,14 @@ class StdAggregator(OrderIndependentAggregator):
 class LatestValueAggregator(OrderDependentAggregator):
     """Aggregator that computes the latest value"""
 
-    @staticmethod
-    def tile(col: str, agg_id: str) -> list[TileSpec]:
+    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+        assert col is not None
         return [
-            TileSpec(f'FIRST_VALUE("{col}")', f"value_{agg_id}"),
+            TileSpec(
+                f'FIRST_VALUE("{col.name}")',
+                f"value_{agg_id}",
+                self.adapter.get_online_store_type_from_dtype(col.dtype),
+            ),
         ]
 
     @staticmethod
@@ -200,22 +226,19 @@ class LatestValueAggregator(OrderDependentAggregator):
         return f"FIRST_VALUE(value_{agg_id})"
 
 
-def get_aggregator(agg_name: AggFunc) -> TilingAggregator:
+def get_aggregator(agg_name: AggFunc, adapter: BaseAdapter) -> TilingAggregator:
     """Retrieves an aggregator class given the aggregation name
 
     Parameters
     ----------
     agg_name : AggFunc
         Name of the aggregation function
+    adapter : BaseAdapter
+        Instance of BaseAdapter for engine specific sql generation
 
     Returns
     -------
     type[TilingAggregator]
-
-    Raises
-    ------
-    ValueError
-        If the provided aggregation function is not supported
     """
     aggregator_mapping: dict[AggFunc, type[TilingAggregator]] = {
         AggFunc.SUM: SumAggregator,
@@ -227,6 +250,5 @@ def get_aggregator(agg_name: AggFunc) -> TilingAggregator:
         AggFunc.STD: StdAggregator,
         AggFunc.LATEST: LatestValueAggregator,
     }
-    if agg_name not in aggregator_mapping:
-        raise ValueError(f"Unsupported aggregation: {agg_name}")
-    return aggregator_mapping[agg_name]()
+    assert agg_name in aggregator_mapping
+    return aggregator_mapping[agg_name](adapter=adapter)

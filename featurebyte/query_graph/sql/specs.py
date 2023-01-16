@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import pandas as pd
 from sqlglot.expressions import Select
 
-from featurebyte.enum import SourceType, StrEnum
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -25,8 +25,9 @@ from featurebyte.query_graph.node.generic import (
     LookupNode,
     SCDLookupParameters,
 )
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import apply_serving_names_mapping
-from featurebyte.query_graph.sql.tiling import get_aggregator
+from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 
 NonTileBasedAggregationSpecT = TypeVar(
     "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
@@ -129,6 +130,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     def from_groupby_query_node(
         cls,
         groupby_node: Node,
+        adapter: BaseAdapter,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
@@ -154,10 +156,14 @@ class TileBasedAggregationSpec(AggregationSpec):
 
         serving_names = params["serving_names"]
         aggregation_specs = []
-        aggregator = get_aggregator(params["agg_func"])
+        aggregator = get_aggregator(params["agg_func"], adapter=adapter)
+        if params["parent"]:
+            parent_column = InputColumn(name=params["parent"], dtype=DBVarType.FLOAT)
+        else:
+            parent_column = None
         tile_value_columns = [
             spec.tile_column_name
-            for spec in aggregator.tile(params["parent"], params["aggregation_id"])
+            for spec in aggregator.tile(parent_column, params["aggregation_id"])
         ]
         for window, feature_name in zip(params["windows"], params["names"]):
             params = groupby_node.parameters.dict()
