@@ -897,3 +897,11 @@ def test_save_feature_group(saved_feature_list):
 
     # check that "retrieve" conflict resolution works properly
     feature_group.save(conflict_resolution="retrieve")
+
+
+def test_feature_list_constructor():
+    """Test FeatureList constructor"""
+    _ = FeatureList([], "my_fl")  # ok
+    with pytest.raises(TypeError) as exc:
+        FeatureList([])
+    assert "missing a required argument: 'name'" in str(exc.value)

@@ -187,7 +187,10 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         List[FeatureCluster]
         """
-        return FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features))
+        return cast(
+            List[FeatureCluster],
+            FeatureList.derive_feature_clusters(cast(List[FeatureModel], self._features)),
+        )
 
     @typechecked
     def preview(
@@ -515,6 +518,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         if not values.get("readiness_distribution"):
             values["readiness_distribution"] = cls.derive_readiness_distribution(features)
         return values
+
+    @typechecked
+    def __init__(self, items: Sequence[Union[Feature, BaseFeatureGroup]], name: str, **kwargs: Any):
+        super().__init__(items=items, name=name, **kwargs)
 
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:

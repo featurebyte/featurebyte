@@ -219,7 +219,9 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     )["count_7d"]
 
     # Preview a feature list with above features
-    feature_list = FeatureList([window_feature, scd_lookup_feature, dimension_lookup_feature])
+    feature_list = FeatureList(
+        [window_feature, scd_lookup_feature, dimension_lookup_feature], "feature_list"
+    )
     point_in_time = "2001-11-15 10:00:00"
     item_id = "item_42"
     user_id = 1
@@ -302,7 +304,7 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     assert df.iloc[0].to_dict() == expected
 
     # check historical features
-    feature_list = FeatureList([feature])
+    feature_list = FeatureList([feature], "feature_list")
     observations_set = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),

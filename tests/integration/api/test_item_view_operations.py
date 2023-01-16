@@ -140,7 +140,7 @@ def test_item_view_ops(item_data):
             "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
-    feature_list = FeatureList([feature])
+    feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.get_historical_features(df_training_events)
     assert df_historical_features["count_30d"].tolist() == [
         '{\n  "TYPE_42": 2\n}',
@@ -255,7 +255,7 @@ def test_item_view_joined_with_dimension_view(
             "user id": [1, 2, 3, 4, 5],
         }
     )
-    feature_list = FeatureList([feature])
+    feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.get_historical_features(df_training_events)
     assert df_historical_features.sort_values("user id")[
         "most_frequent_item_type_30d"

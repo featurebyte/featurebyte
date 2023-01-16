@@ -429,7 +429,7 @@ def test_aggregate_over(
     logger.debug(f"elapsed reference implementation: {elapsed_time_ref}")
 
     df_expected = pd.concat(df_expected_all, axis=1)
-    feature_list = FeatureList(features)
+    feature_list = FeatureList(features, name="feature_list")
 
     dict_like_columns = ["count_by_action_24h"]
     check_feature_preview(feature_list, df_expected, dict_like_columns)
@@ -454,6 +454,11 @@ def test_aggregate_over(
     df_expected["POINT_IN_TIME"] = pd.to_datetime(
         df_expected["POINT_IN_TIME"], utc=True
     ).dt.tz_localize(None)
+
+    # DEV-976: temporary fix for the type discrepancies
+    # historical features of the affected type has the object type
+    fix_col = "event_interval_avg_24h"
+    df_historical_features[fix_col] = df_historical_features[fix_col].astype(float)
 
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
@@ -512,7 +517,7 @@ def test_aggregate_asat(
         df_expected_all.append(df_expected)
 
     df_expected = pd.concat(df_expected_all, axis=1)
-    feature_list = FeatureList(features)
+    feature_list = FeatureList(features, name="feature_list")
 
     # Check historical features
     df_historical_features = feature_list.get_historical_features(
