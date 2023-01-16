@@ -14,9 +14,14 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.tiling import AggFunc, InputColumn, TileSpec, get_aggregator
 
 
-def make_tile_spec(tile_expr, tile_column_name):
+def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
+    """
+    Helper function to create the expected TileSpec object
+    """
+    if tile_column_type is None:
+        tile_column_type = "FLOAT"
     return TileSpec(
-        tile_expr=tile_expr, tile_column_name=tile_column_name, tile_column_type="FLOAT"
+        tile_expr=tile_expr, tile_column_name=tile_column_name, tile_column_type=tile_column_type
     )
 
 
@@ -25,14 +30,20 @@ def make_tile_spec(tile_expr, tile_column_name):
     [
         (
             AggFunc.SUM,
-            [make_tile_spec(tile_expr='SUM("a_column")', tile_column_name="value_1234beef")],
+            [
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
             "SUM(value_1234beef)",
         ),
         (
             AggFunc.AVG,
             [
-                make_tile_spec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
-                make_tile_spec(
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                ),
+                make_expected_tile_spec(
                     tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
                 ),
             ],
@@ -40,23 +51,31 @@ def make_tile_spec(tile_expr, tile_column_name):
         ),
         (
             AggFunc.MIN,
-            [make_tile_spec(tile_expr='MIN("a_column")', tile_column_name="value_1234beef")],
+            [
+                make_expected_tile_spec(
+                    tile_expr='MIN("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
             "MIN(value_1234beef)",
         ),
         (
             AggFunc.MAX,
-            [make_tile_spec(tile_expr='MAX("a_column")', tile_column_name="value_1234beef")],
+            [
+                make_expected_tile_spec(
+                    tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
             "MAX(value_1234beef)",
         ),
         (
             AggFunc.COUNT,
-            [make_tile_spec(tile_expr="COUNT(*)", tile_column_name="value_1234beef")],
+            [make_expected_tile_spec(tile_expr="COUNT(*)", tile_column_name="value_1234beef")],
             "SUM(value_1234beef)",
         ),
         (
             AggFunc.NA_COUNT,
             [
-                make_tile_spec(
+                make_expected_tile_spec(
                     tile_expr='SUM(CAST("a_column" IS NULL AS INTEGER))',
                     tile_column_name="value_1234beef",
                 )
@@ -66,12 +85,14 @@ def make_tile_spec(tile_expr, tile_column_name):
         (
             AggFunc.STD,
             [
-                make_tile_spec(
+                make_expected_tile_spec(
                     tile_expr='SUM("a_column" * "a_column")',
                     tile_column_name="sum_value_squared_1234beef",
                 ),
-                make_tile_spec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
-                make_tile_spec(
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                ),
+                make_expected_tile_spec(
                     tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
                 ),
             ],
@@ -88,9 +109,10 @@ def make_tile_spec(tile_expr, tile_column_name):
         (
             AggFunc.LATEST,
             [
-                make_tile_spec(
+                make_expected_tile_spec(
                     tile_expr='FIRST_VALUE("a_column")',
                     tile_column_name="value_1234beef",
+                    tile_column_type="VARCHAR",
                 )
             ],
             "FIRST_VALUE(value_1234beef)",
@@ -101,7 +123,7 @@ def test_tiling_aggregators(agg_func, expected_tile_specs, expected_merge_expr):
     """Test tiling aggregators produces expected expressions"""
     agg_id = "1234beef"
     agg = get_aggregator(agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE))
-    input_column = InputColumn(name="a_column", dtype=DBVarType.FLOAT)
+    input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
     tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id)
     assert tile_specs == expected_tile_specs
