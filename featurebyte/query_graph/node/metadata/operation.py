@@ -418,6 +418,9 @@ class GroupOperationStructure(FeatureByteBaseModel):
 class OperationStructure(FeatureByteBaseModel):
     """NodeOperationStructure class"""
 
+    # When NodeOutputType is:
+    # - NodeOutputType.VIEW -> columns represents the output columns
+    # - NodeOutputType.FEATURE -> columns represents the input columns
     columns: List[ViewDataColumn] = Field(default_factory=list)
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     output_type: NodeOutputType
@@ -427,9 +430,11 @@ class OperationStructure(FeatureByteBaseModel):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        # make sure there is no duplicated column names
-        assert len(self.columns) == len(set(col.name for col in self.columns))
-        assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
+        if self.output_category == NodeOutputCategory.VIEW:
+            # make sure there are no duplicated column names
+            assert len(self.columns) == len(set(col.name for col in self.columns))
+        elif self.output_category == NodeOutputCategory.FEATURE:
+            assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
 
     @property
     def series_output_dtype(self) -> DBVarType:

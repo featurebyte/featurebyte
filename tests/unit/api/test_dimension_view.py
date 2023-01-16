@@ -5,6 +5,7 @@ import textwrap
 
 import pytest
 
+from featurebyte import Feature, SlowlyChangingView
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import DBVarType
@@ -186,6 +187,27 @@ def test_as_feature__special_column(snowflake_dimension_view_with_entity):
     # col_int is not allowed in as_features(), but ok in as_feature()
     feature = snowflake_dimension_view_with_entity["col_int"].as_feature("IntFeature")
     assert feature.name == "IntFeature"
+
+
+def test_as_feature_same_column_name(
+    snowflake_dimension_view_with_entity, snowflake_scd_data, cust_id_entity
+):
+    """
+    Test lookup features with same column name
+    """
+    feature_a = snowflake_dimension_view_with_entity["col_float"].as_feature(
+        "FloatFeatureDimensionView"
+    )
+
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    feature_b = scd_view["col_float"].as_feature("FloatFeatureSCDView", offset="7d")
+
+    new_feature = feature_b == feature_a
+    new_feature.name = "lookup_combined_feature"
+
+    # This is to check that when we prune and create operation structure, we don't get an error.
+    new_feature._get_pruned_feature_model()
 
 
 def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust_id_entity):

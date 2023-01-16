@@ -25,7 +25,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
-from featurebyte import DatabricksDetails, SnowflakeDetails
+from featurebyte import DatabricksDetails, DimensionView, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -1014,17 +1014,37 @@ def databricks_event_data_fixture(
     return event_data
 
 
+def get_data_source_from_request(request, valid_data_sources):
+    """
+    Helper function to get data source from request.
+
+    Note that this currently just checks for snowflake. We can update this in the future when we start to add
+    support for other data sources.
+    """
+    kind = "snowflake"
+    if hasattr(request, "param"):
+        kind = request.param
+    assert kind in valid_data_sources
+    return kind
+
+
 @pytest.fixture(name="dimension_data", scope="session")
 def dimension_data_fixture(request):
     """
     Parametrizable fixture for DimensionData (possible parameters: "snowflake")
     """
-    if not hasattr(request, "param"):
-        kind = "snowflake"
-    else:
-        kind = request.param
-    assert kind in {"snowflake"}
+    _ = get_data_source_from_request(request, {"snowflake"})
     return request.getfixturevalue("snowflake_dimension_data")
+
+
+@pytest.fixture(name="dimension_view", scope="session")
+def dimension_view_fixture(request):
+    """
+    Parametrizable fixture for DimensionView (possible parameters: "snowflake")
+    """
+    _ = get_data_source_from_request(request, {"snowflake"})
+    dimension_data = request.getfixturevalue("snowflake_dimension_data")
+    return DimensionView.from_dimension_data(dimension_data)
 
 
 @pytest.fixture(name="scd_data", scope="session")
@@ -1032,11 +1052,7 @@ def scd_data_fixture(request):
     """
     Parametrizable fixture for DimensionData (possible parameters: "snowflake")
     """
-    if not hasattr(request, "param"):
-        kind = "snowflake"
-    else:
-        kind = request.param
-    assert kind in {"snowflake"}
+    _ = get_data_source_from_request(request, {"snowflake"})
     return request.getfixturevalue("snowflake_scd_data")
 
 
@@ -1045,11 +1061,7 @@ def event_data_fixture(request):
     """
     Parametrizable fixture for EventData (possible parameters: "snowflake", "databricks")
     """
-    if not hasattr(request, "param"):
-        kind = "snowflake"
-    else:
-        kind = request.param
-    assert kind in {"snowflake", "databricks"}
+    kind = get_data_source_from_request(request, {"snowflake", "databricks"})
     if kind == "snowflake":
         return request.getfixturevalue("snowflake_event_data")
     return request.getfixturevalue("databricks_event_data")
@@ -1060,9 +1072,7 @@ def item_data_fixture(request):
     """
     Fixture for ItemData
     """
-    if hasattr(request, "param"):
-        # Note: Fixtures for other engines to be added later
-        assert request.param == "snowflake"
+    _ = get_data_source_from_request(request, {"snowflake"})
     return request.getfixturevalue("snowflake_item_data")
 
 
