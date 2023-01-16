@@ -13,6 +13,7 @@ async def test_trigger_tile_schedule(snowflake_session):
     """
     entity_col_names = "PRODUCT_ACTION,CUST_ID"
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"{table_name}_TILE"
     tile_monitor = 10
@@ -39,6 +40,7 @@ async def test_trigger_tile_schedule(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor}
         )

@@ -561,6 +561,7 @@ async def snowflake_tile(snowflake_session):
         column_names=col_names_list,
         entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
         value_column_names=["VALUE"],
+        value_column_types=["FLOAT"],
         tile_id=tile_id,
         aggregation_id="agg_id1",
     )

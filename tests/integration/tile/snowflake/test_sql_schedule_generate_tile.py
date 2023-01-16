@@ -20,6 +20,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
 
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
@@ -43,6 +44,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -103,6 +105,7 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
 
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
@@ -130,6 +133,7 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -163,6 +167,7 @@ async def test_schedule_monitor_tile_online(snowflake_session):
     """
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_monitor = 10
@@ -187,6 +192,7 @@ async def test_schedule_monitor_tile_online(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -213,6 +219,7 @@ async def test_schedule_monitor_tile_online(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts_2}'
@@ -236,6 +243,7 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
     """
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_monitor = 10
@@ -260,6 +268,7 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -272,6 +281,7 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
     await snowflake_session.execute_query(sql)
 
     value_col_names_2 = "VALUE,VALUE_2"
+    value_col_types_2 = "FLOAT,FLOAT"
     tile_sql_2 = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names_2} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
@@ -292,6 +302,7 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names_2}',
+          '{value_col_types_2}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts_2}'
@@ -311,6 +322,7 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
     """
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_monitor = 10
@@ -335,6 +347,7 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names}',
+          '{value_col_types}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -347,6 +360,7 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
     await snowflake_session.execute_query(sql)
 
     value_col_names_2 = "VALUE_3"
+    value_col_types_2 = "FLOAT"
     tile_sql_2 = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names_2} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
@@ -367,6 +381,7 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',
           '{value_col_names_2}',
+          '{value_col_types_2}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts_2}'
