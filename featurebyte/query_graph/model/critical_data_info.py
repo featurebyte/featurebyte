@@ -1,7 +1,7 @@
 """
 This module contains critical data info related models.
 """
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Sequence, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
@@ -9,6 +9,7 @@ from abc import abstractmethod
 import pandas as pd
 from pydantic import Field, validator
 
+from featurebyte.common.typing import OptionalScalar
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidImputationsError
 from featurebyte.models.base import FeatureByteBaseModel
@@ -30,7 +31,6 @@ class ConditionOperationField(StrEnum):
     IS_STRING = "is_string"
 
 
-ScalarT = Optional[Union[int, float, str, bool]]
 NumericT = Union[int, float]
 IMPUTE_OPERATIONS = []
 
@@ -59,7 +59,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
 class BaseImputeOperation(BaseCleaningOperation):
     """BaseImputeOperation class"""
 
-    imputed_value: ScalarT
+    imputed_value: OptionalScalar
 
     def __init_subclass__(cls, **kwargs: Any):
         if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
@@ -102,13 +102,13 @@ class BaseCondition(FeatureByteBaseModel):
     """Base condition model"""
 
     @abstractmethod
-    def check_condition(self, value: ScalarT) -> bool:
+    def check_condition(self, value: OptionalScalar) -> bool:
         """
         Check whether the value fulfill this condition
 
         Parameters
         ----------
-        value: ScalarT
+        value: OptionalScalar
             Value to be checked
 
         Returns
@@ -141,7 +141,7 @@ class MissingValueCondition(BaseCondition):
         ConditionOperationField.MISSING, const=True
     )
 
-    def check_condition(self, value: ScalarT) -> bool:
+    def check_condition(self, value: OptionalScalar) -> bool:
         return bool(pd.isnull(value))
 
     def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
@@ -159,9 +159,9 @@ class DisguisedValueCondition(BaseCondition):
     type: Literal[ConditionOperationField.DISGUISED] = Field(
         ConditionOperationField.DISGUISED, const=True
     )
-    disguised_values: Sequence[ScalarT]
+    disguised_values: Sequence[OptionalScalar]
 
-    def check_condition(self, value: ScalarT) -> bool:
+    def check_condition(self, value: OptionalScalar) -> bool:
         return value in self.disguised_values
 
     def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
@@ -179,9 +179,9 @@ class UnexpectedValueCondition(BaseCondition):
     type: Literal[ConditionOperationField.NOT_IN] = Field(
         ConditionOperationField.NOT_IN, const=True
     )
-    expected_values: Sequence[ScalarT]
+    expected_values: Sequence[OptionalScalar]
 
-    def check_condition(self, value: ScalarT) -> bool:
+    def check_condition(self, value: OptionalScalar) -> bool:
         return value not in self.expected_values
 
     def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
@@ -210,7 +210,7 @@ class BoundaryCondition(BaseCondition):
     ] = Field(allow_mutation=False)
     end_point: NumericT
 
-    def check_condition(self, value: ScalarT) -> bool:
+    def check_condition(self, value: OptionalScalar) -> bool:
         operation_map = {
             ConditionOperationField.LESS_THAN: lambda x: x < self.end_point,
             ConditionOperationField.LESS_THAN_OR_EQUAL: lambda x: x <= self.end_point,
@@ -245,7 +245,7 @@ class IsStringCondition(BaseCondition):
         ConditionOperationField.IS_STRING, const=True
     )
 
-    def check_condition(self, value: ScalarT) -> bool:
+    def check_condition(self, value: OptionalScalar) -> bool:
         return isinstance(value, str)
 
     def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
@@ -261,7 +261,7 @@ class MissingValueImputation(MissingValueCondition, BaseImputeOperation):
     """
     MissingValueImputation class is used to impute the missing value of a data column.
 
-    imputed_value: Optional[Union[int, float, str, bool]]
+    imputed_value: OptionalScalar
         Value to replace missing value
 
     Examples
@@ -276,9 +276,9 @@ class DisguisedValueImputation(DisguisedValueCondition, BaseImputeOperation):
     """
     DisguisedValueImputation class is used to impute the disguised missing value of a data column.
 
-    disguised_values: List[Optional[Union[int, float, str, bool]]]
+    disguised_values: List[OptionalScalar]
         List of disguised missing values
-    imputed_value: Optional[Union[int, float, str, bool]]
+    imputed_value: OptionalScalar
         Value to replace disguised missing value
 
     Examples
@@ -293,9 +293,9 @@ class UnexpectedValueImputation(UnexpectedValueCondition, BaseImputeOperation):
     """
     UnexpectedValueImputation class is used to impute the unexpected value of a data column
 
-    expected_values: List[Optional[Union[int, float, str, bool]]]
+    expected_values: List[OptionalScalar]
         List of expected values, values not in expected value will be imputed
-    imputed_value: Optional[Union[int, float, str, bool]]
+    imputed_value: OptionalScalar
         Value to replace unexpected value
 
     Examples
@@ -314,7 +314,7 @@ class ValueBeyondEndpointImputation(BoundaryCondition, BaseImputeOperation):
         Boundary type
     end_point: Union[int, float]
         End point
-    imputed_value: Optional[Union[int, float, str, bool]]
+    imputed_value: OptionalScalar
         Value to replace value outside the end point boundary
 
     Examples
@@ -329,7 +329,7 @@ class StringValueImputation(IsStringCondition, BaseImputeOperation):
     """
     StringValueImputation class is used to impute those value which is string type
 
-    imputed_value: Optional[Union[int, float, str, bool]]
+    imputed_value: OptionalScalar
         Value to replace string value
 
     Examples

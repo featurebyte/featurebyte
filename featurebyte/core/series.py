@@ -12,7 +12,7 @@ from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.typing import is_scalar_nan
+from featurebyte.common.typing import Scalar, ScalarSequence, is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
@@ -223,7 +223,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     def _binary_op(
         self,
-        other: int | float | str | bool | Series | Sequence[Union[int, float, str, bool]],
+        other: Scalar | Series | ScalarSequence,
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
@@ -234,7 +234,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Parameters
         ----------
-        other: int | float | str | bool | Series
+        other: Scalar | Series | ScalarSequence
             right value of the binary operator
         node_type: NodeType
             binary operator node type
@@ -588,13 +588,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return ~self.isnull()
 
     @typechecked
-    def fillna(self, other: Union[int, float, str, bool]) -> None:
+    def fillna(self, other: Scalar) -> None:
         """
         Replace missing values with the provided value in-place
 
         Parameters
         ----------
-        other : Union[int, float, str, bool]
+        other: Scalar
             Value to replace missing values
         """
         self[self.isnull()] = other
@@ -794,9 +794,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         _ = other
 
     @typechecked
-    def isin(
-        self, other: Union[Series, Sequence[Union[bool, int, float, str]]], right_op: bool = False
-    ) -> Series:
+    def isin(self, other: Union[Series, ScalarSequence], right_op: bool = False) -> Series:
         """
         Identify if values in a series is in another series, or a pre-defined sequence.
 
