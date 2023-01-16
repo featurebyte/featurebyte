@@ -20,6 +20,7 @@ def test_construct_snowflaketile_time_modulo_error():
             frequency_minute=3,
             tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
             value_column_names=["col2"],
+            value_column_types=["FLOAT"],
             entity_column_names=["col1"],
         )
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
@@ -38,6 +39,7 @@ def test_construct_snowflaketile_frequency_minute_error():
             frequency_minute=70,
             tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
             value_column_names=["col2"],
+            value_column_types=["FLOAT"],
             entity_column_names=["col1"],
         )
     assert "frequency_minute should be a multiple of 60 if it is more than 60" in str(excinfo.value)
@@ -53,6 +55,7 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
         frequency_minute=3,
         tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
         value_column_names=["col2"],
+        value_column_types=["FLOAT"],
         entity_column_names=["col1"],
         tile_id="some_tile_id",
         aggregation_id="some_agg_id",
@@ -87,6 +90,7 @@ async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_mana
             5,
             '"col1"',
             'col2',
+            'FLOAT',
             'TILE_ID1',
             'ONLINE',
             '2022-06-21 15:55:00'
@@ -129,6 +133,7 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
                 '__FB_END_DATE',
                 '"col1"',
                 'col2',
+                'FLOAT',
                 'ONLINE',
                 10
             )
@@ -166,6 +171,7 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
                 '__FB_END_DATE',
                 '"col1"',
                 'col2',
+                'FLOAT',
                 'OFFLINE',
                 10
             )

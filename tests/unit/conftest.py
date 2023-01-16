@@ -784,6 +784,7 @@ def mock_snowflake_tile():
         tile_id="TILE_ID1",
         aggregation_id="agg_id1",
         value_column_names=["col2"],
+        value_column_types=["FLOAT"],
         entity_column_names=["col1"],
     )
 

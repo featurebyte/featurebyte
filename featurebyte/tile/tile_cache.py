@@ -60,6 +60,9 @@ class OnDemandTileComputeRequest:
             column_names=self.tile_gen_info.columns,
             entity_column_names=entity_column_names,
             value_column_names=self.tile_gen_info.tile_value_columns,
+            value_column_types=[
+                "FLOAT" for _ in self.tile_gen_info.tile_value_columns
+            ],  # TODO: replace hard-coded value
             tile_id=self.tile_table_id,
             aggregation_id=self.aggregation_id,
             category_column_name=self.tile_gen_info.value_by_column,

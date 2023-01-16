@@ -1,18 +1,19 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(
-    TILE_ID varchar,
-    TIME_MODULO_FREQUENCY_SECONDS float,
-    BLIND_SPOT_SECONDS float,
-    FREQUENCY_MINUTE float,
-    OFFLINE_PERIOD_MINUTE float,
-    SQL varchar,
-    TILE_START_DATE_COLUMN varchar,
-    TILE_LAST_START_DATE_COLUMN varchar,
-    TILE_START_DATE_PLACEHOLDER varchar,
-    TILE_END_DATE_PLACEHOLDER varchar,
-    ENTITY_COLUMN_NAMES varchar,
-    VALUE_COLUMN_NAMES varchar,
-    TYPE varchar,
-    MONITOR_PERIODS float,
+    TILE_ID VARCHAR,
+    TIME_MODULO_FREQUENCY_SECONDS FLOAT,
+    BLIND_SPOT_SECONDS FLOAT,
+    FREQUENCY_MINUTE FLOAT,
+    OFFLINE_PERIOD_MINUTE FLOAT,
+    SQL VARCHAR,
+    TILE_START_DATE_COLUMN VARCHAR,
+    TILE_LAST_START_DATE_COLUMN VARCHAR,
+    TILE_START_DATE_PLACEHOLDER VARCHAR,
+    TILE_END_DATE_PLACEHOLDER VARCHAR,
+    ENTITY_COLUMN_NAMES VARCHAR,
+    VALUE_COLUMN_NAMES VARCHAR,
+    VALUE_COLUMN_TYPES VARCHAR,
+    TYPE VARCHAR,
+    MONITOR_PERIODS FLOAT,
     JOB_SCHEDULE_TS timestamp_tz
 )
 returns string
@@ -69,7 +70,7 @@ $$
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
     var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+monitor_tile_end_ts_str+"''")
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_type}')`
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_type}')`
     try {
         result = snowflake.execute({sqlText: monitor_stored_proc})
         result.next()
@@ -88,7 +89,7 @@ $$
     last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_type}', '${last_tile_start_ts_str}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_type}', '${last_tile_start_ts_str}')`
     try {
         result = snowflake.execute({sqlText: generate_stored_proc})
         result.next()

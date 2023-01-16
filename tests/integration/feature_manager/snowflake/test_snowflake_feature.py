@@ -320,6 +320,7 @@ async def test_get_tile_monitor_summary(
 
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = snowflake_feature.tile_specs[0].tile_id
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 95"
@@ -329,13 +330,13 @@ async def test_get_tile_monitor_summary(
 
     sql = (
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
-        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null)"
     )
     await snowflake_session.execute_query(sql)
 
     sql = (
         f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, "
-        f"'{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE')"
+        f"'{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE')"
     )
     await snowflake_session.execute_query(sql)
     sql = f"SELECT * FROM {tile_id}_MONITOR"

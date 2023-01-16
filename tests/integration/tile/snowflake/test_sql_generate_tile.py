@@ -16,6 +16,7 @@ async def test_generate_tile(snowflake_session):
     """
     entity_col_names = "PRODUCT_ACTION,CUST_ID"
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_sql = (
@@ -34,6 +35,7 @@ async def test_generate_tile(snowflake_session):
         f"  5,"
         f"  '{entity_col_names}',"
         f"  '{value_col_names}',"
+        f"  '{value_col_types}',"
         f"  '{tile_id}',"
         f"  'OFFLINE',"
         f"  '2022-06-05T23:53:00Z')"
@@ -64,6 +66,7 @@ async def test_generate_tile_no_data(snowflake_session):
     """
     entity_col_names = "PRODUCT_ACTION,CUST_ID"
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_sql = (
@@ -73,7 +76,7 @@ async def test_generate_tile_no_data(snowflake_session):
 
     sql = (
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
-        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{tile_id}', 'ONLINE', null)"
     )
     result = await snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
@@ -90,12 +93,13 @@ async def test_generate_tile_non_exist_table(snowflake_session):
     """
     entity_col_names = "PRODUCT_ACTION,CUST_ID"
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM NON_EXIST_TABLE"
 
     sql = (
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
-        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{table_name}_TILE', 'ONLINE', null)"
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{value_col_types}', '{table_name}_TILE', 'ONLINE', null)"
     )
 
     with pytest.raises(ProgrammingError) as exc_info:
@@ -112,6 +116,7 @@ async def test_generate_tile_new_value_column(snowflake_session):
     """
     entity_col_names = "PRODUCT_ACTION,CUST_ID"
     value_col_names = "VALUE"
+    value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_sql = (
@@ -130,6 +135,7 @@ async def test_generate_tile_new_value_column(snowflake_session):
         f"  5,"
         f"  '{entity_col_names}',"
         f"  '{value_col_names}',"
+        f"  '{value_col_types}',"
         f"  '{tile_id}',"
         f"  'OFFLINE',"
         f"  '2022-06-05T23:53:00Z')"
@@ -146,6 +152,7 @@ async def test_generate_tile_new_value_column(snowflake_session):
     assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
 
     value_col_names_2 = "VALUE,VALUE_2"
+    value_col_types_2 = "FLOAT,FLOAT"
     tile_sql_2 = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names_2} FROM {table_name} "
         f"WHERE {InternalName.TILE_START_DATE} >= '2022-06-05T23:48:00Z' "
@@ -166,6 +173,7 @@ async def test_generate_tile_new_value_column(snowflake_session):
         f"  5,"
         f"  '{entity_col_names}',"
         f"  '{value_col_names_2}',"
+        f"  '{value_col_types_2}',"
         f"  '{tile_id}',"
         f"  'OFFLINE',"
         f"  '2022-06-05T23:53:00Z')"

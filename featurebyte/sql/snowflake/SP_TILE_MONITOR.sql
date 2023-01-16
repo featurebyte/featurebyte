@@ -1,13 +1,14 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(
-    MONITOR_SQL varchar,
-    TILE_START_DATE_COLUMN varchar,
-    TIME_MODULO_FREQUENCY_SECOND float,
-    BLIND_SPOT_SECOND float,
-    FREQUENCY_MINUTE float,
-    ENTITY_COLUMN_NAMES varchar,
-    VALUE_COLUMN_NAMES varchar,
-    TILE_ID varchar,
-    TILE_TYPE varchar
+    MONITOR_SQL VARCHAR,
+    TILE_START_DATE_COLUMN VARCHAR,
+    TIME_MODULO_FREQUENCY_SECOND FLOAT,
+    BLIND_SPOT_SECOND FLOAT,
+    FREQUENCY_MINUTE FLOAT,
+    ENTITY_COLUMN_NAMES VARCHAR,
+    VALUE_COLUMN_NAMES VARCHAR,
+    VALUE_COLUMN_TYPES VARCHAR,
+    TILE_ID VARCHAR,
+    TILE_TYPE VARCHAR
 )
 returns string
 language javascript
@@ -34,14 +35,15 @@ $$
     }
 
     var tile_sql = MONITOR_SQL.replaceAll("'", "''")
-    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}', 'Y')`})
+    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${TILE_ID}', '${TILE_ID}', 'Y')`})
     result.next()
     existing_value_columns = result.getColumnValue(1)
     debug = debug + " - existing_value_columns: " + existing_value_columns
 
     if (existing_value_columns === "") {
         // all are new value columns
-        debug = debug + " - all value columns are new: " + VALUE_COLUMN_NAMES
+        debug = debug + " - all value columns are new - col names: " + VALUE_COLUMN_NAMES
+        debug = debug + " - col types: " + VALUE_COLUMN_TYPES
         return debug
     }
 
@@ -104,7 +106,7 @@ $$
 
     } else {
 
-        snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${monitor_table_name}', 'Y')`})
+        snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${TILE_ID}', '${monitor_table_name}', 'Y')`})
 
         // monitor table already exists, insert new records
         var insert_sql = `
