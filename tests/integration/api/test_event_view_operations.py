@@ -19,6 +19,7 @@ from featurebyte import (
     to_timedelta,
 )
 from featurebyte.config import Configurations
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
@@ -952,3 +953,39 @@ def test_latest_per_category_aggregation(event_view):
     df = feature_group.preview({"POINT_IN_TIME": "2001-01-26", "cust_id": 545})
     expected = '{\n  "1": "add",\n  "3": "purchase",\n  "5": "remove",\n  "8": "add",\n  "9": "purchase"\n}'
     assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
+
+
+def test_non_float_tile_value_added_to_tile_table(event_view):
+    """
+    Test case to ensure non-float tile value can be added to an existing tile table without issues
+    """
+    feature_group_1 = event_view.groupby("USER ID").aggregate_over(
+        method="count",
+        windows=["2h"],
+        feature_names=["COUNT_2h"],
+    )
+    feature_list_1 = FeatureList([feature_group_1])
+    feature_group_2 = event_view.groupby("USER ID").aggregate_over(
+        value_column="EVENT_TIMESTAMP",
+        method="latest",
+        windows=["7d"],
+        feature_names=["LATEST_EVENT_TIMESTAMP_BY_USER"],
+    )
+    feature_list_2 = FeatureList([feature_group_2])
+
+    def _get_tile_table_id(feature_obj):
+        return ExtendedFeatureModel(**feature_obj.dict()).tile_specs[0].tile_id
+
+    assert _get_tile_table_id(feature_group_1["COUNT_2h"]) == _get_tile_table_id(
+        feature_group_2["LATEST_EVENT_TIMESTAMP_BY_USER"]
+    )
+
+    # This request triggers tile table creation
+    observations_set = pd.DataFrame({"POINT_IN_TIME": ["2022-04-01"], "user id": 1})
+    _ = feature_list_1.get_historical_features(observations_set)
+
+    # This request causes the tile values corresponding to latest event timestamp to be added to the
+    # same tile table
+    df = feature_list_2.get_historical_features(observations_set)
+
+    assert df.columns == ["LATEST_EVENT_TIMESTAMP_BY_USER"]
