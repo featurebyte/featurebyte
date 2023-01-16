@@ -1,12 +1,12 @@
 import pandas as pd
 
 from featurebyte import (
-    DimensionView,
+    DisguisedValueImputation,
     EventView,
     FeatureList,
     ItemView,
     MissingValueImputation,
-    SlowlyChangingView,
+    UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
 
@@ -14,7 +14,16 @@ from featurebyte import (
 def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
-    assert event_data.preview()["AMOUNT"].isnull().sum() == 2
+    original_df = event_data.preview()
+    assert original_df["AMOUNT"].isnull().sum() == 2
+    assert original_df["SESSION_ID"].isnull().sum() == 0
+    assert set(original_df["PRODUCT_ACTION"].astype(str).unique()) == {
+        "detail",
+        "purchase",
+        "remove",
+        "add",
+        "nan",
+    }
     assert event_data.node.type == "input"
     event_data.AMOUNT.update_critical_data_info(
         cleaning_operations=[
@@ -22,8 +31,27 @@ def test_event_data_update_critical_data_info(event_data):
             ValueBeyondEndpointImputation(type="less_than", end_point=0.0, imputed_value=0.0),
         ]
     )
+    event_data.SESSION_ID.update_critical_data_info(
+        cleaning_operations=[DisguisedValueImputation(disguised_values=[979], imputed_value=None)]
+    )
+    event_data.PRODUCT_ACTION.update_critical_data_info(
+        cleaning_operations=[
+            UnexpectedValueImputation(
+                expected_values=["detail", "purchase", "remove"], imputed_value="missing"
+            ),
+        ]
+    )
     assert event_data.node.type == "graph"
-    assert event_data.preview()["AMOUNT"].isnull().sum() == 0
+    imputed_df = event_data.preview()
+    assert imputed_df["AMOUNT"].isnull().sum() == 0
+    assert imputed_df["SESSION_ID"].isnull().sum() == 1
+    assert set(imputed_df["PRODUCT_ACTION"].astype(str).unique()) == {
+        "detail",
+        "purchase",
+        "remove",
+        "missing",
+        "nan",
+    }
 
     # create feature group & preview
     event_view = EventView.from_event_data(event_data)
@@ -54,6 +82,8 @@ def test_event_data_update_critical_data_info(event_data):
 
     # remove critical data info
     event_data.AMOUNT.update_critical_data_info(cleaning_operations=[])
+    event_data.SESSION_ID.update_critical_data_info(cleaning_operations=[])
+    event_data.PRODUCT_ACTION.update_critical_data_info(cleaning_operations=[])
     assert event_data.node.type == "input"
 
 

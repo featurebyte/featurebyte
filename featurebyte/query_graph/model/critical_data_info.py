@@ -291,7 +291,8 @@ class DisguisedValueImputation(DisguisedValueCondition, BaseImputeOperation):
 
 class UnexpectedValueImputation(UnexpectedValueCondition, BaseImputeOperation):
     """
-    UnexpectedValueImputation class is used to impute the unexpected value of a data column
+    UnexpectedValueImputation class is used to impute the unexpected value of a data column.
+    Note that this imputation operation will not impute missing value.
 
     expected_values: List[OptionalScalar]
         List of expected values, values not in expected value will be imputed
