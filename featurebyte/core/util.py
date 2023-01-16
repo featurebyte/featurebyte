@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from featurebyte.common.typing import ScalarSequence
+from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
@@ -66,7 +66,7 @@ class SeriesBinaryOperator:
     def __init__(
         self,
         input_series: SeriesT,
-        other: int | float | str | bool | SeriesT | ScalarSequence,
+        other: Scalar | SeriesT | ScalarSequence,
     ):
         self.input_series = input_series
         self.other = other
@@ -121,7 +121,7 @@ class SeriesBinaryOperator:
 
 def series_binary_operation(
     input_series: SeriesT,
-    other: int | float | str | bool | SeriesT | ScalarSequence,
+    other: Scalar | SeriesT | ScalarSequence,
     node_type: NodeType,
     output_var_type: DBVarType,
     right_op: bool = False,
@@ -135,7 +135,7 @@ def series_binary_operation(
     ----------
     input_series : SeriesT
         Series like input object
-    other: int | float | str | bool | SeriesT
+    other: Scalar | SeriesT | ScalarSequence
         right value of the binary operator
     node_type: NodeType
         binary operator node type
