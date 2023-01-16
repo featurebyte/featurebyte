@@ -5,6 +5,7 @@ import textwrap
 
 import pytest
 
+from featurebyte import AggFunc
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
@@ -679,7 +680,7 @@ def test_item_view_groupby__event_id_column(
     snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
-        method="count",
+        method=AggFunc.COUNT,
         feature_name="order_size",
     )
     assert isinstance(feature, Feature)

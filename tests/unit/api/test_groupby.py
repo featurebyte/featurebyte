@@ -9,7 +9,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import BaseAggregator, GroupBy
 from featurebyte.api.view import View
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 
 
@@ -399,7 +399,7 @@ def test_supported_views__aggregate(snowflake_event_view_with_entity):
     """
     with pytest.raises(AggregationNotSupportedForViewError) as exc:
         snowflake_event_view_with_entity.groupby("cust_id").aggregate(
-            value_column="col_float", method="sum", feature_name="my_feature"
+            value_column="col_float", method=AggFunc.SUM, feature_name="my_feature"
         )
     assert str(exc.value) == "aggregate() is only available for ItemView"
 

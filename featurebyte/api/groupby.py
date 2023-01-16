@@ -558,7 +558,7 @@ class SimpleAggregator(BaseAggregator):
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[AggFunc] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
@@ -570,7 +570,7 @@ class SimpleAggregator(BaseAggregator):
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[AggFunc]
             Aggregation method
         feature_name: str
             Output feature name
@@ -608,7 +608,7 @@ class SimpleAggregator(BaseAggregator):
 
         assert method is not None
         assert feature_name is not None
-        agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
+        agg_method = construct_agg_func(agg_func=method)
         feature = self._project_feature_from_groupby_node(
             agg_method=agg_method,
             feature_name=feature_name,
@@ -833,7 +833,7 @@ class GroupBy:
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[AggFunc] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
@@ -847,7 +847,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[str]
+        method: Optional[AggFunc]
             Aggregation method
         feature_name: Optional[str]
             Output feature name

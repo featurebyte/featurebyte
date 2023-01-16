@@ -1,8 +1,9 @@
 """
 This module contains mixins used in node classes
 """
-from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Set
+
+from abc import abstractmethod
 
 from pydantic import BaseModel
 
