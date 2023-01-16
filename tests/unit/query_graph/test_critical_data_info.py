@@ -4,7 +4,16 @@ Tests for featurebyte.query_graph.graph_node.critical_data_info
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.critical_data_info import (
+    CriticalDataInfo,
+    DisguisedValueImputation,
+    MissingValueImputation,
+    StringValueImputation,
+    UnexpectedValueImputation,
+    ValueBeyondEndpointImputation,
+)
 
 
 @pytest.mark.parametrize(
@@ -75,3 +84,124 @@ def test_critical_data_info__invalid_imputations(imputations, conflicts):
     assert expected_msg in error_msg
     for conflict_imputation in conflicts:
         assert conflict_imputation in error_msg
+
+
+@pytest.mark.parametrize(
+    "imputation,expected_nodes",
+    [
+        (
+            MissingValueImputation(imputed_value=0),
+            [
+                {"name": "is_null_1", "type": "is_null", "output_type": "series", "parameters": {}},
+                {
+                    "name": "conditional_1",
+                    "type": "conditional",
+                    "output_type": "series",
+                    "parameters": {"value": 0},
+                },
+            ],
+        ),
+        (
+            DisguisedValueImputation(disguised_values=["a", "b"], imputed_value=None),
+            [
+                {
+                    "name": "is_in_1",
+                    "type": "is_in",
+                    "output_type": "series",
+                    "parameters": {"value": ["a", "b"]},
+                },
+                {
+                    "name": "conditional_1",
+                    "type": "conditional",
+                    "output_type": "series",
+                    "parameters": {"value": None},
+                },
+            ],
+        ),
+        (
+            UnexpectedValueImputation(expected_values=["c", "d"], imputed_value=None),
+            [
+                {
+                    "name": "is_in_1",
+                    "type": "is_in",
+                    "output_type": "series",
+                    "parameters": {"value": ["c", "d"]},
+                },
+                {
+                    "name": "not_1",
+                    "type": "not",
+                    "output_type": "series",
+                    "parameters": {},
+                },
+                {
+                    "name": "conditional_1",
+                    "type": "conditional",
+                    "output_type": "series",
+                    "parameters": {"value": None},
+                },
+            ],
+        ),
+        (
+            ValueBeyondEndpointImputation(type="greater_than", end_point=0, imputed_value=0),
+            [
+                {
+                    "name": "gt_1",
+                    "type": "gt",
+                    "output_type": "series",
+                    "parameters": {"value": 0},
+                },
+                {
+                    "name": "conditional_1",
+                    "type": "conditional",
+                    "output_type": "series",
+                    "parameters": {"value": 0},
+                },
+            ],
+        ),
+        (
+            StringValueImputation(imputed_value=None),
+            [
+                {
+                    "name": "is_string_1",
+                    "type": "is_string",
+                    "output_type": "series",
+                    "parameters": {},
+                },
+                {
+                    "name": "conditional_1",
+                    "type": "conditional",
+                    "output_type": "series",
+                    "parameters": {"value": None},
+                },
+            ],
+        ),
+    ],
+)
+def test_critical_data_info__add_cleaning_operation(input_node, imputation, expected_nodes):
+    """Test add cleaning operation output graph"""
+    graph_node, _ = GraphNode.create(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    node_op = imputation.add_cleaning_operation(
+        graph_node=graph_node,
+        input_node=graph_node.output_node,
+    )
+    assert node_op.type == NodeType.CONDITIONAL
+    nested_graph = graph_node.parameters.graph
+    assert nested_graph.nodes[0] == {
+        "name": "proxy_input_1",
+        "type": "proxy_input",
+        "output_type": "frame",
+        "parameters": {"input_order": 0},
+    }
+    assert nested_graph.nodes[1] == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["a"]},
+    }
+    assert nested_graph.nodes[2:] == expected_nodes

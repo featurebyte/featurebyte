@@ -167,7 +167,7 @@ class DisguisedValueCondition(BaseCondition):
     def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         return graph_node.add_operation(
             node_type=NodeType.IS_IN,
-            node_params={"values": self.disguised_values},
+            node_params={"value": self.disguised_values},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[input_node],
         )
@@ -187,7 +187,7 @@ class UnexpectedValueCondition(BaseCondition):
     def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
         isin_node = graph_node.add_operation(
             node_type=NodeType.IS_IN,
-            node_params={"values": self.expected_values},
+            node_params={"value": self.expected_values},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[input_node],
         )
