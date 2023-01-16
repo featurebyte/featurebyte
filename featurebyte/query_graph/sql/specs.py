@@ -139,6 +139,8 @@ class TileBasedAggregationSpec(AggregationSpec):
         ----------
         groupby_node : Node
             Query graph node with groupby type
+        adapter : BaseAdapter
+            Instance of BaseAdapter
         serving_names_mapping : dict[str, str]
             Mapping from original serving name to new serving name
 
