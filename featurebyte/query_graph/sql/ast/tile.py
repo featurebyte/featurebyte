@@ -8,7 +8,7 @@ from typing import cast
 from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
@@ -49,10 +49,11 @@ class BuildTileNode(TableNode):
             quoted_identifier(self.timestamp)
         ).sql()
 
+        input_filtered = self._get_input_filtered_within_date_range()
         input_tiled = select(
             "*",
             f"FLOOR(({timestamp_epoch} - {start_date_epoch}) / {self.frequency}) AS tile_index",
-        ).from_(self.input_node.sql_nested())
+        ).from_(input_filtered.subquery())
 
         tile_start_date = f"TO_TIMESTAMP({start_date_epoch} + tile_index * {self.frequency})"
         keys = [quoted_identifier(k) for k in self.keys]
@@ -63,6 +64,49 @@ class BuildTileNode(TableNode):
             return self._get_tile_sql_order_dependent(keys, tile_start_date, input_tiled)
 
         return self._get_tile_sql_order_independent(keys, tile_start_date, input_tiled)
+
+    def _get_input_filtered_within_date_range(self) -> Select:
+        if self.is_on_demand:
+            return self._get_input_filtered_within_date_range_on_demand()
+        return self._get_input_filtered_within_date_range_scheduled()
+
+    def _get_input_filtered_within_date_range_scheduled(self) -> Select:
+        select_expr = select("*").from_(self.input_node.sql_nested())
+        timestamp = quoted_identifier(self.timestamp).sql()
+        start_cond = (
+            f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        )
+        end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        select_expr = select_expr.where(start_cond, end_cond)
+        return select_expr
+
+    def _get_input_filtered_within_date_range_on_demand(self) -> Select:
+
+        entity_table = InternalName.ENTITY_TABLE_NAME.value
+        start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+        end_date = InternalName.ENTITY_TABLE_END_DATE.value
+
+        join_conditions = []
+        for col in self.keys:
+            condition = parse_one(f'R."{col}" = {entity_table}."{col}"')
+            join_conditions.append(condition)
+        join_conditions.append(parse_one(f'R."{self.timestamp}" >= {start_date}'))
+        join_conditions.append(parse_one(f'R."{self.timestamp}" < {entity_table}.{end_date}'))
+        join_conditions_expr = expressions.and_(*join_conditions)
+
+        select_expr = (
+            select()
+            .with_(entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
+            .select("R.*")
+            .from_(entity_table)
+            .join(
+                self.input_node.sql,
+                join_alias="R",
+                join_type="inner",
+                on=join_conditions_expr,
+            )
+        )
+        return cast(Select, select_expr)
 
     def _get_tile_sql_order_independent(
         self,
