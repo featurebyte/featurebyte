@@ -4,6 +4,7 @@ Unit test for Entity class
 from datetime import datetime
 from unittest import mock
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
@@ -147,26 +148,24 @@ def test_entity_update_name(entity):
 
     # check audit history
     audit_history = entity.audit()
-    expected_paginatation_info = {"page": 1, "page_size": 10, "total": 2}
-    assert audit_history.items() >= expected_paginatation_info.items()
-    history_data = audit_history["data"]
-    assert len(history_data) == 2
-    assert (
-        history_data[0].items()
-        > {
-            "name": 'update: "customer"',
-            "action_type": "UPDATE",
-            "previous_values": {"name": "customer", "updated_at": None},
-        }.items()
+    expected_audit_history = pd.DataFrame(
+        [
+            ("UPDATE", 'update: "customer"', "name", "customer", "Customer"),
+            ("UPDATE", 'update: "customer"', "updated_at", None, entity.updated_at.isoformat()),
+            ("INSERT", 'insert: "customer"', "ancestor_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "created_at", np.nan, entity.created_at.isoformat()),
+            ("INSERT", 'insert: "customer"', "name", np.nan, "customer"),
+            ("INSERT", 'insert: "customer"', "parents", np.nan, []),
+            ("INSERT", 'insert: "customer"', "primary_tabular_data_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "serving_names", np.nan, ["cust_id"]),
+            ("INSERT", 'insert: "customer"', "tabular_data_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "updated_at", np.nan, None),
+            ("INSERT", 'insert: "customer"', "user_id", np.nan, None),
+        ],
+        columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    assert history_data[0]["current_values"].items() > {"name": "Customer"}.items()
-    assert (
-        history_data[1].items()
-        > {"name": 'insert: "customer"', "action_type": "INSERT", "previous_values": {}}.items()
-    )
-    assert (
-        history_data[1]["current_values"].items()
-        > {"name": "customer", "updated_at": None, "serving_names": ["cust_id"]}.items()
+    pd.testing.assert_frame_equal(
+        audit_history[expected_audit_history.columns], expected_audit_history
     )
 
     # create another entity
@@ -243,7 +242,7 @@ def test_get_entity():
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             Entity.list()
-    assert "Failed to list object names." in str(exc.value)
+    assert "Failed to list /entity." in str(exc.value)
 
 
 @pytest.fixture(name="insert_tabular_data_helper")

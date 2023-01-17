@@ -23,6 +23,7 @@ from functools import partial
 from http import HTTPStatus
 
 import lazy_object_proxy
+import pandas as pd
 from bson.objectid import ObjectId
 from pandas import DataFrame
 from pydantic import Field
@@ -253,7 +254,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 for obj_dict in response_dict["data"]:
                     yield obj_dict
             else:
-                raise RecordRetrievalException(response, "Failed to list object names.")
+                raise RecordRetrievalException(response, f"Failed to list {route}.")
 
     @classmethod
     def list(cls, include_id: Optional[bool] = False) -> DataFrame:
@@ -440,25 +441,45 @@ class ApiObject(FeatureByteBaseDocumentModel):
         else:
             raise RecordUpdateException(response=response)
 
-    def audit(self) -> dict[str, Any]:
+    @staticmethod
+    def _prepare_audit_record(record: Dict[str, Any]) -> pd.DataFrame:
+        field_name = "field_name"
+        previous = pd.json_normalize(record["previous_values"]).melt(var_name=field_name)
+        current = pd.json_normalize(record["current_values"]).melt(var_name=field_name)
+        record_df = pd.DataFrame(
+            {
+                "action_at": record["action_at"],
+                "action_type": record["action_type"],
+                "name": record["name"],
+                "old_value": previous.set_index(field_name)["value"],
+                "new_value": current.set_index(field_name)["value"],
+            }
+        ).reset_index()
+        column_order = [
+            "action_at",
+            "action_type",
+            "name",
+            field_name,
+            "old_value",
+            "new_value",
+        ]
+        return record_df[column_order]  # pylint: disable=unsubscriptable-object
+
+    def audit(self) -> pd.DataFrame:
         """
         Get list of persistent audit logs which records the object update history
 
         Returns
         -------
-        Any
+        pd.DataFrame
             List of audit log
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the response status code is unexpected
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"{self._route}/audit/{self.id}")
-        if response.status_code == HTTPStatus.OK:
-            return dict(response.json())
-        raise RecordRetrievalException(response, "Failed to list object audit log.")
+        audit_records = []
+        for audit_record in self._iterate_api_object_using_paginated_routes(
+            route=f"{self._route}/audit/{self.id}", params={"page_size": PAGINATED_CALL_PAGE_SIZE}
+        ):
+            audit_records.append(self._prepare_audit_record(audit_record))
+        return pd.concat(audit_records).reset_index(drop=True)
 
     @typechecked
     def _get_audit_history(self, field_name: str) -> List[Dict[str, Any]]:

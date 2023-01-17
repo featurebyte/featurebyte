@@ -434,28 +434,34 @@ def test_get_feature(saved_feature):
 
     # check audit history
     audit_history = saved_feature.audit()
-    expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
-    assert audit_history.items() > expected_pagination_info.items()
-    history_data = audit_history["data"]
-    assert len(history_data) == 1
-    assert (
-        history_data[0].items()
-        > {
-            "name": 'insert: "sum_1d"',
-            "action_type": "INSERT",
-            "previous_values": {},
-        }.items()
-    )
-    assert (
-        history_data[0]["current_values"].items()
-        > {
-            "name": "sum_1d",
-            "readiness": "DRAFT",
-            "dtype": "FLOAT",
-            "updated_at": None,
-            "user_id": None,
-        }.items()
-    )
+    assert (audit_history["action_type"] == "INSERT").all()
+    assert (audit_history["name"] == 'insert: "sum_1d"').all()
+    assert audit_history["old_value"].isnull().all()
+    assert set(audit_history["field_name"]) == {
+        "tabular_source.table_details.table_name",
+        "updated_at",
+        "tabular_source.feature_store_id",
+        "tabular_data_ids",
+        "user_id",
+        "tabular_source.table_details.database_name",
+        "feature_namespace_id",
+        "online_enabled",
+        "created_at",
+        "entity_ids",
+        "version.name",
+        "feature_list_ids",
+        "raw_graph.nodes",
+        "raw_graph.edges",
+        "node_name",
+        "version.suffix",
+        "deployed_feature_list_ids",
+        "tabular_source.table_details.schema_name",
+        "name",
+        "readiness",
+        "graph.edges",
+        "graph.nodes",
+        "dtype",
+    }
 
     with pytest.raises(RecordRetrievalException) as exc:
         lazy_feature = Feature.get(name="random_name")

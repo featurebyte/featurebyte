@@ -6,6 +6,8 @@ from __future__ import annotations
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
+import numpy as np
+import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
@@ -722,76 +724,131 @@ def test_default_feature_job_setting_history(saved_event_data):
 
     # check audit history
     audit_history = saved_event_data.audit()
-    expected_pagination_info = {"page": 1, "page_size": 10, "total": 4}
-    assert audit_history.items() > expected_pagination_info.items()
-    history_data = audit_history["data"]
-    assert len(history_data) == 4
-    assert (
-        history_data[0].items()
-        > {
-            "name": 'update: "sf_event_data"',
-            "action_type": "UPDATE",
-        }.items()
+
+    # check number of actions
+    expected_unique_records = pd.DataFrame(
+        [
+            ("UPDATE", 'update: "sf_event_data"'),
+            ("UPDATE", 'update: "sf_event_data"'),
+            ("UPDATE", 'update: "sf_event_data"'),
+            ("INSERT", 'insert: "sf_event_data"'),
+        ],
+        columns=["action_type", "name"],
     )
-    assert (
-        history_data[0]["previous_values"].items()
-        > {
-            "default_feature_job_setting": {
-                "blind_spot": "1m30s",
-                "frequency": "10m",
-                "time_modulo_frequency": "2m",
-            }
-        }.items()
+    audit_uniq_records = (
+        audit_history[["action_at", "action_type", "name"]].drop_duplicates().reset_index(drop=True)
     )
-    assert (
-        history_data[0]["current_values"].items()
-        > {
-            "default_feature_job_setting": {
-                "blind_spot": "1m",
-                "frequency": "5m",
-                "time_modulo_frequency": "2m",
-            }
-        }.items()
+    pd.testing.assert_frame_equal(
+        audit_uniq_records[expected_unique_records.columns], expected_unique_records
     )
-    assert (
-        history_data[1].items()
-        > {
-            "name": 'update: "sf_event_data"',
-            "action_type": "UPDATE",
-            "previous_values": {
-                "default_feature_job_setting": None,
-                "updated_at": history_data[1]["previous_values"]["updated_at"],
-            },
-        }.items()
+
+    # check the latest action audit records
+    audit_records = audit_history[audit_history.action_at == audit_uniq_records.action_at.iloc[0]]
+    audit_records.reset_index(drop=True, inplace=True)
+    old_updated_at = audit_records.old_value.iloc[0]
+    new_updated_at = audit_records.new_value.iloc[0]
+    expected_audit_records = pd.DataFrame(
+        [
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "updated_at",
+                old_updated_at,
+                new_updated_at,
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "default_feature_job_setting.blind_spot",
+                "1m30s",
+                "1m",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "default_feature_job_setting.frequency",
+                "10m",
+                "5m",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "default_feature_job_setting.time_modulo_frequency",
+                "2m",
+                "2m",
+            ),
+        ],
+        columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    assert (
-        history_data[1]["current_values"].items()
-        > {
-            "default_feature_job_setting": {
-                "blind_spot": "1m30s",
-                "frequency": "10m",
-                "time_modulo_frequency": "2m",
-            }
-        }.items()
+    pd.testing.assert_frame_equal(
+        audit_records[expected_audit_records.columns], expected_audit_records
     )
-    assert (
-        history_data[3].items()
-        > {
-            "name": 'insert: "sf_event_data"',
-            "action_type": "INSERT",
-            "previous_values": {},
-        }.items()
+
+    # check the 2nd latest action audit records
+    audit_records = audit_history[audit_history.action_at == audit_uniq_records.action_at.iloc[1]]
+    audit_records.reset_index(drop=True, inplace=True)
+    old_updated_at = audit_records.old_value.iloc[-1]
+    new_updated_at = audit_records.new_value.iloc[-1]
+    expected_audit_records = pd.DataFrame(
+        [
+            ("UPDATE", 'update: "sf_event_data"', "default_feature_job_setting", None, np.nan),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "default_feature_job_setting.blind_spot",
+                np.nan,
+                "1m30s",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "default_feature_job_setting.frequency",
+                np.nan,
+                "10m",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "default_feature_job_setting.time_modulo_frequency",
+                np.nan,
+                "2m",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_event_data"',
+                "updated_at",
+                old_updated_at,
+                new_updated_at,
+            ),
+        ],
+        columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    assert (
-        history_data[3]["current_values"].items()
-        > {
-            "name": "sf_event_data",
-            "event_timestamp_column": "event_timestamp",
-            "record_creation_date_column": "created_at",
-            "default_feature_job_setting": None,
-            "status": "DRAFT",
-        }.items()
+    pd.testing.assert_frame_equal(
+        audit_records[expected_audit_records.columns], expected_audit_records
     )
+
+    # check the earliest action audit records
+    audit_records = audit_history[audit_history.action_at == audit_uniq_records.action_at.iloc[-1]]
+    assert set(audit_records["field_name"]) == {
+        "columns_info",
+        "created_at",
+        "default_feature_job_setting",
+        "event_id_column",
+        "event_timestamp_column",
+        "graph.edges",
+        "graph.nodes",
+        "name",
+        "node_name",
+        "record_creation_date_column",
+        "status",
+        "tabular_source.feature_store_id",
+        "tabular_source.table_details.database_name",
+        "tabular_source.table_details.schema_name",
+        "tabular_source.table_details.table_name",
+        "type",
+        "updated_at",
+        "user_id",
+    }
 
 
 @patch("featurebyte.api.event_data.EventData.post_async_task")

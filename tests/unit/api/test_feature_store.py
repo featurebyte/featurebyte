@@ -3,6 +3,7 @@ Unit test for DatabaseSource
 """
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 import pytest_asyncio
@@ -194,32 +195,25 @@ def test_get(saved_snowflake_feature_store):
 
     # check audit history
     audit_history = loaded_feature_store.audit()
-    expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
-    assert audit_history.items() > expected_pagination_info.items()
-    history_data = audit_history["data"]
-    assert len(history_data) == 1
-    assert (
-        history_data[0].items()
-        > {
-            "name": 'insert: "sf_featurestore"',
-            "action_type": "INSERT",
-            "previous_values": {},
-        }.items()
+    expected_audit_history = pd.DataFrame(
+        [
+            ("created_at", loaded_feature_store.created_at.isoformat()),
+            ("details.account", "sf_account"),
+            ("details.database", "sf_database"),
+            ("details.sf_schema", "sf_schema"),
+            ("details.warehouse", "sf_warehouse"),
+            ("name", "sf_featurestore"),
+            ("type", "snowflake"),
+            ("updated_at", None),
+            ("user_id", None),
+        ],
+        columns=["field_name", "new_value"],
     )
-    assert (
-        history_data[0]["current_values"].items()
-        > {
-            "name": "sf_featurestore",
-            "details": {
-                "account": "sf_account",
-                "database": "sf_database",
-                "sf_schema": "sf_schema",
-                "warehouse": "sf_warehouse",
-            },
-            "updated_at": None,
-            "type": "snowflake",
-            "user_id": None,
-        }.items()
+    expected_audit_history["action_type"] = "INSERT"
+    expected_audit_history["name"] = 'insert: "sf_featurestore"'
+    expected_audit_history["old_value"] = np.nan
+    pd.testing.assert_frame_equal(
+        audit_history[expected_audit_history.columns], expected_audit_history
     )
 
 
