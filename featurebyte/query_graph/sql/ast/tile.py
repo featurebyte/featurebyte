@@ -14,7 +14,11 @@ from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    SQLType,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
@@ -117,10 +121,25 @@ class BuildTileNode(TableNode):
 
         join_conditions = []
         for col in self.keys:
-            condition = parse_one(f'R."{col}" = {entity_table}."{col}"')
+            condition = expressions.EQ(
+                this=get_qualified_column_identifier(col, "R"),
+                expression=get_qualified_column_identifier(col, entity_table),
+            )
             join_conditions.append(condition)
-        join_conditions.append(parse_one(f'R."{self.timestamp}" >= {start_date}'))
-        join_conditions.append(parse_one(f'R."{self.timestamp}" < {entity_table}.{end_date}'))
+        join_conditions.append(
+            expressions.GTE(
+                this=get_qualified_column_identifier(self.timestamp, "R"),
+                expression=expressions.Identifier(this=start_date),
+            )
+        )
+        join_conditions.append(
+            expressions.LT(
+                this=get_qualified_column_identifier(self.timestamp, "R"),
+                expression=get_qualified_column_identifier(
+                    end_date, entity_table, quote_column=False
+                ),
+            )
+        )
         join_conditions_expr = expressions.and_(*join_conditions)
 
         select_expr = (
