@@ -1,15 +1,19 @@
 """
 FeatureJobSettingAnalysis API payload schema
 """
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from featurebyte_freeware.feature_job_analysis.schema import AnalysisOptions, FeatureJobSetting
+from pydantic import Field, StrictStr, root_validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    PydanticObjectId,
+)
 from featurebyte.schema.common.base import PaginationMixin
 
 
@@ -30,12 +34,31 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     late_data_allowance: float = Field(gt=0, le=0.5, default=0.005 / 100)
 
 
+class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
+    """
+    FeatureJobSettingAnalysis persistent record without report
+    """
+
+    event_data_id: PydanticObjectId
+    analysis_options: AnalysisOptions
+    recommended_feature_job_setting: FeatureJobSetting
+
+    @root_validator(pre=True)
+    @classmethod
+    def _extract_recommended_feature_job_setting(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "recommended_feature_job_setting" not in values:
+            values["recommended_feature_job_setting"] = values["analysis_result"][
+                "recommended_feature_job_setting"
+            ]
+        return values
+
+
 class FeatureJobSettingAnalysisList(PaginationMixin):
     """
     Paginated list of Feature Job Setting Analysis
     """
 
-    data: List[FeatureJobSettingAnalysisModel]
+    data: List[FeatureJobSettingAnalysisRecord]
 
 
 class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):

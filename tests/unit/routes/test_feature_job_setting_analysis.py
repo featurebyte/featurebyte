@@ -194,15 +194,13 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         """
         Run backtest for existing analysis
         """
-        feature_job_setting_analysis_id = create_success_response.json()["_id"]
+        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         payload = self.load_payload(
             "tests/fixtures/request_payloads/feature_job_settings_analysis_backtest.json"
         )
-        response = test_api_client.post(
-            f"{self.base_route}/{feature_job_setting_analysis_id}/backtest", json=payload
-        )
-        assert response.status_code == HTTPStatus.ACCEPTED
+        response = test_api_client.post(f"{self.base_route}/backtest", json=payload)
+        assert response.status_code == HTTPStatus.CREATED
         response_dict = response.json()
         output_document_id = response_dict["payload"]["output_document_id"]
         assert response_dict["output_path"] == (

@@ -6,6 +6,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_data import ItemData
@@ -43,6 +44,7 @@ __all__ = [
     "Feature",
     "FeatureGroup",
     "FeatureJobSetting",
+    "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",
     "ItemData",

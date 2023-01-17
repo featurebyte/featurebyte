@@ -9,8 +9,6 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.api.base_data import DataColumn
-from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
@@ -19,7 +17,6 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
-    TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
@@ -453,49 +450,52 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
     }
 
 
-@patch("featurebyte.common.env_util.is_notebook")
 @patch("featurebyte.api.event_data.EventData.post_async_task")
+@patch("featurebyte.api.feature_job_setting_analysis.FeatureJobSettingAnalysis.get_by_id")
 def test_update_default_feature_job_setting__using_feature_job_analysis(
+    mock_get_by_id,
     mock_post_async_task,
-    mock_is_notebook,
     saved_event_data,
-    config,
 ):
     """
     Update default feature job setting using feature job analysis
     """
     # test update default feature job setting by using feature job analysis
-    mock_post_async_task.return_value = {
-        "analysis_result": {
-            "recommended_feature_job_setting": {
-                "frequency": 180,
-                "job_time_modulo_frequency": 61,
-                "blind_spot": 395,
-                "feature_cutoff_modulo_frequency": 26,
-            }
+    mock_post_async_task.return_value = {"_id": ObjectId()}
+    analysis = Mock()
+    analysis.get_recommendation.return_value = FeatureJobSetting(
+        blind_spot="0",
+        frequency="24h",
+        time_modulo_frequency="0",
+    )
+    mock_get_by_id.return_value = analysis
+    saved_event_data.initialise_default_feature_job_setting()
+
+    # should make a call to post_async_task
+    mock_post_async_task.assert_called_once_with(
+        route="/feature_job_setting_analysis",
+        payload={
+            "_id": mock_post_async_task.call_args[1]["payload"]["_id"],
+            "name": None,
+            "event_data_id": "6337f9651050ee7d5980660d",
+            "analysis_date": None,
+            "analysis_length": 2419200,
+            "min_featurejob_period": 60,
+            "exclude_late_job": False,
+            "blind_spot_buffer_setting": 5,
+            "job_time_buffer_setting": "auto",
+            "late_data_allowance": 5e-05,
         },
-        "analysis_report": "<html>This is analysis report!</html>",
-    }
+    )
 
-    with patch_import_package("IPython.display") as mock_mod:
-        mock_is_notebook.return_value = False
-        saved_event_data.update_default_feature_job_setting()
-        assert saved_event_data.default_feature_job_setting == FeatureJobSetting(
-            blind_spot="395s",
-            frequency="180s",
-            time_modulo_frequency="61s",
-        )
-        # check that ipython display not get called
-        assert mock_mod.display.call_count == 0
-        assert mock_mod.HTML.call_count == 0
+    # should make a call to display_report()
+    analysis.display_report.assert_called_once()
 
-    with patch_import_package("IPython.display") as mock_mod:
-        mock_is_notebook.return_value = True
-        saved_event_data.update_default_feature_job_setting()
+    # should make a call to get_recommendation()
+    analysis.get_recommendation.assert_called_once()
 
-        # check that ipython display get called
-        assert mock_mod.display.call_count == 1
-        assert mock_mod.HTML.call_count == 1
+    # default_feature_job_setting should be updated
+    assert saved_event_data.default_feature_job_setting == analysis.get_recommendation.return_value
 
 
 @patch("featurebyte.service.feature_job_setting_analysis.EventDataService.get_document")
@@ -510,7 +510,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_no_creat
     mock_get_document.return_value = Mock(record_creation_date_column=None)
 
     with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.update_default_feature_job_setting()
+        saved_event_data.initialise_default_feature_job_setting()
     assert "Creation date column is not available for the event data." in str(exc)
 
 
@@ -534,7 +534,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_high_fre
     )
 
     with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.update_default_feature_job_setting()
+        saved_event_data.initialise_default_feature_job_setting()
     assert "HighUpdateFrequencyError" in str(exc)
 
 
@@ -558,7 +558,7 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
     Test update failure due to event data not saved
     """
     with pytest.raises(RecordCreationException) as exc:
-        snowflake_event_data.update_default_feature_job_setting()
+        snowflake_event_data.initialise_default_feature_job_setting()
     expected_msg = f'EventData (id: "{snowflake_event_data.id}") not found. Please save the EventData object first.'
     assert expected_msg in str(exc)
 
@@ -591,7 +591,7 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure(
     mock_process_store.return_value.get = AsyncMock()
     mock_process_store.return_value.get.return_value = get_return
     with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.update_default_feature_job_setting()
+        saved_event_data.initialise_default_feature_job_setting()
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
@@ -792,3 +792,58 @@ def test_default_feature_job_setting_history(saved_event_data):
             "status": "DRAFT",
         }.items()
     )
+
+
+@patch("featurebyte.api.event_data.EventData.post_async_task")
+@patch("featurebyte.api.feature_job_setting_analysis.FeatureJobSettingAnalysis.get_by_id")
+def test_create_new_feature_job_setting_analysis(
+    mock_get_by_id,
+    mock_post_async_task,
+    saved_event_data,
+):
+    """
+    Update default feature job setting using feature job analysis
+    """
+    # test update default feature job setting by using feature job analysis
+    mock_post_async_task.return_value = {"_id": ObjectId()}
+    analysis = Mock()
+    mock_get_by_id.return_value = analysis
+    analysis_date = datetime.utcnow()
+    saved_event_data.create_new_feature_job_setting_analysis(
+        analysis_date=analysis_date,
+        analysis_length=3600,
+        min_featurejob_period=100,
+        exclude_late_job=True,
+        blind_spot_buffer_setting=10,
+        job_time_buffer_setting=5,
+        late_data_allowance=0.1,
+    )
+
+    mock_post_async_task.assert_called_once_with(
+        route="/feature_job_setting_analysis",
+        payload={
+            "_id": mock_post_async_task.call_args[1]["payload"]["_id"],
+            "name": None,
+            "event_data_id": "6337f9651050ee7d5980660d",
+            "analysis_date": analysis_date.isoformat(),
+            "analysis_length": 3600,
+            "min_featurejob_period": 100,
+            "exclude_late_job": True,
+            "blind_spot_buffer_setting": 10,
+            "job_time_buffer_setting": 5,
+            "late_data_allowance": 0.1,
+        },
+    )
+
+    # should make a call to display_report()
+    analysis.display_report.assert_called_once()
+
+
+@patch("featurebyte.api.feature_job_setting_analysis.FeatureJobSettingAnalysis.list")
+def test_list_feature_job_setting_analysis(mock_list, saved_event_data):
+    """
+    Test list_feature_job_setting_analysis
+    """
+    output = saved_event_data.list_feature_job_setting_analysis()
+    mock_list.assert_called_once_with(event_data_id=saved_event_data.id)
+    assert output == mock_list.return_value

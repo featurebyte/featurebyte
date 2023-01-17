@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
+from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
@@ -21,6 +22,7 @@ from featurebyte.schema.info import (
     EntityInfo,
     EventDataInfo,
     FeatureInfo,
+    FeatureJobSettingAnalysisInfo,
     FeatureListBriefInfoList,
     FeatureListInfo,
     FeatureListNamespaceInfo,
@@ -37,6 +39,7 @@ from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -71,6 +74,9 @@ class InfoService(BaseService):
         self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
         self.feature_list_service = FeatureListService(user=user, persistent=persistent)
         self.feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
+        self.feature_job_setting_analysis_service = FeatureJobSettingAnalysisService(
             user=user, persistent=persistent
         )
 
@@ -583,4 +589,43 @@ class InfoService(BaseService):
             version_count=len(namespace.feature_list_ids),
             feature_count=len(namespace.feature_namespace_ids),
             status=namespace.status,
+        )
+
+    async def get_feature_job_setting_analysis_info(
+        self, document_id: ObjectId, verbose: bool
+    ) -> FeatureJobSettingAnalysisInfo:
+        """
+        Get item data info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        FeatureJobSettingAnalysisInfo
+        """
+        _ = verbose
+        feature_job_setting_analysis = await self.feature_job_setting_analysis_service.get_document(
+            document_id=document_id
+        )
+        recommended_setting = (
+            feature_job_setting_analysis.analysis_result.recommended_feature_job_setting
+        )
+        event_data = await self.event_data_service.get_document(
+            document_id=feature_job_setting_analysis.event_data_id
+        )
+        return FeatureJobSettingAnalysisInfo(
+            created_at=feature_job_setting_analysis.created_at,
+            event_data_name=event_data.name,
+            analysis_options=feature_job_setting_analysis.analysis_options,
+            analysis_parameters=feature_job_setting_analysis.analysis_parameters,
+            recommendation=FeatureJobSetting(
+                blind_spot=f"{recommended_setting.blind_spot}s",
+                time_modulo_frequency=f"{recommended_setting.job_time_modulo_frequency}s",
+                frequency=f"{recommended_setting.frequency}s",
+            ),
         )
