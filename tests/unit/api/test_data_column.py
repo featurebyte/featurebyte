@@ -12,6 +12,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import (
     MissingValueImputation,
+    StringValueImputation,
     ValueBeyondEndpointImputation,
 )
 
@@ -130,6 +131,9 @@ def _check_event_data_with_critical_data_info(event_data):
             ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
         ]
     )
+    event_data.col_float.update_critical_data_info(
+        cleaning_operations=[StringValueImputation(imputed_value=0.0)]
+    )
 
     if event_data.saved:
         # check that output node is a graph node after critical data info get updated
@@ -150,7 +154,7 @@ def _check_event_data_with_critical_data_info(event_data):
             THEN 0
             ELSE CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END
           END AS "col_int",
-          "col_float" AS "col_float",
+          CASE WHEN IS_VARCHAR(TO_VARIANT("col_float")) THEN 0 ELSE "col_float" END AS "col_float",
           "col_char" AS "col_char",
           "col_text" AS "col_text",
           "col_binary" AS "col_binary",
@@ -173,6 +177,7 @@ def _check_remove_critical_data_info(event_data):
     assert event_data.node.type == NodeType.GRAPH
     event_data.col_boolean.update_critical_data_info(cleaning_operations=[])
     event_data.col_int.update_critical_data_info(cleaning_operations=[])
+    event_data.col_float.update_critical_data_info(cleaning_operations=[])
     for column_info in event_data.columns_info:
         if column_info.critical_data_info:
             assert not column_info.critical_data_info.cleaning_operations

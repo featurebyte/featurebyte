@@ -180,12 +180,12 @@ class BaseAdapter:
         Parameters
         ----------
         dictionary_expression: Expression
-            the Expression that should get a dictionary
+            The Expression that should get a dictionary
 
         Returns
         -------
         Expression
-            expression that returns the object keys
+            Expression that returns the object keys
         """
 
     @classmethod
@@ -197,14 +197,31 @@ class BaseAdapter:
         Parameters
         ----------
         input_expression: Expression
-            input expression
+            Input expression
         array_expression: Expression
-            array expression
+            Array expression
 
         Returns
         -------
         Expression
-            expression that checks whether the input is in the array
+            Expression that checks whether the input is in the array
+        """
+
+    @classmethod
+    @abstractmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
+        """
+        Check whether the value of the input column is string type or not
+
+        Parameters
+        ----------
+        column_expr: Expression
+            Column expression
+
+        Returns
+        -------
+        Expression
+            Boolean column to indicate whether the value is string type or not
         """
 
 
@@ -333,6 +350,12 @@ class SnowflakeAdapter(BaseAdapter):
         )
         return output_expr
 
+    @classmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
+        variant_expr = expressions.Anonymous(this="TO_VARIANT", expressions=[column_expr])
+        output_expr = expressions.Anonymous(this="IS_VARCHAR", expressions=[variant_expr])
+        return output_expr
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -422,6 +445,10 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
         raise NotImplementedError()
 
 
