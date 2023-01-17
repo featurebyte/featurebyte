@@ -66,6 +66,7 @@ class TileGenSql:
     serving_names: list[str]
     value_by_column: str | None
     tile_value_columns: list[str]
+    tile_value_types: list[str]
     time_modulo_frequency: int
     frequency: int
     blind_spot: int
@@ -149,6 +150,7 @@ class TileSQLGenerator:
         aggregation_id = groupby_node.parameters.aggregation_id
         entity_columns = groupby_sql_node.keys
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
+        tile_value_types = [spec.tile_column_type for spec in groupby_sql_node.tile_specs]
         assert tile_table_id is not None
         assert aggregation_id is not None
         sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
@@ -159,6 +161,7 @@ class TileSQLGenerator:
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,
+            tile_value_types=tile_value_types,
             time_modulo_frequency=groupby_node.parameters.time_modulo_frequency,
             frequency=groupby_node.parameters.frequency,
             blind_spot=groupby_node.parameters.blind_spot,

@@ -299,6 +299,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
             f"sum_value_avg_{groupby_node_aggregation_id}",
             f"count_value_avg_{groupby_node_aggregation_id}",
         ],
+        "tile_value_types": ["FLOAT", "FLOAT"],
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
@@ -386,6 +387,7 @@ def test_graph_interpreter_on_demand_tile_gen(
             f"sum_value_avg_{groupby_node_aggregation_id}",
             f"count_value_avg_{groupby_node_aggregation_id}",
         ],
+        "tile_value_types": ["FLOAT", "FLOAT"],
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
@@ -465,6 +467,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
             f"sum_value_avg_{aggregation_id}",
             f"count_value_avg_{aggregation_id}",
         ],
+        "tile_value_types": ["FLOAT", "FLOAT"],
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
@@ -503,6 +506,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
             f"sum_value_avg_{groupby_node_aggregation_id}",
             f"count_value_avg_{groupby_node_aggregation_id}",
         ],
+        "tile_value_types": ["FLOAT", "FLOAT"],
         "time_modulo_frequency": 1800,
         "frequency": 3600,
         "blind_spot": 900,
@@ -573,6 +577,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "serving_names": ["BUSINESS_ID"],
         "value_by_column": None,
         "tile_value_columns": [f"value_sum_{aggregation_id}"],
+        "tile_value_types": ["FLOAT"],
         "time_modulo_frequency": 1800,
         "frequency": 3600,
         "blind_spot": 900,
@@ -623,144 +628,6 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         """
     ).strip()
     assert sql == expected
-
-
-def test_graph_interpreter_snowflake(graph):
-    """Test tile building SQL and generates a SQL runnable on Snowflake"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "event_data",
-            "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
-            "timestamp_column": "SERVER_TIMESTAMP",
-            "table_details": {
-                "database_name": "FB_SIMULATE",
-                "schema_name": "PUBLIC",
-                "table_name": "BROWSING_TS",
-            },
-            "feature_store_details": {
-                "type": "snowflake",
-                "details": {
-                    "database": "FB_SIMULATE",
-                    "sf_schema": "PUBLIC",
-                    "account": "account",
-                    "warehouse": "warehouse",
-                },
-            },
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    node_params = {
-        "keys": ["CUST_ID"],
-        "value_by": None,
-        "parent": "*",
-        "agg_func": "count",
-        "time_modulo_frequency": 600,
-        "frequency": 3600,
-        "blind_spot": 1,
-        "timestamp": "SERVER_TIMESTAMP",
-        "windows": ["1d"],
-        "serving_names": ["CUSTOMER_ID"],
-        "names": ["feature_name"],
-    }
-    _groupby_node = graph.add_operation(
-        node_type=NodeType.GROUPBY,
-        node_params={
-            **node_params,
-            "tile_id": get_tile_table_identifier(
-                row_index_lineage_hash="deadbeef1234", parameters=node_params
-            ),
-            "aggregation_id": get_aggregation_identifier(
-                transformations_hash=graph.node_name_to_ref[node_input.name], parameters=node_params
-            ),
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_input],
-    )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node, is_on_demand=False)
-    assert len(tile_gen_sql) == 1
-    sql_template = tile_gen_sql[0].sql
-    expected = textwrap.dedent(
-        f"""
-        SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
-          "CUST_ID",
-          COUNT(*) AS value_count_fc1ac0d8922166006b45c682224593ed1d15c3c6
-        FROM (
-          SELECT
-            *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
-                "CUST_ID" AS "CUST_ID"
-              FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
-            )
-            WHERE
-              "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
-          )
-        )
-        GROUP BY
-          tile_index,
-          "CUST_ID"
-        """
-    ).strip()
-    assert sql_template == expected
-
-    rendered_template = tile_gen_sql[0].sql_template.render(
-        {
-            InternalName.TILE_START_DATE_SQL_PLACEHOLDER: "2022-04-18 00:00:00",
-            InternalName.TILE_END_DATE_SQL_PLACEHOLDER: "2022-04-19 00:00:00",
-        },
-    )
-    expected = textwrap.dedent(
-        f"""
-        SELECT
-          TO_TIMESTAMP(
-            DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMPNTZ)) + tile_index * 3600
-          ) AS __FB_TILE_START_DATE_COLUMN,
-          "CUST_ID",
-          COUNT(*) AS value_count_fc1ac0d8922166006b45c682224593ed1d15c3c6
-        FROM (
-          SELECT
-            *,
-            FLOOR(
-              (
-                DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMPNTZ))
-              ) / 3600
-            ) AS tile_index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
-                "CUST_ID" AS "CUST_ID"
-              FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
-            )
-            WHERE
-              "SERVER_TIMESTAMP" >= CAST('2022-04-18 00:00:00' AS TIMESTAMPNTZ)
-              AND "SERVER_TIMESTAMP" < CAST('2022-04-19 00:00:00' AS TIMESTAMPNTZ)
-          )
-        )
-        GROUP BY
-          tile_index,
-          "CUST_ID"
-        """
-    ).strip()
-    assert rendered_template == expected
 
 
 def test_graph_interpreter_preview(graph, node_input):

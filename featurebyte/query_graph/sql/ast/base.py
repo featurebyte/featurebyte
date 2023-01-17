@@ -14,6 +14,7 @@ from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
@@ -29,6 +30,8 @@ class SQLNodeContext:
 
     Parameters
     ----------
+    graph : QueryGraphModel
+        Query graph
     query_node : Node
         Query graph node
     sql_type: SQLType
@@ -43,6 +46,7 @@ class SQLNodeContext:
         List of input SQL nodes
     """
 
+    graph: QueryGraphModel
     query_node: Node
     sql_type: SQLType
     source_type: SourceType

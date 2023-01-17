@@ -10,13 +10,14 @@ from dataclasses import dataclass
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
-from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
+from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 @dataclass
@@ -137,6 +138,15 @@ class BuildTileNode(TableNode):
             sql_node = cls.make_build_tile_node(context, is_on_demand=True)
         return sql_node
 
+    @staticmethod
+    def _get_parent_dtype(parent_column_name: str, context: SQLNodeContext) -> DBVarType:
+        op_struct = (
+            OperationStructureExtractor(graph=context.graph)
+            .extract(node=context.query_node)
+            .operation_structure_map[context.query_node.name]
+        )
+        return next(col for col in op_struct.columns if col.name == parent_column_name).dtype
+
     @classmethod
     def make_build_tile_node(cls, context: SQLNodeContext, is_on_demand: bool) -> BuildTileNode:
         """Create a BuildTileNode
@@ -155,8 +165,13 @@ class BuildTileNode(TableNode):
         parameters = context.parameters
         input_node = context.input_sql_nodes[0]
         assert isinstance(input_node, TableNode)
-        aggregator = get_aggregator(parameters["agg_func"])
-        tile_specs = aggregator.tile(parameters["parent"], parameters["aggregation_id"])
+        aggregator = get_aggregator(parameters["agg_func"], adapter=context.adapter)
+        if parameters["parent"] is None:
+            parent_column = None
+        else:
+            parent_dtype = cls._get_parent_dtype(parameters["parent"], context)
+            parent_column = InputColumn(name=parameters["parent"], dtype=parent_dtype)
+        tile_specs = aggregator.tile(parent_column, parameters["aggregation_id"])
         columns = (
             [InternalName.TILE_START_DATE.value]
             + parameters["keys"]
@@ -199,7 +214,9 @@ class AggregatedTilesNode(TableNode):
     def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
         sql_node = None
         if context.sql_type == SQLType.POST_AGGREGATION:
-            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(context.query_node)
+            agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+                context.query_node, context.adapter
+            )
             columns_map = {}
             for agg_spec in agg_specs:
                 columns_map[agg_spec.feature_name] = quoted_identifier(agg_spec.agg_result_name)

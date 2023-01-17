@@ -8,8 +8,21 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.tiling import AggFunc, InputColumn, TileSpec, get_aggregator
+
+
+def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
+    """
+    Helper function to create the expected TileSpec object
+    """
+    if tile_column_type is None:
+        tile_column_type = "FLOAT"
+    return TileSpec(
+        tile_expr=tile_expr, tile_column_name=tile_column_name, tile_column_type=tile_column_type
+    )
 
 
 @pytest.mark.parametrize(
@@ -17,36 +30,52 @@ from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
     [
         (
             AggFunc.SUM,
-            [TileSpec(tile_expr='SUM("a_column")', tile_column_name="value_1234beef")],
+            [
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
             "SUM(value_1234beef)",
         ),
         (
             AggFunc.AVG,
             [
-                TileSpec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
-                TileSpec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                ),
+                make_expected_tile_spec(
+                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
+                ),
             ],
             "SUM(sum_value_1234beef) / SUM(count_value_1234beef)",
         ),
         (
             AggFunc.MIN,
-            [TileSpec(tile_expr='MIN("a_column")', tile_column_name="value_1234beef")],
+            [
+                make_expected_tile_spec(
+                    tile_expr='MIN("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
             "MIN(value_1234beef)",
         ),
         (
             AggFunc.MAX,
-            [TileSpec(tile_expr='MAX("a_column")', tile_column_name="value_1234beef")],
+            [
+                make_expected_tile_spec(
+                    tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
+                )
+            ],
             "MAX(value_1234beef)",
         ),
         (
             AggFunc.COUNT,
-            [TileSpec(tile_expr="COUNT(*)", tile_column_name="value_1234beef")],
+            [make_expected_tile_spec(tile_expr="COUNT(*)", tile_column_name="value_1234beef")],
             "SUM(value_1234beef)",
         ),
         (
             AggFunc.NA_COUNT,
             [
-                TileSpec(
+                make_expected_tile_spec(
                     tile_expr='SUM(CAST("a_column" IS NULL AS INTEGER))',
                     tile_column_name="value_1234beef",
                 )
@@ -56,12 +85,16 @@ from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
         (
             AggFunc.STD,
             [
-                TileSpec(
+                make_expected_tile_spec(
                     tile_expr='SUM("a_column" * "a_column")',
                     tile_column_name="sum_value_squared_1234beef",
                 ),
-                TileSpec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
-                TileSpec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
+                make_expected_tile_spec(
+                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                ),
+                make_expected_tile_spec(
+                    tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"
+                ),
             ],
             (
                 "SQRT(CASE WHEN ({variance}) < 0 THEN 0 ELSE ({variance}) END)".format(
@@ -76,9 +109,10 @@ from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
         (
             AggFunc.LATEST,
             [
-                TileSpec(
+                make_expected_tile_spec(
                     tile_expr='FIRST_VALUE("a_column")',
                     tile_column_name="value_1234beef",
+                    tile_column_type="VARCHAR",
                 )
             ],
             "FIRST_VALUE(value_1234beef)",
@@ -88,8 +122,9 @@ from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
 def test_tiling_aggregators(agg_func, expected_tile_specs, expected_merge_expr):
     """Test tiling aggregators produces expected expressions"""
     agg_id = "1234beef"
-    agg = get_aggregator(agg_func)
-    tile_specs = agg.tile("a_column", agg_id)
+    agg = get_aggregator(agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE))
+    input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
+    tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id)
     assert tile_specs == expected_tile_specs
     assert merge_expr == expected_merge_expr

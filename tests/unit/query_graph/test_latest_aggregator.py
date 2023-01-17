@@ -8,6 +8,7 @@ import pytest
 from sqlglot.expressions import select
 
 from featurebyte import SourceType
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 
@@ -20,7 +21,9 @@ def agg_specs_no_window(global_graph, latest_value_without_window_feature_node):
     parent_nodes = global_graph.get_input_node_names(latest_value_without_window_feature_node)
     assert len(parent_nodes) == 1
     groupby_node = global_graph.get_node_by_name(parent_nodes[0])
-    return TileBasedAggregationSpec.from_groupby_query_node(groupby_node)
+    return TileBasedAggregationSpec.from_groupby_query_node(
+        groupby_node, adapter=get_sql_adapter(SourceType.SNOWFLAKE)
+    )
 
 
 def test_get_required_serving_names(agg_specs_no_window):

@@ -55,9 +55,7 @@ class ExtendedFeatureModel(FeatureModel):
                 tile_sql=info.sql,
                 entity_column_names=entity_column_names,
                 value_column_names=info.tile_value_columns,
-                value_column_types=[
-                    "FLOAT" for _ in info.tile_value_columns
-                ],  # TODO: replace hard-coded value
+                value_column_types=info.tile_value_types,
                 tile_id=info.tile_table_id,
                 aggregation_id=info.aggregation_id,
                 category_column_name=info.value_by_column,
