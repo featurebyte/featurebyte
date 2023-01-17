@@ -3,7 +3,7 @@ This module contains ItemData related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type
+from typing import Any, ClassVar, List, Optional, Type
 
 from pydantic import validator
 
@@ -58,3 +58,7 @@ class ItemDataModel(ItemTableData, DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.item_id_column]

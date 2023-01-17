@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from pydantic import Field, StrictStr
 
@@ -156,6 +156,17 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
         List[PydanticObjectId]
         """
         return list(set(col.semantic_id for col in self.columns_info if col.semantic_id))
+
+    @property
+    @abstractmethod
+    def primary_key_columns(self) -> List[str]:
+        """
+        Primary key column names
+
+        Returns
+        -------
+        List[str]
+        """
 
     @classmethod
     def validate_column_exists(
