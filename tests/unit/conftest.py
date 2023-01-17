@@ -411,6 +411,15 @@ def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
     yield scd_data
 
 
+@pytest.fixture(name="snowflake_scd_data_with_entity")
+def snowflake_scd_data_with_entity_fixture(snowflake_scd_data, cust_id_entity):
+    """
+    Fixture for an SCD data with entity
+    """
+    snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
+    return snowflake_scd_data
+
+
 @pytest.fixture(name="snowflake_item_data")
 def snowflake_item_data_fixture(
     snowflake_feature_store,

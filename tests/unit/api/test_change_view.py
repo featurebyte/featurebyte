@@ -4,13 +4,29 @@ Unit tests for change view
 Note that we don't currently inherit from the base view test suite as there are quite a few differences. I'll
 work on updating that in a follow-up.
 """
+import textwrap
 from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest
 
-from featurebyte import FeatureJobSetting
+from featurebyte import FeatureJobSetting, SourceType
 from featurebyte.api.change_view import ChangeView
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+
+
+@pytest.fixture
+def feature_from_change_view(snowflake_scd_data_with_entity):
+    """
+    Fixture for a feature created from a ChangeView
+    """
+    snowflake_change_view = ChangeView.from_slowly_changing_data(
+        snowflake_scd_data_with_entity, "col_int"
+    )
+    feature_group = snowflake_change_view.groupby("col_text").aggregate_over(
+        method="count", windows=["30d"], feature_names=["feat_30d"]
+    )
+    return feature_group["feat_30d"]
 
 
 def test_get_default_feature_job_setting():
@@ -162,3 +178,50 @@ def test_update_feature_job_setting(snowflake_change_view):
     )
     snowflake_change_view.update_default_feature_job_setting(new_feature_job_setting)
     assert snowflake_change_view.default_feature_job_setting == new_feature_job_setting
+
+
+def test_aggregate_over_feature_tile_sql(feature_from_change_view):
+    """
+    Test tile sql is as expected for a feature created from ChangeView
+    """
+    pruned_graph, pruned_node = feature_from_change_view.extract_pruned_graph_and_node()
+    interpreter = GraphInterpreter(pruned_graph, source_type=SourceType.SNOWFLAKE)
+    tile_infos = interpreter.construct_tile_gen_sql(pruned_node, is_on_demand=False)
+    assert len(tile_infos) == 1
+    expected_aggregation_id = pruned_graph.get_node_by_name("groupby_1").parameters.aggregation_id
+    expected = textwrap.dedent(
+        f"""
+        SELECT
+          TO_TIMESTAMP(
+            DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ)) + tile_index * 86400
+          ) AS __FB_TILE_START_DATE_COLUMN,
+          "col_text",
+          COUNT(*) AS value_{expected_aggregation_id}
+        FROM (
+          SELECT
+            *,
+            FLOOR(
+              (
+                DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
+              ) / 86400
+            ) AS tile_index
+          FROM (
+            SELECT
+              *
+            FROM (
+              SELECT
+                "col_text" AS "col_text",
+                "event_timestamp" AS "event_timestamp"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
+            WHERE
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+          )
+        )
+        GROUP BY
+          tile_index,
+          "col_text"
+        """
+    ).strip()
+    assert tile_infos[0].sql == expected
