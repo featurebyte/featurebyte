@@ -12,7 +12,6 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import (
     handle_filter_node,
@@ -127,22 +126,16 @@ class SQLOperationGraph:
         -------
         SQLNode
         """
-        if isinstance(target_node, GroupbyNode):
-            groupby_keys = target_node.parameters.keys
-        else:
-            groupby_keys = None
-        sql_node = self._construct_sql_nodes(target_node, groupby_keys=groupby_keys)  # type: ignore
+        sql_node = self._construct_sql_nodes(target_node)
         return sql_node
 
-    def _construct_sql_nodes(self, cur_node: Node, groupby_keys: list[str] | None) -> Any:
+    def _construct_sql_nodes(self, cur_node: Node) -> Any:
         """Recursively construct the nodes
 
         Parameters
         ----------
         cur_node : Node
             Dictionary representation of Query Graph Node
-        groupby_keys : list[str] | None
-            Groupby keys in the current context. Used when sql_type is BUILD_TILE_ON_DEMAND
 
         Returns
         -------
@@ -164,12 +157,7 @@ class SQLOperationGraph:
         for input_node_id in inputs:
             if input_node_id not in self.sql_nodes:
                 input_node = self.query_graph.get_node_by_name(input_node_id)
-                # Note: In the lineage leading to any features or intermediate outputs, there can be
-                # only one groupby operation (there can be parallel groupby operations, but not
-                # consecutive ones)
-                if groupby_keys is None and isinstance(input_node, GroupbyNode):
-                    groupby_keys = input_node.parameters.keys  # type: ignore
-                self._construct_sql_nodes(input_node, groupby_keys=groupby_keys)
+                self._construct_sql_nodes(input_node)
             input_sql_node = self.sql_nodes[input_node_id]
             input_sql_nodes.append(input_sql_node)
 
@@ -184,7 +172,6 @@ class SQLOperationGraph:
             query_node=cur_node,
             sql_type=self.sql_type,
             source_type=self.source_type,
-            groupby_keys=groupby_keys,
             input_sql_nodes=input_sql_nodes,
         )
 

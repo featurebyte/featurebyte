@@ -38,10 +38,6 @@ class SQLNodeContext:
         Type of SQL code to generate
     source_type : SourceType
         Type of the data warehouse that the SQL will run on
-    groupby_keys : list[str] | None
-        List of groupby keys that is used for the downstream groupby operation. This information is
-        required so that only tiles corresponding to specific entities are built (vs building tiles
-        using all available data). This option is only used when SQLType is BUILD_TILE_ON_DEMAND.
     input_sql_nodes : list[SQLNode]
         List of input SQL nodes
     """
@@ -50,7 +46,6 @@ class SQLNodeContext:
     query_node: Node
     sql_type: SQLType
     source_type: SourceType
-    groupby_keys: list[str] | None
     input_sql_nodes: list[SQLNode]
 
     def __post_init__(self) -> None:

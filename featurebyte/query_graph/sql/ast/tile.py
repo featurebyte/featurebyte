@@ -8,13 +8,17 @@ from typing import cast
 from dataclasses import dataclass
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, alias_, select
+from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    SQLType,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -50,10 +54,11 @@ class BuildTileNode(TableNode):
             quoted_identifier(self.timestamp)
         ).sql()
 
+        input_filtered = self._get_input_filtered_within_date_range()
         input_tiled = select(
             "*",
             f"FLOOR(({timestamp_epoch} - {start_date_epoch}) / {self.frequency}) AS tile_index",
-        ).from_(self.input_node.sql_nested())
+        ).from_(input_filtered.subquery())
 
         tile_start_date = f"TO_TIMESTAMP({start_date_epoch} + tile_index * {self.frequency})"
         keys = [quoted_identifier(k) for k in self.keys]
@@ -64,6 +69,93 @@ class BuildTileNode(TableNode):
             return self._get_tile_sql_order_dependent(keys, tile_start_date, input_tiled)
 
         return self._get_tile_sql_order_independent(keys, tile_start_date, input_tiled)
+
+    def _get_input_filtered_within_date_range(self) -> Select:
+        """
+        Construct sql to filter input data to be within a date range. Only data within this range
+        will be used to calculate tiles.
+
+        Returns
+        -------
+        Select
+        """
+        if self.is_on_demand:
+            return self._get_input_filtered_within_date_range_on_demand()
+        return self._get_input_filtered_within_date_range_scheduled()
+
+    def _get_input_filtered_within_date_range_scheduled(self) -> Select:
+        """
+        Construct sql with placeholders for start and end dates to be filled in by the scheduled
+        tile computation jobs
+
+        Returns
+        -------
+        Select
+        """
+        select_expr = select("*").from_(self.input_node.sql_nested())
+        timestamp = quoted_identifier(self.timestamp).sql()
+        start_cond = (
+            f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        )
+        end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        select_expr = select_expr.where(start_cond, end_cond)
+        return select_expr
+
+    def _get_input_filtered_within_date_range_on_demand(self) -> Select:
+        """
+        Construct sql to filter the data used when building tiles for selected entities only
+
+        The selected entities are expected to be available in an "entity table". It can be injected
+        as a subquery by replacing the placeholder InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.
+
+        Entity table is expected to have these columns:
+        * entity column(s)
+        * InternalName.ENTITY_TABLE_END_DATE
+
+        Returns
+        -------
+        Select
+        """
+        entity_table = InternalName.ENTITY_TABLE_NAME.value
+        start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+        end_date = InternalName.ENTITY_TABLE_END_DATE.value
+
+        join_conditions: list[Expression] = []
+        for col in self.keys:
+            condition = expressions.EQ(
+                this=get_qualified_column_identifier(col, "R"),
+                expression=get_qualified_column_identifier(col, entity_table),
+            )
+            join_conditions.append(condition)
+        join_conditions.append(
+            expressions.GTE(
+                this=get_qualified_column_identifier(self.timestamp, "R"),
+                expression=expressions.Identifier(this=start_date),
+            )
+        )
+        join_conditions.append(
+            expressions.LT(
+                this=get_qualified_column_identifier(self.timestamp, "R"),
+                expression=get_qualified_column_identifier(
+                    end_date, entity_table, quote_column=False
+                ),
+            )
+        )
+        join_conditions_expr = expressions.and_(*join_conditions)
+
+        select_expr = (
+            select()
+            .with_(entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
+            .select("R.*")
+            .from_(entity_table)
+            .join(
+                self.input_node.sql,
+                join_alias="R",
+                join_type="inner",
+                on=join_conditions_expr,
+            )
+        )
+        return cast(Select, select_expr)
 
     def _get_tile_sql_order_independent(
         self,

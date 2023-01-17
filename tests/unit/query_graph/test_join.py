@@ -174,40 +174,40 @@ def test_item_data_join_event_data_attributes_on_demand_tile_gen(
               ) / 3600
             ) AS tile_index
           FROM (
+            WITH __FB_ENTITY_TABLE_NAME AS (
+              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
+            )
             SELECT
-              L."order_method" AS "order_method",
-              R."order_id" AS "order_id",
-              R."item_id" AS "item_id",
-              R."item_name" AS "item_name",
-              R."item_type" AS "item_type"
-            FROM (
-              WITH __FB_ENTITY_TABLE_NAME AS (
-                __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-              )
+              R.*
+            FROM __FB_ENTITY_TABLE_NAME
+            INNER JOIN (
               SELECT
-                R.*
-              FROM __FB_ENTITY_TABLE_NAME
-              INNER JOIN (
+                L."order_method" AS "order_method",
+                R."order_id" AS "order_id",
+                R."item_id" AS "item_id",
+                R."item_name" AS "item_name",
+                R."item_type" AS "item_type"
+              FROM (
                 SELECT
                   "ts" AS "ts",
                   "cust_id" AS "cust_id",
                   "order_id" AS "order_id",
                   "order_method" AS "order_method"
                 FROM "db"."public"."event_table"
+              ) AS L
+              INNER JOIN (
+                SELECT
+                  "order_id" AS "order_id",
+                  "item_id" AS "item_id",
+                  "item_name" AS "item_name",
+                  "item_type" AS "item_type"
+                FROM "db"."public"."item_table"
               ) AS R
-                ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-                AND R."ts" >= __FB_START_DATE
-                AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-            ) AS L
-            INNER JOIN (
-              SELECT
-                "order_id" AS "order_id",
-                "item_id" AS "item_id",
-                "item_name" AS "item_name",
-                "item_type" AS "item_type"
-              FROM "db"."public"."item_table"
+                ON L."order_id" = R."order_id"
             ) AS R
-              ON L."order_id" = R."order_id"
+              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+              AND R."ts" >= __FB_START_DATE
+              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
           )
         )
         GROUP BY
@@ -333,14 +333,14 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
             ) AS tile_index
           FROM (
             SELECT
-              L."ts" AS "ts",
-              L."cust_id" AS "cust_id",
-              L."order_id" AS "order_id",
-              L."order_method" AS "order_method",
-              R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
+              *
             FROM (
               SELECT
-                *
+                L."ts" AS "ts",
+                L."cust_id" AS "cust_id",
+                L."order_id" AS "order_id",
+                L."order_method" AS "order_method",
+                R."__FB_TEMP_FEATURE_NAME" AS "ord_size"
               FROM (
                 SELECT
                   "ts" AS "ts",
@@ -348,34 +348,34 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
                   "order_id" AS "order_id",
                   "order_method" AS "order_method"
                 FROM "db"."public"."event_table"
-              )
-              WHERE
-                "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-            ) AS L
-            LEFT JOIN (
-              SELECT
-                (
-                  "order_size" + 123
-                ) AS "__FB_TEMP_FEATURE_NAME",
-                "order_id"
-              FROM (
+              ) AS L
+              LEFT JOIN (
                 SELECT
-                  "order_id" AS "order_id",
-                  COUNT(*) AS "order_size"
+                  (
+                    "order_size" + 123
+                  ) AS "__FB_TEMP_FEATURE_NAME",
+                  "order_id"
                 FROM (
                   SELECT
                     "order_id" AS "order_id",
-                    "item_id" AS "item_id",
-                    "item_name" AS "item_name",
-                    "item_type" AS "item_type"
-                  FROM "db"."public"."item_table"
+                    COUNT(*) AS "order_size"
+                  FROM (
+                    SELECT
+                      "order_id" AS "order_id",
+                      "item_id" AS "item_id",
+                      "item_name" AS "item_name",
+                      "item_type" AS "item_type"
+                    FROM "db"."public"."item_table"
+                  )
+                  GROUP BY
+                    "order_id"
                 )
-                GROUP BY
-                  "order_id"
-              )
-            ) AS R
-              ON L."order_id" = R."order_id"
+              ) AS R
+                ON L."order_id" = R."order_id"
+            )
+            WHERE
+              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
           )
         )
         GROUP BY

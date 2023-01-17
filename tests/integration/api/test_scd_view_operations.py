@@ -337,3 +337,40 @@ def test_scd_view__create_with_minimal_params(snowflake_scd_data_with_minimal_co
     """
     # Able to create view
     SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data_with_minimal_cols)
+
+
+def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
+    """
+    Test aggregate_over using a key column joined from another view
+    """
+    event_view = EventView.from_event_data(event_data)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+
+    event_view.join(scd_view, on="USER ID")
+
+    feature = event_view.groupby("User Status").aggregate_over(
+        method="count",
+        windows=["30d"],
+        feature_names=["count_30d"],
+    )["count_30d"]
+    feature_list = FeatureList([feature], "feature_list")
+
+    # check preview
+    preview_param = {
+        "POINT_IN_TIME": "2002-01-01 10:00:00",
+        "user_status": "STATUS_CODE_47",
+    }
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2002-01-01 10:00:00"),
+        "user_status": "STATUS_CODE_47",
+        "count_30d": 15,
+    }
+    feature_list.preview(preview_param)
+    df = feature_list.preview(preview_param)
+    assert df.iloc[0].to_dict() == expected
+
+    # check historical features
+    observations_set = pd.DataFrame([preview_param])
+    df = feature_list.get_historical_features(observations_set)
+    df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    assert df.iloc[0].to_dict() == expected
