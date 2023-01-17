@@ -253,7 +253,7 @@ class IsStringNode(ExpressionNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> IsStringNode:
-        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        table_node, input_expr_node, _ = prepare_unary_input_nodes(context)
         sql_node = IsStringNode(
             context=context,
             table_node=table_node,
