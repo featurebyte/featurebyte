@@ -166,7 +166,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
-        "row_index_lineage": ("proxy_input_1",),
+        "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
     # check graph pruning
@@ -303,7 +303,7 @@ def nested_output_graph_fixture(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
-        "row_index_lineage": ("proxy_input_1",),
+        "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
     # check graph pruning
@@ -644,7 +644,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         ],
         "output_category": "view",
         "output_type": "series",
-        "row_index_lineage": ("proxy_input_1",),
+        "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
     # TODO: [DEV-868] Make graph node prunable

@@ -47,36 +47,27 @@ class OperationStructureExtractor(
         node: BaseGraphNode,
         operation_structure: OperationStructure,
         proxy_input_operation_structures: List[OperationStructure],
-        input_node_names: List[str],
     ) -> OperationStructure:
         # find the proxy input nodes from the nested graph to create proxy node name to outer node names mapping
         # (to remap the proxy node name in the nested graph back to outer graph)
         nested_graph = node.parameters.graph
         nested_target_node = nested_graph.get_node_by_name(node.parameters.output_node_name)
-        proxy_input_node_name_to_op_struct_map = {}
         proxy_input_node_name_map = {}
         for proxy_input_node in nested_graph.iterate_nodes(
             target_node=nested_target_node, node_type=NodeType.PROXY_INPUT
         ):
             input_order = proxy_input_node.parameters.input_order
-            proxy_input_node_name_to_op_struct_map[
-                proxy_input_node.name
-            ] = proxy_input_operation_structures[input_order]
-            proxy_input_node_name_map[proxy_input_node.name] = input_node_names[input_order]
+            proxy_input_node_name_map[proxy_input_node.name] = proxy_input_operation_structures[
+                input_order
+            ]
 
         # update node_names of the nested operation structure so that the internal node names (node names only
         # appears in the nested graph are removed)
         clone_kwargs = {
-            "proxy_node_name_map": proxy_input_node_name_to_op_struct_map,
+            "proxy_node_name_map": proxy_input_node_name_map,
             "graph_node_name": node.name,
             "graph_node_transform": node.transform_info,
         }
-
-        # if the row index linage is from the proxy input node name, use the mapped external node
-        # otherwise, keep the original node name in row index lineage
-        row_index_lineage = tuple(
-            proxy_input_node_name_map.get(key, key) for key in operation_structure.row_index_lineage
-        )
         return OperationStructure(
             columns=[
                 col.clone_without_internal_nodes(**clone_kwargs)  # type: ignore
@@ -88,7 +79,7 @@ class OperationStructureExtractor(
             ],
             output_type=operation_structure.output_type,
             output_category=operation_structure.output_category,
-            row_index_lineage=row_index_lineage,
+            row_index_lineage=operation_structure.row_index_lineage,
             is_time_based=operation_structure.is_time_based,
         )
 
@@ -109,12 +100,10 @@ class OperationStructureExtractor(
         nested_operation_structure = nested_op_structure_info.operation_structure_map[
             nested_output_node_name
         ]
-        input_node_names = self.graph.get_input_node_names(node)
         return self._prepare_operation_structure(
             node=node,
             operation_structure=nested_operation_structure,
             proxy_input_operation_structures=input_operation_structures,
-            input_node_names=input_node_names,
         )
 
     def _post_compute(
