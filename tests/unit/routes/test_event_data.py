@@ -56,7 +56,17 @@ class TestEventDataApi(BaseDataApiTestSuite):
                     "type": "type_error.featurebytetype",
                 }
             ],
-        )
+        ),
+        (
+            {**payload, "columns_info": 2 * payload["columns_info"]},
+            [
+                {
+                    "loc": ["body", "columns_info"],
+                    "msg": 'Column name "col_int" is duplicated.',
+                    "type": "value_error",
+                },
+            ],
+        ),
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 

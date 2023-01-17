@@ -847,6 +847,22 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         assert update_response_dict.items() > expected_response.items()
         assert update_response_dict["updated_at"] is not None
 
+    def test_upate_columns_info_422__duplicated_column_name(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
+        """Test update columns unprocessible due to duplicated colum name in columns info"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        duplicated_col_info = columns_info[0]
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}",
+            json={"columns_info": columns_info + [duplicated_col_info]},
+        )
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        duplicated_col_name = duplicated_col_info["name"]
+        error_msg = update_response.json()["detail"][0]["msg"]
+        assert f'Column name "{duplicated_col_name}" is duplicated.' in error_msg
+
     def test_update_columns_info(self, test_api_client_persistent, data_response, columns_info):
         """Test update columns info"""
         test_api_client, _ = test_api_client_persistent

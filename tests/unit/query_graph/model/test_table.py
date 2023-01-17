@@ -8,7 +8,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.column_info import ColumnInfo, validate_columns_info
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.critical_data_info import (
     ConditionOperationField,
@@ -254,3 +254,17 @@ def test_construct_cleaning_recipe_node__dimension_data(dimension_table_data, di
         "is_string_1": ["conditional_3"],
         "assign_1": ["assign_2"],
     }
+
+
+def test_validate_columns_info():
+    """Test validate_columns_info function"""
+    validate_columns_info(columns_info=[])
+    validate_columns_info(columns_info=[ColumnInfo(name="some_col", dtype=DBVarType.INT)])
+    with pytest.raises(ValueError) as exc:
+        validate_columns_info(
+            columns_info=[
+                ColumnInfo(name="dup_col", dtype=DBVarType.INT),
+                ColumnInfo(name="dup_col", dtype=DBVarType.FLOAT),
+            ]
+        )
+    assert 'Column name "dup_col" is duplicated.' in str(exc.value)
