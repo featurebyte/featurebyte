@@ -858,3 +858,51 @@ def test_extract_operation_structure__groupby_on_event_timestamp_columns(
         {"name": "a_2h_average", "window": "2h", **common_agg_params},
         {"name": "a_48h_average", "window": "48h", **common_agg_params},
     ]
+
+
+def test_extract_operation_structure__graph_node_row_index_lineage(
+    query_graph_with_cleaning_ops_graph_node,
+):
+    """Test row index lineage of the graph (cleaning type) node's operation structure"""
+    query_graph, graph_node = query_graph_with_cleaning_ops_graph_node
+    op_struct = query_graph.extract_operation_structure(node=graph_node)
+
+    # check columns & aggregations
+    common_params = {
+        "node_names": {"input_1"},
+        "node_name": "input_1",
+        "filter": False,
+        "tabular_data_id": None,
+        "tabular_data_type": "event_data",
+        "type": "source",
+    }
+    assert op_struct.columns == [
+        {"name": "ts", "dtype": "TIMESTAMP", **common_params},
+        {"name": "cust_id", "dtype": "INT", **common_params},
+        {"name": "b", "dtype": "FLOAT", **common_params},
+        {
+            "name": "a",
+            "dtype": "FLOAT",
+            "filter": False,
+            "node_names": {"input_1", "graph_1"},
+            "node_name": "graph_1",
+            "transforms": ["graph"],
+            "columns": [
+                {
+                    "name": "a",
+                    "dtype": "FLOAT",
+                    "node_names": {"input_1", "graph_1"},
+                    "node_name": "graph_1",
+                    "filter": False,
+                    "tabular_data_id": None,
+                    "tabular_data_type": "event_data",
+                    "type": "source",
+                }
+            ],
+            "type": "derived",
+        },
+    ]
+    assert op_struct.aggregations == []
+
+    # make sure the row index lineage points to non-nested nodes
+    assert op_struct.row_index_lineage == ("input_1",)
