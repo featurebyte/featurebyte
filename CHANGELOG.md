@@ -20,6 +20,7 @@
 + `changelog`: Added support for timestamps with timezone offsets
 + `changelog`: Include serving endpoint information in FeatureList.info()
 + `changelog`: Added FeatureJobSettingAnalysis api to list and retrieve job setting analysis
++ `changelog`: Added support to download feature job setting analysis report as pdf
 
 ### 🧰 Bug fixes 🧰
 

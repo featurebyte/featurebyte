@@ -2,6 +2,7 @@
 Unit test for FeatureJobSettingAnalysis class
 """
 import json
+import textwrap
 from io import BytesIO
 from unittest.mock import patch
 
@@ -170,3 +171,37 @@ def test_backtest(mock_display_html, mock_post_async_task, saved_analysis):
     assert client.get.call_count == 2
     mock_display_html.assert_called_once_with("html report content")
     assert_frame_equal(backtest_result, expected_results)
+
+
+@patch("featurebyte.common.env_util.is_notebook")
+def test_download_report(mock_is_notebook, saved_analysis):
+    """
+    Test download_report
+    """
+    analysis = FeatureJobSettingAnalysis.get_by_id(saved_analysis)
+    with patch("base64.b64encode") as mock_encode:
+        mock_encode.return_value.decode.return_value = "b64_string"
+
+        with patch_import_package("IPython.display") as mock_mod:
+            # download should work in notebook environment
+            mock_is_notebook.return_value = True
+            analysis.download_report()
+            expected_content = textwrap.dedent(
+                f"""
+                function download(dataurl, filename) {{
+                  const link = document.createElement("a");
+                  link.href = dataurl;
+                  link.download = filename;
+                  link.click();
+                }}
+                download("data:application/pdf;base64,b64_string", "feature_job_setting_analysis_{analysis.id}.pdf");
+                """
+            ).strip()
+            assert mock_mod.display.call_count == 1
+            assert mock_mod.Javascript.call_args[0][0] == expected_content
+
+        with patch_import_package("IPython.display") as mock_mod:
+            # download will not work in non-notebook environment
+            mock_is_notebook.return_value = False
+            analysis.download_report()
+            assert mock_mod.display.call_count == 0

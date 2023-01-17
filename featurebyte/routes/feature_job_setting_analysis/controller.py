@@ -3,7 +3,12 @@ FeatureJobSettingAnalysis API route controller
 """
 from __future__ import annotations
 
+import tempfile
+from io import BytesIO
+
+import pdfkit
 from bson import ObjectId
+from fastapi.responses import StreamingResponse
 
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -109,3 +114,40 @@ class FeatureJobSettingAnalysisController(
             data=data, task_manager=self.task_controller.task_manager
         )
         return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def get_feature_job_setting_analysis_report(
+        self, feature_job_setting_analysis_id: ObjectId
+    ) -> StreamingResponse:
+        """
+        Retrieve analysis report as pdf file
+
+        Parameters
+        ----------
+        feature_job_setting_analysis_id: ObjectId
+            FeatureJobSettingAnalysis Id
+
+        Returns
+        -------
+        StreamingResponse
+        """
+        analysis: FeatureJobSettingAnalysisModel = await self.service.get_document(
+            document_id=feature_job_setting_analysis_id
+        )
+        buffer = BytesIO()
+
+        options = {"page-size": "Letter", "encoding": "UTF-8", "no-outline": None}
+        with tempfile.NamedTemporaryFile() as file_obj:
+            pdfkit.from_string(analysis.analysis_report, file_obj.name, options=options)
+            file_obj.seek(0)
+            buffer.write(file_obj.read())
+            buffer.seek(0)
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={
+                "content-disposition": (
+                    'attachment; name="report"; '
+                    f'filename="feature_job_setting_analysis_{feature_job_setting_analysis_id}.pdf"'
+                )
+            },
+        )

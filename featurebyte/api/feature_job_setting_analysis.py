@@ -13,7 +13,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_data import DataApiObject
-from featurebyte.common.env_util import display_html_in_notebook
+from featurebyte.common.env_util import display_html_in_notebook, download_pdf_in_notebook
 from featurebyte.config import Configurations
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
@@ -94,6 +94,16 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         Display analysis report
         """
         display_html_in_notebook(self.analysis_report)
+
+    @typechecked
+    def download_report(self) -> None:
+        """
+        Display analysis report
+        """
+        client = Configurations().get_client()
+        response = client.get(f"{self._route}/{self.id}/report")
+        file_name = response.headers["content-disposition"].split("filename=")[1]
+        download_pdf_in_notebook(response.content, file_name)
 
     @typechecked
     def get_recommendation(self) -> FeatureJobSetting:
