@@ -6,6 +6,7 @@ from featurebyte import (
     FeatureList,
     ItemView,
     MissingValueImputation,
+    StringValueImputation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
@@ -41,6 +42,12 @@ def test_event_data_update_critical_data_info(event_data):
             ),
         ]
     )
+    event_data.TRANSACTION_ID.update_critical_data_info(
+        cleaning_operations=[StringValueImputation(imputed_value=0)]
+    )
+    event_data.CUST_ID.update_critical_data_info(
+        cleaning_operations=[StringValueImputation(imputed_value=0)]
+    )
     assert event_data.node.type == "graph"
     imputed_df = event_data.preview()
     assert imputed_df["AMOUNT"].isnull().sum() == 0
@@ -52,6 +59,10 @@ def test_event_data_update_critical_data_info(event_data):
         "missing",
         "nan",
     }
+    # check that values in string type column (TRANSACTION_ID) are imputed to 0 and
+    # values in integer type column (CUST_ID) are not imputed.
+    assert (imputed_df["TRANSACTION_ID"] == 0).all()
+    assert (imputed_df["CUST_ID"] == original_df["CUST_ID"]).all()
 
     # create feature group & preview
     event_view = EventView.from_event_data(event_data)
@@ -86,6 +97,8 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.AMOUNT.update_critical_data_info(cleaning_operations=[])
     event_data.SESSION_ID.update_critical_data_info(cleaning_operations=[])
     event_data.PRODUCT_ACTION.update_critical_data_info(cleaning_operations=[])
+    event_data.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
+    event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
     assert event_data.node.type == "input"
 
 

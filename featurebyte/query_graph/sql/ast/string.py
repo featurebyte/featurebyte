@@ -238,3 +238,25 @@ class SubStringNode(ExpressionNode):
             length=parameters["length"],
         )
         return sql_node
+
+
+@dataclass
+class IsStringNode(ExpressionNode):
+    """Node for IS_STRING operation to construct a boolean flag to indicate whether the value is string or not."""
+
+    expr: ExpressionNode
+    query_node_type = NodeType.IS_STRING
+
+    @property
+    def sql(self) -> Expression:
+        return self.context.adapter.is_string_type(column_expr=self.expr.sql)
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> IsStringNode:
+        table_node, input_expr_node, _ = prepare_unary_input_nodes(context)
+        sql_node = IsStringNode(
+            context=context,
+            table_node=table_node,
+            expr=input_expr_node,
+        )
+        return sql_node

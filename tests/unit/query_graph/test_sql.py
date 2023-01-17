@@ -28,6 +28,7 @@ from featurebyte.query_graph.sql.ast.generic import (
 from featurebyte.query_graph.sql.ast.input import InputNode
 from featurebyte.query_graph.sql.ast.is_in import IsInNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.ast.string import IsStringNode
 from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
 from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType
@@ -347,6 +348,16 @@ def test_cast(parameters, expected, input_node):
         )
     )
     assert node.sql.sql() == expected
+
+
+def test_is_string_node(input_node):
+    """Test IS_STRING node SQL generation"""
+    input_expr = make_str_expression_node(table_node=input_node, expr="a")
+    context = make_context(
+        node_type=NodeType.IS_STRING, parameters={}, input_sql_nodes=[input_expr]
+    )
+    node = IsStringNode.build(context)
+    assert node.sql.sql() == "IS_VARCHAR(TO_VARIANT(a))"
 
 
 def test_cosine_similarity(input_node):
