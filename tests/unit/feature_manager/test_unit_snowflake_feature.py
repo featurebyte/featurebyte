@@ -51,6 +51,7 @@ async def test_online_enable(
         feature_store_table_name="feature_store_table_1",
     )
 
+    mock_execute_query.return_value = []
     await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_called_once()

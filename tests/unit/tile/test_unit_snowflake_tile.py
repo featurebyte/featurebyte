@@ -2,10 +2,12 @@
 Unit test for snowflake tile
 """
 import textwrap
+from datetime import datetime
 from unittest import mock
 
 import pytest
 
+from featurebyte.common import date_util
 from featurebyte.models.tile import TileSpec, TileType
 
 
@@ -108,15 +110,21 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
     """
     _ = mock_execute_query
 
-    minute_offset = mock_snowflake_tile.time_modulo_frequency_second // 60
+    schedule_time = datetime.utcnow()
+    next_job_time = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=mock_snowflake_tile.frequency_minute,
+        time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
+    )
+    cron = f"{next_job_time.minute} {next_job_time.hour} * * *"
 
-    sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile)
+    sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
 
     expected_sql = textwrap.dedent(
         f"""
         CREATE OR REPLACE TASK SHELL_TASK_TILE_ID1_ONLINE
           WAREHOUSE = sf_warehouse
-          SCHEDULE = 'USING CRON {minute_offset} * * * * UTC'
+          SCHEDULE = 'USING CRON {cron} UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
                 'SHELL_TASK_TILE_ID1_ONLINE',

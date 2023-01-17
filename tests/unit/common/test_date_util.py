@@ -1,7 +1,7 @@
 """
 Tests for functions in date_util.py module
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import dateutil.parser
 
@@ -48,7 +48,7 @@ def test_tile_index_to_timestamp(index_to_timestamp_fixture):
 
 
 def test_get_next_job_datetime():
-    """Test get get next job datetime"""
+    """Test get next job datetime"""
 
     input_dt = datetime(2022, 12, 1, 12, 0, 55)
     expect_dt = datetime(2022, 12, 1, 12, 1, 20)

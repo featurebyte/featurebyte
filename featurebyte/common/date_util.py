@@ -88,7 +88,7 @@ def get_next_job_datetime(
     frequency_minutes: int
         frequency in minutes
 
-    time_modulo_frequency_seconds:
+    time_modulo_frequency_seconds: int
         time_modulo_frequency in seconds
 
     Returns
@@ -98,12 +98,16 @@ def get_next_job_datetime(
     frequency = frequency_minutes * 60
 
     epoch_time = datetime(1970, 1, 1)
-    a = (input_dt - epoch_time).total_seconds()
-    next_expected_job = (a // frequency) * frequency + time_modulo_frequency_seconds
-    if a % frequency > time_modulo_frequency_seconds:
-        next_expected_job += frequency
+    total_seconds = (input_dt - epoch_time).total_seconds()
 
-    next_expected_job = epoch_time + timedelta(seconds=next_expected_job)
+    next_expected_job_seconds = (
+        total_seconds // frequency
+    ) * frequency + time_modulo_frequency_seconds
+
+    if total_seconds % frequency > time_modulo_frequency_seconds:
+        next_expected_job_seconds += frequency
+
+    next_expected_job = epoch_time + timedelta(seconds=next_expected_job_seconds)
 
     if input_dt == next_expected_job:
         next_expected_job += timedelta(seconds=frequency)
