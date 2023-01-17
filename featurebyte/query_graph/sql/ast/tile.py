@@ -119,7 +119,7 @@ class BuildTileNode(TableNode):
         start_date = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
         end_date = InternalName.ENTITY_TABLE_END_DATE.value
 
-        join_conditions = []
+        join_conditions: list[Expression] = []
         for col in self.keys:
             condition = expressions.EQ(
                 this=get_qualified_column_identifier(col, "R"),
