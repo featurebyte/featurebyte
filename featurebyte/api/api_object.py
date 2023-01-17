@@ -14,6 +14,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -269,9 +270,31 @@ class ApiObject(FeatureByteBaseDocumentModel):
         DataFrame
             Table of objects
         """
+        return cls._list(include_id=include_id)
+
+    @classmethod
+    def _list(
+        cls, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
+    ) -> DataFrame:
+        """
+        List the object name store at the persistent
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        params: Optional[Dict[str, Any]]
+            Additional parameters to include in request
+
+        Returns
+        -------
+        DataFrame
+            Table of objects
+        """
+        params = params or {}
         output = []
         for item_dict in cls._iterate_api_object_using_paginated_routes(
-            route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE}
+            route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
             output.append(cls._list_schema(**item_dict).dict())
 
@@ -289,8 +312,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
     def map_dict_list_to_name(
         object_map: Dict[Optional[ObjectId], str],
         object_id_field: str,
-        object_dicts: List[Dict[str, ObjectId]],
-    ) -> List[Optional[str]]:
+        object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]],
+    ) -> Union[Optional[str], List[Optional[str]]]:
         """
         Map list of object dict to object names
 
@@ -300,23 +323,25 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Dict that maps ObjectId to name
         object_id_field: str
             Name of field in object dict to get object id from
-        object_dicts: List[Dict[str, ObjectId]]
+        object_dict: Union[Dict[str, ObjectId], List[Dict[str, ObjectId]]]
             List of dict to map
 
         Returns
         -------
-        List[Optional[str]]
+        Union[Optional[str], List[Optional[str]]]
         """
-        return [
-            object_map.get(object_dict.get(object_id_field))
-            for object_dict in object_dicts
-            if object_dict.get(object_id_field)
-        ]
+        if isinstance(object_dict, list):
+            return [
+                object_map.get(_obj_dict.get(object_id_field))
+                for _obj_dict in object_dict
+                if _obj_dict.get(object_id_field)
+            ]
+        return object_map.get(object_dict.get(object_id_field))
 
     @staticmethod
     def map_object_id_to_name(
-        object_map: Dict[Optional[ObjectId], str], object_ids: List[ObjectId]
-    ) -> List[Optional[str]]:
+        object_map: Dict[Optional[ObjectId], str], object_id: Union[ObjectId, List[ObjectId]]
+    ) -> Union[Optional[str], List[Optional[str]]]:
         """
         Map list of object ids object names
 
@@ -324,14 +349,16 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ----------
         object_map: Dict[Optional[ObjectId], str],
             Dict that maps ObjectId to name
-        object_ids: List[ObjectId]
-            List of object ids to map
+        object_id: Union[ObjectId, List[ObjectId]]
+            List of object ids to map, or object id to map
 
         Returns
         -------
-        List[Optional[str]]
+        Union[Optional[str], List[Optional[str]]]
         """
-        return [object_map.get(object_id) for object_id in object_ids]
+        if isinstance(object_id, list):
+            return [object_map.get(_id) for _id in object_id]
+        return object_map.get(object_id)
 
     @classmethod
     def _post_process_list(cls, item_list: DataFrame) -> DataFrame:
@@ -484,6 +511,73 @@ class ApiObject(FeatureByteBaseDocumentModel):
             return PrettyDict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
+    @staticmethod
+    def post_async_task(
+        route: str, payload: dict[str, Any], delay: float = 3.0, retrieve_result: bool = True
+    ) -> dict[str, Any]:
+        """
+        Post async task to the worker & retrieve the results (blocking)
+        Parameters
+        ----------
+        route: str
+            Async task route
+        payload: dict[str, Any]
+            Task payload
+        delay: float
+            Delay used in polling the task
+        retrieve_result: bool
+            Whether to retrieve result from output_url
+
+        Returns
+        -------
+        dict[str, Any]
+            Response data
+
+        Raises
+        ------
+        RecordCreationException
+            When failed to generate feature job setting analysis task
+        RecordRetrievalException
+            When failed to retrieve feature job setting analysis result
+        """
+        client = Configurations().get_client()
+        create_response = client.post(url=route, json=payload)
+        if create_response.status_code == HTTPStatus.CREATED:
+            create_response_dict = create_response.json()
+            status = create_response_dict["status"]
+
+            # poll the task route (if the task is still running)
+            task_get_response = None
+            while status in [TaskStatus.STARTED, TaskStatus.PENDING]:
+                task_get_response = client.get(url=f'/task/{create_response_dict["id"]}')
+                if task_get_response.status_code == HTTPStatus.OK:
+                    status = task_get_response.json()["status"]
+                    time.sleep(delay)
+                else:
+                    raise RecordRetrievalException(task_get_response)
+
+            # check the task status
+            if status != TaskStatus.SUCCESS:
+                raise RecordCreationException(response=task_get_response or create_response)
+
+            # retrieve task result
+            output_url = create_response_dict.get("output_path")
+            if output_url is None:
+                if task_get_response:
+                    output_url = task_get_response.json().get("output_path")
+            if output_url is None:
+                raise RecordRetrievalException(response=task_get_response or create_response)
+
+            if not retrieve_result:
+                return {"output_url": output_url}
+
+            logger.debug("Retrieving task result", extra={"output_url": output_url})
+            result_response = client.get(url=output_url)
+            if result_response.status_code == HTTPStatus.OK:
+                return dict(result_response.json())
+            raise RecordRetrievalException(response=result_response)
+        raise RecordCreationException(response=create_response)
+
 
 class SavableApiObject(ApiObject):
     """
@@ -563,64 +657,3 @@ class SavableApiObject(ApiObject):
             **self._get_init_params_from_object(),
             saved=True,
         )
-
-    @staticmethod
-    def post_async_task(route: str, payload: dict[str, Any], delay: float = 3.0) -> dict[str, Any]:
-        """
-        Post async task to the worker & retrieve the results (blocking)
-
-        Parameters
-        ----------
-        route: str
-            Async task route
-        payload: dict[str, Any]
-            Task payload
-        delay: float
-            Delay used in polling the task
-
-        Returns
-        -------
-        dict[str, Any]
-            Response data
-
-        Raises
-        ------
-        RecordCreationException
-            When failed to generate feature job setting analysis task
-        RecordRetrievalException
-            When failed to retrieve feature job setting analysis result
-        """
-        client = Configurations().get_client()
-        create_response = client.post(url=route, json=payload)
-        if create_response.status_code == HTTPStatus.CREATED:
-            create_response_dict = create_response.json()
-            status = create_response_dict["status"]
-
-            # poll the task route (if the task is still running)
-            task_get_response = None
-            while status in [TaskStatus.STARTED, TaskStatus.PENDING]:
-                task_get_response = client.get(url=f'/task/{create_response_dict["id"]}')
-                if task_get_response.status_code == HTTPStatus.OK:
-                    status = task_get_response.json()["status"]
-                    time.sleep(delay)
-                else:
-                    raise RecordRetrievalException(task_get_response)
-
-            # check the task status
-            if status != TaskStatus.SUCCESS:
-                raise RecordCreationException(response=task_get_response or create_response)
-
-            # retrieve task result
-            output_url = create_response_dict.get("output_path")
-            if output_url is None:
-                if task_get_response:
-                    output_url = task_get_response.json().get("output_path")
-            if output_url is None:
-                raise RecordRetrievalException(response=task_get_response or create_response)
-
-            logger.debug("Retrieving task result", extra={"output_url": output_url})
-            result_response = client.get(url=output_url)
-            if result_response.status_code == HTTPStatus.OK:
-                return dict(result_response.json())
-            raise RecordRetrievalException(response=result_response)
-        raise RecordCreationException(response=create_response)

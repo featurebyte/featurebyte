@@ -281,7 +281,7 @@ app_container_config = {
         {
             "name": "feature_job_setting_analysis_controller",
             "clazz": FeatureJobSettingAnalysisController,
-            "depends": ["feature_job_setting_analysis_service", "task_controller"],
+            "depends": ["feature_job_setting_analysis_service", "task_controller", "info_service"],
         },
         {
             "name": "feature_list_namespace_controller",

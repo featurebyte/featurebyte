@@ -3,17 +3,22 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional, Union
 
+from datetime import datetime
+
+import pandas as pd
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.env_util import display_html_in_notebook
+from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
+from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
 
 class EventData(EventDataModel, DataApiObject):
@@ -130,32 +135,15 @@ class EventData(EventDataModel, DataApiObject):
         )
 
     @typechecked
-    def update_default_feature_job_setting(
-        self, feature_job_setting: Optional[FeatureJobSetting] = None
-    ) -> None:
+    def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:
         """
         Update default feature job setting
 
         Parameters
         ----------
-        feature_job_setting: Optional[FeatureJobSetting]
-            Feature job setting object (auto-detected if not provided)
+        feature_job_setting: FeatureJobSetting
+            Feature job setting object
         """
-        if feature_job_setting is None:
-            job_setting_analysis = self.post_async_task(
-                route="/feature_job_setting_analysis", payload={"event_data_id": str(self.id)}
-            )
-            recommended_setting = job_setting_analysis["analysis_result"][
-                "recommended_feature_job_setting"
-            ]
-            feature_job_setting = FeatureJobSetting(
-                blind_spot=f'{recommended_setting["blind_spot"]}s',
-                time_modulo_frequency=f'{recommended_setting["job_time_modulo_frequency"]}s',
-                frequency=f'{recommended_setting["frequency"]}s',
-            )
-
-            display_html_in_notebook(job_setting_analysis["analysis_report"])
-
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},
             allow_update_local=True,
@@ -171,3 +159,83 @@ class EventData(EventDataModel, DataApiObject):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="default_feature_job_setting")
+
+    @typechecked
+    def create_new_feature_job_setting_analysis(
+        self,
+        analysis_date: Optional[datetime] = None,
+        analysis_length: int = 2419200,
+        min_featurejob_period: int = 60,
+        exclude_late_job: bool = False,
+        blind_spot_buffer_setting: int = 5,
+        job_time_buffer_setting: Union[int, Literal["auto"]] = "auto",
+        late_data_allowance: float = 5e-5,
+    ) -> FeatureJobSettingAnalysis:
+        """
+        Create new feature job setting analysis on the event data
+
+        Parameters
+        ----------
+        analysis_date: Optional[datetime]
+            Analysis date
+        analysis_length: int
+            Length of analysis (seconds)
+        min_featurejob_period: int
+            Minimum period for a feature job
+        exclude_late_job: bool
+            Exclude late jobs in analysis
+        job_time_buffer_setting: Union[int, Literal["auto"]]
+            Buffer time for job execution (seconds)
+        blind_spot_buffer_setting: int
+            Buffer time for data population blind spot
+        late_data_allowance: float
+            Threshold for late records (percentile)
+
+        Returns
+        -------
+        FeatureJobSettingAnalysis
+        """
+        payload = FeatureJobSettingAnalysisCreate(
+            event_data_id=self.id,
+            analysis_date=analysis_date,
+            analysis_length=analysis_length,
+            min_featurejob_period=min_featurejob_period,
+            exclude_late_job=exclude_late_job,
+            blind_spot_buffer_setting=blind_spot_buffer_setting,
+            job_time_buffer_setting=job_time_buffer_setting,
+            late_data_allowance=late_data_allowance,
+        )
+        job_setting_analysis = self.post_async_task(
+            route="/feature_job_setting_analysis", payload=payload.json_dict()
+        )
+        analysis = FeatureJobSettingAnalysis.get_by_id(job_setting_analysis["_id"])
+        analysis.display_report()
+        return analysis
+
+    @typechecked
+    def initialise_default_feature_job_setting(self) -> None:
+        """
+        Initialise default feature job setting by performing an analysis on the data
+
+        Raises
+        ------
+        InvalidSettingsError
+            Default feature job setting is already initialised
+        """
+        if self.default_feature_job_setting:
+            raise InvalidSettingsError("Default feature job setting is already initialised")
+
+        analysis = self.create_new_feature_job_setting_analysis()
+        self.update_default_feature_job_setting(analysis.get_recommendation())
+
+    @typechecked
+    def list_feature_job_setting_analysis(self) -> Optional[pd.DataFrame]:
+        """
+        List feature job setting analysis that has been performed
+
+        Returns
+        -------
+        Optional[DataFrame]
+            Table of feature job analysis
+        """
+        return FeatureJobSettingAnalysis.list(event_data_id=self.id)

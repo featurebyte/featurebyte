@@ -7,6 +7,7 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
+from featurebyte_freeware.feature_job_analysis.schema import AnalysisOptions, AnalysisParameters
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte import SourceType
@@ -311,3 +312,15 @@ class FeatureListNamespaceInfo(NamespaceInfo):
     default_feature_list_id: PydanticObjectId
     status: FeatureListStatus
     feature_count: int
+
+
+class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
+    """
+    FeatureJobSettingAnalysis info schema
+    """
+
+    created_at: datetime
+    event_data_name: str
+    analysis_options: AnalysisOptions
+    analysis_parameters: AnalysisParameters
+    recommendation: FeatureJobSetting

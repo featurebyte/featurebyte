@@ -3,7 +3,7 @@ FeatureJobSettingAnalysis API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -20,12 +20,14 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
+from featurebyte.schema.info import FeatureJobSettingAnalysisInfo
 from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature_job_setting_analysis")
@@ -55,10 +57,15 @@ async def list_feature_job_setting_analysis(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    event_data_id: Optional[PydanticObjectId] = None,
 ) -> FeatureJobSettingAnalysisList:
     """
     List Feature Job Setting Analysis
     """
+    params = {}
+    if event_data_id:
+        params["query_filter"] = {"event_data_id": event_data_id}
+
     controller = request.state.app_container.feature_job_setting_analysis_controller
     analysis_list: FeatureJobSettingAnalysisList = await controller.list(
         page=page,
@@ -67,6 +74,7 @@ async def list_feature_job_setting_analysis(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        **params,
     )
     return analysis_list
 
@@ -84,6 +92,23 @@ async def get_feature_job_setting_analysis(
         document_id=feature_job_setting_analysis_id,
     )
     return analysis
+
+
+@router.get("/{feature_job_setting_analysis_id}/info", response_model=FeatureJobSettingAnalysisInfo)
+async def get_feature_job_setting_analysis_info(
+    request: Request,
+    feature_job_setting_analysis_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> FeatureJobSettingAnalysisInfo:
+    """
+    Retrieve FeatureJobSettingAnalysis info
+    """
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    info = await controller.get_info(
+        document_id=feature_job_setting_analysis_id,
+        verbose=verbose,
+    )
+    return cast(FeatureJobSettingAnalysisInfo, info)
 
 
 @router.get("/audit/{feature_job_setting_analysis_id}", response_model=AuditDocumentList)
@@ -112,9 +137,9 @@ async def list_feature_job_setting_analysis_audit_logs(
 
 
 @router.post(
-    "/{feature_job_setting_analysis_id}/backtest",
+    "/backtest",
     response_model=Task,
-    status_code=HTTPStatus.ACCEPTED,
+    status_code=HTTPStatus.CREATED,
 )
 async def run_backtest(
     request: Request,

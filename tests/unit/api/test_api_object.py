@@ -154,7 +154,7 @@ def mock_client_fixture():
 )
 def test_post_async_task__success(mock_client, route):
     """Test post async task (success)"""
-    output = SavableApiObject.post_async_task(route=route, payload={})
+    output = ApiObject.post_async_task(route=route, payload={})
     assert output == {"result": "some_value"}
 
 
@@ -164,7 +164,7 @@ def test_post_async_task__success(mock_client, route):
 def test_post_async_task__record_creation_exception(mock_client, route):
     """Test post async task (success)"""
     with pytest.raises(RecordCreationException):
-        SavableApiObject.post_async_task(route=route, payload={})
+        ApiObject.post_async_task(route=route, payload={})
 
 
 @pytest.mark.parametrize(
@@ -173,7 +173,7 @@ def test_post_async_task__record_creation_exception(mock_client, route):
 def test_post_async_task__record_retrieval_exception(mock_client, route):
     """Test post async task (success)"""
     with pytest.raises(RecordRetrievalException):
-        SavableApiObject.post_async_task(route=route, payload={})
+        ApiObject.post_async_task(route=route, payload={})
 
 
 def test_api_object_repr(mock_configuration):
