@@ -47,7 +47,6 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         query_node=mock_query_node,
         input_sql_nodes=input_sql_nodes,
         sql_type=sql_type,
-        groupby_keys=None,
         source_type=SourceType.SNOWFLAKE,
     )
     return context
