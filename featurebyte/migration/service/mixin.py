@@ -5,9 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional, Protocol
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-from featurebyte.app import User
 from featurebyte.logger import logger
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -42,6 +41,11 @@ class BaseMigrationServiceMixin(Protocol):
     async def migrate_record(self, document: Document) -> None:
         """
         Perform migration for a Document
+
+        Parameters
+        ----------
+        document: Document
+            Document to be migrated
         """
 
     async def migrate_all_records(
@@ -81,7 +85,7 @@ class BaseMigrationServiceMixin(Protocol):
         logger.info(f'Complete migration (collection: "{self.collection_name}")')
 
 
-class MigrationServiceMixin(BaseMigrationServiceMixin, Protocol):
+class MigrationServiceMixin(BaseMigrationServiceMixin, ABC):
     """MigrationServiceMixin class"""
 
     @classmethod
@@ -109,13 +113,31 @@ class MigrationServiceMixin(BaseMigrationServiceMixin, Protocol):
         )
 
 
-class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, Protocol):
+class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
+    """DataWarehouseMigrationMixin class
+
+    Provides common functionalities required for migrating data warehouse
+    """
 
     get_credential: Any
 
     def get_session_manager_service(
-        self, user: User, persistent: Persistent
+        self, user: Any, persistent: Persistent
     ) -> SessionManagerService:
+        """
+        Get a SessionManagerService
+
+        Parameters
+        ----------
+        user: Any
+            User object
+        persistent: Persistent
+            Persistent object
+
+        Returns
+        -------
+        SessionManagerService
+        """
         credential_provider = ConfigCredentialProvider()
         session_validator_service = SessionValidatorService(user, persistent, credential_provider)
         return SessionManagerService(
@@ -124,3 +146,14 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, Protocol):
             credential_provider=credential_provider,
             session_validator_service=session_validator_service,
         )
+
+    def set_credential_callback(self, get_credential: Any) -> None:
+        """
+        Set the get_credential callback
+
+        Parameters
+        ----------
+        get_credential: Any
+            Callback to retrieve credential
+        """
+        self.get_credential = get_credential

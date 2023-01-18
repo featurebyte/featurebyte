@@ -7,6 +7,7 @@ from bson import ObjectId
 
 from featurebyte import EventView, Feature, FeatureList
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationService
+from featurebyte.utils.credential import get_credential
 
 
 @pytest.fixture(scope="session")
@@ -93,7 +94,8 @@ async def test_data_warehouse_migration_v6(user, persistent, event_data, snowfla
         assert "VALUE_COLUMN_TYPES" not in (await _retrieve_tile_registry())
 
         # # Run migration
-        service = DataWarehouseMigrationService(user, persistent)
+        service = DataWarehouseMigrationService(user=user, persistent=persistent)
+        service.set_credential_callback(get_credential)
         await service.add_tile_value_types_column()
 
         # Check migration correctly adds the VALUE_COLUMN_TYPES column

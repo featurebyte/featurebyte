@@ -21,6 +21,7 @@ from featurebyte.migration.run import (
 )
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
+from featurebyte.utils.credential import get_credential
 
 
 def test_retrieve_all_migration_methods():
@@ -57,7 +58,10 @@ async def test_migrate_method_generator(user, persistent):
 
     expected_method_num = len(retrieve_all_migration_methods())
     method_generator = migrate_method_generator(
-        user=user, persistent=persistent, schema_metadata=schema_metadata
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
     )
     assert len([_ async for _ in method_generator]) == expected_method_num
 
@@ -73,7 +77,10 @@ async def test_migrate_method_generator(user, persistent):
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
     method_generator = migrate_method_generator(
-        user=user, persistent=persistent, schema_metadata=schema_metadata
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
     )
     methods = [method async for method in method_generator]
     assert len(methods) == expected_method_num - 1
@@ -131,13 +138,16 @@ async def test_run_migration(migration_check_persistent, user):
     )
 
     # perform migration on testing samples to check the migration logic
-    await run_migration(user=user, persistent=persistent)
+    await run_migration(user=user, persistent=persistent, get_credential=get_credential)
 
     # check that all migrated collections contains some examples for testing
     version = 0
     description = "Initial schema"
     async for service, migrate_method in migrate_method_generator(
-        user=user, persistent=persistent, schema_metadata=schema_metadata
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
     ):
         marker = _extract_migrate_method_marker(migrate_method)
         version = max(version, marker.version)

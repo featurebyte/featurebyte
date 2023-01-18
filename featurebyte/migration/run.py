@@ -14,11 +14,13 @@ from featurebyte.logger import logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
+from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.utils.credential import get_credential as get_credential_from_config
 
 BaseDocumentServiceT = BaseDocumentService[
     FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
@@ -87,7 +89,7 @@ def retrieve_all_migration_methods() -> dict[int, Any]:
 
 
 async def migrate_method_generator(
-    user: Any, persistent: Persistent, schema_metadata: SchemaMetadataModel
+    user: Any, persistent: Persistent, get_credential: Any, schema_metadata: SchemaMetadataModel
 ) -> AsyncGenerator[tuple[BaseDocumentServiceT, Callable[..., Any]], None]:
     """
     Migrate method generator
@@ -98,6 +100,8 @@ async def migrate_method_generator(
         User object contains id information
     persistent: Persistent
         Persistent storage object
+    get_credential: Any
+        Callback to retrieve credential
     schema_metadata: SchemaMetadataModel
         Schema metadata
 
@@ -115,6 +119,8 @@ async def migrate_method_generator(
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
         migrate_service = migrate_service_class(user=user, persistent=persistent)
+        if isinstance(migrate_service, DataWarehouseMigrationMixin):
+            migrate_service.set_credential_callback(get_credential)
         migrate_method = getattr(migrate_service, migrate_method_data["method"])
         yield migrate_service, migrate_method
 
@@ -145,7 +151,7 @@ async def post_migration_sanity_check(service: BaseDocumentServiceT) -> None:
     )
 
 
-async def run_migration(user: Any, persistent: Persistent) -> None:
+async def run_migration(user: Any, persistent: Persistent, get_credential: Any) -> None:
     """
     Run database migration
 
@@ -155,6 +161,8 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
         User object
     persistent: Persistent
         Persistent object
+    get_credential: Any
+        Callback to retrieve credential
     """
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
     schema_metadata = await schema_metadata_service.get_or_create_document(
@@ -163,6 +171,7 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,
+        get_credential=get_credential,
         schema_metadata=schema_metadata,
     )
     async for service, migrate_method in method_generator:
@@ -190,4 +199,4 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
     persistent: MongoDB
         Mongo persistent object
     """
-    await run_migration(User(), persistent)
+    await run_migration(User(), persistent, get_credential_from_config)

@@ -8,7 +8,6 @@ from typing import Any, Optional
 import textwrap
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service import migrate
@@ -18,7 +17,6 @@ from featurebyte.models.persistent import Document
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.utils.credential import get_credential
 
 
 class TileColumnTypeExtractor:
@@ -28,9 +26,12 @@ class TileColumnTypeExtractor:
 
     def __init__(self, user: Any, persistent: Persistent):
         self.feature_service = FeatureService(user, persistent)
-        self.tile_column_name_to_type = None
+        self.tile_column_name_to_type: Optional[dict[str, str]] = None
 
     async def setup(self) -> None:
+        """
+        Set up the object by loading existing Feature documents
+        """
         self.tile_column_name_to_type = await self._build_tile_column_name_to_type_mapping(
             self.feature_service
         )
@@ -51,9 +52,37 @@ class TileColumnTypeExtractor:
         return tile_column_name_to_type
 
     def get_tile_column_type(self, tile_column_name: str) -> str | None:
+        """
+        Get tile column type for the given tile column name. Return None if the column type is not
+        known (when none of the existing Feature corresponds to the tile column; could be due to
+        unsaved features or TILE_REGISTRY table being in a bad state)
+
+        Parameters
+        ----------
+        tile_column_name: str
+            Tile column name
+
+        Returns
+        -------
+        str | None
+        """
+        assert self.tile_column_name_to_type is not None
         return self.tile_column_name_to_type.get(tile_column_name)
 
-    def transform_value_column_names(self, value_column_names: pd.Series) -> pd.Series:
+    def get_tile_column_types_from_names(self, value_column_names: pd.Series) -> pd.Series:
+        """
+        Transform the VALUE_COLUMN_NAMES column from TILE_REGISTRY to VALUE_COLUMN_TYPES
+
+        Parameters
+        ----------
+        value_column_names: Series
+            Series of tile column names from TILE_REGISTRY
+
+        Returns
+        -------
+        Series
+        """
+
         def _transform(column_names: list[str]) -> str | None:
             column_types = []
             for column_name in column_names:
@@ -67,8 +96,13 @@ class TileColumnTypeExtractor:
 
 
 class DataWarehouseMigrationService(FeatureStoreService, DataWarehouseMigrationMixin):
+    """
+    DataWarehouseMigrationService class
 
-    extractor: Optional[TileColumnTypeExtractor] = Field(default=None)
+    Responsible for migrating the featurebyte working schema in the data warehouse
+    """
+
+    extractor: TileColumnTypeExtractor
 
     @migrate(version=6, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
     async def add_tile_value_types_column(self) -> None:
@@ -90,13 +124,13 @@ class DataWarehouseMigrationService(FeatureStoreService, DataWarehouseMigrationM
         feature_store = FeatureStoreModel(**document)
         session_manager_service = self.get_session_manager_service(self.user, self.persistent)
         session = await session_manager_service.get_feature_store_session(
-            feature_store, get_credential=get_credential
+            feature_store, get_credential=self.get_credential
         )
         df_tile_registry = await session.execute_query(
             "SELECT TILE_ID, VALUE_COLUMN_NAMES FROM TILE_REGISTRY"
         )
-        df_tile_registry["VALUE_COLUMN_TYPES"] = self.extractor.transform_value_column_names(
-            df_tile_registry["VALUE_COLUMN_NAMES"]
+        df_tile_registry["VALUE_COLUMN_TYPES"] = self.extractor.get_tile_column_types_from_names(  # type: ignore[index]
+            df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
         )
         await session.register_table("UPDATED_TILE_REGISTRY", df_tile_registry)
 
