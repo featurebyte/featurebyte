@@ -278,11 +278,11 @@ class CountDictAccessor:
         --------
         Getting relative frequency from a dictionary feature using a scalar value
 
-        >>> dictionary_feature.cd.c("key")  # doctest: +SKIP
+        >>> dictionary_feature.cd.get_relative_frequency("key")  # doctest: +SKIP
 
         Getting relative frequency from a dictionary feature using a lookup feature
 
-        >>> dictionary_feature.cd.feature_clazz = type(self._feature_obj)
+        >>> dictionary_feature.cd.get_relative_frequency(lookup_feature)  # doctest: +SKIP
         """
         feature_clazz = type(self._feature_obj)
         if isinstance(key, feature_clazz):
