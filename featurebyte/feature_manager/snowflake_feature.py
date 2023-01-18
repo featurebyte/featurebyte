@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
@@ -13,6 +13,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.common import date_util
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
+    tm_call_schedule_online_store,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_last_tile_index,
@@ -87,6 +88,24 @@ class FeatureManagerSnowflake(BaseModel):
 
             # generate historical tiles
             await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
+
+            # populate feature store
+            await self._populate_feature_store(tile_spec=tile_spec, schedule_time=schedule_time)
+
+    async def _populate_feature_store(self, tile_spec: TileSpec, schedule_time: datetime) -> None:
+        next_job_time = date_util.get_next_job_datetime(
+            input_dt=schedule_time,
+            frequency_minutes=tile_spec.frequency_minute,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+        )
+        job_schedule_ts = next_job_time - timedelta(minutes=tile_spec.frequency_minute)
+        job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
+
+        populate_sql = tm_call_schedule_online_store.render(
+            tile_id=tile_spec.tile_id,
+            job_schedule_ts_str=job_schedule_ts_str,
+        )
+        await self._session.execute_query(populate_sql)
 
     async def _generate_historical_tiles(
         self, tile_mgr: TileManagerSnowflake, tile_spec: TileSpec
