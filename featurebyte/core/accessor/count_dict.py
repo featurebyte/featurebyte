@@ -183,6 +183,27 @@ class CountDictAccessor:
 
         >>> dictionary_feature.cd.get_value(lookup_feature)  # doctest: +SKIP
         """
+        feature_clazz = type(self._feature_obj)
+        if isinstance(key, feature_clazz):
+            assert_is_lookup_feature(key.node_types_lineage)
+
+        additional_node_params = {}
+        # We only need to assign value if we have been passed in a single scalar value.
+        if not isinstance(key, feature_clazz):
+            additional_node_params["value"] = key
+        # construct operation structure of the get value node output
+        op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
+        get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
+
+        response = self._feature_obj._binary_op(  # pylint: disable=protected-access
+            other=key,
+            node_type=NodeType.GET_VALUE,
+            output_var_type=get_value_node.derive_var_type([op_struct]),
+            right_op=False,
+            additional_node_params=additional_node_params,
+        )
+        assert isinstance(response, feature_clazz)
+        return response
 
     def get_rank(
         self, key: Union[Scalar, Feature], descending: bool = False, right_op: bool = False
@@ -225,9 +246,6 @@ class CountDictAccessor:
         if not isinstance(key, feature_clazz):
             additional_node_params["value"] = key
 
-        # construct operation structure of the get value node output
-        op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
-        get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
         response = self._feature_obj._binary_op(  # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_RANK,
@@ -237,6 +255,7 @@ class CountDictAccessor:
         )
         assert isinstance(response, feature_clazz)
         return response
+
 
     def get_relative_frequency(
         self, key: Union[Scalar, Feature], right_op: bool = False
@@ -264,23 +283,6 @@ class CountDictAccessor:
         Getting relative frequency from a dictionary feature using a lookup feature
 
         >>> dictionary_feature.cd.feature_clazz = type(self._feature_obj)
-        if isinstance(key, feature_clazz):
-            assert_is_lookup_feature(key.node_types_lineage)
-
-        additional_node_params = {}
-        # We only need to assign value if we have been passed in a single scalar value.
-        if not isinstance(key, feature_clazz):
-            additional_node_params["value"] = key
-
-        response = self._feature_obj._binary_op(  # pylint: disable=protected-access
-            other=key,
-            node_type=NodeType.GET_VALUE,
-            output_var_type=get_value_node.derive_var_type([op_struct]),
-            right_op=False,
-            additional_node_params=additional_node_params,
-        )
-        assert isinstance(response, feature_clazz)
-        return response(lookup_feature)  # doctest: +SKIP
         """
         feature_clazz = type(self._feature_obj)
         if isinstance(key, feature_clazz):
