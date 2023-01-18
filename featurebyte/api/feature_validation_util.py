@@ -6,7 +6,7 @@ from typing import List
 from featurebyte.query_graph.enum import NodeType
 
 
-def is_lookup_feature(node_types_lineage: List[NodeType]) -> None:
+def assert_is_lookup_feature(node_types_lineage: List[NodeType]) -> None:
     """
     Checks to see if a feature is a lookup feature.
 

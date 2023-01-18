@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from typeguard import typechecked
 
-from featurebyte.api.feature_validation_util import is_lookup_feature
+from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
@@ -160,7 +160,11 @@ class CountDictAccessor:
         right_op: bool = False,
     ) -> Feature:
         """
-        Get the value in a dictionary feature, based on the value in the lookup feature.
+        Get the value in a dictionary feature, based on the key provided.
+
+        This key could be either
+        - the value in the lookup feature, or
+        - a scalar value passed in.
 
         Parameters
         ----------
@@ -173,10 +177,20 @@ class CountDictAccessor:
         -------
         Feature
             new feature
+
+        Examples
+        --------
+        Getting value from a dictionary feature using a scalar value
+
+        >>> dictionary_feature.cd.get_value("key")
+
+        Getting value from a dictionary feature using a lookup feature
+
+        >>> dictionary_feature.cd.get_value(lookup_feature)
         """
         feature_clazz = type(self._feature_obj)
         if isinstance(key, feature_clazz):
-            is_lookup_feature(key.node_types_lineage)
+            assert_is_lookup_feature(key.node_types_lineage)
 
         additional_node_params = {}
         # We only need to assign value if we have been passed in a single scalar value.

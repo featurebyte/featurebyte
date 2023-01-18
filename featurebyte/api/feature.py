@@ -16,7 +16,7 @@ from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.feature_validation_util import is_lookup_feature
+from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
@@ -497,4 +497,4 @@ class Feature(
         other: Union[Series, Sequence[Union[bool, int, float, str]]]
             other
         """
-        is_lookup_feature(self.node_types_lineage)
+        assert_is_lookup_feature(self.node_types_lineage)

@@ -93,31 +93,6 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
     }
 
 
-def test_get_value_from_dictionary__validation_fails(
-    item_type_dimension_lookup_feature, event_data
-):
-    """
-    Test validation will cause errors when features are not of the correct type.
-    """
-    # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(
-        value_column="PRODUCT_ACTION",
-        method="latest",
-        windows=["30d"],
-        feature_names=["LATEST_ACTION_DICT_30d"],
-    )
-    dictionary_feature = feature_group["LATEST_ACTION_DICT_30d"]
-
-    with pytest.raises(AttributeError) as exc:
-        item_type_dimension_lookup_feature.cd.get_value(item_type_dimension_lookup_feature)
-    assert "Can only use .cd accessor with count per category features" in str(exc)
-
-    with pytest.raises(ValueError) as exc:
-        dictionary_feature.cd.get_value(dictionary_feature)
-    assert "not a lookup feature" in str(exc)
-
-
 def test_get_value_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, item_data
 ):

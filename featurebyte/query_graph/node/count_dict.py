@@ -72,6 +72,7 @@ class GetValueFromDictionaryNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         aggregations = inputs[0].aggregations
         agg_column = aggregations[0]
+        # This assumes that dictionary features are never post-processed.
         assert isinstance(agg_column, AggregationColumn)
         method = agg_column.method
         assert method is not None

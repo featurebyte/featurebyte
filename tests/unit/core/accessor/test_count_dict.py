@@ -87,3 +87,16 @@ def test_cosine_similarity__other_not_dict_scalar(count_per_category_feature):
     with pytest.raises(TypeError) as exc:
         count_per_category_feature.cd.cosine_similarity(123)
     assert str(exc.value) == "cosine_similarity is only available for Feature; got 123"
+
+
+def test_get_value_from_dictionary__validation_fails(float_feature, count_per_category_feature):
+    """
+    Test validation will cause errors when features are not of the correct type.
+    """
+    with pytest.raises(AttributeError) as exc:
+        float_feature.cd.get_value(float_feature)
+    assert "Can only use .cd accessor with count per category features" in str(exc)
+
+    with pytest.raises(ValueError) as exc:
+        count_per_category_feature.cd.get_value(count_per_category_feature)
+    assert "not a lookup feature" in str(exc)
