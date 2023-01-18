@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
@@ -847,3 +848,29 @@ def test_list_feature_job_setting_analysis(mock_list, saved_event_data):
     output = saved_event_data.list_feature_job_setting_analysis()
     mock_list.assert_called_once_with(event_data_id=saved_event_data.id)
     assert output == mock_list.return_value
+
+
+def test_event_data__entity_relation_auto_tagging(saved_event_data):
+    """Test event data update: entity relation will be created automatically"""
+    transaction_entity = Entity(name="transaction", serving_names=["transaction_id"])
+    transaction_entity.save()
+
+    customer = Entity(name="customer", serving_names=["customer_id"])
+    customer.save()
+
+    # add entities to event data
+    assert saved_event_data.event_id_column == "col_int"
+    saved_event_data.col_int.as_entity("transaction")
+    saved_event_data.cust_id.as_entity("customer")
+
+    updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
+    assert updated_transaction_entity.parents == [
+        {"id": customer.id, "data_type": "event_data", "data_id": saved_event_data.id}
+    ]
+    updated_customer_entity = Entity.get_by_id(id=customer.id)
+    assert updated_customer_entity.parents == []
+
+    # remove primary id column's entity
+    saved_event_data.col_int.as_entity(None)
+    updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
+    assert updated_transaction_entity.parents == []
