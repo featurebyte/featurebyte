@@ -3,8 +3,9 @@ Module for helper classes to generate engine specific SQL expressions
 """
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Literal, Optional
+
+from abc import abstractmethod
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, select
