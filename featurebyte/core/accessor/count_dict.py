@@ -182,11 +182,11 @@ class CountDictAccessor:
         --------
         Getting value from a dictionary feature using a scalar value
 
-        >>> dictionary_feature.cd.get_value("key")
+        >>> dictionary_feature.cd.get_value("key")  # doctest: +SKIP
 
         Getting value from a dictionary feature using a lookup feature
 
-        >>> dictionary_feature.cd.get_value(lookup_feature)
+        >>> dictionary_feature.cd.get_value(lookup_feature)  # doctest: +SKIP
         """
         feature_clazz = type(self._feature_obj)
         if isinstance(key, feature_clazz):
