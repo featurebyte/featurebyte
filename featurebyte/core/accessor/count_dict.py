@@ -218,7 +218,9 @@ class CountDictAccessor:
         if isinstance(key, feature_clazz):
             assert_is_lookup_feature(key.node_types_lineage)
 
-        additional_node_params = {}
+        additional_node_params = {
+            "descending": descending,
+        }
         # We only need to assign value if we have been passed in a single scalar value.
         if not isinstance(key, feature_clazz):
             additional_node_params["value"] = key
