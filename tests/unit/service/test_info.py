@@ -2,6 +2,7 @@
 Test for InfoService
 """
 import pytest
+from bson import ObjectId
 
 from featurebyte import SnowflakeDetails
 from featurebyte.models.dimension_data import DimensionDataModel
@@ -483,26 +484,23 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
 def test_get_main_data(info_service, item_data, event_data, dimension_data):
     """Test _get_main_data logic"""
     new_columns_info = []
-    for col in dimension_data.columns_info:
-        new_columns_info.append({**col.dict(), "entity_id": None})
-    dimension_data_without_entity = DimensionDataModel(
+    for i, col in enumerate(dimension_data.columns_info):
+        new_columns_info.append({**col.dict(), "entity_id": ObjectId() if i == 0 else None})
+    dimension_data_with_entity = DimensionDataModel(
         **{**dimension_data.dict(), "columns_info": new_columns_info}
     )
     assert (
         info_service._get_main_data(
-            [item_data, event_data, dimension_data, dimension_data_without_entity]
+            [item_data, event_data, dimension_data, dimension_data_with_entity]
         )
         == item_data
     )
     assert (
-        info_service._get_main_data([event_data, dimension_data, dimension_data_without_entity])
+        info_service._get_main_data([event_data, dimension_data, dimension_data_with_entity])
         == event_data
     )
     assert (
-        info_service._get_main_data([dimension_data, dimension_data_without_entity])
-        == dimension_data
+        info_service._get_main_data([dimension_data, dimension_data_with_entity])
+        == dimension_data_with_entity
     )
-    assert (
-        info_service._get_main_data([dimension_data_without_entity])
-        == dimension_data_without_entity
-    )
+    assert info_service._get_main_data([dimension_data]) == dimension_data
