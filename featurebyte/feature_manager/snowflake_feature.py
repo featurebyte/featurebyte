@@ -47,7 +47,9 @@ class FeatureManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    async def online_enable(self, feature_spec: OnlineFeatureSpec) -> None:
+    async def online_enable(
+        self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
+    ) -> None:
         """
         Schedule both online and offline tile jobs
 
@@ -55,6 +57,8 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
+        schedule_time: datetime
+            the moment of scheduling the job
         """
         tile_mgr = TileManagerSnowflake(session=self._session)
 
@@ -68,22 +72,21 @@ class FeatureManagerSnowflake(BaseModel):
             exist_tasks = await self._session.execute_query(
                 f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
             )
-            if exist_tasks is not None and len(exist_tasks) > 0:
-                logger.warning(f"The tile jobs exist. Enable existing jobs: {tile_spec.tile_id}")
-                # enable existing online/offline tiles scheduled job
-                for _, row in exist_tasks.iterrows():
-                    await self._session.execute_query(f"ALTER TASK IF EXISTS {row['name']} RESUME")
-            else:
+            if exist_tasks is None or len(exist_tasks) == 0:
                 # enable online tiles scheduled job
-                await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
+                await tile_mgr.schedule_online_tiles(
+                    tile_spec=tile_spec, schedule_time=schedule_time
+                )
                 logger.debug(f"Done schedule_online_tiles for {tile_spec}")
 
                 # enable offline tiles scheduled job
-                await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
+                await tile_mgr.schedule_offline_tiles(
+                    tile_spec=tile_spec, schedule_time=schedule_time
+                )
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
-                # generate historical tiles
-                await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
+            # generate historical tiles
+            await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
 
     async def _generate_historical_tiles(
         self, tile_mgr: TileManagerSnowflake, tile_spec: TileSpec
@@ -192,9 +195,7 @@ class FeatureManagerSnowflake(BaseModel):
                 if exist_tasks is not None and len(exist_tasks) > 0:
                     logger.warning(f"Start disabling jobs for {tile_spec.tile_id}")
                     for _, row in exist_tasks.iterrows():
-                        await self._session.execute_query(
-                            f"ALTER TASK IF EXISTS {row['name']} SUSPEND"
-                        )
+                        await self._session.execute_query(f"DROP TASK IF EXISTS {row['name']}")
 
     async def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """

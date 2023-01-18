@@ -11,6 +11,7 @@ import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
+from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -59,9 +60,14 @@ async def online_enabled_feature_spec_fixture(
                 online_feature_spec = OnlineFeatureSpec(
                     feature=snowflake_feature,
                 )
-                await feature_manager.online_enable(online_feature_spec)
 
-                yield online_feature_spec
+                schedule_time = datetime.utcnow()
+
+                await feature_manager.online_enable(
+                    online_feature_spec, schedule_time=schedule_time
+                )
+
+                yield online_feature_spec, schedule_time
 
                 await snowflake_session.execute_query(
                     f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
@@ -81,18 +87,36 @@ async def test_online_enabled_feature_spec(
     """
     Test online_enable
     """
-    online_feature_spec = online_enabled_feature_spec
+    online_feature_spec, schedule_time = online_enabled_feature_spec
     expected_tile_id = snowflake_tile.tile_id
+
+    next_job_time_online = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=snowflake_tile.frequency_minute,
+        time_modulo_frequency_seconds=snowflake_tile.time_modulo_frequency_second,
+    )
+
+    next_job_time_offline = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=1440,
+        time_modulo_frequency_seconds=snowflake_tile.time_modulo_frequency_second,
+    )
 
     tasks = await snowflake_session.execute_query(
         f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].tile_id}%'"
     )
     assert len(tasks) == 2
     assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id}_OFFLINE"
-    assert tasks["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"
+    assert (
+        tasks["schedule"].iloc[0]
+        == f"USING CRON {next_job_time_offline.minute} {next_job_time_offline.hour} {next_job_time_offline.day} * * UTC"
+    )
     assert tasks["state"].iloc[0] == "started"
     assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id}_ONLINE"
-    assert tasks["schedule"].iloc[1] == "USING CRON 3 * * * * UTC"
+    assert (
+        tasks["schedule"].iloc[1]
+        == f"USING CRON {next_job_time_online.minute} {next_job_time_online.hour} {next_job_time_online.day} * * UTC"
+    )
     assert tasks["state"].iloc[1] == "started"
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{expected_tile_id}'"
@@ -145,15 +169,13 @@ async def test_online_disable(
     """
     Test online_disable
     """
-    online_feature_spec = online_enabled_feature_spec
+    online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
     await feature_manager.online_disable(online_feature_spec)
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(result) == 2
-    assert result.iloc[0]["state"] == "suspended"
-    assert result.iloc[1]["state"] == "suspended"
+    assert len(result) == 0
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
     result = await snowflake_session.execute_query(sql)
@@ -180,7 +202,7 @@ async def test_online_disable__tile_in_use(
     """
     Test online_disable
     """
-    online_feature_spec = online_enabled_feature_spec
+    online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
     online_feature_spec_2 = copy.deepcopy(online_feature_spec)
@@ -235,15 +257,13 @@ async def test_online_disable___re_enable(
     """
     Test online_disable
     """
-    online_feature_spec = online_enabled_feature_spec
+    online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
     await feature_manager.online_disable(online_feature_spec)
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
-    assert len(result) == 2
-    assert result.iloc[0]["state"] == "suspended"
-    assert result.iloc[1]["state"] == "suspended"
+    assert len(result) == 0
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND IS_DELETED = TRUE"
     result = await snowflake_session.execute_query(sql)

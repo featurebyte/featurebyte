@@ -1,6 +1,8 @@
 """
 Tests for functions in date_util.py module
 """
+from datetime import datetime
+
 import dateutil.parser
 
 from featurebyte.common import date_util
@@ -43,3 +45,28 @@ def test_tile_index_to_timestamp(index_to_timestamp_fixture):
     )
     derived_dt_str = derived_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
     assert derived_dt_str == time_stamp_str
+
+
+def test_get_next_job_datetime():
+    """Test get next job datetime"""
+
+    input_dt = datetime(2022, 12, 1, 12, 0, 55)
+    expect_dt = datetime(2022, 12, 1, 12, 1, 20)
+    next_job = date_util.get_next_job_datetime(
+        input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20
+    )
+    assert next_job == expect_dt
+
+    input_dt = datetime(2022, 12, 1, 12, 1, 19)
+    expect_dt = datetime(2022, 12, 1, 12, 1, 20)
+    next_job = date_util.get_next_job_datetime(
+        input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20
+    )
+    assert next_job == expect_dt
+
+    input_dt = datetime(2022, 12, 1, 12, 1, 20)
+    expect_dt = datetime(2022, 12, 1, 12, 18, 20)
+    next_job = date_util.get_next_job_datetime(
+        input_dt, frequency_minutes=17, time_modulo_frequency_seconds=20
+    )
+    assert next_job == expect_dt

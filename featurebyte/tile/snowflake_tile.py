@@ -10,6 +10,7 @@ from datetime import datetime
 import pandas as pd
 from pydantic import PrivateAttr
 
+from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
@@ -197,6 +198,7 @@ class TileManagerSnowflake(BaseTileManager):
         self,
         tile_spec: TileSpec,
         monitor_periods: int = 10,
+        schedule_time: datetime = datetime.utcnow(),
     ) -> str:
         """
         Schedule online tiles
@@ -207,14 +209,19 @@ class TileManagerSnowflake(BaseTileManager):
             the input TileSpec
         monitor_periods: int
             number of tile periods to monitor and re-generate. Default is 10
+        schedule_time: datetime
+            the moment of scheduling the job
 
         Returns
         -------
             generated sql to be executed
         """
-
-        start_minute = tile_spec.time_modulo_frequency_second // 60
-        cron = f"{start_minute} * * * *"
+        next_job_time = date_util.get_next_job_datetime(
+            input_dt=schedule_time,
+            frequency_minutes=tile_spec.frequency_minute,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+        )
+        cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
         return await self._schedule_tiles(
             tile_spec=tile_spec,
@@ -227,6 +234,7 @@ class TileManagerSnowflake(BaseTileManager):
         self,
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
+        schedule_time: datetime = datetime.utcnow(),
     ) -> str:
         """
         Schedule offline tiles
@@ -237,13 +245,20 @@ class TileManagerSnowflake(BaseTileManager):
             the input TileSpec
         offline_minutes: int
             offline tile lookback minutes to monitor and re-generate. Default is 1440
+        schedule_time: datetime
+            the moment of scheduling the job
 
         Returns
         -------
             generated sql to be executed
         """
-        start_minute = tile_spec.time_modulo_frequency_second // 60
-        cron = f"{start_minute} 0 * * *"
+
+        next_job_time = date_util.get_next_job_datetime(
+            input_dt=schedule_time,
+            frequency_minutes=offline_minutes,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+        )
+        cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
         return await self._schedule_tiles(
             tile_spec=tile_spec,
