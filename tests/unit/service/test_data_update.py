@@ -1,7 +1,7 @@
 """
 Test DataUpdateService
 """
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -321,7 +321,7 @@ async def entity_qux_fixture(entity_service):
         ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [], {"qux"}),
     ],
 )
-async def test_update_entity_relationship(
+async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     data_update_service,
     entity_service,
     event_data,
@@ -370,7 +370,10 @@ async def test_update_entity_relationship(
     )
 
     # check the output of the old & new primary entity
-    sorter = lambda parent_entity: parent_entity.id
+    def key_sorter(parent_entity):
+        # helper function used to sort list of parent entity
+        return parent_entity.id
+
     for entity_id in old_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
         expected_parent_ids = convert_entity_name_to_ids(expected_old_primary_parents, entities)
@@ -378,7 +381,9 @@ async def test_update_entity_relationship(
             ParentEntity(id=entity_id, data_type="event_data", data_id=event_data.id)
             for entity_id in expected_parent_ids
         ]
-        assert sorted(primary_entity.parents, key=sorter) == sorted(expected_parents, key=sorter)
+        assert sorted(primary_entity.parents, key=key_sorter) == sorted(
+            expected_parents, key=key_sorter
+        )
 
     for entity_id in new_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
@@ -387,4 +392,6 @@ async def test_update_entity_relationship(
             ParentEntity(id=entity_id, data_type="event_data", data_id=event_data.id)
             for entity_id in expected_parent_ids
         ]
-        assert sorted(primary_entity.parents, key=sorter) == sorted(expected_parents, key=sorter)
+        assert sorted(primary_entity.parents, key=key_sorter) == sorted(
+            expected_parents, key=key_sorter
+        )
