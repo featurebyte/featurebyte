@@ -232,7 +232,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
     get_value_feature_preview = get_value_feature.preview(preview_params)
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: 2.0,
+        get_value_feature.name: 1.0,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
@@ -242,7 +242,7 @@ def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_fea
     Test is in dictionary
     """
     # perform get_rank
-    get_value_feature = count_item_type_dictionary_feature.cd.get_rank("type_44")
+    get_value_feature = count_item_type_dictionary_feature.cd.get_rank("type_44", descending=True)
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_rank_in_dictionary"
 

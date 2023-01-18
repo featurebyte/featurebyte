@@ -3,7 +3,8 @@ CREATE OR REPLACE FUNCTION F_GET_RANK(counts variant, key_to_use VARCHAR, is_des
   LANGUAGE JAVASCRIPT
 AS
 $$
-  if (!COUNTS || COUNTS.keys().length == 0) {
+  var counts_keys = Object.keys(COUNTS)
+  if (!COUNTS || counts_keys.length == 0) {
     return null;
   }
   // Return index -1 if we are unable to find the item.
@@ -12,7 +13,7 @@ $$
   }
 
   // Create an array of key-value pairs
-  var counts_tuple_arr = Object.keys(COUNTS).map((key) => { return [key, COUNTS[key]] });
+  var counts_tuple_arr = counts_keys.map((key) => { return [key, COUNTS[key]] });
   counts_tuple_arr.sort(
     (first, second) => { return first[1] - second[1] }
   )
