@@ -3,7 +3,7 @@ This module contains count_dict accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, TypeVar, Union
 
 from typeguard import typechecked
 
@@ -239,7 +239,7 @@ class CountDictAccessor:
         if isinstance(key, feature_clazz):
             assert_is_lookup_feature(key.node_types_lineage)
 
-        additional_node_params = {
+        additional_node_params: Dict[str, Any] = {
             "descending": descending,
         }
         # We only need to assign value if we have been passed in a single scalar value.
