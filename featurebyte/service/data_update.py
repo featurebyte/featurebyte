@@ -3,13 +3,15 @@ DataStatusService
 """
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any, List, Union
 
 from collections import defaultdict
 
 from bson.objectid import ObjectId
 
+from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataModel, DataStatus
 from featurebyte.persistent import Persistent
 from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
@@ -174,7 +176,7 @@ class DataUpdateService(BaseService):
                 # update entity data reference
                 await self.update_entity_data_references(document, data)
 
-    async def _update_entity_document(
+    async def _update_entity_tabular_data_reference(
         self,
         document: DataModel,
         entity_update: dict[ObjectId, int],
@@ -211,6 +213,104 @@ class DataUpdateService(BaseService):
                 data=EntityServiceUpdate(**update_values),
             )
 
+    @staticmethod
+    def _include_parent_entities(
+        parents: List[ParentEntity],
+        data_id: ObjectId,
+        data_type: TableDataType,
+        parent_entity_ids: List[ObjectId],
+    ) -> List[ParentEntity]:
+        current_parent_entity_ids = {
+            parent.id
+            for parent in parents
+            if parent.data_id == data_id and parent.data_type == data_type
+        }
+        additional_parent_entity_ids = sorted(
+            set(parent_entity_ids).difference(current_parent_entity_ids)
+        )
+        output = parents.copy()
+        for entity_id in additional_parent_entity_ids:
+            output.append(ParentEntity(id=entity_id, data_type=data_type, data_id=data_id))
+        return output
+
+    @staticmethod
+    def _exclude_parent_entities(
+        parents: List[ParentEntity],
+        data_id: ObjectId,
+        data_type: TableDataType,
+        parent_entity_ids: List[ObjectId],
+    ) -> List[ParentEntity]:
+        output = []
+        for parent in parents:
+            if (
+                parent.id in parent_entity_ids
+                and parent.data_id == data_id
+                and parent.data_type == data_type
+            ):
+                continue
+            output.append(parent)
+        return output
+
+    async def _update_entity_relationship(
+        self,
+        document: DataModel,
+        old_primary_entities: set[ObjectId],
+        old_parent_entities: set[ObjectId],
+        new_primary_entities: set[ObjectId],
+        new_parent_entities: set[ObjectId],
+    ) -> None:
+        new_diff_old_primary_entities = new_primary_entities.difference(old_primary_entities)
+        old_diff_new_primary_entities = old_primary_entities.difference(new_primary_entities)
+        common_primary_entities = new_primary_entities.intersection(old_primary_entities)
+        if new_diff_old_primary_entities:
+            # new primary entities are introduced
+            for entity_id in new_diff_old_primary_entities:
+                primary_entity = await self.entity_service.get_document(document_id=entity_id)
+                parents = self._include_parent_entities(
+                    parents=primary_entity.parents,
+                    data_id=document.id,
+                    data_type=document.type,
+                    parent_entity_ids=list(new_parent_entities),
+                )
+                await self.entity_service.update_document(
+                    document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
+                )
+
+        if old_diff_new_primary_entities:
+            # old primary entities are removed
+            for entity_id in old_diff_new_primary_entities:
+                primary_entity = await self.entity_service.get_document(document_id=entity_id)
+                parents = self._exclude_parent_entities(
+                    parents=primary_entity.parents,
+                    data_id=document.id,
+                    data_type=document.type,
+                    parent_entity_ids=list(old_parent_entities),
+                )
+                await self.entity_service.update_document(
+                    document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
+                )
+
+        if common_primary_entities:
+            # change of non-primary entities
+            for entity_id in common_primary_entities:
+                primary_entity = await self.entity_service.get_document(document_id=entity_id)
+                parents = self._exclude_parent_entities(
+                    parents=primary_entity.parents,
+                    data_id=document.id,
+                    data_type=document.type,
+                    parent_entity_ids=list(old_parent_entities.difference(new_parent_entities)),
+                )
+                parents = self._include_parent_entities(
+                    parents=parents,
+                    data_id=document.id,
+                    data_type=document.type,
+                    parent_entity_ids=list(new_parent_entities.difference(old_parent_entities)),
+                )
+                if parents != primary_entity.parents:
+                    await self.entity_service.update_document(
+                        document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
+                    )
+
     async def update_entity_data_references(
         self, document: DataModel, data: DataServiceUpdateSchema
     ) -> None:
@@ -227,26 +327,46 @@ class DataUpdateService(BaseService):
         if not data.columns_info:
             return
 
-        # update data references in affected entities
+        # prepare data to:
+        # - update data references in affected entities
+        # - update entity relationship
         primary_keys = document.primary_key_columns
         entity_update: dict[ObjectId, int] = defaultdict(int)
         primary_entity_update: dict[ObjectId, int] = defaultdict(int)
+        old_primary_entities: set[ObjectId] = set()
+        old_parent_entities: set[ObjectId] = set()
+        new_primary_entities: set[ObjectId] = set()
+        new_parent_entities: set[ObjectId] = set()
         for column_info in document.columns_info:
             if column_info.entity_id:
-                # flag for removal from entity
+                # flag for removal from entity & track old entity relationship
                 entity_update[column_info.entity_id] -= 1
                 if column_info.name in primary_keys:
                     primary_entity_update[column_info.entity_id] -= 1
+                    old_primary_entities.add(column_info.entity_id)
+                else:
+                    old_parent_entities.add(column_info.entity_id)
 
         for column_info in data.columns_info:
             if column_info.entity_id:
-                # flag for addition to entity
+                # flag for addition to entity & track new entity relationship
                 entity_update[column_info.entity_id] += 1
                 if column_info.name in primary_keys:
                     primary_entity_update[column_info.entity_id] += 1
+                    new_primary_entities.add(column_info.entity_id)
+                else:
+                    new_parent_entities.add(column_info.entity_id)
 
-        await self._update_entity_document(
+        # actual entity document update
+        await self._update_entity_tabular_data_reference(
             document=document,
             entity_update=entity_update,
             primary_entity_update=primary_entity_update,
+        )
+        await self._update_entity_relationship(
+            document=document,
+            old_primary_entities=old_primary_entities,
+            old_parent_entities=old_parent_entities,
+            new_primary_entities=new_primary_entities,
+            new_parent_entities=new_parent_entities,
         )

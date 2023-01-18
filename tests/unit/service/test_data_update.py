@@ -1,12 +1,14 @@
 """
 Test DataUpdateService
 """
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -255,7 +257,134 @@ async def test_update_entity_data_references(
         with patch.object(
             data_update_service.entity_service, "update_document"
         ) as mock_update_document:
-            await data_update_service.update_entity_data_references(document=data_model, data=data)
-            update_payload = mock_update_document.call_args[1]["data"]
-            assert update_payload.tabular_data_ids == [data_model.id]
-            assert update_payload.primary_tabular_data_ids == [data_model.id]
+            with patch.object(data_update_service, "_update_entity_relationship"):
+                await data_update_service.update_entity_data_references(
+                    document=data_model, data=data
+                )
+                update_payload = mock_update_document.call_args[1]["data"]
+                assert update_payload.tabular_data_ids == [data_model.id]
+                assert update_payload.primary_tabular_data_ids == [data_model.id]
+
+
+@pytest_asyncio.fixture(name="entity_foo")
+async def entity_foo_fixture(entity_service):
+    """Entity foo"""
+    entity = await entity_service.create_document(data=EntityCreate(name="foo", serving_name="foo"))
+    return entity
+
+
+@pytest_asyncio.fixture(name="entity_bar")
+async def entity_bar_fixture(entity_service):
+    """Entity bar"""
+    entity = await entity_service.create_document(data=EntityCreate(name="bar", serving_name="bar"))
+    return entity
+
+
+@pytest_asyncio.fixture(name="entity_baz")
+async def entity_baz_fixture(entity_service):
+    """Entity baz"""
+    entity = await entity_service.create_document(data=EntityCreate(name="baz", serving_name="baz"))
+    return entity
+
+
+@pytest_asyncio.fixture(name="entity_qux")
+async def entity_qux_fixture(entity_service):
+    """Entity qux"""
+    entity = await entity_service.create_document(data=EntityCreate(name="qux", serving_name="qux"))
+    return entity
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "old_primary_entities,old_parent_entities,new_primary_entities,new_parent_entities,"
+    "expected_old_primary_parents,expected_new_primary_parents",
+    [
+        # data has no entity at all
+        (set(), set(), set(), set(), [], []),
+        # data has no primary entity
+        (set(), {"foo"}, set(), {"bar"}, [], []),
+        # data has no changes in entities
+        ({"foo"}, {"bar"}, {"foo"}, {"bar"}, ["bar"], ["bar"]),
+        # add a new primary entity
+        (set(), {"baz"}, {"foo"}, {"baz"}, [], ["baz"]),
+        # add a new parent entity
+        ({"foo"}, set(), {"foo"}, {"bar"}, ["bar"], ["bar"]),
+        ({"foo"}, {"bar"}, {"foo"}, {"bar", "baz"}, ["bar", "baz"], ["bar", "baz"]),
+        # remove a parent entity
+        ({"foo"}, {"bar"}, {"foo"}, set(), [], []),
+        ({"foo"}, {"bar", "baz"}, {"foo"}, {"bar"}, ["bar"], ["bar"]),
+        # change of primary entity from foo to bar
+        ({"foo"}, {"baz"}, {"bar"}, {"baz"}, [], ["baz"]),
+        # change of parent entity from bar to baz
+        ({"foo"}, {"bar"}, {"foo"}, {"baz"}, ["baz"], ["baz"]),
+        # change of primary & parent entity
+        ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [], {"qux"}),
+    ],
+)
+async def test_update_entity_relationship(
+    data_update_service,
+    entity_service,
+    event_data,
+    entity_foo,
+    entity_bar,
+    entity_baz,
+    entity_qux,
+    old_primary_entities,
+    old_parent_entities,
+    new_primary_entities,
+    new_parent_entities,
+    expected_old_primary_parents,
+    expected_new_primary_parents,
+):
+    """Test _update_entity_relationship"""
+
+    def convert_entity_name_to_ids(entity_names, entity_docs):
+        # convert list of entity names to entity ids
+        entity_name_id_map = {entity.name: entity.id for entity in entity_docs}
+        return set(entity_name_id_map[name] for name in entity_names)
+
+    # setup old primary entity
+    entities = [entity_foo, entity_bar, entity_baz, entity_qux]
+    old_primary_entities = convert_entity_name_to_ids(old_primary_entities, entities)
+    old_parent_entities = convert_entity_name_to_ids(old_parent_entities, entities)
+    new_primary_entities = convert_entity_name_to_ids(new_primary_entities, entities)
+    new_parent_entities = convert_entity_name_to_ids(new_parent_entities, entities)
+    for entity_id in old_primary_entities:
+        await entity_service.update_document(
+            document_id=entity_id,
+            data=EntityServiceUpdate(
+                parents=[
+                    ParentEntity(id=parent_id, data_type="event_data", data_id=event_data.id)
+                    for parent_id in old_parent_entities
+                ]
+            ),
+        )
+
+    # call update entity relationship
+    await data_update_service._update_entity_relationship(
+        document=event_data,
+        old_primary_entities=old_primary_entities,
+        old_parent_entities=old_parent_entities,
+        new_primary_entities=new_primary_entities,
+        new_parent_entities=new_parent_entities,
+    )
+
+    # check the output of the old & new primary entity
+    sorter = lambda parent_entity: parent_entity.id
+    for entity_id in old_primary_entities:
+        primary_entity = await entity_service.get_document(document_id=entity_id)
+        expected_parent_ids = convert_entity_name_to_ids(expected_old_primary_parents, entities)
+        expected_parents = [
+            ParentEntity(id=entity_id, data_type="event_data", data_id=event_data.id)
+            for entity_id in expected_parent_ids
+        ]
+        assert sorted(primary_entity.parents, key=sorter) == sorted(expected_parents, key=sorter)
+
+    for entity_id in new_primary_entities:
+        primary_entity = await entity_service.get_document(document_id=entity_id)
+        expected_parent_ids = convert_entity_name_to_ids(expected_new_primary_parents, entities)
+        expected_parents = [
+            ParentEntity(id=entity_id, data_type="event_data", data_id=event_data.id)
+            for entity_id in expected_parent_ids
+        ]
+        assert sorted(primary_entity.parents, key=sorter) == sorted(expected_parents, key=sorter)

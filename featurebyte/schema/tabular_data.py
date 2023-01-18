@@ -46,8 +46,10 @@ class DataUpdate(FeatureByteBaseModel):
 
     @validator("columns_info")
     @classmethod
-    def _validate_columns_info(cls, values: Optional[List[ColumnInfo]]) -> List[ColumnInfo]:
-        if values:
+    def _validate_columns_info(
+        cls, values: Optional[List[ColumnInfo]]
+    ) -> Optional[List[ColumnInfo]]:
+        if values is not None:
             validate_columns_info(columns_info=values)
         return values
 
