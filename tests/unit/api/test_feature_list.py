@@ -4,6 +4,7 @@ Tests for featurebyte.api.feature_list
 import textwrap
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 from freezegun import freeze_time
@@ -518,35 +519,35 @@ def test_get_feature_list(saved_feature_list):
 
     # check audit log
     audit_history = saved_feature_list.audit()
-    expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
-    assert audit_history.items() > expected_pagination_info.items()
-    history_data = audit_history["data"]
-    assert (
-        history_data[0].items()
-        > {
-            "name": 'insert: "my_feature_list"',
-            "action_type": "INSERT",
-            "previous_values": {},
-        }.items()
+    expected_audit_history = pd.DataFrame(
+        [
+            ("created_at", saved_feature_list.created_at.isoformat()),
+            ("deployed", False),
+            ("feature_clusters", audit_history.new_value.iloc[2]),
+            ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
+            ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace_id)),
+            ("name", "my_feature_list"),
+            ("online_enabled_feature_ids", []),
+            ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
+            ("updated_at", None),
+            ("user_id", None),
+            ("version.name", saved_feature_list.version.name),
+            ("version.suffix", None),
+        ],
+        columns=["field_name", "new_value"],
     )
-    assert (
-        history_data[0]["current_values"].items()
-        > {
-            "name": "my_feature_list",
-            "feature_ids": [str(val) for val in saved_feature_list.feature_ids],
-            "readiness_distribution": [{"readiness": "DRAFT", "count": 1}],
-            "feature_list_namespace_id": str(saved_feature_list.feature_list_namespace.id),
-            "version": saved_feature_list.version,
-            "updated_at": None,
-            "user_id": None,
-        }.items()
+    expected_audit_history["action_type"] = "INSERT"
+    expected_audit_history["name"] = 'insert: "my_feature_list"'
+    expected_audit_history["old_value"] = np.nan
+    pd.testing.assert_frame_equal(
+        audit_history[expected_audit_history.columns], expected_audit_history
     )
 
     # check unexpected exception in audit
     with patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             saved_feature_list.audit()
-    assert "Failed to list object audit log." in str(exc.value)
+    assert f"Failed to list /feature_list/audit/{saved_feature_list.id}." in str(exc.value)
 
 
 def test_list(saved_feature_list):

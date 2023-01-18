@@ -428,6 +428,8 @@ class BaseDocumentService(
             query_filter={},
             sort_by="action_at",
             sort_dir="asc",
+            page=1,
+            page_size=0,
         )
         return self._get_field_history(field=field, audit_docs=audit_data["data"])
 
