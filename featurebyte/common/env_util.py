@@ -5,9 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import base64
-import textwrap
-
 
 def is_notebook() -> bool:
     """
@@ -54,37 +51,3 @@ def display_html_in_notebook(html_content: str) -> None:
         from IPython.display import HTML, display  # pylint: disable=import-error
 
         display(HTML(html_content), metadata=dict(isolated=True))
-
-
-def download_pdf_in_notebook(binary_content: bytes, file_name: str) -> None:
-    """
-    Display html content in notebook environment
-
-    Parameters
-    ----------
-    binary_content: bytes
-        HTML content to display
-    file_name: str
-        Name of pdf file
-    """
-
-    if is_notebook():
-        # pylint: disable=import-outside-toplevel
-        from IPython.display import Javascript, display  # pylint: disable=import-error
-
-        b64_string = base64.b64encode(binary_content).decode("utf-8")
-        display(
-            Javascript(
-                textwrap.dedent(
-                    f"""
-                function download(dataurl, filename) {{
-                  const link = document.createElement("a");
-                  link.href = dataurl;
-                  link.download = filename;
-                  link.click();
-                }}
-                download("data:application/pdf;base64,{b64_string}", {file_name});
-                """
-                ).strip()
-            )
-        )

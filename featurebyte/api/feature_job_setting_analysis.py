@@ -3,9 +3,10 @@ FeatureJobSettingAnalysis class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
@@ -13,7 +14,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_data import DataApiObject
-from featurebyte.common.env_util import display_html_in_notebook, download_pdf_in_notebook
+from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
@@ -96,14 +97,36 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         display_html_in_notebook(self.analysis_report)
 
     @typechecked
-    def download_report(self) -> None:
+    def download_report(self, output_path: Optional[Union[str, Path]] = None) -> Path:
         """
-        Display analysis report
+        Downlaod analysis report
+
+        Parameters
+        ----------
+        output_path: Optional[Union[str, Path]]
+            Location to save downloaded report
+
+        Returns
+        -------
+        Path
+
+        Raises
+        ------
+        FileExistsError
+            File already exists at output path
         """
         client = Configurations().get_client()
         response = client.get(f"{self._route}/{self.id}/report")
-        file_name = response.headers["content-disposition"].split("filename=")[1]
-        download_pdf_in_notebook(response.content, file_name)
+        file_name = response.headers["content-disposition"].split("filename=")[1].replace('"', "")
+        output_path = output_path or Path(f"./{file_name}")
+        output_path = Path(output_path)
+
+        if output_path.exists():
+            raise FileExistsError(f"{output_path} already exists.")
+
+        with open(output_path, "wb") as file_obj:
+            file_obj.write(response.content)
+        return output_path
 
     @typechecked
     def get_recommendation(self) -> FeatureJobSetting:
