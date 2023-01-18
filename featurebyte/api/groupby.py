@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Type, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -833,7 +833,7 @@ class GroupBy:
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[AggFunc] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
@@ -847,7 +847,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[AggFunc]
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: Optional[str]
             Output feature name
