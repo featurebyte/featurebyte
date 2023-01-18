@@ -109,3 +109,61 @@ class GetValueFromDictionaryNode(ExpressionNode):
             dictionary_feature_node=dictionary_node,
             lookup_feature_node=lookup_node,
         )
+
+
+@dataclass
+class GetRelativeFrequencyNode(ExpressionNode):
+    """Node to get relative frequency"""
+
+    lookup_key_node: ExpressionNode
+    dictionary_node: ExpressionNode
+    query_node_type = NodeType.GET_RELATIVE_FREQUENCY
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Anonymous(
+            this="F_GET_RELATIVE_FREQUENCY",
+            expressions=[self.dictionary_node.sql, self.lookup_key_node.sql],
+        )
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> GetRelativeFrequencyNode:
+        table_node, dictionary_node, lookup_key_node = prepare_binary_op_input_nodes(context)
+        return GetRelativeFrequencyNode(
+            context=context,
+            table_node=table_node,
+            dictionary_node=dictionary_node,
+            lookup_key_node=lookup_key_node,
+        )
+
+
+@dataclass
+class GetRankNode(ExpressionNode):
+    """Node to get relative frequency"""
+
+    lookup_key_node: ExpressionNode
+    dictionary_node: ExpressionNode
+    descending: bool = False
+    query_node_type = NodeType.GET_RANK
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Anonymous(
+            this="F_GET_RANK",
+            expressions=[
+                self.dictionary_node.sql,
+                self.lookup_key_node.sql,
+                make_literal_value(self.descending),
+            ],
+        )
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> GetRankNode:
+        table_node, dictionary_node, lookup_key_node = prepare_binary_op_input_nodes(context)
+        return GetRankNode(
+            context=context,
+            table_node=table_node,
+            dictionary_node=dictionary_node,
+            lookup_key_node=lookup_key_node,
+            descending=context.parameters["descending"],
+        )

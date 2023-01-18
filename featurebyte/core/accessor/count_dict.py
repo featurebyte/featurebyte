@@ -183,6 +183,37 @@ class CountDictAccessor:
 
         >>> dictionary_feature.cd.get_value(lookup_feature)  # doctest: +SKIP
         """
+
+    def get_rank(
+        self, key: Union[Scalar, Feature], descending: bool = False, right_op: bool = False
+    ) -> Feature:
+        """
+        Gets the relative frequency of a particular key
+
+        Parameters
+        ----------
+        key: Union[Scalar, Feature]
+            key to lookup the value for
+        descending: bool
+            defaults to ranking in ascending order. Set to true to rank in descending order.
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Feature
+
+
+        Examples
+        --------
+        Getting rank from a dictionary feature using a scalar value
+
+        >>> dictionary_feature.cd.get_rank("key")  # doctest: +SKIP
+
+        Getting rank from a dictionary feature using a lookup feature
+
+        >>> dictionary_feature.cd.get_rank(lookup_feature)  # doctest: +SKIP
+        """
         feature_clazz = type(self._feature_obj)
         if isinstance(key, feature_clazz):
             assert_is_lookup_feature(key.node_types_lineage)
@@ -197,9 +228,72 @@ class CountDictAccessor:
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
         response = self._feature_obj._binary_op(  # pylint: disable=protected-access
             other=key,
+            node_type=NodeType.GET_RANK,
+            output_var_type=self._feature_obj.dtype,
+            right_op=right_op,
+            additional_node_params=additional_node_params,
+        )
+        assert isinstance(response, feature_clazz)
+        return response
+
+    def get_relative_frequency(
+        self, key: Union[Scalar, Feature], right_op: bool = False
+    ) -> Feature:
+        """
+        Gets the relative frequency of a particular key
+
+        Parameters
+        ----------
+        key: Union[Scalar, Feature]
+            key to lookup the value for
+        right_op: bool
+            right op
+
+        Returns
+        -------
+        Feature
+
+        Examples
+        --------
+        Getting relative frequency from a dictionary feature using a scalar value
+
+        >>> dictionary_feature.cd.c("key")  # doctest: +SKIP
+
+        Getting relative frequency from a dictionary feature using a lookup feature
+
+        >>> dictionary_feature.cd.feature_clazz = type(self._feature_obj)
+        if isinstance(key, feature_clazz):
+            assert_is_lookup_feature(key.node_types_lineage)
+
+        additional_node_params = {}
+        # We only need to assign value if we have been passed in a single scalar value.
+        if not isinstance(key, feature_clazz):
+            additional_node_params["value"] = key
+
+        response = self._feature_obj._binary_op(  # pylint: disable=protected-access
+            other=key,
             node_type=NodeType.GET_VALUE,
             output_var_type=get_value_node.derive_var_type([op_struct]),
             right_op=False,
+            additional_node_params=additional_node_params,
+        )
+        assert isinstance(response, feature_clazz)
+        return response(lookup_feature)  # doctest: +SKIP
+        """
+        feature_clazz = type(self._feature_obj)
+        if isinstance(key, feature_clazz):
+            assert_is_lookup_feature(key.node_types_lineage)
+
+        additional_node_params = {}
+        # We only need to assign value if we have been passed in a single scalar value.
+        if not isinstance(key, feature_clazz):
+            additional_node_params["value"] = key
+
+        response = self._feature_obj._binary_op(  # pylint: disable=protected-access
+            other=key,
+            node_type=NodeType.GET_RELATIVE_FREQUENCY,
+            output_var_type=self._feature_obj.dtype,
+            right_op=right_op,
             additional_node_params=additional_node_params,
         )
         assert isinstance(response, feature_clazz)

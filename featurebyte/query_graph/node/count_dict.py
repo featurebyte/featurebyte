@@ -83,3 +83,36 @@ class GetValueFromDictionaryNode(BaseSeriesOutputNode):
         if parent_column is None:
             parent_column = inputs[0].columns[0]
         return agg_func.derive_output_var_type(parent_column.dtype, category=None)
+
+
+class GetRankFromDictionaryNode(BaseSeriesOutputNode):
+    """Get rank from dictionary node class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        value: Optional[Scalar]
+        descending: bool = False
+
+    type: Literal[NodeType.GET_RANK] = Field(NodeType.GET_RANK, const=True)
+    parameters: Parameters
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT
+
+
+class GetRelativeFrequencyFromDictionaryNode(BaseSeriesOutputNode):
+    """Get relative frequency from dictionary node class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        value: Optional[Scalar]
+
+    type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = Field(
+        NodeType.GET_RELATIVE_FREQUENCY, const=True
+    )
+    parameters: Parameters
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return DBVarType.FLOAT

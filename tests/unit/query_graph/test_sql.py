@@ -14,6 +14,8 @@ from featurebyte.query_graph.sql.ast.binary import BinaryOp
 from featurebyte.query_graph.sql.ast.count_dict import (
     CountDictTransformNode,
     DictionaryKeysNode,
+    GetRankNode,
+    GetRelativeFrequencyNode,
     GetValueFromDictionaryNode,
 )
 from featurebyte.query_graph.sql.ast.datetime import (
@@ -298,7 +300,6 @@ def test_dictionary_keys_node(input_node):
     node = DictionaryKeysNode.build(
         make_context(
             node_type=NodeType.DICTIONARY_KEYS,
-            parameters={},
             input_sql_nodes=[column],
         )
     )
@@ -314,11 +315,48 @@ def test_get_value_node(input_node):
     node = GetValueFromDictionaryNode.build(
         make_context(
             node_type=NodeType.GET_VALUE,
-            parameters={},
             input_sql_nodes=[dictionary_node, lookup_node],
         )
     )
     assert node.sql.sql() == "GET(dictionary, lookup)"
+
+
+@pytest.mark.parametrize(
+    "parameters, expected",
+    [
+        ({"descending": True}, "F_GET_RANK(dictionary, lookup, True)"),
+        ({"descending": False}, "F_GET_RANK(dictionary, lookup, False)"),
+    ],
+)
+def test_get_rank_node(parameters, expected, input_node):
+    """
+    Test get rank node
+    """
+    dictionary_node = make_str_expression_node(table_node=input_node, expr="dictionary")
+    lookup_node = make_str_expression_node(table_node=input_node, expr="lookup")
+    node = GetRankNode.build(
+        make_context(
+            node_type=NodeType.GET_RANK,
+            parameters=parameters,
+            input_sql_nodes=[dictionary_node, lookup_node],
+        )
+    )
+    assert node.sql.sql() == expected
+
+
+def test_get_relative_frequency_node(input_node):
+    """
+    Test get relative frequency node
+    """
+    dictionary_node = make_str_expression_node(table_node=input_node, expr="dictionary")
+    lookup_node = make_str_expression_node(table_node=input_node, expr="lookup")
+    node = GetRelativeFrequencyNode.build(
+        make_context(
+            node_type=NodeType.GET_RELATIVE_FREQUENCY,
+            input_sql_nodes=[dictionary_node, lookup_node],
+        )
+    )
+    assert node.sql.sql() == "F_GET_RELATIVE_FREQUENCY(dictionary, lookup)"
 
 
 def test_is_in_node(input_node):
