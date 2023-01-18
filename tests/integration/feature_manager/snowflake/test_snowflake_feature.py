@@ -62,17 +62,12 @@ async def online_enabled_feature_spec_fixture(
                 )
 
                 schedule_time = datetime.utcnow()
-                next_job_time = date_util.get_next_job_datetime(
-                    input_dt=schedule_time,
-                    frequency_minutes=snowflake_tile.frequency_minute,
-                    time_modulo_frequency_seconds=snowflake_tile.time_modulo_frequency_second,
-                )
 
                 await feature_manager.online_enable(
                     online_feature_spec, schedule_time=schedule_time
                 )
 
-                yield online_feature_spec, next_job_time
+                yield online_feature_spec, schedule_time
 
                 await snowflake_session.execute_query(
                     f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
@@ -92,20 +87,35 @@ async def test_online_enabled_feature_spec(
     """
     Test online_enable
     """
-    online_feature_spec, next_job_time = online_enabled_feature_spec
+    online_feature_spec, schedule_time = online_enabled_feature_spec
     expected_tile_id = snowflake_tile.tile_id
+
+    next_job_time_online = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=snowflake_tile.frequency_minute,
+        time_modulo_frequency_seconds=snowflake_tile.time_modulo_frequency_second,
+    )
+
+    next_job_time_offline = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=1440,
+        time_modulo_frequency_seconds=snowflake_tile.time_modulo_frequency_second,
+    )
 
     tasks = await snowflake_session.execute_query(
         f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].tile_id}%'"
     )
     assert len(tasks) == 2
     assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id}_OFFLINE"
-    assert tasks["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"
+    assert (
+        tasks["schedule"].iloc[0]
+        == f"USING CRON {next_job_time_offline.minute} {next_job_time_offline.hour} {next_job_time_offline.day} * * UTC"
+    )
     assert tasks["state"].iloc[0] == "started"
     assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id}_ONLINE"
     assert (
         tasks["schedule"].iloc[1]
-        == f"USING CRON {next_job_time.minute} {next_job_time.hour} * * * UTC"
+        == f"USING CRON {next_job_time_online.minute} {next_job_time_online.hour} {next_job_time_online.day} * * UTC"
     )
     assert tasks["state"].iloc[1] == "started"
 

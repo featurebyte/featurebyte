@@ -116,7 +116,7 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
         frequency_minutes=mock_snowflake_tile.frequency_minute,
         time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
     )
-    cron = f"{next_job_time.minute} {next_job_time.hour} * * *"
+    cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
     sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
 
@@ -157,12 +157,22 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
     Test schedule_offline_tiles method in TileSnowflake
     """
     _ = mock_execute_query
-    sql = await tile_manager.schedule_offline_tiles(mock_snowflake_tile)
+
+    schedule_time = datetime.utcnow()
+    next_job_time = date_util.get_next_job_datetime(
+        input_dt=schedule_time,
+        frequency_minutes=1440,
+        time_modulo_frequency_seconds=mock_snowflake_tile.time_modulo_frequency_second,
+    )
+
+    sql = await tile_manager.schedule_offline_tiles(
+        tile_spec=mock_snowflake_tile, schedule_time=schedule_time
+    )
     expected_sql = textwrap.dedent(
-        """
+        f"""
         CREATE OR REPLACE TASK SHELL_TASK_TILE_ID1_OFFLINE
           WAREHOUSE = sf_warehouse
-          SCHEDULE = 'USING CRON 3 0 * * * UTC'
+          SCHEDULE = 'USING CRON 3 0 {next_job_time.day} * * UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
                 'SHELL_TASK_TILE_ID1_OFFLINE',

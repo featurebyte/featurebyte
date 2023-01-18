@@ -221,7 +221,7 @@ class TileManagerSnowflake(BaseTileManager):
             frequency_minutes=tile_spec.frequency_minute,
             time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
         )
-        cron = f"{next_job_time.minute} {next_job_time.hour} * * *"
+        cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
         return await self._schedule_tiles(
             tile_spec=tile_spec,
@@ -258,7 +258,7 @@ class TileManagerSnowflake(BaseTileManager):
             frequency_minutes=offline_minutes,
             time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
         )
-        cron = f"{next_job_time.minute} {next_job_time.hour} * * *"
+        cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
         return await self._schedule_tiles(
             tile_spec=tile_spec,
