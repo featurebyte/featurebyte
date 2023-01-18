@@ -13,10 +13,9 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.persistent import Document
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
-from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.session.base import BaseSession
 
 
 class TileColumnTypeExtractor:
@@ -95,7 +94,7 @@ class TileColumnTypeExtractor:
         return value_column_names.str.replace('"', "").str.split(",").apply(_transform)
 
 
-class DataWarehouseMigrationService(FeatureStoreService, DataWarehouseMigrationMixin):
+class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
     """
     DataWarehouseMigrationService class
 
@@ -120,12 +119,10 @@ class DataWarehouseMigrationService(FeatureStoreService, DataWarehouseMigrationM
         # migrate all records and audit records
         await self.migrate_all_records()
 
-    async def migrate_record(self, document: Document) -> None:
-        feature_store = FeatureStoreModel(**document)
-        session_manager_service = self.get_session_manager_service(self.user, self.persistent)
-        session = await session_manager_service.get_feature_store_session(
-            feature_store, get_credential=self.get_credential
-        )
+    async def migrate_record_with_session(
+        self, feature_store: FeatureStoreModel, session: BaseSession
+    ) -> None:
+        _ = feature_store
         df_tile_registry = await session.execute_query(
             "SELECT TILE_ID, VALUE_COLUMN_NAMES FROM TILE_REGISTRY"
         )
