@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -256,41 +256,42 @@ class ItemView(View, GroupByMixin):
             return
 
         keys = groupby_obj.keys
-        groupby_keys_from_event_data = all(
-            self._is_column_derived_only_from_event_data(key) for key in keys
-        )
-        if groupby_keys_from_event_data and self._is_column_derived_only_from_event_data(
-            value_column
-        ):
+        columns_to_check = [*keys, value_column]
+        if self._are_columns_derived_only_from_event_data(columns_to_check):
             raise ValueError(
                 "Columns imported from EventData and their derivatives should be aggregated in"
                 " EventView"
             )
 
-    def _is_column_derived_only_from_event_data(self, column_name: str) -> bool:
+    def _are_columns_derived_only_from_event_data(self, column_names: List[str]) -> bool:
         """
         Check if column is derived using only EventData's columns
 
         Parameters
         ----------
-        column_name : str
-            Name of the column in ItemView to check
+        column_names : List[str]
+            Column names in ItemView to check
 
         Returns
         -------
         bool
         """
         operation_structure = self.graph.extract_operation_structure(self.node)
-        column_structure = next(
-            column for column in operation_structure.columns if column.name == column_name
-        )
-        if isinstance(column_structure, DerivedDataColumn):
-            return all(
-                input_column.tabular_data_type == TableDataType.EVENT_DATA
-                for input_column in column_structure.columns
+        for column_name in column_names:
+            column_structure = next(
+                column for column in operation_structure.columns if column.name == column_name
             )
-        # column_structure is a SourceDataColumn
-        return column_structure.tabular_data_type == TableDataType.EVENT_DATA
+            if isinstance(column_structure, DerivedDataColumn):
+                if not all(
+                    input_column.tabular_data_type == TableDataType.EVENT_DATA
+                    for input_column in column_structure.columns
+                ):
+                    return False
+                continue
+            # column_structure is a SourceDataColumn
+            if column_structure.tabular_data_type != TableDataType.EVENT_DATA:
+                return False
+        return True
 
     def get_join_column(self) -> str:
         return self.item_id_column
