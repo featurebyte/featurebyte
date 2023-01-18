@@ -8,7 +8,7 @@ $$
   }
   var counts_arr = Object.values(COUNTS);
   var total = counts_arr.reduce((partialSum, a) => partialSum + a, 0);
-  var key_value = COUNTS.get(key_to_use)
+  var key_value = COUNTS[KEY_TO_USE]
   return key_value / total;
 $$
 ;

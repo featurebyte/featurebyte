@@ -18,6 +18,20 @@ def item_type_dimension_lookup_feature_fixture(dimension_view):
     return dimension_view["item_type"].as_feature("ItemTypeFeature")
 
 
+@pytest.fixture(name="count_item_type_dictionary_feature")
+def count_item_type_dictionary_feature_fixture(item_data):
+    """
+    Get count item type dictionary feature.
+
+    Feature is grouped by ORDER_ID, with ITEM_TYPE as their category.
+    """
+    item_data = ItemView.from_item_data(item_data)
+    return item_data.groupby("order_id", category="item_type").aggregate(
+        method="count",
+        feature_name="COUNT_ITEM_TYPE",
+    )
+
+
 def test_dimension_lookup_features(dimension_view):
     """
     Test lookup features from DimensionView
@@ -94,20 +108,15 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
 
 
 def test_get_value_from_dictionary__target_is_lookup_feature(
-    item_type_dimension_lookup_feature, item_data
+    item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
     """
     Test get value from dictionary.
     """
-    # get dictionary feature
-    item_data = ItemView.from_item_data(item_data)
-    dictionary_feature = item_data.groupby("order_id", category="item_type").aggregate(
-        method="count",
-        feature_name="COUNT_ITEM_TYPE",
-    )
-
     # perform get_value
-    get_value_feature = dictionary_feature.cd.get_value(item_type_dimension_lookup_feature)
+    get_value_feature = count_item_type_dictionary_feature.cd.get_value(
+        item_type_dimension_lookup_feature
+    )
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_count_value_from_dictionary"
 
@@ -151,5 +160,97 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
         get_value_feature.name: "4.421000000000000e+01",
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
+    item_type_dimension_lookup_feature, count_item_type_dictionary_feature
+):
+    """
+    Test get relative frequency from dictionary.
+    """
+    # perform get_value
+    get_value_feature = count_item_type_dictionary_feature.cd.get_relative_frequency(
+        item_type_dimension_lookup_feature
+    )
+    assert isinstance(get_value_feature, Feature)
+    get_value_feature.name = "get_relative_frequency_from_dictionary"
+
+    # assert
+    preview_params = {
+        "POINT_IN_TIME": "2001-01-13 12:00:00",
+        "item_id": "item_44",
+        "order_id": "T2",
+    }
+    get_value_feature_preview = get_value_feature.preview(preview_params)
+    assert get_value_feature_preview.shape[0] == 1
+    assert get_value_feature_preview.iloc[0].to_dict() == {
+        get_value_feature.name: 0.125,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
+    """
+    Test get relative frequency
+    """
+    # perform get_value
+    get_value_feature = count_item_type_dictionary_feature.cd.get_relative_frequency("type_44")
+    assert isinstance(get_value_feature, Feature)
+    get_value_feature.name = "get_relative_frequency_in_dictionary"
+
+    # assert
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "order_id": "T2"}
+    get_value_feature_preview = get_value_feature.preview(preview_params)
+    assert get_value_feature_preview.shape[0] == 1
+    assert get_value_feature_preview.iloc[0].to_dict() == {
+        get_value_feature.name: 0.125,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+def test_get_rank_from_dictionary__target_is_lookup_feature(
+    item_type_dimension_lookup_feature, count_item_type_dictionary_feature
+):
+    """
+    Test get value from dictionary.
+    """
+    # perform get_rank
+    get_value_feature = count_item_type_dictionary_feature.cd.get_rank(
+        item_type_dimension_lookup_feature
+    )
+    assert isinstance(get_value_feature, Feature)
+    get_value_feature.name = "get_rank_value_from_dictionary"
+
+    # assert
+    preview_params = {
+        "POINT_IN_TIME": "2001-01-13 12:00:00",
+        "item_id": "item_44",
+        "order_id": "T2",
+    }
+    get_value_feature_preview = get_value_feature.preview(preview_params)
+    assert get_value_feature_preview.shape[0] == 1
+    assert get_value_feature_preview.iloc[0].to_dict() == {
+        get_value_feature.name: 2.0,
+        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+    }
+
+
+def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
+    """
+    Test is in dictionary
+    """
+    # perform get_rank
+    get_value_feature = count_item_type_dictionary_feature.cd.get_rank("type_44")
+    assert isinstance(get_value_feature, Feature)
+    get_value_feature.name = "get_rank_in_dictionary"
+
+    # assert
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "order_id": "T2"}
+    get_value_feature_preview = get_value_feature.preview(preview_params)
+    assert get_value_feature_preview.shape[0] == 1
+    assert get_value_feature_preview.iloc[0].to_dict() == {
+        get_value_feature.name: 2.0,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
