@@ -173,7 +173,7 @@ class AggregationOpStructMixin:
             aggregation_func_obj = construct_agg_func(cast(AggFunc, agg_func))
             input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
             output_var_type = aggregation_func_obj.derive_output_var_type(
-                input_var_type=input_var_type, category=getattr(self.parameters, "category", None)
+                input_var_type=input_var_type, category=self.parameters.value_by
             )
         else:
             # to be overriden at the _get_aggregations

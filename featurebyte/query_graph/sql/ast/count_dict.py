@@ -13,7 +13,10 @@ from sqlglot.expressions import Expression
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.ast.util import prepare_unary_input_nodes
+from featurebyte.query_graph.sql.ast.util import (
+    prepare_binary_op_input_nodes,
+    prepare_unary_input_nodes,
+)
 from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT
 
 
@@ -80,4 +83,29 @@ class DictionaryKeysNode(ExpressionNode):
             context=context,
             table_node=table_node,
             dictionary_feature_node=input_expr_node,
+        )
+
+
+@dataclass
+class GetValueFromDictionaryNode(ExpressionNode):
+    """Node that gets the value from a dictionary"""
+
+    dictionary_feature_node: ExpressionNode
+    lookup_feature_node: ExpressionNode
+    query_node_type = NodeType.GET_VALUE
+
+    @property
+    def sql(self) -> Expression:
+        return self.context.adapter.get_value_from_dictionary(
+            self.dictionary_feature_node.sql, self.lookup_feature_node.sql
+        )
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> GetValueFromDictionaryNode:
+        table_node, dictionary_node, lookup_node = prepare_binary_op_input_nodes(context)
+        return GetValueFromDictionaryNode(
+            context=context,
+            table_node=table_node,
+            dictionary_feature_node=dictionary_node,
+            lookup_feature_node=lookup_node,
         )

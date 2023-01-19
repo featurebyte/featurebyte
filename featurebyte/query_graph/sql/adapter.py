@@ -225,6 +225,27 @@ class BaseAdapter:
             Boolean column to indicate whether the value is string type or not
         """
 
+    @classmethod
+    @abstractmethod
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
+        """
+        Get the value from a dictionary based on a key provided.
+
+        Parameters
+        ----------
+        dictionary_expression: Expression
+            expression that corresponds to the dictionary value
+        key_expression: Expression
+            expression that corresponds to the key we want to look up
+
+        Returns
+        -------
+        Expression
+            expression which returns the value for a key provided
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -363,6 +384,14 @@ class SnowflakeAdapter(BaseAdapter):
         output_expr = expressions.Anonymous(this="IS_VARCHAR", expressions=[variant_expr])
         return output_expr
 
+    @classmethod
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="GET", expressions=[dictionary_expression, key_expression]
+        )
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -456,6 +485,12 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
         raise NotImplementedError()
 
 

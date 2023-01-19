@@ -1,6 +1,7 @@
 """
 Unit tests for core/accessor/count_dict.py
 """
+
 import pytest
 
 from featurebyte.enum import DBVarType
@@ -87,3 +88,44 @@ def test_cosine_similarity__other_not_dict_scalar(count_per_category_feature):
     with pytest.raises(TypeError) as exc:
         count_per_category_feature.cd.cosine_similarity(123)
     assert str(exc.value) == "cosine_similarity is only available for Feature; got 123"
+
+
+def test_get_value_from_dictionary__validation_fails(float_feature, count_per_category_feature):
+    """
+    Test validation will cause errors when features are not of the correct type.
+    """
+    with pytest.raises(AttributeError) as exc:
+        float_feature.cd.get_value(float_feature)
+    assert "Can only use .cd accessor with count per category features" in str(exc)
+
+    with pytest.raises(ValueError) as exc:
+        count_per_category_feature.cd.get_value(count_per_category_feature)
+    assert "not a lookup feature" in str(exc)
+
+
+def test_get_value_from_dictionary__success(count_per_category_feature, sum_per_category_feature):
+    """Test get_value method"""
+    # count don't have parent column & sum has parent column,
+    # use different aggregation methods to cover both cases
+    for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
+        # check the count_dict has a proper dtype
+        count_dict_op_struct = per_cat_feat.graph.extract_operation_structure(
+            node=per_cat_feat.node
+        )
+        assert len(count_dict_op_struct.aggregations) == 1
+        assert count_dict_op_struct.aggregations[0].dtype == "OBJECT"
+
+        result = per_cat_feat.cd.get_value("key")
+        result_dict = result.dict()
+        assert result.dtype == "FLOAT"
+        assert result_dict["graph"]["edges"] == [
+            {"source": "input_1", "target": "groupby_1"},
+            {"source": "groupby_1", "target": "project_1"},
+            {"source": "project_1", "target": "get_value_1"},
+        ]
+        assert result_dict["graph"]["nodes"][3] == {
+            "name": "get_value_1",
+            "output_type": "series",
+            "parameters": {"value": "key"},
+            "type": "get_value",
+        }

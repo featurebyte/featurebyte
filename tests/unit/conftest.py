@@ -747,6 +747,26 @@ def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
     yield features
 
 
+@pytest.fixture(name="sum_per_category_feature")
+def sum_per_category_feature_fixture(snowflake_event_view_with_entity):
+    """
+    Aggregation (sum) per category FeatureGroup fixture
+    """
+    grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
+    features = grouped.aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+        feature_names=["sum_30m"],
+    )
+    yield features["sum_30m"]
+
+
 @pytest.fixture(name="count_per_category_feature")
 def count_per_category_feature_fixture(count_per_category_feature_group):
     """
