@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, ClassVar, List, Optional, Type, TypeVar
 
 from http import HTTPStatus
 

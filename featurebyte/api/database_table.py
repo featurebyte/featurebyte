@@ -22,6 +22,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
+from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
@@ -138,7 +139,8 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         str
         """
         node = self.node
-        graph_node = self.table_data.construct_cleaning_recipe_node(input_node=self.node)
+        assert isinstance(node, InputNode)
+        graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
         if graph_node:
             node = GlobalQueryGraph().add_node(node=graph_node, input_nodes=[self.node])
 
