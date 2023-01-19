@@ -1,8 +1,10 @@
 import contextlib
+from copy import deepcopy
 from unittest.mock import Mock
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import EventView, Feature, FeatureList
@@ -45,11 +47,60 @@ async def revert_when_done(session, table_name):
         await session.execute_query(f"CREATE OR REPLACE TABLE {table_name} CLONE {backup_name}")
 
 
+@pytest_asyncio.fixture(name="bad_feature_stores")
+async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
+    """
+    Invalid FeatureStore documents to test error handling during migration
+    """
+    feature_store_doc = await persistent.find_one(
+        "feature_store", {"_id": snowflake_feature_store.id}
+    )
+    del feature_store_doc["_id"]
+
+    # FeatureStore without credentials configured
+    feature_store = deepcopy(feature_store_doc)
+    feature_store["name"] = "snowflake_featurestore_no_creds"
+    feature_store["details"]["sf_schema"] += "_1"
+    await persistent.insert_one(
+        collection_name="feature_store", document=feature_store, user_id=user.id
+    )
+
+    # FeatureStore with wrong credentials
+    feature_store = deepcopy(feature_store_doc)
+    feature_store["name"] = "snowflake_featurestore_wrong_creds"
+    feature_store["details"]["sf_schema"] += "_2"
+    await persistent.insert_one(
+        collection_name="feature_store", document=feature_store, user_id=user.id
+    )
+
+    # FeatureStore that can no longer instantiate a session object because of working schema
+    # collision (they used to be allowed and might still exist as old documents)
+    feature_store = deepcopy(feature_store_doc)
+    feature_store["name"] = "snowflake_featurestore_invalid_because_same_schema_a"
+    feature_store["details"]["sf_schema"] += "_3"
+    await persistent.insert_one(
+        collection_name="feature_store", document=feature_store, user_id=user.id
+    )
+    feature_store = deepcopy(feature_store_doc)
+    feature_store["name"] = "snowflake_featurestore_invalid_because_same_schema_b"
+    feature_store["details"]["sf_schema"] += "_3"
+    await persistent.insert_one(
+        collection_name="feature_store", document=feature_store, user_id=user.id
+    )
+
+
 @pytest.mark.asyncio
-async def test_data_warehouse_migration_v6(user, persistent, event_data, snowflake_session):
+async def test_data_warehouse_migration_v6(
+    user,
+    persistent,
+    event_data,
+    snowflake_session,
+    bad_feature_stores,
+):
     """
     Test data warehouse migration
     """
+    _ = bad_feature_stores
     event_view = EventView.from_event_data(event_data)
     features = event_view.groupby("USER ID").aggregate_over(
         method="count",

@@ -63,6 +63,24 @@ def config_fixture():
                 "password": os.getenv("SNOWFLAKE_PASSWORD"),
             },
             {
+                "feature_store": "snowflake_featurestore_invalid_because_same_schema_a",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": os.getenv("SNOWFLAKE_USER"),
+                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            },
+            {
+                "feature_store": "snowflake_featurestore_invalid_because_same_schema_b",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": os.getenv("SNOWFLAKE_USER"),
+                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            },
+            {
+                "feature_store": "snowflake_featurestore_wrong_creds",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": "wrong-user",
+                "password": "wrong-password",
+            },
+            {
                 "feature_store": "sqlite_datasource",
             },
             {
@@ -79,7 +97,6 @@ def config_fixture():
             }
         ],
     }
-
     with tempfile.TemporaryDirectory() as tempdir:
         config_file_path = os.path.join(tempdir, "config.yaml")
         with open(config_file_path, "w") as file_handle:

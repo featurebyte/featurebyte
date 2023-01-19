@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 
 from bson import ObjectId
 
+from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
@@ -181,7 +182,18 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
 
     async def migrate_record(self, document: Document) -> None:
         feature_store = FeatureStoreModel(**document)
-        session = await self.get_session(feature_store)
+        try:
+            session = await self.get_session(feature_store)
+            # Verify that session is fully functional by attempting to execute a query
+            _ = await session.execute_query("SELECT 1 AS A")
+        except CredentialsError:
+            logger.debug(f"Got CredentialsError, skipping migration for {feature_store.name}")
+            return
+        except Exception:  # pylint: disable=broad-except
+            logger.debug(
+                f"Got unexpected error when creating session, skipping migration for {feature_store.name}"
+            )
+            return
         await self.migrate_record_with_session(feature_store, session)
 
     async def migrate_record_with_session(
