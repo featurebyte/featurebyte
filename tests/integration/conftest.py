@@ -54,25 +54,28 @@ def config_fixture():
     """
     Config object for integration testing
     """
+    username_password = {
+        "credential_type": "USERNAME_PASSWORD",
+        "username": os.getenv("SNOWFLAKE_USER"),
+        "password": os.getenv("SNOWFLAKE_PASSWORD"),
+    }
     config_dict = {
         "credential": [
             {
                 "feature_store": "snowflake_featurestore",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": os.getenv("SNOWFLAKE_USER"),
-                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+                **username_password,
             },
             {
                 "feature_store": "snowflake_featurestore_invalid_because_same_schema_a",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": os.getenv("SNOWFLAKE_USER"),
-                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+                **username_password,
             },
             {
                 "feature_store": "snowflake_featurestore_invalid_because_same_schema_b",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": os.getenv("SNOWFLAKE_USER"),
-                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+                **username_password,
+            },
+            {
+                "feature_store": "snowflake_featurestore_unreachable",
+                **username_password,
             },
             {
                 "feature_store": "snowflake_featurestore_wrong_creds",

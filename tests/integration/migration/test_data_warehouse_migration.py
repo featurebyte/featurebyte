@@ -88,6 +88,15 @@ async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
 
+    # FeatureStore with unreachable host
+    feature_store = deepcopy(feature_store_doc)
+    feature_store["name"] = "snowflake_featurestore_unreachable"
+    feature_store["details"]["account"] = "this.snowflake.account.does.not.exist.gcp"
+    feature_store["details"]["sf_schema"] += "_4"
+    await persistent.insert_one(
+        collection_name="feature_store", document=feature_store, user_id=user.id
+    )
+
 
 @pytest.mark.asyncio
 async def test_data_warehouse_migration_v6(
