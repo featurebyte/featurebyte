@@ -28,11 +28,11 @@ def features_fixture(event_data):
         windows=["2h", "24h"],
         feature_names=["AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
     )
-    feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
-        method="count",
-        windows=["24h"],
-        feature_names=["EVENT_COUNT_BY_ACTION_24h"],
-    )
+    # feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
+    #     method="count",
+    #     windows=["24h"],
+    #     feature_names=["EVENT_COUNT_BY_ACTION_24h"],
+    # )
     features = [
         feature_group["AMOUNT_SUM_2h"],
         feature_group["AMOUNT_SUM_24h"],
