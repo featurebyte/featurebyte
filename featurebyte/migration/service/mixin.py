@@ -7,10 +7,13 @@ from typing import Any, Optional, Protocol
 
 from abc import ABC, abstractmethod
 
+from bson import ObjectId
+
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent
+from featurebyte.service.base_document import DocumentUpdateSchema
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
@@ -123,6 +126,19 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
     """
 
     get_credential: Any
+
+    async def create_document(self, data: DocumentUpdateSchema) -> Document:  # type: ignore[override]
+        raise NotImplementedError()
+
+    async def update_document(  # type: ignore[override]
+        self,
+        document_id: ObjectId,
+        data: DocumentUpdateSchema,
+        exclude_none: bool = True,
+        document: Optional[Document] = None,
+        return_document: bool = True,
+    ) -> Optional[Document]:
+        raise NotImplementedError()
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
         """
