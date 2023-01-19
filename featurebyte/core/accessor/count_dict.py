@@ -14,10 +14,6 @@ from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.count_dict import GetValueFromDictionaryNode
-from featurebyte.query_graph.node.metadata.operation import (
-    OperationStructureBranchState,
-    OperationStructureInfo,
-)
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
