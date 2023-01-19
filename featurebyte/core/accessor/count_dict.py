@@ -256,7 +256,6 @@ class CountDictAccessor:
         assert isinstance(response, feature_clazz)
         return response
 
-
     def get_relative_frequency(
         self, key: Union[Scalar, Feature], right_op: bool = False
     ) -> Feature:
