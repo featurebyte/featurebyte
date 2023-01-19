@@ -40,8 +40,8 @@ class TileColumnTypeExtractor:
         feature_service: FeatureService,
     ) -> dict[str, str]:
         tile_column_name_to_type = {}
-        feature_documents = await feature_service.list_documents(page_size=0)
-        for doc in feature_documents["data"]:
+        feature_documents = feature_service.list_documents_iterator({})
+        async for doc in feature_documents:
             feature_model = ExtendedFeatureModel(**doc)
             for tile_spec in feature_model.tile_specs:
                 for tile_column_name, tile_column_type in zip(
