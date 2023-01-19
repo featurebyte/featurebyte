@@ -280,7 +280,7 @@ class ItemView(View, GroupByMixin):
         """
         if self.event_id_column not in groupby_obj.keys:
             raise ValueError(
-                f"GroupBy columns must contain the event ID column ({self.event_id_column}) to prevent time leakage "
+                f"GroupBy keys must contain the event ID column ({self.event_id_column}) to prevent time leakage "
                 "when performing simple aggregates."
             )
 
