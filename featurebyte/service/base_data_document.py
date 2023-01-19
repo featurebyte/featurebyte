@@ -3,12 +3,12 @@ BaseDataDocumentService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar, cast
+from typing import Any, Optional, TypeVar
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import UniqueConstraintResolutionSignature
-from featurebyte.models.feature_store import ConstructGraphMixin, DataStatus
+from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.schema.tabular_data import DataCreate, DataServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -107,27 +107,17 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
 
     async def create_document(self, data: DocumentCreate) -> Document:
         # retrieve feature store
-        feature_store = await FeatureStoreService(
-            user=self.user, persistent=self.persistent
-        ).get_document(document_id=data.tabular_source.feature_store_id)
+        _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
+            document_id=data.tabular_source.feature_store_id
+        )
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()
         payload_dict = {**data.json_dict(), "_id": data_doc_id}
 
-        # create graph & node
-        graph, node = cast(ConstructGraphMixin, self.document_class).construct_graph_and_node(
-            feature_store_details=feature_store.get_feature_store_details(),
-            table_data_dict=payload_dict,
-        )
-
         # create document for insertion
         document = self.document_class(
-            user_id=self.user.id,
-            status=DataStatus.DRAFT,
-            graph=graph,
-            node_name=node.name,
-            **payload_dict,
+            user_id=self.user.id, status=DataStatus.DRAFT, **payload_dict
         )
 
         # check any conflict with existing documents

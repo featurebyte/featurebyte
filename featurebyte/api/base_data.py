@@ -212,18 +212,21 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         assert cls._create_schema_class is not None
 
         # construct an input node & insert into the global graph
+        _id_value = _id or ObjectId()
         graph, inserted_node = cls.construct_graph_and_node(
             feature_store_details=tabular_source.feature_store.get_feature_store_details(),
             table_data_dict={
                 "tabular_source": tabular_source.tabular_source,
                 "columns_info": tabular_source.columns_info,
+                "_id": _id_value,
                 **kwargs,
             },
             graph=GlobalQueryGraph(),
         )
+        assert inserted_node.parameters.id == _id_value
 
         data = cls._create_schema_class(  # pylint: disable=not-callable
-            _id=_id or ObjectId(),
+            _id=_id_value,
             name=name,
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
@@ -232,6 +235,8 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             node_name=inserted_node.name,
             **kwargs,
         )
+        assert data.id == _id_value
+
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
         if response.status_code == HTTPStatus.OK:

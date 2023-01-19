@@ -20,7 +20,6 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -103,15 +102,18 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
                 ]
                 values["columns_info"] = columns_info
 
-        # check whether the graph exists or whether the graph is empty (means nodes is empty)
-        if "graph" not in values or not QueryGraphModel(**dict(values["graph"])).nodes:
-            graph, node = cls.construct_graph_and_node(
-                feature_store_details=feature_store.get_feature_store_details(),
-                table_data_dict=values,
-            )
-            values["graph"] = graph
-            values["node_name"] = node.name
+        # construct graph & node
+        # table node contains data id, this part is to ensure that the id is passed to table node parameters
+        table_data_dict = values.copy()
+        if "id" in table_data_dict and "_id" not in table_data_dict:
+            table_data_dict["_id"] = table_data_dict["id"]
 
+        graph, node = cls.construct_graph_and_node(
+            feature_store_details=feature_store.get_feature_store_details(),
+            table_data_dict=table_data_dict,
+        )
+        values["graph"] = graph
+        values["node_name"] = node.name
         return values
 
     @property
