@@ -130,6 +130,8 @@ def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
         Dataframe object
     """
     dataframe.reset_index(drop=True, inplace=True)
+    if dataframe.shape[0] == 0:
+        return
     for name in dataframe.columns:
         # Decimal with integer values becomes float during conversion to json
         if (

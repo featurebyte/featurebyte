@@ -565,3 +565,16 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         response = test_api_client.post("/feature_store/description", json=sample_payload)
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
+
+    def test_sample_empty_table(
+        self, test_api_client_persistent, data_sample_payload, mock_get_session
+    ):
+        """Test data sample works with empty table"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame({"a": ["a"]})[:0]
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(dataframe_from_json(response.json()), expected_df)
