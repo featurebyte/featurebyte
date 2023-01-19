@@ -89,7 +89,11 @@ def retrieve_all_migration_methods() -> dict[int, Any]:
 
 
 async def migrate_method_generator(
-    user: Any, persistent: Persistent, get_credential: Any, schema_metadata: SchemaMetadataModel
+    user: Any,
+    persistent: Persistent,
+    get_credential: Any,
+    schema_metadata: SchemaMetadataModel,
+    include_data_warehouse_migrations: bool,
 ) -> AsyncGenerator[tuple[BaseDocumentServiceT, Callable[..., Any]], None]:
     """
     Migrate method generator
@@ -104,6 +108,8 @@ async def migrate_method_generator(
         Callback to retrieve credential
     schema_metadata: SchemaMetadataModel
         Schema metadata
+    include_data_warehouse_migrations: bool
+        Whether to include data warehouse migrations
 
     Yields
     ------
@@ -120,6 +126,8 @@ async def migrate_method_generator(
         migrate_service_class = getattr(module, migrate_method_data["class"])
         migrate_service = migrate_service_class(user=user, persistent=persistent)
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
+            if not include_data_warehouse_migrations:
+                continue
             migrate_service.set_credential_callback(get_credential)
         migrate_method = getattr(migrate_service, migrate_method_data["method"])
         yield migrate_service, migrate_method
@@ -151,7 +159,12 @@ async def post_migration_sanity_check(service: BaseDocumentServiceT) -> None:
     )
 
 
-async def run_migration(user: Any, persistent: Persistent, get_credential: Any) -> None:
+async def run_migration(
+    user: Any,
+    persistent: Persistent,
+    get_credential: Any,
+    include_data_warehouse_migrations: bool = True,
+) -> None:
     """
     Run database migration
 
@@ -163,6 +176,8 @@ async def run_migration(user: Any, persistent: Persistent, get_credential: Any) 
         Persistent object
     get_credential: Any
         Callback to retrieve credential
+    include_data_warehouse_migrations: bool
+        Whether to include data warehouse migrations
     """
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
     schema_metadata = await schema_metadata_service.get_or_create_document(
@@ -173,6 +188,7 @@ async def run_migration(user: Any, persistent: Persistent, get_credential: Any) 
         persistent=persistent,
         get_credential=get_credential,
         schema_metadata=schema_metadata,
+        include_data_warehouse_migrations=include_data_warehouse_migrations,
     )
     async for service, migrate_method in method_generator:
         marker = _extract_migrate_method_marker(migrate_method)
@@ -199,4 +215,6 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
     persistent: MongoDB
         Mongo persistent object
     """
-    await run_migration(User(), persistent, get_credential_from_config)
+    await run_migration(
+        User(), persistent, get_credential_from_config, include_data_warehouse_migrations=False
+    )
