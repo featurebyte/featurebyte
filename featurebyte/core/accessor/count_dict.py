@@ -249,7 +249,7 @@ class CountDictAccessor:
         response = self._feature_obj._binary_op(  # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_RANK,
-            output_var_type=self._feature_obj.dtype,
+            output_var_type=DBVarType.FLOAT,
             right_op=right_op,
             additional_node_params=additional_node_params,
         )
@@ -296,7 +296,7 @@ class CountDictAccessor:
         response = self._feature_obj._binary_op(  # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_RELATIVE_FREQUENCY,
-            output_var_type=self._feature_obj.dtype,
+            output_var_type=DBVarType.FLOAT,
             right_op=right_op,
             additional_node_params=additional_node_params,
         )
