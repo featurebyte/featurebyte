@@ -123,13 +123,16 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
         _ = feature_store
-        df_tile_registry = await session.execute_query(
-            "SELECT TILE_ID, VALUE_COLUMN_NAMES FROM TILE_REGISTRY"
-        )
+        df_tile_registry = await session.execute_query("SELECT * FROM TILE_REGISTRY")
+        if "VALUE_COLUMN_TYPES" in df_tile_registry:  # type: ignore[operator]
+            return
         df_tile_registry["VALUE_COLUMN_TYPES"] = self.extractor.get_tile_column_types_from_names(  # type: ignore[index]
             df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
         )
-        await session.register_table("UPDATED_TILE_REGISTRY", df_tile_registry)
+        await session.register_table(
+            "UPDATED_TILE_REGISTRY",
+            df_tile_registry[["TILE_ID", "VALUE_COLUMN_NAMES", "VALUE_COLUMN_TYPES"]],  # type: ignore[index]
+        )
 
         await session.execute_query(
             "ALTER TABLE TILE_REGISTRY ADD COLUMN VALUE_COLUMN_TYPES VARCHAR"
