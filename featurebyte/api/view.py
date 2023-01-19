@@ -557,7 +557,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         other_view: View
             the other view that we want to join with. This should only be a SlowlyChangingView, or DimensionView.
         on: Optional[str]
-            - ‘on’ argument is optional if:
+            Column name in the caller to join on the index in other_view. ‘on’ argument is optional if:
             - the name of the key column in the calling view is the same name as the natural (primary) key in the
               other view.
             - the primary key of the Dimension View or the natural key of the SCD View is an entity that has been
