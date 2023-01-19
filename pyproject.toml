@@ -104,6 +104,7 @@ loguru = "^0.6.0"
 motor = { version = "^3.0.0", optional = true }
 orjson = "^3.8.3"
 pandas = "^1.4.2"
+pdfkit = { version = "^1.0.0", optional = true }
 pyarrow = "^8.0.0,<9.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
 pymongo = "^4.1.1"
@@ -117,7 +118,7 @@ typeguard = "^2.13.3"
 uvicorn = { version = "^0.18.2", extras = ["standard"], optional = true }
 
 [tool.poetry.extras]
-server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"

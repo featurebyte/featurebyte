@@ -12,7 +12,7 @@ ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential netcat curl && \
+    apt-get install -y build-essential netcat curl wkhtmltopdf && \
     apt-get clean
 
 # install poetry

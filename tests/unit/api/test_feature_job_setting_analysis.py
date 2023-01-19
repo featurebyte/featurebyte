@@ -2,10 +2,13 @@
 Unit test for FeatureJobSettingAnalysis class
 """
 import json
+import os
+import tempfile
 from io import BytesIO
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 import pytest_asyncio
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
@@ -170,3 +173,18 @@ def test_backtest(mock_display_html, mock_post_async_task, saved_analysis):
     assert client.get.call_count == 2
     mock_display_html.assert_called_once_with("html report content")
     assert_frame_equal(backtest_result, expected_results)
+
+
+def test_download_report(saved_analysis):
+    """
+    Test download_report
+    """
+    analysis = FeatureJobSettingAnalysis.get_by_id(saved_analysis)
+    with tempfile.NamedTemporaryFile() as file_obj:
+        with pytest.raises(FileExistsError) as exc:
+            analysis.download_report(output_path=file_obj.name)
+            assert str(exc) == f"{file_obj.name} already exists"
+
+        # download should work if path does not exist
+        os.unlink(file_obj.name)
+        analysis.download_report(output_path=file_obj.name)

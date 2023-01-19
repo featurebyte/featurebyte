@@ -3,9 +3,10 @@ FeatureJobSettingAnalysis class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 from bson import ObjectId
@@ -94,6 +95,38 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         Display analysis report
         """
         display_html_in_notebook(self.analysis_report)
+
+    @typechecked
+    def download_report(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+        """
+        Downlaod analysis report
+
+        Parameters
+        ----------
+        output_path: Optional[Union[str, Path]]
+            Location to save downloaded report
+
+        Returns
+        -------
+        Path
+
+        Raises
+        ------
+        FileExistsError
+            File already exists at output path
+        """
+        client = Configurations().get_client()
+        response = client.get(f"{self._route}/{self.id}/report")
+        file_name = response.headers["content-disposition"].split("filename=")[1].replace('"', "")
+        output_path = output_path or Path(f"./{file_name}")
+        output_path = Path(output_path)
+
+        if output_path.exists():
+            raise FileExistsError(f"{output_path} already exists.")
+
+        with open(output_path, "wb") as file_obj:
+            file_obj.write(response.content)
+        return output_path
 
     @typechecked
     def get_recommendation(self) -> FeatureJobSetting:

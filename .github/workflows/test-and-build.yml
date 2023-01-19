@@ -115,6 +115,7 @@ jobs:
       - name: Install dependencies & start mongo
         if: ${{ needs.flags.outputs.changes != 0 }}
         run: |
+          sudo apt-get install wkhtmltopdf
           make install
           make test-setup
 
@@ -177,10 +178,11 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
-
     - name: Install dependencies
       if: ${{ needs.flags.outputs.changes != 0 }}
-      run: make install
+      run: |
+        sudo apt-get install wkhtmltopdf
+        make install
 
     - name: Run tests
       if: ${{ needs.flags.outputs.changes != 0 }}

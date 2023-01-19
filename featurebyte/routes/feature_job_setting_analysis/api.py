@@ -8,6 +8,7 @@ from typing import Optional, cast
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
@@ -109,6 +110,23 @@ async def get_feature_job_setting_analysis_info(
         verbose=verbose,
     )
     return cast(FeatureJobSettingAnalysisInfo, info)
+
+
+@router.get("/{feature_job_setting_analysis_id}/report")
+async def get_feature_job_setting_analysis_report(
+    request: Request,
+    feature_job_setting_analysis_id: PydanticObjectId,
+) -> StreamingResponse:
+    """
+    Retrieve FeatureJobSettingAnalysis pdf report
+    """
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    return cast(
+        StreamingResponse,
+        await controller.get_feature_job_setting_analysis_report(
+            feature_job_setting_analysis_id=feature_job_setting_analysis_id,
+        ),
+    )
 
 
 @router.get("/audit/{feature_job_setting_analysis_id}", response_model=AuditDocumentList)

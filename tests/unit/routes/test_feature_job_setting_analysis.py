@@ -257,3 +257,24 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         response_dict = response.json()
         assert response_dict["status"] == "FAILURE"
         assert "HighUpdateFrequencyError" in response_dict["traceback"]
+
+    @pytest.mark.asyncio
+    async def test_report_download(self, test_api_client_persistent, create_success_response):
+        """
+        Download pdf report download for existing analysis
+        """
+        response_dict = create_success_response.json()
+        feature_job_setting_analysis_id = response_dict["_id"]
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get(
+            f"{self.base_route}/{feature_job_setting_analysis_id}/report"
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert len(response.content) > 0
+        assert response.headers == {
+            "content-disposition": (
+                'attachment; name="report"; '
+                'filename="feature_job_setting_analysis_62f301e841b73757c9ff879a.pdf"'
+            ),
+            "content-type": "application/pdf",
+        }
