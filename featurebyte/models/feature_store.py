@@ -106,12 +106,6 @@ class ConstructGraphMixin:
             feature_store_details=feature_store_details
         )
         inserted_input_node = graph.add_node(node=input_node, input_nodes=[])
-        graph_node = table_data.construct_cleaning_recipe_node(  # pylint: disable=no-member
-            input_node=inserted_input_node
-        )
-        if graph_node:
-            inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
-            return graph, inserted_graph_node
         return graph, inserted_input_node
 
 
@@ -129,8 +123,6 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
         Record creation date column name
     """
 
-    graph: QueryGraph = Field(default_factory=QueryGraph)  # DEV-556: remove default_factory
-    node_name: str = Field(default_factory=str)  # DEV-556: remove default factory
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]

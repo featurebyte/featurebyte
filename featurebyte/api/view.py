@@ -38,6 +38,7 @@ from featurebyte.exception import (
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import ProjectNode
@@ -213,11 +214,19 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ViewT
             constructed View object
         """
+        node_name = data.node_name
+        graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data.node)
+        if graph_node:
+            inserted_graph_node = GlobalQueryGraph().add_node(
+                node=graph_node, input_nodes=[data.node]
+            )
+            node_name = inserted_graph_node.name
+
         return cls(
             feature_store=data.feature_store,
             tabular_source=data.tabular_source,
             columns_info=data.columns_info,
-            node_name=data.node_name,
+            node_name=node_name,
             tabular_data_ids=[data.id],
             **kwargs,
         )

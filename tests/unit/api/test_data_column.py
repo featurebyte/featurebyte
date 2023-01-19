@@ -122,7 +122,6 @@ def _check_event_data_with_critical_data_info(event_data):
         client = config.get_client()
         response = client.get(f"/event_data/{event_data.id}")
         response_dict = response.json()
-        assert response_dict["node_name"].startswith("input")
 
     # update critical data info with some cleaning operations
     event_data.col_int.update_critical_data_info(
@@ -135,15 +134,7 @@ def _check_event_data_with_critical_data_info(event_data):
         cleaning_operations=[StringValueImputation(imputed_value=0.0)]
     )
 
-    if event_data.saved:
-        # check that output node is a graph node after critical data info get updated
-        config = Configurations()
-        client = config.get_client()
-        response = client.get(f"/event_data/{event_data.id}")
-        response_dict = response.json()
-        assert response_dict["node_name"].startswith("graph")
-
-    assert event_data.node.type == NodeType.GRAPH
+    assert event_data.node.type == NodeType.INPUT
     expected_query = textwrap.dedent(
         """
         SELECT
@@ -166,7 +157,7 @@ def _check_event_data_with_critical_data_info(event_data):
         LIMIT 10
     """
     ).strip()
-    assert event_data.preview_sql() == expected_query
+    assert event_data.preview_clean_data_sql() == expected_query
 
     event_view = EventView.from_event_data(event_data)
     assert event_view.preview_sql() == expected_query
@@ -174,7 +165,7 @@ def _check_event_data_with_critical_data_info(event_data):
 
 def _check_remove_critical_data_info(event_data):
     """ "Check remove critical data info"""
-    assert event_data.node.type == NodeType.GRAPH
+    assert event_data.node.type == NodeType.INPUT
     event_data.col_boolean.update_critical_data_info(cleaning_operations=[])
     event_data.col_int.update_critical_data_info(cleaning_operations=[])
     event_data.col_float.update_critical_data_info(cleaning_operations=[])
@@ -184,15 +175,9 @@ def _check_remove_critical_data_info(event_data):
         else:
             assert column_info.critical_data_info is None
 
-    if event_data.saved:
-        # check that output node is an input node after all critical data info get moved
-        config = Configurations()
-        client = config.get_client()
-        response = client.get(f"/event_data/{event_data.id}")
-        response_dict = response.json()
-        assert response_dict["node_name"].startswith("input")
-
     assert event_data.node.type == NodeType.INPUT
+    event_view = EventView.from_event_data(event_data=event_data)
+    assert event_view.node.type == NodeType.INPUT
 
 
 def test_data_column__update_critical_data_info(snowflake_event_data):

@@ -48,8 +48,10 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.CUST_ID.update_critical_data_info(
         cleaning_operations=[StringValueImputation(imputed_value=0)]
     )
-    assert event_data.node.type == "graph"
-    imputed_df = event_data.preview()
+    assert event_data.node.type == "input"
+    # create feature group & preview
+    event_view = EventView.from_event_data(event_data)
+    imputed_df = event_view.preview()
     assert imputed_df["AMOUNT"].isnull().sum() == 0
     assert imputed_df["SESSION_ID"].isnull().sum() == 1
     assert set(imputed_df["PRODUCT_ACTION"].astype(str).unique()) == {
@@ -64,8 +66,6 @@ def test_event_data_update_critical_data_info(event_data):
     assert (imputed_df["TRANSACTION_ID"] == 0).all()
     assert (imputed_df["CUST_ID"] == original_df["CUST_ID"]).all()
 
-    # create feature group & preview
-    event_view = EventView.from_event_data(event_data)
     assert event_view.node.type == "graph"
     feature_group = event_view.groupby("CUST_ID").aggregate_over(
         method="count",
@@ -99,7 +99,10 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.PRODUCT_ACTION.update_critical_data_info(cleaning_operations=[])
     event_data.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
     event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
-    assert event_data.node.type == "input"
+
+    # check event_view node after removing all cleaning operations
+    event_view = EventView.from_event_data(event_data)
+    assert event_view.node.type == "input"
 
 
 def test_item_data_update_critical_data_info(item_data):
@@ -109,7 +112,7 @@ def test_item_data_update_critical_data_info(item_data):
     item_data["item_type"].update_critical_data_info(
         cleaning_operations=[MissingValueImputation(imputed_value="missing_item")]
     )
-    assert item_data.node.type == "graph"
+    assert item_data.node.type == "input"
     _ = item_data.preview()
 
     # check feature & preview

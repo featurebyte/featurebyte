@@ -17,10 +17,13 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
 class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseModel, ABC):
@@ -109,6 +112,41 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
             values["node_name"] = node.name
 
         return values
+
+    @property
+    def table_data(self) -> BaseTableData:
+        """
+        Table data object for the given data model
+
+        Returns
+        -------
+        BaseTableData
+        """
+        return self._table_data_class(**self.json_dict())
+
+    def preview_clean_data_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the table data after applying list of cleaning operations
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        str
+        """
+        node = self.node
+        graph_node = self.table_data.construct_cleaning_recipe_node(input_node=self.node)
+        if graph_node:
+            node = GlobalQueryGraph().add_node(node=graph_node, input_nodes=[self.node])
+
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=node, aggressive=True)
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):

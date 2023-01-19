@@ -281,18 +281,6 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         output.set_parent(self)
         return output
 
-    def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
-        previous_columns_info = self.columns_info
-        super().update(update_payload=update_payload, allow_update_local=allow_update_local)
-        if allow_update_local and self.columns_info != previous_columns_info:
-            # update the global query graph if there is any changes in columns_info
-            _, inserted_node = self.construct_graph_and_node(
-                feature_store_details=self.feature_store.get_feature_store_details(),
-                table_data_dict=self.json_dict(),
-                graph=GlobalQueryGraph(),
-            )
-            self.node_name = inserted_node.name
-
     @typechecked
     def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
         """

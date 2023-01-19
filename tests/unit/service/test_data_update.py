@@ -172,49 +172,6 @@ async def test_update_columns_info__critical_data_info(
     # check the updated document
     updated_doc = await event_data_service.get_document(document_id=event_data.id)
     assert updated_doc.columns_info == columns_info
-    assert updated_doc.node_name == "graph_1"
-    assert updated_doc.graph.nodes[0] == event_data_doc["graph"]["nodes"][0]
-    assert updated_doc.graph.nodes[1].parameters == {
-        "graph": {
-            "edges": [
-                {"source": "proxy_input_1", "target": "project_1"},
-                {"source": "project_1", "target": "is_null_1"},
-                {"source": "project_1", "target": "conditional_1"},
-                {"source": "is_null_1", "target": "conditional_1"},
-                {"source": "proxy_input_1", "target": "assign_1"},
-                {"source": "conditional_1", "target": "assign_1"},
-            ],
-            "nodes": [
-                {
-                    "name": "proxy_input_1",
-                    "type": "proxy_input",
-                    "output_type": "frame",
-                    "parameters": {"input_order": 0},
-                },
-                {
-                    "name": "project_1",
-                    "type": "project",
-                    "output_type": "series",
-                    "parameters": {"columns": ["col_int"]},
-                },
-                {"name": "is_null_1", "type": "is_null", "output_type": "series", "parameters": {}},
-                {
-                    "name": "conditional_1",
-                    "type": "conditional",
-                    "output_type": "series",
-                    "parameters": {"value": 0},
-                },
-                {
-                    "name": "assign_1",
-                    "type": "assign",
-                    "output_type": "frame",
-                    "parameters": {"name": "col_int", "value": None},
-                },
-            ],
-        },
-        "output_node_name": "assign_1",
-        "type": "cleaning",
-    }
 
     # test remove critical data info
     columns_info[0]["critical_data_info"] = {"cleaning_operations": []}
@@ -226,7 +183,6 @@ async def test_update_columns_info__critical_data_info(
     # check the updated document
     updated_doc = await event_data_service.get_document(document_id=event_data.id)
     assert updated_doc.columns_info == columns_info
-    assert updated_doc.node_name == "input_1"
 
 
 @pytest.mark.asyncio

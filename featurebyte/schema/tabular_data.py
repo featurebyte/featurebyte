@@ -59,9 +59,6 @@ class DataServiceUpdate(DataUpdate, BaseDocumentServiceUpdateSchema):
     DataService update schema
     """
 
-    graph: Optional[QueryGraphModel]
-    node_name: Optional[str]
-
 
 class TabularDataList(PaginationMixin):
     """
