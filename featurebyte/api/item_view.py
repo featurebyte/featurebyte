@@ -252,10 +252,15 @@ class ItemView(View, GroupByMixin):
             If aggregation is using an EventData derived column and the groupby key is an Entity
             from EventData
         """
+        keys = groupby_obj.keys
+        if self.event_id_column not in keys:
+            raise ValueError(
+                f"GroupBy columns must contain the event ID column ({self.event_id_column}) to prevent time leakage."
+            )
+
         if value_column is None:
             return
 
-        keys = groupby_obj.keys
         columns_to_check = [*keys, value_column]
         if self._are_columns_derived_only_from_event_data(columns_to_check):
             raise ValueError(
