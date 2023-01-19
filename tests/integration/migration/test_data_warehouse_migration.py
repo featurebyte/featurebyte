@@ -38,15 +38,11 @@ async def revert_when_done(session, table_name):
     cause other tests to fail)
     """
     backup_name = f"{table_name}_BACKUP"
-    await session.execute_query(
-        f"CREATE OR REPLACE TABLE {backup_name} AS (SELECT * FROM {table_name})"
-    )
+    await session.execute_query(f"CREATE OR REPLACE TABLE {backup_name} CLONE {table_name}")
     try:
         yield
     finally:
-        await session.execute_query(
-            f"CREATE OR REPLACE TABLE {table_name} AS (SELECT * FROM {backup_name})"
-        )
+        await session.execute_query(f"CREATE OR REPLACE TABLE {table_name} CLONE {backup_name}")
 
 
 @pytest.mark.asyncio
