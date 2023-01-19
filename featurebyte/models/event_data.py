@@ -3,7 +3,7 @@ This module contains EventData related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 from datetime import datetime
 
@@ -186,3 +186,9 @@ class EventDataModel(EventTableData, DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        if self.event_id_column:
+            return [self.event_id_column]
+        return []  # DEV-556: event_id_column should not be empty

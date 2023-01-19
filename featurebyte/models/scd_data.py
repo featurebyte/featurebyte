@@ -3,7 +3,7 @@ This module contains SCD data related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type
+from typing import Any, ClassVar, List, Optional, Type
 
 from pydantic import root_validator, validator
 
@@ -65,3 +65,9 @@ class SCDDataModel(SCDTableData, DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types=None
         )
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        if self.surrogate_key_column:
+            return [self.surrogate_key_column]
+        return []  # DEV-556: surrogate_key_column should not be empty

@@ -285,7 +285,7 @@ class DisguisedValueImputation(DisguisedValueCondition, BaseImputeOperation):
     --------
     Create an imputation rule to replace -999 with 0
 
-    >>> DisguisedValueImputation(disguised_values=-999, imputed_value=0) # doctest: +SKIP
+    >>> DisguisedValueImputation(disguised_values=[-999], imputed_value=0) # doctest: +SKIP
     """
 
 

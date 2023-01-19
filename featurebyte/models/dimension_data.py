@@ -3,7 +3,7 @@ This module contains DimensionData related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type
+from typing import Any, ClassVar, List, Optional, Type
 
 from pydantic import root_validator, validator
 
@@ -47,3 +47,7 @@ class DimensionDataModel(DimensionTableData, DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.dimension_id_column]

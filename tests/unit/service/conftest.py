@@ -276,7 +276,6 @@ async def dimension_data_fixture(test_dir, feature_store, dimension_data_service
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_dimension_table"
-        payload["columns_info"][0]["entity_id"] = str(ObjectId())
         item_data = await dimension_data_service.create_document(
             data=DimensionDataCreate(**payload)
         )
