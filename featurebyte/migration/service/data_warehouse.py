@@ -82,12 +82,12 @@ class TileColumnTypeExtractor:
         Series
         """
 
-        def _transform(column_names: list[str]) -> str | None:
+        def _transform(column_names: list[str]) -> str:
             column_types = []
             for column_name in column_names:
                 column_type = self.get_tile_column_type(column_name)
                 if column_type is None:
-                    return None
+                    column_type = "FLOAT"
                 column_types.append(column_type)
             return ",".join(column_types)
 
@@ -147,3 +147,25 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
             """
         ).strip()
         await session.execute_query(update_query)
+
+        for _, row in df_tile_registry.iterrows():
+            tile_id = row["TILE_ID"]
+            tile_column_names = row["VALUE_COLUMN_NAMES"].replace('"', "").split(",")
+            tile_column_types = row["VALUE_COLUMN_TYPES"].split(",")
+            for tile_column_name, tile_column_type in zip(tile_column_names, tile_column_types):
+                if tile_column_type == "FLOAT":
+                    continue
+                try:
+                    await session.execute_query(
+                        f"""
+                        ALTER TABLE {tile_id} DROP COLUMN {tile_column_name}
+                        """
+                    )
+                    await session.execute_query(
+                        f"""
+                        ALTER TABLE {tile_id} ADD COLUMN {tile_column_name} {tile_column_type} DEFAULT NULL
+                        """
+                    )
+                except:
+                    # ok if column tile table or tile column doesn't exist yet
+                    pass

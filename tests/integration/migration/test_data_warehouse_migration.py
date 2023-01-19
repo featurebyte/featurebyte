@@ -31,6 +31,15 @@ def get_tile_id(feature: Feature):
     return groupby_node.parameters.dict()["tile_id"]
 
 
+def get_aggregation_id(feature: Feature):
+    """
+    Helper function to retrieve the aggregation id of a feature
+    """
+    graph, _ = feature.extract_pruned_graph_and_node()
+    groupby_node = graph.get_node_by_name("groupby_1")
+    return groupby_node.parameters.dict()["aggregation_id"]
+
+
 @contextlib.asynccontextmanager
 async def revert_when_done(session, table_name):
     """
@@ -111,32 +120,58 @@ async def test_data_warehouse_migration_v6(
     """
     _ = bad_feature_stores
     event_view = EventView.from_event_data(event_data)
-    features = event_view.groupby("USER ID").aggregate_over(
+    features_1 = event_view.groupby("USER ID").aggregate_over(
         method="count",
         windows=["7d"],
-        feature_names=["test_data_warehouse_migration_v6_feature"],
+        feature_names=["test_data_warehouse_migration_v6_feature_count"],
         feature_job_setting={
             "frequency": "42m",
             "blind_spot": "5m",
             "time_modulo_frequency": "10m",
         },
     )
-    feature_list = FeatureList([features], name="test_data_warehouse_migration_v6_list")
-    feature_list.save()
+    features_2 = event_view.groupby("USER ID").aggregate_over(
+        value_column="EVENT_TIMESTAMP",
+        method="latest",
+        windows=["7d"],
+        feature_names=["test_data_warehouse_migration_v6_feature_latest_event_time"],
+        feature_job_setting={
+            "frequency": "42m",
+            "blind_spot": "5m",
+            "time_modulo_frequency": "10m",
+        },
+    )
+    feature_list_1 = FeatureList([features_1], name="test_data_warehouse_migration_v6_list_1")
+    feature_list_1.save()
+    feature_list_2 = FeatureList([features_2], name="test_data_warehouse_migration_v6_list_2")
+    feature_list_2.save()
     preview_param = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "user id": 1,
     }
     observations_set = pd.DataFrame([preview_param])
-    _ = feature_list.get_historical_features(observations_set)
+    _ = feature_list_1.get_historical_features(observations_set)
+    _ = feature_list_2.get_historical_features(observations_set)
 
-    expected_tile_id = get_tile_id(features["test_data_warehouse_migration_v6_feature"])
+    # Get tile id to check (both features should have the same tile id)
+    expected_tile_id = get_tile_id(features_1["test_data_warehouse_migration_v6_feature_count"])
+    assert expected_tile_id == get_tile_id(
+        features_2["test_data_warehouse_migration_v6_feature_latest_event_time"]
+    )
+    latest_feature_agg_id = get_aggregation_id(
+        features_2["test_data_warehouse_migration_v6_feature_latest_event_time"]
+    )
+    latest_feature_tile_column = f"value_{latest_feature_agg_id}"
 
     async def _retrieve_tile_registry():
         df = await snowflake_session.execute_query(
             f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{expected_tile_id}'"
         )
         return df.sort_values("TILE_ID")
+
+    async def _retrieve_tile_table():
+        df = await snowflake_session.execute_query(f"SELECT * FROM {expected_tile_id}")
+        return df
 
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup
     df_expected = await _retrieve_tile_registry()
@@ -149,7 +184,16 @@ async def test_data_warehouse_migration_v6(
         )
         assert "VALUE_COLUMN_TYPES" not in (await _retrieve_tile_registry())
 
-        # # Run migration
+        # Simulate the case when the column in the tile table has wrong type to be corrected (FLOAT
+        # is the wrong type, should be TIMESTAMP_NTZ)
+        await snowflake_session.execute_query(
+            f"ALTER TABLE {expected_tile_id} DROP COLUMN {latest_feature_tile_column}"
+        )
+        await snowflake_session.execute_query(
+            f"ALTER TABLE {expected_tile_id} ADD COLUMN {latest_feature_tile_column} FLOAT DEFAULT NULL"
+        )
+
+        # Run migration
         service = DataWarehouseMigrationService(user=user, persistent=persistent)
         service.set_credential_callback(get_credential)
         await service.add_tile_value_types_column()
@@ -158,4 +202,10 @@ async def test_data_warehouse_migration_v6(
         df_migrated = await _retrieve_tile_registry()
         assert (
             df_migrated["VALUE_COLUMN_TYPES"].tolist() == df_expected["VALUE_COLUMN_TYPES"].tolist()
+        )
+
+        df_migrated_tile_table = await _retrieve_tile_table()
+        assert (
+            str(df_migrated_tile_table[latest_feature_tile_column.upper()].dtype)
+            == "datetime64[ns, UTC]"
         )
