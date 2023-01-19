@@ -588,7 +588,7 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
     assert node_dict["output_type"] == "frame"
     assert node_dict["type"] == "join_feature"
     assert node_dict["parameters"] == {
-        "feature_entity_column": "item_id_col",
+        "feature_entity_column": "event_id_col",
         "name": "new_col",
         "view_entity_column": "cust_id",
         "view_point_in_time_column": None,
