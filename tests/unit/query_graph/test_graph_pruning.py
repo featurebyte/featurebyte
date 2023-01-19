@@ -243,7 +243,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
             "aggregation_type": "groupby",
             "method": "count",
             "window": "30d",
-            "dtype": "FLOAT",
+            "dtype": "OBJECT",
             "type": "aggregation",
             "node_name": "groupby_1",
             "node_names": {"groupby_1", "input_2", "input_1", "join_1"},
