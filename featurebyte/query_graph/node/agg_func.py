@@ -76,7 +76,6 @@ class SumAggFunc(BaseAggFunc):
     _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
         DBVarType.INT: DBVarType.INT,
         DBVarType.FLOAT: DBVarType.FLOAT,
-        DBVarType.OBJECT: DBVarType.FLOAT,
     }
 
     def _derive_output_var_type(
@@ -147,8 +146,6 @@ class BaseCountAggFunc(BaseAggFunc):
     def _derive_output_var_type(
         self, input_var_type: DBVarType, category: Optional[str] = None
     ) -> DBVarType:
-        if category:
-            return DBVarType.OBJECT
         return DBVarType.FLOAT
 
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:

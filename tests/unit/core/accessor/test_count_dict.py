@@ -103,26 +103,29 @@ def test_get_value_from_dictionary__validation_fails(float_feature, count_per_ca
     assert "not a lookup feature" in str(exc)
 
 
-def test_get_value_from_dictionary__success(count_per_category_feature):
+def test_get_value_from_dictionary__success(count_per_category_feature, sum_per_category_feature):
     """Test get_value method"""
-    # check the count_dict has a proper dtype
-    count_dict_op_struct = count_per_category_feature.graph.extract_operation_structure(
-        node=count_per_category_feature.node
-    )
-    assert len(count_dict_op_struct.aggregations) == 1
-    assert count_dict_op_struct.aggregations[0].dtype == "OBJECT"
+    # count don't have parent column & sum has parent column,
+    # use different aggregation methods to cover both cases
+    for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
+        # check the count_dict has a proper dtype
+        count_dict_op_struct = per_cat_feat.graph.extract_operation_structure(
+            node=per_cat_feat.node
+        )
+        assert len(count_dict_op_struct.aggregations) == 1
+        assert count_dict_op_struct.aggregations[0].dtype == "OBJECT"
 
-    result = count_per_category_feature.cd.get_value("key")
-    result_dict = result.dict()
-    assert result.dtype == "FLOAT"
-    assert result_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
-        {"source": "groupby_1", "target": "project_1"},
-        {"source": "project_1", "target": "get_value_1"},
-    ]
-    assert result_dict["graph"]["nodes"][3] == {
-        "name": "get_value_1",
-        "output_type": "series",
-        "parameters": {"value": "key"},
-        "type": "get_value",
-    }
+        result = per_cat_feat.cd.get_value("key")
+        result_dict = result.dict()
+        assert result.dtype == "FLOAT"
+        assert result_dict["graph"]["edges"] == [
+            {"source": "input_1", "target": "groupby_1"},
+            {"source": "groupby_1", "target": "project_1"},
+            {"source": "project_1", "target": "get_value_1"},
+        ]
+        assert result_dict["graph"]["nodes"][3] == {
+            "name": "get_value_1",
+            "output_type": "series",
+            "parameters": {"value": "key"},
+            "type": "get_value",
+        }
