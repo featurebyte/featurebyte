@@ -241,7 +241,18 @@ class ItemView(View, GroupByMixin):
             GroupBy object
         value_column: Optional[str]
             Column to be aggregated
+
+        Raises
+        ------
+        ValueError
+            raised when groupby keys contains the event ID column
         """
+        if self.event_id_column in groupby_obj.keys:
+            raise ValueError(
+                f"GroupBy keys must NOT contain the event ID column ({self.event_id_column}) when performing "
+                "aggregate_over functions."
+            )
+
         self._validate_columns_are_from_event_data(groupby_obj, value_column)
 
     def validate_aggregation_parameters(
