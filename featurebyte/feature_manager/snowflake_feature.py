@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.common import date_util
+from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_call_schedule_online_store,
@@ -93,7 +94,7 @@ class FeatureManagerSnowflake(BaseModel):
             await self._populate_feature_store(tile_spec=tile_spec, schedule_time=schedule_time)
 
     async def _populate_feature_store(self, tile_spec: TileSpec, schedule_time: datetime) -> None:
-        next_job_time = date_util.get_next_job_datetime(
+        next_job_time = get_next_job_datetime(
             input_dt=schedule_time,
             frequency_minutes=tile_spec.frequency_minute,
             time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
