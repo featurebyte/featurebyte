@@ -223,7 +223,7 @@ class CountDictAccessor:
         Returns
         -------
         Feature
-
+            feature
 
         Examples
         --------
@@ -272,6 +272,7 @@ class CountDictAccessor:
         Returns
         -------
         Feature
+            feature
 
         Examples
         --------
