@@ -8,6 +8,7 @@ from typing import Any, Optional
 import textwrap
 
 import pandas as pd
+from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service import migrate
@@ -123,9 +124,11 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
         _ = feature_store
+
         df_tile_registry = await session.execute_query("SELECT * FROM TILE_REGISTRY")
         if "VALUE_COLUMN_TYPES" in df_tile_registry:  # type: ignore[operator]
             return
+
         df_tile_registry["VALUE_COLUMN_TYPES"] = self.extractor.get_tile_column_types_from_names(  # type: ignore[index]
             df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
         )
@@ -148,7 +151,9 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
         ).strip()
         await session.execute_query(update_query)
 
-        for _, row in df_tile_registry.iterrows():
+        # Update columns in tile tables where the type is not FLOAT. In such cases, tile generation
+        # likely encountered error and updating to correct type should fix it.
+        for _, row in df_tile_registry.iterrows():  # type: ignore[union-attr]
             tile_id = row["TILE_ID"]
             tile_column_names = row["VALUE_COLUMN_NAMES"].replace('"', "").split(",")
             tile_column_types = row["VALUE_COLUMN_TYPES"].split(",")
@@ -166,6 +171,6 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
                         ALTER TABLE {tile_id} ADD COLUMN {tile_column_name} {tile_column_type} DEFAULT NULL
                         """
                     )
-                except:
+                except ProgrammingError:
                     # ok if column tile table or tile column doesn't exist yet
                     pass

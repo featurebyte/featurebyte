@@ -9,7 +9,9 @@ services:
     volumes:
       - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
       - ~/.featurebyte/data/:/data/
-    ports: []
+    ports:
+      - 27021:27021
+      - 27022:27022
 
   featurebyte-server:
     hostname: featurebyte-server
