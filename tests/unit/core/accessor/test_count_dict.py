@@ -1,7 +1,6 @@
 """
 Unit tests for core/accessor/count_dict.py
 """
-import pdb
 
 import pytest
 
