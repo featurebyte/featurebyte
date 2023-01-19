@@ -223,7 +223,6 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             },
             graph=GlobalQueryGraph(),
         )
-        assert inserted_node.parameters.id == _id_value
 
         data = cls._create_schema_class(  # pylint: disable=not-callable
             _id=_id_value,
@@ -235,7 +234,6 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             node_name=inserted_node.name,
             **kwargs,
         )
-        assert data.id == _id_value
 
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
