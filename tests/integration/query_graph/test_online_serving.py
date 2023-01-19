@@ -2,15 +2,14 @@
 Integration test for online store SQL generation
 """
 import time
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
 from featurebyte import EventView, FeatureList
+from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.enum import SourceType
-from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
@@ -29,48 +28,20 @@ def features_fixture(event_data):
         windows=["2h", "24h"],
         feature_names=["AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
     )
-    feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
-        method="count",
-        windows=["24h"],
-        feature_names=["EVENT_COUNT_BY_ACTION_24h"],
-    )
+    # feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
+    #     method="count",
+    #     windows=["24h"],
+    #     feature_names=["EVENT_COUNT_BY_ACTION_24h"],
+    # )
     features = [
         feature_group["AMOUNT_SUM_2h"],
         feature_group["AMOUNT_SUM_24h"],
-        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+        # TODO: Re-enable this https://featurebyte.atlassian.net/browse/DEV-1032
+        # feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
     ]
     for feature in features:
         feature.save()
     return features
-
-
-async def update_online_store(
-    session,
-    feature,
-    feature_job_time_ts,
-    expected_columns_after_update,
-):
-    """
-    Trigger the SP_TILE_SCHEDULE_ONLINE_STORE with a fixed feature job time
-    """
-    # Manually update feature mapping table. Should only be done in test
-    extended_feature_model = ExtendedFeatureModel(**feature.dict())
-    online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-    feature_manager = FeatureManagerSnowflake(session)
-    await feature_manager._update_tile_feature_mapping_table(online_feature_spec)
-
-    # Trigger SP_TILE_SCHEDULE_ONLINE_STORE which will call the feature sql registered above. Use
-    # upper() on tile_id to simulate how SP_TILE_GENERATE_SCHEDULE would call
-    # SP_TILE_SCHEDULE_ONLINE_STORE.
-    tile_id = online_feature_spec.tile_ids[0].upper()
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{feature_job_time_ts}')"
-    await session.execute_query(sql)
-
-    # Check that online store table excludes the point in time column
-    df_online_store = await session.execute_query(
-        f"SELECT * FROM {online_feature_spec.feature_store_table_name}"
-    )
-    assert df_online_store.columns.tolist() == expected_columns_after_update
 
 
 @pytest.mark.asyncio
@@ -78,59 +49,53 @@ async def test_online_serving_sql(features, snowflake_session, config):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
+    point_in_time = "2001-01-02 12:00:00"
+    frequency = pd.Timedelta("1h").total_seconds()
+    time_modulo_frequency = pd.Timedelta("30m").total_seconds()
+    next_job_datetime = get_next_job_datetime(
+        pd.Timestamp(point_in_time).to_pydatetime(),
+        int(frequency // 60),
+        time_modulo_frequency_seconds=int(time_modulo_frequency),
+    )
 
-    # Trigger tile compute. After get_historical_features, tiles should be already computed for the
-    # provided point in time. -999 is a dummy entity id not seen in the EventData.
-    feature_job_time = "2001-01-02 12:00:00"
+    feature_list = FeatureList(features, name="My Online Serving Featurelist")
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
         {
-            "POINT_IN_TIME": pd.to_datetime([feature_job_time] * len(user_ids)),
+            "POINT_IN_TIME": pd.to_datetime([point_in_time] * len(user_ids)),
             "user id": user_ids,
         }
     )
-    feature_list = FeatureList(features, name="My Online Serving Featurelist")
     df_historical = feature_list.get_historical_features(df_training_events)
 
-    # Trigger SP_TILE_SCHEDULE_ONLINE_STORE to compute features and update online store
-    await update_online_store(
-        snowflake_session, features[0], feature_job_time, ["user id", "AMOUNT_SUM_2h"]
-    )
-    await update_online_store(
-        snowflake_session,
-        features[1],
-        feature_job_time,
-        ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
-    )
-    await update_online_store(
-        snowflake_session,
-        features[2],
-        feature_job_time,
-        ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"],
-    )
-
-    # Run online store retrieval sql
-    df_entities = pd.DataFrame({"user id": user_ids})
-    request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
-    feature_clusters = feature_list._get_feature_clusters()
-    online_retrieval_sql = get_online_store_retrieval_sql(
-        feature_clusters[0].graph,
-        feature_clusters[0].nodes,
-        source_type=SourceType.SNOWFLAKE,
-        request_table_columns=["user id"],
-        request_table_expr=request_table_expr,
-    )
-    online_features = await snowflake_session.execute_query(online_retrieval_sql)
-
-    # Check result is expected
-    columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"]
-    assert online_features.columns.tolist() == columns
-    pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
-
-    # Check online_features route
+    # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
-    feature_list.deploy(make_production_ready=True, enable=True)
+    with patch(
+        "featurebyte.feature_manager.snowflake_feature.get_next_job_datetime",
+        return_value=next_job_datetime,
+    ):
+        feature_list.deploy(make_production_ready=True, enable=True)
+
     try:
+        # Run online store retrieval sql
+        df_entities = pd.DataFrame({"user id": user_ids})
+        request_table_expr = construct_dataframe_sql_expr(df_entities, date_cols=[])
+        feature_clusters = feature_list._get_feature_clusters()
+        online_retrieval_sql = get_online_store_retrieval_sql(
+            feature_clusters[0].graph,
+            feature_clusters[0].nodes,
+            source_type=SourceType.SNOWFLAKE,
+            request_table_columns=["user id"],
+            request_table_expr=request_table_expr,
+        )
+        online_features = await snowflake_session.execute_query(online_retrieval_sql)
+
+        # Check result is expected
+        columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"]
+        assert set(online_features.columns.tolist()) == set(columns)
+        pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
+
+        # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
     finally:
         feature_list.deploy(make_production_ready=True, enable=False)

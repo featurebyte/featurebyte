@@ -58,7 +58,7 @@ async def test_online_enable(
     mock_schedule_offline_tiles.assert_called_once()
     mock_generate_tiles.assert_called_once()
 
-    assert mock_execute_query.call_count == 2
+    assert mock_execute_query.call_count == 3
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
@@ -98,7 +98,12 @@ async def test_online_enable_duplicate_tile_task(
         feature_store_table_name="feature_store_table_1",
     )
 
-    mock_execute_query.side_effect = [None, pd.DataFrame.from_dict({"name": ["task_1"]}), None]
+    mock_execute_query.side_effect = [
+        None,
+        pd.DataFrame.from_dict({"name": ["task_1"]}),
+        None,
+        None,
+    ]
     await feature_manager.online_enable(feature_spec)
 
     mock_schedule_online_tiles.assert_not_called()

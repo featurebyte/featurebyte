@@ -23,7 +23,9 @@ def feature_sql_fixture():
     """
     Feature sql fixture
     """
-    return "SELECT *, 'test_quote' FROM TEMP_TABLE"
+    return f"""
+    SELECT *, 'test_quote', 1 as "sum_30m", 2 as "sum_30m_2", row_number() over (order by CUST_ID desc) as "cust_id" FROM TEMP_TABLE
+"""
 
 
 @pytest.fixture(name="feature_store_table_name")
@@ -157,6 +159,14 @@ async def test_online_enabled_feature_spec(
     )
     result = result[:3].drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
+
+    # validate as result of calling SP_TILE_SCHEDULE_ONLINE_STORE to populate Online Store
+    sql = f"SELECT * FROM {feature_store_table_name}"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 100
+    expect_cols = online_feature_spec.serving_names
+    expect_cols.append(online_feature_spec.feature.name)
+    assert list(result) == expect_cols
 
 
 @pytest.mark.asyncio

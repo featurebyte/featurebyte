@@ -96,3 +96,9 @@ tm_delete_tile_feature_mapping = Template(
     AND FEATURE_VERSION = '{{feature_version}}'
 """
 )
+
+tm_call_schedule_online_store = Template(
+    """
+    call SP_TILE_SCHEDULE_ONLINE_STORE('{{tile_id}}', '{{job_schedule_ts_str}}')
+"""
+)
