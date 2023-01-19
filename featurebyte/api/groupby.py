@@ -246,7 +246,7 @@ class WindowAggregator(BaseAggregator):
             feature_names=feature_names,
             feature_job_setting=feature_job_setting,
         )
-        self.view.validate_aggregation_parameters(
+        self.view.validate_aggregate_over_parameters(
             groupby_obj=self.groupby,
             value_column=value_column,
         )

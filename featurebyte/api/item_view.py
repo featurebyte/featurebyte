@@ -229,6 +229,21 @@ class ItemView(View, GroupByMixin):
         )
         return params
 
+    def validate_aggregate_over_parameters(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
+        """
+        Check whether aggregate_over parameters are valid for ItemView.
+
+        Parameters
+        ----------
+        groupby_obj: GroupBy
+            GroupBy object
+        value_column: Optional[str]
+            Column to be aggregated
+        """
+        self._validate_columns_are_from_event_data(groupby_obj, value_column)
+
     def validate_aggregation_parameters(
         self, groupby_obj: GroupBy, value_column: Optional[str]
     ) -> None:
@@ -252,15 +267,36 @@ class ItemView(View, GroupByMixin):
             If aggregation is using an EventData derived column and the groupby key is an Entity
             from EventData
         """
-        keys = groupby_obj.keys
-        if self.event_id_column not in keys:
+        if self.event_id_column not in groupby_obj.keys:
             raise ValueError(
-                f"GroupBy columns must contain the event ID column ({self.event_id_column}) to prevent time leakage."
+                f"GroupBy columns must contain the event ID column ({self.event_id_column}) to prevent time leakage "
+                "when performing simple aggregates."
             )
 
+        self._validate_columns_are_from_event_data(groupby_obj, value_column)
+
+    def _validate_columns_are_from_event_data(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
+        """
+        Helper method to validate whether columns are from event data.
+
+        Parameters
+        ----------
+        groupby_obj: GroupBy
+            GroupBy object
+        value_column: Optional[str]
+            Column to be aggregated
+
+        Raises
+        ------
+        ValueError
+            raised when all columns are found in event data
+        """
         if value_column is None:
             return
 
+        keys = groupby_obj.keys
         columns_to_check = [*keys, value_column]
         if self._are_columns_derived_only_from_event_data(columns_to_check):
             raise ValueError(

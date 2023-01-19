@@ -166,12 +166,25 @@ class GroupByMixin:
 
         return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
 
+    def validate_aggregate_over_parameters(
+        self, groupby_obj: GroupBy, value_column: Optional[str]
+    ) -> None:
+        """
+        Perform View specific validation on the parameters provided for aggregate_over groupby's.
+
+        Parameters
+        ----------
+        groupby_obj: GroupBy
+            GroupBy object
+        value_column: Optional[str]
+            Column to be aggregated
+        """
+
     def validate_aggregation_parameters(
         self, groupby_obj: GroupBy, value_column: Optional[str]
     ) -> None:
         """
-        Perform View specific validation on the parameters provided for groupby and aggregate
-        functions
+        Perform View specific validation on the parameters provided for simple aggregation functions.
 
         Parameters
         ----------
