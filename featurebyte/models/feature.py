@@ -230,15 +230,21 @@ class FeatureModel(FeatureByteBaseDocumentModel):
             return convert_version_string_to_dict(value)
         return value
 
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph and node
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
         tuple[QueryGraph, Node]
             Pruned graph and node
         """
+        _ = kwargs
         pruned_graph, node_name_map = self.graph.prune(target_node=self.node, aggressive=True)
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node

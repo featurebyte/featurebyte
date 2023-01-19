@@ -162,9 +162,14 @@ class HasExtractPrunedGraphAndNode(Protocol):
     feature_store: FeatureStoreModel
 
     @abstractmethod
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraph, Node]:
         """
         Extract pruned graph & node from the global query graph
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters
 
         Raises
         ------
@@ -190,12 +195,14 @@ class SampleMixin:
     """
 
     @typechecked
-    def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10) -> pd.DataFrame:
+    def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
         """
         Preview transformed table/column partial output
 
         Parameters
         ----------
+        **kwargs: Any
+            Additional keyword parameters
         limit: int
             maximum number of return rows
 
@@ -208,7 +215,7 @@ class SampleMixin:
         RecordRetrievalException
             Preview request failed
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStorePreview(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,
@@ -240,6 +247,7 @@ class SampleMixin:
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
     ) -> pd.DataFrame:
         """
         Sample transformed table/column
@@ -254,6 +262,8 @@ class SampleMixin:
             Start of date range to sample from
         to_timestamp: Optional[datetime]
             End of date range to sample from
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
@@ -267,7 +277,7 @@ class SampleMixin:
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStoreSample(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,
@@ -291,6 +301,7 @@ class SampleMixin:
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
+        **kwargs: Any,
     ) -> pd.DataFrame:
         """
         Describe transformed table/column
@@ -305,6 +316,8 @@ class SampleMixin:
             Start of date range to sample from
         to_timestamp: Optional[datetime]
             End of date range to sample from
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
@@ -318,7 +331,7 @@ class SampleMixin:
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         payload = FeatureStoreSample(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,

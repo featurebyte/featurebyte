@@ -91,16 +91,21 @@ class QueryObject(FeatureByteBaseModel):
             values["node_name"] = node_name_map[values["node_name"]]
         return values
 
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
         tuple[QueryGraphModel, Node]
             QueryGraph & mapped Node object (within the pruned graph)
         """
-        # TODO: make aggression=True after optimizing operation structure runtime (DEV-974)
+        _ = kwargs
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
             target_node=self.node, aggressive=True
         )
