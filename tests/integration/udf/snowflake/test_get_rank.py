@@ -15,6 +15,7 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
     [
         (None, "null", False, np.nan),
         ({"a": 1}, "null", False, np.nan),
+        (same_values, "'non_existing_key'", False, np.nan),
         (same_values, "'a'", False, 1),
         (same_values, "'c'", False, 1),
         (ascending_values, "'a'", False, 1),

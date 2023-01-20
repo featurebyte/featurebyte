@@ -197,7 +197,6 @@ class CountDictAccessor:
             other=key,
             node_type=NodeType.GET_VALUE,
             output_var_type=get_value_node.derive_var_type([op_struct]),
-            right_op=False,
             additional_node_params=additional_node_params,
         )
 
@@ -240,7 +239,6 @@ class CountDictAccessor:
             other=key,
             node_type=NodeType.GET_RANK,
             output_var_type=DBVarType.FLOAT,
-            right_op=False,
             additional_node_params=additional_node_params,
         )
 
@@ -279,6 +277,5 @@ class CountDictAccessor:
             other=key,
             node_type=NodeType.GET_RELATIVE_FREQUENCY,
             output_var_type=DBVarType.FLOAT,
-            right_op=False,
             additional_node_params=additional_node_params,
         )
