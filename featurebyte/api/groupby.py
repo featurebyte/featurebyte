@@ -542,7 +542,7 @@ class SimpleAggregator(BaseAggregator):
         Feature
         """
         self._validate_method_and_value_column(method=method, value_column=value_column)
-        self.view.validate_aggregation_parameters(
+        self.view.validate_simple_aggregate_parameters(
             groupby_obj=self.groupby,
             value_column=value_column,
         )

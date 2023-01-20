@@ -548,9 +548,9 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_i
     snowflake_item_view.validate_join(snowflake_item_view)
 
 
-def test_validate_aggregation_parameters(snowflake_item_data, transaction_entity):
+def test_validate_simple_aggregate_parameters(snowflake_item_data, transaction_entity):
     """
-    Test validate_aggregation_parameters
+    Test validate_simple_aggregate_parameters
     """
     snowflake_item_data["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_data["item_id_col"].as_entity(transaction_entity.name)
