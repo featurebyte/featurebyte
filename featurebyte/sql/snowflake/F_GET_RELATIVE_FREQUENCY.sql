@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION F_GET_RELATIVE_FREQUENCY(counts variant, key_to_use V
 AS
 $$
   if (!COUNTS) {
-    return null;
+    return;
   }
   var counts_arr = Object.values(COUNTS);
   var total = counts_arr.reduce((partialSum, a) => partialSum + a, 0);

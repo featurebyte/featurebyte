@@ -1,15 +1,18 @@
-CREATE OR REPLACE FUNCTION F_GET_RANK(counts variant, key_to_use VARCHAR, is_descending VARCHAR)
+CREATE OR REPLACE FUNCTION F_GET_RANK(counts variant, key_to_use VARCHAR, is_descending BOOLEAN)
   RETURNS float
   LANGUAGE JAVASCRIPT
 AS
 $$
+  if (!COUNTS) {
+    return
+  }
   var counts_keys = Object.keys(COUNTS)
-  if (!COUNTS || counts_keys.length == 0) {
-    return null;
+  if (counts_keys.length == 0) {
+    return;
   }
   // Return index -1 if we are unable to find the item.
   if (!KEY_TO_USE in COUNTS) {
-    return -1;
+    return;
   }
 
   // Create an array of key-value pairs
@@ -17,14 +20,16 @@ $$
   counts_tuple_arr.sort(
     (first, second) => { return first[1] - second[1] }
   )
-  if (IS_DESCENDING == "True") {
+  if (IS_DESCENDING) {
     counts_tuple_arr.reverse()
   }
+
   var first_element = counts_tuple_arr[0]
-  var previous_key = first_element[0]
-  if (previous_key == KEY_TO_USE) {
+  if (first_element[0] == KEY_TO_USE) {
     return 1;
   }
+
+  var previous_value = first_element[1]
 
   // If values are the same, we will return the highest rank.
   // eg.
@@ -34,12 +39,21 @@ $$
   for (var i = 1; i < counts_tuple_arr.length; i++) {
     var current_element = counts_tuple_arr[i];
     var current_key = current_element[0]
+    var current_value = current_element[1]
+    // Correct key found
     if (current_key == KEY_TO_USE) {
-      return current_rank
-    } else if (current_key != previous_key) {
-      current_rank += 1
+      if (current_value == previous_value) {
+        return current_rank
+      }
+      return i + 1
+    }
+
+    // Haven't found the correct key yet, update state if the value is new
+    if (current_value != previous_value) {
+      current_rank = i + 1
+      previous_value = current_value
     }
   }
-  return -1
+  return
 $$
 ;

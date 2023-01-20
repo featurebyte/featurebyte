@@ -4,16 +4,7 @@ Tests for snowflake cosine similarity UDF
 import numpy as np
 import pytest
 
-
-def to_object(obj_dict):
-    """
-    Returns an expression converts the dict to an object in Snowflake
-    """
-    args = []
-    for k, v in obj_dict.items():
-        args.append(f"'{k}'")
-        args.append(str(v))
-    return f"OBJECT_CONSTRUCT({', '.join(args)})"
+from tests.integration.udf.snowflake.util import to_object
 
 
 @pytest.mark.parametrize(
@@ -37,14 +28,9 @@ async def test_cosine_similarity_udf(snowflake_session, counts1, counts2, expect
     Test cosine similarity UDF
     """
 
-    def _to_expr(x):
-        if x is None:
-            return "null"
-        return to_object(x)
-
     async def _check(a, b):
-        a_expr = _to_expr(a)
-        b_expr = _to_expr(b)
+        a_expr = to_object(a)
+        b_expr = to_object(b)
         query = f"SELECT F_COUNT_DICT_COSINE_SIMILARITY({a_expr}, {b_expr}) AS OUT"
         df = await snowflake_session.execute_query(query)
         np.testing.assert_allclose(df.iloc[0]["OUT"], expected, 1e-5)

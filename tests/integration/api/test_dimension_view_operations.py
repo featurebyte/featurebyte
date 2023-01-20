@@ -5,6 +5,7 @@ Integration tests related to DimensionView
 import pytest
 
 from featurebyte import EventView, Feature, ItemView
+from featurebyte.common.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
@@ -214,7 +215,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
     """
-    Test get value from dictionary.
+    Test get rank from dictionary.
     """
     # perform get_rank
     get_value_feature = count_item_type_dictionary_feature.cd.get_rank(
@@ -239,7 +240,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
 
 def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
     """
-    Test is in dictionary
+    Test get rank in dictionary
     """
     # perform get_rank
     get_value_feature = count_item_type_dictionary_feature.cd.get_rank("type_44", descending=True)
@@ -254,3 +255,23 @@ def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_fea
         get_value_feature.name: 1.0,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
+
+
+def test_get_rank_in_dictionary__target_is_not_found(count_item_type_dictionary_feature):
+    """
+    Test get rank in dictionary, key is not found
+    """
+    # perform get_rank
+    get_value_feature = count_item_type_dictionary_feature.cd.get_rank(
+        "unknown_key", descending=True
+    )
+    assert isinstance(get_value_feature, Feature)
+    get_value_feature.name = "get_rank_in_dictionary"
+
+    # assert
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "order_id": "T2"}
+    get_value_feature_preview = get_value_feature.preview(preview_params)
+    assert get_value_feature_preview.shape[0] == 1
+    preview_dict = get_value_feature_preview.iloc[0].to_dict()
+    rank = preview_dict[get_value_feature.name]
+    assert is_scalar_nan(rank)
