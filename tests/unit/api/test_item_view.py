@@ -558,21 +558,21 @@ def test_validate_aggregation_parameters(snowflake_item_data, transaction_entity
 
     # no error expected as other_col is not from event data
     group_by = snowflake_item_view.groupby("event_id_col")
-    snowflake_item_view.validate_aggregation_parameters(group_by, "other_col")
+    snowflake_item_view.validate_simple_aggregate_parameters(group_by, "other_col")
 
     # error expected as groupby column needs to contain the event ID column
     group_by = snowflake_item_view.groupby("item_id_col")
     with pytest.raises(ValueError) as exc:
-        snowflake_item_view.validate_aggregation_parameters(group_by, "other_col")
+        snowflake_item_view.validate_simple_aggregate_parameters(group_by, "other_col")
     assert "GroupBy keys must contain the event ID column" in str(exc)
 
     # no error expected as groupby keys contains event id col
     group_by = snowflake_item_view.groupby(["item_id_col", "event_id_col"])
-    snowflake_item_view.validate_aggregation_parameters(group_by, None)
+    snowflake_item_view.validate_simple_aggregate_parameters(group_by, None)
 
     # no error expected as no value_column is passed in
     group_by = snowflake_item_view.groupby("event_id_col")
-    snowflake_item_view.validate_aggregation_parameters(group_by, None)
+    snowflake_item_view.validate_simple_aggregate_parameters(group_by, None)
 
 
 def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_entity):

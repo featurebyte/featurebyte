@@ -253,9 +253,9 @@ class ItemView(View, GroupByMixin):
                 "aggregate_over functions."
             )
 
-        self._validate_columns_are_from_event_data(groupby_obj, value_column)
+        self._assert_not_all_columns_are_from_event_data(groupby_obj, value_column)
 
-    def validate_aggregation_parameters(
+    def validate_simple_aggregate_parameters(
         self, groupby_obj: GroupBy, value_column: Optional[str]
     ) -> None:
         """
@@ -284,9 +284,9 @@ class ItemView(View, GroupByMixin):
                 "when performing simple aggregates."
             )
 
-        self._validate_columns_are_from_event_data(groupby_obj, value_column)
+        self._assert_not_all_columns_are_from_event_data(groupby_obj, value_column)
 
-    def _validate_columns_are_from_event_data(
+    def _assert_not_all_columns_are_from_event_data(
         self, groupby_obj: GroupBy, value_column: Optional[str]
     ) -> None:
         """

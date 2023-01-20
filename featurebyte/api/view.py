@@ -180,7 +180,7 @@ class GroupByMixin:
             Column to be aggregated
         """
 
-    def validate_aggregation_parameters(
+    def validate_simple_aggregate_parameters(
         self, groupby_obj: GroupBy, value_column: Optional[str]
     ) -> None:
         """
