@@ -140,12 +140,6 @@ class SlowlyChangingView(View, GroupByMixin):
     def get_join_column(self) -> str:
         return self.natural_key_column
 
-    def _get_as_features_excluded_columns(self) -> List[str]:
-        excluded_columns = [self.get_join_column(), self.effective_timestamp_column]
-        if self.current_flag_column is not None:
-            excluded_columns.append(self.current_flag_column)
-        return excluded_columns
-
     def get_common_scd_parameters(self) -> SCDBaseParameters:
         """
         Get parameters related to Slowly Changing Data (SCD)
