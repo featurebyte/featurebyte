@@ -338,8 +338,8 @@ def test_is_in_node(input_node):
     )
     assert (
         node.sql.sql()
-        == "IFF(CAST(ARRAY_CONTAINS(TO_VARIANT(cd_val), ARRAY(1, 2, 3)) IS NULL AS BOOLEAN), FALSE, "
-        "ARRAY_CONTAINS(TO_VARIANT(cd_val), ARRAY(1, 2, 3)))"
+        == f"CASE WHEN CAST(ARRAY_CONTAINS(TO_VARIANT({input_series_expr_str}), {array_expr_str}) IS NULL AS BOOLEAN) "
+        f"THEN FALSE ELSE ARRAY_CONTAINS(TO_VARIANT({input_series_expr_str}), {array_expr_str}) END"
     )
 
 
