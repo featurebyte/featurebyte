@@ -193,7 +193,7 @@ class CountDictAccessor:
         op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
 
-        return self._feature_obj._binary_op(  # pylint: disable=protected-access
+        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_VALUE,
             output_var_type=get_value_node.derive_var_type([op_struct]),
@@ -236,7 +236,7 @@ class CountDictAccessor:
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
-        return self._feature_obj._binary_op(  # pylint: disable=protected-access
+        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_RANK,
             output_var_type=DBVarType.FLOAT,
@@ -275,7 +275,7 @@ class CountDictAccessor:
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
-        return self._feature_obj._binary_op(  # pylint: disable=protected-access
+        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_RELATIVE_FREQUENCY,
             output_var_type=DBVarType.FLOAT,
