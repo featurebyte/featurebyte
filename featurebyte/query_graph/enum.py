@@ -80,6 +80,8 @@ class NodeType(StrEnum):
     COUNT_DICT_TRANSFORM = "count_dict_transform"
     COSINE_SIMILARITY = "cosine_similarity"
     DICTIONARY_KEYS = "dictionary_keys"
+    GET_RANK = "get_rank"
+    GET_RELATIVE_FREQUENCY = "get_relative_frequency"
 
     # window functions related operations
     LAG = "lag"

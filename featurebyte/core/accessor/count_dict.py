@@ -3,7 +3,7 @@ This module contains count_dict accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, TypeVar, Union
 
 from typeguard import typechecked
 
@@ -183,25 +183,99 @@ class CountDictAccessor:
 
         >>> dictionary_feature.cd.get_value(lookup_feature)  # doctest: +SKIP
         """
-        feature_clazz = type(self._feature_obj)
-        if isinstance(key, feature_clazz):
-            assert_is_lookup_feature(key.node_types_lineage)
-
         additional_node_params = {}
-        # We only need to assign value if we have been passed in a single scalar value.
-        if not isinstance(key, feature_clazz):
+        if isinstance(key, type(self._feature_obj)):
+            assert_is_lookup_feature(key.node_types_lineage)
+        else:
+            # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
-
         # construct operation structure of the get value node output
         op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
 
-        response = self._feature_obj._binary_op(  # pylint: disable=protected-access
+        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
             other=key,
             node_type=NodeType.GET_VALUE,
             output_var_type=get_value_node.derive_var_type([op_struct]),
-            right_op=False,
             additional_node_params=additional_node_params,
         )
-        assert isinstance(response, feature_clazz)
-        return response
+
+    def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
+        """
+        Gets the relative frequency of a particular key
+
+        Parameters
+        ----------
+        key: Union[Scalar, Feature]
+            key to lookup the value for
+        descending: bool
+            defaults to ranking in ascending order. Set to true to rank in descending order.
+
+        Returns
+        -------
+        Feature
+            feature
+
+        Examples
+        --------
+        Getting rank from a dictionary feature using a scalar value
+
+        >>> dictionary_feature.cd.get_rank("key")  # doctest: +SKIP
+
+        Getting rank from a dictionary feature using a lookup feature
+
+        >>> dictionary_feature.cd.get_rank(lookup_feature)  # doctest: +SKIP
+        """
+        additional_node_params: Dict[str, Any] = {
+            "descending": descending,
+        }
+        if isinstance(key, type(self._feature_obj)):
+            assert_is_lookup_feature(key.node_types_lineage)
+        else:
+            # We only need to assign value if we have been passed in a single scalar value.
+            additional_node_params["value"] = key
+
+        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
+            other=key,
+            node_type=NodeType.GET_RANK,
+            output_var_type=DBVarType.FLOAT,
+            additional_node_params=additional_node_params,
+        )
+
+    def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
+        """
+        Gets the relative frequency of a particular key
+
+        Parameters
+        ----------
+        key: Union[Scalar, Feature]
+            key to lookup the value for
+
+        Returns
+        -------
+        Feature
+            feature
+
+        Examples
+        --------
+        Getting relative frequency from a dictionary feature using a scalar value
+
+        >>> dictionary_feature.cd.get_relative_frequency("key")  # doctest: +SKIP
+
+        Getting relative frequency from a dictionary feature using a lookup feature
+
+        >>> dictionary_feature.cd.get_relative_frequency(lookup_feature)  # doctest: +SKIP
+        """
+        additional_node_params = {}
+        if isinstance(key, type(self._feature_obj)):
+            assert_is_lookup_feature(key.node_types_lineage)
+        else:
+            # We only need to assign value if we have been passed in a single scalar value.
+            additional_node_params["value"] = key
+
+        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
+            other=key,
+            node_type=NodeType.GET_RELATIVE_FREQUENCY,
+            output_var_type=DBVarType.FLOAT,
+            additional_node_params=additional_node_params,
+        )

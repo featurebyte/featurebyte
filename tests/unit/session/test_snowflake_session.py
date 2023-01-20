@@ -152,6 +152,8 @@ EXPECTED_FUNCTIONS = [
     "F_COUNT_DICT_MOST_FREQUENT",
     "F_COUNT_DICT_NUM_UNIQUE",
     "F_COUNT_DICT_COSINE_SIMILARITY",
+    "F_GET_RANK",
+    "F_GET_RELATIVE_FREQUENCY",
 ]
 
 EXPECTED_PROCEDURES = [
@@ -314,6 +316,12 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
             "identifier": "F_COUNT_DICT_NUM_UNIQUE",
+            "type": "function",
+        },
+        {"filename": "F_GET_RANK.sql", "identifier": "F_GET_RANK", "type": "function"},
+        {
+            "filename": "F_GET_RELATIVE_FREQUENCY.sql",
+            "identifier": "F_GET_RELATIVE_FREQUENCY",
             "type": "function",
         },
         {
