@@ -57,7 +57,6 @@ def test_event_data_update_critical_data_info(event_data):
         "purchase",
         "remove",
         "missing",
-        "nan",
     }
     # check that values in string type column (TRANSACTION_ID) are imputed to 0 and
     # values in integer type column (CUST_ID) are not imputed.
