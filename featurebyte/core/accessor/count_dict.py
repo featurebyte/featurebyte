@@ -205,9 +205,7 @@ class CountDictAccessor:
         assert isinstance(response, feature_clazz)
         return response
 
-    def get_rank(
-        self, key: Union[Scalar, Feature], descending: bool = False, right_op: bool = False
-    ) -> Feature:
+    def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
         """
         Gets the relative frequency of a particular key
 
@@ -217,8 +215,6 @@ class CountDictAccessor:
             key to lookup the value for
         descending: bool
             defaults to ranking in ascending order. Set to true to rank in descending order.
-        right_op: bool
-            right op
 
         Returns
         -------
@@ -250,15 +246,13 @@ class CountDictAccessor:
             other=key,
             node_type=NodeType.GET_RANK,
             output_var_type=DBVarType.FLOAT,
-            right_op=right_op,
+            right_op=False,
             additional_node_params=additional_node_params,
         )
         assert isinstance(response, feature_clazz)
         return response
 
-    def get_relative_frequency(
-        self, key: Union[Scalar, Feature], right_op: bool = False
-    ) -> Feature:
+    def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
         """
         Gets the relative frequency of a particular key
 
@@ -266,8 +260,6 @@ class CountDictAccessor:
         ----------
         key: Union[Scalar, Feature]
             key to lookup the value for
-        right_op: bool
-            right op
 
         Returns
         -------
@@ -297,7 +289,7 @@ class CountDictAccessor:
             other=key,
             node_type=NodeType.GET_RELATIVE_FREQUENCY,
             output_var_type=DBVarType.FLOAT,
-            right_op=right_op,
+            right_op=False,
             additional_node_params=additional_node_params,
         )
         assert isinstance(response, feature_clazz)
