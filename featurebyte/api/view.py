@@ -542,9 +542,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     def get_excluded_columns_as_other_view(self, join_key: str) -> list[str]:
         """
-        Get the columns to be excluded from the view it is used as other_view in a join. By default,
-        join key is always excluded. Specific views can opt to exclude additional columns by
-        overriding _get_additional_excluded_columns_as_other_view().
+        Get the columns to be excluded from the view when it is used as other_view in a join. By
+        default, join key is always excluded. Specific views can opt to exclude additional columns
+        by overriding _get_additional_excluded_columns_as_other_view().
 
         Parameters
         ----------
