@@ -11,6 +11,7 @@ import pandas as pd
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.logger import logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -44,7 +45,13 @@ class TileColumnTypeExtractor:
         feature_documents = feature_service.list_documents_iterator({})
         async for doc in feature_documents:
             feature_model = ExtendedFeatureModel(**doc)
-            for tile_spec in feature_model.tile_specs:
+            try:
+                tile_specs = feature_model.tile_specs
+            except:  # pylint: disable=bare-except
+                logger.exception(f"Failed to extract tile_specs for {doc}")
+                # For tile columns with no known type, they will be given a FLOAT type below
+                continue
+            for tile_spec in tile_specs:
                 for tile_column_name, tile_column_type in zip(
                     tile_spec.value_column_names, tile_spec.value_column_types
                 ):
