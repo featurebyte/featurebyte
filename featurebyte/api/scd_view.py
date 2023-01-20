@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import Field
 from typeguard import typechecked
