@@ -28,9 +28,7 @@ class IsInNode(ExpressionNode):
         )
         expr_is_null = expressions.Is(this=in_array_expr, expression=expressions.NULL)
         cast_as_boolean = expressions.Cast(this=expr_is_null, to=parse_one("BOOLEAN"))
-        return expressions.Anonymous(
-            this="IFF", expressions=[cast_as_boolean, parse_one("FALSE"), in_array_expr]
-        )
+        return expressions.If(this=cast_as_boolean, true=parse_one("FALSE"), false=in_array_expr)
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> IsInNode:
