@@ -32,7 +32,7 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
 )
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
 
@@ -687,13 +687,22 @@ class MetadataSchemaInitializer:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
         """
+        from featurebyte.migration.run import (  # pylint: disable=import-outside-toplevel
+            retrieve_all_migration_methods,
+        )
+
+        current_migration_version = max(
+            retrieve_all_migration_methods(data_warehouse_migrations_only=True)
+        )
         create_metadata_table_query = (
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
             "WORKING_SCHEMA_VERSION INT, "
+            f"{InternalName.MIGRATION_VERSION} INT, "
             "FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+            f"{current_migration_version} AS {InternalName.MIGRATION_VERSION}, "
             "NULL AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         )

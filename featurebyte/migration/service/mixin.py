@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 
 from bson import ObjectId
 
+from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -45,7 +46,7 @@ class BaseMigrationServiceMixin(Protocol):
         ...
 
     @abstractmethod
-    async def migrate_record(self, document: Document) -> None:
+    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
         """
         Perform migration for a Document
 
@@ -53,12 +54,15 @@ class BaseMigrationServiceMixin(Protocol):
         ----------
         document: Document
             Document to be migrated
+        version: Optional[int]
+            Migration number
         """
 
     async def migrate_all_records(
         self,
         query_filter: Optional[dict[str, Any]] = None,
         page_size: int = 10,
+        version: Optional[int] = None,
     ) -> None:
         """
         Migrate all records in this service's collection & audit collection
@@ -69,6 +73,8 @@ class BaseMigrationServiceMixin(Protocol):
             Query filter used to filter the documents used for migration
         page_size: int
             Page size
+        version: Optional[int]
+            Optional migration version number
         """
         # migrate all records and audit records
         if query_filter is None:
@@ -84,7 +90,7 @@ class BaseMigrationServiceMixin(Protocol):
                 page_size=page_size,
             )
             for doc in docs:
-                await self.migrate_record(doc)
+                await self.migrate_record(doc, version)
 
             to_iterate = bool(total > (page * page_size))
             page += 1
@@ -112,7 +118,8 @@ class MigrationServiceMixin(BaseMigrationServiceMixin, ABC):
         """
         return cls.document_class(**record).dict(by_alias=True)  # type: ignore
 
-    async def migrate_record(self, document: Document) -> None:
+    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+        _ = version
         await self.persistent.migrate_record(
             collection_name=self.collection_name,
             document=document,
@@ -184,7 +191,12 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         """
         self.get_credential = get_credential
 
-    async def migrate_record(self, document: Document) -> None:
+    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+
+        # Data warehouse migration requires version to be provided when calling migrate_all_records
+        # so that the warehouse metadata can be updated accordingly
+        assert version is not None
+
         feature_store = FeatureStoreModel(**document)
         try:
             session = await self.get_session(feature_store)
@@ -199,6 +211,28 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
             )
             return
         await self.migrate_record_with_session(feature_store, session)
+        await self.update_migration_version(session, version)
+
+    @staticmethod
+    async def update_migration_version(session: BaseSession, version: int) -> None:
+        """
+        Update MIGRATION_VERSION in warehouse metadata
+
+        Parameters
+        ----------
+        session: BaseSession
+            BaseSession object to interact with data warehouse
+        version: int
+            Current migration version number
+        """
+        df_metadata = await session.execute_query("SELECT * FROM METADATA_SCHEMA")
+        if InternalName.MIGRATION_VERSION not in df_metadata:  # type: ignore[operator]
+            await session.execute_query(
+                f"ALTER TABLE METADATA_SCHEMA ADD COLUMN {InternalName.MIGRATION_VERSION} INT"
+            )
+        await session.execute_query(
+            f"UPDATE METADATA_SCHEMA SET {InternalName.MIGRATION_VERSION} = {version}"
+        )
 
     async def migrate_record_with_session(
         self, feature_store: FeatureStoreModel, session: BaseSession

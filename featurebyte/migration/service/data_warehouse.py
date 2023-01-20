@@ -118,7 +118,7 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
         self.extractor = tile_column_type_extractor
 
         # migrate all records and audit records
-        await self.migrate_all_records()
+        await self.migrate_all_records(version=6)
 
     async def migrate_record_with_session(
         self, feature_store: FeatureStoreModel, session: BaseSession

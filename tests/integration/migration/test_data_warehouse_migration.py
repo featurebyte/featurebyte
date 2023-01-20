@@ -8,6 +8,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import EventView, Feature, FeatureList
+from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationService
 from featurebyte.utils.credential import get_credential
 
@@ -173,6 +174,10 @@ async def test_data_warehouse_migration_v6(
         df = await snowflake_session.execute_query(f"SELECT * FROM {expected_tile_id}")
         return df
 
+    async def _get_migration_version():
+        df = await snowflake_session.execute_query(f"SELECT * FROM METADATA_SCHEMA")
+        return df["MIGRATION_VERSION"].iloc[0]
+
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup
     df_expected = await _retrieve_tile_registry()
 
@@ -193,6 +198,11 @@ async def test_data_warehouse_migration_v6(
             f"ALTER TABLE {expected_tile_id} ADD COLUMN {latest_feature_tile_column} FLOAT DEFAULT NULL"
         )
 
+        # Simulate missing MIGRATION_VERSION
+        await snowflake_session.execute_query(
+            f"ALTER TABLE METADATA_SCHEMA DROP COLUMN {InternalName.MIGRATION_VERSION}"
+        )
+
         # Run migration
         service = DataWarehouseMigrationService(user=user, persistent=persistent)
         service.set_credential_callback(get_credential)
@@ -209,3 +219,5 @@ async def test_data_warehouse_migration_v6(
             str(df_migrated_tile_table[latest_feature_tile_column.upper()].dtype)
             == "datetime64[ns, UTC]"
         )
+
+        assert await _get_migration_version() == 6

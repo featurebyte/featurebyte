@@ -204,6 +204,8 @@ class InternalName(StrEnum):
 
     POINT_IN_TIME_SQL_PLACEHOLDER = "__FB_POINT_IN_TIME_SQL_PLACEHOLDER"
 
+    MIGRATION_VERSION = "MIGRATION_VERSION"
+
 
 class WorkerCommand(StrEnum):
     """

@@ -49,9 +49,14 @@ def _extract_migrate_methods(service_class: Any) -> list[tuple[int, str]]:
     return output
 
 
-def retrieve_all_migration_methods() -> dict[int, Any]:
+def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False) -> dict[int, Any]:
     """
     List all the migration methods
+
+    Parameters
+    ----------
+    data_warehouse_migrations_only: bool
+        If True, include data warehouse migrations only
 
     Returns
     -------
@@ -72,6 +77,10 @@ def retrieve_all_migration_methods() -> dict[int, Any]:
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
             if inspect.isclass(attr) and issubclass(attr, BaseDocumentService):
+                if data_warehouse_migrations_only and not issubclass(
+                    attr, DataWarehouseMigrationMixin
+                ):
+                    continue
                 for version, migrate_method_name in _extract_migrate_methods(attr):
                     migrate_method_data = {
                         "module": mod.__name__,
