@@ -201,10 +201,10 @@ class SampleMixin:
 
         Parameters
         ----------
-        **kwargs: Any
-            Additional keyword parameters
         limit: int
             maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------

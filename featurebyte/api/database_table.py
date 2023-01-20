@@ -3,12 +3,15 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Type
+from typing import Any, ClassVar, Optional, Type, Union
 
 from abc import ABC
+from datetime import datetime
 from http import HTTPStatus
 
+import pandas as pd
 from pydantic import Field, root_validator
+from typeguard import typechecked
 
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
@@ -20,10 +23,11 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
 class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseModel, ABC):
@@ -127,6 +131,19 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         """
         return self._table_data_class(**self.json_dict())
 
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
+        node = self.node
+        if kwargs.get("after_cleaning"):
+            assert isinstance(node, InputNode)
+            graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
+            if graph_node:
+                node = GlobalQueryGraph().add_node(node=graph_node, input_nodes=[self.node])
+
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=node, aggressive=True)
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
+        return pruned_graph, mapped_node
+
+    @typechecked
     def preview_clean_data_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the table data after applying list of cleaning operations
@@ -140,17 +157,109 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         -------
         str
         """
-        node = self.node
-        assert isinstance(node, InputNode)
-        graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
-        if graph_node:
-            node = GlobalQueryGraph().add_node(node=graph_node, input_nodes=[self.node])
+        return self._preview_sql(limit=limit, after_cleaning=True)
 
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=node, aggressive=True)
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
-        return GraphInterpreter(
-            pruned_graph, source_type=self.feature_store.type
-        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
+    @typechecked
+    def preview(self, limit: int = 10, after_cleaning: bool = False, **kwargs: Any) -> pd.DataFrame:
+        """
+        Preview raw or clean table data
+
+        Parameters
+        ----------
+        limit: int
+            Maximum number of return rows
+        after_cleaning: bool
+            Whether to apply cleaning operations
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        return super().preview(limit=limit, after_cleaning=after_cleaning, **kwargs)  # type: ignore[misc]
+
+    @typechecked
+    def sample(
+        self,
+        size: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Sample raw or clean table data
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+        after_cleaning: bool
+            Whether to apply cleaning operations
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        return super().sample(  # type: ignore[misc]
+            size=size,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            after_cleaning=after_cleaning,
+            **kwargs,
+        )
+
+    @typechecked
+    def describe(
+        self,
+        size: int = 0,
+        seed: int = 1234,
+        from_timestamp: Optional[Union[datetime, str]] = None,
+        to_timestamp: Optional[Union[datetime, str]] = None,
+        after_cleaning: bool = False,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """
+        Describe raw or clean table data
+
+        Parameters
+        ----------
+        size: int
+            Maximum number of rows to sample
+        seed: int
+            Seed to use for random sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to sample from
+        to_timestamp: Optional[datetime]
+            End of date range to sample from
+        after_cleaning: bool
+            Whether to apply cleaning operations
+        **kwargs: Any
+            Additional keyword parameters
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        return super().describe(  # type: ignore[misc]
+            size=size,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            after_cleaning=after_cleaning,
+            **kwargs,
+        )
 
 
 class DatabaseTable(GenericTableData, AbstractTableDataFrame):

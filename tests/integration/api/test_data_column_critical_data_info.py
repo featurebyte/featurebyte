@@ -49,12 +49,27 @@ def test_event_data_update_critical_data_info(event_data):
         cleaning_operations=[StringValueImputation(imputed_value=0)]
     )
     assert event_data.node.type == "input"
+
     # create feature group & preview
     event_view = EventView.from_event_data(event_data)
-    imputed_df = event_view.preview()
-    assert imputed_df["AMOUNT"].isnull().sum() == 0
-    assert imputed_df["SESSION_ID"].isnull().sum() == 1
-    assert set(imputed_df["PRODUCT_ACTION"].astype(str).unique()) == {
+
+    # check equality between cleaning data's vs view's preview, sample & describe operations
+    view_df = event_view.preview()
+    clean_df = event_data.preview(after_cleaning=True)
+    pd.testing.assert_frame_equal(view_df, clean_df)
+
+    view_sample_df = event_view.sample()
+    clean_sample_df = event_data.sample(after_cleaning=True)
+    pd.testing.assert_frame_equal(view_sample_df, clean_sample_df)
+
+    # DEV-1036: not able to generate describe output on the following operations
+    # view_describe_df = event_view.describe()
+    # clean_describe_df = event_data.describe(after_cleaning=True)
+    # pd.testing.assert_frame_equal(view_describe_df, clean_describe_df)
+
+    assert view_df["AMOUNT"].isnull().sum() == 0
+    assert view_df["SESSION_ID"].isnull().sum() == 1
+    assert set(view_df["PRODUCT_ACTION"].astype(str).unique()) == {
         "detail",
         "purchase",
         "remove",
@@ -63,8 +78,8 @@ def test_event_data_update_critical_data_info(event_data):
     }
     # check that values in string type column (TRANSACTION_ID) are imputed to 0 and
     # values in integer type column (CUST_ID) are not imputed.
-    assert (imputed_df["TRANSACTION_ID"] == 0).all()
-    assert (imputed_df["CUST_ID"] == original_df["CUST_ID"]).all()
+    assert (view_df["TRANSACTION_ID"] == 0).all()
+    assert (view_df["CUST_ID"] == original_df["CUST_ID"]).all()
 
     assert event_view.node.type == "graph"
     feature_group = event_view.groupby("CUST_ID").aggregate_over(
