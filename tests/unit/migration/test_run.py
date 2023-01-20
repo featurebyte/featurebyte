@@ -9,16 +9,14 @@ import pytest
 import pytest_asyncio
 from bson import json_util
 
-from featurebyte.migration.helper import (
-    _extract_migrate_method_marker,
-    _extract_migrate_methods,
-    retrieve_all_migration_methods,
-)
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
+    _extract_migrate_method_marker,
+    _extract_migrate_methods,
     migrate_method_generator,
     post_migration_sanity_check,
+    retrieve_all_migration_methods,
     run_migration,
 )
 from featurebyte.schema.entity import EntityCreate

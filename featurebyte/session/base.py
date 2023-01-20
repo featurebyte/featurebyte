@@ -687,7 +687,7 @@ class MetadataSchemaInitializer:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
         """
-        from featurebyte.migration.helper import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.migration.run import (  # pylint: disable=import-outside-toplevel
             retrieve_all_migration_methods,
         )
 
