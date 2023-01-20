@@ -178,6 +178,16 @@ class SlowlyChangingView(View, GroupByMixin):
             }
         }
 
+    def _get_additional_excluded_columns_as_other_view(self) -> list[str]:
+        excluded_columns = [self.effective_timestamp_column]
+        if self.current_flag_column:
+            excluded_columns.append(self.current_flag_column)
+        if self.surrogate_key_column:
+            excluded_columns.append(self.surrogate_key_column)
+        if self.end_timestamp_column:
+            excluded_columns.append(self.end_timestamp_column)
+        return excluded_columns
+
     def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         return {
             "scd_parameters": {

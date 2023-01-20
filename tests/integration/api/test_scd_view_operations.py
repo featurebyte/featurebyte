@@ -97,21 +97,7 @@ async def test_scd_join_small(snowflake_session, snowflake_feature_store):
             ),
             "cust_id": [1000, 1000, 1000],
             "event_id": [1, 2, 3],
-            "effective_ts_latest": pd.to_datetime(
-                [
-                    np.nan,
-                    "2022-04-12 10:00:00",
-                    "2022-04-20 10:00:00",
-                ]
-            ),
             "scd_value_latest": [np.nan, 1, 2],
-            "effective_ts_latest_v2": pd.to_datetime(
-                [
-                    np.nan,
-                    "2022-04-12 10:00:00",
-                    "2022-04-20 10:00:00",
-                ]
-            ),
             "scd_value_latest_v2": [np.nan, 1, 2],
         }
     )

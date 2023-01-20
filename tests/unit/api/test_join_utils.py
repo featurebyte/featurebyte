@@ -7,8 +7,8 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
-    filter_join_key_from_column,
-    filter_join_key_from_column_info,
+    filter_columns,
+    filter_columns_info,
     is_column_name_in_columns,
     join_tabular_data_ids,
 )
@@ -22,13 +22,13 @@ def test_filter_join_key_from_column():
     Test filter_join_key_from_column
     """
     columns = ["colA", "colB", "colC"]
-    filtered_columns = filter_join_key_from_column(columns, "randomCol")
+    filtered_columns = filter_columns(columns, ["randomCol"])
     assert filtered_columns == columns
 
-    filtered_columns = filter_join_key_from_column(columns, "colA")
+    filtered_columns = filter_columns(columns, ["colA"])
     assert filtered_columns == ["colB", "colC"]
 
-    filtered_columns = filter_join_key_from_column(columns, "")
+    filtered_columns = filter_columns(columns, [""])
     assert filtered_columns == columns
 
 
@@ -41,13 +41,13 @@ def test_filter_join_key_from_column_info():
         get_column_info("colB"),
         get_column_info("colC"),
     ]
-    filtered_columns = filter_join_key_from_column_info(column_infos, "randomCol")
+    filtered_columns = filter_columns_info(column_infos, ["randomCol"])
     assert filtered_columns == column_infos
 
-    filtered_columns = filter_join_key_from_column_info(column_infos, "colA")
+    filtered_columns = filter_columns_info(column_infos, ["colA"])
     assert filtered_columns == [get_column_info("colB"), get_column_info("colC")]
 
-    filtered_columns = filter_join_key_from_column_info(column_infos, "")
+    filtered_columns = filter_columns_info(column_infos, [""])
     assert filtered_columns == column_infos
 
 

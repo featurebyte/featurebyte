@@ -15,7 +15,7 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
-    filter_join_key_from_column,
+    filter_columns,
     join_tabular_data_ids,
 )
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
@@ -132,7 +132,7 @@ class ItemView(View, GroupByMixin):
         # EventData's event_id_column will be excluded from the result since that would be same as
         # ItemView's event_id_column. There is no need to specify event_suffix if the
         # event_id_column is the only common column name between EventData and ItemView.
-        columns_excluding_event_id = filter_join_key_from_column(columns, left_on)
+        columns_excluding_event_id = filter_columns(columns, [left_on])
         renamed_event_view_columns = append_rsuffix_to_columns(
             columns_excluding_event_id, event_suffix
         )

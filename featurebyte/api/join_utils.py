@@ -36,24 +36,25 @@ def append_rsuffix_to_column_info(
     return updated_column_info
 
 
-def filter_join_key_from_column(columns: List[str], join_key: str) -> List[str]:
+def filter_columns(columns: List[str], exclude_columns: List[str]) -> List[str]:
     """
-    Filters the join key from a list of columns. This is used to remove the join key from the other view's columns
-    so that we don't duplicate information in the resulting view.
+    Filters a list of columns. This is used to remove columns such as the join key from the other
+    view's columns so that we don't duplicate information in the resulting view.
 
     Parameters
     ----------
     columns: List[str]
         columns for a view
-    join_key: str
-        join key column
+    exclude_columns: List[str]
+        column names to be excluded
 
     Returns
     -------
     List[str]
         filtered list of columns
     """
-    return [col for col in columns if col != join_key]
+    exclude_columns_set = set(exclude_columns)
+    return [col for col in columns if col not in exclude_columns_set]
 
 
 def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> List[str]:
@@ -77,23 +78,24 @@ def append_rsuffix_to_columns(columns: List[str], rsuffix: Optional[str]) -> Lis
     return [f"{col}{rsuffix}" for col in columns]
 
 
-def filter_join_key_from_column_info(col_info: List[ColumnInfo], join_key: str) -> List[ColumnInfo]:
+def filter_columns_info(col_info: List[ColumnInfo], exclude_columns: List[str]) -> List[ColumnInfo]:
     """
     Filters out column info that matches the join key.
 
     Parameters
     ----------
     col_info: List[ColumnInfo]
-        colum info's
-    join_key: str
-        join key
+        Column info's
+    exclude_columns: List[str]
+        Column names to be removed from columns info
 
     Returns
     -------
     List[ColumnInfo]
         filtered column info's
     """
-    return [col_info for col_info in col_info if col_info.name != join_key]
+    exclude_columns_set = set(exclude_columns)
+    return [col_info for col_info in col_info if col_info.name not in exclude_columns_set]
 
 
 def combine_column_info_of_views(
