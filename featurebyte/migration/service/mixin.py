@@ -129,6 +129,8 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
     get_credential: Any
 
     async def create_document(self, data: DocumentUpdateSchema) -> Document:  # type: ignore[override]
+        # Currently any implementation of DataWarehouseMigrationMixin is required to only make
+        # modification to data warehouse and not to mongo due to the way they are tested.
         raise NotImplementedError()
 
     async def update_document(  # type: ignore[override]
@@ -139,6 +141,8 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         document: Optional[Document] = None,
         return_document: bool = True,
     ) -> Optional[Document]:
+        # Currently any implementation of DataWarehouseMigrationMixin is required to only make
+        # modification to data warehouse and not to mongo due to the way they are tested.
         raise NotImplementedError()
 
     async def get_session(self, feature_store: FeatureStoreModel) -> BaseSession:
