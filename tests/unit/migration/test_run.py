@@ -21,6 +21,7 @@ from featurebyte.migration.run import (
 )
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
+from featurebyte.utils.credential import get_credential
 
 
 def test_retrieve_all_migration_methods():
@@ -57,7 +58,11 @@ async def test_migrate_method_generator(user, persistent):
 
     expected_method_num = len(retrieve_all_migration_methods())
     method_generator = migrate_method_generator(
-        user=user, persistent=persistent, schema_metadata=schema_metadata
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
+        include_data_warehouse_migrations=True,
     )
     assert len([_ async for _ in method_generator]) == expected_method_num
 
@@ -73,13 +78,37 @@ async def test_migrate_method_generator(user, persistent):
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
     method_generator = migrate_method_generator(
-        user=user, persistent=persistent, schema_metadata=schema_metadata
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
+        include_data_warehouse_migrations=True,
     )
     methods = [method async for method in method_generator]
     assert len(methods) == expected_method_num - 1
     for _, method in methods:
         marker = _extract_migrate_method_marker(method)
         assert marker.version > 1
+
+
+@pytest.mark.asyncio
+async def test_migrate_method_generator__exclude_warehouse(user, persistent):
+    """Test migrate method generator with include_data_warehouse_migrations=False"""
+    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
+
+    expected_num_warehouse_migrations = 1
+    expected_method_num = len(retrieve_all_migration_methods()) - expected_num_warehouse_migrations
+    method_generator = migrate_method_generator(
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
+        include_data_warehouse_migrations=False,
+    )
+    assert len([_ async for _ in method_generator]) == expected_method_num
 
 
 @pytest_asyncio.fixture(name="migration_check_persistent")
@@ -131,13 +160,22 @@ async def test_run_migration(migration_check_persistent, user):
     )
 
     # perform migration on testing samples to check the migration logic
-    await run_migration(user=user, persistent=persistent)
+    await run_migration(
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        include_data_warehouse_migrations=False,
+    )
 
     # check that all migrated collections contains some examples for testing
     version = 0
     description = "Initial schema"
     async for service, migrate_method in migrate_method_generator(
-        user=user, persistent=persistent, schema_metadata=schema_metadata
+        user=user,
+        persistent=persistent,
+        get_credential=get_credential,
+        schema_metadata=schema_metadata,
+        include_data_warehouse_migrations=False,
     ):
         marker = _extract_migrate_method_marker(migrate_method)
         version = max(version, marker.version)
