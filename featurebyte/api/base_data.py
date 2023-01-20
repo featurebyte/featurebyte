@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, ClassVar, List, Optional, Type, TypeVar
 
 from http import HTTPStatus
 
@@ -212,18 +212,20 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         assert cls._create_schema_class is not None
 
         # construct an input node & insert into the global graph
+        data_id_value = _id or ObjectId()
         graph, inserted_node = cls.construct_graph_and_node(
             feature_store_details=tabular_source.feature_store.get_feature_store_details(),
             table_data_dict={
                 "tabular_source": tabular_source.tabular_source,
                 "columns_info": tabular_source.columns_info,
+                "_id": data_id_value,
                 **kwargs,
             },
             graph=GlobalQueryGraph(),
         )
 
         data = cls._create_schema_class(  # pylint: disable=not-callable
-            _id=_id or ObjectId(),
+            _id=data_id_value,
             name=name,
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
@@ -232,6 +234,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
             node_name=inserted_node.name,
             **kwargs,
         )
+
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
         if response.status_code == HTTPStatus.OK:
@@ -280,18 +283,6 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         output = DataColumn(info=info)
         output.set_parent(self)
         return output
-
-    def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
-        previous_columns_info = self.columns_info
-        super().update(update_payload=update_payload, allow_update_local=allow_update_local)
-        if allow_update_local and self.columns_info != previous_columns_info:
-            # update the global query graph if there is any changes in columns_info
-            _, inserted_node = self.construct_graph_and_node(
-                feature_store_details=self.feature_store.get_feature_store_details(),
-                table_data_dict=self.json_dict(),
-                graph=GlobalQueryGraph(),
-            )
-            self.node_name = inserted_node.name
 
     @typechecked
     def update_record_creation_date_column(self, record_creation_date_column: str) -> None:

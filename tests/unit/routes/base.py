@@ -867,9 +867,6 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         """Test update columns info"""
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
-        graph_nodes = response_dict["graph"]["nodes"]
-        assert len(graph_nodes) == 1
-        assert graph_nodes[0]["name"] == "input_1"
 
         # modify current_value's critical data info
         current_value_info = columns_info[-2]
@@ -884,12 +881,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             f"{self.base_route}/{response_dict['_id']}",
             json={"columns_info": columns_info},
         )
-        update_response_dict = update_response.json()
         assert update_response.status_code == HTTPStatus.OK
-        updated_graph_nodes = update_response_dict["graph"]["nodes"]
-        assert len(updated_graph_nodes) == 2
-        assert updated_graph_nodes[0] == graph_nodes[0]
-        assert updated_graph_nodes[1]["name"] == "graph_1"
 
     def test_update_422(
         self,

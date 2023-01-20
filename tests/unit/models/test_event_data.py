@@ -95,8 +95,6 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
                 "table_name": "table",
             },
         },
-        "graph": {"nodes": [], "edges": []},
-        "node_name": "",
     }
     assert event_data.dict() == expected_event_data_dict
     event_data_json = event_data.json(by_alias=True)

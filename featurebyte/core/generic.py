@@ -91,21 +91,32 @@ class QueryObject(FeatureByteBaseModel):
             values["node_name"] = node_name_map[values["node_name"]]
         return values
 
-    def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
+
+        Parameters
+        ----------
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
         tuple[QueryGraphModel, Node]
             QueryGraph & mapped Node object (within the pruned graph)
         """
-        # TODO: make aggression=True after optimizing operation structure runtime (DEV-974)
+        _ = kwargs
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
             target_node=self.node, aggressive=True
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
+
+    def _preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
     @typechecked
     def preview_sql(self, limit: int = 10) -> str:
@@ -121,10 +132,7 @@ class QueryObject(FeatureByteBaseModel):
         -------
         str
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        return GraphInterpreter(
-            pruned_graph, source_type=self.feature_store.type
-        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
+        return self._preview_sql(limit=limit)
 
     def copy(
         self: QueryObjectT,
