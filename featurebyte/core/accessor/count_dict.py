@@ -155,25 +155,6 @@ class CountDictAccessor:
             **self._feature_obj.binary_op_series_params(),
         )
 
-    def _is_feature(self, obj: Any) -> bool:
-        """
-        Helper function to check if an object is feature.
-
-        Note that we do this because we can't call `isinstance` on a "Feature" type that isn't a concrete type.
-
-        Parameters
-        ----------
-        obj: Any
-            object we want to check
-
-        Returns
-        -------
-        bool
-            True if the object is a feature
-        """
-        feature_clazz = type(self._feature_obj)
-        return isinstance(obj, feature_clazz)
-
     def get_value(self, key: Union[Scalar, Feature]) -> Feature:
         """
         Get the value in a dictionary feature, based on the key provided.
@@ -202,9 +183,8 @@ class CountDictAccessor:
 
         >>> dictionary_feature.cd.get_value(lookup_feature)  # doctest: +SKIP
         """
-        key_is_feature = self._is_feature(key)
         additional_node_params = {}
-        if key_is_feature:
+        if isinstance(key, Feature):
             assert_is_lookup_feature(key.node_types_lineage)
         else:
             # We only need to assign value if we have been passed in a single scalar value.
@@ -220,7 +200,7 @@ class CountDictAccessor:
             right_op=False,
             additional_node_params=additional_node_params,
         )
-        assert self._is_feature(get_value_feature)
+        assert isinstance(get_value_feature, Feature)
         return get_value_feature
 
     def get_rank(self, key: Union[Scalar, Feature], descending: bool = False) -> Feature:
@@ -249,11 +229,10 @@ class CountDictAccessor:
 
         >>> dictionary_feature.cd.get_rank(lookup_feature)  # doctest: +SKIP
         """
-        key_is_feature = self._is_feature(key)
         additional_node_params: Dict[str, Any] = {
             "descending": descending,
         }
-        if key_is_feature:
+        if isinstance(key, Feature):
             assert_is_lookup_feature(key.node_types_lineage)
         else:
             # We only need to assign value if we have been passed in a single scalar value.
@@ -266,7 +245,7 @@ class CountDictAccessor:
             right_op=False,
             additional_node_params=additional_node_params,
         )
-        assert self._is_feature(rank_feature)
+        assert isinstance(rank_feature, Feature)
         return rank_feature
 
     def get_relative_frequency(self, key: Union[Scalar, Feature]) -> Feature:
@@ -293,9 +272,8 @@ class CountDictAccessor:
 
         >>> dictionary_feature.cd.get_relative_frequency(lookup_feature)  # doctest: +SKIP
         """
-        key_is_feature = self._is_feature(key)
         additional_node_params = {}
-        if key_is_feature:
+        if isinstance(key, Feature):
             assert_is_lookup_feature(key.node_types_lineage)
         else:
             # We only need to assign value if we have been passed in a single scalar value.
@@ -310,5 +288,5 @@ class CountDictAccessor:
                 additional_node_params=additional_node_params,
             )
         )
-        assert self._is_feature(relative_frequency_feature)
+        assert isinstance(relative_frequency_feature, Feature)
         return relative_frequency_feature
