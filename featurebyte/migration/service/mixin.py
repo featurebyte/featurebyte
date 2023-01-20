@@ -3,7 +3,7 @@ MigrationServiceMixin class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Optional, Protocol
 
 from abc import ABC, abstractmethod
 
@@ -19,7 +19,10 @@ from featurebyte.service.base_document import DocumentUpdateSchema
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
-from featurebyte.session.base import BaseSession
+
+if TYPE_CHECKING:
+    from featurebyte.session.base import BaseSession
+
 from featurebyte.utils.credential import ConfigCredentialProvider
 
 
