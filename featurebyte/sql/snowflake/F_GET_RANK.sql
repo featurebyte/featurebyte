@@ -35,7 +35,6 @@ $$
     var current_element = counts_tuple_arr[i];
     var current_key = current_element[0]
     if (current_key == KEY_TO_USE) {
-      // Return index + 1 since we want our ranks to start from 1
       return current_rank
     } else if (current_key != previous_key) {
       current_rank += 1
