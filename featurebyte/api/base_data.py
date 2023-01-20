@@ -212,20 +212,20 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         assert cls._create_schema_class is not None
 
         # construct an input node & insert into the global graph
-        _id_value = _id or ObjectId()
+        data_id_value = _id or ObjectId()
         graph, inserted_node = cls.construct_graph_and_node(
             feature_store_details=tabular_source.feature_store.get_feature_store_details(),
             table_data_dict={
                 "tabular_source": tabular_source.tabular_source,
                 "columns_info": tabular_source.columns_info,
-                "_id": _id_value,
+                "_id": data_id_value,
                 **kwargs,
             },
             graph=GlobalQueryGraph(),
         )
 
         data = cls._create_schema_class(  # pylint: disable=not-callable
-            _id=_id_value,
+            _id=data_id_value,
             name=name,
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,

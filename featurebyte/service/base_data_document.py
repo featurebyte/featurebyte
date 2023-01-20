@@ -106,7 +106,7 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         return message
 
     async def create_document(self, data: DocumentCreate) -> Document:
-        # retrieve feature store
+        # retrieve feature store to check the feature_store_id is valid
         _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
             document_id=data.tabular_source.feature_store_id
         )
