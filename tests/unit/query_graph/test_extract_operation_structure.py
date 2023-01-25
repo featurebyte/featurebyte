@@ -302,6 +302,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == ("groupby_1",)
+    assert op_struct.is_time_based is True
 
     grp_op_struct = op_struct.to_group_operation_structure()
     assert to_dict(grp_op_struct.source_columns) == expected_columns
@@ -309,6 +310,7 @@ def test_extract_operation__groupby(query_graph_with_groupby):
     assert grp_op_struct.aggregations == expected_aggregations
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("groupby_1",)
+    assert grp_op_struct.is_time_based is True
 
     # check project on feature group
     project_node = graph.add_operation(
@@ -407,6 +409,7 @@ def test_extract_operation__item_groupby(
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
     assert op_struct.row_index_lineage == ("item_groupby_1",)
+    assert op_struct.is_time_based is False
 
 
 def test_extract_operation__join_node(
@@ -517,6 +520,7 @@ def test_extract_operation__join_double_aggregations(
     assert to_dict(grp_op_struct.aggregations) == expected_aggregations
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("groupby_1",)
+    assert op_struct.is_time_based is True
 
 
 def test_extract_operation__lookup_feature(
@@ -578,6 +582,43 @@ def test_extract_operation__lookup_feature(
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("lookup_1",)
+    assert op_struct.is_time_based is False
+
+
+def test_extract_operation__scd_lookup_feature(
+    global_graph,
+    scd_lookup_feature_node,
+    scd_data_input_node,
+):
+    """Test extract_operation_strucure: SCD lookup features"""
+
+    op_struct = global_graph.extract_operation_structure(node=scd_lookup_feature_node)
+    common_data_params = extract_column_parameters(scd_data_input_node)
+    expected_columns = [
+        {"name": "membership_status", "dtype": "VARCHAR", **common_data_params},
+    ]
+    expected_aggregations = [
+        {
+            "name": "Current Membership Status",
+            "dtype": "VARCHAR",
+            "filter": False,
+            "node_names": {"lookup_1", "project_1", "input_1"},
+            "node_name": "lookup_1",
+            "method": None,
+            "keys": ["cust_id"],
+            "window": None,
+            "category": None,
+            "type": "aggregation",
+            "column": expected_columns[0],
+            "aggregation_type": "lookup",
+        }
+    ]
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("lookup_1",)
+    assert op_struct.is_time_based is True
 
 
 def test_extract_operation__aggregate_asat_feature(
@@ -615,6 +656,7 @@ def test_extract_operation__aggregate_asat_feature(
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "series"
     assert op_struct.row_index_lineage == ("aggregate_as_at_1",)
+    assert op_struct.is_time_based is True
 
 
 def test_extract_operation__alias(global_graph, input_node):

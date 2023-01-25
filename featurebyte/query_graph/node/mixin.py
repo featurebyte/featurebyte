@@ -80,6 +80,16 @@ class AggregationOpStructMixin:
         List of excluded column names
         """
 
+    @abstractmethod
+    def _is_time_based(self) -> bool:
+        """
+        Returns whether the aggregation is time based
+
+        Returns
+        -------
+        bool
+        """
+
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         """
         Get the data column used for aggregation
@@ -200,8 +210,7 @@ class AggregationOpStructMixin:
                 output_var_type=output_var_type,
             )
 
-        # Only item aggregates are not time based.
-        is_time_based = self.type != NodeType.ITEM_GROUPBY
+        is_time_based = self._is_time_based()
         return OperationStructure(
             **node_kwargs,
             output_type=self.output_type,
