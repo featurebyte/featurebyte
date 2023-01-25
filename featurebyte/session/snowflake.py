@@ -255,7 +255,7 @@ class SnowflakeSession(BaseSession):
         schema = []
         for colname, dtype in dataframe.dtypes.to_dict().items():
 
-            if isinstance(dataframe[colname].iloc[0], datetime.datetime):
+            if dataframe.shape[0] > 0 and isinstance(dataframe[colname].iloc[0], datetime.datetime):
                 if dataframe[colname].iloc[0].tzinfo:
                     db_type = "TIMESTAMP_TZ"
                 else:

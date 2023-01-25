@@ -543,6 +543,10 @@ def test_get_columns_schema_from_dataframe():
     expected_schema = list(expected_dict.items())
     assert schema == expected_schema
 
+    # test empty dataframe
+    schema = SnowflakeSession.get_columns_schema_from_dataframe(dataframe.iloc[:0])
+    assert schema == expected_schema
+
 
 @pytest.mark.parametrize("error_type", [DatabaseError, OperationalError])
 def test_constructor__credentials_error(snowflake_connector, error_type, snowflake_session_dict):
