@@ -182,7 +182,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             plt.title("Job distribution over time")
             plt.axvline(x=self.request_date, color="red")
             buffer = BytesIO()
-            fig.savefig(buffer, format="png")
+            fig.savefig(buffer, format="png", metadata={"Software": None})
             image_1 = base64.b64encode(buffer.getvalue()).decode("utf-8")
             plt.close()
 
@@ -205,9 +205,9 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             ax3.set_ylabel("Job count")
             ax3.hist(self.job_session_logs.COMPUTE_DURATION, rwidth=0.7)
             buffer = BytesIO()
-            fig.savefig(buffer, format="png")
+            fig.savefig(buffer, format="png", metadata={"Software": None})
             image_2 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-            fig.savefig(buffer, format="png")
+            fig.savefig(buffer, format="png", metadata={"Software": None})
             plt.close()
         except ModuleNotFoundError:
             logger.warning("matplotlib not installed, skipping job status plots.")
