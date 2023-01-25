@@ -152,19 +152,25 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             return
 
         # Otherwise, the validity is based on DBVarType
-        # TODO: think about this
         valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
-            DBVarType.BOOL: (bool, Series),
-            DBVarType.INT: (int, float, Series),
-            DBVarType.FLOAT: (int, float, Series),
-            DBVarType.VARCHAR: (str, Series),
+            DBVarType.BOOL: (bool,),
+            DBVarType.INT: (int, float),
+            DBVarType.FLOAT: (int, float),
+            DBVarType.VARCHAR: (str,),
         }
         accepted_types = valid_assignment_map.get(self.dtype)
         if accepted_types is None:
             raise ValueError(
                 f"Conditionally updating '{self}' of type {self.dtype} is not supported!"
             )
-        if not isinstance(value, accepted_types):
+        if isinstance(value, Series):
+            type_of_series = valid_assignment_map.get(value.dtype)
+            if type_of_series != accepted_types:
+                raise ValueError(
+                    f"Conditionally updating '{self}' with series of type '{value.dtype}' is not allowed."
+                )
+
+        elif not isinstance(value, accepted_types):
             raise ValueError(
                 f"Conditionally updating '{self}' with value '{value}' is not supported!"
             )
