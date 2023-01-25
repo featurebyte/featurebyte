@@ -110,7 +110,8 @@ class Conditional(ExpressionNode):
         input_table_node = series_node.table_node
 
         # Check to see if both values are present. If so, error since we don't know which one to use.
-        if len(input_sql_nodes) == 3 and "value" in context.parameters:
+        context_value = context.parameters["value"]
+        if len(input_sql_nodes) == 3 and context_value is not None:
             raise ValueError("too many values provided.")
 
         # Figure out value to use
@@ -121,7 +122,7 @@ class Conditional(ExpressionNode):
             assert isinstance(value_node, ExpressionNode)
             value_series = value_node
         else:
-            value = context.parameters["value"]
+            value = context_value
 
         sql_node = Conditional(
             context=context,
