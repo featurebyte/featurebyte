@@ -18,8 +18,8 @@ from featurebyte.api.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,
-    filter_join_key_from_column,
-    filter_join_key_from_column_info,
+    filter_columns,
+    filter_columns_info,
     is_column_name_in_columns,
     join_tabular_data_ids,
 )
@@ -563,6 +563,29 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         # Perform other validation
         self.validate_join(other_view)
 
+    def get_excluded_columns_as_other_view(self, join_key: str) -> list[str]:
+        """
+        Get the columns to be excluded from the view when it is used as other_view in a join. By
+        default, join key is always excluded. Specific views can opt to exclude additional columns
+        by overriding _get_additional_excluded_columns_as_other_view().
+
+        Parameters
+        ----------
+        join_key: str
+            Join key
+
+        Returns
+        -------
+        list[str]
+            List of column names to be excluded
+        """
+        excluded_columns = [join_key]
+        excluded_columns.extend(self._get_additional_excluded_columns_as_other_view())
+        return excluded_columns
+
+    def _get_additional_excluded_columns_as_other_view(self) -> list[str]:
+        return []
+
     @typechecked
     def join(  # pylint: disable=too-many-locals
         self,
@@ -598,7 +621,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         left_output_columns = self.columns
 
         left_on, right_on = self._get_join_keys(other_view, on)
-        filtered_other_columns = filter_join_key_from_column(other_view.columns, right_on)
+        other_view_excluded_columns = other_view.get_excluded_columns_as_other_view(right_on)
+        filtered_other_columns = filter_columns(
+            other_view.columns, exclude_columns=other_view_excluded_columns
+        )
         right_input_columns = filtered_other_columns
         right_output_columns = append_rsuffix_to_columns(filtered_other_columns, rsuffix)
 
@@ -623,7 +649,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         )
 
         # Construct new columns_info
-        filtered_column_infos = filter_join_key_from_column_info(other_view.columns_info, right_on)
+        filtered_column_infos = filter_columns_info(
+            other_view.columns_info, other_view_excluded_columns
+        )
         joined_columns_info = combine_column_info_of_views(
             self.columns_info, append_rsuffix_to_column_info(filtered_column_infos, rsuffix)
         )

@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import Field
 from typeguard import typechecked
@@ -140,12 +140,6 @@ class SlowlyChangingView(View, GroupByMixin):
     def get_join_column(self) -> str:
         return self.natural_key_column
 
-    def _get_as_features_excluded_columns(self) -> List[str]:
-        excluded_columns = [self.get_join_column(), self.effective_timestamp_column]
-        if self.current_flag_column is not None:
-            excluded_columns.append(self.current_flag_column)
-        return excluded_columns
-
     def get_common_scd_parameters(self) -> SCDBaseParameters:
         """
         Get parameters related to Slowly Changing Data (SCD)
@@ -177,6 +171,16 @@ class SlowlyChangingView(View, GroupByMixin):
                 **self.get_common_scd_parameters().dict(),
             }
         }
+
+    def _get_additional_excluded_columns_as_other_view(self) -> list[str]:
+        excluded_columns = [self.effective_timestamp_column]
+        if self.current_flag_column:
+            excluded_columns.append(self.current_flag_column)
+        if self.surrogate_key_column:
+            excluded_columns.append(self.surrogate_key_column)
+        if self.end_timestamp_column:
+            excluded_columns.append(self.end_timestamp_column)
+        return excluded_columns
 
     def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
         return {
