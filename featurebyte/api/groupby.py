@@ -334,11 +334,30 @@ class WindowAggregator(BaseAggregator):
         frequency = feature_job_setting.get("frequency")
         time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
         blind_spot = feature_job_setting.get("blind_spot")
-        default_setting = self.view.default_feature_job_setting
-        if default_setting:
-            frequency = frequency or default_setting.frequency
-            time_modulo_frequency = time_modulo_frequency or default_setting.time_modulo_frequency
-            blind_spot = blind_spot or default_setting.blind_spot
+
+        # Check that feature job setting is not specified partially (must be all or nothing)
+        settings_overridden = [
+            frequency is not None,
+            time_modulo_frequency is not None,
+            blind_spot is not None,
+        ]
+        is_settings_provided = any(settings_overridden)
+        if is_settings_provided and not all(settings_overridden):
+            raise ValueError(
+                "All of frequency, time_modulo_frequency and blind_spot must be specified in"
+                " feature_job_setting"
+            )
+
+        if not is_settings_provided:
+            default_setting = self.view.default_feature_job_setting
+            if default_setting is None:
+                raise ValueError(
+                    f"feature_job_setting is required as the {type(self.view).__name__} does not "
+                    "have a default feature job setting"
+                )
+            frequency = default_setting.frequency
+            time_modulo_frequency = default_setting.time_modulo_frequency
+            blind_spot = default_setting.blind_spot
 
         return FeatureJobSetting(
             frequency=frequency,
