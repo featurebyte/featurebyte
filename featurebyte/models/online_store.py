@@ -13,6 +13,7 @@ from featurebyte.query_graph.sql.online_serving import (
     get_entities_ids_and_serving_names,
     get_online_store_feature_compute_sql,
     get_online_store_table_name_from_graph,
+    is_online_store_eligible,
 )
 
 
@@ -108,6 +109,17 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
             node=self.feature.node,
             source_type=self.feature.feature_store_type,
         )
+
+    @property
+    def is_online_store_eligible(self) -> bool:
+        """
+        Whether pre-computation with online store is eligible for the feature
+
+        Returns
+        -------
+        bool
+        """
+        return is_online_store_eligible(graph=self.feature.graph, node=self.feature.node)
 
     @property
     def feature_store_table_name(self) -> str:

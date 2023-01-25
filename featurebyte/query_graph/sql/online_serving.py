@@ -284,6 +284,9 @@ def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:
     -------
     bool
     """
+    op_struct = graph.extract_operation_structure(node)
+    if not op_struct.is_time_based:
+        return False
     has_point_in_time_groupby = False
     for _ in graph.iterate_nodes(node, NodeType.GROUPBY):
         has_point_in_time_groupby = True

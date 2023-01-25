@@ -137,6 +137,10 @@ class OnlineEnableService(BaseService):
         extended_feature_model = ExtendedFeatureModel(**feature.dict())
 
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
+
+        if not online_feature_spec.is_online_store_eligible:
+            return
+
         feature_store_model = await self.feature_store_service.get_document(
             document_id=feature.tabular_source.feature_store_id
         )

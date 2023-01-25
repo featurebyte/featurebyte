@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql.online_serving import (
     get_entities_ids_and_serving_names,
     get_online_store_feature_compute_sql,
     get_online_store_retrieval_sql,
+    is_online_store_eligible,
 )
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -110,6 +111,22 @@ def test_construct_universe_sql__unbounded_latest(
         """
     ).strip()
     assert expr.sql(pretty=True) == expected_sql
+
+
+def test_is_online_store_eligible__non_time_aware(global_graph, order_size_feature_node):
+    """
+    Test is_online_store_eligible for a non-time-aware feature node
+    """
+    assert not is_online_store_eligible(global_graph, order_size_feature_node)
+
+
+def test_is_online_store_eligible__time_aware(
+    global_graph, latest_value_without_window_feature_node
+):
+    """
+    Test is_online_store_eligible for a time-aware feature node
+    """
+    assert is_online_store_eligible(global_graph, latest_value_without_window_feature_node)
 
 
 def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures):

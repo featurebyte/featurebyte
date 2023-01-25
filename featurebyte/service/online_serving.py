@@ -84,7 +84,7 @@ class OnlineServingService(BaseService):
             feature_cluster.graph,
             feature_cluster.nodes,
             source_type=feature_store.type,
-            request_table_columns=df_request_table.columns,
+            request_table_columns=df_request_table.columns.tolist(),
             request_table_expr=df_expr,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")

@@ -3,8 +3,9 @@ Integration test for online enabling features
 """
 import pytest
 
-from featurebyte import EventView, FeatureList
+from featurebyte import EventView, FeatureList, ItemView
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
@@ -58,3 +59,34 @@ async def test_online_enabled_features_have_scheduled_jobs(
     # computation completes)
     tasks = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
     assert len(tasks) == 2
+
+
+@pytest.mark.asyncio
+async def test_online_enable_non_time_aware_feature(item_data, config):
+    """
+    Test online enabling a non-time aware feature
+    """
+    item_view = ItemView.from_item_data(item_data)
+    feature = item_view.groupby("order_id").aggregate(
+        method="count", feature_name="my_item_feature_for_online_enable_test"
+    )
+    feature_list = FeatureList([feature], "my_non_time_aware_list")
+    feature_list.save()
+
+    try:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        # Check feature request
+        client = config.get_client()
+        entity_serving_names = [{"order_id": "T1"}]
+        data = FeatureListGetOnlineFeatures(entity_serving_names=entity_serving_names)
+        res = client.post(
+            f"/feature_list/{str(feature_list.id)}/online_features",
+            json=data.json_dict(),
+        )
+    finally:
+        feature_list.deploy(enable=False, make_production_ready=False)
+
+    assert res.status_code == 200
+    assert res.json() == {
+        "features": [{"order_id": "T1", "my_item_feature_for_online_enable_test": 9}]
+    }
