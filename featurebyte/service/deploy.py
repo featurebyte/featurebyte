@@ -177,17 +177,20 @@ class DeployService(BaseService):
         if document.deployed != deployed:
             await self._validate_deployed_operation(document, deployed)
 
-            feature_list = await self.feature_list_service.update_document(
-                document_id=feature_list_id,
-                data=FeatureListServiceUpdate(deployed=deployed),
-                document=document,
-                return_document=True,
-            )
-            assert isinstance(feature_list, FeatureListModel)
-
-            # make each feature online first
+            # variables to store feature list's & features' initial state
+            original_deployed = document.deployed
             feature_online_enabled_map = {}
+
             try:
+                feature_list = await self.feature_list_service.update_document(
+                    document_id=feature_list_id,
+                    data=FeatureListServiceUpdate(deployed=deployed),
+                    document=document,
+                    return_document=True,
+                )
+                assert isinstance(feature_list, FeatureListModel)
+
+                # make each feature online enabled first
                 for feature_id in document.feature_ids:
                     async with self.persistent.start_transaction():
                         feature = await self.feature_service.get_document(document_id=feature_id)
@@ -199,12 +202,22 @@ class DeployService(BaseService):
                             return_document=False,
                         )
 
+                async with self.persistent.start_transaction():
+                    await self._update_feature_list_namespace(
+                        feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                        feature_list=feature_list,
+                        return_document=False,
+                    )
+                    if return_document:
+                        return await self.feature_list_service.get_document(
+                            document_id=feature_list_id
+                        )
+
             except Exception as exc:
                 # revert feature list deploy status
-                await self.feature_list_service.update_document(
+                feature_list = await self.feature_list_service.update_document(
                     document_id=feature_list_id,
-                    data=FeatureListServiceUpdate(deployed=not deployed),
-                    document=document,
+                    data=FeatureListServiceUpdate(deployed=original_deployed),
                     return_document=True,
                 )
 
@@ -216,14 +229,13 @@ class DeployService(BaseService):
                             online_enabled=online_enabled,
                             get_credential=get_credential,
                         )
-                raise exc
 
-            async with self.persistent.start_transaction():
+                # update feature list namespace again
+                assert isinstance(feature_list, FeatureListModel)
                 await self._update_feature_list_namespace(
-                    feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                    feature_list_namespace_id=document.feature_list_namespace_id,
                     feature_list=feature_list,
                     return_document=False,
                 )
-                if return_document:
-                    return await self.feature_list_service.get_document(document_id=feature_list_id)
+                raise exc
         return self.conditional_return(document=document, condition=return_document)
