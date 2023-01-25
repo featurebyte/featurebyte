@@ -115,10 +115,11 @@ class Conditional(ExpressionNode):
 
         # Figure out value to use
         value = None
-        value_series = None
+        value_series: Optional[ExpressionNode] = None
         if len(input_sql_nodes) == 3:
-            value_series = input_sql_nodes[2]
-            assert isinstance(value_series, ExpressionNode)
+            value_node = input_sql_nodes[2]
+            assert isinstance(value_node, ExpressionNode)
+            value_series = value_node
         else:
             value = context.parameters["value"]
 
