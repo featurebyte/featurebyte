@@ -193,12 +193,19 @@ class FeatureStoreWarehouseService(BaseService):
             """
             session_logs.index = session_logs["STATUS"]
             timestamps = session_logs["CREATED_AT"].to_dict()
-            return pd.DataFrame(
-                {
-                    status: [timestamps.get(status, pd.NaT)]
-                    for status in ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
-                }
+
+            # extract timestamps for key steps
+            standard_statuses = ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
+            summarized_logs = pd.DataFrame(
+                {status: [timestamps.get(status, pd.NaT)] for status in standard_statuses}
             )
+
+            # extract error message if any
+            summarized_logs["ERROR"] = None
+            error_logs = session_logs[~session_logs["STATUS"].isin(standard_statuses)]
+            if error_logs.shape[0] > 0:
+                summarized_logs["ERROR"] = error_logs["MESSAGE"].iloc[0]
+            return summarized_logs
 
         tile_specs = []
         for feature in features:
@@ -223,6 +230,7 @@ class FeatureStoreWarehouseService(BaseService):
             "QUEUE_DURATION",
             "COMPUTE_DURATION",
             "TOTAL_DURATION",
+            "ERROR",
         ]
         if sessions.shape[0] > 0:
             # exclude sessions that started before the range
@@ -245,17 +253,6 @@ class FeatureStoreWarehouseService(BaseService):
             ).dt.total_seconds()
             return sessions[output_columns]
         return pd.DataFrame(columns=output_columns)
-
-    @staticmethod
-    def _get_current_time() -> datetime.datetime:
-        """
-        Return current UTC time
-
-        Returns
-        -------
-        datetime.datetime
-        """
-        return datetime.datetime.utcnow()
 
     async def get_feature_job_logs(
         self,
@@ -287,7 +284,7 @@ class FeatureStoreWarehouseService(BaseService):
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
-        utcnow = self._get_current_time()
+        utcnow = datetime.datetime.utcnow()
 
         # compile list of tile_ids to filter logs
         tile_ids = []
@@ -301,6 +298,7 @@ class FeatureStoreWarehouseService(BaseService):
                 quoted_identifier("CREATED_AT"),
                 quoted_identifier("TILE_ID"),
                 quoted_identifier("STATUS"),
+                quoted_identifier("MESSAGE"),
             )
             .from_("TILE_JOB_MONITOR")
             .where(

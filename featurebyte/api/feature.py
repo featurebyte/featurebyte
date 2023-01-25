@@ -168,6 +168,9 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             ]
         )
 
+    def __repr__(self) -> str:
+        return str(self)
+
     def _repr_html_(self) -> str:
         try:
             # pylint: disable=import-outside-toplevel
@@ -183,7 +186,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             image_1 = base64.b64encode(buffer.getvalue()).decode("utf-8")
             plt.close()
 
-            # plot delay distributions
+            # plot job duration distributions
             late_pct = self.job_session_logs["IS_LATE"].sum() / self.job_session_logs.shape[0] * 100
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 5))
             ax1.set_title(f"Job duration ({late_pct:.2f}% exceeds threshold)")
@@ -207,7 +210,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             fig.savefig(buffer, format="png")
             plt.close()
         except ModuleNotFoundError:
-            pass
+            logger.warning("matplotlib not installed, skipping job status plots.")
 
         return textwrap.dedent(
             f"""
@@ -290,7 +293,7 @@ class FeatureJobMixin(ApiObject):
                 completed_jobs=("COMPLETED", "count"),
                 max_duration=("TOTAL_DURATION", "max"),
                 percentile_95=("TOTAL_DURATION", lambda x: x.quantile(0.95)),
-                frac_late=("IS_LATE", "mean"),
+                frac_late=("IS_LATE", "sum"),
                 last_completed=("COMPLETED", "max"),
                 exceed_period=("EXCEED_PERIOD", "sum"),
             )
@@ -337,6 +340,8 @@ class FeatureJobMixin(ApiObject):
             feature_stats["exceed_period"] = feature_stats["exceed_period"].astype(int)
             feature_stats.loc[mask, "last_completed"] = pd.NaT
 
+        feature_stats["frac_late"] = feature_stats["frac_late"] / feature_stats["completed_jobs"]
+        feature_stats.loc[feature_stats["completed_jobs"] == 0, "frac_late"] = np.nan
         feature_stats["failed_jobs"] = (
             # missing / incomplete + job duration exceed period
             feature_stats["expected_jobs"]

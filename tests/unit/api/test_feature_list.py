@@ -931,20 +931,69 @@ def test_list_features(saved_feature_list, float_feature):
     )
 
 
+@freeze_time("2023-01-20 06:30:00")
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_get_feature_jobs_status(mock_execute_query, saved_feature_list, update_fixtures):
+def test_get_feature_jobs_status(
+    mock_execute_query, saved_feature_list, feature_job_logs, update_fixtures
+):
     """
     Test get_feature_jobs_status
     """
-    job_logs = pd.read_csv("tests/fixtures/feature_job_status/job_logs.csv")
-    job_logs["CREATED_AT"] = pd.to_datetime(job_logs["CREATED_AT"])
-    mock_execute_query.return_value = job_logs
-    job_status_result = saved_feature_list.get_feature_jobs_status(job_history_window=24)
+    mock_execute_query.return_value = feature_job_logs
+    job_status_result = saved_feature_list.get_feature_jobs_status(
+        job_history_window=24, job_duration_tolerance=1700
+    )
 
+    # check request_parameters content
+    assert job_status_result.request_parameters == {
+        "request_date": "2023-01-20T06:30:00",
+        "job_history_window": 24,
+        "job_duration_tolerance": 1700,
+    }
+
+    # check feature_job_summary content
+    expected_feature_job_summary = pd.DataFrame(
+        {
+            "tile_hash": {0: "99CB16A0"},
+            "frequency(min)": {0: 30},
+            "completed_jobs": {0: 23},
+            "max_duration(s)": {0: 1582.072},
+            "95 percentile": {0: 1574.2431},
+            "frac_late": {0: 0.0},
+            "exceed_period": {0: 0},
+            "failed_jobs": {0: 24},
+            "time_since_last": {0: "29 minutes"},
+        }
+    )
+    assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary)
+
+    # check repr
+    assert repr(job_status_result) == "\n\n".join(
+        [
+            str(pd.DataFrame.from_dict([job_status_result.request_parameters])),
+            str(job_status_result.feature_tile_table),
+            str(job_status_result.feature_job_summary),
+        ]
+    )
+
+    # check repr html without matplotlib
+    fixture_path = "tests/fixtures/feature_job_status/expected_repr.html"
+    repr_html = job_status_result._repr_html_()
+    if update_fixtures:
+        with open(fixture_path, "w") as file_handle:
+            file_handle.write(repr_html)
+    else:
+        with open(fixture_path, "r") as file_handle:
+            expected_repr_html = file_handle.read()
+            assert repr_html == expected_repr_html
+
+    # check session logs
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     if update_fixtures:
         job_status_result.job_session_logs.to_parquet(fixture_path)
-        raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
     else:
         expected_session_logs = pd.read_parquet(fixture_path)
         assert_frame_equal(job_status_result.job_session_logs, expected_session_logs)
+
+    if update_fixtures:
+        raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")

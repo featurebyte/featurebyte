@@ -1,7 +1,6 @@
 """
 Tests for FeatureList route
 """
-import datetime
 import json
 import textwrap
 from collections import defaultdict
@@ -12,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
@@ -692,35 +692,41 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         # Check result
         assert response.json() == {"features": [{"cust_id": 1.0, "feature_value": None}]}
 
-    @patch(
-        "featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService._get_current_time"
-    )
+    @freeze_time("2022-01-02 10:00:00")
     def test_get_feature_job_logs_200(
         self,
-        mock_get_current_time,
         test_api_client_persistent,
         create_success_response,
         mock_get_session,
     ):
         """Test get feature job logs"""
-        mock_get_current_time.return_value = datetime.datetime(2022, 1, 2, 10, 0, 0)
         test_api_client, _ = test_api_client_persistent
         featurelist = create_success_response.json()
         feature_list_id = featurelist["_id"]
 
         job_logs = pd.DataFrame(
             {
-                "SESSION_ID": ["SID"] * 4,
-                "TILE_ID": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"] * 4,
+                "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
+                "TILE_ID": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"] * 6,
                 "CREATED_AT": pd.to_datetime(
                     [
                         "2020-01-02 18:00:00",
                         "2020-01-02 18:01:00",
                         "2020-01-02 18:02:00",
                         "2020-01-02 18:03:00",
+                        "2020-01-02 18:00:00",
+                        "2020-01-02 18:05:00",
                     ]
                 ),
-                "STATUS": ["STARTED", "MONITORED", "GENERATED", "COMPLETED"],
+                "STATUS": [
+                    "STARTED",
+                    "MONITORED",
+                    "GENERATED",
+                    "COMPLETED",
+                    "STARTED",
+                    "GENERATED_FAILED",
+                ],
+                "MESSAGE": [""] * 5 + ["Some error has occurred"],
             }
         )
         mock_session = mock_get_session.return_value
@@ -729,14 +735,15 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.status_code == HTTPStatus.OK
         expected_df = pd.DataFrame(
             {
-                "SESSION_ID": ["SID"],
-                "tile_id": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"],
-                "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"]),
-                "STARTED": pd.to_datetime(["2020-01-02 18:00:00"]),
-                "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00"]),
-                "QUEUE_DURATION": [1500.0],
-                "COMPUTE_DURATION": [180.0],
-                "TOTAL_DURATION": [1680.0],
+                "SESSION_ID": ["SID1", "SID2"],
+                "tile_id": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"] * 2,
+                "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
+                "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
+                "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
+                "QUEUE_DURATION": [1500.0] * 2,
+                "COMPUTE_DURATION": [180.0, np.nan],
+                "TOTAL_DURATION": [1680.0, np.nan],
+                "ERROR": [np.nan, "Some error has occurred"],
             }
         )
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
@@ -748,7 +755,8 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
               "SESSION_ID",
               "CREATED_AT",
               "TILE_ID",
-              "STATUS"
+              "STATUS",
+              "MESSAGE"
             FROM TILE_JOB_MONITOR
             WHERE
               "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)

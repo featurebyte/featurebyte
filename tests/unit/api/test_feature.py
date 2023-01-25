@@ -707,7 +707,9 @@ def test_get_feature_jobs_status(
     Test get_feature_jobs_status
     """
     mock_execute_query.return_value = feature_job_logs
-    job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
+    job_status_result = saved_feature.get_feature_jobs_status(
+        job_history_window=24, job_duration_tolerance=1700
+    )
 
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     if update_fixtures:
@@ -727,7 +729,7 @@ def test_get_feature_jobs_status_incomplete_logs(
     """
     mock_execute_query.return_value = feature_job_logs[:1]
     job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
-    assert job_status_result.job_session_logs.shape == (1, 10)
+    assert job_status_result.job_session_logs.shape == (1, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
             "tile_hash": {0: "99CB16A0"},
@@ -735,7 +737,7 @@ def test_get_feature_jobs_status_incomplete_logs(
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
             "95 percentile": {0: np.nan},
-            "frac_late": {0: 0.0},
+            "frac_late": {0: np.nan},
             "exceed_period": {0: 0},
             "failed_jobs": {0: 48},
             "time_since_last": {0: "NaT"},
@@ -751,7 +753,7 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     """
     mock_execute_query.return_value = feature_job_logs[:0]
     job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
-    assert job_status_result.job_session_logs.shape == (0, 10)
+    assert job_status_result.job_session_logs.shape == (0, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
             "tile_hash": {0: "99CB16A0"},
