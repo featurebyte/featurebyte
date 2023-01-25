@@ -92,7 +92,6 @@ class Conditional(ExpressionNode):
         if self.value_series is not None:
             mask_expression = self.value_series.sql
         else:
-            assert self.value is not None
             mask_expression = make_literal_value(self.value)
         if_expr = expressions.If(this=self.mask.sql, true=mask_expression)
         expr = expressions.Case(ifs=[if_expr], default=self.series_node.sql)
