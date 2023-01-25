@@ -167,7 +167,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             type_of_series = valid_assignment_map.get(value.dtype)
             if type_of_series != accepted_types:
                 raise ValueError(
-                    f"Conditionally updating '{self}' with series of type '{value.dtype}' is not allowed."
+                    f"Conditionally updating '{self}' with type '{type(value).__name__}' is not allowed."
                 )
 
         elif not isinstance(value, accepted_types):

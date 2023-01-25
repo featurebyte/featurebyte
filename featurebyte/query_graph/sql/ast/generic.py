@@ -104,6 +104,10 @@ class Conditional(ExpressionNode):
 
         series_node = input_sql_nodes[0]
         mask = input_sql_nodes[1]
+        value_node = None
+        if len(input_sql_nodes) == 3:
+            value_node = input_sql_nodes[2]  # type: ignore
+            assert isinstance(value_node, ExpressionNode)
         assert isinstance(series_node, ExpressionNode)
         assert isinstance(mask, ExpressionNode)
         input_table_node = series_node.table_node
@@ -113,23 +117,13 @@ class Conditional(ExpressionNode):
         if len(input_sql_nodes) == 3 and context_value is not None:
             raise ValueError("too many values provided.")
 
-        # Figure out value to use
-        value = None
-        value_series: Optional[ExpressionNode] = None
-        if len(input_sql_nodes) == 3:
-            value_node = input_sql_nodes[2]
-            assert isinstance(value_node, ExpressionNode)
-            value_series = value_node
-        else:
-            value = context_value
-
         sql_node = Conditional(
             context=context,
             table_node=input_table_node,
             series_node=series_node,
             mask=mask,
-            value=value,
-            value_series=value_series,
+            value=context_value,
+            value_series=value_node,
         )
         return sql_node
 

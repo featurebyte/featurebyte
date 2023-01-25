@@ -173,6 +173,29 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     ]
 
 
+def test__setitem__conditional_assign_series(int_series):
+    """
+    Test conditional assign with another series
+    """
+    double_series = int_series * 2
+    mask = int_series > 5
+    int_series[mask] = double_series[mask]
+    int_series_dict = int_series.dict()
+    assert int_series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "mul_1"},
+        {"source": "project_1", "target": "gt_1"},
+        {"source": "mul_1", "target": "filter_1"},
+        {"source": "gt_1", "target": "filter_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "gt_1", "target": "conditional_1"},
+        {"source": "filter_1", "target": "conditional_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "conditional_1", "target": "assign_1"},
+        {"source": "assign_1", "target": "project_2"},
+    ]
+
+
 def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
     """
     Test conditional assign on a temporary series
