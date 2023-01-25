@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 
 from bson import ObjectId
 
+from featurebyte.app import User
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
@@ -168,11 +169,12 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
         BaseSession
         """
         credential_provider = ConfigCredentialProvider()
+        user = User(id=feature_store.user_id)
         session_validator_service = SessionValidatorService(
-            self.user, self.persistent, credential_provider
+            user, self.persistent, credential_provider
         )
         session_manager_service = SessionManagerService(
-            user=self.user,
+            user=user,
             persistent=self.persistent,
             credential_provider=credential_provider,
             session_validator_service=session_validator_service,

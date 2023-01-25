@@ -111,10 +111,14 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
 
     extractor: TileColumnTypeExtractor
 
-    @migrate(version=6, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
-    async def add_tile_value_types_column(self) -> None:
+    async def _add_tile_value_types_column(self, migration_version: int) -> None:
         """
         Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table
+
+        Parameters
+        ----------
+        migration_version: int
+            Migration version
         """
         collection_names = await self.persistent.list_collection_names()
         if "feature_store" not in collection_names:
@@ -125,7 +129,25 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
         self.extractor = tile_column_type_extractor
 
         # migrate all records and audit records
-        await self.migrate_all_records(version=6)
+        await self.migrate_all_records(version=migration_version)
+
+    @migrate(version=6, description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table")
+    async def add_tile_value_types_column(self) -> None:
+        """
+        Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table
+        """
+        await self._add_tile_value_types_column(migration_version=6)
+
+    @migrate(
+        version=7,
+        description="Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table (fix session uses wrong user ID issue)",
+    )
+    async def add_tile_value_types_column_again(self) -> None:
+        """
+        Add VALUE_COLUMN_TYPES column in TILE_REGISTRY table (fix version 6 issues, since the migrations are
+        expected to be idempotent, running the step twice consecutively should be ok).
+        """
+        await self._add_tile_value_types_column(migration_version=7)
 
     async def migrate_record_with_session(
         self, feature_store: FeatureStoreModel, session: BaseSession
