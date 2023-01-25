@@ -28,16 +28,15 @@ def features_fixture(event_data):
         windows=["2h", "24h"],
         feature_names=["AMOUNT_SUM_2h", "AMOUNT_SUM_24h"],
     )
-    # feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
-    #     method="count",
-    #     windows=["24h"],
-    #     feature_names=["EVENT_COUNT_BY_ACTION_24h"],
-    # )
+    feature_group_dict = event_view.groupby("USER ID", category="PRODUCT_ACTION").aggregate_over(
+        method="count",
+        windows=["24h"],
+        feature_names=["EVENT_COUNT_BY_ACTION_24h"],
+    )
     features = [
         feature_group["AMOUNT_SUM_2h"],
         feature_group["AMOUNT_SUM_24h"],
-        # TODO: Re-enable this https://featurebyte.atlassian.net/browse/DEV-1032
-        # feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
     ]
     for feature in features:
         feature.save()
@@ -91,7 +90,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
         online_features = await snowflake_session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h"]
+        columns = ["user id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"]
         assert set(online_features.columns.tolist()) == set(columns)
         pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
 

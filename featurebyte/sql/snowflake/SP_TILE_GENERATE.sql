@@ -58,10 +58,8 @@ $$
         entity_insert_cols = []
         entity_filter_cols = []
         for (const [i, element] of ENTITY_COLUMN_NAMES.split(",").entries()) {
-
-            entity_insert_cols.push("b."+element)
-            entity_filter_cols.push("a." + element + " = b."+ element)
-
+            entity_insert_cols.push(`b.${element}`)
+            entity_filter_cols.push(`EQUAL_NULL(a.${element}, b.${element})`)
         }
         entity_insert_cols_str = entity_insert_cols.join(",")
         entity_filter_cols_str = entity_filter_cols.join(" AND ")
@@ -69,14 +67,11 @@ $$
         value_insert_cols = []
         value_update_cols = []
         for (const [i, element] of VALUE_COLUMN_NAMES.split(",").entries()) {
-
-            value_insert_cols.push("b."+element)
-            value_update_cols.push("a."+element+" = b."+element)
-
+            value_insert_cols.push(`b.${element}`)
+            value_update_cols.push(`a.${element} = b.${element}`)
         }
         value_insert_cols_str = value_insert_cols.join(",")
         value_update_cols_str = value_update_cols.join(",")
-
 
         var tile_insert_sql = `
             merge into ${tile_id} a using (${tile_sql}) b
