@@ -224,14 +224,19 @@ class PreviewService(BaseService):
         graph = feature_preview.graph
         feature_node = graph.get_node_by_name(feature_preview.node_name)
         point_in_time_and_serving_name = feature_preview.point_in_time_and_serving_name
+        operation_struction = feature_preview.graph.extract_operation_structure(feature_node)
 
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
+        # We only need to ensure that the point in time column is provided, if the feature aggregation is time based.
+        if operation_struction.is_time_based:
+            if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+                raise KeyError(
+                    f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
+                )
 
-        # convert point in time to tz-naive UTC
-        point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
-        ).tz_localize(None)
+            # convert point in time to tz-naive UTC
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
+            ).tz_localize(None)
 
         serving_names = []
         for node in graph.iterate_nodes(target_node=feature_node, node_type=NodeType.GROUPBY):
@@ -251,7 +256,7 @@ class PreviewService(BaseService):
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
-            point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
+            point_in_time_and_serving_name=point_in_time_and_serving_name,
             source_type=feature_store.type,
         )
         result = await session.execute_query(preview_sql)

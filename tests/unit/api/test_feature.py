@@ -136,6 +136,16 @@ def test_feature__preview_missing_point_in_time(float_feature):
     assert "Point in time column not provided: POINT_IN_TIME" in str(exc_info.value)
 
 
+def test_feature__preview_missing_point_in_time_non_time_based_feature(non_time_based_feature):
+    """
+    Test feature preview validation - point in time not required for non-time based feature. No error expected.
+    """
+    params_without_point_in_time = {
+        "event_id_col": 1,
+    }
+    non_time_based_feature.preview(params_without_point_in_time)
+
+
 def test_feature__preview_missing_entity_id(float_feature):
     """
     Test feature preview validation missing point in time
