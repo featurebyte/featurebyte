@@ -3,6 +3,8 @@ SessionManager service
 """
 from typing import Any
 
+import pdb
+
 from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError

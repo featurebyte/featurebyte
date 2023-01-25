@@ -2,12 +2,13 @@
 Test functions in migration/run.py
 """
 import glob
+import json
 import os
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytest_asyncio
-from bson import json_util
+from bson import ObjectId, json_util
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
@@ -19,6 +20,8 @@ from featurebyte.migration.run import (
     retrieve_all_migration_methods,
     run_migration,
 )
+from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.service.entity import EntityService
 from featurebyte.utils.credential import get_credential
@@ -99,7 +102,7 @@ async def test_migrate_method_generator__exclude_warehouse(user, persistent):
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
 
-    expected_num_warehouse_migrations = 1
+    expected_num_warehouse_migrations = 2
     expected_method_num = len(retrieve_all_migration_methods()) - expected_num_warehouse_migrations
     method_generator = migrate_method_generator(
         user=user,
@@ -199,3 +202,32 @@ async def test_run_migration(migration_check_persistent, user):
     )
     assert schema_metadata.version == version
     assert schema_metadata.description == description
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.service.session_manager.SessionManager")
+async def test_data_warehouse_migration_get_session(
+    mock_session_manager,
+    migration_check_persistent,
+    user,
+    test_dir,
+):
+    """Test data warehouse migration get_session method"""
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
+    feature_store_user_id = ObjectId()
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature_store = FeatureStoreModel(**{**payload, "user_id": feature_store_user_id})
+
+    get_credential_func = AsyncMock()
+    warehouse_migration = DataWarehouseMigrationMixin(
+        user=user, persistent=migration_check_persistent
+    )
+    warehouse_migration.set_credential_callback(get_credential=get_credential_func)
+
+    # check get_credential called parameters
+    mock_session_manager.return_value.get_session = AsyncMock()
+    _ = await warehouse_migration.get_session(feature_store=feature_store)
+    get_credential_func.assert_called_with(
+        user_id=feature_store_user_id, feature_store_name=feature_store.name
+    )
