@@ -152,11 +152,12 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             return
 
         # Otherwise, the validity is based on DBVarType
+        # TODO: think about this
         valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
-            DBVarType.BOOL: (bool,),
-            DBVarType.INT: (int, float),
-            DBVarType.FLOAT: (int, float),
-            DBVarType.VARCHAR: (str,),
+            DBVarType.BOOL: (bool, Series),
+            DBVarType.INT: (int, float, Series),
+            DBVarType.FLOAT: (int, float, Series),
+            DBVarType.VARCHAR: (str, Series),
         }
         accepted_types = valid_assignment_map.get(self.dtype)
         if accepted_types is None:
@@ -169,18 +170,25 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             )
 
     @typechecked
-    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None]) -> None:
+    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None, Series]) -> None:
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
+
         self._assert_assignment_valid(value)
+        node_params = {}
+        input_nodes = [self.node, key.node]
+        if isinstance(value, Series):
+            input_nodes.append(value.node)
+        else:
+            node_params = {"value": value}
 
         node = self.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
-            node_params={"value": value},
+            node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node, key.node],
+            input_nodes=input_nodes,
         )
         self.node_name = node.name
         if isinstance(value, float) and self.dtype != DBVarType.FLOAT:

@@ -83,26 +83,44 @@ class Conditional(ExpressionNode):
 
     series_node: ExpressionNode
     mask: ExpressionNode
-    value: Any
+    value: Optional[Any]
+    value_series: Optional[ExpressionNode]
     query_node_type = NodeType.CONDITIONAL
 
     @property
     def sql(self) -> Expression:
-        if_expr = expressions.If(this=self.mask.sql, true=make_literal_value(self.value))
+        if self.value_series is not None:
+            mask_expression = self.value_series.sql
+        else:
+            assert self.value is not None
+            mask_expression = make_literal_value(self.value)
+        if_expr = expressions.If(this=self.mask.sql, true=mask_expression)
         expr = expressions.Case(ifs=[if_expr], default=self.series_node.sql)
         return expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> Conditional:
         input_sql_nodes = context.input_sql_nodes
-        assert len(input_sql_nodes) == 2
+        assert len(input_sql_nodes) >= 2
 
         series_node = input_sql_nodes[0]
         mask = input_sql_nodes[1]
-        value = context.parameters["value"]
         assert isinstance(series_node, ExpressionNode)
         assert isinstance(mask, ExpressionNode)
         input_table_node = series_node.table_node
+
+        # Check to see if both values are present. If so, error since we don't know which one to use.
+        if len(input_sql_nodes) == 3 and "value" in context.parameters:
+            raise ValueError("too many values provided.")
+
+        # Figure out value to use
+        value = None
+        value_series = None
+        if len(input_sql_nodes) == 3:
+            value_series = input_sql_nodes[2]
+            assert isinstance(value_series, ExpressionNode)
+        else:
+            value = context.parameters["value"]
 
         sql_node = Conditional(
             context=context,
@@ -110,6 +128,7 @@ class Conditional(ExpressionNode):
             series_node=series_node,
             mask=mask,
             value=value,
+            value_series=value_series,
         )
         return sql_node
 
