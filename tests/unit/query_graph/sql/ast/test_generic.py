@@ -36,6 +36,9 @@ def test_conditional__series_mask(input_node):
     node = Conditional.build(
         make_context(
             node_type=NodeType.CONDITIONAL,
+            parameters={
+                "value": None,
+            },
             input_sql_nodes=[series_node, mask, assigned_series],
         )
     )
