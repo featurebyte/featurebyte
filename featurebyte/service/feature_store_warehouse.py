@@ -162,9 +162,9 @@ class FeatureStoreWarehouseService(BaseService):
         return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
 
     @staticmethod
-    def _summarise_logs(logs: pd.DataFrame, features: List[ExtendedFeatureModel]) -> pd.DataFrame:
+    def _summarize_logs(logs: pd.DataFrame, features: List[ExtendedFeatureModel]) -> pd.DataFrame:
         """
-        Summarise logs by session
+        Summarize logs by session
 
         Parameters
         ----------
@@ -178,7 +178,7 @@ class FeatureStoreWarehouseService(BaseService):
         pd.DataFrame
         """
 
-        def _summarise_session(session_logs: pd.DataFrame) -> pd.DataFrame:
+        def _summarize_session(session_logs: pd.DataFrame) -> pd.DataFrame:
             """
             Compute session durations
 
@@ -219,7 +219,7 @@ class FeatureStoreWarehouseService(BaseService):
 
         # summarize logs by session
         sessions = logs.groupby(["SESSION_ID", "TILE_ID"], group_keys=True).apply(
-            _summarise_session
+            _summarize_session
         )
         output_columns = [
             "SESSION_ID",
@@ -329,4 +329,4 @@ class FeatureStoreWarehouseService(BaseService):
         )
         sql = sql_to_string(sql_expr, source_type=feature_store.type)
         result = await db_session.execute_query(sql)
-        return dataframe_to_json(self._summarise_logs(result, features))
+        return dataframe_to_json(self._summarize_logs(result, features))

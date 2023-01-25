@@ -985,7 +985,7 @@ def test_get_feature_jobs_status(
     else:
         with open(fixture_path, "r") as file_handle:
             expected_repr_html = file_handle.read()
-            assert repr_html == expected_repr_html
+            assert repr_html == expected_repr_html.strip()
 
     # check session logs
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
