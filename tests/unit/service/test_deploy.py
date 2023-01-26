@@ -170,14 +170,18 @@ async def test_update_feature_list_error__state_is_reverted_when_update_feature_
     assert feature_list.online_enabled_feature_ids == []
 
     with patch.object(deploy_service, "_update_feature_list_namespace") as mock_update_fl_namespace:
-        mock_update_fl_namespace.side_effect = Exception
-        with pytest.raises(Exception):
+        error_msg = "random error when calling _update_feature_list_namespace!!"
+        mock_update_fl_namespace.side_effect = Exception(error_msg)
+        with pytest.raises(Exception) as exc:
             _ = await deploy_service.update_feature_list(
                 feature_list_id=feature_list.id,
                 deployed=True,
                 return_document=True,
                 get_credential=Mock(),
             )
+
+        # check exception message
+        assert error_msg in str(exc.value)
 
     # check the mocked method is called once
     assert mock_update_fl_namespace.call_count == 2
@@ -207,14 +211,18 @@ async def test_update_feature_list_error__state_is_reverted_when_update_feature_
     with patch.object(
         deploy_service, "_update_feature", new_callable=AsyncMock
     ) as mock_update_feature:
-        mock_update_feature.side_effect = Exception
-        with pytest.raises(Exception):
+        error_msg = "random error when calling _update_feature!!"
+        mock_update_feature.side_effect = Exception(error_msg)
+        with pytest.raises(Exception) as exc:
             _ = await deploy_service.update_feature_list(
                 feature_list_id=feature_list.id,
                 deployed=True,
                 return_document=True,
                 get_credential=AsyncMock(),
             )
+
+        # check exception message
+        assert error_msg in str(exc.value)
 
     # check the mocked method is called once
     mock_update_feature.assert_called_once()
@@ -235,8 +243,10 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     feature_list_service,
     production_ready_feature_list,
     deploy_service,
+    mock_update_data_warehouse,
 ):
     """Test update feature list exception happens after feature list namespace updated"""
+    _ = mock_update_data_warehouse
     feature_list = production_ready_feature_list
     assert feature_list.deployed is False
     assert feature_list.online_enabled_feature_ids == []
@@ -250,13 +260,15 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
         def __bool__(self):
             raise Exception("return_document throws error!!")
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc:
         _ = await deploy_service.update_feature_list(
             feature_list_id=feature_list.id,
             deployed=True,
             return_document=ReturnDocument(),
             get_credential=AsyncMock(),
         )
+
+    assert "return_document throws error!!" in str(exc.value)
 
     # check feature's online_enabled status & feature list deployed status
     feature_list = await feature_list_service.get_document(document_id=feature_list.id)
@@ -266,3 +278,19 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
     assert feature_list.deployed is False
     assert feature_list.online_enabled_feature_ids == []
     assert feature_list_namespace.deployed_feature_list_ids == []
+
+    # test another exception raised during revert changes
+    with pytest.raises(Exception) as exc:
+        with patch.object(
+            deploy_service, "_revert_changes", new_callable=AsyncMock
+        ) as mock_update_feature:
+            mock_update_feature.side_effect = Exception("Error during revert changes")
+            _ = await deploy_service.update_feature_list(
+                feature_list_id=feature_list.id,
+                deployed=True,
+                return_document=ReturnDocument(),
+                get_credential=AsyncMock(),
+            )
+
+    assert "Error during revert changes" in str(exc.value)
+    assert "return_document throws error!!" in str(exc.value.__context__)

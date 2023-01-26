@@ -143,6 +143,37 @@ class DeployService(BaseService):
                         "Only FeatureList object of all production ready features can be deployed."
                     )
 
+    async def _revert_changes(
+        self,
+        feature_list_id: ObjectId,
+        deployed: bool,
+        feature_online_enabled_map: dict[ObjectId, bool],
+        get_credential,
+    ) -> None:
+        # revert feature list deploy status
+        feature_list = await self.feature_list_service.update_document(
+            document_id=feature_list_id,
+            data=FeatureListServiceUpdate(deployed=deployed),
+            return_document=True,
+        )
+
+        # revert all online enabled status back before raising exception
+        for feature_id, online_enabled in feature_online_enabled_map.items():
+            async with self.persistent.start_transaction():
+                await self.online_enable_service.update_feature(
+                    feature_id=feature_id,
+                    online_enabled=online_enabled,
+                    get_credential=get_credential,
+                )
+
+        # update feature list namespace again
+        assert isinstance(feature_list, FeatureListModel)
+        await self._update_feature_list_namespace(
+            feature_list_namespace_id=feature_list.feature_list_namespace_id,
+            feature_list=feature_list,
+            return_document=False,
+        )
+
     async def update_feature_list(
         self,
         feature_list_id: ObjectId,
@@ -214,28 +245,14 @@ class DeployService(BaseService):
                         )
 
             except Exception as exc:
-                # revert feature list deploy status
-                feature_list = await self.feature_list_service.update_document(
-                    document_id=feature_list_id,
-                    data=FeatureListServiceUpdate(deployed=original_deployed),
-                    return_document=True,
-                )
-
-                # revert all online enabled status back before raising exception
-                for feature_id, online_enabled in feature_online_enabled_map.items():
-                    async with self.persistent.start_transaction():
-                        await self.online_enable_service.update_feature(
-                            feature_id=feature_id,
-                            online_enabled=online_enabled,
-                            get_credential=get_credential,
-                        )
-
-                # update feature list namespace again
-                assert isinstance(feature_list, FeatureListModel)
-                await self._update_feature_list_namespace(
-                    feature_list_namespace_id=document.feature_list_namespace_id,
-                    feature_list=feature_list,
-                    return_document=False,
-                )
+                try:
+                    await self._revert_changes(
+                        feature_list_id=feature_list_id,
+                        deployed=original_deployed,
+                        feature_online_enabled_map=feature_online_enabled_map,
+                        get_credential=get_credential,
+                    )
+                except Exception as revert_exc:
+                    raise revert_exc from exc
                 raise exc
         return self.conditional_return(document=document, condition=return_document)
