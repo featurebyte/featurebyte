@@ -18,6 +18,7 @@ from snowflake.connector.pandas_tools import write_pandas
 from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
+from featurebyte.logger import logger
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
@@ -220,7 +221,8 @@ class SnowflakeSession(BaseSession):
             SnowflakeDataType.TIMESTAMP_TZ,
         }:
             return DBVarType.TIMESTAMP_TZ
-        raise ValueError(f"Not supported data type '{snowflake_var_info}'")
+        logger.warning(f"Snowflake: Not supported data type '{snowflake_var_info}'")
+        return DBVarType.UNKNOWN
 
     async def list_table_schema(
         self,

@@ -82,6 +82,9 @@ async def test_snowflake_session__credential_from_config(snowflake_session_dict)
     assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="fixed_table"
     ) == {"num": DBVarType.INT, "num10": DBVarType.FLOAT, "dec": DBVarType.FLOAT}
+    assert await session.list_table_schema(
+        database_name="sf_database", schema_name="sf_schema", table_name="non_scalar_table"
+    ) == {"variant": "UNKNOWN"}
 
 
 @pytest.fixture(name="mock_snowflake_cursor")

@@ -19,6 +19,7 @@ except ImportError:
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.logger import logger
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 
@@ -130,7 +131,9 @@ class DatabricksSession(BaseSession):
             "STRUCT": DBVarType.STRUCT,
             "STRING": DBVarType.VARCHAR,
         }
-        return mapping[databricks_type]
+        if databricks_type not in mapping:
+            logger.warning(f"Databricks: Not supported data type '{databricks_type}'")
+        return mapping.get(databricks_type, DBVarType.UNKNOWN)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         arrow_table = cursor.fetchall_arrow()
