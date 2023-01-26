@@ -68,6 +68,4 @@ class SCDDataModel(SCDTableData, DataModel):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        if self.surrogate_key_column:
-            return [self.surrogate_key_column]
-        return []  # DEV-556: surrogate_key_column should not be empty
+        return [self.natural_key_column]
