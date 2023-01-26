@@ -253,6 +253,12 @@ def mock_snowflake_execute_query():
                 {"column_name": "num10", "data_type": json.dumps({"type": "FIXED", "scale": 1})},
                 {"column_name": "dec", "data_type": json.dumps({"type": "FIXED", "scale": 2})},
             ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."non_scalar_table"': [
+                {
+                    "column_name": "variant",
+                    "data_type": json.dumps({"type": "VARIANT", "nullable": True}),
+                },
+            ],
             "SHOW SCHEMAS": [
                 {"name": "PUBLIC"},
             ],

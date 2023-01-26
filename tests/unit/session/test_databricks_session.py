@@ -77,6 +77,7 @@ class MockDatabricksConnection:
             ["col_map", "MAP"],
             ["col_struct", "STRUCT"],
             ["col_string", "STRING"],
+            ["col_unknown", "UNKNOWN"],
         ]
         return self
 
@@ -162,6 +163,7 @@ async def test_databricks_session(databricks_session_dict):
         "col_map": DBVarType.MAP,
         "col_struct": DBVarType.STRUCT,
         "col_string": DBVarType.VARCHAR,
+        "col_unknown": DBVarType.UNKNOWN,
     }
     df_result = await session.execute_query("SELECT * FROM table")
     df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})

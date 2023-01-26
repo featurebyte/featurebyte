@@ -130,7 +130,7 @@ class DatabricksSession(BaseSession):
             "STRUCT": DBVarType.STRUCT,
             "STRING": DBVarType.VARCHAR,
         }
-        return mapping[databricks_type]
+        return mapping.get(databricks_type, DBVarType.UNKNOWN)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         arrow_table = cursor.fetchall_arrow()

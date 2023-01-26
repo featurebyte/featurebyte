@@ -220,7 +220,7 @@ class SnowflakeSession(BaseSession):
             SnowflakeDataType.TIMESTAMP_TZ,
         }:
             return DBVarType.TIMESTAMP_TZ
-        raise ValueError(f"Not supported data type '{snowflake_var_info}'")
+        return DBVarType.UNKNOWN
 
     async def list_table_schema(
         self,
