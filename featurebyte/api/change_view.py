@@ -10,11 +10,12 @@ from datetime import datetime
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte import FeatureJobSetting, SlowlyChangingData
 from featurebyte.api.lag import LaggableViewColumn
+from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import ChangeViewNoJoinColumnError
+from featurebyte.models.event_data import FeatureJobSetting
 
 
 class ChangeViewColumn(LaggableViewColumn):

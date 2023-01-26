@@ -4,6 +4,7 @@ Unit test for Feature & FeatureList classes
 from datetime import datetime
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
@@ -674,3 +675,98 @@ def test_is_time_based(saved_feature):
             is_time_based=False,
         )
         assert not saved_feature.is_time_based
+
+
+def test_list_versions(saved_feature):
+    """
+    Test list_versions
+    """
+    feature_version_list = saved_feature.list_versions()
+    assert_frame_equal(
+        feature_version_list,
+        pd.DataFrame(
+            {
+                "name": [saved_feature.name],
+                "version": [saved_feature.version.to_str()],
+                "dtype": [saved_feature.dtype],
+                "readiness": [saved_feature.readiness],
+                "online_enabled": [saved_feature.online_enabled],
+                "data": [["sf_event_data"]],
+                "entities": [["customer"]],
+                "created_at": [saved_feature.created_at],
+            }
+        ),
+    )
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_get_feature_jobs_status(
+    mock_execute_query, saved_feature, feature_job_logs, update_fixtures
+):
+    """
+    Test get_feature_jobs_status
+    """
+    mock_execute_query.return_value = feature_job_logs
+    job_status_result = saved_feature.get_feature_jobs_status(
+        job_history_window=24, job_duration_tolerance=1700
+    )
+
+    fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
+    if update_fixtures:
+        job_status_result.job_session_logs.to_parquet(fixture_path)
+        raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
+    else:
+        expected_session_logs = pd.read_parquet(fixture_path)
+        assert_frame_equal(job_status_result.job_session_logs, expected_session_logs)
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_get_feature_jobs_status_incomplete_logs(
+    mock_execute_query, saved_feature, feature_job_logs
+):
+    """
+    Test get_feature_jobs_status incomplete logs found
+    """
+    mock_execute_query.return_value = feature_job_logs[:1]
+    job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
+    assert job_status_result.job_session_logs.shape == (1, 11)
+    expected_feature_job_summary = pd.DataFrame(
+        {
+            "tile_hash": {0: "99CB16A0"},
+            "frequency(min)": {0: 30},
+            "completed_jobs": {0: 0},
+            "max_duration(s)": {0: np.nan},
+            "95 percentile": {0: np.nan},
+            "frac_late": {0: np.nan},
+            "exceed_period": {0: 0},
+            "failed_jobs": {0: 48},
+            "time_since_last": {0: "NaT"},
+        }
+    )
+    assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary)
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, feature_job_logs):
+    """
+    Test get_feature_jobs_status incomplete logs found
+    """
+    mock_execute_query.return_value = feature_job_logs[:0]
+    job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
+    assert job_status_result.job_session_logs.shape == (0, 11)
+    expected_feature_job_summary = pd.DataFrame(
+        {
+            "tile_hash": {0: "99CB16A0"},
+            "frequency(min)": {0: 30},
+            "completed_jobs": {0: 0},
+            "max_duration(s)": {0: np.nan},
+            "95 percentile": {0: np.nan},
+            "frac_late": {0: np.nan},
+            "exceed_period": {0: 0},
+            "failed_jobs": {0: 48},
+            "time_since_last": {0: "NaT"},
+        }
+    )
+    assert_frame_equal(
+        job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
+    )

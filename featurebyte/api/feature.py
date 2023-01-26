@@ -3,18 +3,20 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import time
 from http import HTTPStatus
 
 import pandas as pd
+from bson import ObjectId
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
+from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
@@ -24,7 +26,9 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -33,6 +37,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.generic import (
@@ -119,6 +124,7 @@ class Feature(
     FeatureModel,
     SavableApiObject,
     CdAccessorMixin,
+    FeatureJobMixin,
 ):
     """
     Feature class
@@ -132,6 +138,21 @@ class Feature(
     # class variables
     _route = "/feature"
     _update_schema_class = FeatureUpdate
+    _list_schema = FeatureModel
+    _list_fields = [
+        "name",
+        "version",
+        "dtype",
+        "readiness",
+        "online_enabled",
+        "data",
+        "entities",
+        "created_at",
+    ]
+    _list_foreign_keys = [
+        ("entity_ids", Entity, "entities"),
+        ("tabular_data_ids", DataApiObject, "data"),
+    ]
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
@@ -139,6 +160,9 @@ class Feature(
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureCreate(**self.json_dict())
         return data.json_dict()
+
+    def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
+        return [(str(self.name), ExtendedFeatureModel(**self.dict()).tile_specs)]
 
     @root_validator(pre=True)
     @classmethod
@@ -151,8 +175,80 @@ class Feature(
         return values
 
     @classmethod
-    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
-        return FeatureNamespace.list(*args, **kwargs)
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List saved features
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of features
+        """
+        return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
+
+    @classmethod
+    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
+        features = super()._post_process_list(item_list)
+        # convert version strings
+        features["version"] = features["version"].apply(
+            lambda version: VersionIdentifier(**version).to_str()
+        )
+        return features
+
+    @classmethod
+    def list_versions(
+        cls,
+        include_id: Optional[bool] = False,
+        feature_list_id: Optional[ObjectId] = None,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List saved features versions
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        feature_list_id: Optional[ObjectId] = None,
+            Include only features in specified feature list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of features
+        """
+        params = {}
+        if feature_list_id:
+            params = {"feature_list_id": str(feature_list_id)}
+        feature_list = cls._list(include_id=include_id, params=params)
+        if entity:
+            feature_list = feature_list[
+                feature_list.entities.apply(lambda entities: entity in entities)
+            ]
+        if data:
+            feature_list = feature_list[
+                feature_list.data.apply(lambda data_list: data in data_list)
+            ]
+        return feature_list
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:

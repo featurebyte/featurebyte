@@ -10,6 +10,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature import (
@@ -24,6 +25,7 @@ from featurebyte.schema.info import FeatureInfo
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
@@ -44,6 +46,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         preview_service: PreviewService,
         version_service: VersionService,
         info_service: InfoService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
     ):
         super().__init__(service)
         self.feature_list_service = feature_list_service
@@ -51,6 +54,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         self.preview_service = preview_service
         self.version_service = version_service
         self.info_service = info_service
+        self.feature_store_warehouse_service = feature_store_warehouse_service
 
     async def create_feature(
         self, data: Union[FeatureCreate, FeatureNewVersionCreate]
@@ -228,3 +232,31 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             Dataframe converted to json string
         """
         return await self.preview_service.feature_sql(feature_sql=feature_sql)
+
+    async def get_feature_job_logs(
+        self, feature_id: ObjectId, hour_limit: int, get_credential: Any
+    ) -> dict[str, Any]:
+        """
+        Retrieve data preview for query graph node
+
+        Parameters
+        ----------
+        feature_id: ObjectId
+            Feature Id
+        hour_limit: int
+            Limit in hours on the job history to fetch
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature = await self.service.get_document(feature_id)
+        return await self.feature_store_warehouse_service.get_feature_job_logs(
+            feature_store_id=feature.tabular_source.feature_store_id,
+            features=[ExtendedFeatureModel(**feature.dict())],
+            hour_limit=hour_limit,
+            get_credential=get_credential,
+        )

@@ -256,3 +256,13 @@ def snowflake_event_view_fixture(
     )
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     yield event_view
+
+
+@pytest.fixture(name="feature_job_logs", scope="session")
+def feature_job_logs_fixture():
+    """
+    Feature job log records
+    """
+    job_logs = pd.read_csv("tests/fixtures/feature_job_status/job_logs.csv")
+    job_logs["CREATED_AT"] = pd.to_datetime(job_logs["CREATED_AT"])
+    return job_logs
