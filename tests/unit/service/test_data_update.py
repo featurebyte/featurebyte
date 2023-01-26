@@ -190,7 +190,7 @@ async def test_update_columns_info__critical_data_info(
     "fixture_name,update_class,primary_key_column",
     [
         ("snowflake_event_data", EventDataServiceUpdate, "event_id_column"),
-        ("snowflake_scd_data", SCDDataServiceUpdate, "surrogate_key_column"),
+        ("snowflake_scd_data", SCDDataServiceUpdate, "natural_key_column"),
         ("snowflake_item_data", ItemDataServiceUpdate, "item_id_column"),
         ("snowflake_dimension_data", DimensionDataServiceUpdate, "dimension_id_column"),
     ],
