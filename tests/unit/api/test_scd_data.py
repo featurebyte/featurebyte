@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
@@ -230,3 +231,29 @@ def test_info(saved_scd_data):
     # setting verbose = true is a no-op for now
     info = saved_scd_data.info(verbose=True)
     assert_info_helper(info)
+
+
+def test_scd_data__entity_relation_auto_tagging(saved_scd_data):
+    """Test scd data update: entity relation will be created automatically"""
+    entity_a = Entity(name="a", serving_names=["a_id"])
+    entity_a.save()
+
+    entity_b = Entity(name="b", serving_names=["b_id"])
+    entity_b.save()
+
+    # add entities to scd data
+    assert saved_scd_data.natural_key_column == "col_text"
+    saved_scd_data.col_text.as_entity("a")
+    saved_scd_data.cust_id.as_entity("b")
+
+    updated_entity_a = Entity.get_by_id(id=entity_a.id)
+    assert updated_entity_a.parents == [
+        {"id": entity_b.id, "data_type": "scd_data", "data_id": saved_scd_data.id}
+    ]
+    updated_entity_b = Entity.get_by_id(id=entity_b.id)
+    assert updated_entity_b.parents == []
+
+    # remove primary id column's entity
+    saved_scd_data.col_text.as_entity(None)
+    updated_entity_a = Entity.get_by_id(id=entity_a.id)
+    assert updated_entity_a.parents == []
