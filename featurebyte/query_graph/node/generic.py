@@ -413,6 +413,9 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
         cols = self.parameters.keys + [self.parameters.timestamp]
         return [str(col) for col in cols]
 
+    def _is_time_based(self) -> bool:
+        return True
+
     def _get_aggregations(
         self,
         columns: List[ViewDataColumn],
@@ -477,6 +480,9 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
+
+    def _is_time_based(self) -> bool:
+        return False
 
     def _get_aggregations(
         self,
@@ -562,6 +568,9 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         parent_columns = [col for col in columns if col.name in self.parameters.input_column_names]
         return parent_columns
+
+    def _is_time_based(self) -> bool:
+        return self.parameters.scd_parameters is not None
 
     def _get_aggregations(
         self,
@@ -809,6 +818,9 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
+
+    def _is_time_based(self) -> bool:
+        return True
 
     def _get_aggregations(
         self,
