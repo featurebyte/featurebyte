@@ -8,6 +8,7 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.persistent import Persistent
@@ -143,6 +144,37 @@ class DeployService(BaseService):
                         "Only FeatureList object of all production ready features can be deployed."
                     )
 
+    async def _revert_changes(
+        self,
+        feature_list_id: ObjectId,
+        deployed: bool,
+        feature_online_enabled_map: dict[PydanticObjectId, bool],
+        get_credential: Any,
+    ) -> None:
+        # revert feature list deploy status
+        feature_list = await self.feature_list_service.update_document(
+            document_id=feature_list_id,
+            data=FeatureListServiceUpdate(deployed=deployed),
+            return_document=True,
+        )
+
+        # revert all online enabled status back before raising exception
+        for feature_id, online_enabled in feature_online_enabled_map.items():
+            async with self.persistent.start_transaction():
+                await self.online_enable_service.update_feature(
+                    feature_id=feature_id,
+                    online_enabled=online_enabled,
+                    get_credential=get_credential,
+                )
+
+        # update feature list namespace again
+        assert isinstance(feature_list, FeatureListModel)
+        await self._update_feature_list_namespace(
+            feature_list_namespace_id=feature_list.feature_list_namespace_id,
+            feature_list=feature_list,
+            return_document=False,
+        )
+
     async def update_feature_list(
         self,
         feature_list_id: ObjectId,
@@ -167,11 +199,21 @@ class DeployService(BaseService):
         Returns
         -------
         Optional[FeatureListModel]
+
+        Raises
+        ------
+        Exception
+            When there is an unexpected error during feature online_enabled status update
         """
         document = await self.feature_list_service.get_document(document_id=feature_list_id)
         if document.deployed != deployed:
             await self._validate_deployed_operation(document, deployed)
-            async with self.persistent.start_transaction():
+
+            # variables to store feature list's & features' initial state
+            original_deployed = document.deployed
+            feature_online_enabled_map = {}
+
+            try:
                 feature_list = await self.feature_list_service.update_document(
                     document_id=feature_list_id,
                     data=FeatureListServiceUpdate(deployed=deployed),
@@ -179,18 +221,39 @@ class DeployService(BaseService):
                     return_document=True,
                 )
                 assert isinstance(feature_list, FeatureListModel)
-                await self._update_feature_list_namespace(
-                    feature_list_namespace_id=feature_list.feature_list_namespace_id,
-                    feature_list=feature_list,
-                    return_document=False,
-                )
-                for feature_id in feature_list.feature_ids:
-                    await self._update_feature(
-                        feature_id=feature_id,
+
+                # make each feature online enabled first
+                for feature_id in document.feature_ids:
+                    async with self.persistent.start_transaction():
+                        feature = await self.feature_service.get_document(document_id=feature_id)
+                        feature_online_enabled_map[feature.id] = feature.online_enabled
+                        await self._update_feature(
+                            feature_id=feature_id,
+                            feature_list=feature_list,
+                            get_credential=get_credential,
+                            return_document=False,
+                        )
+
+                async with self.persistent.start_transaction():
+                    await self._update_feature_list_namespace(
+                        feature_list_namespace_id=feature_list.feature_list_namespace_id,
                         feature_list=feature_list,
-                        get_credential=get_credential,
                         return_document=False,
                     )
-                if return_document:
-                    return await self.feature_list_service.get_document(document_id=feature_list_id)
+                    if return_document:
+                        return await self.feature_list_service.get_document(
+                            document_id=feature_list_id
+                        )
+
+            except Exception as exc:
+                try:
+                    await self._revert_changes(
+                        feature_list_id=feature_list_id,
+                        deployed=original_deployed,
+                        feature_online_enabled_map=feature_online_enabled_map,
+                        get_credential=get_credential,
+                    )
+                except Exception as revert_exc:
+                    raise revert_exc from exc
+                raise exc
         return self.conditional_return(document=document, condition=return_document)
