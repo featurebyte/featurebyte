@@ -8,6 +8,7 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.persistent import Persistent
@@ -147,8 +148,8 @@ class DeployService(BaseService):
         self,
         feature_list_id: ObjectId,
         deployed: bool,
-        feature_online_enabled_map: dict[ObjectId, bool],
-        get_credential,
+        feature_online_enabled_map: dict[PydanticObjectId, bool],
+        get_credential: Any,
     ) -> None:
         # revert feature list deploy status
         feature_list = await self.feature_list_service.update_document(
