@@ -234,11 +234,11 @@ class PreviewService(BaseService):
                 raise KeyError(
                     f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
                 )
-            else:
-                # If it's not time based, and no time is provided, just put the current time.
-                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
-                    datetime.now()
-                )
+
+            # If it's not time based, and no time is provided, just put the current time.
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
+                datetime.now()
+            )
 
         # convert point in time to tz-naive UTC
         point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
@@ -311,11 +311,10 @@ class PreviewService(BaseService):
                 raise KeyError(
                     f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
                 )
-            else:
-                # If it's not time based, and no time is provided, just put the current time.
-                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
-                    datetime.now()
-                )
+            # If it's not time based, and no time is provided, just put the current time.
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
+                datetime.now()
+            )
 
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
