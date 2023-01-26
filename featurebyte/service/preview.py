@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Tuple, cast
 
+from datetime import datetime
+
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
@@ -227,16 +229,21 @@ class PreviewService(BaseService):
         operation_struction = feature_preview.graph.extract_operation_structure(feature_node)
 
         # We only need to ensure that the point in time column is provided, if the feature aggregation is time based.
-        if operation_struction.is_time_based:
-            if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+            if operation_struction.is_time_based:
                 raise KeyError(
                     f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
                 )
+            else:
+                # If it's not time based, and no time is provided, just put the current time.
+                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
+                    datetime.now()
+                )
 
-            # convert point in time to tz-naive UTC
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
-                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
-            ).tz_localize(None)
+        # convert point in time to tz-naive UTC
+        point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
+        ).tz_localize(None)
 
         serving_names = []
         for node in graph.iterate_nodes(target_node=feature_node, node_type=NodeType.GROUPBY):
@@ -297,12 +304,18 @@ class PreviewService(BaseService):
                     has_time_based_feature = True
                     break
 
+        # Raise error if there's no point in time provided for time based features.
         point_in_time_and_serving_name = featurelist_preview.point_in_time_and_serving_name
-        if (
-            has_time_based_feature
-            and SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name
-        ):
-            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+            if has_time_based_feature:
+                raise KeyError(
+                    f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
+                )
+            else:
+                # If it's not time based, and no time is provided, just put the current time.
+                point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
+                    datetime.now()
+                )
 
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
