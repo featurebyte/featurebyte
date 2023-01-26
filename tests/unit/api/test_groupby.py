@@ -127,7 +127,29 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view_wit
             windows=["30m", "1h", "2h"],
             feature_names=["feat_30m", "feat_1h", "feat_2h"],
         )
-    assert "must be str; got NoneType instead" in str(exc.value)
+    assert str(exc.value) == (
+        "feature_job_setting is required as the EventView does not have a default feature job setting"
+    )
+
+
+def test_groupby__feature_job_setting_partially_specified(
+    snowflake_event_view_with_entity_and_feature_job, cust_id_entity
+):
+    """
+    Test when feature job setting is partially specified
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity_and_feature_job.groupby("cust_id").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            windows=["30m", "1h", "2h"],
+            feature_names=["feat_30m", "feat_1h", "feat_2h"],
+            feature_job_setting={"frequency": "1h"},
+        )
+    assert (
+        str(exc.value)
+        == "All of frequency, time_modulo_frequency and blind_spot must be specified in feature_job_setting"
+    )
 
 
 def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
