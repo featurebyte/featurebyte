@@ -570,9 +570,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         return parent_columns
 
     def _is_time_based(self) -> bool:
-        if self.parameters.scd_parameters is not None:
-            return True
-        return False
+        return self.parameters.scd_parameters is not None
 
     def _get_aggregations(
         self,
