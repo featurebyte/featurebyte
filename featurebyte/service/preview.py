@@ -285,8 +285,23 @@ class PreviewService(BaseService):
         KeyError
             Invalid point_in_time_and_serving_name payload
         """
+        # Check if any of the features are time based
+        has_time_based_feature = False
+        for feature_cluster in featurelist_preview.feature_clusters:
+            for feature_node_name in feature_cluster.node_names:
+                feature_node = feature_cluster.graph.get_node_by_name(feature_node_name)
+                operation_struction = feature_cluster.graph.extract_operation_structure(
+                    feature_node
+                )
+                if operation_struction.is_time_based:
+                    has_time_based_feature = True
+                    break
+
         point_in_time_and_serving_name = featurelist_preview.point_in_time_and_serving_name
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+        if (
+            has_time_based_feature
+            and SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name
+        ):
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
         result: pd.DataFrame = None

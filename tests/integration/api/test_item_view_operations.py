@@ -63,7 +63,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     # check preview
     df = item_aggregate_with_category_features.preview(
         {
-            "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+            # "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
             "order_id": "T42",
         }
     )
