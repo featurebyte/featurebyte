@@ -41,6 +41,7 @@ RUN pip install jupyterlab && \
 # Copy scripts
 COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
 COPY ./docker/migration.py              /scripts/migration.py
+COPY ./docker/samples/                  /samples
 
 RUN adduser --uid $UID --disabled-password --gecos '' $USER
 RUN chown -R $USER:$USER /app
