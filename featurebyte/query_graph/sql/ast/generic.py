@@ -106,7 +106,7 @@ class Conditional(ExpressionNode):
         mask = input_sql_nodes[1]
         value_node = None
         if len(input_sql_nodes) == 3:
-            value_node = input_sql_nodes[2]  # type: ignore
+            value_node = input_sql_nodes[2]
             assert isinstance(value_node, ExpressionNode)
         assert isinstance(series_node, ExpressionNode)
         assert isinstance(mask, ExpressionNode)
@@ -123,7 +123,7 @@ class Conditional(ExpressionNode):
             series_node=series_node,
             mask=mask,
             value=context_value,
-            value_series=value_node,
+            value_series=value_node,  # type: ignore[arg-type]
         )
         return sql_node
 
