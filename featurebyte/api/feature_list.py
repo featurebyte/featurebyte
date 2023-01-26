@@ -854,6 +854,11 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         Returns
         -------
         str
+
+        Raises
+        ------
+        FeatureListNotOnlineEnabledError
+            Feature list not deployed
         """
         if not self.deployed:
             raise FeatureListNotOnlineEnabledError()

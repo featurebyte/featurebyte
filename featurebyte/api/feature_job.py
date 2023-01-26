@@ -78,7 +78,12 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
 
             # plot job time distribution
             fig = plt.figure(figsize=(15, 3))
-            plt.hist(self.job_session_logs.COMPLETED, bins=self.job_history_window, rwidth=0.7)
+            bins = pd.date_range(
+                start=self.request_date - datetime.timedelta(hours=self.job_history_window),
+                end=self.request_date,
+                freq="H",
+            ).to_list()
+            plt.hist(self.job_session_logs.COMPLETED, bins=bins, rwidth=0.7)
             plt.title("Job distribution over time")
             plt.axvline(x=self.request_date, color="red")
             buffer = BytesIO()
