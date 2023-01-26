@@ -3,8 +3,6 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
-from typing import Optional
-
 import functools
 from enum import Enum
 
@@ -148,7 +146,7 @@ class DBVarType(StrEnum):
             self.FLOAT: "float",
             self.INT: "int",
         }
-        return mapping.get(self)
+        return mapping.get(self)  # type: ignore
 
 
 class AggFunc(StrEnum):
