@@ -997,3 +997,44 @@ def test_get_feature_jobs_status(
 
     if update_fixtures:
         raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
+
+
+@patch("featurebyte.core.mixin.SampleMixin.preview")
+def test_online_serving_python_template(
+    mock_preview, feature_list, production_ready_feature, draft_feature
+):
+    """Test feature list online_serving_python_template"""
+    mock_preview.return_value = pd.DataFrame(
+        {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
+    )
+    feature_list.save()
+    assert feature_list.saved is True
+    feature_list.deploy(enable=True, make_production_ready=True)
+    assert (
+        feature_list.online_serving_python_template.strip()
+        == textwrap.dedent(
+            f"""
+        from typing import Any, Dict
+        import requests
+        import pandas as pd
+
+        def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+            \"\"\"
+            Send POST request to online serving endpoint
+            \"\"\"
+            serving_url = "http://localhost:8080/feature_list/{feature_list.id}/online_features"
+            response = requests.post(
+                url=serving_url, headers={{"Authorization": f"Bearer token"}},
+                json={{"entity_serving_names": entity_serving_names}},
+            )
+            assert response.status_code == 200, response.json()
+            return pd.DataFrame.from_dict(response.json()["features"])
+
+        request_features([
+            {{
+                "cust_id": "sample_cust_id"
+            }}
+        ])
+        """
+        ).strip()
+    )

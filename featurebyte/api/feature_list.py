@@ -6,6 +6,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Tuple, Union, cast
 
 import collections
+import json
+import textwrap
 import time
 from http import HTTPStatus
 
@@ -22,6 +24,7 @@ from featurebyte.api.api_object import (
     SavableApiObject,
 )
 from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.data import Data
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
@@ -38,6 +41,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
+    FeatureListNotOnlineEnabledError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -64,6 +68,19 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+
+
+class CodeObject(str):
+    """
+    Code content
+    """
+
+    def _repr_markdown_(self) -> str:
+        return (
+            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">\n\n'
+            f"```python{str(self)}```"
+            "\n\n</div>"
+        )
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -827,4 +844,69 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         self.update(
             update_payload={"deployed": enable, "make_production_ready": make_production_ready},
             allow_update_local=False,
+        )
+
+    @property
+    def online_serving_python_template(self) -> str:
+        """
+        Get python code template for serving online features from a deployed featurelist
+
+        Returns
+        -------
+        str
+        """
+        if not self.deployed:
+            raise FeatureListNotOnlineEnabledError()
+
+        # get entities and tables used for the feature list
+        info = self.info()
+        entities = {
+            Entity.get(entity["name"]).id: {"serving_name": entity["serving_names"]}
+            for entity in info["entities"]
+        }
+        for tabular_source in info["tabular_data"]:
+            data = Data.get(tabular_source["name"])
+            entity_columns = [
+                column for column in data.columns_info if column.entity_id in entities
+            ]
+            if entity_columns:
+                sample_data = data.preview(1)
+                for column in entity_columns:
+                    entities[column.entity_id]["sample_value"] = sample_data[column.name].iloc[0]
+        entity_serving_names = json.dumps(
+            {entity["serving_name"][0]: entity["sample_value"] for entity in entities.values()},
+            indent=4,
+        ).replace("\n", "\n" + " " * 16)
+
+        current_profile = Configurations().profile
+        assert current_profile
+        if current_profile.api_token:
+            headers = f' headers={{"Authorization": f"Bearer {current_profile.api_token}"}},'
+        else:
+            headers = ""
+        serving_endpoint = info["serving_endpoint"]
+        return CodeObject(
+            textwrap.dedent(
+                f"""
+            from typing import Any, Dict
+            import requests
+            import pandas as pd
+
+            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+                \"\"\"
+                Send POST request to online serving endpoint
+                \"\"\"
+                serving_url = "{current_profile.api_url}{serving_endpoint}"
+                response = requests.post(
+                    url=serving_url,{headers}
+                    json={{"entity_serving_names": entity_serving_names}},
+                )
+                assert response.status_code == 200, response.json()
+                return pd.DataFrame.from_dict(response.json()["features"])
+
+            request_features([
+                {entity_serving_names}
+            ])
+            """
+            )
         )

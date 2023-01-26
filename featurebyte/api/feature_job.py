@@ -87,7 +87,12 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
             plt.close()
 
             # plot job duration distributions
-            late_pct = self.job_session_logs["IS_LATE"].sum() / self.job_session_logs.shape[0] * 100
+            completed_jobs = self.job_session_logs["COMPLETED"].count()
+            late_pct = (
+                (self.job_session_logs["IS_LATE"].sum() / completed_jobs)
+                if completed_jobs
+                else np.nan
+            )
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 5))
             ax1.set_title(f"Job duration ({late_pct:.2f}% exceeds threshold)")
             ax1.set_xlabel("Duration in seconds")
