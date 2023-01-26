@@ -5,7 +5,7 @@ import textwrap
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
