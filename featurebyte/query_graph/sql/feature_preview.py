@@ -50,7 +50,7 @@ def get_feature_preview_sql(
     planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=False)
     execution_plan = planner.generate_plan(nodes)
 
-    if point_in_time_and_serving_name:
+    if point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME]:
         # build required tiles
         tic = time.time()
         point_in_time = point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME]
