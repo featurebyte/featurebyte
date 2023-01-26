@@ -62,10 +62,10 @@ def test_event_data_update_critical_data_info(event_data):
     clean_sample_df = event_data.sample(after_cleaning=True)
     pd.testing.assert_frame_equal(view_sample_df, clean_sample_df)
 
-    # DEV-1036: not able to generate describe output on the following operations
-    # view_describe_df = event_view.describe()
-    # clean_describe_df = event_data.describe(after_cleaning=True)
-    # pd.testing.assert_frame_equal(view_describe_df, clean_describe_df)
+    # check describe operation between post-clean event data & event view
+    view_describe_df = event_view.describe()
+    clean_describe_df = event_data.describe(after_cleaning=True)
+    pd.testing.assert_frame_equal(view_describe_df, clean_describe_df)
 
     assert view_df["AMOUNT"].isnull().sum() == 0
     assert view_df["SESSION_ID"].isnull().sum() == 1
@@ -77,7 +77,7 @@ def test_event_data_update_critical_data_info(event_data):
     }
     # check that values in string type column (TRANSACTION_ID) are imputed to 0 and
     # values in integer type column (CUST_ID) are not imputed.
-    assert (view_df["TRANSACTION_ID"] == 0).all()
+    assert (view_df["TRANSACTION_ID"] == "0.00000").all()
     assert (view_df["CUST_ID"] == original_df["CUST_ID"]).all()
 
     assert event_view.node.type == "graph"

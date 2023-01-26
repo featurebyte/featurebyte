@@ -7,7 +7,7 @@ from abc import abstractmethod
 
 from pydantic import validator
 
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -85,6 +85,7 @@ class BaseTableData(FeatureByteBaseModel):
         frame_node: Node,
         project_node: ProjectNode,
         output_column_name: str,
+        dtype: DBVarType,
     ) -> Node:
         """
         Add cleaning operations to the graph node
@@ -101,6 +102,8 @@ class BaseTableData(FeatureByteBaseModel):
             Column projection node
         output_column_name: str
             Output column name
+        dtype: DBVarType
+            Data type that output column will be casted to
 
         Returns
         -------
@@ -109,7 +112,7 @@ class BaseTableData(FeatureByteBaseModel):
         input_node: Node = project_node
         for cleaning_operation in cleaning_operations:
             input_node = cleaning_operation.add_cleaning_operation(
-                graph_node=graph_node, input_node=input_node
+                graph_node=graph_node, input_node=input_node, dtype=dtype
             )
 
         return graph_node.add_operation(
@@ -160,6 +163,7 @@ class BaseTableData(FeatureByteBaseModel):
                 project_node=cast(ProjectNode, proj_col_node),
                 frame_node=frame_node,
                 output_column_name=col_info.name,
+                dtype=col_info.dtype,
             )
 
         return graph_node

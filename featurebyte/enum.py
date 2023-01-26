@@ -3,6 +3,8 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
+from typing import Optional
+
 import functools
 from enum import Enum
 
@@ -130,6 +132,23 @@ class DBVarType(StrEnum):
     MAP = "MAP", "Map column"
     STRUCT = "STRUCT", "Struct column"
     UNKNOWN = "UNKNOWN", "Unknown column type"
+
+    def to_type_str(self) -> str | None:
+        """
+        Convert DBVarType to internal type string
+
+        Returns
+        -------
+        str | None
+        """
+        mapping = {
+            self.BOOL: "bool",
+            self.CHAR: "str",
+            self.VARCHAR: "str",
+            self.FLOAT: "float",
+            self.INT: "int",
+        }
+        return mapping.get(self)
 
 
 class AggFunc(StrEnum):

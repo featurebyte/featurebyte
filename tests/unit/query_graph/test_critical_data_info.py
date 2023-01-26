@@ -4,6 +4,7 @@ Tests for featurebyte.query_graph.graph_node.critical_data_info
 import pytest
 from pydantic.error_wrappers import ValidationError
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.critical_data_info import (
@@ -189,8 +190,9 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
     node_op = imputation.add_cleaning_operation(
         graph_node=graph_node,
         input_node=graph_node.output_node,
+        dtype=DBVarType.FLOAT,
     )
-    assert node_op.type == NodeType.CONDITIONAL
+    assert node_op.type == NodeType.CAST
     nested_graph = graph_node.parameters.graph
     assert nested_graph.nodes[0] == {
         "name": "proxy_input_1",
@@ -204,4 +206,11 @@ def test_critical_data_info__add_cleaning_operation(input_node, imputation, expe
         "output_type": "series",
         "parameters": {"columns": ["a"]},
     }
-    assert nested_graph.nodes[2:] == expected_nodes
+    end_idx = 2 + len(expected_nodes)
+    assert nested_graph.nodes[2:end_idx] == expected_nodes
+    assert nested_graph.nodes[end_idx] == {
+        "name": "cast_1",
+        "type": "cast",
+        "output_type": "series",
+        "parameters": {"type": "float", "from_dtype": "FLOAT"},
+    }

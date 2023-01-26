@@ -1131,7 +1131,9 @@ def query_graph_with_cleaning_ops_graph_node_fixture(global_graph, input_node):
     )
     operation = MissingValueImputation(imputed_value=0)
     node_op = operation.add_cleaning_operation(
-        graph_node=graph_node, input_node=graph_node.output_node
+        graph_node=graph_node,
+        input_node=graph_node.output_node,
+        dtype=DBVarType.UNKNOWN,
     )
     graph_node.add_operation(
         node_type=NodeType.ASSIGN,
