@@ -482,6 +482,18 @@ def run_test_conditional_assign_feature(feature_group):
     result = feature_group.preview(preview_param)
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
+    # Assign conditionally a series
+    double_feature_count_24h = feature_count_24h * 2
+    feature_count_24h[mask] = double_feature_count_24h[mask]
+    result = feature_count_24h.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 28})
+
+    # Undo above
+    mask = feature_count_24h == 28.0
+    feature_count_24h[mask] = 14.0
+    result = feature_count_24h.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
+
     # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
     # effect on FeatureGroup
     temp_feature = feature_count_24h * 10

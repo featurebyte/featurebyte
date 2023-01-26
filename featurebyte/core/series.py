@@ -163,24 +163,38 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             raise ValueError(
                 f"Conditionally updating '{self}' of type {self.dtype} is not supported!"
             )
-        if not isinstance(value, accepted_types):
+        if isinstance(value, Series):
+            type_of_series = valid_assignment_map.get(value.dtype)
+            if type_of_series != accepted_types:
+                raise ValueError(
+                    f"Conditionally updating '{self}' with type '{type(value).__name__}' is not allowed."
+                )
+
+        elif not isinstance(value, accepted_types):
             raise ValueError(
                 f"Conditionally updating '{self}' with value '{value}' is not supported!"
             )
 
     @typechecked
-    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None]) -> None:
+    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None, Series]) -> None:
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
+
         self._assert_assignment_valid(value)
+        node_params = {}
+        input_nodes = [self.node, key.node]
+        if isinstance(value, Series):
+            input_nodes.append(value.node)
+        else:
+            node_params = {"value": value}
 
         node = self.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
-            node_params={"value": value},
+            node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node, key.node],
+            input_nodes=input_nodes,
         )
         self.node_name = node.name
         if isinstance(value, float) and self.dtype != DBVarType.FLOAT:
