@@ -1,11 +1,11 @@
 import json
 import time
 from collections import defaultdict
-from decimal import Decimal
 
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.api.types import is_numeric_dtype
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
@@ -244,8 +244,8 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
 
     if regular_columns:
         for col in regular_columns:
-            if isinstance(df[col].iloc[0], Decimal):
-                df[col] = df[col].astype(int)
+            if is_numeric_dtype(df_expected[col]):
+                df[col] = df[col].astype(float)
         pd.testing.assert_frame_equal(
             df[regular_columns], df_expected[regular_columns], check_dtype=False
         )
@@ -454,11 +454,6 @@ def test_aggregate_over(
     df_expected["POINT_IN_TIME"] = pd.to_datetime(
         df_expected["POINT_IN_TIME"], utc=True
     ).dt.tz_localize(None)
-
-    # DEV-976: temporary fix for the type discrepancies
-    # historical features of the affected type has the object type
-    fix_col = "event_interval_avg_24h"
-    df_historical_features[fix_col] = df_historical_features[fix_col].astype(float)
 
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
