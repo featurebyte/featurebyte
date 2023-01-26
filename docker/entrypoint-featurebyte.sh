@@ -29,7 +29,7 @@ ln -s /app/.featurebyte/config.yaml /app/.featurebyte/notebook/config.yaml
 
 echo "Writing additional samples in ~/.featurebyte/notebook/samples"
 mkdir -p /app/.featurebyte/notebook/samples  # This will not replace
-cp -n /samples/* /app/.featurebyte/notebook/samples/  # Copy without replacement
+cp -nr /samples/* /app/.featurebyte/notebook/samples/  # Copy without replacement
 
 echo "Featurebyte Beta Server is Running"
 echo "┌────────────────────────┬──────────────────────────────────────────────────────────────────────────┐"
