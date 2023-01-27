@@ -212,12 +212,19 @@ class PreviewService(BaseService):
         ----------
         point_in_time_and_serving_name: Dict[str, Any]
             dictionary containing point in time and serving name
+        is_time_based: bool
+            whether the feature is time based
 
         Returns
         -------
         Tuple[Dict[str, Any], bool]
             updated dictionary, and whether the dictionary was updated with an arbitrary time. Updated will only return
             True if the dictionary did not contain a point in time variable before.
+
+        Raises
+        ------
+        KeyError
+            raised if the point in time column is not provided in the dictionary for a time based feature
         """
         updated = False
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
@@ -314,11 +321,6 @@ class PreviewService(BaseService):
         -------
         dict[str, Any]
             Dataframe converted to json string
-
-        Raises
-        ------
-        KeyError
-            Invalid point_in_time_and_serving_name payload
         """
         # Check if any of the features are time based
         has_time_based_feature = False
