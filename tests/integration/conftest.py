@@ -274,7 +274,7 @@ def transaction_dataframe():
     # pylint: disable=no-member
     row_number = 24 * 366
     rng = np.random.RandomState(1234)
-    product_actions = ["detail", "add", "purchase", "remove", None]
+    product_actions = ["detail", "àdd", "purchase", "rëmove", None]
     timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366).to_series()
 
     # add more points to the first one month
@@ -295,30 +295,30 @@ def transaction_dataframe():
 
     data = pd.DataFrame(
         {
-            "event_timestamp": event_timestamps,
+            "ëvent_timestamp": event_timestamps,
             "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
             "cust_id": rng.randint(1, 1000, row_number),
-            "user id": rng.randint(1, 10, row_number),
+            "üser id": rng.randint(1, 10, row_number),
             "product_action": rng.choice(product_actions, row_number),
             "session_id": rng.randint(100, 1000, row_number),
         }
     )
     amount = (rng.rand(row_number) * 100).round(2)
     amount[::5] = np.nan
-    data["amount"] = amount
+    data["àmount"] = amount
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
     data["session_id"] = data["session_id"].sample(frac=1.0, random_state=0).reset_index(drop=True)
 
     # add some second-level variation to the event timestamp
-    data["event_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
+    data["ëvent_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
     # exclude any nanosecond components since it is not supported
-    data["event_timestamp"] = data["event_timestamp"].dt.floor("us")
+    data["ëvent_timestamp"] = data["ëvent_timestamp"].dt.floor("us")
     # add timezone offset
-    offsets = rng.choice(range(24), size=data["event_timestamp"].shape[0])
-    data["event_timestamp"] = data["event_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
-    data["event_timestamp"] = pd.to_datetime(
-        data["event_timestamp"].astype(str) + [f"+{i:02d}:00" for i in offsets]
+    offsets = rng.choice(range(24), size=data["ëvent_timestamp"].shape[0])
+    data["ëvent_timestamp"] = data["ëvent_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
+    data["ëvent_timestamp"] = pd.to_datetime(
+        data["ëvent_timestamp"].astype(str) + [f"+{i:02d}:00" for i in offsets]
     )
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
     yield data
@@ -402,14 +402,14 @@ def scd_dataframe_fixture(transaction_data):
     """
     rng = np.random.RandomState(0)  # pylint: disable=no-member
 
-    natural_key_values = transaction_data["user id"].unique()
-    dates = pd.to_datetime(transaction_data["event_timestamp"], utc=True).dt.floor("d")
+    natural_key_values = transaction_data["üser id"].unique()
+    dates = pd.to_datetime(transaction_data["ëvent_timestamp"], utc=True).dt.floor("d")
     effective_timestamp_values = pd.date_range(dates.min(), dates.max())
     # Add variations at hour level
     effective_timestamp_values += pd.to_timedelta(
         rng.randint(0, 24, len(effective_timestamp_values)), unit="h"
     )
-    values = [f"STATUS_CODE_{i}" for i in range(50)]
+    values = [f"STÀTUS_CODE_{i}" for i in range(50)]
 
     num_rows = 1000
     data = pd.DataFrame(
@@ -436,7 +436,7 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
     """
     df = pd.merge(
         transaction_data_upper_case[
-            ["TRANSACTION_ID", "EVENT_TIMESTAMP", "USER ID", "PRODUCT_ACTION"]
+            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "PRODUCT_ACTION"]
         ],
         items_dataframe,
         left_on="TRANSACTION_ID",
@@ -787,7 +787,7 @@ def user_entity_fixture():
     """
     Fixture for an Entity "User"
     """
-    entity = Entity(name="User", serving_names=["user id"])
+    entity = Entity(name="User", serving_names=["üser id"])
     entity.save()
     return entity
 
@@ -863,13 +863,13 @@ def create_transactions_event_data_from_feature_store(
     )
     expected_dtypes = pd.Series(
         {
-            "EVENT_TIMESTAMP": "TIMESTAMP_TZ",
+            "ËVENT_TIMESTAMP": "TIMESTAMP_TZ",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
-            "USER ID": "INT",
+            "ÜSER ID": "INT",
             "PRODUCT_ACTION": "VARCHAR",
             "SESSION_ID": "INT",
-            "AMOUNT": "FLOAT",
+            "ÀMOUNT": "FLOAT",
             "TRANSACTION_ID": "VARCHAR",
         }
     )
@@ -878,14 +878,14 @@ def create_transactions_event_data_from_feature_store(
         tabular_source=database_table,
         name=event_data_name,
         event_id_column="TRANSACTION_ID",
-        event_timestamp_column="EVENT_TIMESTAMP",
+        event_timestamp_column="ËVENT_TIMESTAMP",
     )
     event_data.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-    event_data["USER ID"].as_entity("User")
+    event_data["ÜSER ID"].as_entity("User")
     event_data["PRODUCT_ACTION"].as_entity("ProductAction")
     event_data["CUST_ID"].as_entity("Customer")
     event_data.save()

@@ -20,9 +20,9 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
     item_view = ItemView.from_item_data(item_data)
     df_preview = item_view.preview(limit=50)
     assert df_preview.columns.tolist() == [
-        "EVENT_TIMESTAMP",
+        "ËVENT_TIMESTAMP",
         "CUST_ID",
-        "USER ID",
+        "ÜSER ID",
         "PRODUCT_ACTION",
         "order_id",
         "item_id",
@@ -33,8 +33,8 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
     # Check preview result with the expected joined events-items data
     for _, row in df_preview.iterrows():
         # Check if each row in the preview result appears in the expected joined DataFrame
-        mask = expected_joined_event_item_dataframe["EVENT_TIMESTAMP"] == row["EVENT_TIMESTAMP"]
-        for col in ["USER ID", "PRODUCT_ACTION", "order_id", "item_id", "item_type"]:
+        mask = expected_joined_event_item_dataframe["ËVENT_TIMESTAMP"] == row["ËVENT_TIMESTAMP"]
+        for col in ["ÜSER ID", "PRODUCT_ACTION", "order_id", "item_id", "item_type"]:
             mask &= expected_joined_event_item_dataframe[col] == row[col]
         matched = expected_joined_event_item_dataframe[mask]
         assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
@@ -123,21 +123,21 @@ def test_item_view_ops(item_data):
     assert (df["item_type_upper"] == "TYPE_42").all()
 
     # Create a feature using aggregation with time windows and preview it
-    feature = item_view_filtered.groupby("USER ID", category="item_type_upper").aggregate_over(
+    feature = item_view_filtered.groupby("ÜSER ID", category="item_type_upper").aggregate_over(
         method="count",
         windows=["30d"],
         feature_names=["count_30d"],
     )["count_30d"]
-    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "user id": 1})
+    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "user id": 1,
+        "üser id": 1,
         "count_30d": '{\n  "TYPE_42": 2\n}',
     }
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"] * 10),
-            "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
     feature_list = FeatureList([feature], name="feature_list")
@@ -197,9 +197,9 @@ def test_item_view_joined_with_dimension_view(
         "order_id",
         "item_id",
         "item_type",
-        "EVENT_TIMESTAMP",
+        "ËVENT_TIMESTAMP",
         "CUST_ID",
-        "USER ID",
+        "ÜSER ID",
         "PRODUCT_ACTION",
     ]
     assert item_view.columns == item_columns
@@ -240,7 +240,7 @@ def test_item_view_joined_with_dimension_view(
 
     # check historical features
     feature = (
-        item_view.groupby("USER ID", category="item_type_dimension")
+        item_view.groupby("ÜSER ID", category="item_type_dimension")
         .aggregate_over(
             method="count",
             windows=["30d"],
@@ -252,11 +252,11 @@ def test_item_view_joined_with_dimension_view(
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "user id": [1, 2, 3, 4, 5],
+            "üser id": [1, 2, 3, 4, 5],
         }
     )
     feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.get_historical_features(df_training_events)
-    assert df_historical_features.sort_values("user id")[
+    assert df_historical_features.sort_values("üser id")[
         "most_frequent_item_type_30d"
     ].tolist() == ["type_47", "type_88", "type_53", "type_92", "type_12"]
