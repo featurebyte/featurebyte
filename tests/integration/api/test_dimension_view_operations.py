@@ -40,11 +40,11 @@ def test_dimension_lookup_features(dimension_view):
     feature = dimension_view["item_type"].as_feature("ItemTypeFeature")
 
     # Test single lookup feature
-    preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "item_id": "item_42"}
+    preview_params = {"item_id": "item_42"}
     df = feature.preview(preview_params)
     assert df.iloc[0].to_dict() == {
         "ItemTypeFeature": "type_42",
-        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+        **preview_params,
     }
 
     # Test multiple lookup features
@@ -56,7 +56,7 @@ def test_dimension_lookup_features(dimension_view):
     assert df.iloc[0].to_dict() == {
         "ItemNameFeature": "name_42",
         "ItemTypeFeature": "type_42",
-        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+        **preview_params,
     }
 
 

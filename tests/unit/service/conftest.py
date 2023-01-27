@@ -160,6 +160,12 @@ def online_enable_service_fixture(app_container):
     return app_container.online_enable_service
 
 
+@pytest.fixture(name="preview_service")
+def preview_service_fixture(app_container):
+    """PreviewService fixture"""
+    return app_container.preview_service
+
+
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
 def online_enable_service_data_warehouse_mocks_fixture():
     """
