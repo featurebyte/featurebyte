@@ -4,7 +4,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit"]
 
 [metadata]
-content-hash = "b66facb06c37a5e7f79d16b5c3c2af3a6ea1ed8faab2d59bc8296eed4a494b8c"
+content-hash = "9025729f9385061535fb0a1ec05c2d28027cdd658b2cb7f22f807239052804be"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
 
@@ -2907,16 +2907,16 @@ version = "2.4.0"
 category = "main"
 description = "An easily customizable SQL parser and transpiler"
 files = [
-    {file = "sqlglot-10.5.7-py3-none-any.whl", hash = "sha256:1949097837ff0c12b8e520564fcdfc712641aafa3d3d29724c2ba958d996d046"},
-    {file = "sqlglot-10.5.7.tar.gz", hash = "sha256:a606ec642da7f3693bec8ab8cd9a359715974b8f975a90416efaef29ec04e108"},
+    {file = "sqlglot-10.3.2-py3-none-any.whl", hash = "sha256:9c95862ab5b12d73ff0d65ac3c70ab1af8e250b4268643bfab47331653f4f2dd"},
+    {file = "sqlglot-10.3.2.tar.gz", hash = "sha256:90578196d3b32da6f0e1ce03d30885833acafb56771c1a94cafe63575e4b4397"},
 ]
 name = "sqlglot"
 optional = false
 python-versions = "*"
-version = "10.5.7"
+version = "10.3.2"
 
 [package.extras]
-dev = ["autoflake", "black", "duckdb", "isort", "mypy (>=0.990)", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil"]
+dev = ["autoflake", "black", "duckdb", "isort", "mypy", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil"]
 
 [[package]]
 category = "main"
