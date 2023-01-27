@@ -267,6 +267,8 @@ class PreviewService(BaseService):
             source_type=feature_store.type,
         )
         result = await session.execute_query(preview_sql)
+        if SpecialColumnName.POINT_IN_TIME not in feature_preview.point_in_time_and_serving_name:
+            result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
         return dataframe_to_json(result)
 
     async def preview_featurelist(
@@ -306,6 +308,7 @@ class PreviewService(BaseService):
 
         # Raise error if there's no point in time provided for time based features.
         point_in_time_and_serving_name = featurelist_preview.point_in_time_and_serving_name
+        has_point_in_time = True
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             if has_time_based_feature:
                 raise KeyError(
@@ -315,6 +318,7 @@ class PreviewService(BaseService):
             point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
                 datetime.now()
             )
+            has_point_in_time = False
 
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
@@ -338,6 +342,9 @@ class PreviewService(BaseService):
                 result = _result
             else:
                 result = result.merge(_result, on=group_join_keys)
+
+        if not has_point_in_time:
+            result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
 
         return dataframe_to_json(result)
 

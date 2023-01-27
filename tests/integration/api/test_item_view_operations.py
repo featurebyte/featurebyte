@@ -67,8 +67,6 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
         }
     )
     results = df.iloc[0].to_dict()
-    assert "POINT_IN_TIME" in results
-    results.pop("POINT_IN_TIME")
     assert results == {
         "order_id": "T42",
         "most_frequent_item_type": "type_13",
