@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Tuple, cast
 
-from datetime import datetime
-
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
@@ -35,6 +33,9 @@ from featurebyte.service.base_service import BaseService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
+
+# This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
+ARBITRARY_TIME = pd.Timestamp(1970, 1, 1, 12)
 
 
 class PreviewService(BaseService):
@@ -229,6 +230,7 @@ class PreviewService(BaseService):
         operation_struction = feature_preview.graph.extract_operation_structure(feature_node)
 
         # We only need to ensure that the point in time column is provided, if the feature aggregation is time based.
+        has_point_in_time = True
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             if operation_struction.is_time_based:
                 raise KeyError(
@@ -236,9 +238,8 @@ class PreviewService(BaseService):
                 )
 
             # If it's not time based, and no time is provided, just put the current time.
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
-                datetime.now()
-            )
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
+            has_point_in_time = False
 
         # convert point in time to tz-naive UTC
         point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
@@ -267,7 +268,9 @@ class PreviewService(BaseService):
             source_type=feature_store.type,
         )
         result = await session.execute_query(preview_sql)
-        if SpecialColumnName.POINT_IN_TIME not in feature_preview.point_in_time_and_serving_name:
+        if result is None:
+            return {}
+        if not has_point_in_time:
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
         return dataframe_to_json(result)
 
@@ -315,9 +318,7 @@ class PreviewService(BaseService):
                     f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
                 )
             # If it's not time based, and no time is provided, just put the current time.
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.Timestamp(
-                datetime.now()
-            )
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
             has_point_in_time = False
 
         result: pd.DataFrame = None
@@ -343,6 +344,8 @@ class PreviewService(BaseService):
             else:
                 result = result.merge(_result, on=group_join_keys)
 
+        if result is None:
+            return {}
         if not has_point_in_time:
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
 
