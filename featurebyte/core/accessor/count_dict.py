@@ -152,7 +152,7 @@ class CountDictAccessor:
         return series_operator.operate(
             node_type=NodeType.COSINE_SIMILARITY,
             output_var_type=DBVarType.FLOAT,
-            **self._feature_obj.binary_op_series_params(),
+            **self._feature_obj.binary_op_series_params(other),
         )
 
     def get_value(self, key: Union[Scalar, Feature]) -> Feature:

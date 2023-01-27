@@ -25,6 +25,7 @@ from featurebyte.api.join_utils import (
 )
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_offset_string
+from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
@@ -65,14 +66,14 @@ class ViewColumn(Series, SampleMixin):
             return None
         return self._parent.timestamp_column
 
-    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
         Parameters
         ----------
-        other: Series
-            Other Series object
+        other: Scalar | Series | ScalarSequence
+            Other object
 
         Returns
         -------

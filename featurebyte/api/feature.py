@@ -20,6 +20,7 @@ from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
@@ -403,15 +404,15 @@ class Feature(
         operation_structure = self.extract_operation_structure()
         return operation_structure.is_time_based
 
-    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
 
         Parameters
         ----------
-        other: Series
-            Other Series object
+        other: other: Scalar | Series | ScalarSequence
+            Other object
 
         Returns
         -------
@@ -419,7 +420,7 @@ class Feature(
         """
         tabular_data_ids = set(self.tabular_data_ids)
         entity_ids = set(self.entity_ids)
-        if other is not None:
+        if isinstance(other, Series):
             tabular_data_ids = tabular_data_ids.union(getattr(other, "tabular_data_ids", []))
             entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
         return {"tabular_data_ids": sorted(tabular_data_ids), "entity_ids": sorted(entity_ids)}

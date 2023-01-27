@@ -106,15 +106,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             **self.unary_op_series_params(),
         )
 
-    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
 
         Parameters
         ----------
-        other: Series
-            Other Series object
+        other: Scalar | Series | ScalarSequence
+            Other object
 
         Returns
         -------
@@ -264,10 +264,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         Series
             output of the binary operation
         """
-        if isinstance(other, Series):
-            binary_op_series_params = self.binary_op_series_params(other)
-        else:
-            binary_op_series_params = self.binary_op_series_params()
+        binary_op_series_params = self.binary_op_series_params(other)
         series_operator = DefaultSeriesBinaryOperator(self, other)
         return series_operator.operate(
             node_type=node_type,
