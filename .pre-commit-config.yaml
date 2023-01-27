@@ -1,14 +1,6 @@
 default_stages: [commit]
 
 repos:
-  - repo: local
-    hooks:
-      - id: format
-        name: Formatting Code
-        entry: bash -c "make format; git add . -u"
-        types: [ ]
-        language: system
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.5.0
     hooks:
@@ -16,3 +8,11 @@ repos:
       - id: end-of-file-fixer
         exclude: LICENSE
       - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: format
+        name: Formatting Code
+        entry: bash -c "make format; git add . -u"
+        types: [ ]
+        language: system
