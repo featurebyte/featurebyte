@@ -10,7 +10,7 @@ import pandas as pd
 from pydantic import Field, validator
 
 from featurebyte.common.typing import OptionalScalar
-from featurebyte.enum import StrEnum
+from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.exception import InvalidImputationsError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -39,7 +39,9 @@ class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
     @abstractmethod
-    def add_cleaning_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
+    def add_cleaning_operation(
+        self, graph_node: GraphNode, input_node: Node, dtype: DBVarType
+    ) -> Node:
         """
         Add cleaning operation to the graph node
 
@@ -49,6 +51,8 @@ class BaseCleaningOperation(FeatureByteBaseModel):
             Nested graph node
         input_node: Node
             Input node to the query graph
+        dtype: DBVarType
+            Data type that output column will be casted to
 
         Returns
         -------
@@ -70,14 +74,25 @@ class BaseImputeOperation(BaseCleaningOperation):
         class_name = self.__class__.__name__
         return f"{class_name}({self.dict()})"
 
-    def add_cleaning_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
+    def add_cleaning_operation(
+        self, graph_node: GraphNode, input_node: Node, dtype: DBVarType
+    ) -> Node:
         condition_node = self.add_condition_operation(graph_node=graph_node, input_node=input_node)
-        graph_node.add_operation(
+        cond_assign_node = graph_node.add_operation(
             node_type=NodeType.CONDITIONAL,
             node_params={"value": self.imputed_value},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[input_node, condition_node],
         )
+        # explicitly cast the output back to original type if `dtype.to_type_str()` is not None
+        type_str = DBVarType(dtype).to_type_str()
+        if type_str:
+            graph_node.add_operation(
+                node_type=NodeType.CAST,
+                node_params={"type": type_str, "from_dtype": dtype},
+                node_output_type=NodeOutputType.SERIES,
+                input_nodes=[cond_assign_node],
+            )
         return graph_node.output_node
 
     @abstractmethod

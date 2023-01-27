@@ -222,13 +222,13 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
             """
         SELECT
           "event_timestamp" AS "event_timestamp",
-          CASE
+          CAST(CASE
             WHEN (
-              CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END < 0
+              CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT) < 0
             )
             THEN NULL
-            ELSE CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END
-          END AS "amount"
+            ELSE CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT)
+          END AS FLOAT) AS "amount"
         FROM "db_name"."schema_name"."table_name"
         LIMIT 10
         """
@@ -248,9 +248,12 @@ def test_construct_cleaning_recipe_node__dimension_data(dimension_table_data, di
         "is_in_1": ["not_1"],
         "not_1": ["conditional_1"],
         "is_in_2": ["conditional_2"],
-        "conditional_1": ["assign_1"],
-        "conditional_2": ["is_string_1", "conditional_3"],
-        "conditional_3": ["assign_2"],
+        "conditional_1": ["cast_1"],
+        "conditional_2": ["cast_2"],
+        "conditional_3": ["cast_3"],
+        "cast_1": ["assign_1"],
+        "cast_2": ["is_string_1", "conditional_3"],
+        "cast_3": ["assign_2"],
         "is_string_1": ["conditional_3"],
         "assign_1": ["assign_2"],
     }

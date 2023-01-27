@@ -649,16 +649,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             new_type = known_str_to_type[new_type]
 
         if new_type is int:
-            type_name = "int"
             output_var_type = DBVarType.INT
         elif new_type is float:
-            type_name = "float"
             output_var_type = DBVarType.FLOAT
         else:
-            type_name = "str"
             output_var_type = DBVarType.VARCHAR
 
-        node_params = {"type": type_name, "from_dtype": self.dtype}
+        node_params = {"type": output_var_type.to_type_str(), "from_dtype": self.dtype}
         return series_unary_operation(
             input_series=self,
             node_type=NodeType.CAST,

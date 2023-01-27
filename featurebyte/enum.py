@@ -131,6 +131,23 @@ class DBVarType(StrEnum):
     STRUCT = "STRUCT", "Struct column"
     UNKNOWN = "UNKNOWN", "Unknown column type"
 
+    def to_type_str(self) -> str | None:
+        """
+        Convert DBVarType to internal type string
+
+        Returns
+        -------
+        str | None
+        """
+        mapping = {
+            self.BOOL: "bool",
+            self.CHAR: "str",
+            self.VARCHAR: "str",
+            self.FLOAT: "float",
+            self.INT: "int",
+        }
+        return mapping.get(self)  # type: ignore
+
 
 class AggFunc(StrEnum):
     """
