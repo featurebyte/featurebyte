@@ -2,7 +2,6 @@
 Tests for featurebyte.api.feature_list
 """
 import textwrap
-import time
 from unittest.mock import patch
 
 import numpy as np
@@ -18,6 +17,7 @@ from featurebyte.api.feature_list import (
     FeatureList,
     FeatureListNamespace,
 )
+from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -59,6 +59,14 @@ def deprecated_feature_fixture(feature_group):
     feature.__dict__["version"] = "V220404"
     feature_group["deprecated_feature"] = feature
     return feature
+
+
+@pytest.fixture(name="single_feat_flist")
+def single_feat_flist_fixture(production_ready_feature):
+    """Feature list with a single feature"""
+    flist = FeatureList([production_ready_feature], name="my_feature_list")
+    production_ready_feature.feature_store.save()
+    return flist
 
 
 def test_feature_list_production_ready_fraction__one_fourth(
@@ -121,12 +129,13 @@ def test_feature_list_production_ready_fraction__single_feature(production_ready
     )
 
 
-@pytest.mark.usefixtures("mocked_tile_cache")
 @freeze_time("2022-05-01")
-def test_feature_list_creation__success(production_ready_feature, mocked_tile_cache):
+def test_feature_list_creation__success(
+    production_ready_feature, single_feat_flist, mocked_tile_cache
+):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    production_ready_feature.feature_store.save()
+    production_ready_feature.feature_store.save(conflict_resolution="retrieve")
 
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
@@ -152,10 +161,9 @@ def test_feature_list_creation__success(production_ready_feature, mocked_tile_ca
     assert error_message in str(exc.value)
 
 
-@pytest.mark.usefixtures("mocked_tile_cache")
-def test_feature_list__get_historical_features(production_ready_feature, mocked_tile_cache):
+def test_feature_list__get_historical_features(single_feat_flist, mocked_tile_cache):
     """Test FeatureList can be created with valid inputs"""
-    flist = FeatureList([production_ready_feature], name="my_feature_list")
+    flist = single_feat_flist
     dataframe = pd.DataFrame(
         {
             "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
@@ -164,7 +172,6 @@ def test_feature_list__get_historical_features(production_ready_feature, mocked_
     )
 
     # check success case
-    production_ready_feature.feature_store.save()
     with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
         with patch(
             "featurebyte.api.feature_list.dataframe_from_arrow_stream"
@@ -185,7 +192,48 @@ def test_feature_list__get_historical_features(production_ready_feature, mocked_
         "If the error is related to connection broken, "
         "try to use a smaller `max_batch_size` parameter (current value: 1000)."
     )
+
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.parametrize("max_batch_size", [1, 5, 6, 11])
+def test_feature_list__get_historical_features__iteration_logic(
+    single_feat_flist, mocked_tile_cache, max_batch_size
+):
+    """Check get_historical_features iteration logic"""
+    flist = single_feat_flist
+    row_number = 9
+    dataframe = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2022-04-01", freq="D", periods=row_number),
+            "cust_id": [f"C{i}" for i in range(row_number)],
+        }
+    )
+    dataframe["POINT_IN_TIME"] = dataframe.POINT_IN_TIME.dt.strftime("%Y-%m-%d")
+
+    # check iterations logic is correct
+    with patch("requests.sessions.Session.post") as mock_post:
+        with patch(
+            "featurebyte.api.feature_list.dataframe_from_arrow_stream"
+        ) as mock_from_arrow_stream:
+            mock_from_arrow_stream.return_value = pd.DataFrame()
+            mock_response = mock_post.return_value
+            mock_response.status_code = 200
+            mock_response.context = ""
+            flist.get_historical_features(dataframe, max_batch_size=max_batch_size)
+
+    # check that no training events are missed
+    training_events_data = []
+    for call_args in mock_post.call_args_list:
+        training_events_bytes = call_args[1]["files"]["training_events"]
+        training_events_data.append(dataframe_from_arrow_stream(training_events_bytes))
+
+    post_training_events_df = pd.concat(training_events_data)
+    columns = list(dataframe.columns)
+    pd.testing.assert_frame_equal(
+        dataframe.sort_values(columns).reset_index(drop=True),
+        post_training_events_df.sort_values(columns).reset_index(drop=True),
+    )
 
 
 @freeze_time("2022-05-01")
