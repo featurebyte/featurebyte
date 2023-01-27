@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from pandas import DataFrame
 from typeguard import typechecked
 
-from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
@@ -132,28 +132,22 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         self.info = column_info
 
 
-class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
+class DataListMixin(ApiObject):
     """
-    Base class for all Data objects
+    Mixin to implement data source list function
     """
 
     _route = "/tabular_data"
-    _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
     _list_schema = TabularDataModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
     _list_foreign_keys = [
         ("columns_info.entity_id", Entity, "entities"),
     ]
 
-    def _get_create_payload(self) -> dict[str, Any]:
-        assert self._create_schema_class is not None
-        data = self._create_schema_class(**self.json_dict())  # pylint: disable=not-callable
-        return data.json_dict()
-
     @classmethod
     def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
         """
-        List the object name store at the persistent
+        List saved data sources
 
         Parameters
         ----------
@@ -165,12 +159,25 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, GetAttrMixin):
         Returns
         -------
         DataFrame
-            Table of objects
+            Table of data sources
         """
         data_list = super().list(include_id=include_id)
         if entity:
             data_list = data_list[data_list.entities.apply(lambda entities: entity in entities)]
         return data_list
+
+
+class DataApiObject(AbstractTableDataFrame, SavableApiObject, DataListMixin, GetAttrMixin):
+    """
+    Base class for all Data objects
+    """
+
+    _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        assert self._create_schema_class is not None
+        data = self._create_schema_class(**self.json_dict())  # pylint: disable=not-callable
+        return data.json_dict()
 
     @classmethod
     @typechecked

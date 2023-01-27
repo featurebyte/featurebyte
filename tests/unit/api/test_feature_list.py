@@ -19,6 +19,7 @@ from featurebyte.api.feature_list import (
 )
 from featurebyte.exception import (
     DuplicatedRecordException,
+    FeatureListNotOnlineEnabledError,
     ObjectHasBeenSavedError,
     RecordRetrievalException,
 )
@@ -1000,10 +1001,8 @@ def test_get_feature_jobs_status(
 
 
 @patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_get_online_serving_code(
-    mock_preview, feature_list, production_ready_feature, draft_feature
-):
-    """Test feature list online_serving_python_template"""
+def test_get_online_serving_code(mock_preview, feature_list):
+    """Test feature get_online_serving_code"""
     mock_preview.return_value = pd.DataFrame(
         {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
     )
@@ -1058,3 +1057,19 @@ def test_get_online_serving_code(
             """
         ).strip()
     )
+
+
+def test_get_online_serving_code_not_deployed(feature_list):
+    """Test feature get_online_serving_code on undeployed feature list"""
+    with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
+        feature_list.get_online_serving_code()
+    assert "Feature list is not deployed." in str(exc.value)
+
+
+def test_get_online_serving_code_unsupported_language(feature_list):
+    """Test feature get_online_serving_code with unsupported language"""
+    feature_list.save()
+    feature_list.deploy(enable=True, make_production_ready=True)
+    with pytest.raises(NotImplementedError) as exc:
+        feature_list.get_online_serving_code(language="java")
+    assert "Supported languages: ['python', 'sh']" in str(exc.value)

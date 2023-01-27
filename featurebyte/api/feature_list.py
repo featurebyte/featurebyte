@@ -868,7 +868,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
             Serving code not available
         """
         if not self.deployed:
-            raise FeatureListNotOnlineEnabledError()
+            raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")
 
         templates = {"python": "python.tpl", "sh": "shell.tpl"}
         template_file = templates.get(language)
