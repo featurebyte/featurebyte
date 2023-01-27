@@ -9,6 +9,7 @@ import collections
 import time
 from http import HTTPStatus
 
+import numpy as np
 import pandas as pd
 from alive_progress import alive_bar
 from bson.objectid import ObjectId
@@ -689,6 +690,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         self,
         training_events: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
+        max_batch_size: int = 5000,
     ) -> Optional[pd.DataFrame]:
         """Get historical features
 
@@ -701,6 +703,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
             Optional serving names mapping if the training events data has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
             serving name.
+        max_batch_size: int
+            Maximum number of rows per batch
 
         Returns
         -------
@@ -731,15 +735,33 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         )
 
         client = Configurations().get_client()
-        response = client.post(
-            "/feature_list/historical_features",
-            data={"payload": payload.json()},
-            files={"training_events": dataframe_to_arrow_bytes(training_events)},
-        )
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        content = response.content
-        return dataframe_from_arrow_stream(content)
+        output = []
+        with alive_bar(
+            total=int(np.ceil(len(training_events) / max_batch_size)),
+            title="Retrieving Historical Feature(s)",
+            **get_alive_bar_additional_params(),
+        ) as progress_bar:
+            for _, batch in training_events.groupby(
+                np.arange(len(training_events)) // max_batch_size
+            ):
+                response = client.post(
+                    "/feature_list/historical_features",
+                    data={"payload": payload.json()},
+                    files={"training_events": dataframe_to_arrow_bytes(batch)},
+                )
+                if response.status_code != HTTPStatus.OK:
+                    raise RecordRetrievalException(
+                        response,
+                        resolution=(
+                            f"\nIf the error is related to connection broken, "
+                            f"try to use a smaller `max_batch_size` parameter (current value: {max_batch_size})."
+                        ),
+                    )
+
+                output.append(dataframe_from_arrow_stream(response.content))
+                progress_bar()  # pylint: disable=not-callable
+
+        return pd.concat(output, ignore_index=True)
 
     @typechecked
     def create_new_version(

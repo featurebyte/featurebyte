@@ -19,7 +19,7 @@ class ResponseException(Exception):
         resolution = None
         if "resolution" in kwargs:
             resolution = kwargs.pop("resolution")
-        exc_info = None
+        exc_info = response.text
         try:
             response_dict = response.json()
             for field in ["detail", "traceback"]:
@@ -29,7 +29,7 @@ class ResponseException(Exception):
             if resolution:
                 exc_info += resolution
         except JSONDecodeError:
-            exc_info = response.text
+            pass
 
         if exc_info:
             super().__init__(exc_info, *args, **kwargs)
