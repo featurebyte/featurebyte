@@ -68,7 +68,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     """
     # get dictionary feature
     event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(
+    feature_group = event_view.groupby("CUST_ID", category="ÜSER ID").aggregate_over(
         value_column="PRODUCT_ACTION",
         method="latest",
         windows=["30d"],
@@ -143,7 +143,7 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     event_view = EventView.from_event_data(event_data)
     feature_name = "SUM_AMOUNT_DICT_30d"
     feature_group = event_view.groupby("CUST_ID", category="PRODUCT_ACTION").aggregate_over(
-        value_column="AMOUNT",
+        value_column="ÀMOUNT",
         method="sum",
         windows=["30d"],
         feature_names=[feature_name],

@@ -18,7 +18,7 @@ def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
     computation, get_historical_features(), etc.
     """
     event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("USER ID", category=groupby_category).aggregate_over(
+    feature_group = event_view.groupby("ÜSER ID", category=groupby_category).aggregate_over(
         method="count",
         windows=["48h"],
         feature_names=["SESSION_COUNT_48h"],
@@ -66,7 +66,7 @@ async def test_snowflake_tile_cache(
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "user id": [1, 2, 3, 4, 5],
+            "üser id": [1, 2, 3, 4, 5],
         }
     )
 
@@ -84,7 +84,7 @@ async def test_snowflake_tile_cache(
     await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
-        "USER ID",
+        "ÜSER ID",
         [1, 2, 3, 4, 5],
     )
     await tile_cache.invoke_tile_manager(requests)
@@ -105,7 +105,7 @@ async def test_snowflake_tile_cache(
             "POINT_IN_TIME": pd.to_datetime(
                 ["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3
             ),
-            "user id": [1, 2, 3, 4, 5],
+            "üser id": [1, 2, 3, 4, 5],
         }
     )
     await snowflake_session.register_table(request_table_name, df_training_events)
@@ -118,7 +118,7 @@ async def test_snowflake_tile_cache(
     await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
-        "USER ID",
+        "ÜSER ID",
         [3, 4, 5],
     )
     await tile_cache.invoke_tile_manager(requests)
@@ -129,7 +129,7 @@ async def test_snowflake_tile_cache(
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 2),
-            "user id": [6, 7],
+            "üser id": [6, 7],
         }
     )
 
@@ -145,7 +145,7 @@ async def test_snowflake_tile_cache(
     await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
-        "USER ID",
+        "ÜSER ID",
         [6, 7],
     )
     await tile_cache.invoke_tile_manager(requests)

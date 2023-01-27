@@ -52,9 +52,9 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     df = get_expected_scd_join_result(
         df_left=transaction_data_upper_case,
         df_right=scd_dataframe,
-        left_key="USER ID",
+        left_key="ÜSER ID",
         right_key="User ID",
-        left_timestamp="EVENT_TIMESTAMP",
+        left_timestamp="ËVENT_TIMESTAMP",
         right_timestamp="Effective Timestamp",
     )
     df = df.reset_index()
@@ -141,15 +141,15 @@ def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_d
     """
     event_view = EventView.from_event_data(event_data)
     scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
-    event_view.join(scd_data, on="USER ID")
+    event_view.join(scd_data, on="ÜSER ID")
     df = event_view.preview(1000)
     df_expected = expected_dataframe_scd_join
 
     # Check correctness of joined view
-    df["EVENT_TIMESTAMP"] = pd.to_datetime(df["EVENT_TIMESTAMP"], utc=True).dt.tz_localize(None)
-    df_compare = df[["EVENT_TIMESTAMP", "USER ID", "User Status"]].merge(
-        df_expected[["EVENT_TIMESTAMP", "USER ID", "User Status"]],
-        on=["EVENT_TIMESTAMP", "USER ID"],
+    df["ËVENT_TIMESTAMP"] = pd.to_datetime(df["ËVENT_TIMESTAMP"], utc=True).dt.tz_localize(None)
+    df_compare = df[["ËVENT_TIMESTAMP", "ÜSER ID", "User Status"]].merge(
+        df_expected[["ËVENT_TIMESTAMP", "ÜSER ID", "User Status"]],
+        on=["ËVENT_TIMESTAMP", "ÜSER ID"],
         suffixes=("_actual", "_expected"),
     )
     pd.testing.assert_series_equal(
@@ -165,21 +165,21 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     """
     event_view = EventView.from_event_data(event_data)
     scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
-    event_view.join(scd_data, on="USER ID")
+    event_view.join(scd_data, on="ÜSER ID")
 
     # Create a feature and preview it
-    feature = event_view.groupby("USER ID", category="User Status").aggregate_over(
+    feature = event_view.groupby("ÜSER ID", category="User Status").aggregate_over(
         method="count",
         windows=["7d"],
         feature_names=["count_7d"],
     )["count_7d"]
 
-    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "user id": 1})
+    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
 
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "user id": 1,
-        "count_7d": '{\n  "STATUS_CODE_12": 2,\n  "STATUS_CODE_3": 1,\n  "STATUS_CODE_46": 10,\n  "STATUS_CODE_48": 5\n}',
+        "üser id": 1,
+        "count_7d": '{\n  "STÀTUS_CODE_12": 2,\n  "STÀTUS_CODE_3": 1,\n  "STÀTUS_CODE_46": 10,\n  "STÀTUS_CODE_48": 5\n}',
     }
 
 
@@ -197,8 +197,8 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
 
     # Window feature that depends on an SCD join
     event_view = EventView.from_event_data(event_data)
-    event_view.join(scd_view, on="USER ID")
-    window_feature = event_view.groupby("USER ID", "User Status").aggregate_over(
+    event_view.join(scd_view, on="ÜSER ID")
+    window_feature = event_view.groupby("ÜSER ID", "User Status").aggregate_over(
         method="count",
         windows=["7d"],
         feature_names=["count_7d"],
@@ -213,13 +213,13 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     user_id = 1
     preview_params = {
         "POINT_IN_TIME": point_in_time,
-        "user id": user_id,
+        "üser id": user_id,
         "item_id": item_id,
     }
     preview_output = feature_list.preview(preview_params).iloc[0].to_dict()
     assert set(preview_output.keys()) == {
         "POINT_IN_TIME",
-        "user id",
+        "üser id",
         "item_id",
         "count_7d",
         "Current User Status",
@@ -235,7 +235,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     assert preview_output["Item Name Feature"] == "name_42"
     assert (
         preview_output["count_7d"]
-        == '{\n  "STATUS_CODE_12": 2,\n  "STATUS_CODE_3": 1,\n  "STATUS_CODE_46": 10,\n  "STATUS_CODE_48": 5\n}'
+        == '{\n  "STÀTUS_CODE_12": 2,\n  "STÀTUS_CODE_3": 1,\n  "STÀTUS_CODE_46": 10,\n  "STÀTUS_CODE_48": 5\n}'
     )
 
 
@@ -253,7 +253,7 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
     user_id = 1
     preview_params = {
         "POINT_IN_TIME": point_in_time,
-        "user id": user_id,
+        "üser id": user_id,
     }
     preview_output = scd_lookup_feature.preview(preview_params).iloc[0].to_dict()
 
@@ -279,12 +279,12 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     df = feature.preview(
         {
             "POINT_IN_TIME": "2001-10-25 10:00:00",
-            "user_status": "STATUS_CODE_42",
+            "user_status": "STÀTUS_CODE_42",
         }
     )
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
-        "user_status": "STATUS_CODE_42",
+        "user_status": "STÀTUS_CODE_42",
         "Current Number of Users With This Status": 1,
     }
     assert df.iloc[0].to_dict() == expected
@@ -294,7 +294,7 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     observations_set = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
-            "user_status": ["STATUS_CODE_47"] * 10,
+            "user_status": ["STÀTUS_CODE_47"] * 10,
         }
     )
     expected = observations_set.copy()
@@ -332,7 +332,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     event_view = EventView.from_event_data(event_data)
     scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
 
-    event_view.join(scd_view, on="USER ID")
+    event_view.join(scd_view, on="ÜSER ID")
 
     feature = event_view.groupby("User Status").aggregate_over(
         method="count",
@@ -344,11 +344,11 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     # check preview
     preview_param = {
         "POINT_IN_TIME": "2002-01-01 10:00:00",
-        "user_status": "STATUS_CODE_47",
+        "user_status": "STÀTUS_CODE_47",
     }
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2002-01-01 10:00:00"),
-        "user_status": "STATUS_CODE_47",
+        "user_status": "STÀTUS_CODE_47",
         "count_30d": 15,
     }
     feature_list.preview(preview_param)

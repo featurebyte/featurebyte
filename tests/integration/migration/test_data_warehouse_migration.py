@@ -121,7 +121,7 @@ async def test_data_warehouse_migration_v6(
     """
     _ = bad_feature_stores
     event_view = EventView.from_event_data(event_data)
-    features_1 = event_view.groupby("USER ID").aggregate_over(
+    features_1 = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_count"],
@@ -131,8 +131,8 @@ async def test_data_warehouse_migration_v6(
             "time_modulo_frequency": "10m",
         },
     )
-    features_2 = event_view.groupby("USER ID").aggregate_over(
-        value_column="EVENT_TIMESTAMP",
+    features_2 = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ËVENT_TIMESTAMP",
         method="latest",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_latest_event_time"],
@@ -148,7 +148,7 @@ async def test_data_warehouse_migration_v6(
     feature_list_2.save()
     preview_param = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
+        "üser id": 1,
     }
     observations_set = pd.DataFrame([preview_param])
     _ = feature_list_1.get_historical_features(observations_set)

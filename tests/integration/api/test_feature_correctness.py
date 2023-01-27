@@ -115,10 +115,10 @@ def observation_set(transaction_data_upper_case):
 
     # Sample training time points from historical data
     df = transaction_data_upper_case
-    cols = ["EVENT_TIMESTAMP", "USER ID"]
+    cols = ["ËVENT_TIMESTAMP", "ÜSER ID"]
     df = df[cols].drop_duplicates(cols)
     df = df.sample(1000, replace=False, random_state=0).reset_index(drop=True)
-    df.rename({"EVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
+    df.rename({"ËVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
 
     # Add random spikes to point in time of some rows
     rng = np.random.RandomState(0)
@@ -264,16 +264,16 @@ def add_inter_events_derived_columns(df, event_view):
 
     # Previous amount
     col = f"PREV_AMOUNT_BY_{by_column}"
-    df[col] = get_lagged_series_pandas(df, "AMOUNT", "EVENT_TIMESTAMP", by_column)
-    event_view[col] = event_view["AMOUNT"].lag(by_column)
+    df[col] = get_lagged_series_pandas(df, "ÀMOUNT", "ËVENT_TIMESTAMP", by_column)
+    event_view[col] = event_view["ÀMOUNT"].lag(by_column)
 
     # Time since previous event
     col = f"TIME_SINCE_PREVIOUS_EVENT_BY_{by_column}"
     df[col] = (
-        df["EVENT_TIMESTAMP"]
-        - get_lagged_series_pandas(df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", by_column)
+        df["ËVENT_TIMESTAMP"]
+        - get_lagged_series_pandas(df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", by_column)
     ).dt.total_seconds()
-    event_view[col] = event_view["EVENT_TIMESTAMP"] - event_view["EVENT_TIMESTAMP"].lag(by_column)
+    event_view[col] = event_view["ËVENT_TIMESTAMP"] - event_view["ËVENT_TIMESTAMP"].lag(by_column)
 
     return df
 
@@ -293,10 +293,10 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     for _, preview_time_point in sampled_points.iterrows():
         preview_param = {
             "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
-            "user id": preview_time_point["USER ID"],
+            "üser id": preview_time_point["ÜSER ID"],
         }
         output = feature_list[feature_list.feature_names].preview(preview_param)
-        output.rename({"user id": "USER ID"}, axis=1, inplace=True)
+        output.rename({"üser id": "ÜSER ID"}, axis=1, inplace=True)
         df_expected = pd.DataFrame([preview_time_point], index=output.index)
         fb_assert_frame_equal(output, df_expected, dict_like_columns)
     elapsed = time.time() - tic
@@ -316,13 +316,13 @@ def test_aggregate_over(
     # Test cases listed here. This is written this way instead of parametrized test is so that all
     # features can be retrieved in one historical request
     feature_parameters = [
-        ("AMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), None),
-        ("AMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), None),
-        ("AMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
-        ("AMOUNT", "max", "24h", "max_24h", lambda x: x.max(), None),
-        ("AMOUNT", "sum", "24h", "sum_24h", sum_func, None),
+        ("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), None),
+        ("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), None),
+        ("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
+        ("ÀMOUNT", "max", "24h", "max_24h", lambda x: x.max(), None),
+        ("ÀMOUNT", "sum", "24h", "sum_24h", sum_func, None),
         (None, "count", "24h", "count_24h", lambda x: len(x), None),
-        ("AMOUNT", "na_count", "24h", "na_count_24h", lambda x: x.isnull().sum(), None),
+        ("ÀMOUNT", "na_count", "24h", "na_count_24h", lambda x: x.isnull().sum(), None),
         (None, "count", "24h", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
         ("PREV_AMOUNT_BY_CUST_ID", "avg", "24h", "prev_amount_avg_24h", lambda x: x.mean(), None),
         (
@@ -333,9 +333,9 @@ def test_aggregate_over(
             lambda x: x.mean(),
             None,
         ),
-        ("AMOUNT", "std", "24h", "std_24h", lambda x: x.std(ddof=0), None),
+        ("ÀMOUNT", "std", "24h", "std_24h", lambda x: x.std(ddof=0), None),
         (
-            "AMOUNT",
+            "ÀMOUNT",
             "latest",
             "24h",
             "latest_24h",
@@ -343,7 +343,7 @@ def test_aggregate_over(
             None,
         ),
         (
-            "AMOUNT",
+            "ÀMOUNT",
             "latest",
             None,
             "latest_ever",
@@ -361,13 +361,13 @@ def test_aggregate_over(
     )
 
     # Some fixed parameters
-    entity_column_name = "USER ID"
-    event_timestamp_column_name = "EVENT_TIMESTAMP"
+    entity_column_name = "ÜSER ID"
+    event_timestamp_column_name = "ËVENT_TIMESTAMP"
 
     # Apply a filter condition
     def _get_filtered_data(event_view_or_dataframe):
-        cond1 = event_view_or_dataframe["AMOUNT"] > 20
-        cond2 = event_view_or_dataframe["AMOUNT"].isnull()
+        cond1 = event_view_or_dataframe["ÀMOUNT"] > 20
+        cond2 = event_view_or_dataframe["ÀMOUNT"].isnull()
         mask = cond1 | cond2
         return event_view_or_dataframe[mask]
 
@@ -437,7 +437,7 @@ def test_aggregate_over(
     tic = time.time()
     df_historical_features = feature_list.get_historical_features(
         observation_set,
-        serving_names_mapping={"user id": "USER ID"},
+        serving_names_mapping={"üser id": "ÜSER ID"},
     )
     elapsed_historical = time.time() - tic
     logger.debug(f"elapsed historical: {elapsed_historical}")

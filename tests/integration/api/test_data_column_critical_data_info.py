@@ -16,17 +16,17 @@ def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
     original_df = event_data.preview()
-    assert original_df["AMOUNT"].isnull().sum() == 2
+    assert original_df["ÀMOUNT"].isnull().sum() == 2
     assert original_df["SESSION_ID"].isnull().sum() == 0
     assert set(original_df["PRODUCT_ACTION"].astype(str).unique()) == {
         "detail",
         "purchase",
-        "remove",
-        "add",
+        "rëmove",
+        "àdd",
         "nan",
     }
     assert event_data.node.type == "input"
-    event_data.AMOUNT.update_critical_data_info(
+    event_data["ÀMOUNT"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),
             ValueBeyondEndpointImputation(type="less_than", end_point=0.0, imputed_value=0.0),
@@ -38,7 +38,7 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.PRODUCT_ACTION.update_critical_data_info(
         cleaning_operations=[
             UnexpectedValueImputation(
-                expected_values=["detail", "purchase", "remove"], imputed_value="missing"
+                expected_values=["detail", "purchase", "rëmove"], imputed_value="missing"
             ),
         ]
     )
@@ -67,12 +67,12 @@ def test_event_data_update_critical_data_info(event_data):
     clean_describe_df = event_data.describe(after_cleaning=True)
     pd.testing.assert_frame_equal(view_describe_df, clean_describe_df)
 
-    assert view_df["AMOUNT"].isnull().sum() == 0
+    assert view_df["ÀMOUNT"].isnull().sum() == 0
     assert view_df["SESSION_ID"].isnull().sum() == 1
     assert set(view_df["PRODUCT_ACTION"].astype(str).unique()) == {
         "detail",
         "purchase",
-        "remove",
+        "rëmove",
         "missing",
     }
     # check that values in string type column (TRANSACTION_ID) are imputed to 0 and
@@ -108,7 +108,7 @@ def test_event_data_update_critical_data_info(event_data):
     pd.testing.assert_frame_equal(feat_preview_df, hist_feat, check_dtype=False)
 
     # remove critical data info
-    event_data.AMOUNT.update_critical_data_info(cleaning_operations=[])
+    event_data["ÀMOUNT"].update_critical_data_info(cleaning_operations=[])
     event_data.SESSION_ID.update_critical_data_info(cleaning_operations=[])
     event_data.PRODUCT_ACTION.update_critical_data_info(cleaning_operations=[])
     event_data.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
@@ -131,13 +131,13 @@ def test_item_data_update_critical_data_info(item_data):
 
     # check feature & preview
     item_view = ItemView.from_item_data(item_data)
-    window_feature = item_view.groupby("USER ID", category="item_type").aggregate_over(
+    window_feature = item_view.groupby("ÜSER ID", category="item_type").aggregate_over(
         method="count",
         windows=["12h"],
         feature_names=["count_12h"],
     )["count_12h"]
     window_preview_df = window_feature.preview(
-        {"POINT_IN_TIME": "2001-11-15 10:00:00", "user id": 1}
+        {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
     )
     assert window_preview_df.count_12h.iloc[0] == (
         '{\n  "type_19": 1,\n  "type_38": 1,\n  "type_39": 1,\n  "type_44": 1,\n  "type_69": 1,\n  "type_85": 1,'
@@ -155,7 +155,7 @@ def test_item_data_update_critical_data_info(item_data):
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"]),
-            "user id": [1, 1],
+            "üser id": [1, 1],
             "order_id": ["T236", "T236"],
         }
     )
@@ -164,7 +164,7 @@ def test_item_data_update_critical_data_info(item_data):
     )
     assert list(hist_feat.columns) == [
         "POINT_IN_TIME",
-        "user id",
+        "üser id",
         "order_id",
         "order_size",
         "count_12h",

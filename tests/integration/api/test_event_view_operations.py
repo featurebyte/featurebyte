@@ -201,13 +201,13 @@ def event_view_fixture(event_data):
     # create event view
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
-        "EVENT_TIMESTAMP",
+        "ËVENT_TIMESTAMP",
         "CREATED_AT",
         "CUST_ID",
-        "USER ID",
+        "ÜSER ID",
         "PRODUCT_ACTION",
         "SESSION_ID",
-        "AMOUNT",
+        "ÀMOUNT",
         "TRANSACTION_ID",
     ]
     return event_view
@@ -218,8 +218,8 @@ def feature_group_fixture(event_view):
     """
     Fixture for a simple FeatureGroup with count features
     """
-    event_view["derived_value_column"] = 1.0 * event_view["USER ID"]
-    feature_group = event_view.groupby("USER ID").aggregate_over(
+    event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
+    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
@@ -234,7 +234,7 @@ def feature_group_per_category_fixture(event_view):
     """
 
     feature_group_per_category = event_view.groupby(
-        "USER ID", category="PRODUCT_ACTION"
+        "ÜSER ID", category="PRODUCT_ACTION"
     ).aggregate_over(
         method="count",
         windows=["2h", "24h"],
@@ -266,11 +266,11 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
 
     # apply more event view operations
-    event_view["AMOUNT"].fillna(0)
+    event_view["ÀMOUNT"].fillna(0)
 
     # check accessor operations
     check_string_operations(event_view, "PRODUCT_ACTION")
-    check_datetime_operations(event_view, "EVENT_TIMESTAMP")
+    check_datetime_operations(event_view, "ËVENT_TIMESTAMP")
 
     # check casting operations
     check_cast_operations(event_view, source_type=event_view.feature_store.type)
@@ -282,7 +282,7 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     expected = transaction_data_upper_case.copy()
     expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
     expected["LUCKY_CUSTOMER"] = (expected["CUST_ID_X_SESSION_ID"] > 140.0).astype(int)
-    expected["AMOUNT"] = expected["AMOUNT"].fillna(0)
+    expected["ÀMOUNT"] = expected["ÀMOUNT"].fillna(0)
 
     # check agreement
     output = event_view.preview(limit=expected.shape[0])
@@ -304,7 +304,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
-        "user id": 1,
+        "üser id": 1,
     }
 
     # preview count features
@@ -313,7 +313,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         df_feature_preview,
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
+            "üser id": 1,
             "COUNT_2h": 3,
             "COUNT_24h": 14,
         },
@@ -325,11 +325,11 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         assert df_feature_preview.shape[0] == 1
         assert df_feature_preview.iloc[0].to_dict() == {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
-            "COUNT_BY_ACTION_2h": '{\n  "add": 2,\n  "purchase": 1\n}',
-            "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+            "üser id": 1,
+            "COUNT_BY_ACTION_2h": '{\n  "purchase": 1,\n  "àdd": 2\n}',
+            "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "detail": 2,\n  "purchase": 4,\n  "rëmove": 1,\n  "àdd": 6\n}',
             "ENTROPY_BY_ACTION_24h": 1.376055285260417,
-            "MOST_FREQUENT_ACTION_24h": "add",
+            "MOST_FREQUENT_ACTION_24h": "àdd",
             "NUM_UNIQUE_ACTION_24h": 5,
             "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
             "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
@@ -341,7 +341,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         df_feature_preview,
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
+            "üser id": 1,
             "COUNT_2h": 3,
         },
     )
@@ -353,7 +353,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         df_feature_preview,
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
+            "üser id": 1,
             "Unnamed": 0.2142857143,
         },
     )
@@ -367,7 +367,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         df_feature_preview,
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
+            "üser id": 1,
             "COUNT_2h": 3,
             "COUNT_24h": 14,
             "COUNT_2h / COUNT_24h": 0.21428599999999998,
@@ -382,7 +382,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         df_feature_preview,
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
+            "üser id": 1,
             "Unnamed": 4.0,
         },
     )
@@ -394,13 +394,13 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     # add iet entropy
     feature_group["iet_entropy_24h"] = iet_entropy(
-        event_view, "USER ID", window="24h", name="iet_entropy_24h"
+        event_view, "ÜSER ID", window="24h", name="iet_entropy_24h"
     )
     feature_group["pyramid_sum_24h"] = pyramid_sum(
-        event_view, "USER ID", window="24h", numeric_column="AMOUNT", name="pyramid_sum_24h"
+        event_view, "ÜSER ID", window="24h", numeric_column="ÀMOUNT", name="pyramid_sum_24h"
     )
-    feature_group["amount_sum_24h"] = event_view.groupby("USER ID").aggregate_over(
-        "AMOUNT", method="sum", windows=["24h"], feature_names=["amount_sum_24h"]
+    feature_group["amount_sum_24h"] = event_view.groupby("ÜSER ID").aggregate_over(
+        "ÀMOUNT", method="sum", windows=["24h"], feature_names=["amount_sum_24h"]
     )["amount_sum_24h"]
 
     # preview a more complex feature group (multiple group by, some have the same tile_id)
@@ -420,9 +420,9 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     expected_amount_sum_24h = 582.14
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
+        "üser id": 1,
         "COUNT_2h": 3,
-        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "detail": 2,\n  "purchase": 4,\n  "rëmove": 1,\n  "àdd": 6\n}',
         "NUM_PURCHASE_7d": 6,
         "iet_entropy_24h": 1.661539,
         "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
@@ -444,7 +444,7 @@ def create_feature_with_filtered_event_view(event_view):
     Create a feature with filtered event view using string literal
     """
     event_view = event_view[event_view["PRODUCT_ACTION"] == "purchase"]
-    feature_group = event_view.groupby("USER ID").aggregate_over(
+    feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["7d"],
         feature_names=["NUM_PURCHASE_7d"],
@@ -460,7 +460,7 @@ def run_test_conditional_assign_feature(feature_group):
     feature_count_24h = feature_group["COUNT_24h"]
     preview_param = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
+        "üser id": 1,
     }
     result = feature_count_24h.preview(preview_param)
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
@@ -519,7 +519,7 @@ def test_get_historical_features(feature_group, feature_group_per_category):
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
-            "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
     feature_list = FeatureList(
@@ -538,19 +538,19 @@ def test_get_historical_features(feature_group, feature_group_per_category):
     df_historical_expected = pd.DataFrame(
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
-            "user id": df_training_events["user id"],
+            "üser id": df_training_events["üser id"],
             "COUNT_2h": [3, 1, 1, 0, 0, 3, 0, 0, 1, 0],
             "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, 0],
             "COUNT_BY_ACTION_24h": [
-                '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 5,\n  "add": 1,\n  "detail": 2,\n  "remove": 4\n}',
-                '{\n  "__MISSING__": 3,\n  "detail": 4,\n  "purchase": 4,\n  "remove": 2\n}',
-                '{\n  "__MISSING__": 4,\n  "add": 5,\n  "detail": 1,\n  "purchase": 1\n}',
-                '{\n  "__MISSING__": 2,\n  "add": 2,\n  "detail": 3,\n  "purchase": 4,\n  "remove": 2\n}',
-                '{\n  "__MISSING__": 4,\n  "add": 4,\n  "detail": 2,\n  "purchase": 6,\n  "remove": 2\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "detail": 5,\n  "purchase": 6,\n  "remove": 3\n}',
-                '{\n  "__MISSING__": 4,\n  "add": 1,\n  "detail": 1,\n  "purchase": 1,\n  "remove": 6\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 2,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 4\n}',
+                '{\n  "__MISSING__": 1,\n  "detail": 2,\n  "purchase": 4,\n  "rëmove": 1,\n  "àdd": 6\n}',
+                '{\n  "__MISSING__": 5,\n  "detail": 2,\n  "rëmove": 4,\n  "àdd": 1\n}',
+                '{\n  "__MISSING__": 3,\n  "detail": 4,\n  "purchase": 4,\n  "rëmove": 2\n}',
+                '{\n  "__MISSING__": 4,\n  "detail": 1,\n  "purchase": 1,\n  "àdd": 5\n}',
+                '{\n  "__MISSING__": 2,\n  "detail": 3,\n  "purchase": 4,\n  "rëmove": 2,\n  "àdd": 2\n}',
+                '{\n  "__MISSING__": 4,\n  "detail": 2,\n  "purchase": 6,\n  "rëmove": 2,\n  "àdd": 4\n}',
+                '{\n  "__MISSING__": 3,\n  "detail": 5,\n  "purchase": 6,\n  "rëmove": 3,\n  "àdd": 1\n}',
+                '{\n  "__MISSING__": 4,\n  "detail": 1,\n  "purchase": 1,\n  "rëmove": 6,\n  "àdd": 1\n}',
+                '{\n  "__MISSING__": 3,\n  "detail": 3,\n  "purchase": 2,\n  "rëmove": 4,\n  "àdd": 2\n}',
                 None,
             ],
             "ENTROPY_BY_ACTION_24h": [
@@ -566,15 +566,15 @@ def test_get_historical_features(feature_group, feature_group_per_category):
                 np.nan,
             ],
             "MOST_FREQUENT_ACTION_24h": [
-                "add",
+                "àdd",
                 "__MISSING__",
                 "detail",
-                "add",
+                "àdd",
                 "purchase",
                 "purchase",
                 "purchase",
-                "remove",
-                "remove",
+                "rëmove",
+                "rëmove",
                 None,
             ],
             "NUM_UNIQUE_ACTION_24h": [5.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0],
@@ -605,7 +605,7 @@ def test_get_historical_features(feature_group, feature_group_per_category):
         }
     )
     df_historical_features = feature_list.get_historical_features(df_training_events)
-    # When using fetch_pandas_all(), the dtype of "USER ID" column is int8 (int64 otherwise)
+    # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
 
     # Test again using the same feature list and data but with serving names mapping
@@ -619,7 +619,7 @@ def _test_get_historical_features_with_serving_names(
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
-    mapping = {"user id": "new_user id"}
+    mapping = {"üser id": "new_user id"}
 
     # Instead of providing the default serving name "user id", provide "new_user id" in data
     df_training_events = df_training_events.rename(mapping, axis=1)
@@ -745,7 +745,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
 
     # check timedelta extracted properties
     pandas_previous_timestamp = get_lagged_series_pandas(
-        dt_df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", "CUST_ID"
+        dt_df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", "CUST_ID"
     )
     pandas_event_interval_second = (pandas_series - pandas_previous_timestamp).dt.total_seconds()
     pandas_event_interval_minute = (
@@ -804,75 +804,75 @@ def check_datetime_operations(event_view, column_name, limit=100):
 def check_cast_operations(event_view, source_type, limit=100):
     """Check casting operations"""
     event_view = event_view.copy()
-    event_view["AMOUNT_INT"] = event_view["AMOUNT"].astype(int)
-    event_view["AMOUNT_STR"] = event_view["AMOUNT"].astype(str)
-    event_view["AMOUNT_FLOAT"] = event_view["AMOUNT"].astype(float)
-    event_view["INT_FROM_BOOL"] = (event_view["AMOUNT"] > 50).astype(int)
-    event_view["FLOAT_FROM_BOOL"] = (event_view["AMOUNT"] > 50).astype(float)
+    event_view["AMOUNT_INT"] = event_view["ÀMOUNT"].astype(int)
+    event_view["AMOUNT_STR"] = event_view["ÀMOUNT"].astype(str)
+    event_view["AMOUNT_FLOAT"] = event_view["ÀMOUNT"].astype(float)
+    event_view["INT_FROM_BOOL"] = (event_view["ÀMOUNT"] > 50).astype(int)
+    event_view["FLOAT_FROM_BOOL"] = (event_view["ÀMOUNT"] > 50).astype(float)
     df = event_view.preview(limit=limit)
 
     # compare string representation to make sure that the values are converted to int rather than
     # just being floored ("2" instead of "2.0")
-    expected = df["AMOUNT"].astype(int).astype(str).tolist()
+    expected = df["ÀMOUNT"].astype(int).astype(str).tolist()
     assert df["AMOUNT_INT"].astype(str).tolist() == expected
 
     if source_type == SourceType.SNOWFLAKE:
         pd.testing.assert_series_equal(
             df["AMOUNT_STR"],
-            df["AMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x),
+            df["ÀMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x),
             check_names=False,
         )
     else:
         pd.testing.assert_series_equal(
-            df["AMOUNT_STR"], df["AMOUNT"].astype(str), check_names=False
+            df["AMOUNT_STR"], df["ÀMOUNT"].astype(str), check_names=False
         )
 
     pd.testing.assert_series_equal(
-        df["AMOUNT_FLOAT"], df["AMOUNT"].astype(float), check_names=False
+        df["AMOUNT_FLOAT"], df["ÀMOUNT"].astype(float), check_names=False
     )
 
-    assert df["INT_FROM_BOOL"].tolist() == (df["AMOUNT"] > 50).astype(int).tolist()
-    assert df["FLOAT_FROM_BOOL"].tolist() == (df["AMOUNT"] > 50).astype(float).tolist()
+    assert df["INT_FROM_BOOL"].tolist() == (df["ÀMOUNT"] > 50).astype(int).tolist()
+    assert df["FLOAT_FROM_BOOL"].tolist() == (df["ÀMOUNT"] > 50).astype(float).tolist()
 
 
 def check_numeric_operations(event_view, limit=100):
     """Check casting operations"""
     event_view = event_view.copy()
 
-    event_view["AMOUNT_ABS"] = (event_view["AMOUNT"] * (-1)).abs()
-    event_view["AMOUNT_SQRT"] = event_view["AMOUNT"].sqrt()
-    event_view["AMOUNT_POW_2"] = event_view["AMOUNT"].pow(2)
-    event_view["AMOUNT_FLOOR"] = event_view["AMOUNT"].floor()
-    event_view["AMOUNT_CEIL"] = event_view["AMOUNT"].ceil()
-    event_view["AMOUNT_INT_MOD_5"] = event_view["AMOUNT"].astype(int) % 5
-    event_view["AMOUNT_LOG"] = (event_view["AMOUNT"] + 1).log()
+    event_view["AMOUNT_ABS"] = (event_view["ÀMOUNT"] * (-1)).abs()
+    event_view["AMOUNT_SQRT"] = event_view["ÀMOUNT"].sqrt()
+    event_view["AMOUNT_POW_2"] = event_view["ÀMOUNT"].pow(2)
+    event_view["AMOUNT_FLOOR"] = event_view["ÀMOUNT"].floor()
+    event_view["AMOUNT_CEIL"] = event_view["ÀMOUNT"].ceil()
+    event_view["AMOUNT_INT_MOD_5"] = event_view["ÀMOUNT"].astype(int) % 5
+    event_view["AMOUNT_LOG"] = (event_view["ÀMOUNT"] + 1).log()
     event_view["AMOUNT_LOG_EXP"] = event_view["AMOUNT_LOG"].exp()
-    event_view["ONE_MINUS_AMOUNT"] = 1 - event_view["AMOUNT"]
+    event_view["ONE_MINUS_AMOUNT"] = 1 - event_view["ÀMOUNT"]
     df = event_view.preview(limit=limit)
 
-    pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["AMOUNT"] * (-1)).abs(), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["AMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["AMOUNT"].pow(2), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["ÀMOUNT"] * (-1)).abs(), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["ÀMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["ÀMOUNT"].pow(2), check_names=False)
     pd.testing.assert_series_equal(
-        df["AMOUNT_FLOOR"], np.floor(df["AMOUNT"]), check_names=False, check_dtype=False
+        df["AMOUNT_FLOOR"], np.floor(df["ÀMOUNT"]), check_names=False, check_dtype=False
     )
     pd.testing.assert_series_equal(
-        df["AMOUNT_CEIL"], np.ceil(df["AMOUNT"]), check_names=False, check_dtype=False
+        df["AMOUNT_CEIL"], np.ceil(df["ÀMOUNT"]), check_names=False, check_dtype=False
     )
     pd.testing.assert_series_equal(
-        df["AMOUNT_INT_MOD_5"].astype(int), df["AMOUNT"].astype(int) % 5, check_names=False
+        df["AMOUNT_INT_MOD_5"].astype(int), df["ÀMOUNT"].astype(int) % 5, check_names=False
     )
-    pd.testing.assert_series_equal(df["AMOUNT_LOG"], np.log(df["AMOUNT"] + 1), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_LOG"], np.log(df["ÀMOUNT"] + 1), check_names=False)
     pd.testing.assert_series_equal(
-        df["AMOUNT_LOG_EXP"], np.exp(np.log(df["AMOUNT"] + 1)), check_names=False
+        df["AMOUNT_LOG_EXP"], np.exp(np.log(df["ÀMOUNT"] + 1)), check_names=False
     )
-    pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["AMOUNT"], check_names=False)
+    pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], check_names=False)
 
 
 def check_day_of_week_counts(event_view, preview_param):
     """Check using derived numeric column as category"""
-    event_view["event_day_of_week"] = event_view["EVENT_TIMESTAMP"].dt.day_of_week
-    day_of_week_counts = event_view.groupby("USER ID", category="event_day_of_week").aggregate_over(
+    event_view["event_day_of_week"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
+    day_of_week_counts = event_view.groupby("ÜSER ID", category="event_day_of_week").aggregate_over(
         method="count",
         windows=["24h"],
         feature_names=["DAY_OF_WEEK_COUNTS_24h"],
@@ -886,7 +886,7 @@ def check_day_of_week_counts(event_view, preview_param):
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
+        "üser id": 1,
         "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}',
         "DAY_OF_WEEK_ENTROPY_24h": 0.830471712436292,
     }
@@ -956,14 +956,14 @@ def test_latest_per_category_aggregation(event_view):
     """
     Test latest per category aggregation with value column of string type
     """
-    feature_group = event_view.groupby("CUST_ID", category="USER ID").aggregate_over(
+    feature_group = event_view.groupby("CUST_ID", category="ÜSER ID").aggregate_over(
         value_column="PRODUCT_ACTION",
         method="latest",
         windows=["30d"],
         feature_names=["LATEST_ACTION_DICT_30d"],
     )
     df = feature_group.preview({"POINT_IN_TIME": "2001-01-26", "cust_id": 545})
-    expected = '{\n  "1": "add",\n  "3": "purchase",\n  "5": "remove",\n  "8": "add",\n  "9": "purchase"\n}'
+    expected = '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
     assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
 
 
@@ -971,14 +971,14 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues
     """
-    feature_group_1 = event_view.groupby("USER ID").aggregate_over(
+    feature_group_1 = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["2h"],
         feature_names=["COUNT_2h"],
     )
     feature_list_1 = FeatureList([feature_group_1], name="feature_list_1")
-    feature_group_2 = event_view.groupby("USER ID").aggregate_over(
-        value_column="EVENT_TIMESTAMP",
+    feature_group_2 = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ËVENT_TIMESTAMP",
         method="latest",
         windows=["7d"],
         feature_names=["LATEST_EVENT_TIMESTAMP_BY_USER"],
@@ -993,7 +993,7 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
     )
 
     # This request triggers tile table creation
-    observations_set = pd.DataFrame({"POINT_IN_TIME": ["2001-01-02 10:00:00"], "user id": 1})
+    observations_set = pd.DataFrame({"POINT_IN_TIME": ["2001-01-02 10:00:00"], "üser id": 1})
     _ = feature_list_1.get_historical_features(observations_set)
 
     # This request causes the tile values corresponding to latest event timestamp to be added to the
@@ -1002,6 +1002,6 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
 
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
+        "üser id": 1,
         "LATEST_EVENT_TIMESTAMP_BY_USER": pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC"),
     }
