@@ -4,7 +4,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit"]
 
 [metadata]
-content-hash = "7f6cdeba2c9c8a9ffe07059a257842aa39affe35c0894d0e53dd16337e1713a7"
+content-hash = "b66facb06c37a5e7f79d16b5c3c2af3a6ea1ed8faab2d59bc8296eed4a494b8c"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
 
@@ -3151,6 +3151,18 @@ version = "22.1.0.2"
 
 [package.dependencies]
 types-cryptography = "*"
+
+[[package]]
+category = "dev"
+description = "Typing stubs for python-dateutil"
+files = [
+    {file = "types-python-dateutil-2.8.19.6.tar.gz", hash = "sha256:4a6f4cc19ce4ba1a08670871e297bf3802f55d4f129e6aa2443f540b6cf803d2"},
+    {file = "types_python_dateutil-2.8.19.6-py3-none-any.whl", hash = "sha256:cfb7d31021c6bce6f3362c69af6e3abb48fe3e08854f02487e844ff910deec2a"},
+]
+name = "types-python-dateutil"
+optional = false
+python-versions = "*"
+version = "2.8.19.6"
 
 [[package]]
 category = "dev"
