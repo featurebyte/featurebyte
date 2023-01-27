@@ -761,7 +761,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
                 output.append(dataframe_from_arrow_stream(response.content))
                 progress_bar()  # pylint: disable=not-callable
 
-        return pd.concat(output).reset_index(drop=True)
+        return pd.concat(output, ignore_index=True)
 
     @typechecked
     def create_new_version(

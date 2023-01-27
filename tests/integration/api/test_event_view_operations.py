@@ -608,6 +608,17 @@ def test_get_historical_features(feature_group, feature_group_per_category):
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
 
+    # check that making multiple request calls produces the same result
+    max_batch_size = int((len(df_training_events) / 2.0) + 1)
+    df_historical_multi = feature_list.get_historical_features(
+        df_training_events, max_batch_size=max_batch_size
+    )
+    sort_cols = list(df_training_events.columns)
+    pd.testing.assert_frame_equal(
+        df_historical_features.sort_values(sort_cols).reset_index(drop=True),
+        df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
+    )
+
     # Test again using the same feature list and data but with serving names mapping
     _test_get_historical_features_with_serving_names(
         feature_list, df_training_events, df_historical_expected
