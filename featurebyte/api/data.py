@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.api.base_data import DataApiObject
+from bson import ObjectId
+
+from featurebyte.api.base_data import DataListMixin
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.event_data import EventData
 from featurebyte.api.item_data import ItemData
@@ -15,7 +17,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.tabular_data import TabularDataModel
 
 
-class Data(TabularDataModel, DataApiObject):
+class Data(TabularDataModel, DataListMixin):
     """
     Data class
     """
@@ -26,26 +28,47 @@ class Data(TabularDataModel, DataApiObject):
         proxy_class="featurebyte.Data",
     )
 
+    _data_type_to_cls_mapping = {
+        TableDataType.EVENT_DATA: EventData,
+        TableDataType.ITEM_DATA: ItemData,
+        TableDataType.SCD_DATA: SlowlyChangingData,
+        TableDataType.DIMENSION_DATA: DimensionData,
+    }
+
     @classmethod
     def get(cls: Any, name: str) -> Any:
         """
-        Retrieve lazy object from the persistent given object name
+        Retrieve saved data source by name
 
         Parameters
         ----------
         name: str
-            Object name
+            Data source name
 
         Returns
         -------
         Any
-            Retrieved object with the specified name
+            Retrieved data source
         """
         data = cls._get(name)
-        data_class = {
-            TableDataType.EVENT_DATA: EventData,
-            TableDataType.ITEM_DATA: ItemData,
-            TableDataType.SCD_DATA: SlowlyChangingData,
-            TableDataType.DIMENSION_DATA: DimensionData,
-        }[data.type]
+        data_class = cls._data_type_to_cls_mapping[data.type]
         return data_class.get(name)
+
+    @classmethod
+    def get_by_id(cls: Any, id: ObjectId) -> Any:  # pylint: disable=redefined-builtin,invalid-name
+        """
+        Retrieve saved data source by ID
+
+        Parameters
+        ----------
+        id: ObjectId
+            Data source ID
+
+        Returns
+        -------
+        Any
+            Retrieved data source
+        """
+        data = cls._get_by_id(id)
+        data_class = cls._data_type_to_cls_mapping[data.type]
+        return data_class.get_by_id(id)

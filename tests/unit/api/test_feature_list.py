@@ -20,6 +20,7 @@ from featurebyte.api.feature_list import (
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DuplicatedRecordException,
+    FeatureListNotOnlineEnabledError,
     ObjectHasBeenSavedError,
     RecordRetrievalException,
 )
@@ -1072,3 +1073,78 @@ def test_get_feature_jobs_status(
 
     if update_fixtures:
         raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
+
+
+@patch("featurebyte.core.mixin.SampleMixin.preview")
+def test_get_online_serving_code(mock_preview, feature_list):
+    """Test feature get_online_serving_code"""
+    mock_preview.return_value = pd.DataFrame(
+        {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
+    )
+    feature_list.save()
+    assert feature_list.saved is True
+    feature_list.deploy(enable=True, make_production_ready=True)
+    assert (
+        feature_list.get_online_serving_code().strip()
+        == textwrap.dedent(
+            f'''
+            from typing import Any, Dict
+
+            import pandas as pd
+            import requests
+
+
+            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+                """
+                Send POST request to online serving endpoint
+
+                Parameters
+                ----------
+                entity_serving_names: Dict[str, Any]
+                    Entity serving name values to used for serving request
+
+                Returns
+                -------
+                pd.DataFrame
+                """
+                response = requests.post(
+                    url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
+                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
+                    json={{"entity_serving_names": entity_serving_names}},
+                )
+                assert response.status_code == 200, response.json()
+                return pd.DataFrame.from_dict(response.json()["features"])
+
+
+            request_features([{{"cust_id": "sample_cust_id"}}])
+            '''
+        ).strip()
+    )
+    assert (
+        feature_list.get_online_serving_code(language="sh").strip()
+        == textwrap.dedent(
+            f"""
+            #!/bin/sh
+
+            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
+                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+                http://localhost:8080/feature_list/{feature_list.id}/online_features
+            """
+        ).strip()
+    )
+
+
+def test_get_online_serving_code_not_deployed(feature_list):
+    """Test feature get_online_serving_code on undeployed feature list"""
+    with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
+        feature_list.get_online_serving_code()
+    assert "Feature list is not deployed." in str(exc.value)
+
+
+def test_get_online_serving_code_unsupported_language(feature_list):
+    """Test feature get_online_serving_code with unsupported language"""
+    feature_list.save()
+    feature_list.deploy(enable=True, make_production_ready=True)
+    with pytest.raises(NotImplementedError) as exc:
+        feature_list.get_online_serving_code(language="java")
+    assert "Supported languages: ['python', 'sh']" in str(exc.value)

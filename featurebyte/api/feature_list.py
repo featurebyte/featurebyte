@@ -6,6 +6,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Tuple, Union, cast
 
 import collections
+import json
+import os.path
 import time
 from http import HTTPStatus
 
@@ -13,6 +15,7 @@ import numpy as np
 import pandas as pd
 from alive_progress import alive_bar
 from bson.objectid import ObjectId
+from jinja2 import Template
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
@@ -23,6 +26,7 @@ from featurebyte.api.api_object import (
     SavableApiObject,
 )
 from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.data import Data
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
@@ -39,6 +43,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
+    FeatureListNotOnlineEnabledError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -65,6 +70,19 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+
+
+class CodeObject(str):
+    """
+    Code content
+    """
+
+    def _repr_markdown_(self) -> str:
+        return (
+            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">\n\n'
+            f"```python\n{str(self).strip()}\n```"
+            "\n\n</div>"
+        )
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -849,4 +867,88 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         self.update(
             update_payload={"deployed": enable, "make_production_ready": make_production_ready},
             allow_update_local=False,
+        )
+
+    def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
+        """
+        Get python code template for serving online features from a deployed featurelist
+
+        Parameters
+        ----------
+        language: Literal["python", "sh"]
+            Language for which to get code template
+
+        Returns
+        -------
+        str
+
+        Raises
+        ------
+        FeatureListNotOnlineEnabledError
+            Feature list not deployed
+        NotImplementedError
+            Serving code not available
+        """
+        if not self.deployed:
+            raise FeatureListNotOnlineEnabledError("Feature list is not deployed.")
+
+        templates = {"python": "python.tpl", "sh": "shell.tpl"}
+        template_file = templates.get(language)
+        if not template_file:
+            raise NotImplementedError(f"Supported languages: {list(templates.keys())}")
+
+        # get entities and tables used for the feature list
+        num_rows = 1
+        info = self.info()
+        entities = {
+            Entity.get(entity["name"]).id: {"serving_name": entity["serving_names"]}
+            for entity in info["entities"]
+        }
+        for tabular_source in info["tabular_data"]:
+            data = Data.get(tabular_source["name"])
+            entity_columns = [
+                column for column in data.columns_info if column.entity_id in entities
+            ]
+            if entity_columns:
+                sample_data = data.preview(num_rows)
+                for column in entity_columns:
+                    entities[column.entity_id]["sample_value"] = sample_data[column.name].to_list()
+
+        entity_serving_names = json.dumps(
+            [
+                {
+                    entity["serving_name"][0]: entity["sample_value"][row_idx]
+                    for entity in entities.values()
+                }
+                for row_idx in range(num_rows)
+            ]
+        )
+
+        # construct serving url
+        current_profile = Configurations().profile
+        assert current_profile
+        serving_endpoint = info["serving_endpoint"]
+        headers = {"Content-Type": "application/json"}
+        if current_profile.api_token:
+            headers["Authorization"] = f"Bearer {current_profile.api_token}"
+        header_params = " ".join([f"-H '{key}: {value}'" for key, value in headers.items()])
+        serving_url = f"{current_profile.api_url}{serving_endpoint}"
+
+        # populate template
+        with open(
+            file=os.path.join(
+                os.path.dirname(__file__), f"templates/online_serving/{template_file}"
+            ),
+            mode="r",
+            encoding="utf-8",
+        ) as file_object:
+            template = Template(file_object.read())
+
+        return CodeObject(
+            template.render(
+                headers=json.dumps(headers),
+                header_params=header_params,
+                serving_url=serving_url,
+                entity_serving_names=entity_serving_names,
+            )
         )
