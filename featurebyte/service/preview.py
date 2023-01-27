@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Tuple, cast
+from typing import Any, AsyncGenerator, Dict, Tuple, cast
 
 import pandas as pd
 
@@ -201,6 +201,36 @@ class PreviewService(BaseService):
         ).dropna(axis=0, how="all")
         return dataframe_to_json(results, type_conversions, skip_prepare=True)
 
+    @staticmethod
+    def _update_point_in_time_if_needed(
+        point_in_time_and_serving_name: Dict[str, Any], is_time_based: bool
+    ) -> Tuple[Dict[str, Any], bool]:
+        """
+        Helper method to update point in time if needed.
+
+        Parameters
+        ----------
+        point_in_time_and_serving_name: Dict[str, Any]
+            dictionary containing point in time and serving name
+
+        Returns
+        -------
+        Tuple[Dict[str, Any], bool]
+            updated dictionary, and whether the dictionary was updated with an arbitrary time. Updated will only return
+            True if the dictionary did not contain a point in time variable before.
+        """
+        updated = False
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+            if is_time_based:
+                raise KeyError(
+                    f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
+                )
+
+            # If it's not time based, and no time is provided, use an arbitrary time.
+            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
+            updated = True
+        return point_in_time_and_serving_name, updated
+
     async def preview_feature(
         self, feature_preview: FeaturePreview, get_credential: Any
     ) -> dict[str, Any]:
@@ -230,16 +260,9 @@ class PreviewService(BaseService):
         operation_struction = feature_preview.graph.extract_operation_structure(feature_node)
 
         # We only need to ensure that the point in time column is provided, if the feature aggregation is time based.
-        has_point_in_time = True
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            if operation_struction.is_time_based:
-                raise KeyError(
-                    f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
-                )
-
-            # If it's not time based, and no time is provided, just put the current time.
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
-            has_point_in_time = False
+        point_in_time_and_serving_name, updated = PreviewService._update_point_in_time_if_needed(
+            point_in_time_and_serving_name, operation_struction.is_time_based
+        )
 
         # convert point in time to tz-naive UTC
         point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
@@ -270,7 +293,7 @@ class PreviewService(BaseService):
         result = await session.execute_query(preview_sql)
         if result is None:
             return {}
-        if not has_point_in_time:
+        if updated:
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
         return dataframe_to_json(result)
 
@@ -310,16 +333,9 @@ class PreviewService(BaseService):
                     break
 
         # Raise error if there's no point in time provided for time based features.
-        point_in_time_and_serving_name = featurelist_preview.point_in_time_and_serving_name
-        has_point_in_time = True
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            if has_time_based_feature:
-                raise KeyError(
-                    f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
-                )
-            # If it's not time based, and no time is provided, just put the current time.
-            point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME] = ARBITRARY_TIME
-            has_point_in_time = False
+        point_in_time_and_serving_name, updated = PreviewService._update_point_in_time_if_needed(
+            featurelist_preview.point_in_time_and_serving_name, has_time_based_feature
+        )
 
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
@@ -346,7 +362,7 @@ class PreviewService(BaseService):
 
         if result is None:
             return {}
-        if not has_point_in_time:
+        if updated:
             result = result.drop(SpecialColumnName.POINT_IN_TIME, axis="columns")
 
         return dataframe_to_json(result)
