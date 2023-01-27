@@ -67,6 +67,7 @@ def mock_client_fixture():
         def __init__(self, status_code, response_dict):
             self.status_code = status_code
             self.response_dict = response_dict
+            self.text = ""
 
         def json(self):
             return self.response_dict

@@ -2,6 +2,7 @@
 Tests for featurebyte.api.feature_list
 """
 import textwrap
+import time
 from unittest.mock import patch
 
 import numpy as np
@@ -125,17 +126,7 @@ def test_feature_list_production_ready_fraction__single_feature(production_ready
 def test_feature_list_creation__success(production_ready_feature, mocked_tile_cache):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    dataframe = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
-            "cust_id": ["C1", "C2"],
-        }
-    )
-
     production_ready_feature.feature_store.save()
-    with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
-        with patch("featurebyte.api.feature_list.dataframe_from_arrow_stream"):
-            flist.get_historical_features(dataframe)
 
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
@@ -159,6 +150,42 @@ def test_feature_list_creation__success(production_ready_feature, mocked_tile_ca
         f"Please save the FeatureList object first."
     )
     assert error_message in str(exc.value)
+
+
+@pytest.mark.usefixtures("mocked_tile_cache")
+def test_feature_list__get_historical_features(production_ready_feature, mocked_tile_cache):
+    """Test FeatureList can be created with valid inputs"""
+    flist = FeatureList([production_ready_feature], name="my_feature_list")
+    dataframe = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
+
+    # check success case
+    production_ready_feature.feature_store.save()
+    with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
+        with patch(
+            "featurebyte.api.feature_list.dataframe_from_arrow_stream"
+        ) as mock_from_arrow_stream:
+            mock_from_arrow_stream.return_value = pd.DataFrame()
+            flist.get_historical_features(dataframe)
+
+    # check the case when response status code is not OK
+    with patch("requests.sessions.Session.post") as mock_post:
+        mock_response = mock_post.return_value
+        mock_response.status_code = 500
+        mock_response.text = "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)"
+        with pytest.raises(RecordRetrievalException) as exc:
+            flist.get_historical_features(dataframe)
+
+    expected_msg = (
+        "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)\n"
+        "If the error is related to connection broken, "
+        "try to use a smaller `max_batch_size` parameter (current value: 1000)."
+    )
+    assert expected_msg in str(exc.value)
 
 
 @freeze_time("2022-05-01")

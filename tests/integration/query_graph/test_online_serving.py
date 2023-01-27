@@ -67,6 +67,17 @@ async def test_online_serving_sql(features, snowflake_session, config):
     )
     df_historical = feature_list.get_historical_features(df_training_events)
 
+    # check that making multiple request calls produces the same result
+    max_batch_size = int((len(user_ids) / 2.0) + 1)
+    df_historical_multi = feature_list.get_historical_features(
+        df_training_events, max_batch_size=max_batch_size
+    )
+    sort_cols = list(df_training_events.columns)
+    pd.testing.assert_frame_equal(
+        df_historical.sort_values(sort_cols).reset_index(drop=True),
+        df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
+    )
+
     # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
     with patch(

@@ -750,9 +750,17 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
                     files={"training_events": dataframe_to_arrow_bytes(batch)},
                 )
                 if response.status_code != HTTPStatus.OK:
-                    raise RecordRetrievalException(response)
+                    raise RecordRetrievalException(
+                        response,
+                        resolution=(
+                            f"\nIf the error is related to connection broken, "
+                            f"try to use a smaller `max_batch_size` parameter (current value: {max_batch_size})."
+                        ),
+                    )
+
                 output.append(dataframe_from_arrow_stream(response.content))
                 progress_bar()  # pylint: disable=not-callable
+
         return pd.concat(output).reset_index(drop=True)
 
     @typechecked
