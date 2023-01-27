@@ -47,7 +47,7 @@ disallow_any_generics = true
 disallow_incomplete_defs = true
 disallow_subclassing_any = false
 disallow_untyped_defs = true
-exclude = ['tests', 'docs', 'docker', '.github', 'featurebyte/api/templates']
+exclude = ['tests', 'docker', '.github', 'featurebyte/api/templates']
 ignore_missing_imports = true
 implicit_reexport = false
 no_implicit_optional = true
@@ -135,23 +135,6 @@ pytest-timeout = "^2.1.0"
 pytest-xdist = "^3.0.2"
 pyupgrade = "^2.37.2"
 toml-sort = "^0.20.0"
-
-[tool.poetry.group.docs.dependencies]
-docstring-parser = "^0.15"
-mike = "^1.1.2"
-mkautodoc = "^0.2.0"
-mkdocs = "^1.4.1"
-mkdocs-awesome-pages-plugin = "^2.8.0"
-mkdocs-enumerate-headings-plugin = "^0.5.0"
-mkdocs-gen-files = "^0.4.0"
-mkdocs-git-authors-plugin = "^0.6.5"
-mkdocs-git-revision-date-localized-plugin = "^1.1.0"
-mkdocs-literate-nav = "^0.5.0"
-mkdocs-material = "^8.5.7"
-mkdocs-minify-plugin = "^0.6.1"
-mkdocs-print-site-plugin = "^2.3.4"
-mkdocs-section-index = "^0.3.4"
-mkdocs-table-reader-plugin = "^1.1.1"
 
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
