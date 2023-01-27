@@ -190,7 +190,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_tile_ca
     expected_msg = (
         "Connection broken: InvalidChunkLength(got length b'', 0 bytes read)\n"
         "If the error is related to connection broken, "
-        "try to use a smaller `max_batch_size` parameter (current value: 1000)."
+        "try to use a smaller `max_batch_size` parameter (current value: 5000)."
     )
 
     assert expected_msg in str(exc.value)

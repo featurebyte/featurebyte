@@ -690,7 +690,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         self,
         training_events: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
-        max_batch_size: int = 1000,
+        max_batch_size: int = 5000,
     ) -> Optional[pd.DataFrame]:
         """Get historical features
 
