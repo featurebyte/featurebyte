@@ -870,7 +870,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         if not self.deployed:
             raise FeatureListNotOnlineEnabledError()
 
-        templates = {"python": "online_serving.py", "sh": "online_serving.sh"}
+        templates = {"python": "python.tpl", "sh": "shell.tpl"}
         template_file = templates.get(language)
         if not template_file:
             raise NotImplementedError(f"Supported languages: {list(templates.keys())}")
@@ -914,7 +914,9 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
 
         # populate template
         with open(
-            file=os.path.join(os.path.dirname(__file__), f"templates/{template_file}"),
+            file=os.path.join(
+                os.path.dirname(__file__), f"templates/online_serving/{template_file}"
+            ),
             mode="r",
             encoding="utf-8",
         ) as file_object:
