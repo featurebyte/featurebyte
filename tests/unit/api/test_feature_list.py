@@ -1000,7 +1000,7 @@ def test_get_feature_jobs_status(
 
 
 @patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_online_serving_python_template(
+def test_get_online_serving_code(
     mock_preview, feature_list, production_ready_feature, draft_feature
 ):
     """Test feature list online_serving_python_template"""
@@ -1011,30 +1011,50 @@ def test_online_serving_python_template(
     assert feature_list.saved is True
     feature_list.deploy(enable=True, make_production_ready=True)
     assert (
-        feature_list.online_serving_python_template.strip()
+        feature_list.get_online_serving_code().strip()
+        == textwrap.dedent(
+            f'''
+            from typing import Any, Dict
+
+            import pandas as pd
+            import requests
+
+
+            def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
+                """
+                Send POST request to online serving endpoint
+
+                Parameters
+                ----------
+                entity_serving_names: Dict[str, Any]
+                    Entity serving name values to used for serving request
+
+                Returns
+                -------
+                pd.DataFrame
+                """
+                response = requests.post(
+                    url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
+                    headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
+                    json={{"entity_serving_names": entity_serving_names}},
+                )
+                assert response.status_code == 200, response.json()
+                return pd.DataFrame.from_dict(response.json()["features"])
+
+
+            request_features([{{"cust_id": "sample_cust_id"}}])
+            '''
+        ).strip()
+    )
+    assert (
+        feature_list.get_online_serving_code(language="sh").strip()
         == textwrap.dedent(
             f"""
-        from typing import Any, Dict
-        import requests
-        import pandas as pd
+            #!/bin/sh
 
-        def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
-            \"\"\"
-            Send POST request to online serving endpoint
-            \"\"\"
-            serving_url = "http://localhost:8080/feature_list/{feature_list.id}/online_features"
-            response = requests.post(
-                url=serving_url, headers={{"Authorization": f"Bearer token"}},
-                json={{"entity_serving_names": entity_serving_names}},
-            )
-            assert response.status_code == 200, response.json()
-            return pd.DataFrame.from_dict(response.json()["features"])
-
-        request_features([
-            {{
-                "cust_id": "sample_cust_id"
-            }}
-        ])
-        """
+            curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
+                '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
+                http://localhost:8080/feature_list/{feature_list.id}/online_features
+            """
         ).strip()
     )
