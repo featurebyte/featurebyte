@@ -12,11 +12,7 @@ import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
 from featurebyte.enum import SourceType, SpecialColumnName
-from featurebyte.exception import (
-    MissingPointInTimeColumnError,
-    MissingServingNameError,
-    TooRecentPointInTimeError,
-)
+from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logger import logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -121,11 +117,6 @@ def get_historical_features_sql(
     Returns
     -------
     str
-
-    Raises
-    ------
-    MissingServingNameError
-        If any required serving name is not provided
     """
     planner = FeatureExecutionPlanner(
         graph,
@@ -134,13 +125,6 @@ def get_historical_features_sql(
         is_online_serving=False,
     )
     plan = planner.generate_plan(nodes)
-
-    missing_serving_names = plan.required_serving_names.difference(request_table_columns)
-    if missing_serving_names:
-        missing_serving_names_str = ", ".join(sorted(missing_serving_names))
-        raise MissingServingNameError(
-            f"Required serving names not provided: {missing_serving_names_str}"
-        )
 
     sql = plan.construct_combined_sql(
         request_table_name=request_table_name,

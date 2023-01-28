@@ -28,6 +28,7 @@ from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
@@ -201,6 +202,10 @@ app_container_config = {
         {
             "name": "info_service",
             "clazz": InfoService,
+        },
+        {
+            "name": "entity_validation_service",
+            "clazz": EntityValidationService,
         },
     ],
     # Controllers can depend on any object defined above.

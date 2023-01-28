@@ -10,6 +10,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
+from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.routes.common.base import BaseDocumentController
@@ -188,7 +189,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             return await self.preview_service.preview_feature(
                 feature_preview=feature_preview, get_credential=get_credential
             )
-        except KeyError as exc:
+        except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Iterable, Optional, Type, Union
 
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
@@ -68,6 +69,19 @@ class FeatureExecutionPlan:
         out = set()
         for aggregator in self.iter_aggregators():
             out.update(aggregator.get_required_serving_names())
+        return out
+
+    @property
+    def required_entity_ids(self) -> set[ObjectId]:
+        """Returns the list of required entity_ids
+
+        Returns
+        -------
+        set[ObjectId]
+        """
+        out = set()
+        for aggregator in self.iter_aggregators():
+            out.update(aggregator.get_required_entity_ids())
         return out
 
     def iter_aggregators(self) -> Iterable[AggregatorType]:
@@ -301,10 +315,12 @@ class FeatureExecutionPlanner:
     def __init__(
         self,
         graph: QueryGraphModel,
-        source_type: SourceType,
         is_online_serving: bool,
         serving_names_mapping: dict[str, str] | None = None,
+        source_type: SourceType | None = None,
     ):
+        if source_type is None:
+            source_type = SourceType.SNOWFLAKE
         self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
         self.plan = FeatureExecutionPlan(source_type, is_online_serving)
         self.source_type = source_type

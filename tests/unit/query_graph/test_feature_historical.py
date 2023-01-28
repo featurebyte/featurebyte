@@ -68,28 +68,6 @@ async def test_get_historical_features__missing_point_in_time(
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
 
 
-@pytest.mark.asyncio
-async def test_get_historical_features__missing_required_serving_name(
-    mock_snowflake_feature, mocked_session
-):
-    """Test validation of missing point in time for historical features"""
-    training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2022-01-01", "2022-02-01", "2022-03-01"],
-            "CUST_IDz": ["C1", "C2", "C3"],
-        }
-    )
-    with pytest.raises(exception.MissingServingNameError) as exc_info:
-        await get_historical_features(
-            session=mocked_session,
-            graph=mock_snowflake_feature.graph,
-            nodes=[mock_snowflake_feature.node],
-            training_events=training_events,
-            source_type=SourceType.SNOWFLAKE,
-        )
-    assert str(exc_info.value) == "Required serving names not provided: cust_id"
-
-
 @freeze_time("2022-05-01")
 @pytest.mark.parametrize("point_in_time_is_datetime_dtype", [True, False])
 @pytest.mark.asyncio

@@ -89,7 +89,7 @@ class RecordRetrievalException(ResponseException):
 
 class MissingPointInTimeColumnError(Exception):
     """
-    Raised when point in time column is not provided in historical requests
+    Raised when point in time column is not provided
     """
 
 
@@ -99,9 +99,9 @@ class TooRecentPointInTimeError(Exception):
     """
 
 
-class MissingServingNameError(Exception):
+class RequiredEntityNotProvidedError(Exception):
     """
-    Raised when one or more required serving names are not provided
+    Raised when one or more required entities are not provided
     """
 
 

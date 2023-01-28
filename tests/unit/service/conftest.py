@@ -203,6 +203,18 @@ def deploy_service_fixture(app_container):
     return app_container.deploy_service
 
 
+@pytest.fixture(name="entity_service")
+def entity_validation_service_fixture(app_container):
+    """EntityService fixture"""
+    return app_container.entity_service
+
+
+@pytest.fixture(name="entity_validation_service")
+def entity_validation_service_fixture(app_container):
+    """EntityValidationService fixture"""
+    return app_container.entity_validation_service
+
+
 @pytest_asyncio.fixture(name="feature_store")
 async def feature_store_fixture(test_dir, feature_store_service):
     """FeatureStore model"""

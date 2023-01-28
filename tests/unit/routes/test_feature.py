@@ -433,7 +433,7 @@ class TestFeatureApi(BaseApiTestSuite):
         }
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == "Serving name not provided: cust_id"
+        assert "Required entities are not provided in the request" in response.json()["detail"]
 
     def test_preview_not_a_dict(self, test_api_client_persistent, feature_preview_payload):
         """
