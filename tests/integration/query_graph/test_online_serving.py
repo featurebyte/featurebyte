@@ -33,11 +33,18 @@ def features_fixture(event_data):
         windows=["24h"],
         feature_names=["EVENT_COUNT_BY_ACTION_24h"],
     )
+    feature_complex = (
+        feature_group["AMOUNT_SUM_24h"]
+        * feature_group_dict["EVENT_COUNT_BY_ACTION_24h"].cd.entropy()
+    )
+    feature_complex.name = "COMPLEX_FEATURE_WITH_MULTIPLE_TILE_TABLES"
     features = [
         feature_group["AMOUNT_SUM_2h"],
         feature_group["AMOUNT_SUM_24h"],
         feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+        feature_complex,
     ]
+
     for feature in features:
         feature.save()
     return features
