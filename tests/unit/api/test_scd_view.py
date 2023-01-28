@@ -14,7 +14,7 @@ class TestSlowlyChangingView(BaseViewTestSuite):
     SlowlyChangingView test suite
     """
 
-    protected_columns = ["col_int", "col_text", "event_timestamp", "col_char"]
+    protected_columns = ["col_int", "col_text", "effective_timestamp", "is_active"]
     view_type = ViewType.SLOWLY_CHANGING_VIEW
     col = "cust_id"
     factory_method = SlowlyChangingView.from_slowly_changing_data
@@ -89,10 +89,10 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
         ],
         "join_type": "left",
         "scd_parameters": {
-            "effective_timestamp_column": "event_timestamp",
+            "effective_timestamp_column": "effective_timestamp",
             "natural_key_column": "col_text",
-            "current_flag_column": "col_char",
-            "end_timestamp_column": "event_timestamp",
+            "current_flag_column": "is_active",
+            "end_timestamp_column": "end_timestamp",
             "left_timestamp_column": "event_timestamp",
         },
     }
@@ -118,10 +118,10 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
             "serving_name": "cust_id",
             "entity_id": cust_id_entity.id,
             "scd_parameters": {
-                "effective_timestamp_column": "event_timestamp",
+                "effective_timestamp_column": "effective_timestamp",
                 "natural_key_column": "col_text",
-                "current_flag_column": "col_char",
-                "end_timestamp_column": "event_timestamp",
+                "current_flag_column": "is_active",
+                "end_timestamp_column": "end_timestamp",
                 "offset": "7d",
             },
         },
@@ -145,7 +145,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     timestamp column
     """
     subset_view = snowflake_scd_view[["col_float"]]
-    assert subset_view.columns == ["col_float", "col_char", "col_text", "event_timestamp"]
+    assert subset_view.columns == ["col_float", "is_active", "col_text", "effective_timestamp"]
 
 
 def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity):
@@ -154,19 +154,19 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
     """
     snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
     scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
-    feature = scd_view["event_timestamp"].as_feature("Latest Record Change Date")
+    feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     lookup_node_dict = get_node(feature.dict()["graph"], "lookup_1")
     assert feature.name == "Latest Record Change Date"
     assert lookup_node_dict["parameters"] == {
-        "input_column_names": ["event_timestamp"],
+        "input_column_names": ["effective_timestamp"],
         "feature_names": ["Latest Record Change Date"],
         "entity_column": "col_text",
         "serving_name": "cust_id",
         "entity_id": cust_id_entity.id,
         "scd_parameters": {
-            "effective_timestamp_column": "event_timestamp",
-            "current_flag_column": "col_char",
-            "end_timestamp_column": "event_timestamp",
+            "effective_timestamp_column": "effective_timestamp",
+            "current_flag_column": "is_active",
+            "end_timestamp_column": "end_timestamp",
             "natural_key_column": "col_text",
             "offset": None,
         },

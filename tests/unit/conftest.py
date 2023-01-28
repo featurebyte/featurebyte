@@ -259,6 +259,30 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "VARIANT", "nullable": True}),
                 },
             ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table"': [
+                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+                {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+                {
+                    "column_name": "is_active",
+                    "data_type": json.dumps({"type": "BOOLEAN", "length": 1}),
+                },
+                {
+                    "column_name": "col_text",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+                {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
+                {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+                {
+                    "column_name": "effective_timestamp",
+                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                },
+                {
+                    "column_name": "end_timestamp",
+                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                },
+                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED", "scale": 0})},
+            ],
             "SHOW SCHEMAS": [
                 {"name": "PUBLIC"},
             ],
@@ -323,6 +347,21 @@ def snowflake_database_table_item_data_fixture(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="items_table",
+    )
+
+
+@pytest.fixture(name="snowflake_database_table_scd_data")
+def snowflake_database_table_scd_data_fixture(
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store
+):
+    """
+    DatabaseTable object fixture for SlowlyChangingData (using config object)
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    yield snowflake_feature_store.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="scd_table",
     )
 
 
@@ -401,16 +440,16 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
 
 
 @pytest.fixture(name="snowflake_scd_data")
-def snowflake_scd_data_fixture(snowflake_database_table, snowflake_scd_data_id):
+def snowflake_scd_data_fixture(snowflake_database_table_scd_data, snowflake_scd_data_id):
     """SlowlyChangingData object fixture"""
     scd_data = SlowlyChangingData.from_tabular_source(
-        tabular_source=snowflake_database_table,
+        tabular_source=snowflake_database_table_scd_data,
         name="sf_scd_data",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
-        effective_timestamp_column="event_timestamp",
-        end_timestamp_column="event_timestamp",
-        current_flag_column="col_char",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
         _id=snowflake_scd_data_id,
     )
     assert scd_data.node.parameters.id == scd_data.id

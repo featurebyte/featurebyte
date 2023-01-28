@@ -10,6 +10,7 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
+from featurebyte import SlowlyChangingView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -1148,3 +1149,28 @@ def test_get_online_serving_code_unsupported_language(feature_list):
     with pytest.raises(NotImplementedError) as exc:
         feature_list.get_online_serving_code(language="java")
     assert "Supported languages: ['python', 'sh']" in str(exc.value)
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_get_feature_jobs_status_feature_without_tile(
+    mock_execute_query,
+    saved_scd_data,
+    cust_id_entity,
+    snowflake_event_data,
+    float_feature,
+    feature_job_logs,
+):
+    """
+    Test SlowlyChangingView as_feature selects a special column that is excluded by default
+    """
+    mock_execute_query.return_value = feature_job_logs[:0]
+    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
+    snowflake_event_data.save()
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
+    feature_list = FeatureList([feature, float_feature], name="FeatureList")
+    feature_list.save()
+    job_status_result = feature_list.get_feature_jobs_status()
+    assert job_status_result.feature_tile_table.shape == (1, 2)
+    assert job_status_result.feature_job_summary.shape == (1, 9)
+    assert job_status_result.job_session_logs.shape == (0, 11)

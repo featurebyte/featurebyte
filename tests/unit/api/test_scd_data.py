@@ -15,13 +15,14 @@ from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 class TestEventDataTestSuite(BaseDataTestSuite):
 
-    data_type = DataType.DIMENSION_DATA
+    data_type = DataType.SCD_DATA
     col = "col_int"
     expected_columns = {
-        "col_char",
+        "is_active",
         "col_float",
         "col_boolean",
-        "event_timestamp",
+        "effective_timestamp",
+        "end_timestamp",
         "col_text",
         "created_at",
         "col_binary",
@@ -31,17 +32,17 @@ class TestEventDataTestSuite(BaseDataTestSuite):
 
 
 @pytest.fixture(name="scd_data_dict")
-def scd_data_dict_fixture(snowflake_database_table):
+def scd_data_dict_fixture(snowflake_database_table_scd_data):
     """SCDData in serialized dictionary format"""
     return {
         "type": TableDataType.SCD_DATA,
         "name": "sf_scd_data",
         "tabular_source": {
-            "feature_store_id": snowflake_database_table.feature_store.id,
+            "feature_store_id": snowflake_database_table_scd_data.feature_store.id,
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
-                "table_name": "sf_table",
+                "table_name": "scd_table",
             },
         },
         "columns_info": [
@@ -61,8 +62,8 @@ def scd_data_dict_fixture(snowflake_database_table):
             },
             {
                 "entity_id": None,
-                "name": "col_char",
-                "dtype": "CHAR",
+                "name": "is_active",
+                "dtype": "BOOL",
                 "semantic_id": None,
                 "critical_data_info": None,
             },
@@ -89,7 +90,14 @@ def scd_data_dict_fixture(snowflake_database_table):
             },
             {
                 "entity_id": None,
-                "name": "event_timestamp",
+                "name": "effective_timestamp",
+                "dtype": "TIMESTAMP_TZ",
+                "semantic_id": None,
+                "critical_data_info": None,
+            },
+            {
+                "entity_id": None,
+                "name": "end_timestamp",
                 "dtype": "TIMESTAMP_TZ",
                 "semantic_id": None,
                 "critical_data_info": None,
@@ -111,9 +119,9 @@ def scd_data_dict_fixture(snowflake_database_table):
         ],
         "natural_key_column": "col_text",
         "surrogate_key_column": "col_int",
-        "effective_timestamp_column": "event_timestamp",
-        "end_timestamp_column": "event_timestamp",
-        "current_flag": "col_char",
+        "effective_timestamp_column": "effective_timestamp",
+        "end_timestamp_column": "end_timestamp",
+        "current_flag": "is_active",
         "record_creation_date_column": "created_at",
         "created_at": None,
         "updated_at": None,
@@ -122,18 +130,18 @@ def scd_data_dict_fixture(snowflake_database_table):
     }
 
 
-def test_from_tabular_source(snowflake_database_table, scd_data_dict):
+def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     """
     Test SCDData creation using tabular source
     """
     scd_data = SlowlyChangingData.from_tabular_source(
-        tabular_source=snowflake_database_table,
+        tabular_source=snowflake_database_table_scd_data,
         name="sf_scd_data",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
-        effective_timestamp_column="event_timestamp",
-        end_timestamp_column="event_timestamp",
-        current_flag_column="col_char",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
         record_creation_date_column="created_at",
     )
 
@@ -156,32 +164,32 @@ def test_from_tabular_source(snowflake_database_table, scd_data_dict):
     # user input validation
     with pytest.raises(TypeError) as exc:
         SlowlyChangingData.from_tabular_source(
-            tabular_source=snowflake_database_table,
+            tabular_source=snowflake_database_table_scd_data,
             name=123,
             natural_key_column="col_text",
             surrogate_key_column="col_int",
-            effective_timestamp_column="event_timestamp",
-            end_timestamp_column="event_timestamp",
-            current_flag_column="col_char",
+            effective_timestamp_column="effective_timestamp",
+            end_timestamp_column="end_timestamp",
+            current_flag_column="is_current",
             record_creation_date_column=345,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
 @pytest.mark.usefixtures("saved_scd_data")
-def test_from_tabular_source__duplicated_record(snowflake_database_table):
+def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_data):
     """
     Test SCDData creation failure due to duplicated dimension data name
     """
     with pytest.raises(DuplicatedRecordException) as exc:
         SlowlyChangingData.from_tabular_source(
-            tabular_source=snowflake_database_table,
+            tabular_source=snowflake_database_table_scd_data,
             name="sf_scd_data",
             natural_key_column="col_text",
             surrogate_key_column="col_int",
-            effective_timestamp_column="event_timestamp",
-            end_timestamp_column="event_timestamp",
-            current_flag_column="col_char",
+            effective_timestamp_column="effective_timestamp",
+            end_timestamp_column="end_timestamp",
+            current_flag_column="is_active",
             record_creation_date_column="created_at",
         )
     assert 'SlowlyChangingData (scd_data.name: "sf_scd_data") exists in saved record.' in str(
@@ -189,20 +197,20 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table):
     )
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table):
+def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_data):
     """
     Test SCDData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.base_data.Configurations"):
             SlowlyChangingData.from_tabular_source(
-                tabular_source=snowflake_database_table,
+                tabular_source=snowflake_database_table_scd_data,
                 name="sf_scd_data",
                 natural_key_column="col_text",
                 surrogate_key_column="col_int",
-                effective_timestamp_column="event_timestamp",
-                end_timestamp_column="event_timestamp",
-                current_flag_column="col_char",
+                effective_timestamp_column="effective_timestamp",
+                end_timestamp_column="end_timestamp",
+                current_flag_column="is_active",
                 record_creation_date_column="created_at",
             )
 
@@ -216,9 +224,9 @@ def assert_info_helper(scd_data_info):
     assert scd_data_info["status"] == "DRAFT"
     assert scd_data_info["natural_key_column"] == "col_text"
     assert scd_data_info["surrogate_key_column"] == "col_int"
-    assert scd_data_info["effective_timestamp_column"] == "event_timestamp"
-    assert scd_data_info["end_timestamp_column"] == "event_timestamp"
-    assert scd_data_info["current_flag_column"] == "col_char"
+    assert scd_data_info["effective_timestamp_column"] == "effective_timestamp"
+    assert scd_data_info["end_timestamp_column"] == "end_timestamp"
+    assert scd_data_info["current_flag_column"] == "is_active"
 
 
 def test_info(saved_scd_data):

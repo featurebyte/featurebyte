@@ -163,7 +163,8 @@ class Feature(
         return data.json_dict()
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
-        return [(str(self.name), ExtendedFeatureModel(**self.dict()).tile_specs)]
+        tile_specs = ExtendedFeatureModel(**self.dict()).tile_specs
+        return [(str(self.name), tile_specs)] if tile_specs else []
 
     @root_validator(pre=True)
     @classmethod
