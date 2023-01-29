@@ -11,7 +11,6 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
-    OnlineStoreLookupSpec,
     OnlineStorePrecomputePlan,
     get_entities_ids_and_serving_names,
     get_online_store_precompute_queries,
@@ -226,23 +225,6 @@ def test_get_entities_ids_and_serving_names(mixed_point_in_time_and_item_aggrega
     )
     # order_size - item groupby
     assert get_entities_ids_and_serving_names(graph, nodes[1]) == (set(), set())
-
-
-def test_online_store_lookup_spec(query_graph_with_groupby_and_feature_nodes):
-    """
-    Test constructing OnlineStoreLookupSpec from query graph and nodes
-    """
-    graph, *nodes = query_graph_with_groupby_and_feature_nodes
-    assert asdict(OnlineStoreLookupSpec.from_graph_and_node(graph, nodes[0])) == {
-        "feature_name": "a_2h_average",
-        "feature_store_table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
-        "serving_names": ["CUSTOMER_ID"],
-    }
-    assert asdict(OnlineStoreLookupSpec.from_graph_and_node(graph, nodes[1])) == {
-        "feature_name": "a_48h_average plus 123",
-        "feature_store_table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
-        "serving_names": ["CUSTOMER_ID"],
-    }
 
 
 def test_online_store_feature_retrieval_sql__all_eligible(

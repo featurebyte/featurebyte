@@ -13,8 +13,8 @@ from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
-    Aggregator,
     LeftJoinableSubquery,
+    TileBasedAggregator,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -289,7 +289,7 @@ class TileBasedAggregationSpecSet:
             yield agg_specs
 
 
-class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
+class WindowAggregator(TileBasedAggregator):
     """
     WindowAggregator is responsible for SQL generation for aggregation with time windows
 
@@ -315,6 +315,8 @@ class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
         aggregation_spec: TileBasedAggregationSpec
             Aggregation specification
         """
+        if self.is_online_serving:
+            return
         assert aggregation_spec.window is not None
         self.window_aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
@@ -610,7 +612,7 @@ class WindowAggregator(Aggregator[TileBasedAggregationSpec]):
 
         return results
 
-    def update_aggregation_table_expr(
+    def update_aggregation_table_expr_offline(
         self,
         table_expr: Select,
         point_in_time_column: str,
