@@ -35,18 +35,18 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    precompute_queries: list[OnlineStorePrecomputeQuery]
+    precompute_queries: list[OnlineStorePrecomputeQuery] = []
 
-    @classmethod
-    @validator("precompute_queries")
-    def generate_precompute_queries(cls, val, values):
+    @validator("precompute_queries", always=True)
+    def generate_precompute_queries(cls, val, values) -> list[OnlineStorePrecomputeQuery]:
         _ = val
         feature = values["feature"]
-        return get_online_store_precompute_queries(
+        precompute_queries = get_online_store_precompute_queries(
             graph=feature.graph,
             node=feature.node,
             source_type=feature.feature_store_type,
         )
+        return precompute_queries
 
     @property
     def tile_ids(self) -> List[str]:
@@ -95,52 +95,15 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         """
         return is_online_store_eligible(graph=self.feature.graph, node=self.feature.node)
 
-    # @property
-    # def value_type(self) -> str:
-    #     """
-    #     Feature value's data type (e.g. VARCHAR)
-    #
-    #     Returns
-    #     -------
-    #     str
-    #     """
-    #     adapter = get_sql_adapter(self.feature.feature_store_type)
-    #     return adapter.get_physical_type_from_dtype(self.feature.dtype)
-    #
-    # @property
-    # def serving_names(self) -> List[str]:
-    #     """
-    #     Derived serving names from the query graph. This will be the join keys in the store table
-    #
-    #     Returns
-    #     -------
-    #     List[str]
-    #     """
-    #     _, serving_names = get_entities_ids_and_serving_names(self.feature.graph, self.feature.node)
-    #     return sorted(serving_names)
-    #
-    # @property
-    # def feature_sql(self) -> str:
-    #     """
-    #     Feature pre-computation SQL for online store
-    #
-    #     Returns
-    #     -------
-    #     str
-    #     """
-    #     return get_online_store_feature_compute_sql(
-    #         graph=self.feature.graph,
-    #         node=self.feature.node,
-    #         source_type=self.feature.feature_store_type,
-    #     )
-    #
-    # @property
-    # def feature_store_table_name(self) -> str:
-    #     """
-    #     Name of the online store table for the feature
-    #
-    #     Returns
-    #     -------
-    #     str
-    #     """
-    #     return get_online_store_table_name_from_graph(self.feature.graph, self.feature.node)
+    @property
+    def value_type(self) -> str:
+        """
+        Feature value's data type (e.g. VARCHAR)
+
+        Returns
+        -------
+        str
+        """
+        # TODO: needed?
+        adapter = get_sql_adapter(self.feature.feature_store_type)
+        return adapter.get_physical_type_from_dtype(self.feature.dtype)

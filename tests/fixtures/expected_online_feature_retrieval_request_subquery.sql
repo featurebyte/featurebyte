@@ -28,7 +28,7 @@ WITH ONLINE_REQUEST_TABLE AS (
       "CUSTOMER_ID" AS "CUSTOMER_ID",
       "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
       "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489"
-    FROM "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6"
+    FROM online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6
   ) AS T0
     ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
   LEFT JOIN (

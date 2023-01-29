@@ -191,7 +191,8 @@ class FeatureExecutionPlan:
         """
         columns = []
         if exclude_post_aggregation:
-            columns = agg_result_names
+            for agg_result_name in agg_result_names:
+                columns.append(quoted_identifier(agg_result_name))
         else:
             for feature_spec in self.feature_specs.values():
                 feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"

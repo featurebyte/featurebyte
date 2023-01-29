@@ -340,9 +340,7 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
             agg_result_names = sorted(agg_result_names)
             serving_names = self._alias_original_serving_names_to_request_serving_names(table_name)
             quoted_agg_result_names = [quoted_identifier(name) for name in agg_result_names]
-            expr = select(*serving_names, *quoted_agg_result_names).from_(
-                quoted_identifier(table_name)
-            )
+            expr = select(*serving_names, *quoted_agg_result_names).from_(table_name)
             join_keys = self.request_serving_names_by_online_store_table[table_name]
             query = LeftJoinableSubquery(
                 expr,

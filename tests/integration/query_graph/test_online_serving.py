@@ -97,7 +97,13 @@ async def test_online_serving_sql(features, snowflake_session, config):
         online_features = await snowflake_session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = ["üser id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"]
+        columns = [
+            "üser id",
+            "AMOUNT_SUM_2h",
+            "AMOUNT_SUM_24h",
+            "EVENT_COUNT_BY_ACTION_24h",
+            "COMPLEX_FEATURE_WITH_MULTIPLE_TILE_TABLES",
+        ]
         assert set(online_features.columns.tolist()) == set(columns)
         pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
 
