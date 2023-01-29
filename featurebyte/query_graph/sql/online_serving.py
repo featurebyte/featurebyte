@@ -114,6 +114,8 @@ class OnlineStorePrecomputePlan:
                 node=agg_params["pruned_node"],
                 tile_id=agg_params["tile_id"],
                 aggregation_id=agg_params["aggregation_id"],
+                entity_ids=agg_params["entity_ids"],
+                serving_names=agg_params["serving_names"],
                 agg_result_name=agg_result_name,
                 universe=universe,
                 source_type=source_type,
@@ -148,6 +150,8 @@ class OnlineStorePrecomputePlan:
         tile_id: str,
         aggregation_id: str,
         agg_result_name: str,
+        entity_ids: list[ObjectId],
+        serving_names: list[str],
         universe: OnlineStoreUniverse,
         source_type: SourceType,
     ) -> OnlineStorePrecomputeQuery:
@@ -163,9 +167,7 @@ class OnlineStorePrecomputePlan:
             exclude_post_aggregation=True,
         )
         sql = sql_to_string(sql_expr, source_type)
-        # TODO: should this be getting entity_ids directly from AggregationSpec?
-        entity_ids, serving_names = get_entities_ids_and_serving_names(graph, node)
-        table_name = get_online_store_table_name_from_entity_ids(entity_ids)
+        table_name = get_online_store_table_name_from_entity_ids(set(entity_ids))
 
         op_struct = (
             OperationStructureExtractor(graph=graph)
@@ -265,11 +267,14 @@ class OnlineStorePrecomputePlan:
                 )
                 pruned_graph, node_name_map = graph.prune(project_node, aggressive=True)
                 pruned_node = pruned_graph.get_node_by_name(node_name_map[project_node.name])
+                # TODO: make the value a class and contains TileBasedAggregationSpec?
                 self.params_by_agg_result_name[agg_spec.agg_result_name] = {
                     "tile_id": tile_id,
                     "pruned_graph": pruned_graph,
                     "pruned_node": pruned_node,
                     "aggregation_id": agg_id,
+                    "entity_ids": agg_spec.entity_ids,
+                    "serving_names": agg_spec.serving_names,
                 }
 
     @classmethod
@@ -304,53 +309,6 @@ def get_online_store_precompute_queries(
     universe_plan = OnlineStorePrecomputePlan(graph, node, adapter=get_sql_adapter(source_type))
     queries = universe_plan.construct_online_store_precompute_queries(source_type=source_type)
     return queries
-
-
-def get_entities_ids_and_serving_names(
-    graph: QueryGraph, node: Node
-) -> Tuple[set[ObjectId], set[str]]:
-    """
-    Get the union of all entity ids of the node's input nodes. Only point in time groupby nodes are
-    considered, since other nodes that produce features (e.g. ItemGroupyNode) generate features that
-    cannot be pre-computed.
-
-    Parameters
-    ----------
-    graph : QueryGraph
-        Query graph
-    node : Node
-        Query graph node
-
-    Returns
-    -------
-    Tuple[set[ObjectId], set[str]]
-    """
-    entity_ids = set()
-    serving_names = set()
-    for groupby_node in graph.iterate_nodes(node, NodeType.GROUPBY):
-        parameters = groupby_node.parameters.dict()
-        entity_ids.update(parameters["entity_ids"])
-        serving_names.update(parameters["serving_names"])
-    return entity_ids, serving_names
-
-
-def get_online_store_table_name_from_graph(graph: QueryGraph, node: Node) -> str:
-    """
-    Get the online store table given the query graph and node
-
-    Parameters
-    ----------
-    graph : QueryGraph
-        Query graph
-    node : Node
-        Query graph node
-
-    Returns
-    -------
-    str
-    """
-    entity_ids, _ = get_entities_ids_and_serving_names(graph, node)
-    return get_online_store_table_name_from_entity_ids(entity_ids)
 
 
 def is_online_store_eligible(graph: QueryGraph, node: Node) -> bool:

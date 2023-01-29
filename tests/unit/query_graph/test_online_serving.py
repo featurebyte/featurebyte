@@ -2,7 +2,6 @@
 Tests for featurebyte.query_graph.sql.online_serving
 """
 import textwrap
-from dataclasses import asdict
 
 import pandas as pd
 from bson import ObjectId
@@ -12,7 +11,6 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputePlan,
-    get_entities_ids_and_serving_names,
     get_online_store_precompute_queries,
     get_online_store_retrieval_sql,
     is_online_store_eligible,
@@ -211,20 +209,6 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
         "tests/fixtures/expected_online_feature_compute_sql_complex_2.sql",
         update_fixture=update_fixtures,
     )
-
-
-def test_get_entities_ids_and_serving_names(mixed_point_in_time_and_item_aggregations_features):
-    """
-    Test get_entities_ids_and_serving_names
-    """
-    graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    # a_48h_average - point in time groupby
-    assert get_entities_ids_and_serving_names(graph, nodes[0]) == (
-        {ObjectId("637516ebc9c18f5a277a78db")},
-        {"CUSTOMER_ID"},
-    )
-    # order_size - item groupby
-    assert get_entities_ids_and_serving_names(graph, nodes[1]) == (set(), set())
 
 
 def test_online_store_feature_retrieval_sql__all_eligible(

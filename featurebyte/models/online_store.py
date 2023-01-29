@@ -13,9 +13,7 @@ from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStorePrecomputeQuery,
-    get_entities_ids_and_serving_names,
     get_online_store_precompute_queries,
-    get_online_store_table_name_from_graph,
     is_online_store_eligible,
 )
 
