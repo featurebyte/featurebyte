@@ -35,10 +35,10 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    precompute_queries: list[OnlineStorePrecomputeQuery] = []
+    precompute_queries: List[OnlineStorePrecomputeQuery] = []
 
     @validator("precompute_queries", always=True)
-    def generate_precompute_queries(cls, val, values) -> list[OnlineStorePrecomputeQuery]:
+    def generate_precompute_queries(cls, val, values) -> List[OnlineStorePrecomputeQuery]:
         _ = val
         feature = values["feature"]
         precompute_queries = get_online_store_precompute_queries(

@@ -3,7 +3,7 @@ SQL generation for online serving
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast
 
 from dataclasses import dataclass
 
@@ -55,7 +55,7 @@ class OnlineStorePrecomputeQuery(FeatureByteBaseModel):
     table_name: str
     result_name: str
     result_type: str
-    serving_names: list[str]
+    serving_names: List[str]
 
 
 @dataclass
@@ -70,7 +70,7 @@ class OnlineStoreUniverse:
     """
 
     expr: expressions.Select
-    columns: list[str]
+    columns: List[str]
 
 
 class OnlineStorePrecomputePlan:
