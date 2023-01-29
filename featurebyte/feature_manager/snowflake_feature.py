@@ -63,6 +63,7 @@ class FeatureManagerSnowflake(BaseModel):
         schedule_time: datetime
             the moment of scheduling the job
         """
+        logger.info(f"online_enable: {feature_spec.feature.name}")
         tile_mgr = TileManagerSnowflake(session=self._session)
 
         # insert records into tile-feature mapping table

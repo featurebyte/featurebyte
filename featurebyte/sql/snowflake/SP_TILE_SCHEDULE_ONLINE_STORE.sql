@@ -49,7 +49,12 @@ $$
         if (table_exist === "N") {
 
             //feature store table does not exist, create table with the input feature sql
-            columns = f_entity_columns.split(",")
+            if (f_entity_columns) {
+                columns = f_entity_columns.split(",")
+            }
+            else {
+                columns = []
+            }
             columns.push(`"${f_name}"`)
             columns_str = columns.join(", ")
             var create_sql = `create table ${fs_table} as (select ${columns_str} from (${f_sql}))`
@@ -78,23 +83,36 @@ $$
             }
 
             // remove feature values for entities that are not in entity universe
-            var remove_values_sql = `
-                update ${fs_table} set "${f_name}" = NULL
-                    where (${f_entity_columns}) not in
-                    (select ${f_entity_columns} from (${f_sql}))
-            `
-            debug = debug + " - remove_values_sql: " + remove_values_sql
-            snowflake.execute({sqlText: remove_values_sql})
+            if (f_entity_columns) {
+                var remove_values_sql = `
+                    update ${fs_table} set "${f_name}" = NULL
+                        where (${f_entity_columns}) not in
+                        (select ${f_entity_columns} from (${f_sql}))
+                `
+                debug = debug + " - remove_values_sql: " + remove_values_sql
+                snowflake.execute({sqlText: remove_values_sql})
+            }
 
             // update or insert feature values for entities that are in entity universe
+            if (f_entity_columns) {
+                on_condition_str = `${entity_filter_cols_str}`
+                insert_str = `${f_entity_columns}, "${f_name}"`
+                values_str = `${entity_insert_cols_str}, "${f_name}"`
+            }
+            else {
+                // no entity columns
+                on_condition_str = "true"
+                insert_str = `"${f_name}"`
+                values_str = `"${f_name}"`
+            }
             var merge_sql = `
                 merge into ${fs_table} a using (${f_sql}) b
-                    on ${entity_filter_cols_str}
+                    on ${on_condition_str}
                     when matched then
                         update set a."${f_name}" = b."${f_name}"
                     when not matched then
-                        insert (${f_entity_columns}, "${f_name}")
-                            values (${entity_insert_cols_str}, "${f_name}")
+                        insert (${insert_str})
+                            values (${values_str})
             `
             debug = debug + " - merge_sql: " + merge_sql
             snowflake.execute({sqlText: merge_sql})
