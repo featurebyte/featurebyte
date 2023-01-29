@@ -118,7 +118,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-    ) -> tuple[str, expressions.Select]:
+    ) -> tuple[str, expressions.Select, list[str]]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -148,6 +148,7 @@ class FeatureExecutionPlan:
 
         # Update table_expr using the aggregators
         agg_table_index = 0
+        agg_result_names = []
         for aggregator in self.iter_aggregators():
             agg_result = aggregator.update_aggregation_table_expr(
                 table_expr=table_expr,
@@ -158,11 +159,16 @@ class FeatureExecutionPlan:
             table_expr = agg_result.updated_table_expr
             agg_table_index = agg_result.updated_index
             current_columns += agg_result.column_names
+            agg_result_names += agg_result.column_names
 
-        return self.AGGREGATION_TABLE_NAME, table_expr
+        return self.AGGREGATION_TABLE_NAME, table_expr, agg_result_names
 
     def construct_post_aggregation_sql(
-        self, cte_context: expressions.Select, request_table_columns: Optional[list[str]]
+        self,
+        cte_context: expressions.Select,
+        request_table_columns: Optional[list[str]],
+        exclude_post_aggregation: bool,
+        agg_result_names: list[str],
     ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
@@ -183,10 +189,13 @@ class FeatureExecutionPlan:
         -------
         str
         """
-        qualified_feature_names = []
-        for feature_spec in self.feature_specs.values():
-            feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
-            qualified_feature_names.append(feature_alias)
+        columns = []
+        if exclude_post_aggregation:
+            columns = agg_result_names
+        else:
+            for feature_spec in self.feature_specs.values():
+                feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
+                columns.append(feature_alias)
 
         if request_table_columns:
             request_table_column_names = [
@@ -195,9 +204,9 @@ class FeatureExecutionPlan:
         else:
             request_table_column_names = []
 
-        table_expr = cte_context.select(
-            *request_table_column_names, *qualified_feature_names
-        ).from_(f"{self.AGGREGATION_TABLE_NAME} AS AGG")
+        table_expr = cte_context.select(*request_table_column_names, *columns).from_(
+            f"{self.AGGREGATION_TABLE_NAME} AS AGG"
+        )
         return table_expr
 
     def construct_combined_sql(
@@ -206,6 +215,7 @@ class FeatureExecutionPlan:
         point_in_time_column: str,
         request_table_columns: list[str],
         prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
+        exclude_post_aggregation: bool = False,
     ) -> expressions.Select:
         """Construct combined SQL that will generate the features
 
@@ -233,17 +243,16 @@ class FeatureExecutionPlan:
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
-        cte_statements.append(
-            self.construct_combined_aggregation_cte(
-                request_table_name,
-                point_in_time_column,
-                request_table_columns,
-            )
+        agg_cte_name, agg_expr, agg_result_names = self.construct_combined_aggregation_cte(
+            request_table_name,
+            point_in_time_column,
+            request_table_columns,
         )
+        cte_statements.append((agg_cte_name, agg_expr))
         cte_context = construct_cte_sql(cte_statements)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
-            cte_context, request_table_columns
+            cte_context, request_table_columns, exclude_post_aggregation, agg_result_names
         )
         return post_aggregation_sql
 

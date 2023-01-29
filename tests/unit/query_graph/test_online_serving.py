@@ -5,7 +5,6 @@ import textwrap
 from dataclasses import asdict
 
 import pandas as pd
-import pytest
 from bson import ObjectId
 
 from featurebyte.enum import SourceType
@@ -13,9 +12,9 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
     OnlineStoreLookupSpec,
-    OnlineStoreUniversePlan,
+    OnlineStorePrecomputePlan,
     get_entities_ids_and_serving_names,
-    get_online_store_feature_compute_sql,
+    get_online_store_precompute_queries,
     get_online_store_retrieval_sql,
     is_online_store_eligible,
 )
@@ -27,10 +26,10 @@ def test_construct_universe_sql(query_graph_with_groupby):
     Test constructing universe sql for a simple point in time groupby
     """
     node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    plan = OnlineStoreUniversePlan(
+    plan = OnlineStorePrecomputePlan(
         query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
-    expr, _ = plan.construct_online_store_universe()
+    universe = plan._construct_online_store_universe(node.parameters.tile_id)
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -50,7 +49,7 @@ def test_construct_universe_sql(query_graph_with_groupby):
           )
         """
     ).strip()
-    assert expr.sql(pretty=True) == expected_sql
+    assert universe.expr.sql(pretty=True) == expected_sql
 
 
 def test_construct_universe_sql__category(query_graph_with_category_groupby):
@@ -59,8 +58,8 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
     """
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
-    plan = OnlineStoreUniversePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
-    expr, _ = plan.construct_online_store_universe()
+    plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
+    universe = plan._construct_online_store_universe(node.parameters.tile_id)
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -80,7 +79,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
           )
         """
     ).strip()
-    assert expr.sql(pretty=True) == expected_sql
+    assert universe.expr.sql(pretty=True) == expected_sql
 
 
 def test_construct_universe_sql__unbounded_latest(
@@ -89,12 +88,14 @@ def test_construct_universe_sql__unbounded_latest(
     """
     Test constructing universe sql for groupby with category
     """
-    plan = OnlineStoreUniversePlan(
+    plan = OnlineStorePrecomputePlan(
         global_graph,
         latest_value_without_window_feature_node,
         get_sql_adapter(SourceType.SNOWFLAKE),
     )
-    expr, _ = plan.construct_online_store_universe()
+    universe = plan._construct_online_store_universe(
+        "TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E"
+    )
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -110,7 +111,7 @@ def test_construct_universe_sql__unbounded_latest(
           )
         """
     ).strip()
-    assert expr.sql(pretty=True) == expected_sql
+    assert universe.expr.sql(pretty=True) == expected_sql
 
 
 def test_is_online_store_eligible__non_time_aware(global_graph, order_size_feature_node):
@@ -135,21 +136,82 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     """
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
-    sql = get_online_store_feature_compute_sql(graph, node, SourceType.SNOWFLAKE)
+    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
+    assert len(queries) == 2
+    assert queries[0].dict(exclude={"sql"}) == {
+        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "result_name": "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_type": "FLOAT",
+        "serving_names": ["CUSTOMER_ID"],
+    }
+    assert queries[1].dict(exclude={"sql"}) == {
+        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "result_name": "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_type": "FLOAT",
+        "serving_names": ["CUSTOMER_ID"],
+    }
     assert_equal_with_expected_fixture(
-        sql,
-        "tests/fixtures/expected_online_feature_compute_sql.sql",
+        queries[0].sql,
+        "tests/fixtures/expected_online_feature_compute_sql_0.sql",
+        update_fixture=update_fixtures,
+    )
+    assert_equal_with_expected_fixture(
+        queries[1].sql,
+        "tests/fixtures/expected_online_feature_compute_sql_1.sql",
         update_fixture=update_fixtures,
     )
 
 
-def test_complex_features_not_implemented(complex_feature_query_graph):
+def test_complex_features(complex_feature_query_graph, update_fixtures):
     """
-    Test complex features with multiple tile tables raises NotImplementedError
+    Test complex features with multiple tile tables
     """
     node, graph = complex_feature_query_graph
-    with pytest.raises(NotImplementedError):
-        _ = get_online_store_feature_compute_sql(graph, node, SourceType.SNOWFLAKE)
+    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
+    assert len(queries) == 3
+    assert queries[0].dict(exclude={"sql"}) == {
+        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "result_name": "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_type": "FLOAT",
+        "serving_names": ["CUSTOMER_ID"],
+    }
+    assert queries[1].dict(exclude={"sql"}) == {
+        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "result_name": "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "result_type": "FLOAT",
+        "serving_names": ["CUSTOMER_ID"],
+    }
+    assert queries[2].dict(exclude={"sql"}) == {
+        "tile_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
+        "aggregation_id": "sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
+        "table_name": "online_store_b8cd14c914ca8a3a31bbfdf21e684d0d6c1936f3",
+        "result_name": "agg_w604800_sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
+        "result_type": "FLOAT",
+        "serving_names": ["BUSINESS_ID"],
+    }
+    assert_equal_with_expected_fixture(
+        queries[0].sql,
+        "tests/fixtures/expected_online_feature_compute_sql_complex_0.sql",
+        update_fixture=update_fixtures,
+    )
+    assert_equal_with_expected_fixture(
+        queries[1].sql,
+        "tests/fixtures/expected_online_feature_compute_sql_complex_1.sql",
+        update_fixture=update_fixtures,
+    )
+    assert_equal_with_expected_fixture(
+        queries[2].sql,
+        "tests/fixtures/expected_online_feature_compute_sql_complex_2.sql",
+        update_fixture=update_fixtures,
+    )
 
 
 def test_get_entities_ids_and_serving_names(mixed_point_in_time_and_item_aggregations_features):
