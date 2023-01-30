@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
@@ -32,7 +33,8 @@ from featurebyte.query_graph.transform.operation_structure import OperationStruc
 
 class OnlineStorePrecomputeQuery(FeatureByteBaseModel):
     """
-    Represents a query required to support pre-computation for a feature
+    Represents a query required to support pre-computation for a feature. The pre-computed result is
+    a single column to be stored in the online store table.
 
     sql: str
         Sql query that performs pre-computation for a feature. The result is not the feature values
@@ -73,6 +75,18 @@ class OnlineStoreUniverse:
     columns: List[str]
 
 
+@dataclass
+class PrecomputeQueryParams:
+    """
+    Information required to generate a OnlineStorePrecomputeQuery
+    """
+
+    pruned_graph: QueryGraphModel
+    pruned_node: Node
+    agg_spec: TileBasedAggregationSpec
+    # universe: OnlineStoreUniverse
+
+
 class OnlineStorePrecomputePlan:
     """
     OnlineStorePrecomputePlan is responsible for extracting universe for online store feature
@@ -92,7 +106,7 @@ class OnlineStorePrecomputePlan:
         self.adapter = adapter
         self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.params_by_tile_id: dict[str, Any] = {}
-        self.params_by_agg_result_name: dict[str, Any] = {}
+        self.params_by_agg_result_name: dict[str, PrecomputeQueryParams] = {}
         self._update(graph, node)
 
     def construct_online_store_precompute_queries(
@@ -112,16 +126,10 @@ class OnlineStorePrecomputePlan:
         """
         result = []
         for agg_result_name, agg_params in self.params_by_agg_result_name.items():
-            tile_id = agg_params["tile_id"]
+            tile_id = agg_params.agg_spec.tile_table_id
             universe = self._construct_online_store_universe(tile_id)
             query = self._construct_online_store_precompute_query(
-                graph=agg_params["pruned_graph"],
-                node=agg_params["pruned_node"],
-                tile_id=agg_params["tile_id"],
-                aggregation_id=agg_params["aggregation_id"],
-                entity_ids=agg_params["entity_ids"],
-                serving_names=agg_params["serving_names"],
-                agg_result_name=agg_result_name,
+                params=agg_params,
                 universe=universe,
                 source_type=source_type,
             )
@@ -155,19 +163,17 @@ class OnlineStorePrecomputePlan:
 
     def _construct_online_store_precompute_query(
         self,
-        graph: QueryGraph,
-        node: Node,
-        tile_id: str,
-        aggregation_id: str,
-        agg_result_name: str,
-        entity_ids: list[ObjectId],
-        serving_names: list[str],
+        params: PrecomputeQueryParams,
         universe: OnlineStoreUniverse,
         source_type: SourceType,
     ) -> OnlineStorePrecomputeQuery:
 
-        planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=False)
-        plan = planner.generate_plan([node])
+        planner = FeatureExecutionPlanner(
+            params.pruned_graph,
+            source_type=source_type,
+            is_online_serving=False,
+        )
+        plan = planner.generate_plan([params.pruned_node])
 
         sql_expr = plan.construct_combined_sql(
             request_table_name=REQUEST_TABLE_NAME,
@@ -177,12 +183,12 @@ class OnlineStorePrecomputePlan:
             exclude_post_aggregation=True,
         )
         sql = sql_to_string(sql_expr, source_type)
-        table_name = get_online_store_table_name_from_entity_ids(set(entity_ids))
+        table_name = get_online_store_table_name_from_entity_ids(set(params.agg_spec.entity_ids))
 
         op_struct = (
-            OperationStructureExtractor(graph=graph)
-            .extract(node=node)
-            .operation_structure_map[node.name]
+            OperationStructureExtractor(graph=params.pruned_graph)
+            .extract(node=params.pruned_node)
+            .operation_structure_map[params.pruned_node.name]
         )
         assert len(op_struct.aggregations) == 1
         aggregation = op_struct.aggregations[0]
@@ -190,12 +196,12 @@ class OnlineStorePrecomputePlan:
 
         return OnlineStorePrecomputeQuery(
             sql=sql,
-            tile_id=tile_id,
-            aggregation_id=aggregation_id,
+            tile_id=params.agg_spec.tile_table_id,
+            aggregation_id=params.agg_spec.aggregation_id,
             table_name=table_name,
-            result_name=agg_result_name,
+            result_name=params.agg_spec.agg_result_name,
             result_type=result_type,
-            serving_names=sorted(serving_names),
+            serving_names=sorted(params.agg_spec.serving_names),
         )
 
     def _construct_online_store_universe(self, tile_id: str) -> OnlineStoreUniverse:
@@ -278,15 +284,11 @@ class OnlineStorePrecomputePlan:
                 )
                 pruned_graph, node_name_map = graph.prune(project_node, aggressive=True)
                 pruned_node = pruned_graph.get_node_by_name(node_name_map[project_node.name])
-                # TODO: make the value a class and contains TileBasedAggregationSpec?
-                self.params_by_agg_result_name[agg_spec.agg_result_name] = {
-                    "tile_id": tile_id,
-                    "pruned_graph": pruned_graph,
-                    "pruned_node": pruned_node,
-                    "aggregation_id": agg_id,
-                    "entity_ids": agg_spec.entity_ids,
-                    "serving_names": agg_spec.serving_names,
-                }
+                self.params_by_agg_result_name[agg_spec.agg_result_name] = PrecomputeQueryParams(
+                    pruned_graph=pruned_graph,
+                    pruned_node=pruned_node,
+                    agg_spec=agg_spec,
+                )
 
     @classmethod
     def _get_point_in_time_expr(cls) -> Expression:
