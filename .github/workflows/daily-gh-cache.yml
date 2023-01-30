@@ -1,9 +1,9 @@
-name: "Daily Cleanup"
+name: "Daily Cache Maintainance"
 
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
 ## WORKFLOW_GH_TOKEN__CHESTER    | Github Classic Token            | [Github Cache                   ] delete
-## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
+## GCR_PYPI_CREDENTIALS_R_B64    | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
 
 on:
   workflow_dispatch: {}
@@ -16,7 +16,7 @@ env:
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}  # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
 
 jobs:
   # Github caches do not update themselves on a successful run
