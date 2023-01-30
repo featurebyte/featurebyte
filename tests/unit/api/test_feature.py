@@ -778,7 +778,7 @@ def test_get_feature_jobs_status_feature_without_tile(
     mock_execute_query, saved_scd_data, cust_id_entity, feature_job_logs
 ):
     """
-    Test SlowlyChangingView as_feature selects a special column that is excluded by default
+    Test get_feature_jobs_status for feature without tile
     """
     mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_data["col_text"].as_entity(cust_id_entity.name)
