@@ -6,6 +6,7 @@ import textwrap
 from dataclasses import asdict
 
 import pytest
+from bson import ObjectId
 from sqlglot import select
 
 from featurebyte.enum import SourceType
@@ -39,6 +40,7 @@ def agg_spec_template_fixture():
         feature_name="Amount (1d sum)",
         is_order_dependent=False,
         tile_value_columns=["value"],
+        entity_ids=[ObjectId()],
     )
     return agg_spec
 
@@ -247,6 +249,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
+                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             )
         ],
         [
@@ -271,6 +274,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
+                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             )
         ],
     ]
@@ -324,6 +328,7 @@ def test_feature_execution_planner__serving_names_mapping(
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
+                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             )
         ],
         [
@@ -348,6 +353,7 @@ def test_feature_execution_planner__serving_names_mapping(
                     f"sum_value_avg_{groupby_node_aggregation_id}",
                     f"count_value_avg_{groupby_node_aggregation_id}",
                 ],
+                entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
             )
         ],
     ]

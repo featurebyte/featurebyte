@@ -2,6 +2,8 @@
 Tests for featurebyte.query_graph.feature_common
 """
 
+from bson import ObjectId
+
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -39,6 +41,7 @@ def test_aggregation_spec__from_groupby_query_node(
                 f"sum_value_avg_{groupby_node_aggregation_id}",
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
+            entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
         ),
         TileBasedAggregationSpec(
             window=172800,
@@ -61,6 +64,7 @@ def test_aggregation_spec__from_groupby_query_node(
                 f"sum_value_avg_{groupby_node_aggregation_id}",
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
+            entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
         ),
     ]
     assert agg_specs == expected_agg_specs
@@ -103,6 +107,7 @@ def test_aggregation_spec__override_serving_names(
                 f"sum_value_avg_{groupby_node_aggregation_id}",
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
+            entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
         ),
         TileBasedAggregationSpec(
             window=172800,
@@ -125,6 +130,7 @@ def test_aggregation_spec__override_serving_names(
                 f"sum_value_avg_{groupby_node_aggregation_id}",
                 f"count_value_avg_{groupby_node_aggregation_id}",
             ],
+            entity_ids=[ObjectId("637516ebc9c18f5a277a78db")],
         ),
     ]
     assert agg_specs == expected_agg_specs
