@@ -11,7 +11,6 @@ from databricks_cli.sdk import ApiClient
 from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
-from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
