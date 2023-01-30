@@ -18,8 +18,8 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models import FeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
