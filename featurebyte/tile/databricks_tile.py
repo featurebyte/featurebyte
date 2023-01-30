@@ -11,7 +11,6 @@ from databricks_cli.sdk import ApiClient
 from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
-from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
@@ -124,8 +123,6 @@ class TileManagerDatabricks(BaseTileManager):
             ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"'{end_ts_str}'")
         else:
             tile_sql = tile_spec.tile_sql
-
-        logger.debug(f"tile_sql: {tile_sql}")
 
         job_params = [
             self._session.featurebyte_schema,

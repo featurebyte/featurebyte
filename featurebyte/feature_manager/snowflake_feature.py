@@ -69,7 +69,6 @@ class FeatureManagerSnowflake(BaseModel):
 
         # enable tile generation with scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
-            logger.info(f"tile_spec: {tile_spec}")
 
             exist_tasks = await self._session.execute_query(
                 f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
@@ -79,13 +78,13 @@ class FeatureManagerSnowflake(BaseModel):
                 await tile_mgr.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
-                logger.debug(f"Done schedule_online_tiles for {tile_spec}")
+                logger.debug(f"Done schedule_online_tiles for {tile_spec.tile_id}")
 
                 # enable offline tiles scheduled job
                 await tile_mgr.schedule_offline_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
-                logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+                logger.debug(f"Done schedule_offline_tiles for {tile_spec.tile_id}")
 
             # generate historical tiles
             await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
@@ -197,13 +196,11 @@ class FeatureManagerSnowflake(BaseModel):
                 feature_name=feature_spec.feature.name,
                 feature_version=feature_spec.feature.version.to_str(),
             )
-            logger.debug(f"tile_feature_mapping delete_sql: {delete_sql}")
             await self._session.execute_query(delete_sql)
             logger.debug(f"Done delete tile_feature_mapping for {tile_id}")
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
-            logger.info(f"tile_spec: {tile_spec}")
             exist_mapping = await self._session.execute_query(
                 f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_spec.tile_id}' and IS_DELETED = FALSE"
             )
@@ -231,7 +228,6 @@ class FeatureManagerSnowflake(BaseModel):
             last_tile_index of all the tile_ids as dataframe
         """
         sql = tm_last_tile_index.render(feature=feature)
-        logger.debug(f"generated sql: {sql}")
         result = await self._session.execute_query(sql)
         return result
 
@@ -255,6 +251,5 @@ class FeatureManagerSnowflake(BaseModel):
         sql = tm_feature_tile_monitor.render(
             query_start_ts=query_start_ts, query_end_ts=query_end_ts
         )
-        logger.debug(f"generated sql: {sql}")
         result = await self._session.execute_query(sql)
         return result
