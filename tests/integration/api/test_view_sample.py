@@ -11,12 +11,23 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
 
 
+def test_event_data_sample(snowflake_event_data):
+    """
+    Test event data sample & event data column sample
+    """
+    event_data_df = snowflake_event_data.sample()
+    ts_col = "ËVENT_TIMESTAMP"
+    ev_ts = snowflake_event_data[ts_col].sample()
+    pd.testing.assert_frame_equal(event_data_df[[ts_col]], ev_ts)
+
+
 def test_event_view_sample(snowflake_event_data):
     """
     Test sample for EventView
     """
+    sample_kwargs = {"size": 10, "seed": 1234}
     event_view = EventView.from_event_data(snowflake_event_data)
-    sample_df = event_view.sample(size=10, seed=1234)
+    sample_df = event_view.sample(**sample_kwargs)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
@@ -31,6 +42,11 @@ def test_event_view_sample(snowflake_event_data):
     assert sample_df.shape == (10, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-06 03:42:00.000640+10:00")
     assert sample_df["ËVENT_TIMESTAMP"].max() == pd.Timestamp("2001-10-14 13:57:21.000525+06:00")
+
+    # test view column
+    ts_col = "ËVENT_TIMESTAMP"
+    ev_ts = event_view[ts_col].sample(**sample_kwargs)
+    pd.testing.assert_frame_equal(sample_df[[ts_col]], ev_ts)
 
 
 def test_event_view_sample_seed(snowflake_event_data):
