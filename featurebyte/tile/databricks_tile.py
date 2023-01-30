@@ -125,8 +125,6 @@ class TileManagerDatabricks(BaseTileManager):
         else:
             tile_sql = tile_spec.tile_sql
 
-        logger.debug(f"tile_sql: {tile_sql}")
-
         job_params = [
             self._session.featurebyte_schema,
             tile_sql,

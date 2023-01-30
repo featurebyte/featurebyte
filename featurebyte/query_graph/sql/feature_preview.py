@@ -88,6 +88,5 @@ def get_feature_preview_sql(
     )
     elapsed = time.time() - tic
     logger.debug(f"Generating full SQL took {elapsed:.2}s")
-    logger.debug(f"Feature SQL:\n{preview_sql}")
 
     return preview_sql
