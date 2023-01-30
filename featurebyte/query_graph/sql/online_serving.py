@@ -75,6 +75,15 @@ class OnlineStoreUniverse:
 class PrecomputeQueryParams:
     """
     Information required to generate a OnlineStorePrecomputeQuery
+
+    pruned_graph: QueryGraphModel
+        Graph pruned to produce the aggregated column described by agg_spec
+    pruned_node: Node
+        Pruned node, see above
+    agg_spec: TileBasedAggregationSpec
+        Aggregation specification
+    universe: OnlineStoreUniverse
+        Query that produces the universe entities for the aggregation
     """
 
     pruned_graph: QueryGraphModel
@@ -368,6 +377,7 @@ def get_online_store_retrieval_sql(
     expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
     if SpecialColumnName.POINT_IN_TIME not in request_table_columns:
         expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
+        request_table_columns
 
     if request_table_name is not None:
         # Case 1: Request table is already registered as a table with a name
