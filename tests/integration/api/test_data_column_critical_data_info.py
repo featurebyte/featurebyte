@@ -16,6 +16,12 @@ def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
     original_df = event_data.preview()
+
+    # check data column preview
+    amount = event_data["ÀMOUNT"].preview()
+    pd.testing.assert_frame_equal(original_df[["ÀMOUNT"]], amount)
+
+    assert original_df["ÀMOUNT"].isnull().sum() == 2
     assert original_df["ÀMOUNT"].isnull().sum() == 2
     assert original_df["SESSION_ID"].isnull().sum() == 0
     assert set(original_df["PRODUCT_ACTION"].astype(str).unique()) == {

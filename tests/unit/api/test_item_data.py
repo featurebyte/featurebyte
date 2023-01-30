@@ -274,6 +274,34 @@ class TestItemDataTestSuite(BaseDataTestSuite):
         "created_at",
         "event_timestamp",
     }
+    expected_data_sql = """
+    SELECT
+      "event_id_col" AS "event_id_col",
+      "item_id_col" AS "item_id_col",
+      "item_type" AS "item_type",
+      "item_amount" AS "item_amount",
+      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
+    FROM "sf_database"."sf_schema"."items_table"
+    LIMIT 10
+    """
+    expected_data_column_sql = """
+    SELECT
+      "event_id_col" AS "event_id_col"
+    FROM "sf_database"."sf_schema"."items_table"
+    LIMIT 10
+    """
+    expected_clean_data_sql = """
+    SELECT
+      CAST(CASE WHEN "event_id_col" IS NULL THEN 0 ELSE "event_id_col" END AS BIGINT) AS "event_id_col",
+      "item_id_col" AS "item_id_col",
+      "item_type" AS "item_type",
+      "item_amount" AS "item_amount",
+      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
+    FROM "sf_database"."sf_schema"."items_table"
+    LIMIT 10
+    """
 
 
 def test_item_data_column__as_entity(snowflake_item_data):

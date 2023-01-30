@@ -24,7 +24,6 @@ from featurebyte.exception import (
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
-from tests.util.helper import patch_import_package
 
 
 @pytest.fixture(name="event_data_dict")
@@ -240,6 +239,40 @@ class TestEventDataTestSuite(BaseDataTestSuite):
         "col_int",
         "cust_id",
     }
+    expected_data_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("created_at" AS VARCHAR) AS "created_at",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
+    expected_data_column_sql = """
+    SELECT
+      "col_int" AS "col_int"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
+    expected_clean_data_sql = """
+    SELECT
+      CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("created_at" AS VARCHAR) AS "created_at",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
 
 
 def test_event_data__save__feature_store_not_saved_exception(snowflake_event_data):
