@@ -33,34 +33,36 @@ class TestSlowChangingDataTestSuite(BaseDataTestSuite):
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
-      "col_char" AS "col_char",
+      "is_active" AS "is_active",
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
+      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
       CAST("created_at" AS VARCHAR) AS "created_at",
       "cust_id" AS "cust_id"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
     expected_data_column_sql = """
     SELECT
       "col_int" AS "col_int"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
     expected_clean_data_sql = """
     SELECT
       CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
       "col_float" AS "col_float",
-      "col_char" AS "col_char",
+      "is_active" AS "is_active",
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
+      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
       CAST("created_at" AS VARCHAR) AS "created_at",
       "cust_id" AS "cust_id"
-    FROM "sf_database"."sf_schema"."sf_table"
+    FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
     """
 
