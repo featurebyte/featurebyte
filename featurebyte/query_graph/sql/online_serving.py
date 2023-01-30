@@ -3,11 +3,10 @@ SQL generation for online serving
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
 from dataclasses import dataclass
 
-from bson import ObjectId
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
@@ -24,10 +23,7 @@ from featurebyte.query_graph.sql.online_serving_util import (
     get_online_store_table_name_from_entity_ids,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
-from featurebyte.query_graph.sql.tile_util import (
-    calculate_first_and_last_tile_indices,
-    update_maximum_window_size_dict,
-)
+from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
@@ -104,8 +100,6 @@ class OnlineStorePrecomputePlan:
 
     def __init__(self, graph: QueryGraph, node: Node, adapter: BaseAdapter):
         self.adapter = adapter
-        self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
-        self.params_by_tile_id: dict[str, Any] = {}
         self.params_by_agg_result_name: dict[str, PrecomputeQueryParams] = {}
         self._update(graph, node)
 
@@ -126,8 +120,7 @@ class OnlineStorePrecomputePlan:
         """
         result = []
         for agg_result_name, agg_params in self.params_by_agg_result_name.items():
-            tile_id = agg_params.agg_spec.tile_table_id
-            universe = self._construct_online_store_universe(tile_id)
+            universe = self._construct_online_store_universe(agg_params.agg_spec)
             query = self._construct_online_store_precompute_query(
                 params=agg_params,
                 universe=universe,
@@ -136,28 +129,29 @@ class OnlineStorePrecomputePlan:
             result.append(query)
         return result
 
-    def _get_first_and_last_indices(self, tile_id: str) -> Tuple[Optional[Expression], Expression]:
+    def _get_first_and_last_indices(
+        self, agg_spec: TileBasedAggregationSpec
+    ) -> Tuple[Optional[Expression], Expression]:
         """
         Get the first and last tile indices required to compute the feature
 
         Parameters
         ----------
-        tile_id: str
-            Tile table identifier
+        agg_spec: TileBasedAggregationSpec
+            Aggregation specification
 
         Returns
         -------
         Tuple[Optional[Expression], Expression]
         """
-        params_dict = self.params_by_tile_id[tile_id]
         point_in_time_expr = self._get_point_in_time_expr()
-        window_size = self.max_window_size_by_tile_id[tile_id]
+        window_size = agg_spec.window
         first_index, last_index = calculate_first_and_last_tile_indices(
             adapter=self.adapter,
             point_in_time_expr=point_in_time_expr,
             window_size=window_size,
-            frequency=params_dict["frequency"],
-            time_modulo_frequency=params_dict["time_modulo_frequency"],
+            frequency=agg_spec.frequency,
+            time_modulo_frequency=agg_spec.time_modulo_frequency,
         )
         return first_index, last_index
 
@@ -204,25 +198,28 @@ class OnlineStorePrecomputePlan:
             serving_names=sorted(params.agg_spec.serving_names),
         )
 
-    def _construct_online_store_universe(self, tile_id: str) -> OnlineStoreUniverse:
+    def _construct_online_store_universe(
+        self,
+        agg_spec: TileBasedAggregationSpec,
+    ) -> OnlineStoreUniverse:
         """
         Construct SQL expression that extracts the universe for online store. The result of this SQL
         contains a point in time column, so it can be used directly as the request table.
 
         Parameters
         ----------
-        tile_id: str
-            Tile table identifier
+        agg_spec: TileBasedAggregationSpec
+            Aggregation specification
 
         Returns
         -------
         OnlineStoreUniverse
         """
-        first_index, last_index = self._get_first_and_last_indices(tile_id)
+        first_index, last_index = self._get_first_and_last_indices(agg_spec)
 
-        params = self.params_by_tile_id[tile_id]
-        serving_names = params["serving_names"]
-        keys = params["keys"]
+        tile_id = agg_spec.tile_table_id
+        serving_names = agg_spec.serving_names
+        keys = agg_spec.keys
 
         filter_conditions: list[Expression] = []
         if first_index is not None:
@@ -261,21 +258,7 @@ class OnlineStorePrecomputePlan:
         groupby_nodes = list(graph.iterate_nodes(node, NodeType.GROUPBY))
         for groupby_node in groupby_nodes:
             agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node, self.adapter)
-            agg_id = agg_specs[0].aggregation_id
-            tile_id = agg_specs[0].tile_table_id
             for agg_spec in agg_specs:
-                # TODO: can be simplified and improved - window size is specific to each agg_spec
-                update_maximum_window_size_dict(
-                    max_window_size_dict=self.max_window_size_by_tile_id,
-                    key=tile_id,
-                    window_size=agg_spec.window,
-                )
-                self.params_by_tile_id[tile_id] = {
-                    "keys": agg_spec.keys,
-                    "serving_names": agg_spec.serving_names,
-                    "frequency": agg_spec.frequency,
-                    "time_modulo_frequency": agg_spec.time_modulo_frequency,
-                }
                 project_node = graph.add_operation(
                     NodeType.PROJECT,
                     node_params={"columns": [agg_spec.feature_name]},

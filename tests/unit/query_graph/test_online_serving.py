@@ -4,7 +4,6 @@ Tests for featurebyte.query_graph.sql.online_serving
 import textwrap
 
 import pandas as pd
-from bson import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
@@ -15,7 +14,15 @@ from featurebyte.query_graph.sql.online_serving import (
     get_online_store_retrieval_sql,
     is_online_store_eligible,
 )
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture
+
+
+def get_aggregation_specs(groupby_node) -> list[TileBasedAggregationSpec]:
+    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+        groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
+    )
+    return agg_specs
 
 
 def test_construct_universe_sql(query_graph_with_groupby):
@@ -26,7 +33,33 @@ def test_construct_universe_sql(query_graph_with_groupby):
     plan = OnlineStorePrecomputePlan(
         query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
-    universe = plan._construct_online_store_universe(node.parameters.tile_id)
+    agg_specs = get_aggregation_specs(node)
+
+    # window size of 2h
+    universe = plan._construct_online_store_universe(agg_specs[0])
+    expected_sql = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
+          "cust_id" AS "CUSTOMER_ID"
+        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+        WHERE
+          INDEX >= FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          ) - 2
+          AND INDEX < FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          )
+        """
+    ).strip()
+    assert universe.expr.sql(pretty=True) == expected_sql
+
+    # window size of 48h
+    universe = plan._construct_online_store_universe(agg_specs[1])
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -51,12 +84,14 @@ def test_construct_universe_sql(query_graph_with_groupby):
 
 def test_construct_universe_sql__category(query_graph_with_category_groupby):
     """
-    Test constructing universe sql for groupby with category
+    Test constructing universe sql for groupby with category (the category column should not be part
+    of SELECT DISTINCT)
     """
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
     plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
-    universe = plan._construct_online_store_universe(node.parameters.tile_id)
+    agg_specs = get_aggregation_specs(node)
+    universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -68,7 +103,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
             ) / 3600
-          ) - 48
+          ) - 2
           AND INDEX < FLOOR(
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
@@ -90,9 +125,8 @@ def test_construct_universe_sql__unbounded_latest(
         latest_value_without_window_feature_node,
         get_sql_adapter(SourceType.SNOWFLAKE),
     )
-    universe = plan._construct_online_store_universe(
-        "TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E"
-    )
+    agg_specs = get_aggregation_specs(global_graph.get_node_by_name("groupby_1"))
+    universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
