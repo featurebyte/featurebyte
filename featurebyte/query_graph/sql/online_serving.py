@@ -119,7 +119,7 @@ class OnlineStorePrecomputePlan:
         list[OnlineStorePrecomputeQuery]
         """
         result = []
-        for agg_result_name, agg_params in self.params_by_agg_result_name.items():
+        for _, agg_params in self.params_by_agg_result_name.items():
             query = self._construct_online_store_precompute_query(
                 params=agg_params,
                 source_type=source_type,
@@ -237,7 +237,7 @@ class OnlineStorePrecomputePlan:
             .from_(tile_id)
             .where(expressions.and_(*filter_conditions))
         )
-        universe_columns = [SpecialColumnName.POINT_IN_TIME] + serving_names
+        universe_columns = [SpecialColumnName.POINT_IN_TIME.value] + serving_names
 
         return OnlineStoreUniverse(expr=expr, columns=universe_columns)
 

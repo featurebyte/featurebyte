@@ -110,6 +110,5 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         -------
         str
         """
-        # TODO: needed?
         adapter = get_sql_adapter(self.feature.feature_store_type)
         return adapter.get_physical_type_from_dtype(self.feature.dtype)
