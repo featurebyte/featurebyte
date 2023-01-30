@@ -16,7 +16,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
     Test the stored procedure of generating tiles
     """
 
-    tile_id, feature_store_table_name, _, _ = tile_task_prep
+    tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep
 
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
@@ -33,6 +33,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -101,7 +102,7 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
     Test the stored procedure of generating tiles
     """
 
-    tile_id, feature_store_table_name, _, _ = tile_task_prep
+    tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep
 
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
@@ -122,6 +123,7 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -169,7 +171,9 @@ async def test_schedule_monitor_tile_online(snowflake_session):
     value_col_names = "VALUE"
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{suffix}"
+    agg_id = f"some_agg_id_{suffix}"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:53:00Z"
     tile_sql = (
@@ -181,6 +185,7 @@ async def test_schedule_monitor_tile_online(snowflake_session):
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -208,6 +213,7 @@ async def test_schedule_monitor_tile_online(snowflake_session):
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -245,7 +251,9 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
     value_col_names = "VALUE"
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{suffix}"
+    agg_id = f"some_agg_id_{suffix}"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:53:00Z"
     tile_sql = (
@@ -257,6 +265,7 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -291,6 +300,7 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -324,7 +334,9 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
     value_col_names = "VALUE"
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{suffix}"
+    agg_id = f"some_agg_id_{suffix}"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:53:00Z"
     tile_sql = (
@@ -336,6 +348,7 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,
@@ -370,6 +383,7 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
     monitor_sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
+          '{agg_id}',
           183,
           3,
           5,

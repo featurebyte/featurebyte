@@ -74,20 +74,20 @@ class FeatureManagerSnowflake(BaseModel):
         for tile_spec in feature_spec.feature.tile_specs:
 
             exist_tasks = await self._session.execute_query(
-                f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
+                f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
             )
             if exist_tasks is None or len(exist_tasks) == 0:
                 # enable online tiles scheduled job
                 await tile_mgr.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
-                logger.debug(f"Done schedule_online_tiles for {tile_spec.tile_id}")
+                logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
                 # enable offline tiles scheduled job
                 await tile_mgr.schedule_offline_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
-                logger.debug(f"Done schedule_offline_tiles for {tile_spec.tile_id}")
+                logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
             # generate historical tiles
             await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
@@ -105,7 +105,7 @@ class FeatureManagerSnowflake(BaseModel):
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
 
         populate_sql = tm_call_schedule_online_store.render(
-            tile_id=tile_spec.tile_id,
+            aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
         )
         await self._session.execute_query(populate_sql)
@@ -162,9 +162,10 @@ class FeatureManagerSnowflake(BaseModel):
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         """
-        for tile_id in feature_spec.tile_ids:
+        for tile_spec in feature_spec.feature.tile_specs:
             upsert_sql = tm_upsert_tile_feature_mapping.render(
-                tile_id=tile_id,
+                tile_id=tile_spec.tile_id,
+                aggregation_id=tile_spec.aggregation_id,
                 feature_name=feature_spec.feature.name,
                 feature_type=feature_spec.value_type,
                 feature_version=feature_spec.feature.version.to_str(),
@@ -173,7 +174,7 @@ class FeatureManagerSnowflake(BaseModel):
                 is_deleted=False,
             )
             await self._session.execute_query(upsert_sql)
-            logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
+            logger.debug(f"Done insert tile_feature_mapping for {tile_spec.aggregation_id}")
 
         for query in feature_spec.precompute_queries:
             upsert_sql = tm_upsert_online_store_mapping.render(
@@ -199,30 +200,30 @@ class FeatureManagerSnowflake(BaseModel):
             input feature instance
         """
         # delete records from tile-feature mapping table
-        for tile_id in feature_spec.tile_ids:
+        for agg_id in feature_spec.aggregation_ids:
             delete_sql = tm_delete_tile_feature_mapping.render(
-                tile_id=tile_id,
+                aggregation_id=agg_id,
                 feature_name=feature_spec.feature.name,
                 feature_version=feature_spec.feature.version.to_str(),
             )
             await self._session.execute_query(delete_sql)
-            logger.debug(f"Done delete tile_feature_mapping for {tile_id}")
-            delete_sql = tm_delete_online_store_mapping.render(tile_id=tile_id)
+            logger.debug(f"Done delete tile_feature_mapping for {agg_id}")
+            delete_sql = tm_delete_online_store_mapping.render(aggregation_id=agg_id)
             await self._session.execute_query(delete_sql)
-            logger.debug(f"Done delete online_store_mapping for {tile_id}")
+            logger.debug(f"Done delete online_store_mapping for {agg_id}")
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
             exist_mapping = await self._session.execute_query(
-                f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_spec.tile_id}' and IS_DELETED = FALSE"
+                f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
             )
             # only disable tile jobs when there is no tile-feature mapping records for the particular tile
             if exist_mapping is None or len(exist_mapping) == 0:
                 exist_tasks = await self._session.execute_query(
-                    f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
+                    f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
                 )
                 if exist_tasks is not None and len(exist_tasks) > 0:
-                    logger.warning(f"Start disabling jobs for {tile_spec.tile_id}")
+                    logger.warning(f"Start disabling jobs for {tile_spec.aggregation_id}")
                     for _, row in exist_tasks.iterrows():
                         await self._session.execute_query(f"DROP TASK IF EXISTS {row['name']}")
 

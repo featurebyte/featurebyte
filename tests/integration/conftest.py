@@ -572,6 +572,7 @@ async def snowflake_tile(snowflake_session):
 
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
     tile_id = "TILE_ID1"
+    aggregation_id = "agg_id1"
 
     tile_spec = TileSpec(
         time_modulo_frequency_second=183,
@@ -583,7 +584,7 @@ async def snowflake_tile(snowflake_session):
         value_column_names=["VALUE"],
         value_column_types=["FLOAT"],
         tile_id=tile_id,
-        aggregation_id="agg_id1",
+        aggregation_id=aggregation_id,
     )
 
     yield tile_spec
@@ -593,8 +594,10 @@ async def snowflake_tile(snowflake_session):
         f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
     )
     await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_ONLINE")
+    await snowflake_session.execute_query(
+        f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_OFFLINE"
+    )
 
 
 @pytest_asyncio.fixture

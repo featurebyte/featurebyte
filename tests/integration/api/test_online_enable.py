@@ -52,12 +52,12 @@ async def test_online_enabled_features_have_scheduled_jobs(
     feature = online_enabled_feature_list[online_enabled_feature_list.feature_names[0]]
     tile_specs = ExtendedFeatureModel(**feature.dict()).tile_specs
     assert len(tile_specs) == 1
-    tile_id = tile_specs[0].tile_id
+    aggregation_id = tile_specs[0].aggregation_id
 
     # There should be two scheduled jobs for the tile id - one for online tile and another for
     # offline tile (online store pre-computation job is triggered by the online tile task once tile
     # computation completes)
-    tasks = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    tasks = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(tasks) == 2
 
 

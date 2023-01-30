@@ -1,5 +1,5 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_SCHEDULE_ONLINE_STORE (
-    TILE_ID varchar,
+    AGGREGATION_ID varchar,
     JOB_SCHEDULE_TS_STR varchar
 )
 returns string
@@ -13,7 +13,7 @@ $$
         2. merge updated values into the feature_store_table
     */
 
-    var debug = "Debug - TILE_ID: " + TILE_ID
+    var debug = "Debug - AGGREGATION_ID: " + AGGREGATION_ID
 
     var select_sql = `
         SELECT
@@ -24,7 +24,7 @@ $$
           RESULT_TYPE
         FROM ONLINE_STORE_MAPPING
         WHERE
-          TILE_ID ILIKE '${TILE_ID}' AND IS_DELETED = FALSE
+          AGGREGATION_ID ILIKE '${AGGREGATION_ID}' AND IS_DELETED = FALSE
     `
     var result = snowflake.execute({sqlText: select_sql})
     var table_columns = []

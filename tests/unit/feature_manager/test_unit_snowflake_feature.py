@@ -69,6 +69,7 @@ async def test_online_enable(
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
+        aggregation_id=feature_spec.aggregation_ids[0],
         feature_name=feature_spec.feature.name,
         feature_type=feature_spec.value_type,
         feature_version=feature_spec.feature.version.to_str(),
@@ -151,19 +152,19 @@ async def test_online_disable(
     await feature_manager.online_disable(feature_spec)
 
     delete_sql = tm_delete_tile_feature_mapping.render(
-        tile_id=feature_spec.tile_ids[0],
+        aggregation_id=feature_spec.aggregation_ids[0],
         feature_name=feature_spec.feature.name,
         feature_version=feature_spec.feature.version.to_str(),
     )
     assert mock_execute_query.call_args_list[0] == mock.call(delete_sql)
 
     delete_sql = tm_delete_online_store_mapping.render(
-        tile_id=feature_spec.tile_ids[0],
+        aggregation_id=feature_spec.aggregation_ids[0],
     )
     assert mock_execute_query.call_args_list[1] == mock.call(delete_sql)
 
     assert mock_execute_query.call_args_list[2] == mock.call(
-        f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{feature_spec.tile_ids[0]}' and IS_DELETED = FALSE"
+        f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{feature_spec.aggregation_ids[0]}' and IS_DELETED = FALSE"
     )
 
 
