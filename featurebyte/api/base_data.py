@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Type, TypeVar
+from typing import Any, ClassVar, List, Optional, Type, TypeVar, cast
 
 from http import HTTPStatus
 
@@ -52,7 +52,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         -------
         FeatureStoreModel
         """
-        return self.parent.feature_store
+        return cast(FeatureStoreModel, self.parent.feature_store)
 
     def _prepare_columns_info(self, column_info: ColumnInfo) -> List[ColumnInfo]:
         """
