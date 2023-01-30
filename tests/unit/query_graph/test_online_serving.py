@@ -1,6 +1,8 @@
 """
 Tests for featurebyte.query_graph.sql.online_serving
 """
+from typing import List
+
 import textwrap
 
 import pandas as pd
@@ -18,7 +20,7 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-def get_aggregation_specs(groupby_node) -> list[TileBasedAggregationSpec]:
+def get_aggregation_specs(groupby_node) -> List[TileBasedAggregationSpec]:
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
         groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
