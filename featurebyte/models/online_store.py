@@ -43,7 +43,9 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         val: List[OnlineStorePrecomputeQuery],
         values: Dict[str, Any],
     ) -> List[OnlineStorePrecomputeQuery]:
-        _ = val
+        if val:
+            # Allow direct setting; mainly used in integration tests
+            return val
         feature = values["feature"]
         precompute_queries = get_online_store_precompute_queries(
             graph=feature.graph,

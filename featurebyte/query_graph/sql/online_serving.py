@@ -258,6 +258,7 @@ class OnlineStorePrecomputePlan:
             agg_id = agg_specs[0].aggregation_id
             tile_id = agg_specs[0].tile_table_id
             for agg_spec in agg_specs:
+                # TODO: can be simplified and improved - window size is specific to each agg_spec
                 update_maximum_window_size_dict(
                     max_window_size_dict=self.max_window_size_by_tile_id,
                     key=tile_id,
