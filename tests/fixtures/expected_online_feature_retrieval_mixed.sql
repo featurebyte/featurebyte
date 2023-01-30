@@ -12,6 +12,7 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
   SELECT
     REQ."CUSTOMER_ID",
     REQ."order_id",
+    REQ."POINT_IN_TIME",
     "T0"."agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
     "T0"."agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
     "T1"."count_None_99a214e3edd7fa51" AS "count_None_99a214e3edd7fa51"

@@ -169,6 +169,7 @@ class FeatureExecutionPlan:
         request_table_columns: Optional[list[str]],
         exclude_post_aggregation: bool,
         agg_result_names: list[str],
+        exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
@@ -189,11 +190,16 @@ class FeatureExecutionPlan:
             output columns directly. Intended to be used by online store pre-computation.
         agg_result_names: bool
             Names of the aggregated columns. Used when excluded_post_aggregation is True.
+        exclude_columns: Optional[set[str]]
+            When provided, exclude these columns from the output
 
         Returns
         -------
         str
         """
+        if exclude_columns is None:
+            exclude_columns = set()
+
         columns: list[expressions.Expression | str] = []
         if exclude_post_aggregation:
             for agg_result_name in agg_result_names:
@@ -205,7 +211,9 @@ class FeatureExecutionPlan:
 
         if request_table_columns:
             request_table_column_names = [
-                f"AGG.{quoted_identifier(col).sql()}" for col in request_table_columns
+                f"AGG.{quoted_identifier(col).sql()}"
+                for col in request_table_columns
+                if col not in exclude_columns
             ]
         else:
             request_table_column_names = []
@@ -222,6 +230,7 @@ class FeatureExecutionPlan:
         request_table_columns: list[str],
         prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
         exclude_post_aggregation: bool = False,
+        exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
         """Construct combined SQL that will generate the features
 
@@ -239,6 +248,8 @@ class FeatureExecutionPlan:
         exclude_post_aggregation: bool
             When True, exclude post aggregation transforms and select aggregated columns as the
             output columns directly. Intended to be used by online store pre-computation.
+        exclude_columns: Optional[set[str]]
+            When provided, exclude these columns from the output
 
         Returns
         -------
@@ -261,7 +272,11 @@ class FeatureExecutionPlan:
         cte_context = construct_cte_sql(cte_statements)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
-            cte_context, request_table_columns, exclude_post_aggregation, agg_result_names
+            cte_context=cte_context,
+            request_table_columns=request_table_columns,
+            exclude_post_aggregation=exclude_post_aggregation,
+            agg_result_names=agg_result_names,
+            exclude_columns=exclude_columns,
         )
         return post_aggregation_sql
 

@@ -84,6 +84,7 @@ async def test_feature_list_deployed(
             ), _FB_AGGREGATED AS (
               SELECT
                 REQ."cust_id",
+                REQ."POINT_IN_TIME",
                 "T0"."agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0"
               FROM ONLINE_REQUEST_TABLE AS REQ
               LEFT JOIN (

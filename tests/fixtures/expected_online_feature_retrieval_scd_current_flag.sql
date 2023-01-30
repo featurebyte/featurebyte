@@ -15,6 +15,7 @@ WITH ONLINE_REQUEST_TABLE AS (
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."CUSTOMER_ID",
+    REQ."POINT_IN_TIME",
     "T0"."membership_status_fbfdb013880b3a67" AS "membership_status_fbfdb013880b3a67"
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (

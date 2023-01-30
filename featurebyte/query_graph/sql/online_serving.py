@@ -372,12 +372,10 @@ def get_online_store_retrieval_sql(
     planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=True)
     plan = planner.generate_plan(nodes)
 
-    # Form a request table as a common table expression (CTE) and add the point in time column if
-    # not already provided
+    # Form a request table as a common table expression (CTE) and add the point in time column
     expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
-    if SpecialColumnName.POINT_IN_TIME not in request_table_columns:
-        expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
-        request_table_columns
+    expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
+    request_table_columns.append(SpecialColumnName.POINT_IN_TIME)
 
     if request_table_name is not None:
         # Case 1: Request table is already registered as a table with a name
@@ -396,6 +394,7 @@ def get_online_store_retrieval_sql(
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
         prior_cte_statements=ctes,
+        exclude_columns={SpecialColumnName.POINT_IN_TIME},
     )
 
     return sql_to_string(expr, source_type=source_type)
