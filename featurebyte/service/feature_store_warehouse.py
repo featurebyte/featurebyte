@@ -208,14 +208,18 @@ class FeatureStoreWarehouseService(BaseService):
             return summarized_logs
 
         tile_specs = []
+        tile_specs_cols = ["tile_id", "frequency_minute", "time_modulo_frequency_second"]
         for feature in features:
-            _tile_specs = pd.DataFrame.from_dict(
-                [tile_spec.dict() for tile_spec in feature.tile_specs]
-            )
-            tile_specs.append(
-                _tile_specs[["tile_id", "frequency_minute", "time_modulo_frequency_second"]]
-            )
-        feature_tile_specs = pd.concat(tile_specs).drop_duplicates()
+            if feature.tile_specs:
+                _tile_specs = pd.DataFrame.from_dict(
+                    [tile_spec.dict() for tile_spec in feature.tile_specs]
+                )
+                tile_specs.append(_tile_specs[tile_specs_cols])
+        feature_tile_specs = (
+            pd.concat(tile_specs).drop_duplicates()
+            if tile_specs
+            else pd.DataFrame(columns=tile_specs_cols)
+        )
 
         # summarize logs by session
         sessions = logs.groupby(["SESSION_ID", "TILE_ID"], group_keys=True).apply(

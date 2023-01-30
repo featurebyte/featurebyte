@@ -30,7 +30,11 @@ class BaseDataTestSuite:
 
     @pytest.fixture(name="data_under_test")
     def get_data_under_test_fixture(
-        self, snowflake_item_data, snowflake_event_data, snowflake_dimension_data
+        self,
+        snowflake_item_data,
+        snowflake_event_data,
+        snowflake_dimension_data,
+        snowflake_scd_data,
     ):
         """
         Retrieves fixture for data under test.
@@ -39,6 +43,7 @@ class BaseDataTestSuite:
             DataType.ITEM_DATA: snowflake_item_data,
             DataType.EVENT_DATA: snowflake_event_data,
             DataType.DIMENSION_DATA: snowflake_dimension_data,
+            DataType.SCD_DATA: snowflake_scd_data,
         }
         if self.data_type not in data_map:
             pytest.fail(
@@ -56,7 +61,10 @@ class BaseDataTestSuite:
 
         with pytest.raises(AttributeError) as exc:
             _ = data_under_test.non_exist_column
-        assert f"'{self.data_type}' object has no attribute 'non_exist_column'" in str(exc.value)
+        assert (
+            f"'{data_under_test.__class__.__name__}' object has no attribute 'non_exist_column'"
+            in str(exc.value)
+        )
 
         # check __getattr__ is working properly
         assert isinstance(data_under_test[self.col], DataColumn)

@@ -10,6 +10,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import SlowlyChangingView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -770,3 +771,21 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     assert_frame_equal(
         job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
     )
+
+
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_get_feature_jobs_status_feature_without_tile(
+    mock_execute_query, saved_scd_data, cust_id_entity, feature_job_logs
+):
+    """
+    Test get_feature_jobs_status for feature without tile
+    """
+    mock_execute_query.return_value = feature_job_logs[:0]
+    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
+    feature.save()
+    job_status_result = feature.get_feature_jobs_status()
+    assert job_status_result.feature_tile_table.shape == (0, 2)
+    assert job_status_result.feature_job_summary.shape == (0, 9)
+    assert job_status_result.job_session_logs.shape == (0, 11)

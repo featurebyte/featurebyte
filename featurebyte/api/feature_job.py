@@ -224,22 +224,23 @@ class FeatureJobMixin(ApiObject):
 
         # compute expected number of jobs
         feature_stats["expected_jobs"] = 0
-        last_job_times = feature_stats.apply(
-            lambda row: get_next_job_datetime(
-                utc_now, row.frequency_minute, row.time_modulo_frequency_second
-            ),
-            axis=1,
-        ) - pd.to_timedelta(feature_stats.frequency_minute, unit="minute")
-        window_start = utc_now - datetime.timedelta(hours=job_history_window)
-        last_job_expected_to_complete_in_window = (
-            (utc_now - last_job_times).dt.total_seconds() > job_duration_tolerance
-        ) & (last_job_times > window_start)
-        feature_stats.loc[last_job_expected_to_complete_in_window, "expected_jobs"] = 1
+        if feature_stats.shape[0] > 0:
+            last_job_times = feature_stats.apply(
+                lambda row: get_next_job_datetime(
+                    utc_now, row.frequency_minute, row.time_modulo_frequency_second
+                ),
+                axis=1,
+            ) - pd.to_timedelta(feature_stats.frequency_minute, unit="minute")
+            window_start = utc_now - datetime.timedelta(hours=job_history_window)
+            last_job_expected_to_complete_in_window = (
+                (utc_now - last_job_times).dt.total_seconds() > job_duration_tolerance
+            ) & (last_job_times > window_start)
+            feature_stats.loc[last_job_expected_to_complete_in_window, "expected_jobs"] = 1
 
-        window_size = np.maximum((last_job_times - window_start).dt.total_seconds(), 0)
-        feature_stats["expected_jobs"] += np.floor(
-            window_size / feature_stats["frequency_minute"] / 60
-        ).astype(int)
+            window_size = np.maximum((last_job_times - window_start).dt.total_seconds(), 0)
+            feature_stats["expected_jobs"] += np.floor(
+                window_size / feature_stats["frequency_minute"] / 60
+            ).astype(int)
 
         # default values for tiles without job records
         mask = feature_stats["last_completed"].isnull()
@@ -336,8 +337,20 @@ class FeatureJobMixin(ApiObject):
                     dict(**tile_spec.dict(), tile_hash=tile_hash, feature_name=feature_name)
                 )
             tile_specs.append(pd.DataFrame.from_dict(data))
-        feature_tile_specs_df = pd.concat(tile_specs)
 
+        feature_tile_specs_df = (
+            pd.concat(tile_specs)
+            if tile_specs
+            else pd.DataFrame(
+                columns=[
+                    "tile_hash",
+                    "feature_name",
+                    "tile_id",
+                    "frequency_minute",
+                    "time_modulo_frequency_second",
+                ]
+            )
+        )
         return self._compute_feature_jobs_summary(
             logs=logs,
             feature_tile_specs=feature_tile_specs_df,

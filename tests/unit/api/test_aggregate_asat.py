@@ -52,10 +52,10 @@ def test_aggregate_asat__valid(scd_view_with_entity, entity_col_int):
         "type": "aggregate_as_at",
         "output_type": "frame",
         "parameters": {
-            "effective_timestamp_column": "event_timestamp",
+            "effective_timestamp_column": "effective_timestamp",
             "natural_key_column": "col_text",
-            "current_flag_column": "col_char",
-            "end_timestamp_column": "event_timestamp",
+            "current_flag_column": "is_active",
+            "end_timestamp_column": "end_timestamp",
             "keys": ["col_int"],
             "parent": "col_float",
             "agg_func": "sum",
@@ -111,7 +111,7 @@ def test_aggregate_asat__category_not_supported(scd_view_with_entity):
     Test groupby with category is not supported
     """
     with pytest.raises(ValueError) as exc:
-        scd_view_with_entity.groupby("col_int", category="col_char").aggregate_asat(
+        scd_view_with_entity.groupby("col_int", category="col_text").aggregate_asat(
             value_column="col_float", method="sum", feature_name="asat_feature"
         )
     assert str(exc.value) == "category is not supported for aggregate_asat"
