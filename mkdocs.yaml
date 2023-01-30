@@ -1,0 +1,87 @@
+site_name: FeatureByte
+repo_name: featurebyte/featurebyte
+repo_url: https://github.com/featurebyte/featurebyte
+edit_uri: blob/main/
+watch:
+  - featurebyte
+
+nav:
+  - API Reference: reference/
+
+theme:
+  language: en
+  name: material
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  homepage: https://featurebyte.com
+  favicon: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
+  logo: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.instant
+    - instant
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - attr_list
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      auto_title: false
+      use_pygments: true
+      linenums: false
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+  - fbautodoc
+
+extra_css:
+  - css/code_select.css
+
+extra:
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+  version:
+    provider: mike
+    default: latest
+
+copyright: Copyright &copy; 2022 FeatureByte Inc.
