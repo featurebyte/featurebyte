@@ -101,6 +101,11 @@ class OnlineStorePrecomputePlan:
         """
         Construct SQL queries for online store pre-computation
 
+        Parameters
+        ----------
+        source_type: SourceType
+            Source type information
+
         Returns
         -------
         list[OnlineStorePrecomputeQuery]
@@ -126,6 +131,11 @@ class OnlineStorePrecomputePlan:
     def _get_first_and_last_indices(self, tile_id: str) -> Tuple[Optional[Expression], Expression]:
         """
         Get the first and last tile indices required to compute the feature
+
+        Parameters
+        ----------
+        tile_id: str
+            Tile table identifier
 
         Returns
         -------

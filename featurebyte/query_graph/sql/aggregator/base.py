@@ -272,12 +272,11 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
     Aggregator that handles TileBasedAggregationSpec
     """
 
-    def __init__(self, is_online_serving: bool = False, *args: Any, **kwargs: Any) -> None:
-        # TODO: refactor with a OnlineStoreTable class?
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.agg_result_names_by_online_store_table: dict[str, set[str]] = defaultdict(set)
         self.original_serving_names_by_online_store_table: dict[str, list[str]] = {}
         self.request_serving_names_by_online_store_table: dict[str, list[str]] = {}
-        super().__init__(is_online_serving=is_online_serving, *args, **kwargs)
 
     def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
         super().update(aggregation_spec)
@@ -324,6 +323,23 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
     ) -> AggregationResult:
         """
         Compute aggregation result in offline mode
+
+        Parameters
+        ----------
+        table_expr: Select
+            The table expression to update. This is typically the temporary aggregation table that
+            has the same number of rows as the request table, referred to in the final feature sql
+            as _FB_AGGREGATED
+        point_in_time_column: str
+            Point in time column name
+        current_columns: list[str]
+            List of column names in the current table
+        current_query_index: int
+            A running integer to be used to construct new table aliases
+
+        Returns
+        -------
+        AggregationResult
         """
 
     def update_aggregation_table_expr_online(
@@ -333,11 +349,27 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
     ) -> AggregationResult:
         """
         Lookup aggregation result from online store table in online mode
+
+        Parameters
+        ----------
+        table_expr: Select
+            The table expression to update. This is typically the temporary aggregation table that
+            has the same number of rows as the request table, referred to in the final feature sql
+            as _FB_AGGREGATED
+        current_query_index: int
+            A running integer to be used to construct new table aliases
+
+        Returns
+        -------
+        AggregationResult
         """
         left_join_queries = []
 
-        for (table_name, agg_result_names) in self.agg_result_names_by_online_store_table.items():
-            agg_result_names = sorted(agg_result_names)
+        for (
+            table_name,
+            agg_result_names_set,
+        ) in self.agg_result_names_by_online_store_table.items():
+            agg_result_names = sorted(agg_result_names_set)
             serving_names = self._alias_original_serving_names_to_request_serving_names(table_name)
             quoted_agg_result_names = [quoted_identifier(name) for name in agg_result_names]
             expr = select(*serving_names, *quoted_agg_result_names).from_(table_name)

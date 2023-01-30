@@ -184,12 +184,17 @@ class FeatureExecutionPlan:
             A partial Select statement with CTEs defined
         request_table_columns : Optional[list[str]]
             Columns in the input request table
+        exclude_post_aggregation: bool
+            When True, exclude post aggregation transforms and select aggregated columns as the
+            output columns directly. Intended to be used by online store pre-computation.
+        agg_result_names: bool
+            Names of the aggregated columns. Used when excluded_post_aggregation is True.
 
         Returns
         -------
         str
         """
-        columns = []
+        columns: list[expressions.Expression | str] = []
         if exclude_post_aggregation:
             for agg_result_name in agg_result_names:
                 columns.append(quoted_identifier(agg_result_name))
@@ -231,6 +236,9 @@ class FeatureExecutionPlan:
         prior_cte_statements : Optional[list[tuple[str, str]]]
             Other CTE statements to incorporate to the final SQL (namely the request data SQL and
             on-demand tile SQL)
+        exclude_post_aggregation: bool
+            When True, exclude post aggregation transforms and select aggregated columns as the
+            output columns directly. Intended to be used by online store pre-computation.
 
         Returns
         -------

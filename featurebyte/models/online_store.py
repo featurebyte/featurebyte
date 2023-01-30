@@ -1,7 +1,7 @@
 """
 This module contains Tile related models
 """
-from typing import List, cast
+from typing import Any, Dict, List, cast
 
 from pydantic import validator
 
@@ -38,7 +38,11 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     precompute_queries: List[OnlineStorePrecomputeQuery] = []
 
     @validator("precompute_queries", always=True)
-    def generate_precompute_queries(cls, val, values) -> List[OnlineStorePrecomputeQuery]:
+    def _generate_precompute_queries(  # pylint: disable=no-self-argument
+        cls,
+        val: List[OnlineStorePrecomputeQuery],
+        values: Dict[str, Any],
+    ) -> List[OnlineStorePrecomputeQuery]:
         _ = val
         feature = values["feature"]
         precompute_queries = get_online_store_precompute_queries(

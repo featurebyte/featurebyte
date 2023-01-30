@@ -199,6 +199,7 @@ class FeatureManagerSnowflake(BaseModel):
         """
         # delete records from tile-feature mapping table
         for tile_id in feature_spec.tile_ids:
+            # TODO: update IS_DELETED field in ONLINE_STORE_MAPPING as well
             delete_sql = tm_delete_tile_feature_mapping.render(
                 tile_id=tile_id,
                 feature_name=feature_spec.feature.name,
