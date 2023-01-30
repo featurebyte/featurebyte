@@ -80,7 +80,7 @@ class PrecomputeQueryParams:
     pruned_graph: QueryGraphModel
     pruned_node: Node
     agg_spec: TileBasedAggregationSpec
-    # universe: OnlineStoreUniverse
+    universe: OnlineStoreUniverse
 
 
 class OnlineStorePrecomputePlan:
@@ -120,10 +120,8 @@ class OnlineStorePrecomputePlan:
         """
         result = []
         for agg_result_name, agg_params in self.params_by_agg_result_name.items():
-            universe = self._construct_online_store_universe(agg_params.agg_spec)
             query = self._construct_online_store_precompute_query(
                 params=agg_params,
-                universe=universe,
                 source_type=source_type,
             )
             result.append(query)
@@ -158,7 +156,6 @@ class OnlineStorePrecomputePlan:
     def _construct_online_store_precompute_query(
         self,
         params: PrecomputeQueryParams,
-        universe: OnlineStoreUniverse,
         source_type: SourceType,
     ) -> OnlineStorePrecomputeQuery:
 
@@ -172,8 +169,8 @@ class OnlineStorePrecomputePlan:
         sql_expr = plan.construct_combined_sql(
             request_table_name=REQUEST_TABLE_NAME,
             point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-            request_table_columns=universe.columns,
-            prior_cte_statements=[(REQUEST_TABLE_NAME, universe.expr)],
+            request_table_columns=params.universe.columns,
+            prior_cte_statements=[(REQUEST_TABLE_NAME, params.universe.expr)],
             exclude_post_aggregation=True,
         )
         sql = sql_to_string(sql_expr, source_type)
@@ -259,6 +256,7 @@ class OnlineStorePrecomputePlan:
         for groupby_node in groupby_nodes:
             agg_specs = TileBasedAggregationSpec.from_groupby_query_node(groupby_node, self.adapter)
             for agg_spec in agg_specs:
+                universe = self._construct_online_store_universe(agg_spec)
                 project_node = graph.add_operation(
                     NodeType.PROJECT,
                     node_params={"columns": [agg_spec.feature_name]},
@@ -271,6 +269,7 @@ class OnlineStorePrecomputePlan:
                     pruned_graph=pruned_graph,
                     pruned_node=pruned_node,
                     agg_spec=agg_spec,
+                    universe=universe,
                 )
 
     @classmethod
