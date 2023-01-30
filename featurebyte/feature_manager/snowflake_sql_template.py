@@ -129,6 +129,13 @@ tm_upsert_online_store_mapping = Template(
 """
 )
 
+tm_delete_online_store_mapping = Template(
+    """
+    UPDATE ONLINE_STORE_MAPPING SET IS_DELETED = TRUE
+    WHERE TILE_ID = '{{tile_id}}'
+"""
+)
+
 tm_call_schedule_online_store = Template(
     """
     call SP_TILE_SCHEDULE_ONLINE_STORE('{{tile_id}}', '{{job_schedule_ts_str}}')

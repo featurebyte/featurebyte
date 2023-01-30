@@ -15,6 +15,7 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_call_schedule_online_store,
+    tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_last_tile_index,
@@ -199,7 +200,6 @@ class FeatureManagerSnowflake(BaseModel):
         """
         # delete records from tile-feature mapping table
         for tile_id in feature_spec.tile_ids:
-            # TODO: update IS_DELETED field in ONLINE_STORE_MAPPING as well
             delete_sql = tm_delete_tile_feature_mapping.render(
                 tile_id=tile_id,
                 feature_name=feature_spec.feature.name,
@@ -207,6 +207,9 @@ class FeatureManagerSnowflake(BaseModel):
             )
             await self._session.execute_query(delete_sql)
             logger.debug(f"Done delete tile_feature_mapping for {tile_id}")
+            delete_sql = tm_delete_online_store_mapping.render(tile_id=tile_id)
+            await self._session.execute_query(delete_sql)
+            logger.debug(f"Done delete online_store_mapping for {tile_id}")
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:

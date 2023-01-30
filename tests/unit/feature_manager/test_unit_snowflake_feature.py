@@ -9,6 +9,7 @@ import pytest
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
+    tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_upsert_online_store_mapping,
@@ -146,7 +147,7 @@ async def test_online_disable(
         feature_store_table_name="feature_store_table_1",
     )
 
-    mock_execute_query.side_effect = [None, None, None]
+    mock_execute_query.side_effect = [None, None, None, None]
     await feature_manager.online_disable(feature_spec)
 
     delete_sql = tm_delete_tile_feature_mapping.render(
@@ -155,6 +156,15 @@ async def test_online_disable(
         feature_version=feature_spec.feature.version.to_str(),
     )
     assert mock_execute_query.call_args_list[0] == mock.call(delete_sql)
+
+    delete_sql = tm_delete_online_store_mapping.render(
+        tile_id=feature_spec.tile_ids[0],
+    )
+    assert mock_execute_query.call_args_list[1] == mock.call(delete_sql)
+
+    assert mock_execute_query.call_args_list[2] == mock.call(
+        f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{feature_spec.tile_ids[0]}' and IS_DELETED = FALSE"
+    )
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
