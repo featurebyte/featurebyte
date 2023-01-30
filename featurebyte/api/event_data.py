@@ -213,17 +213,17 @@ class EventData(EventDataModel, DataApiObject):
         return analysis
 
     @typechecked
-    def initialise_default_feature_job_setting(self) -> None:
+    def initialize_default_feature_job_setting(self) -> None:
         """
-        Initialise default feature job setting by performing an analysis on the data
+        Initialize default feature job setting by performing an analysis on the data
 
         Raises
         ------
         InvalidSettingsError
-            Default feature job setting is already initialised
+            Default feature job setting is already initialized
         """
         if self.default_feature_job_setting:
-            raise InvalidSettingsError("Default feature job setting is already initialised")
+            raise InvalidSettingsError("Default feature job setting is already initialized")
 
         analysis = self.create_new_feature_job_setting_analysis()
         self.update_default_feature_job_setting(analysis.get_recommendation())
