@@ -191,7 +191,9 @@ class FeatureExecutionPlan:
         agg_result_names: bool
             Names of the aggregated columns. Used when excluded_post_aggregation is True.
         exclude_columns: Optional[set[str]]
-            When provided, exclude these columns from the output
+            When provided, exclude these columns from the output. This is currently used when
+            generating feature retrieval sql for online requests where we want to exclude the
+            internally added point in time column from the final output.
 
         Returns
         -------
