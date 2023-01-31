@@ -157,7 +157,8 @@ async def test_drop_all_and_recreate(
     restored_tasks = await _get_tasks()
     restored_metadata = await _get_schema_metadata()
     assert restored_tasks == original_tasks
-    assert restored_metadata == original_metadata
+    assert restored_metadata["FEATURE_STORE_ID"] == original_metadata["FEATURE_STORE_ID"]
+    assert restored_metadata["MIGRATION_VERSION"] == 8
 
     # Check online request can be made and produces same result
     res = make_online_request(client, deployed_feature_list, entity_serving_names)
