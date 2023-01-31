@@ -1,5 +1,9 @@
 name: "Daily Tags Maintenance"
 
+# Permission to push (DELETE) tags
+permissions:
+  contents: write
+
 on:
   workflow_dispatch: {}
   schedule:
