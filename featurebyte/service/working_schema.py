@@ -16,9 +16,29 @@ from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
 
+async def drop_all_objects(session: BaseSession) -> None:
+    """
+    Drop all objects in the working schema
+
+    Parameters
+    ----------
+    session: BaseSession
+        BaseSession object
+    """
+    initializer = session.initializer()
+    if initializer is not None:
+        try:
+            await initializer.drop_all_objects_in_working_schema()
+        except NotImplementedError:
+            logger.info(f"drop_all_objects_in_working_schema not implemented for {session}")
+            return
+    else:
+        return
+
+
 class WorkingSchemaService(BaseService):
     """
-    WorkingSchemaService
+    WorkingSchemaService is responsible for managing the working schema in the data warehouse
     """
 
     def __init__(self, user: Any, persistent: Persistent):
@@ -41,17 +61,10 @@ class WorkingSchemaService(BaseService):
 
         # Drop everything in the working schema. It would be easier to drop the schema directly and
         # then recreate, but the assumption is that the account might not have this privilege.
-        initializer = session.initializer()
-        if initializer is not None:
-            try:
-                await initializer.drop_all_objects_in_working_schema()
-            except NotImplementedError:
-                logger.info(f"drop_all_objects_in_working_schema not implemented for {session}")
-                return
-        else:
-            return
+        await drop_all_objects(session)
 
         # Initialize working schema. This covers registering tables, functions and procedures.
+        initializer = session.initializer()
         await initializer.initialize()
 
         # Update feature store id in the metadata schema. This is typically done on creation of
