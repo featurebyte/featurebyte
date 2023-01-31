@@ -73,9 +73,9 @@ class PrettyDict(Dict[str, Any]):
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
-def _api_object_cache_key(obj: Any, *args: Any, **kwargs: Any) -> Any:
+def _api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any) -> Any:
     # Return a cache key for _cache key retrieval (only object ID is used)
-    return hashkey(obj.id, *args, **kwargs)
+    return hashkey(obj.Settings.collection_name, obj.id, *args, **kwargs)
 
 
 class ApiObject(FeatureByteBaseDocumentModel):

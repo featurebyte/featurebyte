@@ -1135,3 +1135,29 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list):
     assert feature_list.readiness_distribution.dict() == {
         "__root__": [{"readiness": "DRAFT", "count": 1}]
     }
+
+
+def test_feature_list_synchronization(saved_feature_list):
+    """Test feature list synchronization"""
+    # construct a cloned feature list (feature list with the same feature list ID)
+    cloned_feat_list = FeatureList.get_by_id(id=saved_feature_list.id)
+
+    # update the original feature list's version mode (stored at feature list namespace record)
+    target_mode = DefaultVersionMode.MANUAL
+    assert saved_feature_list.default_version_mode != target_mode
+    saved_feature_list.update_default_version_mode(target_mode)
+    assert saved_feature_list.default_version_mode == target_mode
+
+    # check the clone's version mode also get updated
+    assert cloned_feat_list.default_version_mode == target_mode
+
+    # update original feature list deployed status (stored at feature list record)
+    assert saved_feature_list.deployed is False
+    assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
+    saved_feature_list.deploy(enable=True, make_production_ready=True)
+    assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
+    assert saved_feature_list.deployed is True
+
+    # check the clone's deployed value
+    assert cloned_feat_list.deployed is True
+    assert cloned_feat_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY

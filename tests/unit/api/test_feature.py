@@ -789,3 +789,27 @@ def test_get_feature_jobs_status_feature_without_tile(
     assert job_status_result.feature_tile_table.shape == (0, 2)
     assert job_status_result.feature_job_summary.shape == (0, 9)
     assert job_status_result.job_session_logs.shape == (0, 11)
+
+
+def test_feature_synchronization(saved_feature):
+    """Test feature synchronization"""
+    # construct a cloned feature (feature with the same feature ID)
+    cloned_feat = Feature.get_by_id(id=saved_feature.id)
+
+    # update the original feature's version mode (stored at feature namespace record)
+    target_mode = DefaultVersionMode.MANUAL
+    assert saved_feature.default_version_mode != target_mode
+    saved_feature.update_default_version_mode(target_mode)
+    assert saved_feature.default_version_mode == target_mode
+
+    # check the clone's version mode also get updated
+    assert cloned_feat.default_version_mode == target_mode
+
+    # update original feature's readiness (stored at feature record)
+    target_readiness = FeatureReadiness.DEPRECATED
+    assert saved_feature.readiness != target_readiness
+    saved_feature.update_readiness(target_readiness)
+    assert saved_feature.readiness == target_readiness
+
+    # check the clone's readiness value
+    assert cloned_feat.readiness == target_readiness
