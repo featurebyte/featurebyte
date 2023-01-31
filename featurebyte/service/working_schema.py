@@ -65,6 +65,8 @@ class WorkingSchemaService(BaseService):
 
         # Initialize working schema. This covers registering tables, functions and procedures.
         initializer = session.initializer()
+        if not initializer:
+            return
         await initializer.initialize()
 
         # Update feature store id in the metadata schema. This is typically done on creation of
