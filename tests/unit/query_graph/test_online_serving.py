@@ -8,6 +8,7 @@ import textwrap
 import pandas as pd
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
@@ -204,9 +205,16 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     """
     node, graph = complex_feature_query_graph
 
+    # Prune graph to remove unused windows (in the actual code paths, graph is always pruned before
+    # any sql generation)
+    pruned_graph_model, node_name_map = graph.prune(node, aggressive=True)
+    pruned_node = pruned_graph_model.get_node_by_name(node_name_map[node.name])
+    pruned_graph, loaded_node_name_map = QueryGraph().load(pruned_graph_model)
+    pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
+
     # Check precompute sqls
-    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
-    assert len(queries) == 3
+    queries = get_online_store_precompute_queries(pruned_graph, pruned_node, SourceType.SNOWFLAKE)
+    assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
@@ -226,10 +234,6 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
         **expected_query_params_tile_1,
     }
     assert queries[1].dict(exclude={"sql"}) == {
-        "result_name": "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
-        **expected_query_params_tile_1,
-    }
-    assert queries[2].dict(exclude={"sql"}) == {
         "result_name": "agg_w604800_sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
         **expected_query_params_tile_2,
     }
@@ -243,18 +247,13 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
         "tests/fixtures/expected_online_precompute_complex_1.sql",
         update_fixture=update_fixtures,
     )
-    assert_equal_with_expected_fixture(
-        queries[2].sql,
-        "tests/fixtures/expected_online_precompute_complex_2.sql",
-        update_fixture=update_fixtures,
-    )
 
     # Check retrieval sql
     sql = get_online_store_retrieval_sql(
         request_table_name="MY_REQUEST_TABLE",
         request_table_columns=["CUSTOMER_ID"],
-        graph=graph,
-        nodes=[node],
+        graph=pruned_graph,
+        nodes=[pruned_node],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
