@@ -73,6 +73,11 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     def aggregation_ids(self) -> List[str]:
         """
         Derive aggregation_ids property from tile_specs
+
+        Returns
+        -------
+        List[str]
+            derived aggregation_ids
         """
         out = set()
         for tile_spec in self.feature.tile_specs:
