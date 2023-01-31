@@ -26,14 +26,13 @@ from http import HTTPStatus
 import lazy_object_proxy
 import pandas as pd
 from bson.objectid import ObjectId
-from cachetools import cachedmethod
+from cachetools import TTLCache, cachedmethod
 from cachetools.keys import hashkey
 from pandas import DataFrame
 from pydantic import Field
 from rich.pretty import pretty_repr
 from typeguard import typechecked
 
-from featurebyte.common.utils import generate_api_object_cache
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -89,7 +88,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _list_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
     _list_foreign_keys: List[Tuple[str, Any, str]] = []
-    _cache = generate_api_object_cache()
+    _cache = TTLCache(maxsize=1024, ttl=1)
 
     # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)

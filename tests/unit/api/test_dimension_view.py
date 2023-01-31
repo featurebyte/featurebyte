@@ -5,9 +5,9 @@ import textwrap
 
 import pytest
 
-from featurebyte import Feature, SlowlyChangingView
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType

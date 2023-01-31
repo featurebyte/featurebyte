@@ -10,11 +10,11 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import SlowlyChangingView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -669,7 +669,7 @@ def test_is_time_based(saved_feature):
 
     # Mock out GroupOperationStructure to have time-based property set to true
     with patch(
-        "featurebyte.models.feature.FeatureModel.extract_operation_structure"
+        "featurebyte.models.feature.FrozenFeatureModel.extract_operation_structure"
     ) as mocked_extract:
         mocked_extract.return_value = GroupOperationStructure(
             row_index_lineage=("item_groupby_1",),

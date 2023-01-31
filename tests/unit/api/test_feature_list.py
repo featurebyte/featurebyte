@@ -10,7 +10,6 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import SlowlyChangingView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -18,6 +17,7 @@ from featurebyte.api.feature_list import (
     FeatureList,
     FeatureListNamespace,
 )
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -35,7 +35,6 @@ def draft_feature_fixture(feature_group):
     """Fixture for a draft feature"""
     feature = feature_group["production_ready_feature"] + 123
     feature.name = "draft_feature"
-    feature.__dict__["readiness"] = FeatureReadiness.DRAFT
     feature.__dict__["version"] = "V220402"
     feature_group["draft_feature"] = feature
     return feature
@@ -71,66 +70,6 @@ def single_feat_flist_fixture(production_ready_feature):
     return flist
 
 
-def test_feature_list_production_ready_fraction__one_fourth(
-    production_ready_feature, draft_feature, quarantine_feature, deprecated_feature
-):
-    """Test feature list production ready fraction"""
-    feature_list = FeatureList(
-        [
-            production_ready_feature,
-            draft_feature,
-            quarantine_feature,
-            deprecated_feature,
-        ],
-        name="feature_list_name",
-    )
-    assert feature_list.production_ready_fraction == 0.25
-
-
-def test_feature_list_production_ready_fraction__one_third(
-    production_ready_feature, draft_feature, quarantine_feature
-):
-    """Test feature list production ready fraction"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-                draft_feature,
-                quarantine_feature,
-            ],
-            name="feature_list_name",
-        ).production_ready_fraction
-        == 1 / 3.0
-    )
-
-
-def test_feature_list_production_ready_fraction__one_half(production_ready_feature, draft_feature):
-    """Test feature list production ready fraction"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-                draft_feature,
-            ],
-            name="feature_list_name",
-        ).production_ready_fraction
-        == 0.5
-    )
-
-
-def test_feature_list_production_ready_fraction__single_feature(production_ready_feature):
-    """Test feature list production ready fraction"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-            ],
-            name="feature_list_name",
-        ).production_ready_fraction
-        == 1.0
-    )
-
-
 @freeze_time("2022-05-01")
 def test_feature_list_creation__success(
     production_ready_feature, single_feat_flist, mocked_tile_cache
@@ -142,10 +81,7 @@ def test_feature_list_creation__success(
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
         "version": "V220501",
-        "deployed": False,
-        "online_enabled_feature_ids": [],
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -249,17 +185,11 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "deployed": False,
         "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
-        ],
-        "online_enabled_feature_ids": [],
-        "readiness_distribution": [
-            {"count": 1, "readiness": "PRODUCTION_READY"},
-            {"count": 2, "readiness": "DRAFT"},
         ],
         "name": "my_feature_list",
         "feature_clusters": None,
@@ -1174,3 +1104,34 @@ def test_get_feature_jobs_status_feature_without_tile(
     assert job_status_result.feature_tile_table.shape == (1, 2)
     assert job_status_result.feature_job_summary.shape == (1, 9)
     assert job_status_result.job_session_logs.shape == (0, 11)
+
+
+def test_feature_list__check_feature_readiness_update(saved_feature_list):
+    """Test feature list feature readiness derived attributes update logic"""
+    new_feat = saved_feature_list["sum_1d"] + 100
+    new_feat.name = "new_feat"
+    new_feat.save()
+
+    feature_list = FeatureList([new_feat], name="my_fl")
+    assert feature_list.production_ready_fraction == 0.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
+
+    new_feat.update_readiness(readiness="PRODUCTION_READY")
+    assert feature_list.production_ready_fraction == 1.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
+    }
+
+    feature_list.save()
+    assert feature_list.production_ready_fraction == 1.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
+    }
+
+    new_feat.update_readiness(readiness="DRAFT")
+    assert feature_list.production_ready_fraction == 0.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
