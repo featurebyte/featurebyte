@@ -12,7 +12,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.enum import SemanticType
+from featurebyte.enum import SemanticType, SourceType
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate
@@ -179,6 +179,7 @@ def online_enable_service_data_warehouse_mocks_fixture():
         with patch(
             "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
         ) as feature_manager_cls:
+            mock_get_feature_store_session.return_value = Mock(source_type=SourceType.SNOWFLAKE)
             mocks["get_feature_store_session"] = mock_get_feature_store_session
             mocks["feature_manager"] = feature_manager_cls.return_value
             yield mocks

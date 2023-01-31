@@ -17,6 +17,7 @@ from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.session.base import BaseSession
 
 
@@ -102,7 +103,7 @@ class TileColumnTypeExtractor:
         return value_column_names.str.replace('"', "").str.split(",").apply(_transform)
 
 
-class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
+class DataWarehouseMigrationServiceV6(DataWarehouseMigrationMixin):
     """
     DataWarehouseMigrationService class
 
@@ -203,3 +204,27 @@ class DataWarehouseMigrationService(DataWarehouseMigrationMixin):
                 except ProgrammingError:
                     # ok if column tile table or tile column doesn't exist yet
                     pass
+
+
+class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
+    """
+    Reset working schema from scratch due to major changes in the warehouse schema in order to:
+
+    1. Add online serving support for complex features involving multiple tile tables
+    2. Fix jobs scheduling bug caused by tile_id collision
+    """
+
+    @migrate(version=8, description="Reset working schema from scratch")
+    async def reset_working_schema(self) -> None:
+        """
+        Reset working schema from scratch
+        """
+        await self.migrate_all_records(version=8)
+
+    async def migrate_record_with_session(
+        self, feature_store: FeatureStoreModel, session: BaseSession
+    ) -> None:
+        working_schema_service = WorkingSchemaService(user=self.user, persistent=self.persistent)
+        await working_schema_service.recreate_working_schema(
+            feature_store_id=feature_store.id, session=session
+        )

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, OrderedDict
 
 import collections
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -28,6 +28,9 @@ def base_session_test_fixture():
     """
 
     class BaseSessionTestFixture(BaseSession):
+        def initializer(self):
+            return Mock(name="MockInitializer")
+
         source_type: SourceType = Field(SourceType.TEST, const=True)
 
         @property
@@ -92,6 +95,9 @@ def base_schema_initializer_test_fixture():
 
         async def list_procedures(self) -> list[str]:
             return []
+
+        async def drop_all_objects_in_working_schema(self) -> None:
+            return
 
     return BaseSchemaInitializerTestFixture
 

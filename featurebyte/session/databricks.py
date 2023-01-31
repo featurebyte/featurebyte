@@ -50,8 +50,8 @@ class DatabricksSession(BaseSession):
             schema=self.featurebyte_schema,
         )
 
-    async def initialize(self) -> None:
-        await DatabricksSchemaInitializer(self).initialize()
+    def initializer(self) -> BaseSchemaInitializer:
+        return DatabricksSchemaInitializer(self)
 
     @property
     def schema_name(self) -> str:
@@ -156,6 +156,9 @@ class DatabricksSession(BaseSession):
 
 class DatabricksSchemaInitializer(BaseSchemaInitializer):
     """Databricks schema initializer class"""
+
+    async def drop_all_objects_in_working_schema(self) -> None:
+        raise NotImplementedError()
 
     @property
     def sql_directory_name(self) -> str:
