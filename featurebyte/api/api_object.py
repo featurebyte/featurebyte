@@ -74,7 +74,7 @@ class PrettyDict(Dict[str, Any]):
 
 
 def _api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any) -> Any:
-    # Return a cache key for _cache key retrieval (only object ID is used)
+    # Return a cache key for _cache key retrieval (only collection name & object ID are used)
     return hashkey(obj.Settings.collection_name, obj.id, *args, **kwargs)
 
 
