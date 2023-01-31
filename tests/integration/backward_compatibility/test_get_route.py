@@ -27,6 +27,7 @@ from featurebyte.persistent.mongo import MongoDB
 
 @pytest.fixture(name="mongo_persistent", scope="module")
 def mongo_persistent_fixture():
+    # os.system("./scripts/dump_staging_app.sh --nsInclude='app.*'")
     mongo_connection = os.getenv("MONGO_CONNECTION")
     persistent = MongoDB(uri=mongo_connection, database="app")
     yield persistent
