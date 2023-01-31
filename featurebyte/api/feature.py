@@ -394,7 +394,7 @@ class Feature(
             return False
 
     @property
-    def deployed_feature_list_ids(self):
+    def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
         return self.cached_model.deployed_feature_list_ids
 
     @property

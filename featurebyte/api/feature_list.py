@@ -602,7 +602,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         try:
             return self.cached_model.readiness_distribution
         except RecordRetrievalException:
-            return self.derive_readiness_distribution(list(self.feature_objects.values()))
+            return self.derive_readiness_distribution(list(self.feature_objects.values()))  # type: ignore
 
     @property
     def deployed(self) -> bool:

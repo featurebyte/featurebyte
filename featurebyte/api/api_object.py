@@ -46,6 +46,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 from featurebyte.schema.task import TaskStatus
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
+ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
 
@@ -72,7 +73,7 @@ class PrettyDict(Dict[str, Any]):
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
-def _cache_key(obj, *args, **kwargs):
+def _api_object_cache_key(obj: Any, *args: Any, **kwargs: Any) -> Any:
     """Return a cache key for _cache key retrieval."""
     return hashkey(obj.id, *args, **kwargs)
 
@@ -88,7 +89,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _list_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
     _list_foreign_keys: List[Tuple[str, Any, str]] = []
-    _cache = TTLCache(maxsize=1024, ttl=1)
+    _cache: Any = TTLCache(maxsize=1024, ttl=1)
 
     # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
@@ -96,9 +97,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
     def __repr__(self) -> str:
         return repr(self.info())
 
-    @property
-    @cachedmethod(cache=operator.attrgetter("_cache"), key=_cache_key)
-    def cached_model(self) -> FeatureByteBaseDocumentModel:
+    @property  # type: ignore
+    @cachedmethod(cache=operator.attrgetter("_cache"), key=_api_object_cache_key)
+    def cached_model(self: ModelT) -> ModelT:
         """
         Retrieve the model stored the persistent (result of this property will be cached within the time-to-live
         period specified during _cache attribution construction). If the cached expired, calling this property
@@ -108,7 +109,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         FeatureByteBaseDocumentModel
         """
-        return self._list_schema(**self._get_object_dict_by_id(id=self.id))
+        return self._list_schema(**self._get_object_dict_by_id(id=self.id))  # type: ignore
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
