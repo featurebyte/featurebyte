@@ -188,12 +188,12 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     }
     assert_equal_with_expected_fixture(
         queries[0].sql,
-        "tests/fixtures/expected_online_precompute_sql_0.sql",
+        "tests/fixtures/expected_online_precompute_0.sql",
         update_fixture=update_fixtures,
     )
     assert_equal_with_expected_fixture(
         queries[1].sql,
-        "tests/fixtures/expected_online_precompute_sql_1.sql",
+        "tests/fixtures/expected_online_precompute_1.sql",
         update_fixture=update_fixtures,
     )
 
@@ -203,6 +203,8 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     Test complex features with multiple tile tables
     """
     node, graph = complex_feature_query_graph
+
+    # Check precompute sqls
     queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
     assert len(queries) == 3
     expected_query_params_tile_1 = {
@@ -233,17 +235,31 @@ def test_complex_features(complex_feature_query_graph, update_fixtures):
     }
     assert_equal_with_expected_fixture(
         queries[0].sql,
-        "tests/fixtures/expected_online_precompute_sql_complex_0.sql",
+        "tests/fixtures/expected_online_precompute_complex_0.sql",
         update_fixture=update_fixtures,
     )
     assert_equal_with_expected_fixture(
         queries[1].sql,
-        "tests/fixtures/expected_online_precompute_sql_complex_1.sql",
+        "tests/fixtures/expected_online_precompute_complex_1.sql",
         update_fixture=update_fixtures,
     )
     assert_equal_with_expected_fixture(
         queries[2].sql,
-        "tests/fixtures/expected_online_precompute_sql_complex_2.sql",
+        "tests/fixtures/expected_online_precompute_complex_2.sql",
+        update_fixture=update_fixtures,
+    )
+
+    # Check retrieval sql
+    sql = get_online_store_retrieval_sql(
+        request_table_name="MY_REQUEST_TABLE",
+        request_table_columns=["CUSTOMER_ID"],
+        graph=graph,
+        nodes=[node],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_complex.sql",
         update_fixture=update_fixtures,
     )
 
