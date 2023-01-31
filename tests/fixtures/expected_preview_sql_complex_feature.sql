@@ -219,5 +219,5 @@ SELECT
   AGG."CUSTOMER_ID",
   (
     "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" / NULLIF("agg_w604800_sum_875069c3061f4fbb8c0e49a0a927676315f07a46", 0)
-  ) AS "Unnamed"
+  ) AS "a_2h_avg_by_user_div_7d_by_biz"
 FROM _FB_AGGREGATED AS AGG
