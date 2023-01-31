@@ -29,13 +29,15 @@ from featurebyte.core.series import Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
-from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
     FeatureNamespaceModel,
     FeatureReadiness,
+    FrozenFeatureModel,
+    FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
@@ -51,7 +53,7 @@ from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
 
-class FeatureNamespace(FeatureNamespaceModel, ApiObject):
+class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     """
     FeatureNamespace class
     """
@@ -73,6 +75,26 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
         ("entity_ids", Entity, "entities"),
         ("tabular_data_ids", DataApiObject, "data"),
     ]
+
+    @property
+    def feature_ids(self) -> List[PydanticObjectId]:
+        return self.cached_model.feature_ids
+
+    @property
+    def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+        return self.cached_model.online_enabled_feature_ids
+
+    @property
+    def readiness(self) -> FeatureReadiness:
+        return self.cached_model.readiness
+
+    @property
+    def default_feature_id(self) -> PydanticObjectId:
+        return self.cached_model.default_feature_id
+
+    @property
+    def default_version_mode(self) -> DefaultVersionMode:
+        return self.cached_model.default_version_mode
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
@@ -122,7 +144,7 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
 class Feature(
     ProtectedColumnsQueryObject,
     Series,
-    FeatureModel,
+    FrozenFeatureModel,
     SavableApiObject,
     CdAccessorMixin,
     FeatureJobMixin,
@@ -356,6 +378,24 @@ class Feature(
         FeatureNamespace
         """
         return FeatureNamespace.get_by_id(id=self.feature_namespace_id)
+
+    @property
+    def readiness(self) -> FeatureReadiness:
+        try:
+            return self.cached_model.readiness
+        except RecordRetrievalException:
+            return FeatureReadiness.DRAFT
+
+    @property
+    def online_enabled(self) -> bool:
+        try:
+            return self.cached_model.online_enabled
+        except RecordRetrievalException:
+            return False
+
+    @property
+    def deployed_feature_list_ids(self):
+        return self.cached_model.deployed_feature_list_ids
 
     @property
     def is_default(self) -> bool:
