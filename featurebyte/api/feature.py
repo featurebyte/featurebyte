@@ -78,22 +78,57 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
 
     @property
     def feature_ids(self) -> List[PydanticObjectId]:
+        """
+        List of feature IDs from the same feature namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
         return self.cached_model.feature_ids
 
     @property
     def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+        """
+        List of online-enabled feature IDs from the same feature namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
         return self.cached_model.online_enabled_feature_ids
 
     @property
     def readiness(self) -> FeatureReadiness:
+        """
+        Feature readiness of the default feature of this feature namespace
+
+        Returns
+        -------
+        FeatureReadiness
+        """
         return self.cached_model.readiness
 
     @property
     def default_feature_id(self) -> PydanticObjectId:
+        """
+        Default feature ID of this feature namespace
+
+        Returns
+        -------
+        PydanticObjectId
+        """
         return self.cached_model.default_feature_id
 
     @property
     def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Default feature namespace version mode of this feature namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
         return self.cached_model.default_version_mode
 
     @classmethod
@@ -148,7 +183,7 @@ class Feature(
     SavableApiObject,
     CdAccessorMixin,
     FeatureJobMixin,
-):
+):  # pylint: disable=too-many-public-methods
     """
     Feature class
     """
@@ -381,6 +416,13 @@ class Feature(
 
     @property
     def readiness(self) -> FeatureReadiness:
+        """
+        Feature readiness of this feature
+
+        Returns
+        -------
+        FeatureReadiness
+        """
         try:
             return self.cached_model.readiness
         except RecordRetrievalException:
@@ -388,6 +430,14 @@ class Feature(
 
     @property
     def online_enabled(self) -> bool:
+        """
+        Whether this feature is oneline-enabled or not, an online-enabled feature is a feature used by at least
+        one deployed feature list.
+
+        Returns
+        -------
+        bool
+        """
         try:
             return self.cached_model.online_enabled
         except RecordRetrievalException:
@@ -395,6 +445,13 @@ class Feature(
 
     @property
     def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
+        """
+        IDs of deployed feature lists which use this feature
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
         return self.cached_model.deployed_feature_list_ids
 
     @property

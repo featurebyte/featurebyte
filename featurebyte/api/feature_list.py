@@ -1,6 +1,7 @@
 """
 FeatureListVersion class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Tuple, Union, cast
@@ -361,26 +362,68 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
     @property
     def feature_list_ids(self) -> List[PydanticObjectId]:
+        """
+        List of feature list IDs from the same feature list namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
         return self.cached_model.feature_list_ids
 
     @property
     def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
+        """
+        List of deployed feature list IDs from the same feature list namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
         return self.cached_model.deployed_feature_list_ids
 
     @property
     def readiness_distribution(self) -> FeatureReadinessDistribution:
+        """
+        Feature readiness distribution of the default feature list of this feature list namespace
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+        """
         return self.cached_model.readiness_distribution
 
     @property
     def default_feature_list_id(self) -> PydanticObjectId:
+        """
+        Default feature list ID of this feature list namespace
+
+        Returns
+        -------
+        PydanticObjectId
+        """
         return self.cached_model.default_feature_list_id
 
     @property
     def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Default feature list version mode of this feature list namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
         return self.cached_model.default_version_mode
 
     @property
     def status(self) -> FeatureListStatus:
+        """
+        Feature list status
+
+        Returns
+        -------
+        FeatureListStatus
+        """
         return self.cached_model.status
 
     @classmethod
@@ -590,6 +633,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     @property
     def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+        """
+        List of online enabled feature IDs of this feature list
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
         try:
             return self.cached_model.online_enabled_feature_ids
         except RecordRetrievalException:
@@ -599,6 +649,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     @property
     def readiness_distribution(self) -> FeatureReadinessDistribution:
+        """
+        Feature readiness distribution of this feature list
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+        """
         try:
             return self.cached_model.readiness_distribution
         except RecordRetrievalException:
@@ -606,6 +663,13 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
     @property
     def deployed(self) -> bool:
+        """
+        Whether this feature list is deployed or not
+
+        Returns
+        -------
+        bool
+        """
         try:
             return self.cached_model.deployed
         except RecordRetrievalException:

@@ -74,7 +74,7 @@ class PrettyDict(Dict[str, Any]):
 
 
 def _api_object_cache_key(obj: Any, *args: Any, **kwargs: Any) -> Any:
-    """Return a cache key for _cache key retrieval."""
+    # Return a cache key for _cache key retrieval (only object ID is used)
     return hashkey(obj.id, *args, **kwargs)
 
 
@@ -109,7 +109,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         FeatureByteBaseDocumentModel
         """
-        return self._list_schema(**self._get_object_dict_by_id(id=self.id))  # type: ignore
+        return self._list_schema(**self._get_object_dict_by_id(id_value=self.id))  # type: ignore
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -149,9 +149,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
 
     @classmethod
-    def _get_object_dict_by_id(cls: Type[ApiObjectT], id: ObjectId) -> dict[str, Any]:
+    def _get_object_dict_by_id(cls: Type[ApiObjectT], id_value: ObjectId) -> dict[str, Any]:
         client = Configurations().get_client()
-        response = client.get(url=f"{cls._route}/{id}")
+        response = client.get(url=f"{cls._route}/{id_value}")
         if response.status_code == HTTPStatus.OK:
             return dict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
@@ -205,7 +205,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     def _get_by_id(
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
-        return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id=id))
+        return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id_value=id))
 
     @classmethod
     def get_by_id(
