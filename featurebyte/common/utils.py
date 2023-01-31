@@ -13,6 +13,7 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+from cachetools import TTLCache
 from dateutil import parser
 
 from featurebyte.enum import DBVarType
@@ -254,3 +255,8 @@ def validate_datetime_input(value: Union[datetime, str]) -> str:
         datetime_value = parser.parse(value)
 
     return datetime_value.isoformat()
+
+
+def generate_api_object_cache() -> TTLCache:
+    """Helper function generate cache for api object"""
+    return TTLCache(maxsize=1024, ttl=1)

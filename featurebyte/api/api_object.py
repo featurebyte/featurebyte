@@ -18,6 +18,7 @@ from typing import (
     cast,
 )
 
+import operator
 import time
 from functools import partial
 from http import HTTPStatus
@@ -25,11 +26,14 @@ from http import HTTPStatus
 import lazy_object_proxy
 import pandas as pd
 from bson.objectid import ObjectId
+from cachetools import cachedmethod
+from cachetools.keys import hashkey
 from pandas import DataFrame
 from pydantic import Field
 from rich.pretty import pretty_repr
 from typeguard import typechecked
 
+from featurebyte.common.utils import generate_api_object_cache
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -69,6 +73,11 @@ class PrettyDict(Dict[str, Any]):
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
+def _cache_key(obj, *args, **kwargs):
+    """Return a cache key for _cache key retrieval."""
+    return hashkey(obj.id, *args, **kwargs)
+
+
 class ApiObject(FeatureByteBaseDocumentModel):
     """
     ApiObject contains common methods used to retrieve data
@@ -80,12 +89,27 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _list_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
     _list_foreign_keys: List[Tuple[str, Any, str]] = []
+    _cache = generate_api_object_cache()
 
     # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     def __repr__(self) -> str:
         return repr(self.info())
+
+    @property
+    @cachedmethod(cache=operator.attrgetter("_cache"), key=_cache_key)
+    def cached_model(self) -> FeatureByteBaseDocumentModel:
+        """
+        Retrieve the model stored the persistent (result of this property will be cached within the time-to-live
+        period specified during _cache attribution construction). If the cached expired, calling this property
+        will make an API call to retrieve the most recent result stored at persistent.
+
+        Returns
+        -------
+        FeatureByteBaseDocumentModel
+        """
+        return self._list_schema(**self._get_object_dict_by_id(id=self.id))
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -123,6 +147,14 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 f'{class_name} (name: "{name}") not found. Please save the {class_name} object first.',
             )
         raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
+
+    @classmethod
+    def _get_object_dict_by_id(cls: Type[ApiObjectT], id: ObjectId) -> dict[str, Any]:
+        client = Configurations().get_client()
+        response = client.get(url=f"{cls._route}/{id}")
+        if response.status_code == HTTPStatus.OK:
+            return dict(response.json())
+        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
     def _get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
@@ -173,11 +205,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     def _get_by_id(
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
-        client = Configurations().get_client()
-        response = client.get(url=f"{cls._route}/{id}")
-        if response.status_code == HTTPStatus.OK:
-            return cls.from_persistent_object_dict(object_dict=response.json())
-        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+        return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id=id))
 
     @classmethod
     def get_by_id(
