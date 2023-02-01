@@ -626,8 +626,5 @@ def test_non_time_feature__create_new_version(saved_item_data, transaction_entit
             )
         )
 
-    expected_msg = (
-        'Feature "feat" is not a time-aware feature. '
-        "Feature job setting has no effect in feature value derivation."
-    )
+    expected_msg = "Feature job setting has no effect in feature value derivation."
     assert expected_msg in str(exc.value)

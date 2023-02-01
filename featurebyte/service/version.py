@@ -94,10 +94,7 @@ class VersionService(BaseService):
                 **{**feature.dict(), "graph": graph, "node_name": node_name, "_id": ObjectId()}
             )
         if feature_job_setting and not has_groupby_node:
-            raise DocumentError(
-                f'Feature "{feature.name}" is not a time-aware feature. '
-                "Feature job setting has no effect in feature value derivation."
-            )
+            raise DocumentError("Feature job setting has no effect in feature value derivation.")
         raise DocumentError("No change detected on the new feature version.")
 
     async def create_new_feature_version(
