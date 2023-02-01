@@ -28,7 +28,7 @@ from featurebyte.query_graph.model.critical_data_info import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails
+from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
 
 version: str = get_version()
 
@@ -58,6 +58,7 @@ __all__ = [
     "AggFunc",
     "SourceType",
     "SnowflakeDetails",
+    "SparkDetails",
     "UsernamePasswordCredential",
     "MissingValueImputation",
     "DisguisedValueImputation",

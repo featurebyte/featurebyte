@@ -12,7 +12,12 @@ import json
 import pandas as pd
 from pydantic import Field
 from snowflake import connector
-from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
+from snowflake.connector.errors import (
+    DatabaseError,
+    NotSupportedError,
+    OperationalError,
+    ProgrammingError,
+)
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
@@ -33,6 +38,8 @@ class SnowflakeSession(BaseSession):
     Precision & scale:
     https://docs.snowflake.com/en/sql-reference/data-types-numeric.html#impact-of-precision-and-scale-on-storage-size
     """
+
+    _no_schema_error = ProgrammingError
 
     account: str
     warehouse: str

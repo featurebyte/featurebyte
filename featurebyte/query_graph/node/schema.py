@@ -7,7 +7,7 @@ from typing import ClassVar, Optional, Union
 
 from pydantic import StrictStr
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, DistributeStorageType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 
 
@@ -42,11 +42,27 @@ class DatabricksDetails(BaseDatabaseDetails):
     featurebyte_schema: StrictStr
 
 
+class SparkDetails(BaseDatabaseDetails):
+    """Model for Spark data source information"""
+
+    host: StrictStr
+    port: int
+    http_path: StrictStr
+    use_http_transport: bool
+    remote_storage_type: DistributeStorageType
+    remote_storage_url: str
+    remote_storage_spark_url: StrictStr
+    featurebyte_catalog: StrictStr
+    featurebyte_schema: StrictStr
+
+
 class TestDatabaseDetails(BaseDatabaseDetails):
     """Model for a no-op mock database details for use in tests"""
 
 
-DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails, DatabricksDetails, TestDatabaseDetails]
+DatabaseDetails = Union[
+    SnowflakeDetails, SparkDetails, SQLiteDetails, DatabricksDetails, TestDatabaseDetails
+]
 
 
 class FeatureStoreDetails(FeatureByteBaseModel):

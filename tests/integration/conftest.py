@@ -41,7 +41,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import SQLiteDetails, TableDetails
+from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
@@ -90,6 +90,14 @@ def config_fixture():
                 "feature_store": "databricks_featurestore",
                 "credential_type": "ACCESS_TOKEN",
                 "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            },
+            {
+                "feature_store": "spark_featurestore",
+                "credential_type": "S3",
+                "storage_credential": {
+                    "s3_access_key_id": "username",
+                    "s3_secret_access_key": "password",
+                },
             },
         ],
         "profile": [
@@ -229,6 +237,33 @@ def databricks_feature_store_fixture(mock_get_persistent):
             server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
+            featurebyte_schema=temp_schema_name,
+        ),
+    )
+    feature_store.save()
+    return feature_store
+
+
+@pytest.fixture(name="spark_feature_store", scope="session")
+def spark_feature_store_fixture(mock_get_persistent):
+    """
+    Spark database source fixture
+    """
+    _ = mock_get_persistent
+    schema_name = "featurebyte"
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    feature_store = FeatureStore(
+        name="spark_featurestore",
+        type="spark",
+        details=SparkDetails(
+            host="localhost",
+            port=10000,
+            http_path="cliservice",
+            use_http_transport=False,
+            remote_storage_type="s3",
+            remote_storage_url="http://localhost:9000/staging/",
+            remote_storage_spark_url="s3a://staging/",
+            featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,
         ),
     )

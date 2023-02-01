@@ -208,9 +208,18 @@ class SourceType(StrEnum):
     SNOWFLAKE = "snowflake", "Snowflake connection details"
     SQLITE = "sqlite", "SQLite connection details"
     DATABRICKS = "databricks", "DataBricks connection details"
+    SPARK = "spark", "Spark connection details"
 
     # TEST source type should only be used for mocking in unit tests.
     TEST = "test", "For testing only"
+
+
+class DistributeStorageType(StrEnum):
+    """
+    Distributed storage type
+    """
+
+    S3 = "s3", "s3 Storage"
 
 
 class SpecialColumnName(StrEnum):
