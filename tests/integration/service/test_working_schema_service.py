@@ -5,9 +5,11 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import EventView, FeatureList
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
+from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
-from featurebyte.service.working_schema import WorkingSchemaService, drop_all_objects
+from featurebyte.service.working_schema import drop_all_objects
 from featurebyte.utils.credential import get_credential
 
 
@@ -100,7 +102,18 @@ async def test_drop_all_and_recreate(
 
     async def _get_tasks():
         df = await _list_objects("TASKS")
-        return df["name"].tolist()
+        # Filter tasks by aggregation ids of the feature list of this current test only (other
+        # integration tests might manually schedule tasks without only enabling a corresponding
+        # feature, and those tasks should excluded in the checks below)
+        feature_agg_ids = set()
+        for feature_name in deployed_feature_list.feature_names:
+            online_spec = OnlineFeatureSpec(
+                feature=ExtendedFeatureModel(**deployed_feature_list[feature_name].dict())
+            )
+            feature_agg_ids.update([agg_id.upper() for agg_id in online_spec.aggregation_ids])
+        task_names = set(df["name"].str.upper().tolist())
+        task_names = task_names.intersection(feature_agg_ids)
+        return sorted(task_names)
 
     async def _get_schema_metadata():
         df = await snowflake_session.execute_query("SELECT * FROM METADATA_SCHEMA")
