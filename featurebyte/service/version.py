@@ -65,6 +65,7 @@ class VersionService(BaseService):
         cls, feature: FeatureModel, feature_job_setting: Optional[FeatureJobSetting]
     ) -> FeatureModel:
         has_change: bool = False
+        has_groupby_node: bool = False
         graph: QueryGraphModel = feature.graph
         node_name = feature.node_name
         if feature_job_setting:
@@ -73,6 +74,7 @@ class VersionService(BaseService):
                 feature.graph, feature.node
             ):
                 # input node will be used when we need to support updating specific groupby node given event data ID
+                has_groupby_node = True
                 parameters = {**groupby_node.parameters.dict(), **feature_job_setting.to_seconds()}
                 if groupby_node.parameters.dict() != parameters:
                     node_name_to_replacement_node[groupby_node.name] = GroupbyNode(
@@ -91,6 +93,8 @@ class VersionService(BaseService):
             return FeatureModel(
                 **{**feature.dict(), "graph": graph, "node_name": node_name, "_id": ObjectId()}
             )
+        if feature_job_setting and not has_groupby_node:
+            raise DocumentError("Feature job setting has no effect in feature value derivation.")
         raise DocumentError("No change detected on the new feature version.")
 
     async def create_new_feature_version(

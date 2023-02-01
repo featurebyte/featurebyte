@@ -8,7 +8,8 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.exception import RepeatedColumnNamesError
+from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import get_node
@@ -602,3 +603,28 @@ def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_ent
     # no error expected as no value_column is passed in
     group_by = snowflake_item_view.groupby("item_id_col")
     snowflake_item_view.validate_aggregate_over_parameters(group_by, None)
+
+
+def test_non_time_feature__create_new_version(saved_item_data, transaction_entity):
+    """
+    Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
+    """
+    saved_item_data["event_id_col"].as_entity(transaction_entity.name)
+    snowflake_item_view = ItemView.from_item_data(saved_item_data, event_suffix="_event_table")
+    feature = snowflake_item_view.groupby("event_id_col").aggregate(
+        method="count",
+        feature_name="order_size",
+    )
+    derived_feature = feature + 123
+    derived_feature.name = "feat"
+    derived_feature.save()
+
+    with pytest.raises(RecordCreationException) as exc:
+        derived_feature.create_new_version(
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+            )
+        )
+
+    expected_msg = "Feature job setting has no effect in feature value derivation."
+    assert expected_msg in str(exc.value)
