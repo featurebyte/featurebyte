@@ -158,7 +158,7 @@ async def get_historical_features(
     training_events: pd.DataFrame,
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
-    is_feature_list_deployed=False,
+    is_feature_list_deployed: bool = False,
 ) -> AsyncGenerator[bytes, None]:
     """Get historical features
 
