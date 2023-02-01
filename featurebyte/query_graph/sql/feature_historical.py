@@ -170,7 +170,7 @@ async def get_historical_features(
     nodes : list[Node]
         List of query graph node
     training_events : pd.DataFrame
-        Training events DataFrame
+        Training events DataFramt
     source_type : SourceType
         Source type information
     serving_names_mapping : dict[str, str] | None
