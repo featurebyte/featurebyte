@@ -4,6 +4,7 @@ Unit tests for aggregate_over
 import pytest
 
 from featurebyte.enum import DBVarType
+from featurebyte.models import FeatureModel
 from tests.util.helper import get_node
 
 
@@ -100,3 +101,22 @@ def test_unbounded_window__composite_keys(snowflake_event_view_with_entity):
     node = get_node(feature_dict["graph"], "groupby_1")
     assert node["parameters"]["windows"] == [None]
     assert node["parameters"]["keys"] == ["cust_id", "col_int"]
+
+
+def test_empty_groupby_keys(snowflake_event_view_with_entity):
+    """
+    Test empty groupby keys (feature without any entity)
+    """
+    feature_group = snowflake_event_view_with_entity.groupby([]).aggregate_over(
+        method="count",
+        windows=["30d"],
+        feature_names=["feat_count"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )
+    feature_dict = feature_group["feat_count"].dict()
+    node = get_node(feature_dict["graph"], "groupby_1")
+    assert node["parameters"]["keys"] == []
+    assert node["parameters"]["entity_ids"] == []
+
+    feature_model = FeatureModel(**feature_group["feat_count"].dict())
+    assert feature_model.entity_ids == []
