@@ -505,7 +505,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
         time_modulo_frequency="0",
     )
     mock_get_by_id.return_value = analysis
-    saved_event_data.initialise_default_feature_job_setting()
+    saved_event_data.initialize_default_feature_job_setting()
 
     # should make a call to post_async_task
     mock_post_async_task.assert_called_once_with(
@@ -546,7 +546,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_no_creat
     mock_get_document.return_value = Mock(record_creation_date_column=None)
 
     with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.initialise_default_feature_job_setting()
+        saved_event_data.initialize_default_feature_job_setting()
     assert "Creation date column is not available for the event data." in str(exc)
 
 
@@ -570,7 +570,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_high_fre
     )
 
     with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.initialise_default_feature_job_setting()
+        saved_event_data.initialize_default_feature_job_setting()
     assert "HighUpdateFrequencyError" in str(exc)
 
 
@@ -594,7 +594,7 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
     Test update failure due to event data not saved
     """
     with pytest.raises(RecordCreationException) as exc:
-        snowflake_event_data.initialise_default_feature_job_setting()
+        snowflake_event_data.initialize_default_feature_job_setting()
     expected_msg = f'EventData (id: "{snowflake_event_data.id}") not found. Please save the EventData object first.'
     assert expected_msg in str(exc)
 
@@ -627,7 +627,7 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure(
     mock_process_store.return_value.get = AsyncMock()
     mock_process_store.return_value.get.return_value = get_return
     with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.initialise_default_feature_job_setting()
+        saved_event_data.initialize_default_feature_job_setting()
     assert "ValueError: Event Data not found" in str(exc.value)
 
 

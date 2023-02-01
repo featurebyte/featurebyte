@@ -1,7 +1,9 @@
 """
 This module contains Tile related models
 """
-from typing import List, cast
+from typing import Any, Dict, List, cast
+
+from pydantic import validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -10,9 +12,8 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.online_serving import (
-    get_entities_ids_and_serving_names,
-    get_online_store_feature_compute_sql,
-    get_online_store_table_name_from_graph,
+    OnlineStorePrecomputeQuery,
+    get_online_store_precompute_queries,
     is_online_store_eligible,
 )
 
@@ -34,18 +35,24 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
+    precompute_queries: List[OnlineStorePrecomputeQuery] = []
 
-    @property
-    def value_type(self) -> str:
-        """
-        Feature value's data type (e.g. VARCHAR)
-
-        Returns
-        -------
-        str
-        """
-        adapter = get_sql_adapter(self.feature.feature_store_type)
-        return adapter.get_physical_type_from_dtype(self.feature.dtype)
+    @validator("precompute_queries", always=True)
+    def _generate_precompute_queries(  # pylint: disable=no-self-argument
+        cls,
+        val: List[OnlineStorePrecomputeQuery],
+        values: Dict[str, Any],
+    ) -> List[OnlineStorePrecomputeQuery]:
+        if val:
+            # Allow direct setting; mainly used in integration tests
+            return val
+        feature = values["feature"]
+        precompute_queries = get_online_store_precompute_queries(
+            graph=feature.graph,
+            node=feature.node,
+            source_type=feature.feature_store_type,
+        )
+        return precompute_queries
 
     @property
     def tile_ids(self) -> List[str]:
@@ -63,16 +70,19 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return list(tile_ids_set)
 
     @property
-    def serving_names(self) -> List[str]:
+    def aggregation_ids(self) -> List[str]:
         """
-        Derived serving names from the query graph. This will be the join keys in the store table
+        Derive aggregation_ids property from tile_specs
 
         Returns
         -------
         List[str]
+            derived aggregation_ids
         """
-        _, serving_names = get_entities_ids_and_serving_names(self.feature.graph, self.feature.node)
-        return sorted(serving_names)
+        out = set()
+        for tile_spec in self.feature.tile_specs:
+            out.add(tile_spec.aggregation_id)
+        return list(out)
 
     @property
     def event_data_ids(self) -> List[str]:
@@ -96,21 +106,6 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return output
 
     @property
-    def feature_sql(self) -> str:
-        """
-        Feature pre-computation SQL for online store
-
-        Returns
-        -------
-        str
-        """
-        return get_online_store_feature_compute_sql(
-            graph=self.feature.graph,
-            node=self.feature.node,
-            source_type=self.feature.feature_store_type,
-        )
-
-    @property
     def is_online_store_eligible(self) -> bool:
         """
         Whether pre-computation with online store is eligible for the feature
@@ -122,12 +117,13 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return is_online_store_eligible(graph=self.feature.graph, node=self.feature.node)
 
     @property
-    def feature_store_table_name(self) -> str:
+    def value_type(self) -> str:
         """
-        Name of the online store table for the feature
+        Feature value's data type (e.g. VARCHAR)
 
         Returns
         -------
         str
         """
-        return get_online_store_table_name_from_graph(self.feature.graph, self.feature.node)
+        adapter = get_sql_adapter(self.feature.feature_store_type)
+        return adapter.get_physical_type_from_dtype(self.feature.dtype)

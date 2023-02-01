@@ -9,8 +9,10 @@ import pytest
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
+    tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
+    tm_upsert_online_store_mapping,
     tm_upsert_tile_feature_mapping,
 )
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -58,21 +60,39 @@ async def test_online_enable(
     mock_schedule_offline_tiles.assert_called_once()
     mock_generate_tiles.assert_called_once()
 
-    assert mock_execute_query.call_count == 3
+    # Expected execute_query calls:
+    # 1. merge into TILE_FEATURE_MAPPING
+    # 2. merge into ONLINE_STORE_MAPPING
+    # 3. SHOW TASKS LIKE
+    # 4. call SP_TILES_SCHEDULE_ONLINE_STORE
+    assert mock_execute_query.call_count == 4
 
     upsert_sql = tm_upsert_tile_feature_mapping.render(
         tile_id=feature_spec.tile_ids[0],
+        aggregation_id=feature_spec.aggregation_ids[0],
         feature_name=feature_spec.feature.name,
         feature_type=feature_spec.value_type,
         feature_version=feature_spec.feature.version.to_str(),
         feature_readiness=str(mock_snowflake_feature.readiness),
         feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
-        feature_sql=feature_spec.feature_sql.replace("'", "''"),
-        feature_store_table_name=feature_spec.feature_store_table_name,
-        entity_column_names_str=",".join(escape_column_names(feature_spec.serving_names)),
         is_deleted=False,
     )
     assert mock_execute_query.call_args_list[0] == mock.call(upsert_sql)
+
+    queries = feature_spec.precompute_queries
+    assert len(queries) == 1
+    query = queries[0]
+    upsert_sql = tm_upsert_online_store_mapping.render(
+        tile_id=query.tile_id,
+        aggregation_id=query.aggregation_id,
+        result_id=query.result_name,
+        result_type=query.result_type,
+        sql_query=query.sql.replace("'", "''"),
+        online_store_table_name=query.table_name,
+        entity_column_names=",".join(escape_column_names(query.serving_names)),
+        is_deleted=False,
+    )
+    assert mock_execute_query.call_args_list[1] == mock.call(upsert_sql)
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -99,6 +119,7 @@ async def test_online_enable_duplicate_tile_task(
     )
 
     mock_execute_query.side_effect = [
+        None,
         None,
         pd.DataFrame.from_dict({"name": ["task_1"]}),
         None,
@@ -127,15 +148,24 @@ async def test_online_disable(
         feature_store_table_name="feature_store_table_1",
     )
 
-    mock_execute_query.side_effect = [None, None, None]
+    mock_execute_query.side_effect = [None, None, None, None]
     await feature_manager.online_disable(feature_spec)
 
     delete_sql = tm_delete_tile_feature_mapping.render(
-        tile_id=feature_spec.tile_ids[0],
+        aggregation_id=feature_spec.aggregation_ids[0],
         feature_name=feature_spec.feature.name,
         feature_version=feature_spec.feature.version.to_str(),
     )
     assert mock_execute_query.call_args_list[0] == mock.call(delete_sql)
+
+    delete_sql = tm_delete_online_store_mapping.render(
+        aggregation_id=feature_spec.aggregation_ids[0],
+    )
+    assert mock_execute_query.call_args_list[1] == mock.call(delete_sql)
+
+    assert mock_execute_query.call_args_list[2] == mock.call(
+        f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{feature_spec.aggregation_ids[0]}' and IS_DELETED = FALSE"
+    )
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

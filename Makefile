@@ -115,3 +115,7 @@ clean:
 	git stash -u
 	git clean -dfx --exclude=.idea/
 	git stash pop
+
+#* Api documentation
+docs:
+	PYTHONPATH=$(PWD)/docs/extensions FB_GENERATE_FULL_DOCS=1 poetry run mkdocs serve --config-file mkdocs.yaml --no-livereload

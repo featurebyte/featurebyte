@@ -2,6 +2,7 @@ CREATE OR REPLACE PROCEDURE SP_TILE_TRIGGER_GENERATE_SCHEDULE(
     SHELL_TASK_NAME VARCHAR,
     WAREHOUSE VARCHAR,
     TILE_ID VARCHAR,
+    AGGREGATION_ID VARCHAR,
     TIME_MODULO_FREQUENCY_SECONDS FLOAT,
     BLIND_SPOT_SECONDS FLOAT,
     FREQUENCY_MINUTE FLOAT,
@@ -44,7 +45,7 @@ $$
     }
 
     var tile_id = TILE_ID.toUpperCase()
-    var task_name = "TILE_TASK_" + TYPE + "_" + tile_id
+    var task_name = "TILE_TASK_" + TYPE + "_" + AGGREGATION_ID
 
     // create and start new scheduled Task with Intervaled Schedule
     var sql = `
@@ -52,7 +53,25 @@ $$
         WAREHOUSE = '${WAREHOUSE}'
         SCHEDULE = '${task_interval} MINUTE'
         AS
-            CALL SP_TILE_GENERATE_SCHEDULE('${tile_id}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, ${OFFLINE_PERIOD_MINUTE}, '${SQL}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', '${TILE_START_DATE_PLACEHOLDER}', '${TILE_END_DATE_PLACEHOLDER}', '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${TYPE}', ${MONITOR_PERIODS}, to_varchar(SYSDATE(), 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"'))
+            CALL SP_TILE_GENERATE_SCHEDULE(
+              '${tile_id}',
+              '${AGGREGATION_ID}',
+              ${TIME_MODULO_FREQUENCY_SECONDS},
+              ${BLIND_SPOT_SECONDS},
+              ${FREQUENCY_MINUTE},
+              ${OFFLINE_PERIOD_MINUTE},
+              '${SQL}',
+              '${TILE_START_DATE_COLUMN}',
+              '${TILE_LAST_START_DATE_COLUMN}',
+              '${TILE_START_DATE_PLACEHOLDER}',
+              '${TILE_END_DATE_PLACEHOLDER}',
+              '${ENTITY_COLUMN_NAMES}',
+              '${VALUE_COLUMN_NAMES}',
+              '${VALUE_COLUMN_TYPES}',
+              '${TYPE}',
+              ${MONITOR_PERIODS},
+              to_varchar(SYSDATE(), 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"')
+            )
     `
     snowflake.execute({sqlText: sql})
 

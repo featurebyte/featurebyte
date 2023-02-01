@@ -45,18 +45,16 @@ tm_upsert_tile_feature_mapping = Template(
     USING (
         SELECT
             '{{tile_id}}' AS TILE_ID,
+            '{{aggregation_id}}' AS AGGREGATION_ID,
             '{{feature_name}}' as FEATURE_NAME,
             '{{feature_type}}' as FEATURE_TYPE,
             '{{feature_version}}' as FEATURE_VERSION,
             '{{feature_readiness}}' as FEATURE_READINESS,
             '{{feature_event_data_ids}}' as FEATURE_EVENT_DATA_IDS,
-            '{{feature_sql}}' as FEATURE_SQL,
-            '{{feature_store_table_name}}' as FEATURE_STORE_TABLE_NAME,
-            '{{entity_column_names_str}}' as FEATURE_ENTITY_COLUMN_NAMES,
             {{is_deleted}} as IS_DELETED
     ) b
     ON
-        a.TILE_ID = b.TILE_ID
+        a.AGGREGATION_ID = b.AGGREGATION_ID
         AND a.FEATURE_NAME = b.FEATURE_NAME
         AND a.FEATURE_VERSION = b.FEATURE_VERSION
     WHEN MATCHED THEN
@@ -64,25 +62,21 @@ tm_upsert_tile_feature_mapping = Template(
     WHEN NOT MATCHED THEN
         INSERT (
             TILE_ID,
+            AGGREGATION_ID,
             FEATURE_NAME,
             FEATURE_TYPE,
             FEATURE_VERSION,
             FEATURE_READINESS,
             FEATURE_EVENT_DATA_IDS,
-            FEATURE_SQL,
-            FEATURE_STORE_TABLE_NAME,
-            FEATURE_ENTITY_COLUMN_NAMES,
             IS_DELETED
         ) VALUES (
             b.TILE_ID,
+            b.AGGREGATION_ID,
             b.FEATURE_NAME,
             b.FEATURE_TYPE,
             b.FEATURE_VERSION,
             b.FEATURE_READINESS,
             b.FEATURE_EVENT_DATA_IDS,
-            b.FEATURE_SQL,
-            b.FEATURE_STORE_TABLE_NAME,
-            b.FEATURE_ENTITY_COLUMN_NAMES,
             b.IS_DELETED
         )
 """
@@ -91,14 +85,62 @@ tm_upsert_tile_feature_mapping = Template(
 tm_delete_tile_feature_mapping = Template(
     """
     UPDATE TILE_FEATURE_MAPPING SET IS_DELETED = TRUE
-    WHERE TILE_ID = '{{tile_id}}'
+    WHERE AGGREGATION_ID = '{{aggregation_id}}'
     AND FEATURE_NAME = '{{feature_name}}'
     AND FEATURE_VERSION = '{{feature_version}}'
 """
 )
 
+tm_upsert_online_store_mapping = Template(
+    """
+    MERGE INTO ONLINE_STORE_MAPPING a
+    USING (
+        SELECT
+            '{{tile_id}}' AS TILE_ID,
+            '{{aggregation_id}}' as AGGREGATION_ID,
+            '{{result_id}}' as RESULT_ID,
+            '{{result_type}}' as RESULT_TYPE,
+            '{{sql_query}}' as SQL_QUERY,
+            '{{online_store_table_name}}' as ONLINE_STORE_TABLE_NAME,
+            '{{entity_column_names}}' as ENTITY_COLUMN_NAMES,
+            {{is_deleted}} as IS_DELETED
+    ) b
+    ON
+        a.RESULT_ID = b.RESULT_ID
+    WHEN MATCHED THEN
+        UPDATE SET a.IS_DELETED = b.IS_DELETED
+    WHEN NOT MATCHED THEN
+        INSERT (
+            TILE_ID,
+            AGGREGATION_ID,
+            RESULT_ID,
+            RESULT_TYPE,
+            SQL_QUERY,
+            ONLINE_STORE_TABLE_NAME,
+            ENTITY_COLUMN_NAMES,
+            IS_DELETED
+        ) VALUES (
+            b.TILE_ID,
+            b.AGGREGATION_ID,
+            b.RESULT_ID,
+            b.RESULT_TYPE,
+            b.SQL_QUERY,
+            b.ONLINE_STORE_TABLE_NAME,
+            b.ENTITY_COLUMN_NAMES,
+            b.IS_DELETED
+        )
+"""
+)
+
+tm_delete_online_store_mapping = Template(
+    """
+    UPDATE ONLINE_STORE_MAPPING SET IS_DELETED = TRUE
+    WHERE AGGREGATION_ID = '{{agg_id}}'
+"""
+)
+
 tm_call_schedule_online_store = Template(
     """
-    call SP_TILE_SCHEDULE_ONLINE_STORE('{{tile_id}}', '{{job_schedule_ts_str}}')
+    call SP_TILE_SCHEDULE_ONLINE_STORE('{{aggregation_id}}', '{{job_schedule_ts_str}}')
 """
 )

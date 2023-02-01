@@ -174,6 +174,7 @@ EXPECTED_TABLES = [
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
     "TILE_FEATURE_MAPPING",
+    "ONLINE_STORE_MAPPING",
     "TILE_JOB_MONITOR",
 ]
 
@@ -357,6 +358,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "T_TILE_JOB_MONITOR.sql",
             "identifier": "TILE_JOB_MONITOR",
+            "type": "table",
+        },
+        {
+            "filename": "T_ONLINE_STORE_MAPPING.sql",
+            "identifier": "ONLINE_STORE_MAPPING",
             "type": "table",
         },
     ]

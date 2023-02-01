@@ -6,7 +6,7 @@ import copy
 import pytest
 from bson import ObjectId
 
-from featurebyte import MissingValueImputation, ValueBeyondEndpointImputation
+from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -426,7 +426,13 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[feature_proj_1, feature_proj_2],
     )
-    return complex_feature_node, graph
+    complex_feature_node_alias = graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "a_2h_avg_by_user_div_7d_by_biz"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[complex_feature_node],
+    )
+    return complex_feature_node_alias, graph
 
 
 @pytest.fixture(name="join_node_params")

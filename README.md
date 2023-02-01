@@ -30,12 +30,6 @@ Checkout the featurebyte repo:
 git clone git@github.com:featurebyte/featurebyte.git && cd featurebyte
 ```
 
-If you don't have `Poetry` installed run:
-
-```bash
-make poetry-download
-```
-
 Install module:
 
 ```bash
@@ -44,7 +38,8 @@ make install
 
 ## 📝 Documentation
 
-Read the latest [documentation](https://featurebyte.github.io/featurebyte/).
+[//]: # (TODO: When documentation server is released, change the URL)
+Read the latest [documentation](https://docs.featurebyte.com).
 
 ## 🚀 Features
 

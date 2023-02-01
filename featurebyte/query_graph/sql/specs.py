@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import pandas as pd
+from bson import ObjectId
 from sqlglot.expressions import Select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
@@ -57,6 +58,7 @@ class AggregationSpec(ABC):
     serving_names_mapping: Optional[dict[str, str]]
 
     def __post_init__(self) -> None:
+        self.original_serving_names = self.serving_names[:]
         if self.serving_names_mapping is not None:
             self.serving_names = apply_serving_names_mapping(
                 self.serving_names, self.serving_names_mapping
@@ -106,6 +108,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     feature_name: str
     is_order_dependent: bool
     tile_value_columns: list[str]
+    entity_ids: list[ObjectId]
 
     @property
     def agg_result_name(self) -> str:
@@ -189,6 +192,7 @@ class TileBasedAggregationSpec(AggregationSpec):
                 feature_name=feature_name,
                 is_order_dependent=aggregator.is_order_dependent,
                 tile_value_columns=tile_value_columns,
+                entity_ids=params["entity_ids"],
             )
             aggregation_specs.append(agg_spec)
 

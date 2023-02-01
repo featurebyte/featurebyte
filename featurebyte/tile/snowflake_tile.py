@@ -293,7 +293,7 @@ class TileManagerSnowflake(BaseTileManager):
             generated sql to be executed
         """
 
-        temp_task_name = f"SHELL_TASK_{tile_spec.tile_id}_{tile_type}"
+        temp_task_name = f"SHELL_TASK_{tile_spec.aggregation_id}_{tile_type}"
 
         sql = tm_schedule_tile.render(
             temp_task_name=temp_task_name,
@@ -311,6 +311,7 @@ class TileManagerSnowflake(BaseTileManager):
             value_column_names=",".join(tile_spec.value_column_names),
             value_column_types=",".join(tile_spec.value_column_types),
             tile_id=tile_spec.tile_id,
+            aggregation_id=tile_spec.aggregation_id,
             tile_type=tile_type,
             offline_minutes=offline_minutes,
             monitor_periods=monitor_periods,

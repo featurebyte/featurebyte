@@ -73,15 +73,32 @@ async def test_feature_list_deployed(
         args[0]
         == textwrap.dedent(
             """
-            SELECT
-              REQ."cust_id",
-              T0."sum_30m"
-            FROM (
+            WITH ONLINE_REQUEST_TABLE AS (
               SELECT
-                1 AS "cust_id"
-            ) AS REQ
-            LEFT JOIN online_store_f5ab522859a34d771de0765fa59842c66e25d5d0 AS T0
-              ON REQ."cust_id" = T0."cust_id"
+                REQ."cust_id",
+                SYSDATE() AS POINT_IN_TIME
+              FROM (
+                SELECT
+                  1 AS "cust_id"
+              ) AS REQ
+            ), _FB_AGGREGATED AS (
+              SELECT
+                REQ."cust_id",
+                REQ."POINT_IN_TIME",
+                "T0"."agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0"
+              FROM ONLINE_REQUEST_TABLE AS REQ
+              LEFT JOIN (
+                SELECT
+                  "cust_id" AS "cust_id",
+                  "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0"
+                FROM online_store_f5ab522859a34d771de0765fa59842c66e25d5d0
+              ) AS T0
+                ON REQ."cust_id" = T0."cust_id"
+            )
+            SELECT
+              AGG."cust_id",
+              "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_30m"
+            FROM _FB_AGGREGATED AS AGG
             """
         ).strip()
     )

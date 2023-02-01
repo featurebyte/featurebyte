@@ -122,14 +122,15 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
 
     expected_sql = textwrap.dedent(
         f"""
-        CREATE OR REPLACE TASK SHELL_TASK_TILE_ID1_ONLINE
+        CREATE OR REPLACE TASK SHELL_TASK_agg_id1_ONLINE
           WAREHOUSE = sf_warehouse
           SCHEDULE = 'USING CRON {cron} UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-                'SHELL_TASK_TILE_ID1_ONLINE',
+                'SHELL_TASK_agg_id1_ONLINE',
                 'sf_warehouse',
                 'TILE_ID1',
+                'agg_id1',
                 183,
                 3,
                 5,
@@ -170,14 +171,15 @@ async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, t
     )
     expected_sql = textwrap.dedent(
         f"""
-        CREATE OR REPLACE TASK SHELL_TASK_TILE_ID1_OFFLINE
+        CREATE OR REPLACE TASK SHELL_TASK_agg_id1_OFFLINE
           WAREHOUSE = sf_warehouse
           SCHEDULE = 'USING CRON 3 0 {next_job_time.day} * * UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-                'SHELL_TASK_TILE_ID1_OFFLINE',
+                'SHELL_TASK_agg_id1_OFFLINE',
                 'sf_warehouse',
                 'TILE_ID1',
+                'agg_id1',
                 183,
                 3,
                 5,
