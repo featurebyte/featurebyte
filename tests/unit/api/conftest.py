@@ -22,8 +22,8 @@ from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.models.feature_store import DataStatus
 
 
-@pytest.fixture(autouse=True)
-def mock_cache_fixture():
+@pytest.fixture(name="mock_api_object_cache")
+def mock_api_object_cache_fixture():
     """Mock api object cache so that the time-to-live period is 0"""
     with patch.object(ApiObject, "_cache", new_callable=PropertyMock) as mock_cache:
         mock_cache.return_value = TTLCache(maxsize=1024, ttl=0)

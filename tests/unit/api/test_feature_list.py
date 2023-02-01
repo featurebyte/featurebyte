@@ -757,8 +757,9 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     assert expected in str(exc.value)
 
 
-def test_deploy(feature_list, production_ready_feature, draft_feature):
+def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_object_cache):
     """Test feature list deployment update"""
+    _ = mock_api_object_cache
     feature_list.save()
     assert feature_list.saved is True
 
@@ -1106,8 +1107,9 @@ def test_get_feature_jobs_status_feature_without_tile(
     assert job_status_result.job_session_logs.shape == (0, 11)
 
 
-def test_feature_list__check_feature_readiness_update(saved_feature_list):
+def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_api_object_cache):
     """Test feature list feature readiness derived attributes update logic"""
+    _ = mock_api_object_cache
     new_feat = saved_feature_list["sum_1d"] + 100
     new_feat.name = "new_feat"
     new_feat.save()
@@ -1137,8 +1139,9 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list):
     }
 
 
-def test_feature_list_synchronization(saved_feature_list):
+def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache):
     """Test feature list synchronization"""
+    _ = mock_api_object_cache
     # construct a cloned feature list (feature list with the same feature list ID)
     cloned_feat_list = FeatureList.get_by_id(id=saved_feature_list.id)
 
@@ -1161,3 +1164,38 @@ def test_feature_list_synchronization(saved_feature_list):
     # check the clone's deployed value
     assert cloned_feat_list.deployed is True
     assert cloned_feat_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
+
+
+def test_feature_list_properties_from_cached_model__before_save(feature_list):
+    """Test (unsaved) feature list properties from cached model"""
+    # check properties derived from feature list model directly
+    assert feature_list.saved is False
+    assert feature_list.online_enabled_feature_ids == []
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 4}]
+    }
+    assert feature_list.production_ready_fraction == 0.0
+    assert feature_list.deployed is False
+
+    # check properties use feature list namespace model info
+    props = ["is_default", "default_version_mode", "status"]
+    for prop in props:
+        with pytest.raises(RecordRetrievalException):
+            _ = getattr(feature_list, prop)
+
+
+def test_feature_list_properties_from_cached_model__after_save(saved_feature_list):
+    """Test (saved) feature list properties from cached model"""
+    # check properties derived from feature list model directly
+    assert saved_feature_list.saved
+    assert saved_feature_list.online_enabled_feature_ids == []
+    assert saved_feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
+    assert saved_feature_list.production_ready_fraction == 0.0
+    assert saved_feature_list.deployed is False
+
+    # check properties use feature list namespace model info
+    assert saved_feature_list.is_default is True
+    assert saved_feature_list.default_version_mode == DefaultVersionMode.AUTO
+    assert saved_feature_list.status == FeatureListStatus.DRAFT

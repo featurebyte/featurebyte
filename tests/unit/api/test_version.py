@@ -1,6 +1,8 @@
 """
 Test feature & feature list version related logic
 """
+import time
+
 import pytest
 
 from featurebyte.api.event_view import EventView
@@ -36,10 +38,12 @@ def feature_group_fixture(
     return feature_group
 
 
-def test_feature_and_feature_list_version(feature_group):
+def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     """
     Test feature & feature list version logic
     """
+    _ = mock_api_object_cache
+
     # create a feature list & save
     feature_list = FeatureList([feature_group], name="my_special_fl")
     feature_list.save()

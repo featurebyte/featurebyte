@@ -62,6 +62,7 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
     _list_schema = FeatureNamespaceModel
+    _get_schema = FeatureNamespaceModel
     _list_fields = [
         "name",
         "dtype",
@@ -197,6 +198,7 @@ class Feature(
     _route = "/feature"
     _update_schema_class = FeatureUpdate
     _list_schema = FeatureModel
+    _get_schema = FeatureModel
     _list_fields = [
         "name",
         "version",
@@ -452,7 +454,10 @@ class Feature(
         -------
         List[PydanticObjectId]
         """
-        return self.cached_model.deployed_feature_list_ids
+        try:
+            return self.cached_model.deployed_feature_list_ids
+        except RecordRetrievalException:
+            return []
 
     @property
     def is_default(self) -> bool:
@@ -616,7 +621,10 @@ class Feature(
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
-        return Feature(**response.json(), **self._get_init_params_from_object(), saved=True)
+
+        object_dict = response.json()
+        self._update_cache(object_dict)  # update object cache store
+        return Feature(**object_dict, **self._get_init_params_from_object(), saved=True)
 
     @typechecked
     def update_readiness(

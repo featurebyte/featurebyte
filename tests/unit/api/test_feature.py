@@ -480,10 +480,11 @@ def test_unary_op_inherits_event_data_id(float_feature):
     assert new_feature.tabular_data_ids == float_feature.tabular_data_ids
 
 
-def test_feature__default_version_info_retrieval(saved_feature):
+def test_feature__default_version_info_retrieval(saved_feature, mock_api_object_cache):
     """
     Test get feature using feature name
     """
+    _ = mock_api_object_cache
     feature = Feature.get(name=saved_feature.name)
     assert feature.is_default is True
     assert feature.default_version_mode == DefaultVersionMode.AUTO
@@ -813,3 +814,32 @@ def test_feature_synchronization(saved_feature):
 
     # check the clone's readiness value
     assert cloned_feat.readiness == target_readiness
+
+
+def test_feature_properties_from_cached_model__before_save(float_feature):
+    """Test (unsaved) feature properties from cached model"""
+    # check properties derived from feature model directly
+    assert float_feature.saved is False
+    assert float_feature.readiness == FeatureReadiness.DRAFT
+    assert float_feature.online_enabled is False
+    assert float_feature.deployed_feature_list_ids == []
+
+    # check properties use feature namespace model info
+    props = ["is_default", "default_version_mode", "default_readiness"]
+    for prop in props:
+        with pytest.raises(RecordRetrievalException):
+            _ = getattr(float_feature, prop)
+
+
+def test_feature_properties_from_cached_model__after_save(saved_feature):
+    """Test (saved) feature properties from cached model"""
+    # check properties derived from feature model directly
+    assert saved_feature.saved is True
+    assert saved_feature.readiness == FeatureReadiness.DRAFT
+    assert saved_feature.online_enabled is False
+    assert saved_feature.deployed_feature_list_ids == []
+
+    # check properties use feature namespace model info
+    assert saved_feature.is_default is True
+    assert saved_feature.default_version_mode == DefaultVersionMode.AUTO
+    assert saved_feature.default_readiness == FeatureReadiness.DRAFT

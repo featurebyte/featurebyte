@@ -344,6 +344,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     _update_schema_class = FeatureListNamespaceUpdate
 
     _list_schema = FeatureListNamespaceModel
+    _get_schema = FeatureListNamespaceModel
     _list_fields = [
         "name",
         "num_features",
@@ -506,6 +507,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
     _list_schema = FeatureListModel
+    _get_schema = FeatureListModel
     _list_fields = [
         "name",
         "feature_list_namespace_id",
@@ -662,6 +664,17 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             return self.derive_readiness_distribution(list(self.feature_objects.values()))  # type: ignore
 
     @property
+    def production_ready_fraction(self) -> float:
+        """
+        Retrieve fraction of production ready features in the feature list
+
+        Returns
+        -------
+        Fraction of production ready feature
+        """
+        return self.readiness_distribution.derive_production_ready_fraction()
+
+    @property
     def deployed(self) -> bool:
         """
         Whether this feature list is deployed or not
@@ -707,17 +720,6 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Feature list status
         """
         return self.feature_list_namespace.status
-
-    @property
-    def production_ready_fraction(self) -> float:
-        """
-        Retrieve fraction of production ready features in the feature list
-
-        Returns
-        -------
-        Fraction of production ready feature
-        """
-        return self.readiness_distribution.derive_production_ready_fraction()
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:

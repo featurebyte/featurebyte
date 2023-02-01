@@ -73,7 +73,23 @@ class PrettyDict(Dict[str, Any]):
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
-def _api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any) -> Any:
+def get_api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any) -> Any:
+    """
+    Construct cache key for a given document model object
+
+    Parameters
+    ----------
+    obj: FeatureByteBaseDocumentModel
+        Document model object
+    args: Any
+        Additional positional arguments
+    kwargs: Any
+        Additional keywords arguments
+
+    Returns
+    -------
+    Any
+    """
     # Return a cache key for _cache key retrieval (only collection name & object ID are used)
     return hashkey(obj.Settings.collection_name, obj.id, *args, **kwargs)
 
@@ -87,6 +103,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _route: ClassVar[str] = ""
     _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
     _list_schema = FeatureByteBaseDocumentModel
+    _get_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
     _list_foreign_keys: List[Tuple[str, Any, str]] = []
     _cache: Any = TTLCache(maxsize=1024, ttl=1)
@@ -98,7 +115,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return repr(self.info())
 
     @property  # type: ignore
-    @cachedmethod(cache=operator.attrgetter("_cache"), key=_api_object_cache_key)
+    @cachedmethod(cache=operator.attrgetter("_cache"), key=get_api_object_cache_key)
     def cached_model(self: ModelT) -> ModelT:
         """
         Retrieve the model stored the persistent (result of this property will be cached within the time-to-live
@@ -109,7 +126,20 @@ class ApiObject(FeatureByteBaseDocumentModel):
         -------
         FeatureByteBaseDocumentModel
         """
-        return self._list_schema(**self._get_object_dict_by_id(id_value=self.id))  # type: ignore
+        return self._get_schema(**self._get_object_dict_by_id(id_value=self.id))  # type: ignore
+
+    @classmethod
+    def _update_cache(cls, object_dict: dict[str, Any]) -> None:
+        """
+        Override existing model stored in the cache
+
+        Parameters
+        ----------
+        object_dict: dict[str, Any]
+            model object in dictionary format
+        """
+        model = cls._get_schema(**object_dict)
+        cls._cache[get_api_object_cache_key(model)] = model
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -153,7 +183,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id_value}")
         if response.status_code == HTTPStatus.OK:
-            return dict(response.json())
+            object_dict = dict(response.json())
+            cls._update_cache(object_dict)
+            return object_dict
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
@@ -455,9 +487,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
         if response.status_code == HTTPStatus.OK:
+            object_dict = response.json()
+            self._update_cache(object_dict)  # update object cache
             type(self).__init__(
                 self,
-                **response.json(),
+                **object_dict,
                 **self._get_init_params_from_object(),
                 saved=True,
             )
@@ -700,6 +734,8 @@ class SavableApiObject(ApiObject):
             object_dict = self._get_object_dict_by_name(name=self.name)
         else:
             object_dict = response.json()
+
+        self._update_cache(object_dict)  # update api object cache store
         type(self).__init__(
             self,
             **object_dict,
