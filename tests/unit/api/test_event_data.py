@@ -138,7 +138,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     assert event_data._ipython_key_completions_() == set(event_data.columns)
 
     output = event_data.dict()
-    event_data_dict["id"] = event_data.id
+    event_data_dict["_id"] = event_data.id
     assert output == event_data_dict
 
     # user input validation

@@ -3,7 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Type, Union
 
 from datetime import datetime
 
@@ -17,11 +17,14 @@ from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalys
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.feature_store import FrozenDataModel
+from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
 
-class EventData(EventDataModel, DataApiObject):
+class EventData(EventTableData, FrozenDataModel, DataApiObject):
     """
     EventData class
     """
@@ -36,6 +39,7 @@ class EventData(EventDataModel, DataApiObject):
     _route = "/event_data"
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
+    _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
 
     @property
     def timestamp_column(self) -> Optional[str]:
