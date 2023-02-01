@@ -3,7 +3,7 @@ SQLiteSession class
 """
 from __future__ import annotations
 
-from typing import Any, OrderedDict
+from typing import Any, Optional, OrderedDict
 
 import collections
 import os
@@ -13,7 +13,7 @@ import pandas as pd
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 
 
 class SQLiteSession(BaseSession):
@@ -23,6 +23,9 @@ class SQLiteSession(BaseSession):
 
     filename: str
     source_type: SourceType = Field(SourceType.SQLITE, const=True)
+
+    def initializer(self) -> Optional[BaseSchemaInitializer]:
+        return None
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)

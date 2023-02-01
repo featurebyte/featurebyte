@@ -102,7 +102,7 @@ async def test_migrate_method_generator__exclude_warehouse(user, persistent):
         name=MigrationMetadata.SCHEMA_METADATA.value
     )
 
-    expected_num_warehouse_migrations = 2
+    expected_num_warehouse_migrations = 3
     expected_method_num = len(retrieve_all_migration_methods()) - expected_num_warehouse_migrations
     method_generator = migrate_method_generator(
         user=user,

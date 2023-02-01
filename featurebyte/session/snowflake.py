@@ -61,11 +61,14 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
-        await SnowflakeSchemaInitializer(self).initialize()
+        await super().initialize()
         # set timezone to UTC
         await self.execute_query(
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
+
+    def initializer(self) -> BaseSchemaInitializer:
+        return SnowflakeSchemaInitializer(self)
 
     @property
     def schema_name(self) -> str:
@@ -310,10 +313,19 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
         await self.session.execute_query(create_schema_query)
 
+    @property
+    def _schema_qualifier(self) -> str:
+        return f'"{self.session.database_name}"."{self.session.schema_name}"'
+
+    def _fully_qualified(self, name: str) -> str:
+        return f"{self._schema_qualifier}.{name}"
+
+    async def _list_objects(self, object_type: str) -> pd.DataFrame:
+        query = f"SHOW {object_type} IN SCHEMA {self._schema_qualifier}"
+        return await self.session.execute_query(query)
+
     async def list_functions(self) -> list[str]:
-        df_result = await self.session.execute_query(
-            f"SHOW USER FUNCTIONS IN DATABASE {self.session.database_name}"
-        )
+        df_result = await self._list_objects("USER FUNCTIONS")
         out = []
         if df_result is not None:
             df_result = df_result[df_result["schema_name"] == self.session.schema_name]
@@ -321,11 +333,53 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         return out
 
     async def list_procedures(self) -> list[str]:
-        df_result = await self.session.execute_query(
-            f"SHOW PROCEDURES IN DATABASE {self.session.database_name}"
-        )
+        df_result = await self._list_objects("PROCEDURES")
         out = []
         if df_result is not None:
             df_result = df_result[df_result["schema_name"] == self.session.schema_name]
             out.extend(df_result["name"])
         return out
+
+    @staticmethod
+    def _format_arguments_to_be_droppable(arguments_list: list[str]) -> list[str]:
+        return [arguments.split(" RETURN", 1)[0] for arguments in arguments_list]
+
+    async def _drop_object(self, object_type: str, name: str) -> None:
+        query = f"DROP {object_type} {self._fully_qualified(name)}"
+        await self.session.execute_query(query)
+
+    async def _drop_tasks(self) -> None:
+        tasks = await self._list_objects("TASKS")
+        while tasks.shape[0]:
+            # Drop tasks in a loop since new tasks might get added while the initial list of tasks
+            # are getting dropped (each shell task schedule new task as they are running)
+            for name in tasks["name"]:
+                await self._drop_object("TASK", name)
+            tasks = await self._list_objects("TASKS")
+
+    async def drop_all_objects_in_working_schema(self) -> None:
+
+        if not await self.schema_exists():
+            return
+
+        objects = await self._list_objects("USER FUNCTIONS")
+        if objects.shape[0]:
+            for func_name_with_args in self._format_arguments_to_be_droppable(
+                objects["arguments"].tolist()
+            ):
+                await self._drop_object("FUNCTION", func_name_with_args)
+
+        objects = await self._list_objects("USER PROCEDURES")
+        if objects.shape[0]:
+            for func_name_with_args in self._format_arguments_to_be_droppable(
+                objects["arguments"].tolist()
+            ):
+                await self._drop_object("PROCEDURE", func_name_with_args)
+
+        await self._drop_tasks()
+
+        table_names = await self.session.list_tables(
+            self.session.database_name, self.session.schema_name
+        )
+        for name in table_names:
+            await self._drop_object("TABLE", name)

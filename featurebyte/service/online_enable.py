@@ -23,6 +23,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import BaseSession
 
 
 class OnlineEnableService(BaseService):
@@ -122,6 +123,38 @@ class OnlineEnableService(BaseService):
             return_document=return_document,
         )
 
+    @staticmethod
+    async def update_data_warehouse_with_session(
+        session: BaseSession, feature: FeatureModel
+    ) -> None:
+        """
+        Update data warehouse registry upon changes to online enable status, such as enabling or
+        disabling scheduled tile and feature jobs
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        feature: FeatureModel
+            Updated Feature object
+        """
+        extended_feature_model = ExtendedFeatureModel(**feature.dict())
+        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
+
+        if not online_feature_spec.is_online_store_eligible:
+            return
+
+        # Currently only Snowflake is supported as there is no abstraction on FeatureManager for
+        # different engines. To be fixed: https://featurebyte.atlassian.net/browse/DEV-810
+        if session.source_type != SourceType.SNOWFLAKE:
+            return
+        feature_manager = FeatureManagerSnowflake(session)
+
+        if feature.online_enabled:
+            await feature_manager.online_enable(online_feature_spec)
+        else:
+            await feature_manager.online_disable(online_feature_spec)
+
     async def _update_data_warehouse(self, feature: FeatureModel, get_credential: Any) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -134,26 +167,13 @@ class OnlineEnableService(BaseService):
         get_credential: Any
             Get credential handler function
         """
-        extended_feature_model = ExtendedFeatureModel(**feature.dict())
-
-        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-
-        if not online_feature_spec.is_online_store_eligible:
-            return
-
         feature_store_model = await self.feature_store_service.get_document(
             document_id=feature.tabular_source.feature_store_id
         )
         session = await self.session_manager_service.get_feature_store_session(
             feature_store_model, get_credential
         )
-        assert feature_store_model.type == SourceType.SNOWFLAKE
-        feature_manager = FeatureManagerSnowflake(session)
-
-        if feature.online_enabled:
-            await feature_manager.online_enable(online_feature_spec)
-        else:
-            await feature_manager.online_disable(online_feature_spec)
+        await self.update_data_warehouse_with_session(session=session, feature=feature)
 
     async def update_feature(
         self,

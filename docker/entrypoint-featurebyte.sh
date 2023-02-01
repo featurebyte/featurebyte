@@ -6,7 +6,7 @@ while ! nc -zvw10 mongo-rs 27021 1>/dev/null 2>&1; do echo "Waiting for upstream
 # perform database migration
 sleep 3 # To allow mongodb container to create replicaset if necessary
 echo "Performing migration"
-PYTHONPATH=$PWD python /scripts/migration.py >/dev/null 2>&1
+PYTHONPATH=$PWD python /scripts/migration.py
 
 # Start notebook
 echo "Starting jupyter notebook"

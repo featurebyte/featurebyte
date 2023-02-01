@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict
+from typing import Any, AsyncGenerator, Optional, OrderedDict
 
 import asyncio
 
@@ -93,6 +93,15 @@ class BaseSession(BaseModel):
     async def initialize(self) -> None:
         """
         Initialize session
+        """
+        initializer = self.initializer()
+        if initializer is not None:
+            await initializer.initialize()
+
+    @abstractmethod
+    def initializer(self) -> Optional[BaseSchemaInitializer]:
+        """
+        Returns an instance of schema initializer
         """
 
     @property
@@ -485,6 +494,13 @@ class BaseSchemaInitializer(ABC):
         Returns
         -------
         int that is the current working schema version.
+        """
+
+    @abstractmethod
+    async def drop_all_objects_in_working_schema(self) -> None:
+        """
+        Reset state of working schema by dropping all existing objects (tables, functions,
+        procedures, etc)
         """
 
     async def initialize(self) -> None:

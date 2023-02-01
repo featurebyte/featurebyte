@@ -210,7 +210,7 @@ class DataWarehouseMigrationMixin(FeatureStoreService, BaseMigrationServiceMixin
             logger.debug(f"Got CredentialsError, skipping migration for {feature_store.name}")
             return
         except Exception:  # pylint: disable=broad-except
-            logger.debug(
+            logger.exception(
                 f"Got unexpected error when creating session, skipping migration for {feature_store.name}"
             )
             return
