@@ -70,6 +70,21 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return list(tile_ids_set)
 
     @property
+    def aggregation_ids(self) -> List[str]:
+        """
+        Derive aggregation_ids property from tile_specs
+
+        Returns
+        -------
+        List[str]
+            derived aggregation_ids
+        """
+        out = set()
+        for tile_spec in self.feature.tile_specs:
+            out.add(tile_spec.aggregation_id)
+        return list(out)
+
+    @property
     def event_data_ids(self) -> List[str]:
         """
         derived event_data_ids from graph

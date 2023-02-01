@@ -79,6 +79,7 @@ tm_schedule_tile = Template(
             '{{temp_task_name}}',
             '{{warehouse}}',
             '{{tile_id}}',
+            '{{aggregation_id}}',
             {{time_modulo_frequency_second}},
             {{blind_spot_second}},
             {{frequency_minute}},

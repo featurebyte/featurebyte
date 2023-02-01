@@ -43,9 +43,11 @@ async def test_schedule_online_tile(snowflake_tile, snowflake_session, tile_mana
 
     await tile_manager.schedule_online_tiles(tile_spec=snowflake_tile, schedule_time=schedule_time)
 
-    task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_ONLINE".upper()
+    task_name = f"SHELL_TASK_{snowflake_tile.aggregation_id}_ONLINE".upper()
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{snowflake_tile.tile_id}%'")
+    result = await snowflake_session.execute_query(
+        f"SHOW TASKS LIKE '%{snowflake_tile.aggregation_id}%'"
+    )
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == f"USING CRON {cron} UTC"
@@ -66,9 +68,11 @@ async def test_schedule_offline_tile(snowflake_tile, snowflake_session, tile_man
 
     await tile_manager.schedule_offline_tiles(tile_spec=snowflake_tile, schedule_time=schedule_time)
 
-    task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_OFFLINE".upper()
+    task_name = f"SHELL_TASK_{snowflake_tile.aggregation_id}_OFFLINE".upper()
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{snowflake_tile.tile_id}%'")
+    result = await snowflake_session.execute_query(
+        f"SHOW TASKS LIKE '%{snowflake_tile.aggregation_id}%'"
+    )
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == f"USING CRON 3 0 {next_job_time.day} * * UTC"

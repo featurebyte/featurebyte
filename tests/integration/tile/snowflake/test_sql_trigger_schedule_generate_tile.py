@@ -16,19 +16,21 @@ async def test_trigger_tile_schedule(snowflake_session):
     value_col_types = "FLOAT"
     table_name = "TEMP_TABLE"
     tile_id = f"{table_name}_TILE"
+    agg_id = "some_agg_id"
     tile_monitor = 10
     tile_sql = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
-    task_name = f"TILE_TASK_ONLINE_{tile_id}"
+    task_name = f"TILE_TASK_ONLINE_{agg_id.upper()}"
 
     sql = f"""
         call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
           null,
           'COMPUTE_WH',
           '{tile_id}',
+          '{agg_id}',
           181,
           1,
           5,
@@ -47,11 +49,11 @@ async def test_trigger_tile_schedule(snowflake_session):
         """
     await snowflake_session.execute_query(sql)
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{agg_id}%'")
     assert len(result) == 1
     assert result["name"].iloc[0] == task_name
     assert result["schedule"].iloc[0] == "5 MINUTE"
 
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS {task_name}")
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{agg_id}%'")
     assert len(result) == 0

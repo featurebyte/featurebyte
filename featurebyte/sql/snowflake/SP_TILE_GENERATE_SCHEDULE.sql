@@ -1,5 +1,6 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(
     TILE_ID VARCHAR,
+    AGGREGATION_ID VARCHAR,
     TIME_MODULO_FREQUENCY_SECONDS FLOAT,
     BLIND_SPOT_SECONDS FLOAT,
     FREQUENCY_MINUTE FLOAT,
@@ -31,10 +32,27 @@ $$
 
     var debug = "Debug - JOB_SCHEDULE_TS: " + JOB_SCHEDULE_TS
     var tile_id = TILE_ID.toUpperCase()
+    var aggregation_id = AGGREGATION_ID.toUpperCase()
     var tile_type = TYPE.toUpperCase()
 
     var session_id = tile_id + "|" + new Date().toISOString()
-    var audit_insert_sql = `INSERT INTO TILE_JOB_MONITOR(TILE_ID, TILE_TYPE, SESSION_ID, STATUS, MESSAGE) VALUES ('${tile_id}', '${tile_type}', '${session_id}', '<STATUS>', '<MESSAGE>')`
+    var audit_insert_sql = `
+        INSERT INTO TILE_JOB_MONITOR (
+          TILE_ID,
+          AGGREGATION_ID,
+          TILE_TYPE,
+          SESSION_ID,
+          STATUS,
+          MESSAGE
+        ) VALUES (
+          '${tile_id}',
+          '${aggregation_id}',
+          '${tile_type}',
+          '${session_id}',
+          '<STATUS>',
+          '<MESSAGE>'
+        )
+    `
 
     snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")})
 
@@ -104,7 +122,7 @@ $$
     // update related online feature store
     try {
         job_schedule_ts_str = JOB_SCHEDULE_TS.toISOString()
-        snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}', '${job_schedule_ts_str}')`})
+        snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${AGGREGATION_ID}', '${job_schedule_ts_str}')`})
     } catch (err)  {
         message = err.message.replaceAll("'", "")
         snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "ONLINE_STORE_FAILED").replace("<MESSAGE>", message)})

@@ -95,6 +95,7 @@ async def test_online_enabled_feature_spec(
     """
     online_feature_spec, schedule_time = online_enabled_feature_spec
     expected_tile_id = snowflake_tile.tile_id
+    expected_aggregation_id = snowflake_tile.aggregation_id
 
     next_job_time_online = date_util.get_next_job_datetime(
         input_dt=schedule_time,
@@ -109,16 +110,16 @@ async def test_online_enabled_feature_spec(
     )
 
     tasks = await snowflake_session.execute_query(
-        f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].tile_id}%'"
+        f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].aggregation_id}%'"
     )
     assert len(tasks) == 2
-    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id}_OFFLINE"
+    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_aggregation_id.upper()}_OFFLINE"
     assert (
         tasks["schedule"].iloc[0]
         == f"USING CRON {next_job_time_offline.minute} {next_job_time_offline.hour} {next_job_time_offline.day} * * UTC"
     )
     assert tasks["state"].iloc[0] == "started"
-    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id}_ONLINE"
+    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_aggregation_id.upper()}_ONLINE"
     assert (
         tasks["schedule"].iloc[1]
         == f"USING CRON {next_job_time_online.minute} {next_job_time_online.hour} {next_job_time_online.day} * * UTC"
@@ -131,6 +132,7 @@ async def test_online_enabled_feature_spec(
     expected_df = pd.DataFrame(
         {
             "TILE_ID": [expected_tile_id],
+            "AGGREGATION_ID": [expected_aggregation_id],
             "FEATURE_NAME": [online_feature_spec.feature.name],
             "FEATURE_TYPE": ["FLOAT"],
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
@@ -149,8 +151,8 @@ async def test_online_enabled_feature_spec(
     assert len(result) == 1
     expected_df = pd.DataFrame(
         {
-            "TILE_ID": ["TILE_ID1"],
-            "AGGREGATION_ID": ["agg_id1"],
+            "TILE_ID": [expected_tile_id],
+            "AGGREGATION_ID": [expected_aggregation_id],
             "RESULT_ID": ["sum_30m"],
             "RESULT_TYPE": ["FLOAT"],
             "SQL_QUERY": feature_sql,
@@ -231,6 +233,7 @@ async def test_online_disable__tile_in_use(
     """
     online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
+    aggregation_id = online_feature_spec.aggregation_ids[0]
 
     online_feature_spec_2 = copy.deepcopy(online_feature_spec)
     online_feature_spec_2.feature.name = online_feature_spec_2.feature.name + "_2"
@@ -238,7 +241,7 @@ async def test_online_disable__tile_in_use(
 
     await feature_manager.online_disable(online_feature_spec)
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(result) == 2
     assert result.iloc[0]["state"] == "started"
     assert result.iloc[1]["state"] == "started"
@@ -249,12 +252,13 @@ async def test_online_disable__tile_in_use(
     expected_df = pd.DataFrame(
         {
             "TILE_ID": [tile_id],
+            "AGGREGATION_ID": [aggregation_id],
             "FEATURE_NAME": [online_feature_spec.feature.name],
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
             "IS_DELETED": [True],
         }
     )
-    result = result[["TILE_ID", "FEATURE_NAME", "FEATURE_VERSION", "IS_DELETED"]]
+    result = result[["TILE_ID", "AGGREGATION_ID", "FEATURE_NAME", "FEATURE_VERSION", "IS_DELETED"]]
     assert_frame_equal(result, expected_df)
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND FEATURE_NAME = '{online_feature_spec_2.feature.name}'"
@@ -263,6 +267,7 @@ async def test_online_disable__tile_in_use(
     expected_df = pd.DataFrame(
         {
             "TILE_ID": [tile_id],
+            "AGGREGATION_ID": [aggregation_id],
             "FEATURE_NAME": [online_feature_spec_2.feature.name],
             "FEATURE_VERSION": [
                 online_feature_spec_2.feature.version.to_str(),
@@ -270,7 +275,7 @@ async def test_online_disable__tile_in_use(
             "IS_DELETED": [False],
         }
     )
-    result = result[["TILE_ID", "FEATURE_NAME", "FEATURE_VERSION", "IS_DELETED"]]
+    result = result[["TILE_ID", "AGGREGATION_ID", "FEATURE_NAME", "FEATURE_VERSION", "IS_DELETED"]]
     assert_frame_equal(result, expected_df)
 
 
@@ -286,10 +291,11 @@ async def test_online_disable___re_enable(
     """
     online_feature_spec, _ = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
+    aggregation_id = online_feature_spec.aggregation_ids[0]
 
     await feature_manager.online_disable(online_feature_spec)
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(result) == 0
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}' AND IS_DELETED = TRUE"
@@ -299,7 +305,7 @@ async def test_online_disable___re_enable(
     # re-enable the feature jobs
     await feature_manager.online_enable(online_feature_spec)
 
-    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(result) == 2
     assert result.iloc[0]["state"] == "started"
     assert result.iloc[1]["state"] == "started"
@@ -311,6 +317,7 @@ async def test_online_disable___re_enable(
     expected_df = pd.DataFrame(
         {
             "TILE_ID": [tile_id],
+            "AGGREGATION_ID": [aggregation_id],
             "FEATURE_NAME": [online_feature_spec.feature.name],
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
             "IS_DELETED": [False],
@@ -319,6 +326,7 @@ async def test_online_disable___re_enable(
     result = result[
         [
             "TILE_ID",
+            "AGGREGATION_ID",
             "FEATURE_NAME",
             "FEATURE_VERSION",
             "IS_DELETED",

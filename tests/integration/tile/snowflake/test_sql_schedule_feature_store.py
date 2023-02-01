@@ -17,10 +17,10 @@ async def test_schedule_update_feature_store__update_feature_value(
     Test the stored procedure for updating feature store
     """
 
-    tile_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
+    tile_id, agg_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     await snowflake_session.execute_query(sql)
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
@@ -45,7 +45,7 @@ async def test_schedule_update_feature_store__update_feature_value(
 """
     await snowflake_session.execute_query(update_mapping_sql)
 
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     await snowflake_session.execute_query(sql)
     sql = f"SELECT * FROM {feature_store_table_name}"
     result = await snowflake_session.execute_query(sql)
@@ -72,10 +72,10 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
     Test the stored procedure for updating feature store
     """
 
-    tile_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
+    tile_id, agg_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     await snowflake_session.execute_query(sql)
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
@@ -104,7 +104,7 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
         WHERE TILE_ID = '{tile_id}'
 """
     await snowflake_session.execute_query(update_mapping_sql)
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     await snowflake_session.execute_query(sql)
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
@@ -135,10 +135,10 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     Test the stored procedure for updating feature store
     """
 
-    tile_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
+    tile_id, agg_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     await snowflake_session.execute_query(sql)
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
@@ -169,7 +169,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
             )
             values (
                 '{tile_id}',
-                'agg_id_2',
+                '{agg_id}',
                 '{new_feature_name}',
                 'FLOAT',
                 'select {entity_col_names}, cast(value_2 as float) as "{new_feature_name}" from TEMP_TABLE limit 2',
@@ -179,7 +179,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     """
     await snowflake_session.execute_query(insert_new_mapping_sql)
 
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
 
     await snowflake_session.execute_query(sql)
 
@@ -208,7 +208,7 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
     Test the stored procedure for updating feature store
     """
 
-    tile_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
+    tile_id, agg_id, feature_store_table_name, feature_name, entity_col_names = tile_task_prep
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     sql = f"""
@@ -220,7 +220,7 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
     """
     await snowflake_session.execute_query(update_mapping_sql)
 
-    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}', '{date_ts_str}')"
+    sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     await snowflake_session.execute_query(sql)
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"

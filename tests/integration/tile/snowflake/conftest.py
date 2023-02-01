@@ -13,8 +13,9 @@ async def tile_task_online_store_prep(snowflake_session):
     feature_store_table_name = "fs_table_1"
 
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    aggregation_id = "some_agg_id"
+    suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
+    tile_id = f"TEMP_TABLE_{suffix}"
+    aggregation_id = f"some_agg_id_{suffix}"
 
     number_records = 2
     insert_mapping_sql = f"""
@@ -45,7 +46,7 @@ async def tile_task_online_store_prep(snowflake_session):
     assert result["TILE_ID"].iloc[0] == tile_id
     assert result["RESULT_ID"].iloc[0] == feature_name
 
-    yield tile_id, feature_store_table_name, feature_name, entity_col_names
+    yield tile_id, aggregation_id, feature_store_table_name, feature_name, entity_col_names
 
     await snowflake_session.execute_query("DELETE FROM ONLINE_STORE_MAPPING")
     await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {feature_store_table_name}")

@@ -45,6 +45,7 @@ tm_upsert_tile_feature_mapping = Template(
     USING (
         SELECT
             '{{tile_id}}' AS TILE_ID,
+            '{{aggregation_id}}' AS AGGREGATION_ID,
             '{{feature_name}}' as FEATURE_NAME,
             '{{feature_type}}' as FEATURE_TYPE,
             '{{feature_version}}' as FEATURE_VERSION,
@@ -53,7 +54,7 @@ tm_upsert_tile_feature_mapping = Template(
             {{is_deleted}} as IS_DELETED
     ) b
     ON
-        a.TILE_ID = b.TILE_ID
+        a.AGGREGATION_ID = b.AGGREGATION_ID
         AND a.FEATURE_NAME = b.FEATURE_NAME
         AND a.FEATURE_VERSION = b.FEATURE_VERSION
     WHEN MATCHED THEN
@@ -61,6 +62,7 @@ tm_upsert_tile_feature_mapping = Template(
     WHEN NOT MATCHED THEN
         INSERT (
             TILE_ID,
+            AGGREGATION_ID,
             FEATURE_NAME,
             FEATURE_TYPE,
             FEATURE_VERSION,
@@ -69,6 +71,7 @@ tm_upsert_tile_feature_mapping = Template(
             IS_DELETED
         ) VALUES (
             b.TILE_ID,
+            b.AGGREGATION_ID,
             b.FEATURE_NAME,
             b.FEATURE_TYPE,
             b.FEATURE_VERSION,
@@ -82,7 +85,7 @@ tm_upsert_tile_feature_mapping = Template(
 tm_delete_tile_feature_mapping = Template(
     """
     UPDATE TILE_FEATURE_MAPPING SET IS_DELETED = TRUE
-    WHERE TILE_ID = '{{tile_id}}'
+    WHERE AGGREGATION_ID = '{{aggregation_id}}'
     AND FEATURE_NAME = '{{feature_name}}'
     AND FEATURE_VERSION = '{{feature_version}}'
 """
@@ -132,12 +135,12 @@ tm_upsert_online_store_mapping = Template(
 tm_delete_online_store_mapping = Template(
     """
     UPDATE ONLINE_STORE_MAPPING SET IS_DELETED = TRUE
-    WHERE TILE_ID = '{{tile_id}}'
+    WHERE AGGREGATION_ID = '{{agg_id}}'
 """
 )
 
 tm_call_schedule_online_store = Template(
     """
-    call SP_TILE_SCHEDULE_ONLINE_STORE('{{tile_id}}', '{{job_schedule_ts_str}}')
+    call SP_TILE_SCHEDULE_ONLINE_STORE('{{aggregation_id}}', '{{job_schedule_ts_str}}')
 """
 )
