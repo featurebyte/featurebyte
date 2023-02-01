@@ -1031,7 +1031,7 @@ def test_get_feature_jobs_status(
     # check feature_job_summary content
     expected_feature_job_summary = pd.DataFrame(
         {
-            "tile_hash": {0: "99CB16A0"},
+            "aggregation_hash": {0: "072a1700"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 23},
             "max_duration(s)": {0: 1582.072},

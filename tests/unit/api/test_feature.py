@@ -733,7 +733,7 @@ def test_get_feature_jobs_status_incomplete_logs(
     assert job_status_result.job_session_logs.shape == (1, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "tile_hash": {0: "99CB16A0"},
+            "aggregation_hash": {0: "072a1700"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
@@ -757,7 +757,7 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     assert job_status_result.job_session_logs.shape == (0, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "tile_hash": {0: "99CB16A0"},
+            "aggregation_hash": {0: "072a1700"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},

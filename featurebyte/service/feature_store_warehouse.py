@@ -208,7 +208,7 @@ class FeatureStoreWarehouseService(BaseService):
             return summarized_logs
 
         tile_specs = []
-        tile_specs_cols = ["tile_id", "frequency_minute", "time_modulo_frequency_second"]
+        tile_specs_cols = ["aggregation_id", "frequency_minute", "time_modulo_frequency_second"]
         for feature in features:
             if feature.tile_specs:
                 _tile_specs = pd.DataFrame.from_dict(
@@ -222,12 +222,12 @@ class FeatureStoreWarehouseService(BaseService):
         )
 
         # summarize logs by session
-        sessions = logs.groupby(["SESSION_ID", "TILE_ID"], group_keys=True).apply(
+        sessions = logs.groupby(["SESSION_ID", "AGGREGATION_ID"], group_keys=True).apply(
             _summarize_session
         )
         output_columns = [
             "SESSION_ID",
-            "tile_id",
+            "AGGREGATION_ID",
             "SCHEDULED",
             "STARTED",
             "COMPLETED",
@@ -239,23 +239,26 @@ class FeatureStoreWarehouseService(BaseService):
         if sessions.shape[0] > 0:
             # exclude sessions that started before the range
             sessions = sessions[~sessions["STARTED"].isnull()].reset_index()
-            sessions = sessions.merge(feature_tile_specs, left_on="TILE_ID", right_on="tile_id")
-            sessions["SCHEDULED"] = sessions.apply(
-                lambda row: get_next_job_datetime(
-                    row.STARTED, row.frequency_minute, row.time_modulo_frequency_second
-                ),
-                axis=1,
-            ) - pd.to_timedelta(sessions.frequency_minute, unit="minute")
-            sessions["COMPUTE_DURATION"] = (
-                sessions["COMPLETED"] - sessions["STARTED"]
-            ).dt.total_seconds()
-            sessions["QUEUE_DURATION"] = (
-                sessions["STARTED"] - sessions["SCHEDULED"]
-            ).dt.total_seconds()
-            sessions["TOTAL_DURATION"] = (
-                sessions["COMPLETED"] - sessions["SCHEDULED"]
-            ).dt.total_seconds()
-            return sessions[output_columns]
+            sessions = sessions.merge(
+                feature_tile_specs, left_on="AGGREGATION_ID", right_on="aggregation_id"
+            )
+            if sessions.shape[0] > 0:
+                sessions["SCHEDULED"] = sessions.apply(
+                    lambda row: get_next_job_datetime(
+                        row.STARTED, row.frequency_minute, row.time_modulo_frequency_second
+                    ),
+                    axis=1,
+                ) - pd.to_timedelta(sessions.frequency_minute, unit="minute")
+                sessions["COMPUTE_DURATION"] = (
+                    sessions["COMPLETED"] - sessions["STARTED"]
+                ).dt.total_seconds()
+                sessions["QUEUE_DURATION"] = (
+                    sessions["STARTED"] - sessions["SCHEDULED"]
+                ).dt.total_seconds()
+                sessions["TOTAL_DURATION"] = (
+                    sessions["COMPLETED"] - sessions["SCHEDULED"]
+                ).dt.total_seconds()
+                return sessions[output_columns]
         return pd.DataFrame(columns=output_columns)
 
     async def get_feature_job_logs(
@@ -290,17 +293,17 @@ class FeatureStoreWarehouseService(BaseService):
         )
         utcnow = datetime.datetime.utcnow()
 
-        # compile list of tile_ids to filter logs
-        tile_ids = []
+        # compile list of aggregation_ids to filter logs
+        aggregation_ids = []
         for feature in features:
             for tile_spec in feature.tile_specs:
-                tile_ids.append(tile_spec.tile_id)
+                aggregation_ids.append(tile_spec.aggregation_id)
 
         sql_expr = (
             expressions.select(
                 quoted_identifier("SESSION_ID"),
                 quoted_identifier("CREATED_AT"),
-                quoted_identifier("TILE_ID"),
+                quoted_identifier("AGGREGATION_ID"),
                 quoted_identifier("STATUS"),
                 quoted_identifier("MESSAGE"),
             )
@@ -320,8 +323,11 @@ class FeatureStoreWarehouseService(BaseService):
                             expression=make_literal_value(utcnow, cast_as_timestamp=True),
                         ),
                         expressions.In(
-                            this=quoted_identifier("TILE_ID"),
-                            expressions=[make_literal_value(tile_id) for tile_id in set(tile_ids)],
+                            this=quoted_identifier("AGGREGATION_ID"),
+                            expressions=[
+                                make_literal_value(aggregation_id)
+                                for aggregation_id in set(aggregation_ids)
+                            ],
                         ),
                         expressions.EQ(
                             this=quoted_identifier("TILE_TYPE"),

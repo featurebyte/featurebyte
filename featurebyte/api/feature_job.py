@@ -182,8 +182,9 @@ class FeatureJobMixin(ApiObject):
 
         # identify jobs with duration that exceeds job period
         logs = logs.merge(
-            feature_tile_specs[["tile_id", "frequency_minute"]].drop_duplicates(),
-            on="tile_id",
+            feature_tile_specs[["aggregation_id", "frequency_minute"]].drop_duplicates(),
+            left_on="AGGREGATION_ID",
+            right_on="aggregation_id",
             how="left",
         )
         logs["PERIOD"] = logs["frequency_minute"] * 60
@@ -191,14 +192,14 @@ class FeatureJobMixin(ApiObject):
 
         # feature tile table
         feature_tile_table = (
-            feature_tile_specs[["feature_name", "tile_hash"]]
+            feature_tile_specs[["feature_name", "aggregation_hash"]]
             .sort_values("feature_name")
             .reset_index(drop=True)
         )
 
         # summarize by tiles
         stats = (
-            logs.groupby("tile_id", group_keys=True)
+            logs.groupby("aggregation_id", group_keys=True)
             .agg(
                 completed_jobs=("COMPLETED", "count"),
                 max_duration=("TOTAL_DURATION", "max"),
@@ -212,14 +213,14 @@ class FeatureJobMixin(ApiObject):
         feature_stats = (
             feature_tile_specs[
                 [
-                    "tile_hash",
+                    "aggregation_hash",
                     "frequency_minute",
                     "time_modulo_frequency_second",
-                    "tile_id",
+                    "aggregation_id",
                 ]
             ]
-            .drop_duplicates("tile_id")
-            .merge(stats, on="tile_id", how="left")
+            .drop_duplicates("aggregation_id")
+            .merge(stats, on="aggregation_id", how="left")
         )
 
         # compute expected number of jobs
@@ -264,7 +265,7 @@ class FeatureJobMixin(ApiObject):
             humanize.naturaldelta
         )
         feature_stats = feature_stats.drop(
-            ["tile_id", "time_modulo_frequency_second", "expected_jobs", "last_completed"],
+            ["aggregation_id", "time_modulo_frequency_second", "expected_jobs", "last_completed"],
             axis=1,
         ).rename(
             {
@@ -281,7 +282,9 @@ class FeatureJobMixin(ApiObject):
             job_duration_tolerance=job_duration_tolerance,
             feature_tile_table=feature_tile_table,
             feature_job_summary=feature_stats,
-            job_session_logs=logs.drop(["SESSION_ID", "tile_id", "frequency_minute"], axis=1)
+            job_session_logs=logs.drop(
+                ["SESSION_ID", "AGGREGATION_ID", "aggregation_id", "frequency_minute"], axis=1
+            )
             .sort_values("STARTED", ascending=False)
             .reset_index(drop=True),
         )
@@ -320,10 +323,10 @@ class FeatureJobMixin(ApiObject):
         result = response.json()
         logs = dataframe_from_json(result)
 
-        # Compute short tile hash
+        # Compute short aggregation hash
         log_columns = logs.columns.to_list()  # pylint: disable=no-member
-        logs["TILE_HASH"] = logs["tile_id"].apply(lambda x: x.split("_")[-1][:8])
-        logs = logs[["TILE_HASH"] + log_columns]
+        logs["AGGREGATION_HASH"] = logs["AGGREGATION_ID"].apply(lambda x: x.split("_")[-1][:8])
+        logs = logs[["AGGREGATION_HASH"] + log_columns]
         logs["IS_LATE"] = logs["TOTAL_DURATION"] > job_duration_tolerance
 
         # get feature tilespecs information
@@ -332,9 +335,12 @@ class FeatureJobMixin(ApiObject):
         for (feature_name, tile_spec_list) in feature_tile_specs:
             data = []
             for tile_spec in tile_spec_list:
-                tile_hash = tile_spec.tile_id.split("_")[-1][:8]
                 data.append(
-                    dict(**tile_spec.dict(), tile_hash=tile_hash, feature_name=feature_name)
+                    dict(
+                        **tile_spec.dict(),
+                        aggregation_hash=tile_spec.aggregation_id.split("_")[-1][:8],
+                        feature_name=feature_name,
+                    )
                 )
             tile_specs.append(pd.DataFrame.from_dict(data))
 
@@ -343,9 +349,9 @@ class FeatureJobMixin(ApiObject):
             if tile_specs
             else pd.DataFrame(
                 columns=[
-                    "tile_hash",
+                    "aggregation_hash",
                     "feature_name",
-                    "tile_id",
+                    "aggregation_id",
                     "frequency_minute",
                     "time_modulo_frequency_second",
                 ]

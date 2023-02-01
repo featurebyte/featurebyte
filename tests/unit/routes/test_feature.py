@@ -476,7 +476,7 @@ class TestFeatureApi(BaseApiTestSuite):
         job_logs = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "TILE_ID": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"] * 6,
+                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 6,
                 "CREATED_AT": pd.to_datetime(
                     [
                         "2020-01-02 18:00:00",
@@ -505,7 +505,7 @@ class TestFeatureApi(BaseApiTestSuite):
         expected_df = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1", "SID2"],
-                "tile_id": ["TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178"] * 2,
+                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 2,
                 "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
                 "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
                 "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
@@ -523,14 +523,14 @@ class TestFeatureApi(BaseApiTestSuite):
             SELECT
               "SESSION_ID",
               "CREATED_AT",
-              "TILE_ID",
+              "AGGREGATION_ID",
               "STATUS",
               "MESSAGE"
             FROM TILE_JOB_MONITOR
             WHERE
               "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
               AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
-              AND "TILE_ID" IN ('TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178')
+              AND "AGGREGATION_ID" IN ('sum_fba233e0f502088c233315a322f4c51e939072c0')
               AND "TILE_TYPE" = 'ONLINE'
             """
             ).strip()
