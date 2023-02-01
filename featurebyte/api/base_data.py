@@ -9,6 +9,7 @@ from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from pandas import DataFrame
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
@@ -228,6 +229,15 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, DataListMixin, Get
     """
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+
+    raw_columns_info: List[ColumnInfo] = Field(alias="columns_info")
+
+    @property
+    def columns_info(self):
+        try:
+            return self.cached_model.columns_info
+        except RecordRetrievalException:
+            return self.raw_columns_info
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None

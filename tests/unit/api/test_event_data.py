@@ -139,8 +139,8 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     assert set(event_data.columns).issubset(dir(event_data))
     assert event_data._ipython_key_completions_() == set(event_data.columns)
 
-    output = event_data.dict()
-    event_data_dict["id"] = event_data.id
+    output = event_data.dict(by_alias=True)
+    event_data_dict["_id"] = event_data.id
     event_data_dict["graph"] = output["graph"]
     event_data_dict["node_name"] = output["node_name"]
     assert output == event_data_dict

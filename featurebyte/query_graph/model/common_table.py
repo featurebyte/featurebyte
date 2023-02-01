@@ -30,8 +30,10 @@ SPECIFIC_DATA_TABLES = []
 DATA_TABLES = []
 
 
-class BaseTableData(FeatureByteBaseModel):
-    """Base data model used to capture input node info"""
+class FrozenTableData(FeatureByteBaseModel):
+    """
+    FrozenTableData stores all the attributes that are fixed after object construction.
+    """
 
     type: Literal[
         TableDataType.GENERIC,
@@ -40,8 +42,13 @@ class BaseTableData(FeatureByteBaseModel):
         TableDataType.DIMENSION_DATA,
         TableDataType.SCD_DATA,
     ]
-    columns_info: List[ColumnInfo]
     tabular_source: TabularSource
+
+
+class BaseTableData(FrozenTableData):
+    """Base data model used to capture input node info"""
+
+    columns_info: List[ColumnInfo]
 
     @validator("columns_info")
     @classmethod

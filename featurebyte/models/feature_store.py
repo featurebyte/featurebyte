@@ -17,7 +17,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.common_table import BaseTableData, FrozenTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -109,7 +109,39 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel, ABC):
+class FrozenDataModel(FrozenTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel, ABC):
+    """
+    FrozenDataModel stores all the attributes that are fixed after object construction.
+    """
+
+    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "tabular_data"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("tabular_source",),
+                conflict_fields_signature={"tabular_source": ["tabular_source"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]
+
+
+class DataModel(BaseTableData, FrozenDataModel, ABC):
     """
     DataModel schema
 
@@ -125,7 +157,6 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
 
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
-    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
@@ -202,27 +233,3 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel
                 dtypes = sorted(str(dtype) for dtype in expected_types)
                 raise ValueError(f'Column "{column_name}" is expected to have type(s): {dtypes}')
         return column_name
-
-    class Settings(FeatureByteBaseDocumentModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "tabular_data"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("tabular_source",),
-                conflict_fields_signature={"tabular_source": ["tabular_source"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]
