@@ -15,9 +15,11 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_call_schedule_online_store,
+    tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_last_tile_index,
+    tm_upsert_online_store_mapping,
     tm_upsert_tile_feature_mapping,
 )
 from featurebyte.logger import logger
@@ -62,6 +64,7 @@ class FeatureManagerSnowflake(BaseModel):
         schedule_time: datetime
             the moment of scheduling the job
         """
+        logger.info(f"online_enable: {feature_spec.feature.name}")
         tile_mgr = TileManagerSnowflake(session=self._session)
 
         # insert records into tile-feature mapping table
@@ -159,8 +162,6 @@ class FeatureManagerSnowflake(BaseModel):
         feature_spec: OnlineFeatureSpec
             Instance of OnlineFeatureSpec
         """
-        feature_sql = feature_spec.feature_sql.replace("'", "''")
-        logger.debug(f"feature_sql: {feature_sql}")
         for tile_id in feature_spec.tile_ids:
             upsert_sql = tm_upsert_tile_feature_mapping.render(
                 tile_id=tile_id,
@@ -169,16 +170,24 @@ class FeatureManagerSnowflake(BaseModel):
                 feature_version=feature_spec.feature.version.to_str(),
                 feature_readiness=str(feature_spec.feature.readiness),
                 feature_event_data_ids=",".join([str(i) for i in feature_spec.event_data_ids]),
-                feature_sql=feature_sql,
-                feature_store_table_name=feature_spec.feature_store_table_name,
-                entity_column_names_str=",".join(
-                    escape_column_names(feature_spec.serving_names),
-                ),
                 is_deleted=False,
             )
-            logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
             await self._session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
+
+        for query in feature_spec.precompute_queries:
+            upsert_sql = tm_upsert_online_store_mapping.render(
+                tile_id=query.tile_id,
+                aggregation_id=query.aggregation_id,
+                result_id=query.result_name,
+                result_type=query.result_type,
+                sql_query=query.sql.replace("'", "''"),
+                online_store_table_name=query.table_name,
+                entity_column_names=",".join(escape_column_names(query.serving_names)),
+                is_deleted=False,
+            )
+            await self._session.execute_query(upsert_sql)
+            logger.debug(f"Done insert tile_feature_mapping for {query.result_name}")
 
     async def online_disable(self, feature_spec: OnlineFeatureSpec) -> None:
         """
@@ -198,6 +207,9 @@ class FeatureManagerSnowflake(BaseModel):
             )
             await self._session.execute_query(delete_sql)
             logger.debug(f"Done delete tile_feature_mapping for {tile_id}")
+            delete_sql = tm_delete_online_store_mapping.render(tile_id=tile_id)
+            await self._session.execute_query(delete_sql)
+            logger.debug(f"Done delete online_store_mapping for {tile_id}")
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:

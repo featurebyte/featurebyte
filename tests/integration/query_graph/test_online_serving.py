@@ -33,11 +33,35 @@ def features_fixture(event_data):
         windows=["24h"],
         feature_names=["EVENT_COUNT_BY_ACTION_24h"],
     )
+    # Use this feature group to test handling of empty entity column names list in
+    # SP_TILE_SCHEDULE_ONLINE_STORE
+    feature_without_entity = event_view.groupby([], category="PRODUCT_ACTION").aggregate_over(
+        method="count",
+        windows=["24h", "7d"],
+        feature_names=["TOTAL_EVENT_COUNT_BY_ACTION_24h", "TOTAL_EVENT_COUNT_BY_ACTION_7d"],
+    )
+    feature_complex_1 = (
+        feature_group["AMOUNT_SUM_24h"]
+        * feature_group_dict["EVENT_COUNT_BY_ACTION_24h"].cd.entropy()
+    )
+    feature_complex_1.name = "COMPLEX_FEATURE_1"
+    feature_complex_2 = feature_without_entity[
+        "TOTAL_EVENT_COUNT_BY_ACTION_24h"
+    ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
+    feature_complex_2.name = "COMPLEX_FEATURE_2"
+    feature_complex_3 = feature_without_entity[
+        "TOTAL_EVENT_COUNT_BY_ACTION_7d"
+    ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
+    feature_complex_3.name = "COMPLEX_FEATURE_3"
     features = [
         feature_group["AMOUNT_SUM_2h"],
         feature_group["AMOUNT_SUM_24h"],
         feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+        feature_complex_1,
+        feature_complex_2,
+        feature_complex_3,
     ]
+
     for feature in features:
         feature.save()
     return features
@@ -90,7 +114,15 @@ async def test_online_serving_sql(features, snowflake_session, config):
         online_features = await snowflake_session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = ["üser id", "AMOUNT_SUM_2h", "AMOUNT_SUM_24h", "EVENT_COUNT_BY_ACTION_24h"]
+        columns = [
+            "üser id",
+            "AMOUNT_SUM_2h",
+            "AMOUNT_SUM_24h",
+            "EVENT_COUNT_BY_ACTION_24h",
+            "COMPLEX_FEATURE_1",
+            "COMPLEX_FEATURE_2",
+            "COMPLEX_FEATURE_3",
+        ]
         assert set(online_features.columns.tolist()) == set(columns)
         pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
 

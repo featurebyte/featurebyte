@@ -15,7 +15,7 @@ from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.online_store import OnlineFeatureSpec
-from featurebyte.utils.snowflake.sql import escape_column_names
+from featurebyte.query_graph.sql.online_serving import OnlineStorePrecomputeQuery
 
 
 @pytest.fixture(name="feature_sql")
@@ -49,31 +49,35 @@ async def online_enabled_feature_spec_fixture(
     """
     Fixture for an OnlineFeatureSpec corresponding to an online enabled feature
     """
-    with patch.object(OnlineFeatureSpec, "feature_sql", PropertyMock(return_value=feature_sql)):
-        with patch.object(
-            OnlineFeatureSpec,
-            "feature_store_table_name",
-            PropertyMock(return_value=feature_store_table_name),
-        ):
-            with patch.object(
-                ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[snowflake_tile])
-            ):
+    with patch.object(
+        ExtendedFeatureModel, "tile_specs", PropertyMock(return_value=[snowflake_tile])
+    ):
+        mock_precompute_queries = [
+            OnlineStorePrecomputeQuery(
+                sql=feature_sql,
+                tile_id=snowflake_tile.tile_id,
+                aggregation_id=snowflake_tile.aggregation_id,
+                table_name=feature_store_table_name,
+                result_name="sum_30m",
+                result_type="FLOAT",
+                serving_names=["cust_id"],
+            )
+        ]
+        online_feature_spec = OnlineFeatureSpec(
+            feature=snowflake_feature, precompute_queries=mock_precompute_queries
+        )
+        schedule_time = datetime.utcnow()
 
-                online_feature_spec = OnlineFeatureSpec(
-                    feature=snowflake_feature,
-                )
+        await feature_manager.online_enable(online_feature_spec, schedule_time=schedule_time)
 
-                schedule_time = datetime.utcnow()
+        yield online_feature_spec, schedule_time
 
-                await feature_manager.online_enable(
-                    online_feature_spec, schedule_time=schedule_time
-                )
-
-                yield online_feature_spec, schedule_time
-
-                await snowflake_session.execute_query(
-                    f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
-                )
+        await snowflake_session.execute_query(
+            f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+        )
+        await snowflake_session.execute_query(
+            f"DELETE FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+        )
 
 
 @pytest.mark.asyncio
@@ -134,11 +138,24 @@ async def test_online_enabled_feature_spec(
             "FEATURE_EVENT_DATA_IDS": [
                 ",".join([str(i) for i in online_feature_spec.event_data_ids])
             ],
-            "FEATURE_SQL": [feature_sql],
-            "FEATURE_STORE_TABLE_NAME": [feature_store_table_name],
-            "FEATURE_ENTITY_COLUMN_NAMES": [
-                ",".join(escape_column_names(online_feature_spec.serving_names))
-            ],
+            "IS_DELETED": [False],
+        }
+    )
+    result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
+
+    sql = f"SELECT * FROM ONLINE_STORE_MAPPING WHERE TILE_ID = '{expected_tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 1
+    expected_df = pd.DataFrame(
+        {
+            "TILE_ID": ["TILE_ID1"],
+            "AGGREGATION_ID": ["agg_id1"],
+            "RESULT_ID": ["sum_30m"],
+            "RESULT_TYPE": ["FLOAT"],
+            "SQL_QUERY": feature_sql,
+            "ONLINE_STORE_TABLE_NAME": feature_store_table_name,
+            "ENTITY_COLUMN_NAMES": ['"cust_id"'],
             "IS_DELETED": [False],
         }
     )
@@ -164,7 +181,7 @@ async def test_online_enabled_feature_spec(
     sql = f"SELECT * FROM {feature_store_table_name}"
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 100
-    expect_cols = online_feature_spec.serving_names
+    expect_cols = online_feature_spec.precompute_queries[0].serving_names[:]
     expect_cols.append(online_feature_spec.feature.name)
     assert list(result) == expect_cols
 
@@ -296,11 +313,6 @@ async def test_online_disable___re_enable(
             "TILE_ID": [tile_id],
             "FEATURE_NAME": [online_feature_spec.feature.name],
             "FEATURE_VERSION": [online_feature_spec.feature.version.to_str()],
-            "FEATURE_SQL": [online_feature_spec.feature_sql],
-            "FEATURE_STORE_TABLE_NAME": [online_feature_spec.feature_store_table_name],
-            "FEATURE_ENTITY_COLUMN_NAMES": [
-                ",".join(escape_column_names(online_feature_spec.serving_names))
-            ],
             "IS_DELETED": [False],
         }
     )
@@ -309,9 +321,6 @@ async def test_online_disable___re_enable(
             "TILE_ID",
             "FEATURE_NAME",
             "FEATURE_VERSION",
-            "FEATURE_SQL",
-            "FEATURE_STORE_TABLE_NAME",
-            "FEATURE_ENTITY_COLUMN_NAMES",
             "IS_DELETED",
         ]
     ]

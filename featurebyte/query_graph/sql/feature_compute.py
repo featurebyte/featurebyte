@@ -118,7 +118,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-    ) -> tuple[str, expressions.Select]:
+    ) -> tuple[str, expressions.Select, list[str]]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -148,6 +148,7 @@ class FeatureExecutionPlan:
 
         # Update table_expr using the aggregators
         agg_table_index = 0
+        agg_result_names = []
         for aggregator in self.iter_aggregators():
             agg_result = aggregator.update_aggregation_table_expr(
                 table_expr=table_expr,
@@ -158,11 +159,17 @@ class FeatureExecutionPlan:
             table_expr = agg_result.updated_table_expr
             agg_table_index = agg_result.updated_index
             current_columns += agg_result.column_names
+            agg_result_names += agg_result.column_names
 
-        return self.AGGREGATION_TABLE_NAME, table_expr
+        return self.AGGREGATION_TABLE_NAME, table_expr, agg_result_names
 
     def construct_post_aggregation_sql(
-        self, cte_context: expressions.Select, request_table_columns: Optional[list[str]]
+        self,
+        cte_context: expressions.Select,
+        request_table_columns: Optional[list[str]],
+        exclude_post_aggregation: bool,
+        agg_result_names: list[str],
+        exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
@@ -178,26 +185,44 @@ class FeatureExecutionPlan:
             A partial Select statement with CTEs defined
         request_table_columns : Optional[list[str]]
             Columns in the input request table
+        exclude_post_aggregation: bool
+            When True, exclude post aggregation transforms and select aggregated columns as the
+            output columns directly. Intended to be used by online store pre-computation.
+        agg_result_names: bool
+            Names of the aggregated columns. Used when excluded_post_aggregation is True.
+        exclude_columns: Optional[set[str]]
+            When provided, exclude these columns from the output. This is currently used when
+            generating feature retrieval sql for online requests where we want to exclude the
+            internally added point in time column from the final output.
 
         Returns
         -------
         str
         """
-        qualified_feature_names = []
-        for feature_spec in self.feature_specs.values():
-            feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
-            qualified_feature_names.append(feature_alias)
+        if exclude_columns is None:
+            exclude_columns = set()
+
+        columns: list[expressions.Expression | str] = []
+        if exclude_post_aggregation:
+            for agg_result_name in agg_result_names:
+                columns.append(quoted_identifier(agg_result_name))
+        else:
+            for feature_spec in self.feature_specs.values():
+                feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
+                columns.append(feature_alias)
 
         if request_table_columns:
             request_table_column_names = [
-                f"AGG.{quoted_identifier(col).sql()}" for col in request_table_columns
+                f"AGG.{quoted_identifier(col).sql()}"
+                for col in request_table_columns
+                if col not in exclude_columns
             ]
         else:
             request_table_column_names = []
 
-        table_expr = cte_context.select(
-            *request_table_column_names, *qualified_feature_names
-        ).from_(f"{self.AGGREGATION_TABLE_NAME} AS AGG")
+        table_expr = cte_context.select(*request_table_column_names, *columns).from_(
+            f"{self.AGGREGATION_TABLE_NAME} AS AGG"
+        )
         return table_expr
 
     def construct_combined_sql(
@@ -206,6 +231,8 @@ class FeatureExecutionPlan:
         point_in_time_column: str,
         request_table_columns: list[str],
         prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
+        exclude_post_aggregation: bool = False,
+        exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
         """Construct combined SQL that will generate the features
 
@@ -220,6 +247,11 @@ class FeatureExecutionPlan:
         prior_cte_statements : Optional[list[tuple[str, str]]]
             Other CTE statements to incorporate to the final SQL (namely the request data SQL and
             on-demand tile SQL)
+        exclude_post_aggregation: bool
+            When True, exclude post aggregation transforms and select aggregated columns as the
+            output columns directly. Intended to be used by online store pre-computation.
+        exclude_columns: Optional[set[str]]
+            When provided, exclude these columns from the output
 
         Returns
         -------
@@ -233,17 +265,20 @@ class FeatureExecutionPlan:
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
-        cte_statements.append(
-            self.construct_combined_aggregation_cte(
-                request_table_name,
-                point_in_time_column,
-                request_table_columns,
-            )
+        agg_cte_name, agg_expr, agg_result_names = self.construct_combined_aggregation_cte(
+            request_table_name,
+            point_in_time_column,
+            request_table_columns,
         )
+        cte_statements.append((agg_cte_name, agg_expr))
         cte_context = construct_cte_sql(cte_statements)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
-            cte_context, request_table_columns
+            cte_context=cte_context,
+            request_table_columns=request_table_columns,
+            exclude_post_aggregation=exclude_post_aggregation,
+            agg_result_names=agg_result_names,
+            exclude_columns=exclude_columns,
         )
         return post_aggregation_sql
 

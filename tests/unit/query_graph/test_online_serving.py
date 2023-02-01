@@ -1,25 +1,31 @@
 """
 Tests for featurebyte.query_graph.sql.online_serving
 """
+from typing import List
+
 import textwrap
-from dataclasses import asdict
 
 import pandas as pd
-import pytest
-from bson import ObjectId
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
-    OnlineStoreLookupSpec,
-    OnlineStoreUniversePlan,
-    get_entities_ids_and_serving_names,
-    get_online_store_feature_compute_sql,
+    OnlineStorePrecomputePlan,
+    get_online_store_precompute_queries,
     get_online_store_retrieval_sql,
     is_online_store_eligible,
 )
+from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture
+
+
+def get_aggregation_specs(groupby_node) -> List[TileBasedAggregationSpec]:
+    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
+        groupby_node, get_sql_adapter(SourceType.SNOWFLAKE)
+    )
+    return agg_specs
 
 
 def test_construct_universe_sql(query_graph_with_groupby):
@@ -27,10 +33,36 @@ def test_construct_universe_sql(query_graph_with_groupby):
     Test constructing universe sql for a simple point in time groupby
     """
     node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    plan = OnlineStoreUniversePlan(
+    plan = OnlineStorePrecomputePlan(
         query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE)
     )
-    expr, _ = plan.construct_online_store_universe()
+    agg_specs = get_aggregation_specs(node)
+
+    # window size of 2h
+    universe = plan._construct_online_store_universe(agg_specs[0])
+    expected_sql = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
+          "cust_id" AS "CUSTOMER_ID"
+        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
+        WHERE
+          INDEX >= FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          ) - 2
+          AND INDEX < FLOOR(
+            (
+              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
+            ) / 3600
+          )
+        """
+    ).strip()
+    assert universe.expr.sql(pretty=True) == expected_sql
+
+    # window size of 48h
+    universe = plan._construct_online_store_universe(agg_specs[1])
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -50,17 +82,19 @@ def test_construct_universe_sql(query_graph_with_groupby):
           )
         """
     ).strip()
-    assert expr.sql(pretty=True) == expected_sql
+    assert universe.expr.sql(pretty=True) == expected_sql
 
 
 def test_construct_universe_sql__category(query_graph_with_category_groupby):
     """
-    Test constructing universe sql for groupby with category
+    Test constructing universe sql for groupby with category (the category column should not be part
+    of SELECT DISTINCT)
     """
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
-    plan = OnlineStoreUniversePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
-    expr, _ = plan.construct_online_store_universe()
+    plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE))
+    agg_specs = get_aggregation_specs(node)
+    universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -72,7 +106,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
             ) / 3600
-          ) - 48
+          ) - 2
           AND INDEX < FLOOR(
             (
               DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
@@ -80,7 +114,7 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
           )
         """
     ).strip()
-    assert expr.sql(pretty=True) == expected_sql
+    assert universe.expr.sql(pretty=True) == expected_sql
 
 
 def test_construct_universe_sql__unbounded_latest(
@@ -89,12 +123,13 @@ def test_construct_universe_sql__unbounded_latest(
     """
     Test constructing universe sql for groupby with category
     """
-    plan = OnlineStoreUniversePlan(
+    plan = OnlineStorePrecomputePlan(
         global_graph,
         latest_value_without_window_feature_node,
         get_sql_adapter(SourceType.SNOWFLAKE),
     )
-    expr, _ = plan.construct_online_store_universe()
+    agg_specs = get_aggregation_specs(global_graph.get_node_by_name("groupby_1"))
+    universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -110,7 +145,7 @@ def test_construct_universe_sql__unbounded_latest(
           )
         """
     ).strip()
-    assert expr.sql(pretty=True) == expected_sql
+    assert universe.expr.sql(pretty=True) == expected_sql
 
 
 def test_is_online_store_eligible__non_time_aware(global_graph, order_size_feature_node):
@@ -135,52 +170,97 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     """
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
-    sql = get_online_store_feature_compute_sql(graph, node, SourceType.SNOWFLAKE)
+    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE)
+    assert len(queries) == 2
+    expected_query_params = {
+        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "result_type": "FLOAT",
+        "serving_names": ["CUSTOMER_ID"],
+    }
+    assert queries[0].dict(exclude={"sql"}) == {
+        "result_name": "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        **expected_query_params,
+    }
+    assert queries[1].dict(exclude={"sql"}) == {
+        "result_name": "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        **expected_query_params,
+    }
     assert_equal_with_expected_fixture(
-        sql,
-        "tests/fixtures/expected_online_feature_compute_sql.sql",
+        queries[0].sql,
+        "tests/fixtures/expected_online_precompute_0.sql",
+        update_fixture=update_fixtures,
+    )
+    assert_equal_with_expected_fixture(
+        queries[1].sql,
+        "tests/fixtures/expected_online_precompute_1.sql",
         update_fixture=update_fixtures,
     )
 
 
-def test_complex_features_not_implemented(complex_feature_query_graph):
+def test_complex_features(complex_feature_query_graph, update_fixtures):
     """
-    Test complex features with multiple tile tables raises NotImplementedError
+    Test complex features with multiple tile tables
     """
     node, graph = complex_feature_query_graph
-    with pytest.raises(NotImplementedError):
-        _ = get_online_store_feature_compute_sql(graph, node, SourceType.SNOWFLAKE)
 
+    # Prune graph to remove unused windows (in the actual code paths, graph is always pruned before
+    # any sql generation)
+    pruned_graph_model, node_name_map = graph.prune(node, aggressive=True)
+    pruned_node = pruned_graph_model.get_node_by_name(node_name_map[node.name])
+    pruned_graph, loaded_node_name_map = QueryGraph().load(pruned_graph_model)
+    pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
 
-def test_get_entities_ids_and_serving_names(mixed_point_in_time_and_item_aggregations_features):
-    """
-    Test get_entities_ids_and_serving_names
-    """
-    graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    # a_48h_average - point in time groupby
-    assert get_entities_ids_and_serving_names(graph, nodes[0]) == (
-        {ObjectId("637516ebc9c18f5a277a78db")},
-        {"CUSTOMER_ID"},
+    # Check precompute sqls
+    queries = get_online_store_precompute_queries(pruned_graph, pruned_node, SourceType.SNOWFLAKE)
+    assert len(queries) == 2
+    expected_query_params_tile_1 = {
+        "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
+        "aggregation_id": "avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        "table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
+        "result_type": "FLOAT",
+        "serving_names": ["CUSTOMER_ID"],
+    }
+    expected_query_params_tile_2 = {
+        "tile_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
+        "aggregation_id": "sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
+        "table_name": "online_store_b8cd14c914ca8a3a31bbfdf21e684d0d6c1936f3",
+        "result_type": "FLOAT",
+        "serving_names": ["BUSINESS_ID"],
+    }
+    assert queries[0].dict(exclude={"sql"}) == {
+        "result_name": "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
+        **expected_query_params_tile_1,
+    }
+    assert queries[1].dict(exclude={"sql"}) == {
+        "result_name": "agg_w604800_sum_875069c3061f4fbb8c0e49a0a927676315f07a46",
+        **expected_query_params_tile_2,
+    }
+    assert_equal_with_expected_fixture(
+        queries[0].sql,
+        "tests/fixtures/expected_online_precompute_complex_0.sql",
+        update_fixture=update_fixtures,
     )
-    # order_size - item groupby
-    assert get_entities_ids_and_serving_names(graph, nodes[1]) == (set(), set())
+    assert_equal_with_expected_fixture(
+        queries[1].sql,
+        "tests/fixtures/expected_online_precompute_complex_1.sql",
+        update_fixture=update_fixtures,
+    )
 
-
-def test_online_store_lookup_spec(query_graph_with_groupby_and_feature_nodes):
-    """
-    Test constructing OnlineStoreLookupSpec from query graph and nodes
-    """
-    graph, *nodes = query_graph_with_groupby_and_feature_nodes
-    assert asdict(OnlineStoreLookupSpec.from_graph_and_node(graph, nodes[0])) == {
-        "feature_name": "a_2h_average",
-        "feature_store_table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
-        "serving_names": ["CUSTOMER_ID"],
-    }
-    assert asdict(OnlineStoreLookupSpec.from_graph_and_node(graph, nodes[1])) == {
-        "feature_name": "a_48h_average plus 123",
-        "feature_store_table_name": "online_store_e5af66c4b0ef5ccf86de19f3403926d5100d9de6",
-        "serving_names": ["CUSTOMER_ID"],
-    }
+    # Check retrieval sql
+    sql = get_online_store_retrieval_sql(
+        request_table_name="MY_REQUEST_TABLE",
+        request_table_columns=["CUSTOMER_ID"],
+        graph=pruned_graph,
+        nodes=[pruned_node],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        sql,
+        "tests/fixtures/expected_online_feature_retrieval_complex.sql",
+        update_fixture=update_fixtures,
+    )
 
 
 def test_online_store_feature_retrieval_sql__all_eligible(

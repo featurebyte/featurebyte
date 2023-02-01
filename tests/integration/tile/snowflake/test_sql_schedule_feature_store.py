@@ -40,7 +40,7 @@ async def test_schedule_update_feature_store__update_feature_value(
 
     number_records = 2
     update_mapping_sql = f"""
-        UPDATE TILE_FEATURE_MAPPING SET FEATURE_SQL = 'select {entity_col_names}, 100.0 as "{feature_name}" from TEMP_TABLE limit {number_records}'
+        UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = 'select {entity_col_names}, 100.0 as "{feature_name}" from TEMP_TABLE limit {number_records}'
         WHERE TILE_ID = '{tile_id}'
 """
     await snowflake_session.execute_query(update_mapping_sql)
@@ -100,7 +100,7 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
         select {entity_col_names}, 98.0 as "{feature_name}" from TEMP_TABLE where __FB_TILE_START_DATE_COLUMN = ''2022-06-05 23:48:00''
 """
     update_mapping_sql = f"""
-        UPDATE TILE_FEATURE_MAPPING SET FEATURE_SQL = '{sql}'
+        UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = '{sql}'
         WHERE TILE_ID = '{tile_id}'
 """
     await snowflake_session.execute_query(update_mapping_sql)
@@ -158,12 +158,22 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 
     new_feature_name = feature_name + "_2"
     insert_new_mapping_sql = f"""
-            insert into TILE_FEATURE_MAPPING(
-                TILE_ID, FEATURE_NAME, FEATURE_TYPE, FEATURE_VERSION, FEATURE_SQL, FEATURE_STORE_TABLE_NAME, FEATURE_ENTITY_COLUMN_NAMES
+            insert into ONLINE_STORE_MAPPING(
+                TILE_ID,
+                AGGREGATION_ID,
+                RESULT_ID,
+                RESULT_TYPE,
+                SQL_QUERY,
+                ONLINE_STORE_TABLE_NAME,
+                ENTITY_COLUMN_NAMES
             )
             values (
-                '{tile_id}', '{new_feature_name}', 'FLOAT', 'feature_1_v1',
-                'select {entity_col_names}, cast(value_2 as float) as "{new_feature_name}" from TEMP_TABLE limit 2', '{feature_store_table_name}',
+                '{tile_id}',
+                'agg_id_2',
+                '{new_feature_name}',
+                'FLOAT',
+                'select {entity_col_names}, cast(value_2 as float) as "{new_feature_name}" from TEMP_TABLE limit 2',
+                '{feature_store_table_name}',
                 '{entity_col_names}'
             )
     """
@@ -205,7 +215,7 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
             select {entity_col_names}, ''cat1'' as "{feature_name}" from TEMP_TABLE where __FB_TILE_START_DATE_COLUMN = ''2022-06-05 23:53:00''
     """
     update_mapping_sql = f"""
-            UPDATE TILE_FEATURE_MAPPING SET FEATURE_SQL = '{sql}', FEATURE_TYPE = 'VARCHAR'
+            UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = '{sql}', RESULT_TYPE = 'VARCHAR'
             WHERE TILE_ID = '{tile_id}'
     """
     await snowflake_session.execute_query(update_mapping_sql)

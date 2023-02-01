@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Generic, TypeVar
 
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from dataclasses import dataclass
 
 from sqlglot import expressions
@@ -14,7 +15,14 @@ from sqlglot.expressions import Select, alias_, select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
-from featurebyte.query_graph.sql.specs import AggregationSpec, NonTileBasedAggregationSpec
+from featurebyte.query_graph.sql.online_serving_util import (
+    get_online_store_table_name_from_entity_ids,
+)
+from featurebyte.query_graph.sql.specs import (
+    AggregationSpec,
+    NonTileBasedAggregationSpec,
+    TileBasedAggregationSpec,
+)
 
 AggregationSpecT = TypeVar("AggregationSpecT", bound=AggregationSpec)
 NonTileBasedAggregationSpecT = TypeVar(
@@ -206,7 +214,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             agg_expr.subquery(),
             join_type="left",
             join_alias=agg_table_alias,
-            on=expressions.and_(*join_conditions),
+            on=expressions.and_(*join_conditions) if join_conditions else None,
         ).select(*agg_result_name_aliases)
         return updated_table_expr
 
@@ -257,6 +265,147 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             List of common table expressions as tuples. The first element of the tuple is the name
             of the CTE and the second element is the corresponding sql expression.
         """
+
+
+class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
+    """
+    Aggregator that handles TileBasedAggregationSpec
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.agg_result_names_by_online_store_table: dict[str, set[str]] = defaultdict(set)
+        self.original_serving_names_by_online_store_table: dict[str, list[str]] = {}
+        self.request_serving_names_by_online_store_table: dict[str, list[str]] = {}
+
+    def update(self, aggregation_spec: TileBasedAggregationSpec) -> None:
+        super().update(aggregation_spec)
+        if self.is_online_serving:
+            table_name = get_online_store_table_name_from_entity_ids(
+                set(aggregation_spec.entity_ids)
+            )
+            self.agg_result_names_by_online_store_table[table_name].add(
+                aggregation_spec.agg_result_name
+            )
+            self.original_serving_names_by_online_store_table[
+                table_name
+            ] = aggregation_spec.original_serving_names
+            self.request_serving_names_by_online_store_table[
+                table_name
+            ] = aggregation_spec.serving_names
+
+    def update_aggregation_table_expr(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_query_index: int,
+    ) -> AggregationResult:
+        if self.is_online_serving:
+            return self.update_aggregation_table_expr_online(
+                table_expr=table_expr,
+                current_query_index=current_query_index,
+            )
+        return self.update_aggregation_table_expr_offline(
+            table_expr=table_expr,
+            point_in_time_column=point_in_time_column,
+            current_columns=current_columns,
+            current_query_index=current_query_index,
+        )
+
+    @abstractmethod
+    def update_aggregation_table_expr_offline(
+        self,
+        table_expr: Select,
+        point_in_time_column: str,
+        current_columns: list[str],
+        current_query_index: int,
+    ) -> AggregationResult:
+        """
+        Compute aggregation result in offline mode
+
+        Parameters
+        ----------
+        table_expr: Select
+            The table expression to update. This is typically the temporary aggregation table that
+            has the same number of rows as the request table, referred to in the final feature sql
+            as _FB_AGGREGATED
+        point_in_time_column: str
+            Point in time column name
+        current_columns: list[str]
+            List of column names in the current table
+        current_query_index: int
+            A running integer to be used to construct new table aliases
+
+        Returns
+        -------
+        AggregationResult
+        """
+
+    def update_aggregation_table_expr_online(
+        self,
+        table_expr: Select,
+        current_query_index: int,
+    ) -> AggregationResult:
+        """
+        Lookup aggregation result from online store table in online mode
+
+        Parameters
+        ----------
+        table_expr: Select
+            The table expression to update. This is typically the temporary aggregation table that
+            has the same number of rows as the request table, referred to in the final feature sql
+            as _FB_AGGREGATED
+        current_query_index: int
+            A running integer to be used to construct new table aliases
+
+        Returns
+        -------
+        AggregationResult
+        """
+        left_join_queries = []
+
+        for (
+            table_name,
+            agg_result_names_set,
+        ) in self.agg_result_names_by_online_store_table.items():
+            agg_result_names = sorted(agg_result_names_set)
+            serving_names = self._alias_original_serving_names_to_request_serving_names(table_name)
+            quoted_agg_result_names = [quoted_identifier(name) for name in agg_result_names]
+            expr = select(*serving_names, *quoted_agg_result_names).from_(table_name)
+            join_keys = self.request_serving_names_by_online_store_table[table_name]
+            query = LeftJoinableSubquery(
+                expr,
+                agg_result_names,
+                join_keys=join_keys,
+            )
+            left_join_queries.append(query)
+
+        return self._update_with_left_joins(
+            table_expr, current_query_index=current_query_index, queries=left_join_queries
+        )
+
+    def _alias_original_serving_names_to_request_serving_names(
+        self, online_store_table_name: str
+    ) -> list[expressions.Expression]:
+        original_serving_names = self.original_serving_names_by_online_store_table[
+            online_store_table_name
+        ]
+        request_serving_names = self.request_serving_names_by_online_store_table[
+            online_store_table_name
+        ]
+        out = []
+        for original_serving_name, request_serving_name in zip(
+            original_serving_names, request_serving_names
+        ):
+            out.append(
+                alias_(
+                    quoted_identifier(original_serving_name),
+                    alias=request_serving_name,
+                    quoted=True,
+                )
+            )
+        return out
 
 
 class NonTileBasedAggregator(Aggregator[NonTileBasedAggregationSpecT], ABC):

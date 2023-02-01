@@ -8,7 +8,7 @@ from typing import Any
 from sqlglot import expressions
 from sqlglot.expressions import Select
 
-from featurebyte.query_graph.sql.aggregator.base import AggregationResult, Aggregator
+from featurebyte.query_graph.sql.aggregator.base import AggregationResult, TileBasedAggregator
 from featurebyte.query_graph.sql.aggregator.window import TileBasedAggregationSpecSet
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
@@ -16,7 +16,7 @@ from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
 
 
-class LatestAggregator(Aggregator[TileBasedAggregationSpec]):
+class LatestAggregator(TileBasedAggregator):
     """
     LatestAggregator is responsible for SQL generation for latest value aggregation without a window
     """
@@ -37,7 +37,7 @@ class LatestAggregator(Aggregator[TileBasedAggregationSpec]):
         assert aggregation_spec.window is None
         self.specs_set.add_aggregation_spec(aggregation_spec)
 
-    def update_aggregation_table_expr(
+    def update_aggregation_table_expr_offline(
         self,
         table_expr: Select,
         point_in_time_column: str,
