@@ -10,7 +10,6 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import SlowlyChangingView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -18,6 +17,7 @@ from featurebyte.api.feature_list import (
     FeatureList,
     FeatureListNamespace,
 )
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -35,7 +35,6 @@ def draft_feature_fixture(feature_group):
     """Fixture for a draft feature"""
     feature = feature_group["production_ready_feature"] + 123
     feature.name = "draft_feature"
-    feature.__dict__["readiness"] = FeatureReadiness.DRAFT
     feature.__dict__["version"] = "V220402"
     feature_group["draft_feature"] = feature
     return feature
@@ -71,66 +70,6 @@ def single_feat_flist_fixture(production_ready_feature):
     return flist
 
 
-def test_feature_list_production_ready_fraction__one_fourth(
-    production_ready_feature, draft_feature, quarantine_feature, deprecated_feature
-):
-    """Test feature list production ready fraction"""
-    feature_list = FeatureList(
-        [
-            production_ready_feature,
-            draft_feature,
-            quarantine_feature,
-            deprecated_feature,
-        ],
-        name="feature_list_name",
-    )
-    assert feature_list.production_ready_fraction == 0.25
-
-
-def test_feature_list_production_ready_fraction__one_third(
-    production_ready_feature, draft_feature, quarantine_feature
-):
-    """Test feature list production ready fraction"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-                draft_feature,
-                quarantine_feature,
-            ],
-            name="feature_list_name",
-        ).production_ready_fraction
-        == 1 / 3.0
-    )
-
-
-def test_feature_list_production_ready_fraction__one_half(production_ready_feature, draft_feature):
-    """Test feature list production ready fraction"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-                draft_feature,
-            ],
-            name="feature_list_name",
-        ).production_ready_fraction
-        == 0.5
-    )
-
-
-def test_feature_list_production_ready_fraction__single_feature(production_ready_feature):
-    """Test feature list production ready fraction"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-            ],
-            name="feature_list_name",
-        ).production_ready_fraction
-        == 1.0
-    )
-
-
 @freeze_time("2022-05-01")
 def test_feature_list_creation__success(
     production_ready_feature, single_feat_flist, mocked_tile_cache
@@ -142,10 +81,7 @@ def test_feature_list_creation__success(
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
         "version": "V220501",
-        "deployed": False,
-        "online_enabled_feature_ids": [],
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -249,17 +185,11 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "deployed": False,
         "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
-        ],
-        "online_enabled_feature_ids": [],
-        "readiness_distribution": [
-            {"count": 1, "readiness": "PRODUCTION_READY"},
-            {"count": 2, "readiness": "DRAFT"},
         ],
         "name": "my_feature_list",
         "feature_clusters": None,
@@ -827,8 +757,9 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     assert expected in str(exc.value)
 
 
-def test_deploy(feature_list, production_ready_feature, draft_feature):
+def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_object_cache):
     """Test feature list deployment update"""
+    _ = mock_api_object_cache
     feature_list.save()
     assert feature_list.saved is True
 
@@ -1174,3 +1105,97 @@ def test_get_feature_jobs_status_feature_without_tile(
     assert job_status_result.feature_tile_table.shape == (1, 2)
     assert job_status_result.feature_job_summary.shape == (1, 9)
     assert job_status_result.job_session_logs.shape == (0, 11)
+
+
+def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_api_object_cache):
+    """Test feature list feature readiness derived attributes update logic"""
+    _ = mock_api_object_cache
+    new_feat = saved_feature_list["sum_1d"] + 100
+    new_feat.name = "new_feat"
+    new_feat.save()
+
+    feature_list = FeatureList([new_feat], name="my_fl")
+    assert feature_list.production_ready_fraction == 0.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
+
+    new_feat.update_readiness(readiness="PRODUCTION_READY")
+    assert feature_list.production_ready_fraction == 1.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
+    }
+
+    feature_list.save()
+    assert feature_list.production_ready_fraction == 1.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
+    }
+
+    new_feat.update_readiness(readiness="DRAFT")
+    assert feature_list.production_ready_fraction == 0.0
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
+
+
+def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache):
+    """Test feature list synchronization"""
+    _ = mock_api_object_cache
+    # construct a cloned feature list (feature list with the same feature list ID)
+    cloned_feat_list = FeatureList.get_by_id(id=saved_feature_list.id)
+
+    # update the original feature list's version mode (stored at feature list namespace record)
+    target_mode = DefaultVersionMode.MANUAL
+    assert saved_feature_list.default_version_mode != target_mode
+    saved_feature_list.update_default_version_mode(target_mode)
+    assert saved_feature_list.default_version_mode == target_mode
+
+    # check the clone's version mode also get updated
+    assert cloned_feat_list.default_version_mode == target_mode
+
+    # update original feature list deployed status (stored at feature list record)
+    assert saved_feature_list.deployed is False
+    assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
+    saved_feature_list.deploy(enable=True, make_production_ready=True)
+    assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
+    assert saved_feature_list.deployed is True
+
+    # check the clone's deployed value
+    assert cloned_feat_list.deployed is True
+    assert cloned_feat_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
+
+
+def test_feature_list_properties_from_cached_model__before_save(feature_list):
+    """Test (unsaved) feature list properties from cached model"""
+    # check properties derived from feature list model directly
+    assert feature_list.saved is False
+    assert feature_list.online_enabled_feature_ids == []
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 4}]
+    }
+    assert feature_list.production_ready_fraction == 0.0
+    assert feature_list.deployed is False
+
+    # check properties use feature list namespace model info
+    props = ["is_default", "default_version_mode", "status"]
+    for prop in props:
+        with pytest.raises(RecordRetrievalException):
+            _ = getattr(feature_list, prop)
+
+
+def test_feature_list_properties_from_cached_model__after_save(saved_feature_list):
+    """Test (saved) feature list properties from cached model"""
+    # check properties derived from feature list model directly
+    assert saved_feature_list.saved
+    assert saved_feature_list.online_enabled_feature_ids == []
+    assert saved_feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
+    assert saved_feature_list.production_ready_fraction == 0.0
+    assert saved_feature_list.deployed is False
+
+    # check properties use feature list namespace model info
+    assert saved_feature_list.is_default is True
+    assert saved_feature_list.default_version_mode == DefaultVersionMode.AUTO
+    assert saved_feature_list.status == FeatureListStatus.DRAFT

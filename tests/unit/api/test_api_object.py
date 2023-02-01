@@ -8,8 +8,26 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.feature import Feature, FeatureNamespace
+from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
+from featurebyte.models.feature import (
+    FeatureModel,
+    FeatureNamespaceModel,
+    FrozenFeatureModel,
+    FrozenFeatureNamespaceModel,
+)
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureListNamespaceModel,
+    FrozenFeatureListModel,
+    FrozenFeatureListNamespaceModel,
+)
+from featurebyte.schema.feature import FeatureUpdate
+from featurebyte.schema.feature_list import FeatureListUpdate
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.schema.task import TaskStatus
 
 
@@ -198,3 +216,41 @@ def test_api_object_list_empty():
         response.status_code = HTTPStatus.OK
         mock_client.get.return_value = response
         assert_frame_equal(ApiObject.list(), pd.DataFrame(columns=["name", "created_at"]))
+
+
+@pytest.mark.parametrize(
+    "api_object_class,frozen_model_class,model_class,update_schema_class",
+    [
+        (Feature, FrozenFeatureModel, FeatureModel, FeatureUpdate),
+        (
+            FeatureNamespace,
+            FrozenFeatureNamespaceModel,
+            FeatureNamespaceModel,
+            FeatureNamespaceUpdate,
+        ),
+        (FeatureList, FrozenFeatureListModel, FeatureListModel, FeatureListUpdate),
+        (
+            FeatureListNamespace,
+            FrozenFeatureListNamespaceModel,
+            FeatureListNamespaceModel,
+            FeatureListNamespaceUpdate,
+        ),
+    ],
+)
+def test_api_object_and_model_attribute_consistencies(
+    api_object_class, frozen_model_class, model_class, update_schema_class
+):
+    """
+    This test is used to check that those updatable attributes from the model has the corresponding property at the
+    api object
+    """
+    frozen_attributes = set(frozen_model_class.__fields__)
+    dynamic_attributes = set(model_class.__fields__).difference(frozen_attributes)
+
+    # attribute specific to the model (but not frozen model) should become a property in api object class
+    for attr in dynamic_attributes:
+        assert isinstance(getattr(api_object_class, attr), property)
+
+    # attributes that can be updated through api should not appear in the attributes of the frozen model
+    updatable_attributes = set(update_schema_class.__fields__)
+    assert updatable_attributes.intersection(frozen_attributes) == set()

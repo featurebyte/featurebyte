@@ -10,8 +10,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from featurebyte import FeatureJobSetting, SourceType
 from featurebyte.api.change_view import ChangeView
+from featurebyte.enum import SourceType
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 

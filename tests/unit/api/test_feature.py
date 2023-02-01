@@ -10,11 +10,11 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import SlowlyChangingView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -480,10 +480,11 @@ def test_unary_op_inherits_event_data_id(float_feature):
     assert new_feature.tabular_data_ids == float_feature.tabular_data_ids
 
 
-def test_feature__default_version_info_retrieval(saved_feature):
+def test_feature__default_version_info_retrieval(saved_feature, mock_api_object_cache):
     """
     Test get feature using feature name
     """
+    _ = mock_api_object_cache
     feature = Feature.get(name=saved_feature.name)
     assert feature.is_default is True
     assert feature.default_version_mode == DefaultVersionMode.AUTO
@@ -669,7 +670,7 @@ def test_is_time_based(saved_feature):
 
     # Mock out GroupOperationStructure to have time-based property set to true
     with patch(
-        "featurebyte.models.feature.FeatureModel.extract_operation_structure"
+        "featurebyte.models.feature.FrozenFeatureModel.extract_operation_structure"
     ) as mocked_extract:
         mocked_extract.return_value = GroupOperationStructure(
             row_index_lineage=("item_groupby_1",),
@@ -789,3 +790,56 @@ def test_get_feature_jobs_status_feature_without_tile(
     assert job_status_result.feature_tile_table.shape == (0, 2)
     assert job_status_result.feature_job_summary.shape == (0, 9)
     assert job_status_result.job_session_logs.shape == (0, 11)
+
+
+def test_feature_synchronization(saved_feature):
+    """Test feature synchronization"""
+    # construct a cloned feature (feature with the same feature ID)
+    cloned_feat = Feature.get_by_id(id=saved_feature.id)
+
+    # update the original feature's version mode (stored at feature namespace record)
+    target_mode = DefaultVersionMode.MANUAL
+    assert saved_feature.default_version_mode != target_mode
+    saved_feature.update_default_version_mode(target_mode)
+    assert saved_feature.default_version_mode == target_mode
+
+    # check the clone's version mode also get updated
+    assert cloned_feat.default_version_mode == target_mode
+
+    # update original feature's readiness (stored at feature record)
+    target_readiness = FeatureReadiness.DEPRECATED
+    assert saved_feature.readiness != target_readiness
+    saved_feature.update_readiness(target_readiness)
+    assert saved_feature.readiness == target_readiness
+
+    # check the clone's readiness value
+    assert cloned_feat.readiness == target_readiness
+
+
+def test_feature_properties_from_cached_model__before_save(float_feature):
+    """Test (unsaved) feature properties from cached model"""
+    # check properties derived from feature model directly
+    assert float_feature.saved is False
+    assert float_feature.readiness == FeatureReadiness.DRAFT
+    assert float_feature.online_enabled is False
+    assert float_feature.deployed_feature_list_ids == []
+
+    # check properties use feature namespace model info
+    props = ["is_default", "default_version_mode", "default_readiness"]
+    for prop in props:
+        with pytest.raises(RecordRetrievalException):
+            _ = getattr(float_feature, prop)
+
+
+def test_feature_properties_from_cached_model__after_save(saved_feature):
+    """Test (saved) feature properties from cached model"""
+    # check properties derived from feature model directly
+    assert saved_feature.saved is True
+    assert saved_feature.readiness == FeatureReadiness.DRAFT
+    assert saved_feature.online_enabled is False
+    assert saved_feature.deployed_feature_list_ids == []
+
+    # check properties use feature namespace model info
+    assert saved_feature.is_default is True
+    assert saved_feature.default_version_mode == DefaultVersionMode.AUTO
+    assert saved_feature.default_readiness == FeatureReadiness.DRAFT

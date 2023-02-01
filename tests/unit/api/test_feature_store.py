@@ -9,7 +9,6 @@ import pytest
 import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
-from featurebyte import SnowflakeDetails
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
@@ -18,6 +17,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
+from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.session.manager import SessionManager
 
 

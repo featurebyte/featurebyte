@@ -36,6 +36,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject):
     # class variables
     _route = "/feature_store"
     _list_schema = FeatureStoreModel
+    _get_schema = FeatureStoreModel
     _list_fields = ["name", "type", "created_at"]
 
     # optional credential parameters

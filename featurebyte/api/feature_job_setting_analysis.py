@@ -32,6 +32,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
     # class variables
     _route = "/feature_job_setting_analysis"
     _list_schema = FeatureJobSettingAnalysisRecord
+    _get_schema = FeatureJobSettingAnalysisModel
     _list_fields = [
         "id",
         "created_at",

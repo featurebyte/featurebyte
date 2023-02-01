@@ -1,6 +1,7 @@
 """
 FeatureListVersion class
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Tuple, Union, cast
@@ -58,6 +59,8 @@ from featurebyte.models.feature_list import (
     FeatureListNewVersionMode,
     FeatureListStatus,
     FeatureReadinessDistribution,
+    FrozenFeatureListModel,
+    FrozenFeatureListNamespaceModel,
 )
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -331,7 +334,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             self[feature_name].save(conflict_resolution=conflict_resolution)
 
 
-class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
+class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     """
     FeatureListNamespace class
     """
@@ -341,6 +344,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
     _update_schema_class = FeatureListNamespaceUpdate
 
     _list_schema = FeatureListNamespaceModel
+    _get_schema = FeatureListNamespaceModel
     _list_fields = [
         "name",
         "num_features",
@@ -356,6 +360,72 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
         ("entity_ids", Entity, "entities"),
         ("tabular_data_ids", DataApiObject, "data"),
     ]
+
+    @property
+    def feature_list_ids(self) -> List[PydanticObjectId]:
+        """
+        List of feature list IDs from the same feature list namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return self.cached_model.feature_list_ids
+
+    @property
+    def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
+        """
+        List of deployed feature list IDs from the same feature list namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return self.cached_model.deployed_feature_list_ids
+
+    @property
+    def readiness_distribution(self) -> FeatureReadinessDistribution:
+        """
+        Feature readiness distribution of the default feature list of this feature list namespace
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+        """
+        return self.cached_model.readiness_distribution
+
+    @property
+    def default_feature_list_id(self) -> PydanticObjectId:
+        """
+        Default feature list ID of this feature list namespace
+
+        Returns
+        -------
+        PydanticObjectId
+        """
+        return self.cached_model.default_feature_list_id
+
+    @property
+    def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Default feature list version mode of this feature list namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
+        return self.cached_model.default_version_mode
+
+    @property
+    def status(self) -> FeatureListStatus:
+        """
+        Feature list status
+
+        Returns
+        -------
+        FeatureListStatus
+        """
+        return self.cached_model.status
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
@@ -413,7 +483,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
         return feature_lists
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJobMixin):
+class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
     """
     FeatureList class
 
@@ -437,6 +507,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
     _route = "/feature_list"
     _update_schema_class = FeatureListUpdate
     _list_schema = FeatureListModel
+    _get_schema = FeatureListModel
     _list_fields = [
         "name",
         "feature_list_namespace_id",
@@ -545,8 +616,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
             values["feature_ids"] = [feature.id for feature in features]
         if not values.get("version"):
             values["version"] = get_version()
-        if not values.get("readiness_distribution"):
-            values["readiness_distribution"] = cls.derive_readiness_distribution(features)
         return values
 
     @typechecked
@@ -563,6 +632,61 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         FeatureListNamespace
         """
         return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
+
+    @property
+    def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+        """
+        List of online enabled feature IDs of this feature list
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        try:
+            return self.cached_model.online_enabled_feature_ids
+        except RecordRetrievalException:
+            return sorted(
+                feature.id for feature in self.feature_objects.values() if feature.online_enabled
+            )
+
+    @property
+    def readiness_distribution(self) -> FeatureReadinessDistribution:
+        """
+        Feature readiness distribution of this feature list
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+        """
+        try:
+            return self.cached_model.readiness_distribution
+        except RecordRetrievalException:
+            return self.derive_readiness_distribution(list(self.feature_objects.values()))  # type: ignore
+
+    @property
+    def production_ready_fraction(self) -> float:
+        """
+        Retrieve fraction of production ready features in the feature list
+
+        Returns
+        -------
+        Fraction of production ready feature
+        """
+        return self.readiness_distribution.derive_production_ready_fraction()
+
+    @property
+    def deployed(self) -> bool:
+        """
+        Whether this feature list is deployed or not
+
+        Returns
+        -------
+        bool
+        """
+        try:
+            return self.cached_model.deployed
+        except RecordRetrievalException:
+            return False
 
     @property
     def is_default(self) -> bool:
@@ -596,17 +720,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject, FeatureJ
         Feature list status
         """
         return self.feature_list_namespace.status
-
-    @property
-    def production_ready_fraction(self) -> float:
-        """
-        Retrieve fraction of production ready features in the feature list
-
-        Returns
-        -------
-        Fraction of production ready feature
-        """
-        return self.readiness_distribution.derive_production_ready_fraction()
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:

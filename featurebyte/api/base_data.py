@@ -193,6 +193,7 @@ class DataListMixin(ApiObject):
 
     _route = "/tabular_data"
     _list_schema = TabularDataModel
+    _get_schema = TabularDataModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
     _list_foreign_keys = [
         ("columns_info.entity_id", Entity, "entities"),

@@ -29,13 +29,15 @@ from featurebyte.core.series import Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
-from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
     FeatureNamespaceModel,
     FeatureReadiness,
+    FrozenFeatureModel,
+    FrozenFeatureNamespaceModel,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
@@ -51,7 +53,7 @@ from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
 
-class FeatureNamespace(FeatureNamespaceModel, ApiObject):
+class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     """
     FeatureNamespace class
     """
@@ -60,6 +62,7 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
     _route = "/feature_namespace"
     _update_schema_class = FeatureNamespaceUpdate
     _list_schema = FeatureNamespaceModel
+    _get_schema = FeatureNamespaceModel
     _list_fields = [
         "name",
         "dtype",
@@ -73,6 +76,61 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
         ("entity_ids", Entity, "entities"),
         ("tabular_data_ids", DataApiObject, "data"),
     ]
+
+    @property
+    def feature_ids(self) -> List[PydanticObjectId]:
+        """
+        List of feature IDs from the same feature namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return self.cached_model.feature_ids
+
+    @property
+    def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+        """
+        List of online-enabled feature IDs from the same feature namespace
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return self.cached_model.online_enabled_feature_ids
+
+    @property
+    def readiness(self) -> FeatureReadiness:
+        """
+        Feature readiness of the default feature of this feature namespace
+
+        Returns
+        -------
+        FeatureReadiness
+        """
+        return self.cached_model.readiness
+
+    @property
+    def default_feature_id(self) -> PydanticObjectId:
+        """
+        Default feature ID of this feature namespace
+
+        Returns
+        -------
+        PydanticObjectId
+        """
+        return self.cached_model.default_feature_id
+
+    @property
+    def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Default feature namespace version mode of this feature namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
+        return self.cached_model.default_version_mode
 
     @classmethod
     def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
@@ -122,11 +180,11 @@ class FeatureNamespace(FeatureNamespaceModel, ApiObject):
 class Feature(
     ProtectedColumnsQueryObject,
     Series,
-    FeatureModel,
+    FrozenFeatureModel,
     SavableApiObject,
     CdAccessorMixin,
     FeatureJobMixin,
-):
+):  # pylint: disable=too-many-public-methods
     """
     Feature class
     """
@@ -140,6 +198,7 @@ class Feature(
     _route = "/feature"
     _update_schema_class = FeatureUpdate
     _list_schema = FeatureModel
+    _get_schema = FeatureModel
     _list_fields = [
         "name",
         "version",
@@ -358,6 +417,49 @@ class Feature(
         return FeatureNamespace.get_by_id(id=self.feature_namespace_id)
 
     @property
+    def readiness(self) -> FeatureReadiness:
+        """
+        Feature readiness of this feature
+
+        Returns
+        -------
+        FeatureReadiness
+        """
+        try:
+            return self.cached_model.readiness
+        except RecordRetrievalException:
+            return FeatureReadiness.DRAFT
+
+    @property
+    def online_enabled(self) -> bool:
+        """
+        Whether this feature is oneline-enabled or not, an online-enabled feature is a feature used by at least
+        one deployed feature list.
+
+        Returns
+        -------
+        bool
+        """
+        try:
+            return self.cached_model.online_enabled
+        except RecordRetrievalException:
+            return False
+
+    @property
+    def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
+        """
+        IDs of deployed feature lists which use this feature
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        try:
+            return self.cached_model.deployed_feature_list_ids
+        except RecordRetrievalException:
+            return []
+
+    @property
     def is_default(self) -> bool:
         """
         Check whether current feature is the default one or not
@@ -519,7 +621,10 @@ class Feature(
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
-        return Feature(**response.json(), **self._get_init_params_from_object(), saved=True)
+
+        object_dict = response.json()
+        self._update_cache(object_dict)  # update object cache store
+        return Feature(**object_dict, **self._get_init_params_from_object(), saved=True)
 
     @typechecked
     def update_readiness(
