@@ -304,6 +304,41 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     pd.testing.assert_frame_equal(df, expected)
 
 
+def test_aggregate_asat__no_entity(scd_data, scd_dataframe):
+    """
+    Test aggregate_asat aggregation on SlowlyChangingView without entity
+    """
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    feature = scd_view.groupby([]).aggregate_asat(
+        method="count", feature_name="Current Number of Users"
+    )
+
+    # check preview
+    df = feature.preview(
+        {
+            "POINT_IN_TIME": "2001-10-25 10:00:00",
+        }
+    )
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
+        "Current Number of Users": 9,
+    }
+    assert df.iloc[0].to_dict() == expected
+
+    # check historical features
+    feature_list = FeatureList([feature], "feature_list")
+    observations_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
+        }
+    )
+    expected = observations_set.copy()
+    expected["Current Number of Users"] = [8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
+    df = feature_list.get_historical_features(observations_set)
+    df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    pd.testing.assert_frame_equal(df, expected)
+
+
 @pytest.fixture(name="snowflake_scd_data_with_minimal_cols", scope="session")
 def snowflake_scd_data_fixture_with_minimal_cols(scd_data_tabular_source):
     """
