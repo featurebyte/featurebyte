@@ -92,6 +92,9 @@ if __name__ == "__main__":
     print("# Deleting old deployment")
     subprocess.run("docker compose down".split(" "))
 
+    # Docker compose does not delete the container sometimes
+    subprocess.run("docker container rm mongo-rs featurebyte-server featurebyte-docs".split(" "))
+
     # Pulling new image
     print("# Pulling new image")
     subprocess.run("docker compose pull".split(" "))
