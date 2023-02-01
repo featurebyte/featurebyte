@@ -82,6 +82,14 @@ async def test_online_serving_sql(features, snowflake_session, config):
     )
 
     feature_list = FeatureList(features, name="My Online Serving Featurelist")
+    # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
+    feature_list.save()
+    with patch(
+        "featurebyte.feature_manager.snowflake_feature.get_next_job_datetime",
+        return_value=next_job_datetime,
+    ):
+        feature_list.deploy(make_production_ready=True, enable=True)
+
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
     df_training_events = pd.DataFrame(
         {
@@ -90,14 +98,6 @@ async def test_online_serving_sql(features, snowflake_session, config):
         }
     )
     df_historical = feature_list.get_historical_features(df_training_events)
-
-    # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
-    feature_list.save()
-    with patch(
-        "featurebyte.feature_manager.snowflake_feature.get_next_job_datetime",
-        return_value=next_job_datetime,
-    ):
-        feature_list.deploy(make_production_ready=True, enable=True)
 
     try:
         # Run online store retrieval sql
