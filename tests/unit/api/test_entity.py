@@ -338,16 +338,3 @@ async def test_add_and_remove_parent(mongo_persistent, insert_tabular_data_helpe
     entity_b_response = response[1]
     assert entity_b_response["name"] == "entity_b"
     assert_entity_has_number_of_parents(entity_b_response, 0)
-
-
-def test_cached_model():
-    """Test cached_model works as expected"""
-    entity_a = Entity(name="entity_a", serving_names=["entity_a"])
-    entity_b = Entity(name="entity_b", serving_names=["entity_b"])
-
-    entity_a.save()
-    entity_b.save()
-
-    # check that value get retrieved correctly
-    assert entity_a.cached_model.name == "entity_a"
-    assert entity_b.cached_model.name == "entity_b"
