@@ -602,7 +602,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
                 {"record_creation_date_column": "non-exist-columns"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
-                    "record_creation_date_column\n  "
+                    "__root__\n  "
                     'Column "non-exist-columns" not found in the table! (type=value_error)'
                 ),
             ),
@@ -610,7 +610,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
                 {"record_creation_date_column": "item_id"},
                 (
                     f"1 validation error for {self.class_name}Model\n"
-                    f"record_creation_date_column\n  "
+                    f"__root__\n  "
                     f"Column \"item_id\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
                 ),
             ),

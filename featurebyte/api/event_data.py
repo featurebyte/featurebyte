@@ -9,7 +9,7 @@ from datetime import datetime
 
 import pandas as pd
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
@@ -33,10 +33,7 @@ class EventData(EventTableData, FrozenDataModel, DataApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        section=["Data"],
-        proxy_class="featurebyte.EventData",
-    )
+    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.EventData")
 
     # class variables
     _route = "/event_data"
@@ -44,45 +41,51 @@ class EventData(EventTableData, FrozenDataModel, DataApiObject):
     _create_schema_class = EventDataCreate
     _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
 
-    # object variables
-    raw_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    # pydantic instance variable (internal use)
+    int_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         alias="default_feature_job_setting"
     )
-    raw_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    raw_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+    int_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
+    int_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
-            columns_info_key="raw_columns_info",
-            expected_column_name_type_pairs=[
-                # ("event_timestamp_column", {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}),
-                ("record_creation_date_column", {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}),
-                ("event_id_column", {DBVarType.VARCHAR, DBVarType.INT}),
+            expected_column_field_name_type_pairs=[
+                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("int_event_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("int_event_id_column", DBVarType.supported_id_types()),
             ],
         )
     )
+
+    @property
+    def sync_columns_info(self):
+        try:
+            return self.cached_model.columns_info
+        except RecordRetrievalException:
+            return self.columns_info
 
     @property
     def default_feature_job_setting(self):
         try:
             return self.cached_model.default_feature_job_setting
         except RecordRetrievalException:
-            return self.raw_default_feature_job_setting
+            return self.int_default_feature_job_setting
 
     @property
     def event_timestamp_column(self):
         try:
             return self.cached_model.event_timestamp_column
         except RecordRetrievalException:
-            return self.raw_event_timestamp_column
+            return self.int_event_timestamp_column
 
     @property
     def event_id_column(self):
         try:
             return self.cached_model.event_id_column
         except RecordRetrievalException:
-            return self.raw_event_id_column
+            return self.int_event_id_column
 
     @property
     def timestamp_column(self) -> Optional[str]:

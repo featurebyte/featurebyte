@@ -39,10 +39,11 @@ class TestEventView(BaseViewTestSuite):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
-def test_from_event_data(snowflake_event_data):
+def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     """
     Test from_event_data
     """
+    _ = mock_api_object_cache
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.node.parameters == snowflake_event_data.frame.node.parameters

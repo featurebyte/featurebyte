@@ -50,11 +50,8 @@ class BaseTableData(FrozenTableData):
 
     columns_info: List[ColumnInfo]
 
-    @validator("columns_info")
-    @classmethod
-    def _validate_columns_info(cls, values: List[ColumnInfo]) -> List[ColumnInfo]:
-        validate_columns_info(columns_info=values)
-        return values
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
 
     def __init_subclass__(cls, **kwargs: Any):
         # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)

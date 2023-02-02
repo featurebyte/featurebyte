@@ -3,40 +3,89 @@ ItemData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional, Type
 
 from bson.objectid import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.item_data import ItemDataModel
+from featurebyte.models.feature_store import FrozenDataModel
+from featurebyte.models.validator import construct_data_model_root_validator
+from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 
-class ItemData(ItemDataModel, DataApiObject):
+class ItemData(ItemTableData, FrozenDataModel, DataApiObject):
     """
     ItemData class
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        section=["Data"],
-        proxy_class="featurebyte.ItemData",
-    )
+    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.ItemData")
 
+    # class variables
     _route = "/item_data"
     _update_schema_class = ItemDataUpdate
     _create_schema_class = ItemDataCreate
+    _table_data_class: ClassVar[Type[BaseTableData]] = ItemTableData
 
+    # pydantic instance variable (public)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         exclude=True, allow_mutation=False
     )
+
+    # pydantic instance variable (internal use)
+    int_event_id_column: StrictStr = Field(alias="event_id_column")
+    int_item_id_column: StrictStr = Field(alias="item_id_column")
+
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            expected_column_field_name_type_pairs=[
+                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("int_event_id_column", DBVarType.supported_id_types()),
+                ("int_item_id_column", DBVarType.supported_id_types()),
+            ],
+        )
+    )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_default_feature_job_setting(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "event_data_id" in values:
+            event_data_id = values["event_data_id"]
+            try:
+                default_feature_job_setting = EventData.get_by_id(
+                    event_data_id
+                ).default_feature_job_setting
+            except RecordRetrievalException:
+                # Typically this shouldn't happen since event_data_id should be available if the
+                # ItemData was instantiated correctly. Currently, this occurs only in tests.
+                return values
+            values["default_feature_job_setting"] = default_feature_job_setting
+        return values
+
+    @property
+    def event_id_column(self):
+        try:
+            return self.cached_model.event_id_column
+        except RecordRetrievalException:
+            return self.int_event_id_column
+
+    @property
+    def item_id_column(self):
+        try:
+            return self.cached_model.item_id_column
+        except RecordRetrievalException:
+            return self.int_item_id_column
 
     @classmethod
     @typechecked
@@ -92,19 +141,3 @@ class ItemData(ItemDataModel, DataApiObject):
             item_id_column=item_id_column,
             event_data_id=event_data_id,
         )
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_default_feature_job_setting(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "event_data_id" in values:
-            event_data_id = values["event_data_id"]
-            try:
-                default_feature_job_setting = EventData.get_by_id(
-                    event_data_id
-                ).default_feature_job_setting
-            except RecordRetrievalException:
-                # Typically this shouldn't happen since event_data_id should be available if the
-                # ItemData was instantiated correctly. Currently, this occurs only in tests.
-                return values
-            values["default_feature_job_setting"] = default_feature_job_setting
-        return values
