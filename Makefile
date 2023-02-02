@@ -98,8 +98,7 @@ beta-build:
 beta-bundle:
 	-mkdir featurebyte_beta
 	# Copy dependencies over to bundled folder
-	cp docker/entrypoint-mongo.sh      featurebyte_beta/entrypoint-mongo.sh
-	cp docker/docker-compose-beta.yml  featurebyte_beta/docker-compose.yml
+	cp docker/docker-compose.yml       featurebyte_beta/docker-compose.yml
 	cp docker/start.py                 featurebyte_beta/start.py
 	cp docker/stop.py                  featurebyte_beta/stop.py
 
