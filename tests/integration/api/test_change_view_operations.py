@@ -1,12 +1,28 @@
 """
 Test change view operations
 """
+import datetime
+from unittest.mock import patch
+
 import pandas as pd
+import pytest
 
 from featurebyte import AggFunc, FeatureList
 from featurebyte.api.change_view import ChangeView
 
 
+@pytest.fixture
+def freeze_time_for_change_view():
+    """
+    Fix ChangeView creation time since that affects its default feature job setting
+    """
+    fixed_change_view_creation_time = datetime.datetime(2022, 5, 1)
+    with patch("featurebyte.api.change_view.datetime") as mocked_datetime:
+        mocked_datetime.now.return_value = fixed_change_view_creation_time
+        yield
+
+
+@pytest.mark.usefixtures("freeze_time_for_change_view")
 def test_change_view(scd_data):
     """
     Test change view operations
@@ -38,6 +54,7 @@ def test_change_view(scd_data):
     }
 
 
+@pytest.mark.usefixtures("freeze_time_for_change_view")
 def test_change_view__feature_no_entity(scd_data):
     """
     Test change view operations
@@ -47,7 +64,7 @@ def test_change_view__feature_no_entity(scd_data):
     # assert that we can get features
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "count_1w": 17,
+        "count_1w": 16,
     }
     count_1w_feature = change_view.groupby([]).aggregate_over(
         method=AggFunc.COUNT,
