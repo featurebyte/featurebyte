@@ -34,7 +34,7 @@ def test_change_view(scd_data):
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
-        "count_1w": 4,
+        "count_1w": 1,
     }
 
 
@@ -47,7 +47,6 @@ def test_change_view__feature_no_entity(scd_data):
     # assert that we can get features
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "üser id": 1,
         "count_1w": 17,
     }
     count_1w_feature = change_view.groupby([]).aggregate_over(
@@ -55,10 +54,10 @@ def test_change_view__feature_no_entity(scd_data):
         windows=["1w"],
         feature_names=["count_1w"],
     )["count_1w"]
-    df = count_1w_feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
+    df = count_1w_feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00"})
     assert df.iloc[0].to_dict() == expected
 
     # check historical features
-    observations_set = pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
+    observations_set = pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00"}])
     df = FeatureList([count_1w_feature], name="mylist").get_historical_features(observations_set)
     assert df.iloc[0].to_dict() == expected

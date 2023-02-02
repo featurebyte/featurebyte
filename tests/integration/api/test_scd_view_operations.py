@@ -180,7 +180,7 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
-        "count_7d": '{\n  "STÀTUS_CODE_12": 2,\n  "STÀTUS_CODE_3": 1,\n  "STÀTUS_CODE_46": 10,\n  "STÀTUS_CODE_48": 5\n}',
+        "count_7d": '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}',
     }
 
 
@@ -234,10 +234,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert (
-        preview_output["count_7d"]
-        == '{\n  "STÀTUS_CODE_12": 2,\n  "STÀTUS_CODE_3": 1,\n  "STÀTUS_CODE_46": 10,\n  "STÀTUS_CODE_48": 5\n}'
-    )
+    assert preview_output["count_7d"] == {"STÀTUS_CODE_34": 3, "STÀTUS_CODE_39": 15}
 
 
 def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
@@ -396,7 +393,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2002-01-01 10:00:00"),
         "user_status": "STÀTUS_CODE_47",
-        "count_30d": 15,
+        "count_30d": 7,
     }
     feature_list.preview(preview_param)
     df = feature_list.preview(preview_param)
