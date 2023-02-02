@@ -1,7 +1,6 @@
 import json
 import os
 import subprocess
-import sys
 
 
 def which(program):
@@ -50,7 +49,7 @@ def edit_docker_cfg():
 
     # Reading
     with open(os.path.expanduser("~/.docker/config.json")) as docker_cfg_file:
-        docker_cfg: dict = json.load(docker_cfg_file)
+        docker_cfg = json.load(docker_cfg_file)
 
         # Config parsing
         #    This is required for windows as by default windows credential helper
@@ -90,11 +89,17 @@ if __name__ == "__main__":
 
     # Delete old deployment
     print("# Deleting old deployment")
-    subprocess.run("docker compose down".split(" "))
+    p = subprocess.Popen("docker compose down".split(" "))
+    p.wait()
+
+    # Docker compose does not delete the container sometimes
+    p = subprocess.Popen("docker container rm featurebyte-server featurebyte-docs".split(" "))
+    p.wait()
 
     # Pulling new image
     print("# Pulling new image")
-    subprocess.run("docker compose pull".split(" "))
+    p = subprocess.Popen("docker compose pull".split(" "))
+    p.wait()
 
     # Reverting docker credentials
     print("# Setting docker configuration")
@@ -102,4 +107,5 @@ if __name__ == "__main__":
 
     # Starting it up
     print("# Starting server")
-    subprocess.run("docker compose up".split(" "))
+    p = subprocess.Popen("docker compose up".split(" "))
+    p.wait()
