@@ -104,6 +104,7 @@ app_container_config = {
             "clazz": PreviewService,
             "extra_deps": [
                 "session_manager_service",
+                "feature_list_service",
             ],
         },
         {

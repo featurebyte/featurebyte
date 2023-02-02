@@ -115,6 +115,7 @@ class FeatureListGetHistoricalFeatures(FeatureByteBaseModel):
 
     feature_clusters: List[FeatureCluster]
     serving_names_mapping: Optional[Dict[str, str]]
+    feature_list_id: Optional[PydanticObjectId]
 
 
 class FeatureListGetOnlineFeatures(FeatureByteBaseModel):

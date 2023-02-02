@@ -9,6 +9,7 @@ import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
@@ -30,6 +31,7 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
@@ -44,11 +46,16 @@ class PreviewService(BaseService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, session_manager_service: SessionManagerService
+        self,
+        user: Any,
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        feature_list_service: FeatureListService,
     ):
         super().__init__(user, persistent)
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.session_manager_service = session_manager_service
+        self.feature_list_service = feature_list_service
 
     async def _get_feature_store_session(
         self, graph: QueryGraph, node_name: str, feature_store_name: str, get_credential: Any
@@ -405,6 +412,16 @@ class PreviewService(BaseService):
             get_credential=get_credential,
         )
 
+        feature_list_id = featurelist_get_historical_features.feature_list_id
+        try:
+            if feature_list_id is None:
+                is_feature_list_deployed = False
+            else:
+                feature_list = await self.feature_list_service.get_document(feature_list_id)
+                is_feature_list_deployed = feature_list.deployed
+        except DocumentNotFoundError:
+            is_feature_list_deployed = False
+
         return await get_historical_features(
             session=db_session,
             graph=feature_cluster.graph,
@@ -412,6 +429,7 @@ class PreviewService(BaseService):
             training_events=training_events,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
             source_type=feature_store.type,
+            is_feature_list_deployed=is_feature_list_deployed,
         )
 
     async def feature_sql(self, feature_sql: FeatureSQL) -> str:

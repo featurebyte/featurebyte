@@ -158,6 +158,7 @@ async def get_historical_features(
     training_events: pd.DataFrame,
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
+    is_feature_list_deployed: bool = False,
 ) -> AsyncGenerator[bytes, None]:
     """Get historical features
 
@@ -176,6 +177,10 @@ async def get_historical_features(
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the training events data has different serving name
         columns than those defined in Entities
+    is_feature_list_deployed : bool
+        Whether the feature list that triggered this historical request is deployed. If so, tile
+        tables would have already been back-filled and there is no need to check and calculate tiles
+        on demand.
 
     Returns
     -------
@@ -205,22 +210,20 @@ async def get_historical_features(
     await session.register_table(request_table_name, training_events)
 
     # Compute tiles on demand if required
-    tic = time.time()
-    tile_cache = get_tile_cache(session=session)
-    await tile_cache.compute_tiles_on_demand(
-        graph=graph,
-        nodes=nodes,
-        request_id=request_id,
-        serving_names_mapping=serving_names_mapping,
-    )
-    elapsed = time.time() - tic
-    logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
+    if not is_feature_list_deployed:
+        tic = time.time()
+        tile_cache = get_tile_cache(session=session)
+        await tile_cache.compute_tiles_on_demand(
+            graph=graph,
+            nodes=nodes,
+            request_id=request_id,
+            serving_names_mapping=serving_names_mapping,
+        )
+        elapsed = time.time() - tic
+        logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
     # Execute feature query
-    tic = time.time()
     result = session.get_async_query_stream(sql)
 
-    elapsed = time.time() - tic
-    logger.debug(f"Executing feature query took {elapsed:.2f}s")
     logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
     return result

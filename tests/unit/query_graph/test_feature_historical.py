@@ -158,6 +158,34 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
 
 
+@pytest.mark.asyncio
+async def test_get_historical_features__skip_tile_cache_if_deployed(
+    float_feature,
+    config,
+    mocked_session,
+    mocked_tile_cache,
+):
+    """
+    Test that for with is_feature_list_deployed=True on demand tile computation is skipped
+    """
+    df_request = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+            "cust_id": ["C1", "C2"],
+        }
+    )
+    mocked_session.generate_session_unique_id.return_value = "1"
+    _ = await get_historical_features(
+        session=mocked_session,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
+        training_events=df_request,
+        source_type=SourceType.SNOWFLAKE,
+        is_feature_list_deployed=True,
+    )
+    mocked_tile_cache.compute_tiles_on_demand.assert_not_called()
+
+
 def test_get_historical_feature_sql(float_feature, update_fixtures):
     """Test SQL code generated for historical features is expected"""
     request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]

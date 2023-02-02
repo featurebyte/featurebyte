@@ -800,6 +800,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Get historical features request failed
         """
         payload = FeatureListGetHistoricalFeatures(
+            feature_list_id=self.id,
             feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
         )
@@ -863,6 +864,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         >>> feature_list.get_historical_features(df)  # doctest: +SKIP
         """
         payload = FeatureListGetHistoricalFeatures(
+            feature_list_id=self.id,
             feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
         )
