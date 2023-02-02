@@ -234,7 +234,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert preview_output["count_7d"] == {"STÀTUS_CODE_34": 3, "STÀTUS_CODE_39": 15}
+    assert preview_output["count_7d"] == '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
 
 
 def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
