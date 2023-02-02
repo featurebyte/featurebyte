@@ -96,19 +96,21 @@ beta-build:
 	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
 
 beta-bundle:
-	-mkdir beta
+	-mkdir featurebyte_beta
 	# Copy dependencies over to bundled folder
-	cp docker/entrypoint-mongo.sh      beta/entrypoint-mongo.sh
-	cp docker/docker-compose-beta.yml  beta/docker-compose.yml
-	cp docker/start.py                 beta/start.py
+	cp docker/entrypoint-mongo.sh      featurebyte_beta/entrypoint-mongo.sh
+	cp docker/docker-compose-beta.yml  featurebyte_beta/docker-compose.yml
+	cp docker/start.py                 featurebyte_beta/start.py
+	cp docker/stop.py                  featurebyte_beta/stop.py
 
-	@test -s beta/creds.json.b64 || echo "Credential file is missing at beta/creds.json.b64"
-	@test -s beta/creds.json.b64 || echo 'create the file with contents: $$(echo "_json_base_64:$$(cat SERVICE_ACCOUNT_FILE | base64)" | base64)'
-	@test -s beta/creds.json.b64 || exit 1
+
+	@test -s featurebyte_beta/creds.json.b64 || echo "Credential file is missing at beta/creds.json.b64"
+	@test -s featurebyte_beta/creds.json.b64 || echo 'create the file with contents: $$(echo "_json_base_64:$$(cat SERVICE_ACCOUNT_FILE | base64)" | base64)'
+	@test -s featurebyte_beta/creds.json.b64 || exit 1
 
 	# Compress with tar.gz and zip
-	tar czvf featurebyte_beta.tar.gz beta/
-	zip -9 featurebyte_beta.zip -r beta/
+	tar czvf featurebyte_beta.tar.gz featurebyte_beta/
+	zip -9 featurebyte_beta.zip -r featurebyte_beta/
 
 #* Cleaning
 clean:
