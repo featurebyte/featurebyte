@@ -13,6 +13,7 @@ from featurebyte import (
     SlowlyChangingData,
     SlowlyChangingView,
 )
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 def get_expected_scd_join_result(
@@ -304,7 +305,7 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     pd.testing.assert_frame_equal(df, expected)
 
 
-def test_aggregate_asat__no_entity(scd_data, scd_dataframe):
+def test_aggregate_asat__no_entity(scd_data, scd_dataframe, config):
     """
     Test aggregate_asat aggregation on SlowlyChangingView without entity
     """
@@ -337,6 +338,17 @@ def test_aggregate_asat__no_entity(scd_data, scd_dataframe):
     df = feature_list.get_historical_features(observations_set)
     df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
     pd.testing.assert_frame_equal(df, expected)
+
+    # check online serving
+    feature_list.save()
+    feature_list.deploy(enable=True, make_production_ready=True)
+    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
+    res = config.get_client().post(
+        f"/feature_list/{str(feature_list.id)}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 200
+    assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
 
 
 @pytest.fixture(name="snowflake_scd_data_with_minimal_cols", scope="session")
