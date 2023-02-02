@@ -9,15 +9,18 @@ from datetime import datetime
 
 import pandas as pd
 from bson.objectid import ObjectId
+from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.enum import DBVarType
+from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
+from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
@@ -40,6 +43,46 @@ class EventData(EventTableData, FrozenDataModel, DataApiObject):
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
     _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
+
+    # object variables
+    raw_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+        alias="default_feature_job_setting"
+    )
+    raw_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
+    raw_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            columns_info_key="raw_columns_info",
+            expected_column_name_type_pairs=[
+                # ("event_timestamp_column", {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}),
+                ("record_creation_date_column", {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}),
+                ("event_id_column", {DBVarType.VARCHAR, DBVarType.INT}),
+            ],
+        )
+    )
+
+    @property
+    def default_feature_job_setting(self):
+        try:
+            return self.cached_model.default_feature_job_setting
+        except RecordRetrievalException:
+            return self.raw_default_feature_job_setting
+
+    @property
+    def event_timestamp_column(self):
+        try:
+            return self.cached_model.event_timestamp_column
+        except RecordRetrievalException:
+            return self.raw_event_timestamp_column
+
+    @property
+    def event_id_column(self):
+        try:
+            return self.cached_model.event_id_column
+        except RecordRetrievalException:
+            return self.raw_event_id_column
 
     @property
     def timestamp_column(self) -> Optional[str]:
@@ -151,6 +194,7 @@ class EventData(EventTableData, FrozenDataModel, DataApiObject):
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},
             allow_update_local=True,
+            add_key_prefix=True,
         )
 
     @property

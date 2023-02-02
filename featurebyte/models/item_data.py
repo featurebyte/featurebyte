@@ -58,7 +58,3 @@ class ItemDataModel(ItemTableData, DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
-
-    @property
-    def primary_key_columns(self) -> List[str]:
-        return [self.item_id_column]

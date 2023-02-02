@@ -106,6 +106,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _get_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
     _list_foreign_keys: List[Tuple[str, Any, str]] = []
+
+    # global api object cache shared by all the ApiObject class & its child classes
     _cache: Any = TTLCache(maxsize=1024, ttl=1)
 
     # other ApiObject attributes
@@ -458,7 +460,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return item_list
 
     @typechecked
-    def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
+    def update(
+        self, update_payload: Dict[str, Any], allow_update_local: bool, add_key_prefix: bool = False
+    ) -> None:
         """
         Update object in the persistent
 
@@ -468,6 +472,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Fields to update in dictionary format
         allow_update_local: bool
             Whether to allow update load object if the object has not been saved
+        add_key_prefix: bool
+            Whether to add raw prefix to the update key
 
         Raises
         ------
@@ -497,6 +503,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             )
         elif response.status_code == HTTPStatus.NOT_FOUND and allow_update_local:
             for key, value in update_payload.items():
+                key = f"raw_{key}" if add_key_prefix else key
                 setattr(self, key, value)
         elif response.status_code == HTTPStatus.CONFLICT:
             raise DuplicatedRecordException(response=response)

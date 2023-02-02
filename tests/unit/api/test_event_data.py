@@ -3,6 +3,7 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -112,7 +113,6 @@ def event_data_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": "DRAFT",
     }
 
 
@@ -213,7 +213,7 @@ def test_deserialization__column_name_not_found(
         EventData.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
-    event_data_dict["record_created_date_column"] = "created_at"
+    event_data_dict["record_creation_date_column"] = "created_at"
     event_data_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
         EventData.parse_obj(event_data_dict)
@@ -431,6 +431,10 @@ def test_update_default_job_setting(snowflake_event_data, config):
     """
     Test update default job setting on non-saved event data
     """
+    # make sure the cache is clear before running following test
+    # without doing this, other tests may have coupling effects to this test as
+    # snowflake_event_data_id fixture is a fixed ObjectId value
+    time.sleep(1)
 
     # make sure the event data is not saved
     client = config.get_client()

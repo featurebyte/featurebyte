@@ -20,7 +20,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import DataStatus, FeatureStoreModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -231,6 +231,7 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     raw_columns_info: List[ColumnInfo] = Field(alias="columns_info")
+    raw_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
 
     @property
     def columns_info(self):
@@ -238,6 +239,20 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
             return self.cached_model.columns_info
         except RecordRetrievalException:
             return self.raw_columns_info
+
+    @property
+    def status(self):
+        try:
+            return self.cached_model.status
+        except RecordRetrievalException:
+            return DataStatus.DRAFT
+
+    @property
+    def record_creation_date_column(self):
+        try:
+            return self.cached_model.record_creation_date_column
+        except RecordRetrievalException:
+            return self.raw_record_creation_date_column
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
@@ -369,4 +384,5 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
         self.update(
             update_payload={"record_creation_date_column": record_creation_date_column},
             allow_update_local=True,
+            add_key_prefix=True,
         )

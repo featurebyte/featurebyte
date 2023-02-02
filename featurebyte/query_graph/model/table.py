@@ -1,7 +1,7 @@
 """
 This module contains specialized table related models.
 """
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
@@ -42,6 +42,12 @@ class EventTableData(BaseTableData):
     event_timestamp_column: StrictStr
     event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
 
+    @property
+    def primary_key_columns(self) -> List[str]:
+        if self.event_id_column:
+            return [self.event_id_column]
+        return []  # DEV-556: event_id_column should not be empty
+
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             name="temp",
@@ -63,6 +69,10 @@ class ItemTableData(BaseTableData):
     event_id_column: StrictStr
     item_id_column: StrictStr
     event_data_id: PydanticObjectId
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.item_id_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
