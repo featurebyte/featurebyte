@@ -412,11 +412,13 @@ class PreviewService(BaseService):
             get_credential=get_credential,
         )
 
+        feature_list_id = featurelist_get_historical_features.feature_list_id
         try:
-            feature_list = await self.feature_list_service.get_document(
-                featurelist_get_historical_features.feature_list_id
-            )
-            is_feature_list_deployed = feature_list.deployed
+            if feature_list_id is None:
+                is_feature_list_deployed = False
+            else:
+                feature_list = await self.feature_list_service.get_document(feature_list_id)
+                is_feature_list_deployed = feature_list.deployed
         except DocumentNotFoundError:
             is_feature_list_deployed = False
 

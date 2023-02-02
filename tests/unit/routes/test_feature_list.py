@@ -507,7 +507,6 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         featurelist_get_historical_features_payload fixture
         """
         return {
-            "feature_list_id": str(ObjectId()),
             "feature_clusters": featurelist_feature_clusters,
             "serving_names_mapping": {},
         }
