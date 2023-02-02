@@ -1,7 +1,6 @@
 import json
 import os
 import subprocess
-import sys
 
 
 def which(program):
@@ -93,7 +92,7 @@ if __name__ == "__main__":
     subprocess.run("docker compose down".split(" "))
 
     # Docker compose does not delete the container sometimes
-    subprocess.run("docker container rm mongo-rs featurebyte-server featurebyte-docs".split(" "))
+    subprocess.run("docker container rm featurebyte-server featurebyte-docs".split(" "))
 
     # Pulling new image
     print("# Pulling new image")

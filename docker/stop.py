@@ -6,4 +6,4 @@ if __name__ == "__main__":
 
     # Docker compose does not delete the container sometimes
     # It is okay if there is an error just making sure the containers are deleted
-    subprocess.run("docker container rm mongo-rs featurebyte-server featurebyte-docs".split(" "))
+    subprocess.run("docker container rm featurebyte-server featurebyte-docs".split(" "))

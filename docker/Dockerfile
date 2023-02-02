@@ -39,8 +39,7 @@ RUN pip install jupyterlab && \
     poetry config --unset http-basic.featurebyte_np
 
 # Copy scripts
-COPY ./docker/entrypoint-featurebyte.sh /scripts/entrypoint.sh
-COPY ./docker/migration.py              /scripts/migration.py
+COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
 COPY ./docker/samples/                  /samples
 
 RUN adduser --uid $UID --disabled-password --gecos '' $USER
