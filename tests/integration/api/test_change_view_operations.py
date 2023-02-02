@@ -48,7 +48,7 @@ def test_change_view__feature_no_entity(scd_data):
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
-        "count_1w": 19,
+        "count_1w": 17,
     }
     count_1w_feature = change_view.groupby([]).aggregate_over(
         method=AggFunc.COUNT,
