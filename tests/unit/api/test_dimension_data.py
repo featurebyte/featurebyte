@@ -147,7 +147,6 @@ def dimension_data_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": DataStatus.DRAFT,
     }
 
 
@@ -171,8 +170,8 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     assert set(dimension_data.columns).issubset(dir(dimension_data))
     assert dimension_data._ipython_key_completions_() == set(dimension_data.columns)
 
-    output = dimension_data.dict()
-    dimension_data_dict["id"] = dimension_data.id
+    output = dimension_data.dict(by_alias=True)
+    dimension_data_dict["_id"] = dimension_data.id
     dimension_data_dict["graph"] = output["graph"]
     dimension_data_dict["node_name"] = output["node_name"]
     assert output == dimension_data_dict

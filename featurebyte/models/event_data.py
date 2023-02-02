@@ -173,11 +173,10 @@ class EventDataModel(EventTableData, DataModel):
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
-            columns_info_key="columns_info",
-            expected_column_name_type_pairs=[
-                # ("event_timestamp_column", {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}),
-                ("record_creation_date_column", {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}),
-                ("event_id_column", {DBVarType.VARCHAR, DBVarType.INT}),
+            expected_column_field_name_type_pairs=[
+                ("event_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("event_id_column", DBVarType.supported_id_types()),
             ],
         )
     )

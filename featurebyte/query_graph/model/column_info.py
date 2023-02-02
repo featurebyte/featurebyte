@@ -29,7 +29,7 @@ class ColumnInfo(ColumnSpec):
     critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
 
 
-def validate_columns_info(columns_info: List[ColumnInfo]) -> None:
+def validate_columns_info(columns_info: List[ColumnInfo]) -> List[ColumnInfo]:
     """
     Validate list of ColumnInfo used in table
 
@@ -49,3 +49,4 @@ def validate_columns_info(columns_info: List[ColumnInfo]) -> None:
         if column_info.name in column_names:
             raise ValueError(f'Column name "{column_info.name}" is duplicated.')
         column_names.add(column_info.name)
+    return columns_info

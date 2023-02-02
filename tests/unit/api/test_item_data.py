@@ -3,6 +3,7 @@ Unit test for ItemData class
 """
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -78,11 +79,10 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
         "created_at": None,
         "event_data_id": ObjectId("6337f9651050ee7d5980660d"),
         "event_id_column": "event_id_col",
-        "id": ObjectId("636a240ec2c2c3f335193e7f"),
+        "_id": ObjectId("636a240ec2c2c3f335193e7f"),
         "item_id_column": "item_id_col",
         "name": "sf_item_data",
         "record_creation_date_column": None,
-        "status": DataStatus.DRAFT,
         "tabular_source": {
             "feature_store_id": snowflake_database_table_item_data.tabular_source.feature_store_id,
             "table_details": {
@@ -159,8 +159,8 @@ def test_from_tabular_source(snowflake_database_table_item_data, item_data_dict,
     assert set(item_data.columns).issubset(dir(item_data))
     assert item_data._ipython_key_completions_() == set(item_data.columns)
 
-    output = item_data.dict()
-    item_data_dict["id"] = item_data.id
+    output = item_data.dict(by_alias=True)
+    item_data_dict["_id"] = item_data.id
     item_data_dict["graph"] = output["graph"]
     item_data_dict["node_name"] = output["node_name"]
     assert output == item_data_dict
@@ -304,10 +304,11 @@ class TestItemDataTestSuite(BaseDataTestSuite):
     """
 
 
-def test_item_data_column__as_entity(snowflake_item_data):
+def test_item_data_column__as_entity(snowflake_item_data, mock_api_object_cache):
     """
     Test setting a column in the ItemData as entity
     """
+    _ = mock_api_object_cache
     # check no column associate with any entity
     assert all([col.entity_id is None for col in snowflake_item_data.columns_info])
 
@@ -361,6 +362,11 @@ def test_event_data__record_creation_exception(snowflake_item_data):
 
 def test_update_record_creation_date_column__unsaved_object(snowflake_item_data):
     """Test update record creation date column (unsaved ItemData)"""
+    # make sure the cache is clear before running following test
+    # without doing this, other tests may have coupling effects to this test as
+    # snowflake_item_data_id fixture is a fixed ObjectId value
+    time.sleep(1)
+
     assert snowflake_item_data.record_creation_date_column is None
     snowflake_item_data.update_record_creation_date_column("created_at")
     assert snowflake_item_data.record_creation_date_column == "created_at"

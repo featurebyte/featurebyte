@@ -162,7 +162,6 @@ def scd_data_dict_fixture(snowflake_database_table_scd_data):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": DataStatus.DRAFT,
     }
 
 
@@ -190,8 +189,8 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     assert set(scd_data.columns).issubset(dir(scd_data))
     assert scd_data._ipython_key_completions_() == set(scd_data.columns)
 
-    output = scd_data.dict()
-    scd_data_dict["id"] = scd_data.id
+    output = scd_data.dict(by_alias=True)
+    scd_data_dict["_id"] = scd_data.id
     scd_data_dict["graph"] = output["graph"]
     scd_data_dict["node_name"] = output["node_name"]
     scd_data_dict["current_flag_column"] = scd_data_dict.pop("current_flag")  # DEV-556

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, OrderedStrEnum
+from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     PydanticObjectId,

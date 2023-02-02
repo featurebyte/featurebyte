@@ -230,15 +230,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, DataListMixin, Get
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
-    raw_columns_info: List[ColumnInfo] = Field(alias="columns_info")
-    raw_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
-
-    @property
-    def columns_info(self):
-        try:
-            return self.cached_model.columns_info
-        except RecordRetrievalException:
-            return self.raw_columns_info
+    int_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
 
     @property
     def status(self):
@@ -252,7 +244,7 @@ class DataApiObject(AbstractTableDataFrame, SavableApiObject, DataListMixin, Get
         try:
             return self.cached_model.record_creation_date_column
         except RecordRetrievalException:
-            return self.raw_record_creation_date_column
+            return self.int_record_creation_date_column
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None

@@ -95,6 +95,10 @@ class DimensionTableData(BaseTableData):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     dimension_id_column: StrictStr
 
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.dimension_id_column]
+
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             name="temp",
@@ -117,6 +121,10 @@ class SCDTableData(BaseTableData):
     surrogate_key_column: Optional[StrictStr]
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
     current_flag_column: Optional[StrictStr] = Field(default=None)
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.natural_key_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(

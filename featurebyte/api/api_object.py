@@ -503,7 +503,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             )
         elif response.status_code == HTTPStatus.NOT_FOUND and allow_update_local:
             for key, value in update_payload.items():
-                key = f"raw_{key}" if add_key_prefix else key
+                key = f"int_{key}" if add_key_prefix else key
                 setattr(self, key, value)
         elif response.status_code == HTTPStatus.CONFLICT:
             raise DuplicatedRecordException(response=response)

@@ -3,6 +3,8 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
+from typing import Set
+
 import functools
 from enum import Enum
 
@@ -130,6 +132,28 @@ class DBVarType(StrEnum):
     MAP = "MAP", "Map column"
     STRUCT = "STRUCT", "Struct column"
     UNKNOWN = "UNKNOWN", "Unknown column type"
+
+    @classmethod
+    def supported_timestamp_types(cls) -> set[DBVarType]:
+        """
+        Supported timestamp types
+
+        Returns
+        -------
+        Set[DBVarType]
+        """
+        return {cls.TIMESTAMP, cls.TIMESTAMP_TZ}
+
+    @classmethod
+    def supported_id_types(cls) -> set[DBVarType]:
+        """
+        Supported id column types
+
+        Returns
+        -------
+        Set[DBVarType]
+        """
+        return {cls.VARCHAR, cls.INT}
 
     def to_type_str(self) -> str | None:
         """

@@ -6,16 +6,21 @@ from __future__ import annotations
 from typing import Optional
 
 from bson.objectid import ObjectId
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.enum import DBVarType
+from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.feature_store import FrozenDataModel
+from featurebyte.models.validator import construct_data_model_root_validator
+from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
-class SlowlyChangingData(SCDDataModel, DataApiObject):
+class SlowlyChangingData(SCDTableData, FrozenDataModel, DataApiObject):
     """
     SlowlyChangingData class
     """
@@ -27,6 +32,65 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
     _route = "/scd_data"
     _update_schema_class = SCDDataUpdate
     _create_schema_class = SCDDataCreate
+    _table_data_class = SCDTableData
+
+    # pydantic instance variable (internal use)
+    int_natural_key_column: StrictStr = Field(alias="natural_key_column")
+    int_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
+    int_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
+    int_end_timestamp_column: Optional[StrictStr] = Field(
+        default=None, alias="end_timestamp_column"
+    )
+    int_current_flag_column: Optional[StrictStr] = Field(default=None, alias="current_flag_column")
+
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            expected_column_field_name_type_pairs=[
+                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("natural_key_column", DBVarType.supported_id_types()),
+                ("effective_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("surrogate_key_column", DBVarType.supported_id_types()),
+                ("end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("current_flag_column", None),
+            ],
+        )
+    )
+
+    @property
+    def natural_key_column(self):
+        try:
+            return self.cached_model.natural_key_column
+        except RecordRetrievalException:
+            return self.int_natural_key_column
+
+    @property
+    def effective_timestamp_column(self):
+        try:
+            return self.cached_model.effective_timestamp_column
+        except RecordRetrievalException:
+            return self.int_effective_timestamp_column
+
+    @property
+    def surrogate_key_column(self):
+        try:
+            return self.cached_model.surrogate_key_column
+        except RecordRetrievalException:
+            return self.int_surrogate_key_column
+
+    @property
+    def end_timestamp_column(self):
+        try:
+            return self.cached_model.end_timestamp_column
+        except RecordRetrievalException:
+            return self.int_end_timestamp_column
+
+    @property
+    def current_flag_column(self):
+        try:
+            return self.cached_model.current_flag_column
+        except RecordRetrievalException:
+            return self.current_flag_column
 
     @property
     def timestamp_column(self) -> Optional[str]:
