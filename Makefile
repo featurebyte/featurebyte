@@ -103,7 +103,7 @@ beta-bundle:
 	cp docker/stop.py                  featurebyte_beta/stop.py
 
 
-	@test -s featurebyte_beta/creds.json.b64 || echo "Credential file is missing at beta/creds.json.b64"
+	@test -s featurebyte_beta/creds.json.b64 || echo "Credential file is missing at featurebyte_beta/creds.json.b64"
 	@test -s featurebyte_beta/creds.json.b64 || echo 'create the file with contents: $$(echo "_json_base_64:$$(cat SERVICE_ACCOUNT_FILE | base64)" | base64)'
 	@test -s featurebyte_beta/creds.json.b64 || exit 1
 

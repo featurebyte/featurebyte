@@ -4,8 +4,7 @@ services:
   featurebyte-server:
     hostname: featurebyte-server
     container_name: featurebyte-server
-    image: featurebyte-beta:latest
-    # image: us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-beta:latest
+    image: us-central1-docker.pkg.dev/beta-testing-373907/docker/featurebyte-beta:latest
     volumes:
       - ~/.featurebyte:/app/.featurebyte
       - /tmp:/tmp
