@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mongo-testrs:
     container_name: mongo-testrs
-    image: mongo:latest
+    image: mongo:4.4
     volumes:
       - ./entrypoint.sh:/scripts/entrypoint.sh
     ports:
