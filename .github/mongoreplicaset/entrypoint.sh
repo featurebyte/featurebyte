@@ -10,12 +10,12 @@ echo "Starting mongo servers"
 /usr/bin/mongod --port=27022 --dbpath=/data/db2 --bind_ip_all --replSet rs0 -v --logpath /data/db2.log --logRotate reopen --logappend &
 
 # Sleep and wait for server to start
-while ! mongosh --quiet --port=27021 --eval "exit" 2>/dev/null; do echo "Waiting for mongo1 to start"; sleep 1; done; echo "mongo1 started"
-while ! mongosh --quiet --port=27022 --eval "exit" 2>/dev/null; do echo "Waiting for mongo2 to start"; sleep 1; done; echo "mongo2 started"
+while ! mongo --quiet --port=27021 --eval "quit()" 2>/dev/null; do echo "Waiting for mongo1 to start"; sleep 1; done; echo "mongo1 started"
+while ! mongo --quiet --port=27022 --eval "quit()" 2>/dev/null; do echo "Waiting for mongo2 to start"; sleep 1; done; echo "mongo2 started"
 
 # If not bootstrapped, bootstrap
-if ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; then
-    mongosh --quiet --port=27021 <<EOF
+if [[ 1 -ne "$(mongo --quiet --port=27021 --eval "rs.status().ok")" ]]; then
+    mongo --quiet --port=27021 <<EOF
         var config = {
             "_id": "rs0",
             "version": 1,
@@ -35,11 +35,8 @@ if ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; then
 EOF
 fi
 
-# Wait for replicaset config to be accepted
-while ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; do sleep 1; done
-
 # Wait for replicaset to form
-while [[ 1 -ne "$(mongosh --quiet --port=27021 --eval "rs.status().ok")" ]]; do
+while [[ 1 -ne "$(mongo --quiet --port=27021 --eval "rs.status().ok")" ]]; do
   echo "Waiting for replicaset to establish";
   sleep 1;
 done
