@@ -538,6 +538,12 @@ class SCDLookupParameters(SCDBaseParameters):
     offset: Optional[str]
 
 
+class EventLookupParameters(BaseModel):
+    """Parameters for EventData lookup"""
+
+    event_timestamp_column: str
+
+
 class LookupNode(AggregationOpStructMixin, BaseNode):
     """LookupNode class"""
 
@@ -550,6 +556,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         serving_name: str
         entity_id: PydanticObjectId
         scd_parameters: Optional[SCDLookupParameters]
+        event_parameters: Optional[EventLookupParameters]
 
         @root_validator(skip_on_failure=True)
         @classmethod

@@ -123,6 +123,14 @@ class EventView(View, GroupByMixin):
         assert self.event_id_column is not None
         return self.event_id_column
 
+    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+        _ = offset
+        return {
+            "event_parameters": {
+                "event_timestamp_column": self.timestamp_column,
+            }
+        }
+
     def _validate_entity_col_override(self, entity_col: str) -> None:
         """
         Validates the entity_col override
