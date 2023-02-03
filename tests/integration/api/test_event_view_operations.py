@@ -1034,26 +1034,26 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
     # Lookup from event should be time based - value is NA is point in time is prior to event time
     ts_before_event = event_timestamp - pd.Timedelta("7d")
     ts_after_event = event_timestamp + pd.Timedelta("7d")
-    expected_amount_if_before_event = event_row["ÀMOUNT"]
+    expected_amount_if_after_event = event_row["ÀMOUNT"]
     # Make sure to pick a non-na value to test meaningfully
-    assert not np.isnan(expected_amount_if_before_event)
+    assert not np.isnan(expected_amount_if_after_event)
 
-    # Point in time before event time - non-NA
-    df = feature.preview({"POINT_IN_TIME": ts_before_event, "order_id": event_id})
-    expected = pd.Series(
-        {
-            "POINT_IN_TIME": ts_before_event,
-            "order_id": event_id,
-            "Amount Feature": expected_amount_if_before_event,
-        }
-    )
-    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
-
-    # Point in time after event time - NA
+    # Point in time after event time - non-NA
     df = feature.preview({"POINT_IN_TIME": ts_after_event, "order_id": event_id})
     expected = pd.Series(
         {
             "POINT_IN_TIME": ts_after_event,
+            "order_id": event_id,
+            "Amount Feature": np.nan,
+        }
+    )
+    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
+
+    # Point in time before event time - NA
+    df = feature.preview({"POINT_IN_TIME": ts_before_event, "order_id": event_id})
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_before_event,
             "order_id": event_id,
             "Amount Feature": np.nan,
         }

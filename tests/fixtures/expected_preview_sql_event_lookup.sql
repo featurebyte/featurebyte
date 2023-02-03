@@ -8,8 +8,8 @@ WITH REQUEST_TABLE AS (
     REQ."order_id",
     CASE
       WHEN REQ."POINT_IN_TIME" < "T0"."ts"
-      THEN "T0"."order_method_1455fa34bdedaabb"
-      ELSE NULL
+      THEN NULL
+      ELSE "T0"."order_method_1455fa34bdedaabb"
     END AS "order_method_1455fa34bdedaabb"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (

@@ -52,8 +52,10 @@ class LookupSubquery(LeftJoinableSubquery):
             is_point_in_time_prior_to_event_timestamp = expressions.LT(
                 this=point_in_time_expr, expression=event_timestamp_expr
             )
-            if_expr = expressions.If(this=is_point_in_time_prior_to_event_timestamp, true=expr)
-            expr = expressions.Case(ifs=[if_expr], default=expressions.null())
+            if_expr = expressions.If(
+                this=is_point_in_time_prior_to_event_timestamp, true=expressions.null()
+            )
+            expr = expressions.Case(ifs=[if_expr], default=expr)
 
         return expr
 
