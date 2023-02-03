@@ -3,7 +3,7 @@ SQL generation for lookup features
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Sequence, Tuple
 
 from dataclasses import dataclass
 
@@ -37,6 +37,8 @@ class LookupSubquery(LeftJoinableSubquery):
             main_alias=main_alias, join_alias=join_alias, column_name=column_name
         )
 
+        # For lookup from EventData, set the looked up value to NA if the point in time is prior to
+        # the event timestamp
         if self.event_timestamp_column is not None:
             point_in_time_expr = get_qualified_column_identifier(
                 SpecialColumnName.POINT_IN_TIME,
@@ -114,7 +116,7 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             if not is_scd and not requires_scd_join:
                 yield specs
 
-    def get_direct_lookups(self) -> list[LeftJoinableSubquery]:
+    def get_direct_lookups(self) -> Sequence[LeftJoinableSubquery]:
         """
         Get simple lookup queries without time based conditions
 

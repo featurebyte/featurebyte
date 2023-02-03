@@ -3,7 +3,7 @@ Base class for aggregation SQL generators
 """
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Sequence, TypeVar
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -55,6 +55,26 @@ class LeftJoinableSubquery:
     def get_expression_for_column(
         self, main_alias: str, join_alias: str, column_name: str
     ) -> expressions.Expression:
+        """
+        Get the expression for a column name after join. The default implementation is simply ito
+        return the qualified expression "{join_alias}"."{column_name}".
+
+        Currently this method exists to allow lookup features from EventView to have a cutoff based
+        on the main table's point in time column after the lookup join.
+
+        Parameters
+        ----------
+        main_alias: str
+            Alias of the left table
+        join_alias: str
+            Alias of the right table (which this LeftJoinableSubquery is representing)
+        column_name: str
+            Column name in the right table
+
+        Returns
+        -------
+        Expression
+        """
         _ = main_alias
         return get_qualified_column_identifier(column_name, join_alias, quote_table=True)
 
@@ -149,7 +169,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         self,
         table_expr: Select,
         current_query_index: int,
-        queries: list[LeftJoinableSubquery],
+        queries: Sequence[LeftJoinableSubquery],
     ) -> AggregationResult:
         """
         Update table_expr by left joining with a list of LeftJoinableSubquery
@@ -160,7 +180,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             Table expression to update
         current_query_index: int
             A running integer to be used to construct new table aliases
-        queries: list[LeftJoinableSubquery]
+        queries: Sequence[LeftJoinableSubquery]
             List of sub-queries to be left joined with table_expr
 
         Returns
@@ -198,14 +218,10 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         ----------
         index : int
             Index of the current left join
-        agg_result_names : list[str]
-            Column names of the aggregated results
-        join_keys : list[str]
-            List of join keys
         table_expr : expressions.Select
             Table to which the left join should be added to
-        agg_expr : expressions.Select
-            SQL expression that performs the aggregation
+        left_joinable_subquery: LeftJoinableSubquery
+            The subquery to be joined to table_expr
 
         Returns
         -------
