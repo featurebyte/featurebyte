@@ -393,6 +393,7 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     assert agg_result_dict == {
         "column_names": ["cust_value_1_9b8bee3acf7d5bc7", "cust_value_2_9b8bee3acf7d5bc7"],
         "join_keys": ["CUSTOMER_ID"],
+        "event_timestamp_column": None,
     }
 
     # Check required serving names

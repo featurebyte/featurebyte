@@ -155,6 +155,7 @@ def test_as_features__with_primary_key_column(snowflake_dimension_view_with_enti
             "serving_name": "cust_id",
             "entity_id": cust_id_entity.id,
             "scd_parameters": None,
+            "event_parameters": None,
         },
     }
 
@@ -244,6 +245,7 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
             "serving_name": "cust_id",
             "entity_id": cust_id_entity.id,
             "scd_parameters": None,
+            "event_parameters": None,
         },
     }
 

@@ -124,6 +124,7 @@ def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
                 "end_timestamp_column": "end_timestamp",
                 "offset": "7d",
             },
+            "event_parameters": None,
         },
     }
 
@@ -170,4 +171,5 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
             "natural_key_column": "col_text",
             "offset": None,
         },
+        "event_parameters": None,
     }
