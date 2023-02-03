@@ -211,7 +211,7 @@ def test_get_feature_preview_sql__event_lookup_features(
     """
     point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",
-        "order_id": 1000,
+        "ORDER_ID": 1000,
     }
     preview_sql = get_feature_preview_sql(
         request_table_name=REQUEST_TABLE_NAME,

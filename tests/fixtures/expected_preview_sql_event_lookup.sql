@@ -1,11 +1,11 @@
 WITH REQUEST_TABLE AS (
   SELECT
     CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
-    1000 AS "order_id"
+    1000 AS "ORDER_ID"
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."POINT_IN_TIME",
-    REQ."order_id",
+    REQ."ORDER_ID",
     CASE
       WHEN REQ."POINT_IN_TIME" < "T0"."ts"
       THEN NULL
@@ -30,6 +30,6 @@ WITH REQUEST_TABLE AS (
 )
 SELECT
   AGG."POINT_IN_TIME",
-  AGG."order_id",
+  AGG."ORDER_ID",
   "order_method_1455fa34bdedaabb" AS "Order Method"
 FROM _FB_AGGREGATED AS AGG
