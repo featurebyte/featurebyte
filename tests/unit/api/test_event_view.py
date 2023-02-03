@@ -45,8 +45,8 @@ def test_from_event_data(snowflake_event_data):
     """
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
-    assert event_view_first.node == snowflake_event_data.node
-    assert event_view_first.row_index_lineage == snowflake_event_data.row_index_lineage
+    assert event_view_first.node.parameters == snowflake_event_data.frame.node.parameters
+    assert event_view_first.row_index_lineage == snowflake_event_data.frame.row_index_lineage
     assert event_view_first.columns_info == snowflake_event_data.columns_info
 
     entity = Entity(name="customer", serving_names=["cust_id"])

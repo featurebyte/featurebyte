@@ -12,7 +12,7 @@ from pandas import DataFrame
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
-from featurebyte.api.database_table import AbstractTableDataFrame, DatabaseTable
+from featurebyte.api.database_table import AbstractTableData, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
@@ -155,8 +155,8 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         tuple[QueryGraphModel, Node]
             QueryGraph & mapped Node object (within the pruned graph)
         """
-        target_node = self.parent.node
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(
+        target_node = self.parent.frame.node
+        pruned_graph, node_name_map = self.parent.frame.graph.prune(
             target_node=target_node, aggressive=True
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
@@ -222,7 +222,7 @@ class DataListMixin(ApiObject):
         return data_list
 
 
-class DataApiObject(AbstractTableDataFrame, SavableApiObject, DataListMixin, GetAttrMixin):
+class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrMixin):
     """
     Base class for all Data objects
     """

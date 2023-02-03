@@ -188,14 +188,6 @@ def test_setitem__str_key_series_value(
     """
     Test assigning Series object to ItemView
     """
-    expected_lineage_item_data_columns = (
-        snowflake_item_data.node.name,
-        snowflake_item_view.node.name,
-    )
-    expected_lineage_event_data_columns = (
-        snowflake_event_data.node.name,
-        snowflake_item_view.node.name,
-    )
     double_value = snowflake_item_view["item_amount"] * 2
     assert isinstance(double_value, Series)
     snowflake_item_view["double_value"] = double_value

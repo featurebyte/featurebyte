@@ -101,8 +101,7 @@ def test_data_column__as_entity__saved__entity_not_found_exception(saved_event_d
 def _check_event_data_with_critical_data_info(event_data):
     """ "Check update critical data info"""
     # check that event data node type is INPUT when there's no critical data info
-    assert event_data.node.type == NodeType.INPUT
-    node_name_before = event_data.node_name
+    assert event_data.frame.node.type == NodeType.INPUT
 
     # update critical data info with empty cleaning operation list
     assert event_data.col_boolean.info.critical_data_info is None
@@ -114,8 +113,7 @@ def _check_event_data_with_critical_data_info(event_data):
         "semantic_id": None,
         "critical_data_info": {"cleaning_operations": []},
     }
-    assert event_data.node.type == NodeType.INPUT
-    assert event_data.node_name == node_name_before
+    assert event_data.frame.node.type == NodeType.INPUT
 
     if event_data.saved:
         # check that node name still input node type as there is no critical data info
@@ -135,7 +133,7 @@ def _check_event_data_with_critical_data_info(event_data):
         cleaning_operations=[StringValueImputation(imputed_value=0.0)]
     )
 
-    assert event_data.node.type == NodeType.INPUT
+    assert event_data.frame.node.type == NodeType.INPUT
     expected_query = textwrap.dedent(
         """
         SELECT
@@ -166,7 +164,7 @@ def _check_event_data_with_critical_data_info(event_data):
 
 def _check_remove_critical_data_info(event_data):
     """ "Check remove critical data info"""
-    assert event_data.node.type == NodeType.INPUT
+    assert event_data.frame.node.type == NodeType.INPUT
     event_data.col_boolean.update_critical_data_info(cleaning_operations=[])
     event_data.col_int.update_critical_data_info(cleaning_operations=[])
     event_data.col_float.update_critical_data_info(cleaning_operations=[])
@@ -176,7 +174,7 @@ def _check_remove_critical_data_info(event_data):
         else:
             assert column_info.critical_data_info is None
 
-    assert event_data.node.type == NodeType.INPUT
+    assert event_data.frame.node.type == NodeType.INPUT
     event_view = EventView.from_event_data(event_data=event_data)
     assert event_view.node.type == NodeType.INPUT
 

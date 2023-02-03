@@ -228,12 +228,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ViewT
             constructed View object
         """
-        node_name = data.node_name
-        assert isinstance(data.node, InputNode)
-        graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data.node)
+        assert isinstance(data.frame.node, InputNode)
+        global_graph, node_name_map = GlobalQueryGraph().load(data.frame.graph)
+        node_name = node_name_map[data.frame.node.name]
+        data_node = global_graph.get_node_by_name(node_name=node_name)
+        graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data_node)
         if graph_node:
             inserted_graph_node = GlobalQueryGraph().add_node(
-                node=graph_node, input_nodes=[data.node]
+                node=graph_node, input_nodes=[data_node]
             )
             node_name = inserted_graph_node.name
 

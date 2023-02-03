@@ -151,7 +151,7 @@ def test_from_tabular_source(snowflake_database_table_item_data, item_data_dict,
     )
 
     # check that node parameter is set properly
-    node_params = item_data.node.parameters
+    node_params = item_data.frame.node.parameters
     assert node_params.id == item_data.id
     assert node_params.type == TableDataType.ITEM_DATA
 
@@ -161,8 +161,6 @@ def test_from_tabular_source(snowflake_database_table_item_data, item_data_dict,
 
     output = item_data.dict()
     item_data_dict["id"] = item_data.id
-    item_data_dict["graph"] = output["graph"]
-    item_data_dict["node_name"] = output["node_name"]
     assert output == item_data_dict
 
     # user input validation
