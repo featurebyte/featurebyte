@@ -86,10 +86,12 @@ test-routes:
 
 #* Docker
 beta-start: beta-build
-	cd docker && docker compose up
+	cd docker/dev && docker compose -f docker-compose.yml up
+	$(MAKE) beta-stop
 
 beta-stop:
-	cd docker && docker compose down
+	cd docker/dev && docker compose -f docker-compose.yml down
+	-docker container rm mongo-rs featurebyte-server featurebyte-docs
 
 beta-build:
 	poetry build   # We are exporting dist/ to the image
