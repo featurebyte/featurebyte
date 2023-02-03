@@ -135,6 +135,10 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         return values
 
     @property
+    def columns_info(self) -> List[ColumnInfo]:
+        return self.int_columns_info
+
+    @property
     def table_data(self) -> BaseTableData:
         """
         Table data object for the given data model
@@ -143,7 +147,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         -------
         BaseTableData
         """
-        return self._table_data_class(**self.json_dict())
+        return self._table_data_class(**{**self.json_dict(), "columns_info": self.columns_info})
 
     @property
     def frame(self) -> TableDataFrame:
@@ -342,7 +346,3 @@ class DatabaseTable(GenericTableData, AbstractTableData):
     """
 
     _table_data_class = GenericTableData
-
-    @property
-    def columns_info(self) -> List[ColumnInfo]:
-        return self.int_columns_info

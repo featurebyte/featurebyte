@@ -6,16 +6,19 @@ import json
 import os
 import tempfile
 from unittest import mock
+from unittest.mock import PropertyMock, patch
 
 import pandas as pd
 import pytest
 import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
+from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -107,6 +110,14 @@ def mock_config_path_env_fixture(config_file):
 
     with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
         mock_env_get.side_effect = mock_env_side_effect
+        yield
+
+
+@pytest.fixture(name="mock_api_object_cache")
+def mock_api_object_cache_fixture():
+    """Mock api object cache so that the time-to-live period is 0"""
+    with patch.object(ApiObject, "_cache", new_callable=PropertyMock) as mock_cache:
+        mock_cache.return_value = TTLCache(maxsize=1024, ttl=0)
         yield
 
 
@@ -410,6 +421,12 @@ def snowflake_item_data_id_2_fixture():
     return ObjectId("6337f9651050ee7d5980662e")
 
 
+@pytest.fixture(name="customer_entity_id")
+def customer_entity_id_fixture():
+    """Customer entity ID"""
+    return ObjectId("6337f9651050ee7d5980662f")
+
+
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
     """EventData object fixture"""
@@ -518,22 +535,14 @@ def snowflake_item_data_same_event_id_fixture(
 
 
 @pytest.fixture(name="cust_id_entity")
-def cust_id_entity_fixture():
+def cust_id_entity_fixture(customer_entity_id, mock_api_object_cache):
     """
     Customer ID entity fixture
     """
-    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity = Entity(name="customer", serving_names=["cust_id"], _id=customer_entity_id)
+    assert entity.id == customer_entity_id
     entity.save()
-    yield entity
-
-
-@pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture():
-    """
-    Event entity fixture
-    """
-    entity = Entity(name="transaction", serving_names=["transaction_id"])
-    entity.save()
+    assert entity.id == customer_entity_id
     yield entity
 
 
@@ -544,6 +553,8 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     """
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_data.col_int.as_entity(cust_id_entity.name)
+    assert snowflake_event_data.cust_id.info.entity_id == cust_id_entity.id
+    assert snowflake_event_data.col_int.info.entity_id == cust_id_entity.id
     yield snowflake_event_data
 
 
@@ -637,7 +648,7 @@ def snowflake_event_view_fixture(
 
 
 @pytest.fixture(name="snowflake_event_view_with_entity")
-def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
+def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity, cust_id_entity):
     """
     Snowflake event view with entity
     """
@@ -661,7 +672,7 @@ def snowflake_event_view_entity_feature_job_fixture(
 
 
 @pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view_with_entity):
+def grouped_event_view_fixture(snowflake_event_view_with_entity, cust_id_entity):
     """
     EventViewGroupBy fixture
     """

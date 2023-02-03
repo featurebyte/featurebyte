@@ -63,10 +63,13 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view):
 
 
 @pytest.fixture
-def snowflake_dimension_view_with_entity(snowflake_dimension_data, cust_id_entity):
+def snowflake_dimension_view_with_entity(
+    snowflake_dimension_data, cust_id_entity, mock_api_object_cache
+):
     """
     Fixture of a DimensionView with entity tagged
     """
+    _ = mock_api_object_cache
     snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
     view = DimensionView.from_dimension_data(snowflake_dimension_data)
     return view
@@ -111,10 +114,13 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view):
     assert str(exc.value) == 'Column "col_int" is not an entity!'
 
 
-def test_as_features__with_primary_key_column(snowflake_dimension_view_with_entity, cust_id_entity):
+def test_as_features__with_primary_key_column(
+    snowflake_dimension_view_with_entity, cust_id_entity, mock_api_object_cache
+):
     """
     Test calling as_features() when including primary column works correctly
     """
+    _ = mock_api_object_cache
     # Set entity
     view = snowflake_dimension_view_with_entity
     entity_column = "col_int"

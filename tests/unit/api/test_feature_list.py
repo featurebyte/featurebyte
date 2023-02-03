@@ -1008,8 +1008,11 @@ def test_get_feature_jobs_status(
 
 
 @patch("featurebyte.core.mixin.SampleMixin.preview")
-def test_get_online_serving_code(mock_preview, feature_list):
+def test_get_online_serving_code(mock_preview, feature_list, cust_id_entity, snowflake_event_data):
     """Test feature get_online_serving_code"""
+    # associate cust_id column with customer entity
+    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
+
     mock_preview.return_value = pd.DataFrame(
         {"col_int": ["sample_col_int"], "cust_id": ["sample_cust_id"]}
     )

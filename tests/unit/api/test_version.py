@@ -16,12 +16,14 @@ from featurebyte.models.feature_list import FeatureListNewVersionMode
 def feature_group_fixture(
     snowflake_feature_store,
     snowflake_event_data_with_entity,
+    cust_id_entity,
 ):
     """
     Feature group fixture
     """
     snowflake_feature_store.save()
     snowflake_event_data_with_entity.save()
+    snowflake_event_data_with_entity.cust_id.as_entity(cust_id_entity.name)
 
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
     feature_group = event_view.groupby("cust_id").aggregate_over(

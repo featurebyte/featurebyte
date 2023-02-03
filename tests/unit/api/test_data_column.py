@@ -18,9 +18,10 @@ from featurebyte.query_graph.model.critical_data_info import (
 )
 
 
-def test_data_column__as_entity(snowflake_event_data):
+def test_data_column__as_entity(snowflake_event_data, mock_api_object_cache):
     """Test setting a column in the event data as entity"""
     # check no column associate with any entity
+    _ = mock_api_object_cache
     assert all([col.entity_id is None for col in snowflake_event_data.columns_info])
 
     # create entity
@@ -179,13 +180,17 @@ def _check_remove_critical_data_info(event_data):
     assert event_view.node.type == NodeType.INPUT
 
 
-def test_data_column__update_critical_data_info(snowflake_event_data):
+def test_data_column__update_critical_data_info(snowflake_event_data, mock_api_object_cache):
     """Test update critical data info of a data column"""
+    _ = mock_api_object_cache
     _check_event_data_with_critical_data_info(snowflake_event_data)
     _check_remove_critical_data_info(snowflake_event_data)
 
 
-def test_data_column__update_critical_data_info__saved_data(saved_event_data):
+def test_data_column__update_critical_data_info__saved_data(
+    saved_event_data, mock_api_object_cache
+):
     """Test update critical data info of a saved data column"""
+    _ = mock_api_object_cache
     _check_event_data_with_critical_data_info(saved_event_data)
     _check_remove_critical_data_info(saved_event_data)
