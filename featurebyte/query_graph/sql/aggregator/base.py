@@ -56,7 +56,7 @@ class LeftJoinableSubquery:
         self, main_alias: str, join_alias: str, column_name: str
     ) -> expressions.Expression:
         """
-        Get the expression for a column name after join. The default implementation is simply ito
+        Get the expression for a column name after join. The default implementation is simply to
         return the qualified expression "{join_alias}"."{column_name}".
 
         Currently this method exists to allow lookup features from EventView to have a cutoff based

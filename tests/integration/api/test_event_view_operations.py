@@ -1044,7 +1044,7 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
         {
             "POINT_IN_TIME": ts_after_event,
             "order_id": event_id,
-            "Amount Feature": np.nan,
+            "Amount Feature": expected_amount_if_after_event,
         }
     )
     pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
