@@ -86,10 +86,10 @@ test-routes:
 
 #* Docker
 beta-start: beta-build
-	cd docker && docker compose up
+	cd docker && docker compose -f docker-compose-local.yml up
 
 beta-stop:
-	cd docker && docker compose down
+	cd docker && docker compose -f docker-compose-local.yml down
 
 beta-build:
 	poetry build   # We are exporting dist/ to the image
