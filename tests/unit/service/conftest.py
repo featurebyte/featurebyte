@@ -203,12 +203,6 @@ def deploy_service_fixture(app_container):
     return app_container.deploy_service
 
 
-@pytest.fixture(name="entity_service")
-def entity_service_fixture(app_container):
-    """EntityService fixture"""
-    return app_container.entity_service
-
-
 @pytest.fixture(name="entity_validation_service")
 def entity_validation_service_fixture(app_container):
     """EntityValidationService fixture"""

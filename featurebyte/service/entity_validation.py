@@ -172,6 +172,11 @@ class EntityValidationService(BaseService):
         serving_names_mapping : dict[str, str] | None
             Optional serving names mapping if the entities are provided under different serving
             names in the request
+
+        Raises
+        ------
+        RequiredEntityNotProvidedError
+            When any of the required entities is not provided in the request
         """
 
         entity_info = await self.get_entity_info_from_request(
