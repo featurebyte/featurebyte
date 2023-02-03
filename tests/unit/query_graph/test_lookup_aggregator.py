@@ -9,7 +9,7 @@ from dataclasses import asdict
 import pytest
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.node.generic import SCDLookupParameters
+from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.specs import LookupSpec
 
@@ -21,6 +21,18 @@ def dimension_lookup_specs(global_graph, lookup_node):
     """
     return LookupSpec.from_query_graph_node(
         lookup_node,
+        graph=global_graph,
+        source_type=SourceType.SNOWFLAKE,
+    )
+
+
+@pytest.fixture
+def event_lookup_specs(global_graph, event_lookup_node):
+    """
+    Fixture for a list of LookupSpec derived from event_lookup_node
+    """
+    return LookupSpec.from_query_graph_node(
+        event_lookup_node,
         graph=global_graph,
         source_type=SourceType.SNOWFLAKE,
     )
@@ -109,6 +121,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_column": "cust_id",
             "entity_ids": [entity_id],
             "scd_parameters": None,
+            "event_parameters": None,
         },
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -118,6 +131,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_column": "cust_id",
             "entity_ids": [entity_id],
             "scd_parameters": None,
+            "event_parameters": None,
         },
     ]
 
@@ -157,6 +171,7 @@ def test_lookup_aggregator__offline_scd_only(
                 end_timestamp_column=None,
                 offset=None,
             ),
+            "event_parameters": None,
         }
     ]
 
@@ -193,6 +208,7 @@ def test_lookup_aggregator__online_with_current_flag(
                 end_timestamp_column=None,
                 offset=None,
             ),
+            "event_parameters": None,
         }
     ]
 
@@ -257,6 +273,7 @@ def test_lookup_aggregator__online_without_current_flag(
                 end_timestamp_column=None,
                 offset=None,
             ),
+            "event_parameters": None,
         }
     ]
 
@@ -296,5 +313,35 @@ def test_lookup_aggregator__online_with_offset(
                 end_timestamp_column=None,
                 offset="14d",
             ),
+            "event_parameters": None,
         }
     ]
+
+
+def test_lookup_aggregator__event_data(offline_lookup_aggregator, event_lookup_specs, entity_id):
+    """
+    Test lookup features from EventData
+    """
+    aggregator = offline_lookup_aggregator
+    update_aggregator(aggregator, event_lookup_specs)
+
+    direct_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=False))
+    assert len(direct_lookup_specs) == 1
+    specs = [asdict(spec) for spec in direct_lookup_specs[0]]
+    for spec in specs:
+        spec.pop("source_expr")
+    assert specs == [
+        {
+            "entity_ids": [entity_id],
+            "serving_names": ["ORDER_ID"],
+            "serving_names_mapping": None,
+            "input_column_name": "order_method",
+            "feature_name": "Order Method",
+            "entity_column": "order_id",
+            "scd_parameters": None,
+            "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
+        }
+    ]
+
+    scd_lookup_specs = list(aggregator.iterate_grouped_lookup_specs(is_scd=True))
+    assert len(scd_lookup_specs) == 0

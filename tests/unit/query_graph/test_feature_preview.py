@@ -201,6 +201,32 @@ def test_get_feature_preview_sql__lookup_features(
     )
 
 
+def test_get_feature_preview_sql__event_lookup_features(
+    global_graph,
+    event_lookup_node,
+    update_fixtures,
+):
+    """
+    Test case for preview SQL for a lookup feature from EventData
+    """
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "order_id": 1000,
+    }
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=[event_lookup_node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_event_lookup.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 def test_get_feature_preview_sql__scd_lookup_features(
     global_graph,
     scd_lookup_feature_node,
