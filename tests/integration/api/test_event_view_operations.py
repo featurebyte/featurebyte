@@ -1040,18 +1040,22 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
 
     # Point in time before event time - non-NA
     df = feature.preview({"POINT_IN_TIME": ts_before_event, "order_id": event_id})
-    expected = {
-        "POINT_IN_TIME": ts_before_event,
-        "order_id": event_id,
-        "Amount Feature": expected_amount_if_before_event,
-    }
-    assert df.iloc[0].to_dict() == expected
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_before_event,
+            "order_id": event_id,
+            "Amount Feature": expected_amount_if_before_event,
+        }
+    )
+    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
 
     # Point in time after event time - NA
     df = feature.preview({"POINT_IN_TIME": ts_after_event, "order_id": event_id})
-    expected = {
-        "POINT_IN_TIME": ts_after_event,
-        "order_id": event_id,
-        "Amount Feature": np.nan,
-    }
-    assert df.iloc[0].to_dict() == expected
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_after_event,
+            "order_id": event_id,
+            "Amount Feature": np.nan,
+        }
+    )
+    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)

@@ -3,19 +3,57 @@ SQL generation for lookup features
 """
 from __future__ import annotations
 
-from typing import Iterable, Tuple
+from typing import Iterable, Optional, Tuple
+
+from dataclasses import dataclass
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
+from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import LookupSpec
+
+
+@dataclass
+class LookupSubquery(LeftJoinableSubquery):
+    """
+    LeftJoinableSubquery for lookup features
+    """
+
+    event_timestamp_column: Optional[str]
+
+    def get_expression_for_column(
+        self, main_alias: str, join_alias: str, column_name: str
+    ) -> expressions.Expression:
+
+        expr = super().get_expression_for_column(
+            main_alias=main_alias, join_alias=join_alias, column_name=column_name
+        )
+
+        if self.event_timestamp_column is not None:
+            point_in_time_expr = get_qualified_column_identifier(
+                SpecialColumnName.POINT_IN_TIME,
+                main_alias,
+            )
+            event_timestamp_expr = get_qualified_column_identifier(
+                self.event_timestamp_column,
+                join_alias,
+                quote_table=True,
+            )
+            is_point_in_time_prior_to_event_timestamp = expressions.LT(
+                this=point_in_time_expr, expression=event_timestamp_expr
+            )
+            if_expr = expressions.If(this=is_point_in_time_prior_to_event_timestamp, true=expr)
+            expr = expressions.Case(ifs=[if_expr], default=expressions.null())
+
+        return expr
 
 
 class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
@@ -118,10 +156,17 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
                 ],
             ).from_(source_expr.subquery())
 
-            result = LeftJoinableSubquery(
+            if specs[0].event_parameters is not None:
+                event_timestamp_column = specs[0].event_parameters.event_timestamp_column
+                agg_expr = agg_expr.select(quoted_identifier(event_timestamp_column))
+            else:
+                event_timestamp_column = None
+
+            result = LookupSubquery(
                 expr=agg_expr,
                 column_names=[spec.agg_result_name for spec in specs],
                 join_keys=[serving_name],
+                event_timestamp_column=event_timestamp_column,
             )
             out.append(result)
 

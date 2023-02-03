@@ -52,6 +52,12 @@ class LeftJoinableSubquery:
     column_names: list[str]
     join_keys: list[str]
 
+    def get_expression_for_column(
+        self, main_alias: str, join_alias: str, column_name: str
+    ) -> expressions.Expression:
+        _ = main_alias
+        return get_qualified_column_identifier(column_name, join_alias, quote_table=True)
+
 
 class Aggregator(Generic[AggregationSpecT], ABC):
     """
@@ -164,16 +170,14 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         aggregated_columns = []
         updated_table_expr = table_expr
         updated_query_index = current_query_index
-        for internal_agg_result in queries:
+        for subquery in queries:
             updated_table_expr = self._construct_left_join_sql(
                 index=updated_query_index,
                 table_expr=updated_table_expr,
-                agg_result_names=internal_agg_result.column_names,
-                join_keys=internal_agg_result.join_keys,
-                agg_expr=internal_agg_result.expr,
+                left_joinable_subquery=subquery,
             )
             updated_query_index += 1
-            aggregated_columns.extend(internal_agg_result.column_names)
+            aggregated_columns.extend(subquery.column_names)
 
         result = AggregationResult(
             updated_table_expr=updated_table_expr,
@@ -185,10 +189,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
     @staticmethod
     def _construct_left_join_sql(
         index: int,
-        agg_result_names: list[str],
-        join_keys: list[str],
         table_expr: expressions.Select,
-        agg_expr: expressions.Select,
+        left_joinable_subquery: LeftJoinableSubquery,
     ) -> expressions.Select:
         """Construct SQL that left joins aggregated result back to request table
 
@@ -213,18 +215,20 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         agg_table_alias = f"T{index}"
         agg_result_name_aliases = [
             alias_(
-                get_qualified_column_identifier(agg_result_name, agg_table_alias, quote_table=True),
+                left_joinable_subquery.get_expression_for_column(
+                    "REQ", agg_table_alias, agg_result_name
+                ),
                 agg_result_name,
                 quoted=True,
             )
-            for agg_result_name in agg_result_names
+            for agg_result_name in left_joinable_subquery.column_names
         ]
         join_conditions = [
             f"REQ.{quoted_identifier(key).sql()} = {agg_table_alias}.{quoted_identifier(key).sql()}"
-            for key in join_keys
+            for key in left_joinable_subquery.join_keys
         ]
         updated_table_expr = table_expr.join(
-            agg_expr.subquery(),
+            left_joinable_subquery.expr.subquery(),
             join_type="left",
             join_alias=agg_table_alias,
             on=expressions.and_(*join_conditions) if join_conditions else None,
