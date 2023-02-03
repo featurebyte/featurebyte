@@ -182,7 +182,7 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     )
 
     # check that node parameter is set properly
-    node_params = scd_data.node.parameters
+    node_params = scd_data.frame.node.parameters
     assert node_params.id == scd_data.id
     assert node_params.type == TableDataType.SCD_DATA
 
@@ -192,8 +192,6 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
 
     output = scd_data.dict()
     scd_data_dict["id"] = scd_data.id
-    scd_data_dict["graph"] = output["graph"]
-    scd_data_dict["node_name"] = output["node_name"]
     scd_data_dict["current_flag_column"] = scd_data_dict.pop("current_flag")  # DEV-556
     assert output == scd_data_dict
 

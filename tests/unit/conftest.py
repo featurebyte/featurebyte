@@ -421,7 +421,7 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
         record_creation_date_column="created_at",
         _id=snowflake_event_data_id,
     )
-    assert event_data.node.parameters.id == event_data.id
+    assert event_data.frame.node.parameters.id == event_data.id
     yield event_data
 
 
@@ -435,7 +435,7 @@ def snowflake_dimension_data_fixture(snowflake_database_table, snowflake_dimensi
         record_creation_date_column="created_at",
         _id=snowflake_dimension_data_id,
     )
-    assert dimension_data.node.parameters.id == dimension_data.id
+    assert dimension_data.frame.node.parameters.id == dimension_data.id
     yield dimension_data
 
 
@@ -452,7 +452,7 @@ def snowflake_scd_data_fixture(snowflake_database_table_scd_data, snowflake_scd_
         current_flag_column="is_active",
         _id=snowflake_scd_data_id,
     )
-    assert scd_data.node.parameters.id == scd_data.id
+    assert scd_data.frame.node.parameters.id == scd_data.id
     yield scd_data
 
 
@@ -480,7 +480,7 @@ def snowflake_item_data_fixture(
     if not snowflake_feature_store.saved:
         snowflake_feature_store.save()
     snowflake_event_data.save()
-    yield ItemData.from_tabular_source(
+    item_data = ItemData.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -488,6 +488,8 @@ def snowflake_item_data_fixture(
         event_data_name=snowflake_event_data.name,
         _id=snowflake_item_data_id,
     )
+    assert item_data.frame.node.parameters.id == item_data.id
+    yield item_data
 
 
 @pytest.fixture(name="snowflake_item_data_same_event_id")

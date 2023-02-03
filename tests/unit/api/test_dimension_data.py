@@ -163,7 +163,7 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
     )
 
     # check that node parameter is set properly
-    node_params = dimension_data.node.parameters
+    node_params = dimension_data.frame.node.parameters
     assert node_params.id == dimension_data.id
     assert node_params.type == TableDataType.DIMENSION_DATA
 
@@ -173,8 +173,6 @@ def test_from_tabular_source(snowflake_database_table, dimension_data_dict):
 
     output = dimension_data.dict()
     dimension_data_dict["id"] = dimension_data.id
-    dimension_data_dict["graph"] = output["graph"]
-    dimension_data_dict["node_name"] = output["node_name"]
     assert output == dimension_data_dict
 
     # user input validation

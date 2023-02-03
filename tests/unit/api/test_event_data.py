@@ -113,8 +113,6 @@ def event_data_dict_fixture(snowflake_database_table):
         "updated_at": None,
         "user_id": None,
         "status": "DRAFT",
-        "graph": {"nodes": [], "edges": []},
-        "node_name": "",
     }
 
 
@@ -131,7 +129,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     )
 
     # check that node parameter is set properly
-    node_params = event_data.node.parameters
+    node_params = event_data.frame.node.parameters
     assert node_params.id == event_data.id
     assert node_params.type == TableDataType.EVENT_DATA
 
@@ -141,8 +139,6 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
 
     output = event_data.dict()
     event_data_dict["id"] = event_data.id
-    event_data_dict["graph"] = output["graph"]
-    event_data_dict["node_name"] = output["node_name"]
     assert output == event_data_dict
 
     # user input validation

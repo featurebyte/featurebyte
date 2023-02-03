@@ -3,7 +3,7 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type, Union
+from typing import Any, ClassVar, List, Optional, Type, Union
 
 from abc import ABC
 from datetime import datetime
@@ -20,9 +20,8 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node import Node
@@ -30,12 +29,35 @@ from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
 
 
-class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseModel, ABC):
+class TableDataFrame(BaseFrame):
     """
-    AbstractTableDataFrame class represents the table data as a frame (in query graph context).
+    TableDataFrame class is a frame encapsulation of the table data objects (like event data, item data).
+    This class is used to construct the query graph for previewing/sampling underlying table stored at the
+    data warehouse. The constructed query graph is stored locally (not loaded into the global query graph).
     """
 
-    node_name: str = Field(default_factory=str)
+    table_data: BaseTableData
+
+    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
+        node = self.node
+        if kwargs.get("after_cleaning"):
+            assert isinstance(node, InputNode)
+            graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
+            if graph_node:
+                node = self.graph.add_node(node=graph_node, input_nodes=[self.node])
+
+        pruned_graph, node_name_map = self.graph.prune(target_node=node, aggressive=True)
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
+        return pruned_graph, mapped_node
+
+
+class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
+    """
+    AbstractTableDataFrame class represents the table data.
+    """
+
+    columns_info: List[ColumnInfo]
+    tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
     _table_data_class: ClassVar[Type[AllTableDataT]]
 
@@ -105,19 +127,6 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
                     for name, var_type in recent_schema.items()
                 ]
                 values["columns_info"] = columns_info
-
-        # construct graph & node
-        # table node contains data id, this part is to ensure that the id is passed to table node parameters
-        table_data_dict = values.copy()
-        if "id" in table_data_dict and "_id" not in table_data_dict:
-            table_data_dict["_id"] = table_data_dict["id"]
-
-        graph, node = cls.construct_graph_and_node(
-            feature_store_details=feature_store.get_feature_store_details(),
-            table_data_dict=table_data_dict,
-        )
-        values["graph"] = graph
-        values["node_name"] = node.name
         return values
 
     @property
@@ -131,17 +140,77 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         """
         return self._table_data_class(**self.json_dict())
 
-    def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
-        node = self.node
-        if kwargs.get("after_cleaning"):
-            assert isinstance(node, InputNode)
-            graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
-            if graph_node:
-                node = GlobalQueryGraph().add_node(node=graph_node, input_nodes=[self.node])
+    @property
+    def frame(self) -> TableDataFrame:
+        """
+        Frame object of this table data object. The frame is constructed from a local query graph.
 
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(target_node=node, aggressive=True)
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[node.name])
-        return pruned_graph, mapped_node
+        Returns
+        -------
+        TableDataFrame
+        """
+        # Note that the constructed query graph WILL NOT BE INSERTED into the global query graph.
+        # Only when the view is constructed, the local query graph (constructed by data object) is then loaded
+        # into the global query graph.
+        graph, node = self.construct_graph_and_node(
+            feature_store_details=self.feature_store.get_feature_store_details(),
+            table_data_dict=self.table_data.dict(by_alias=True),
+        )
+        return TableDataFrame(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            table_data=self.table_data,
+            columns_info=self.columns_info,
+            graph=graph,
+            node_name=node.name,
+        )
+
+    @property
+    def column_var_type_map(self) -> dict[str, DBVarType]:
+        """
+        Column name to DB var type mapping
+
+        Returns
+        -------
+        dict[str, DBVarType]
+        """
+        return {col.name: col.dtype for col in self.columns_info}
+
+    @property
+    def dtypes(self) -> pd.Series:
+        """
+        Retrieve column data type info
+
+        Returns
+        -------
+        pd.Series
+        """
+        return pd.Series(self.column_var_type_map)
+
+    @property
+    def columns(self) -> list[str]:
+        """
+        Columns of the object
+
+        Returns
+        -------
+        list[str]
+        """
+        return list(self.column_var_type_map)
+
+    @typechecked
+    def preview_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the transformation output
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        Returns
+        -------
+        str
+        """
+        return self.frame.preview_sql(limit=limit)
 
     @typechecked
     def preview_clean_data_sql(self, limit: int = 10) -> str:
@@ -157,7 +226,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         -------
         str
         """
-        return self._preview_sql(limit=limit, after_cleaning=True)
+        return self.frame.preview_sql(limit=limit, after_cleaning=True)
 
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False, **kwargs: Any) -> pd.DataFrame:
@@ -177,7 +246,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         -------
         pd.DataFrame
         """
-        return super().preview(limit=limit, after_cleaning=after_cleaning, **kwargs)  # type: ignore[misc]
+        return self.frame.preview(limit=limit, after_cleaning=after_cleaning, **kwargs)  # type: ignore[misc]
 
     @typechecked
     def sample(
@@ -211,7 +280,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         -------
         pd.DataFrame
         """
-        return super().sample(  # type: ignore[misc]
+        return self.frame.sample(  # type: ignore[misc]
             size=size,
             seed=seed,
             from_timestamp=from_timestamp,
@@ -252,7 +321,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         -------
         pd.DataFrame
         """
-        return super().describe(  # type: ignore[misc]
+        return self.frame.describe(  # type: ignore[misc]
             size=size,
             seed=seed,
             from_timestamp=from_timestamp,
@@ -262,7 +331,7 @@ class AbstractTableDataFrame(BaseFrame, ConstructGraphMixin, FeatureByteBaseMode
         )
 
 
-class DatabaseTable(GenericTableData, AbstractTableDataFrame):
+class DatabaseTable(GenericTableData, AbstractTableData):
     """
     DatabaseTable class to preview table
     """

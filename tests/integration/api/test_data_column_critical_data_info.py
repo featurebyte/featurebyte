@@ -31,7 +31,7 @@ def test_event_data_update_critical_data_info(event_data):
         "àdd",
         "nan",
     }
-    assert event_data.node.type == "input"
+    assert event_data.frame.node.type == "input"
     event_data["ÀMOUNT"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),
@@ -54,7 +54,7 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.CUST_ID.update_critical_data_info(
         cleaning_operations=[StringValueImputation(imputed_value=0)]
     )
-    assert event_data.node.type == "input"
+    assert event_data.frame.node.type == "input"
 
     # create feature group & preview
     event_view = EventView.from_event_data(event_data)
@@ -128,11 +128,11 @@ def test_event_data_update_critical_data_info(event_data):
 def test_item_data_update_critical_data_info(item_data):
     """Test ItemData with critical data info preview & feature preview"""
     # add critical data info to item_type column & check data preview
-    assert item_data.node.type == "input"
+    assert item_data.frame.node.type == "input"
     item_data["item_type"].update_critical_data_info(
         cleaning_operations=[MissingValueImputation(imputed_value="missing_item")]
     )
-    assert item_data.node.type == "input"
+    assert item_data.frame.node.type == "input"
     _ = item_data.preview()
 
     # check feature & preview
@@ -178,4 +178,4 @@ def test_item_data_update_critical_data_info(item_data):
 
     # remove critical data info
     item_data["item_type"].update_critical_data_info(cleaning_operations=[])
-    assert item_data.node.type == "input"
+    assert item_data.frame.node.type == "input"

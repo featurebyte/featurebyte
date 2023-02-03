@@ -119,7 +119,7 @@ class QueryObject(FeatureByteBaseModel):
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
     @typechecked
-    def preview_sql(self, limit: int = 10) -> str:
+    def preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
         """
         Generate SQL query to preview the transformation output
 
@@ -127,12 +127,14 @@ class QueryObject(FeatureByteBaseModel):
         ----------
         limit: int
             maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------
         str
         """
-        return self._preview_sql(limit=limit)
+        return self._preview_sql(limit=limit, **kwargs)
 
     def copy(
         self: QueryObjectT,
