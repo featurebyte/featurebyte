@@ -8,6 +8,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+import pytz
 
 from featurebyte import (
     AggFunc,
@@ -1016,3 +1017,41 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
         "üser id": 1,
         "LATEST_EVENT_TIMESTAMP_BY_USER": pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC"),
     }
+
+
+def test_event_view_lookup_features(event_data, transaction_data_upper_case):
+    """
+    Test lookup features from EventView are time based
+    """
+    event_view = EventView.from_event_data(event_data)
+    feature = event_view["ÀMOUNT"].as_feature("Amount Feature")
+
+    df = transaction_data_upper_case
+    event_id = "T42"
+    event_row = df[df["TRANSACTION_ID"] == event_id].iloc[0]
+    event_timestamp = event_row["ËVENT_TIMESTAMP"].astimezone(pytz.utc).replace(tzinfo=None)
+
+    # Lookup from event should be time based - value is NA is point in time is prior to event time
+    ts_before_event = event_timestamp - pd.Timedelta("7d")
+    ts_after_event = event_timestamp + pd.Timedelta("7d")
+    expected_amount_if_before_event = event_row["ÀMOUNT"]
+    # Make sure to pick a non-na value to test meaningfully
+    assert not np.isnan(expected_amount_if_before_event)
+
+    # Point in time before event time - non-NA
+    df = feature.preview({"POINT_IN_TIME": ts_before_event, "order_id": event_id})
+    expected = {
+        "POINT_IN_TIME": ts_before_event,
+        "order_id": event_id,
+        "Amount Feature": expected_amount_if_before_event,
+    }
+    assert df.iloc[0].to_dict() == expected
+
+    # Point in time after event time - NA
+    df = feature.preview({"POINT_IN_TIME": ts_after_event, "order_id": event_id})
+    expected = {
+        "POINT_IN_TIME": ts_after_event,
+        "order_id": event_id,
+        "Amount Feature": np.nan,
+    }
+    assert df.iloc[0].to_dict() == expected

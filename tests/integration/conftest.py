@@ -905,6 +905,7 @@ def create_transactions_event_data_from_feature_store(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
+    event_data["TRANSACTION_ID"].as_entity("Order")
     event_data["ÜSER ID"].as_entity("User")
     event_data["PRODUCT_ACTION"].as_entity("ProductAction")
     event_data["CUST_ID"].as_entity("Customer")
@@ -920,11 +921,13 @@ def snowflake_event_data_fixture(
     user_entity,
     product_action_entity,
     customer_entity,
+    order_entity,
 ):
     """Fixture for an EventData in integration tests"""
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
+    _ = order_entity
     event_data = create_transactions_event_data_from_feature_store(
         snowflake_feature_store,
         database_name=snowflake_session.database,
