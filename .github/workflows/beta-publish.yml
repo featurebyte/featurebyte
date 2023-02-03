@@ -75,7 +75,7 @@ jobs:
           password: ${{ secrets.BETA_DOCKER_CREDENTIALS_RW_B64 }}
 
       - name: Build & Tag & Push Image to Beta
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           push: true
           file: docker/Dockerfile
