@@ -794,6 +794,20 @@ def event_lookup_node_fixture(global_graph, event_data_input_node, entity_id):
     return lookup_node
 
 
+@pytest.fixture(name="event_lookup_feature_node")
+def event_lookup_feature_node_fixture(global_graph, event_lookup_node):
+    """
+    Fixture of a lookup feature from EventData
+    """
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["Order Method"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(event_lookup_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="scd_lookup_node_parameters")
 def scd_lookup_node_parameters_fixture(entity_id):
     return {
