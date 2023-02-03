@@ -19,11 +19,11 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import ItemTableData
+from featurebyte.query_graph.model.table import FrozenItemTableData, ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 
-class ItemData(ItemTableData, FrozenDataModel, DataApiObject):
+class ItemData(FrozenItemTableData, FrozenDataModel, DataApiObject):
     """
     ItemData class
     """
@@ -49,6 +49,7 @@ class ItemData(ItemTableData, FrozenDataModel, DataApiObject):
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
+            columns_info_key="int_columns_info",
             expected_column_field_name_type_pairs=[
                 ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
                 ("int_event_id_column", DBVarType.supported_id_types()),

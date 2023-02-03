@@ -5,14 +5,16 @@ from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, parse_obj_as
+from pydantic import Field, StrictStr, parse_obj_as, validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.model.column_info import ColumnInfo, validate_columns_info
 from featurebyte.query_graph.model.common_table import (
     DATA_TABLES,
     SPECIFIC_DATA_TABLES,
     BaseTableData,
+    FrozenTableData,
 )
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
@@ -34,8 +36,8 @@ class GenericTableData(BaseTableData):
         )
 
 
-class EventTableData(BaseTableData):
-    """EventTableData class"""
+class FrozenEventTableData(FrozenTableData):
+    """FrozenEventTableData class"""
 
     type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -61,8 +63,17 @@ class EventTableData(BaseTableData):
         )
 
 
-class ItemTableData(BaseTableData):
-    """ItemTableData class"""
+class EventTableData(FrozenEventTableData, BaseTableData):
+    """EventTableData class"""
+
+    columns_info: List[ColumnInfo]
+
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
+
+
+class FrozenItemTableData(FrozenTableData):
+    """FrozenItemTableData class"""
 
     type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -88,8 +99,17 @@ class ItemTableData(BaseTableData):
         )
 
 
-class DimensionTableData(BaseTableData):
-    """DimensionTableData class"""
+class ItemTableData(FrozenItemTableData, BaseTableData):
+    """ItemTableData class"""
+
+    columns_info: List[ColumnInfo]
+
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
+
+
+class FrozenDimensionTableData(FrozenTableData):
+    """FrozenDimensionTableData class"""
 
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -111,8 +131,17 @@ class DimensionTableData(BaseTableData):
         )
 
 
-class SCDTableData(BaseTableData):
-    """SCDTableData class"""
+class DimensionTableData(FrozenDimensionTableData, BaseTableData):
+    """DimensionTableData class"""
+
+    columns_info: List[ColumnInfo]
+
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
+
+
+class FrozenSCDTableData(FrozenTableData):
+    """FrozenSCDTableData class"""
 
     type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -140,6 +169,15 @@ class SCDTableData(BaseTableData):
                 **self._get_common_input_node_parameters(),
             },
         )
+
+
+class SCDTableData(FrozenSCDTableData, BaseTableData):
+    """SCDTableData class"""
+
+    columns_info: List[ColumnInfo]
+
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
 
 
 if TYPE_CHECKING:

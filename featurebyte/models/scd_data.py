@@ -35,6 +35,7 @@ class SCDDataModel(SCDTableData, DataModel):
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
+            columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
                 ("record_creation_date_column", DBVarType.supported_timestamp_types()),
                 ("effective_timestamp_column", DBVarType.supported_timestamp_types()),

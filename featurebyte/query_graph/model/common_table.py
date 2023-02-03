@@ -1,9 +1,9 @@
 """
 This module contains common table related models.
 """
-from typing import Any, Dict, Iterable, List, Literal, Optional, cast
+from typing import Any, ClassVar, Dict, Iterable, List, Literal, Optional, cast
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from pydantic import validator
 
@@ -44,22 +44,8 @@ class FrozenTableData(FeatureByteBaseModel):
     ]
     tabular_source: TabularSource
 
-
-class BaseTableData(FrozenTableData):
-    """Base data model used to capture input node info"""
-
-    columns_info: List[ColumnInfo]
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
-
-    def __init_subclass__(cls, **kwargs: Any):
-        # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
-        table_type = cls.__fields__["type"]
-        if repr(table_type.type_).startswith("typing.Literal"):
-            DATA_TABLES.append(cls)
-        if table_type.default != TableDataType.GENERIC:
-            SPECIFIC_DATA_TABLES.append(cls)
+    # class variables (to be overriden by subclass' pydantic instance variable or property method)
+    columns_info: ClassVar[List[ColumnInfo]]
 
     def _get_common_input_node_parameters(self) -> Dict[str, Any]:
         return {
@@ -186,3 +172,20 @@ class BaseTableData(FrozenTableData):
         -------
         InputNode
         """
+
+
+class BaseTableData(FrozenTableData, ABC):
+    """Base data model used to capture input node info"""
+
+    columns_info: List[ColumnInfo]
+
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
+
+    def __init_subclass__(cls, **kwargs: Any):
+        # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
+        table_type = cls.__fields__["type"]
+        if repr(table_type.type_).startswith("typing.Literal"):
+            DATA_TABLES.append(cls)
+        if table_type.default != TableDataType.GENERIC:
+            SPECIFIC_DATA_TABLES.append(cls)

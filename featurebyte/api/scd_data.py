@@ -16,11 +16,11 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.table import SCDTableData
+from featurebyte.query_graph.model.table import FrozenSCDTableData, SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
-class SlowlyChangingData(SCDTableData, FrozenDataModel, DataApiObject):
+class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
     """
     SlowlyChangingData class
     """
@@ -46,6 +46,7 @@ class SlowlyChangingData(SCDTableData, FrozenDataModel, DataApiObject):
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
+            columns_info_key="int_columns_info",
             expected_column_field_name_type_pairs=[
                 ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
                 ("natural_key_column", DBVarType.supported_id_types()),

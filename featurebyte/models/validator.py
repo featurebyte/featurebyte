@@ -7,6 +7,7 @@ from featurebyte.enum import DBVarType
 
 
 def construct_data_model_root_validator(
+    columns_info_key: str,
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
 ) -> Any:
     """
@@ -14,6 +15,8 @@ def construct_data_model_root_validator(
 
     Parameters
     ----------
+    columns_info_key: str
+        Column info key name
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]]
         List of expected column name & type pairs (if type is None, type check will be skipped)
 
@@ -24,7 +27,7 @@ def construct_data_model_root_validator(
 
     def _root_validator(cls, values: dict[str, Any]) -> dict[str, Any]:
         _ = cls
-        columns_info = values["columns_info"]
+        columns_info = values[columns_info_key]
         col_info_map = {}
         for col_info in columns_info:
             col_dict = dict(col_info)

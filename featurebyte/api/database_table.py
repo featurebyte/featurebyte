@@ -56,10 +56,15 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     AbstractTableDataFrame class represents the table data.
     """
 
-    columns_info: List[ColumnInfo]
+    # class variables
+    _table_data_class: ClassVar[Type[AllTableDataT]]
+
+    # pydantic instance variable (public)
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-    _table_data_class: ClassVar[Type[AllTableDataT]]
+
+    # pydantic instance variable (internal use)
+    int_columns_info: List[ColumnInfo] = Field(alias="columns_info")
 
     @root_validator(pre=True)
     @classmethod
@@ -337,3 +342,7 @@ class DatabaseTable(GenericTableData, AbstractTableData):
     """
 
     _table_data_class = GenericTableData
+
+    @property
+    def columns_info(self) -> List[ColumnInfo]:
+        return self.int_columns_info

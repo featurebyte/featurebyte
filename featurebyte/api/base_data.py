@@ -97,6 +97,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         self.parent.update(
             update_payload={"columns_info": self._prepare_columns_info(column_info)},
             allow_update_local=True,
+            add_key_prefix=True,
         )
         self.info = column_info
 
@@ -145,6 +146,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         self.parent.update(
             update_payload={"columns_info": self._prepare_columns_info(column_info)},
             allow_update_local=True,
+            add_key_prefix=True,
         )
         self.info = column_info
 
@@ -230,7 +232,16 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
+    # pydantic instance variable (internal use)
+    int_columns_info: List[ColumnInfo] = Field(alias="columns_info")
     int_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
+
+    @property
+    def columns_info(self) -> List[ColumnInfo]:
+        try:
+            return self.cached_model.columns_info
+        except RecordRetrievalException:
+            return self.int_columns_info
 
     @property
     def status(self):

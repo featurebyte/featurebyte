@@ -17,11 +17,11 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import DimensionTableData
+from featurebyte.query_graph.model.table import DimensionTableData, FrozenDimensionTableData
 from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionDataUpdate
 
 
-class DimensionData(DimensionTableData, FrozenDataModel, DataApiObject):
+class DimensionData(FrozenDimensionTableData, FrozenDataModel, DataApiObject):
     """
     DimensionData class
     """
@@ -41,6 +41,7 @@ class DimensionData(DimensionTableData, FrozenDataModel, DataApiObject):
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
+            columns_info_key="int_columns_info",
             expected_column_field_name_type_pairs=[
                 ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
                 ("int_dimension_id_column", DBVarType.supported_id_types()),

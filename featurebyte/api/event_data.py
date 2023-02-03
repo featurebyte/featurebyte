@@ -22,12 +22,12 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import EventTableData
+from featurebyte.query_graph.model.table import EventTableData, FrozenEventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
 
-class EventData(EventTableData, FrozenDataModel, DataApiObject):
+class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
     """
     EventData class
     """
@@ -51,6 +51,7 @@ class EventData(EventTableData, FrozenDataModel, DataApiObject):
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
+            columns_info_key="int_columns_info",
             expected_column_field_name_type_pairs=[
                 ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
                 ("int_event_timestamp_column", DBVarType.supported_timestamp_types()),
@@ -58,13 +59,6 @@ class EventData(EventTableData, FrozenDataModel, DataApiObject):
             ],
         )
     )
-
-    @property
-    def sync_columns_info(self):
-        try:
-            return self.cached_model.columns_info
-        except RecordRetrievalException:
-            return self.columns_info
 
     @property
     def default_feature_job_setting(self):
