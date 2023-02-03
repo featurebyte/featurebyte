@@ -33,6 +33,7 @@ class EntityInfo(FeatureByteBaseModel):
     provided_entities: List[EntityModel]
 
     @validator("required_entities", "provided_entities")
+    @classmethod
     def _deduplicate_entities(cls, val: List[EntityModel]) -> List[EntityModel]:
         entities_dict: dict[ObjectId, EntityModel] = {}
         for entity in val:
@@ -101,6 +102,25 @@ class EntityValidationService(BaseService):
         request_column_names: set[str],
         serving_names_mapping: dict[str, str] | None = None,
     ) -> EntityInfo:
+        """
+        Create an EntityInfo instance given graph and request
+
+        Parameters
+        ----------
+        graph : QueryGraphModel
+            Query graph
+        nodes : list[Node]
+            List of query graph node
+        request_column_names: set[str]
+            Column names provided in the request
+        serving_names_mapping : dict[str, str] | None
+            Optional serving names mapping if the entities are provided under different serving
+            names in the request
+
+        Returns
+        -------
+        EntityInfo
+        """
 
         # serving_names_mapping: original serving names to overridden serving name
         # inv_serving_names_mapping: overridden serving name to original serving name
@@ -138,6 +158,21 @@ class EntityValidationService(BaseService):
         request_column_names: set[str],
         serving_names_mapping: dict[str, str] | None = None,
     ) -> None:
+        """
+        Validate that entities are provided correctly in feature requests
+
+        Parameters
+        ----------
+        graph : QueryGraphModel
+            Query graph
+        nodes : list[Node]
+            List of query graph node
+        request_column_names: set[str]
+            Column names provided in the request
+        serving_names_mapping : dict[str, str] | None
+            Optional serving names mapping if the entities are provided under different serving
+            names in the request
+        """
 
         entity_info = await self.get_entity_info_from_request(
             graph=graph,

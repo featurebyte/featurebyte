@@ -61,6 +61,8 @@ def relationships(b_is_parent_of_a, c_is_parent_of_b):
     """
     Fixture to register all relationships
     """
+    _ = b_is_parent_of_a
+    _ = c_is_parent_of_b
     yield
 
 
@@ -103,6 +105,8 @@ async def test_entity_service__get_children(
     """
     Test get_children (should get immediate children only)
     """
+    _ = relationships
+
     children = await entity_service.get_children_entities(entity_b.id)
     assert [child.id for child in children] == [entity_a.id]
 

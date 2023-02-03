@@ -1,3 +1,6 @@
+"""
+Unit tests for EntityValidationService
+"""
 import pytest
 
 from featurebyte.exception import RequiredEntityNotProvidedError
