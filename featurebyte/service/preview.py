@@ -262,11 +262,6 @@ class PreviewService(BaseService):
         -------
         dict[str, Any]
             Dataframe converted to json string
-
-        Raises
-        ------
-        KeyError
-            Invalid point_in_time_and_serving_name payload
         """
         graph = feature_preview.graph
         feature_node = graph.get_node_by_name(feature_preview.node_name)
