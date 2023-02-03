@@ -31,7 +31,9 @@ from featurebyte.query_graph.node.schema import TableDetails
 
 class TableDataFrame(BaseFrame):
     """
-    TableDataFrame class is used to construct query for table data object.
+    TableDataFrame class is a frame encapsulation of the table data objects (like event data, item data).
+    This class is used to construct the query graph for previewing/sampling underlying table stored at the
+    data warehouse. The constructed query graph is stored locally (not loaded into the global query graph).
     """
 
     table_data: BaseTableData
@@ -147,6 +149,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         -------
         TableDataFrame
         """
+        # Note that the constructed query graph WILL NOT BE INSERTED into the global query graph.
+        # Only when the view is constructed, the local query graph (constructed by data object) is then loaded
+        # into the global query graph.
         graph, node = self.construct_graph_and_node(
             feature_store_details=self.feature_store.get_feature_store_details(),
             table_data_dict=self.table_data.dict(by_alias=True),
