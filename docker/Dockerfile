@@ -32,7 +32,7 @@ RUN poetry config virtualenvs.create false && \
 # copy featurebyte
 COPY ./dist            /app/dist
 
-RUN pip install jupyterlab && \
+RUN pip install jupyterlab==3.5.3 && \
     pip install --no-index -f /app/dist featurebyte && \
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD && \
     unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME && \
