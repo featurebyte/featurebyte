@@ -127,6 +127,8 @@ class QueryObject(FeatureByteBaseModel):
         ----------
         limit: int
             maximum number of return rows
+        **kwargs: Any
+            Additional keyword parameters
 
         Returns
         -------

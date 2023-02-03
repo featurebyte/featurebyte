@@ -228,10 +228,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ViewT
             constructed View object
         """
-        assert isinstance(data.frame.node, InputNode)
         global_graph, node_name_map = GlobalQueryGraph().load(data.frame.graph)
         node_name = node_name_map[data.frame.node.name]
         data_node = global_graph.get_node_by_name(node_name=node_name)
+        assert isinstance(data_node, InputNode)
         graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data_node)
         if graph_node:
             inserted_graph_node = GlobalQueryGraph().add_node(
