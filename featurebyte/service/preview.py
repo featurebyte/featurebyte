@@ -413,6 +413,7 @@ class PreviewService(BaseService):
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_column_names=request_column_names,
+            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
 
         db_session = await self.session_manager_service.get_feature_store_session(
