@@ -101,6 +101,7 @@ $$
     snowflake.execute({sqlText: audit_insert_sql.replace("<STATUS>", "MONITORED").replace("<MESSAGE>", "")})
 
     // trigger stored procedure to generate tiles
+    // replace SQL template with start and end date strings for tile generation sql
     var generate_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+tile_end_ts_str+"''")
 
     var last_tile_start_ts = new Date(tile_end_ts.getTime())

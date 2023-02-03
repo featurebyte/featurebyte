@@ -13,6 +13,7 @@ from featurebyte import (
     SlowlyChangingData,
     SlowlyChangingView,
 )
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 def get_expected_scd_join_result(
@@ -179,7 +180,7 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
-        "count_7d": '{\n  "STÀTUS_CODE_12": 2,\n  "STÀTUS_CODE_3": 1,\n  "STÀTUS_CODE_46": 10,\n  "STÀTUS_CODE_48": 5\n}',
+        "count_7d": '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}',
     }
 
 
@@ -233,10 +234,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert (
-        preview_output["count_7d"]
-        == '{\n  "STÀTUS_CODE_12": 2,\n  "STÀTUS_CODE_3": 1,\n  "STÀTUS_CODE_46": 10,\n  "STÀTUS_CODE_48": 5\n}'
-    )
+    assert preview_output["count_7d"] == '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
 
 
 def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
@@ -304,6 +302,52 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     pd.testing.assert_frame_equal(df, expected)
 
 
+def test_aggregate_asat__no_entity(scd_data, scd_dataframe, config):
+    """
+    Test aggregate_asat aggregation on SlowlyChangingView without entity
+    """
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    feature = scd_view.groupby([]).aggregate_asat(
+        method="count", feature_name="Current Number of Users"
+    )
+
+    # check preview
+    df = feature.preview(
+        {
+            "POINT_IN_TIME": "2001-10-25 10:00:00",
+        }
+    )
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
+        "Current Number of Users": 9,
+    }
+    assert df.iloc[0].to_dict() == expected
+
+    # check historical features
+    feature_list = FeatureList([feature], "feature_list")
+    observations_set = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
+        }
+    )
+    expected = observations_set.copy()
+    expected["Current Number of Users"] = [8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
+    df = feature_list.get_historical_features(observations_set)
+    df = df.sort_values("POINT_IN_TIME").reset_index(drop=True)
+    pd.testing.assert_frame_equal(df, expected)
+
+    # check online serving
+    feature_list.save()
+    feature_list.deploy(enable=True, make_production_ready=True)
+    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"row_number": 1}])
+    res = config.get_client().post(
+        f"/feature_list/{str(feature_list.id)}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 200
+    assert res.json() == {"features": [{"row_number": 1, "Current Number of Users": 9}]}
+
+
 @pytest.fixture(name="snowflake_scd_data_with_minimal_cols", scope="session")
 def snowflake_scd_data_fixture_with_minimal_cols(scd_data_tabular_source):
     """
@@ -349,7 +393,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2002-01-01 10:00:00"),
         "user_status": "STÀTUS_CODE_47",
-        "count_30d": 15,
+        "count_30d": 7,
     }
     feature_list.preview(preview_param)
     df = feature_list.preview(preview_param)

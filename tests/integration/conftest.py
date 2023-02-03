@@ -402,7 +402,7 @@ def scd_dataframe_fixture(transaction_data):
     """
     rng = np.random.RandomState(0)  # pylint: disable=no-member
 
-    natural_key_values = transaction_data["üser id"].unique()
+    natural_key_values = sorted(transaction_data["üser id"].unique())
     dates = pd.to_datetime(transaction_data["ëvent_timestamp"], utc=True).dt.floor("d")
     effective_timestamp_values = pd.date_range(dates.min(), dates.max())
     # Add variations at hour level

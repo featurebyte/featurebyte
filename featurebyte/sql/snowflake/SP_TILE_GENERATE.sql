@@ -36,13 +36,25 @@ $$
     var tile_sql = SQL.replaceAll("'", "''")
     snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${VALUE_COLUMN_TYPES}', '${tile_id}', '${tile_id}', '${tile_exist}')`})
 
-    //replace SQL template with start and end date strings for tile generation sql
+    if (ENTITY_COLUMN_NAMES) {
+        entity_column_names_select_str = `${ENTITY_COLUMN_NAMES},`
+    } else {
+        entity_column_names_select_str = ""
+    }
     tile_sql = `
         select
-            F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
-            ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES},
-            SYSDATE() as CREATED_AT
-        from (${SQL})
+          F_TIMESTAMP_TO_INDEX(
+            ${TILE_START_DATE_COLUMN},
+            ${TIME_MODULO_FREQUENCY_SECOND},
+            ${BLIND_SPOT_SECOND},
+            ${FREQUENCY_MINUTE}
+          ) as INDEX,
+          ${entity_column_names_select_str}
+          ${VALUE_COLUMN_NAMES},
+          SYSDATE() as CREATED_AT
+        from (
+          ${SQL}
+        )
     `
 
     if (tile_exist === "N") {
@@ -73,14 +85,25 @@ $$
         value_insert_cols_str = value_insert_cols.join(",")
         value_update_cols_str = value_update_cols.join(",")
 
+        if (ENTITY_COLUMN_NAMES) {
+            on_condition_str = `a.INDEX = b.INDEX AND ${entity_filter_cols_str}`
+            insert_str = `INDEX, ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}, CREATED_AT`
+            values_str = `b.INDEX, ${entity_insert_cols_str}, ${value_insert_cols_str}, SYSDATE()`
+        }
+        else {
+            on_condition_str = `a.INDEX = b.INDEX`
+            insert_str = `INDEX, ${VALUE_COLUMN_NAMES}, CREATED_AT`
+            values_str = `b.INDEX, ${value_insert_cols_str}, SYSDATE()`
+        }
+
         var tile_insert_sql = `
             merge into ${tile_id} a using (${tile_sql}) b
-                on a.INDEX = b.INDEX AND ${entity_filter_cols_str}
+                on ${on_condition_str}
                 when matched then
                     update set a.CREATED_AT = SYSDATE(), ${value_update_cols_str}
                 when not matched then
-                    insert (INDEX, ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}, CREATED_AT)
-                        values (b.INDEX, ${entity_insert_cols_str}, ${value_insert_cols_str}, SYSDATE())
+                    insert (${insert_str})
+                        values (${values_str})
         `
         snowflake.execute({sqlText: tile_insert_sql})
         debug = debug + " - tile_insert_sql: " + tile_insert_sql
