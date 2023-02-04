@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Start notebook
 echo "Storing notebooks in directory: ~/.featurebyte/notebook"
 if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir /app/.featurebyte/notebook; fi
 
@@ -30,7 +29,7 @@ echo ""
 
 source /app/.venv/bin/activate
 
-# start featurebyte service (Long running process, CTRL+C to stop)
+# Start notebook (Long running process, CTRL+C to stop)
 echo "Starting jupyter notebook"
 jupyter-lab \
     --notebook-dir=/app/.featurebyte/notebook \
