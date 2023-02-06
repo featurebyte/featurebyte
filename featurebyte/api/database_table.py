@@ -10,7 +10,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field, root_validator
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.config import Configurations
