@@ -262,9 +262,9 @@ class ChangeView(View, GroupByMixin):
             col_names.previous_valid_from_column_name,
         )
         change_view[new_ts_col] = change_view[scd_data.effective_timestamp_column]  # type: ignore
-        change_view[past_ts_col] = change_view[scd_data.effective_timestamp_column].lag(
+        change_view[past_ts_col] = change_view[scd_data.effective_timestamp_column].lag(  # type: ignore
             change_view.natural_key_column
-        )  # type: ignore
+        )
 
         new_col_name, past_col_name = (
             col_names.new_tracked_column_name,
