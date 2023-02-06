@@ -3,7 +3,7 @@ Module for data structures that describe different types of aggregations that fo
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any, List, Optional, Type, TypeVar, cast
 
 import hashlib
 import json
@@ -54,6 +54,7 @@ class AggregationSpec(ABC):
     Base class of all aggregation specifications
     """
 
+    entity_ids: list[ObjectId]
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
 
@@ -108,7 +109,6 @@ class TileBasedAggregationSpec(AggregationSpec):
     feature_name: str
     is_order_dependent: bool
     tile_value_columns: list[str]
-    entity_ids: list[ObjectId]
 
     @property
     def agg_result_name(self) -> str:
@@ -368,6 +368,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         assert isinstance(node, ItemGroupbyNode)
         return [
             ItemAggregationSpec(
+                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parameters=node.parameters,
@@ -426,6 +427,7 @@ class AggregateAsAtSpec(NonTileBasedAggregationSpec):
             AggregateAsAtSpec(
                 parameters=node.parameters,
                 source_expr=source_expr,
+                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
             )
@@ -478,6 +480,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
                 input_column_name=input_column_name,
                 feature_name=feature_name,
                 entity_column=params.entity_column,
+                entity_ids=[params.entity_id],
                 serving_names=[params.serving_name],
                 serving_names_mapping=serving_names_mapping,
                 source_expr=source_expr,

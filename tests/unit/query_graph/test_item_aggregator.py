@@ -4,6 +4,7 @@ Unit tests for featurebyte.query_graph.sql.aggregator.item.ItemAggregator
 import textwrap
 
 import pytest
+from bson import ObjectId
 from sqlglot.expressions import select
 
 from featurebyte.enum import SourceType
@@ -30,6 +31,7 @@ def aggregation_spec_order_size(item_table_sql):
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
         source_expr=item_table_sql,
+        entity_ids=[ObjectId()],
     )
 
 
@@ -47,6 +49,7 @@ def aggregation_spec_max_item_price(item_table_sql):
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
         source_expr=item_table_sql,
+        entity_ids=[ObjectId()],
     )
 
 
@@ -65,6 +68,7 @@ def aggregation_spec_with_category(item_table_sql):
         serving_names_mapping={"serving_order_id": "new_serving_order_id"},
         parameters=params,
         source_expr=item_table_sql,
+        entity_ids=[ObjectId()],
     )
 
 

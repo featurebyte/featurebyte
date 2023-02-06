@@ -15,7 +15,7 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
     REQ."POINT_IN_TIME",
     "T0"."agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
     "T0"."agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "agg_w7200_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489",
-    "T1"."count_None_99a214e3edd7fa51" AS "count_None_99a214e3edd7fa51"
+    "T1"."count_None_5e7639945a1797b3" AS "count_None_5e7639945a1797b3"
   FROM ONLINE_MY_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
@@ -28,7 +28,7 @@ WITH ONLINE_MY_REQUEST_TABLE AS (
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
-      COUNT(*) AS "count_None_99a214e3edd7fa51"
+      COUNT(*) AS "count_None_5e7639945a1797b3"
     FROM "REQUEST_TABLE_order_id" AS REQ
     INNER JOIN (
       SELECT
@@ -48,5 +48,5 @@ SELECT
   AGG."CUSTOMER_ID",
   AGG."order_id",
   "agg_w172800_avg_833762b783166cd0980c65b9e3f3c7c6b9dcd489" AS "a_48h_average",
-  "count_None_99a214e3edd7fa51" AS "order_size"
+  "count_None_5e7639945a1797b3" AS "order_size"
 FROM _FB_AGGREGATED AS AGG

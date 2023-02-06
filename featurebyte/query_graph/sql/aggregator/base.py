@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
@@ -62,6 +63,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         self.adapter = get_sql_adapter(source_type)
         self.is_online_serving = is_online_serving
         self.required_serving_names: set[str] = set()
+        self.required_entity_ids: set[ObjectId] = set()
 
     def get_required_serving_names(self) -> set[str]:
         """
@@ -73,6 +75,16 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         """
         return self.required_serving_names.copy()
 
+    def get_required_entity_ids(self) -> set[ObjectId]:
+        """
+        Get the set of required entity ids
+
+        Returns
+        -------
+        set[ObjectId]
+        """
+        return self.required_entity_ids.copy()
+
     def update(self, aggregation_spec: AggregationSpecT) -> None:
         """
         Update internal states given an AggregationSpec
@@ -83,6 +95,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             Aggregation specification
         """
         self.required_serving_names.update(aggregation_spec.serving_names)
+        self.required_entity_ids.update(aggregation_spec.entity_ids)
         self.additional_update(aggregation_spec)
 
     @abstractmethod

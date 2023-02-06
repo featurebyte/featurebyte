@@ -16,6 +16,7 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import (
     FeatureListNotOnlineEnabledError,
     MissingPointInTimeColumnError,
+    RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -215,7 +216,7 @@ class FeatureListController(
             return await self.preview_service.preview_featurelist(
                 featurelist_preview=featurelist_preview, get_credential=get_credential
             )
-        except KeyError as exc:
+        except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
@@ -254,7 +255,11 @@ class FeatureListController(
                 featurelist_get_historical_features=featurelist_get_historical_features,
                 get_credential=get_credential,
             )
-        except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:
+        except (
+            MissingPointInTimeColumnError,
+            TooRecentPointInTimeError,
+            RequiredEntityNotProvidedError,
+        ) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc

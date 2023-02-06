@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 
-from featurebyte.exception import FeatureListNotOnlineEnabledError
+from featurebyte.exception import FeatureListNotOnlineEnabledError, RequiredEntityNotProvidedError
 
 
 @pytest.fixture
@@ -34,6 +34,23 @@ async def test_feature_list_not_deployed(
             get_credential=Mock(),
         )
     assert str(exc.value) == "Feature List is not online enabled"
+
+
+@pytest.mark.asyncio
+async def test_missing_entity_error(online_serving_service, deployed_feature_list):
+    """
+    Test requesting online features when an required entity is not provided
+    """
+    with pytest.raises(RequiredEntityNotProvidedError) as exc:
+        await online_serving_service.get_online_features_from_feature_list(
+            feature_list=deployed_feature_list,
+            entity_serving_names=[{"wrong_entity": 123}],
+            get_credential=Mock(),
+        )
+    expected = (
+        'Required entities are not provided in the request: customer (serving name: "cust_id")'
+    )
+    assert str(exc.value) == expected
 
 
 @pytest.mark.asyncio

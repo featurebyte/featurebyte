@@ -77,6 +77,14 @@ def input_details_fixture(request):
     return input_details
 
 
+@pytest.fixture(name="entity_id")
+def entity_id_fixture():
+    """
+    Fixture of an entity_id
+    """
+    return ObjectId("63dbe68cd918ef71acffd127")
+
+
 @pytest.fixture(name="input_node")
 def input_node_fixture(global_graph, input_details):
     """Fixture of a query with some operations ready to run groupby"""
@@ -569,13 +577,14 @@ def order_size_feature_join_node_fixture(
 
 
 @pytest.fixture(name="order_size_agg_by_cust_id_graph")
-def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_join_node):
+def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_join_node, entity_id):
     """
     Fixture of a groupby node using a non-time aware feature as the parent
     """
     node_params = {
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
+        "entity_ids": [entity_id],
         "value_by": None,
         "parent": "ord_size",
         "agg_func": "avg",
@@ -619,7 +628,9 @@ def item_data_join_event_data_with_renames_node_fixture(
 
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations")
 def mixed_point_in_time_and_item_aggregations_fixture(
-    query_graph_with_groupby, item_data_input_node
+    query_graph_with_groupby,
+    item_data_input_node,
+    entity_id,
 ):
     """
     Fixture for a graph with both point in time and item (non-time aware) aggregations
@@ -628,6 +639,7 @@ def mixed_point_in_time_and_item_aggregations_fixture(
     node_params = {
         "keys": ["order_id"],
         "serving_names": ["order_id"],
+        "entity_ids": [entity_id],
         "parent": None,
         "agg_func": "count",
         "name": "order_size",
@@ -699,7 +711,7 @@ def scd_join_node_fixture(
 
 
 @pytest.fixture(name="lookup_node")
-def lookup_node_fixture(global_graph, dimension_data_input_node):
+def lookup_node_fixture(global_graph, dimension_data_input_node, entity_id):
     """
     Fixture of a lookup feature node with multiple features
     """
@@ -708,7 +720,7 @@ def lookup_node_fixture(global_graph, dimension_data_input_node):
         "feature_names": ["CUSTOMER ATTRIBUTE 1", "CUSTOMER ATTRIBUTE 2"],
         "entity_column": "cust_id",
         "serving_name": "CUSTOMER_ID",
-        "entity_id": ObjectId(),
+        "entity_id": entity_id,
     }
     lookup_node = global_graph.add_operation(
         node_type=NodeType.LOOKUP,
@@ -761,13 +773,13 @@ def lookup_feature_node_fixture(global_graph, projected_lookup_features):
 
 
 @pytest.fixture(name="scd_lookup_node_parameters")
-def scd_lookup_node_parameters_fixture():
+def scd_lookup_node_parameters_fixture(entity_id):
     return {
         "input_column_names": ["membership_status"],
         "feature_names": ["Current Membership Status"],
         "entity_column": "cust_id",
         "serving_name": "CUSTOMER_ID",
-        "entity_id": ObjectId(),
+        "entity_id": entity_id,
         "scd_parameters": {
             "effective_timestamp_column": "event_timestamp",
             "natural_key_column": "cust_id",

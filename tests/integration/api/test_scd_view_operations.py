@@ -13,6 +13,7 @@ from featurebyte import (
     SlowlyChangingData,
     SlowlyChangingView,
 )
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
@@ -272,6 +273,17 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     feature = scd_view.groupby("User Status").aggregate_asat(
         method="count", feature_name="Current Number of Users With This Status"
     )
+
+    # check preview but provides children id (not yet supported)
+    with pytest.raises(RecordRetrievalException) as exc:
+        FeatureList([feature], name="mylist").preview(
+            {
+                "POINT_IN_TIME": "2001-10-25 10:00:00",
+                "üser id": 1,
+            }
+        )
+    expected = 'Required entities are not provided in the request: UserStatus (serving name: "user_status")'
+    assert str(exc.value) == expected
 
     # check preview
     df = feature.preview(

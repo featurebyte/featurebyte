@@ -85,6 +85,7 @@ def item_agg_spec_fixture():
         serving_names=["OID"],
         serving_names_mapping=None,
         source_expr=select("*").from_("tab"),
+        entity_ids=[ObjectId()],
     )
     return agg_spec
 

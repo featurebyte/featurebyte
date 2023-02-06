@@ -87,7 +87,7 @@ def update_aggregator(aggregator, specs):
 
 
 def test_lookup_aggregator__offline_dimension_only(
-    offline_lookup_aggregator, dimension_lookup_specs
+    offline_lookup_aggregator, dimension_lookup_specs, entity_id
 ):
     """
     Test lookup aggregator with only dimension lookup
@@ -107,6 +107,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "input_column_name": "cust_value_1",
             "feature_name": "CUSTOMER ATTRIBUTE 1",
             "entity_column": "cust_id",
+            "entity_ids": [entity_id],
             "scd_parameters": None,
         },
         {
@@ -115,6 +116,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "input_column_name": "cust_value_2",
             "feature_name": "CUSTOMER ATTRIBUTE 2",
             "entity_column": "cust_id",
+            "entity_ids": [entity_id],
             "scd_parameters": None,
         },
     ]
@@ -124,7 +126,7 @@ def test_lookup_aggregator__offline_dimension_only(
 
 
 def test_lookup_aggregator__offline_scd_only(
-    offline_lookup_aggregator, scd_lookup_specs_with_current_flag
+    offline_lookup_aggregator, scd_lookup_specs_with_current_flag, entity_id
 ):
     """
     Test lookup aggregator with only scd lookups
@@ -143,6 +145,7 @@ def test_lookup_aggregator__offline_scd_only(
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
+            "entity_ids": [entity_id],
             "serving_names_mapping": None,
             "input_column_name": "membership_status",
             "feature_name": "Current Membership Status",
@@ -161,6 +164,7 @@ def test_lookup_aggregator__offline_scd_only(
 def test_lookup_aggregator__online_with_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_with_current_flag,
+    entity_id,
 ):
     """
     Test lookup aggregator with only scd lookups
@@ -177,6 +181,7 @@ def test_lookup_aggregator__online_with_current_flag(
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
+            "entity_ids": [entity_id],
             "serving_names_mapping": None,
             "input_column_name": "membership_status",
             "feature_name": "Current Membership Status",
@@ -220,6 +225,7 @@ def test_lookup_aggregator__online_with_current_flag(
 def test_lookup_aggregator__online_without_current_flag(
     online_lookup_aggregator,
     scd_lookup_specs_without_current_flag,
+    entity_id,
 ):
     """
     Test lookup aggregator with only scd lookups without a current flag column
@@ -239,6 +245,7 @@ def test_lookup_aggregator__online_without_current_flag(
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
+            "entity_ids": [entity_id],
             "serving_names_mapping": None,
             "input_column_name": "membership_status",
             "feature_name": "Current Membership Status",
@@ -257,6 +264,7 @@ def test_lookup_aggregator__online_without_current_flag(
 def test_lookup_aggregator__online_with_offset(
     online_lookup_aggregator,
     scd_lookup_specs_with_offset,
+    entity_id,
 ):
     """
     Test lookup aggregator with only scd lookups with offset
@@ -276,6 +284,7 @@ def test_lookup_aggregator__online_with_offset(
     assert specs == [
         {
             "serving_names": ["CUSTOMER_ID"],
+            "entity_ids": [entity_id],
             "serving_names_mapping": None,
             "input_column_name": "membership_status",
             "feature_name": "Current Membership Status",

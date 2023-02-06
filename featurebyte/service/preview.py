@@ -3,19 +3,17 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Dict, Tuple, cast
+from typing import Any, AsyncGenerator, Dict, Tuple
 
 import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import DocumentNotFoundError
+from featurebyte.exception import DocumentNotFoundError, MissingPointInTimeColumnError
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
@@ -31,6 +29,7 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
@@ -56,6 +55,7 @@ class PreviewService(BaseService):
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.session_manager_service = session_manager_service
         self.feature_list_service = feature_list_service
+        self.entity_validation_service = EntityValidationService(user=user, persistent=persistent)
 
     async def _get_feature_store_session(
         self, graph: QueryGraph, node_name: str, feature_store_name: str, get_credential: Any
@@ -230,13 +230,13 @@ class PreviewService(BaseService):
 
         Raises
         ------
-        KeyError
+        MissingPointInTimeColumnError
             raised if the point in time column is not provided in the dictionary for a time based feature
         """
         updated = False
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             if is_time_based:
-                raise KeyError(
+                raise MissingPointInTimeColumnError(
                     f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}"
                 )
 
@@ -262,11 +262,6 @@ class PreviewService(BaseService):
         -------
         dict[str, Any]
             Dataframe converted to json string
-
-        Raises
-        ------
-        KeyError
-            Invalid point_in_time_and_serving_name payload
         """
         graph = feature_preview.graph
         feature_node = graph.get_node_by_name(feature_preview.node_name)
@@ -283,13 +278,12 @@ class PreviewService(BaseService):
             point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME], utc=True
         ).tz_localize(None)
 
-        serving_names = []
-        for node in graph.iterate_nodes(target_node=feature_node, node_type=NodeType.GROUPBY):
-            serving_names.extend(cast(GroupbyNode, node).parameters.serving_names)
-
-        for col in sorted(set(serving_names)):
-            if col not in point_in_time_and_serving_name:
-                raise KeyError(f"Serving name not provided: {col}")
+        request_column_names = set(point_in_time_and_serving_name.keys())
+        await self.entity_validation_service.validate_provided_entities(
+            graph=graph,
+            nodes=[feature_node],
+            request_column_names=request_column_names,
+        )
 
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
@@ -349,6 +343,12 @@ class PreviewService(BaseService):
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
         for feature_cluster in featurelist_preview.feature_clusters:
+            request_column_names = set(point_in_time_and_serving_name.keys())
+            await self.entity_validation_service.validate_provided_entities(
+                graph=feature_cluster.graph,
+                nodes=feature_cluster.nodes,
+                request_column_names=request_column_names,
+            )
             feature_store = await self.feature_store_service.get_document(
                 feature_cluster.feature_store_id
             )
@@ -407,6 +407,15 @@ class PreviewService(BaseService):
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
         )
+
+        request_column_names = set(training_events.columns)
+        await self.entity_validation_service.validate_provided_entities(
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            request_column_names=request_column_names,
+            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
+        )
+
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
             get_credential=get_credential,
