@@ -3,8 +3,6 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
-from typing import Set
-
 import functools
 from enum import Enum
 
@@ -140,7 +138,7 @@ class DBVarType(StrEnum):
 
         Returns
         -------
-        Set[DBVarType]
+        set[DBVarType]
         """
         return {cls.TIMESTAMP, cls.TIMESTAMP_TZ}
 
@@ -151,7 +149,7 @@ class DBVarType(StrEnum):
 
         Returns
         -------
-        Set[DBVarType]
+        set[DBVarType]
         """
         return {cls.VARCHAR, cls.INT}
 

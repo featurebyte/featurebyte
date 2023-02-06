@@ -38,6 +38,10 @@ def validate_columns_info(columns_info: List[ColumnInfo]) -> List[ColumnInfo]:
     columns_info: List[ColumnInfo]
         List of columns info used in data table
 
+    Returns
+    -------
+    List[ColumnInfo]
+
     Raises
     ------
     ValueError

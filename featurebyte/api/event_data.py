@@ -21,8 +21,7 @@ from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import EventTableData, FrozenEventTableData
+from featurebyte.query_graph.model.table import AllTableDataT, EventTableData, FrozenEventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
@@ -39,7 +38,7 @@ class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
     _route = "/event_data"
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
-    _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (internal use)
     int_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
@@ -61,21 +60,42 @@ class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
     )
 
     @property
-    def default_feature_job_setting(self):
+    def default_feature_job_setting(self) -> FeatureJobSetting:
+        """
+        Default feature job setting of the EventData
+
+        Returns
+        -------
+        FeatureJobSetting
+        """
         try:
             return self.cached_model.default_feature_job_setting
         except RecordRetrievalException:
             return self.int_default_feature_job_setting
 
     @property
-    def event_timestamp_column(self):
+    def event_timestamp_column(self) -> str:
+        """
+        Event timestamp column name of the EventData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.event_timestamp_column
         except RecordRetrievalException:
             return self.int_event_timestamp_column
 
     @property
-    def event_id_column(self):
+    def event_id_column(self) -> str:
+        """
+        Event ID column name of the EventData associated with the ItemData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.event_id_column
         except RecordRetrievalException:
@@ -84,7 +104,7 @@ class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
     @property
     def timestamp_column(self) -> Optional[str]:
         """
-        Event timestamp column
+        Timestamp column name of the EventData
 
         Returns
         -------

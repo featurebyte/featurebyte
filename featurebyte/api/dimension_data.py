@@ -16,8 +16,11 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import DimensionTableData, FrozenDimensionTableData
+from featurebyte.query_graph.model.table import (
+    AllTableDataT,
+    DimensionTableData,
+    FrozenDimensionTableData,
+)
 from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionDataUpdate
 
 
@@ -33,7 +36,7 @@ class DimensionData(FrozenDimensionTableData, FrozenDataModel, DataApiObject):
     _route = "/dimension_data"
     _update_schema_class = DimensionDataUpdate
     _create_schema_class = DimensionDataCreate
-    _table_data_class: ClassVar[Type[BaseTableData]] = DimensionTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (internal use)
     int_dimension_id_column: StrictStr = Field(alias="dimension_id_column")
@@ -50,7 +53,14 @@ class DimensionData(FrozenDimensionTableData, FrozenDataModel, DataApiObject):
     )
 
     @property
-    def dimension_id_column(self):
+    def dimension_id_column(self) -> str:
+        """
+        Dimension ID column name of the DimensionData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.dimension_id_column
         except RecordRetrievalException:

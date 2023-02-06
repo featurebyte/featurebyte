@@ -535,7 +535,7 @@ def snowflake_item_data_same_event_id_fixture(
 
 
 @pytest.fixture(name="cust_id_entity")
-def cust_id_entity_fixture(customer_entity_id, mock_api_object_cache):
+def cust_id_entity_fixture(customer_entity_id):
     """
     Customer ID entity fixture
     """

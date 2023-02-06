@@ -3,7 +3,7 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional, Type
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
@@ -16,7 +16,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.table import FrozenSCDTableData, SCDTableData
+from featurebyte.query_graph.model.table import AllTableDataT, FrozenSCDTableData, SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
@@ -32,7 +32,7 @@ class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
     _route = "/scd_data"
     _update_schema_class = SCDDataUpdate
     _create_schema_class = SCDDataCreate
-    _table_data_class = SCDTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (internal use)
     int_natural_key_column: StrictStr = Field(alias="natural_key_column")
@@ -59,35 +59,70 @@ class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
     )
 
     @property
-    def natural_key_column(self):
+    def natural_key_column(self) -> str:
+        """
+        Natural key column name of the SlowlyChangingData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.natural_key_column
         except RecordRetrievalException:
             return self.int_natural_key_column
 
     @property
-    def effective_timestamp_column(self):
+    def effective_timestamp_column(self) -> str:
+        """
+        Effective timestamp column name of the SlowlyChangingData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.effective_timestamp_column
         except RecordRetrievalException:
             return self.int_effective_timestamp_column
 
     @property
-    def surrogate_key_column(self):
+    def surrogate_key_column(self) -> Optional[str]:
+        """
+        Surrogate key column name of the SlowlyChangingData
+
+        Returns
+        -------
+        Optional[str]
+        """
         try:
             return self.cached_model.surrogate_key_column
         except RecordRetrievalException:
             return self.int_surrogate_key_column
 
     @property
-    def end_timestamp_column(self):
+    def end_timestamp_column(self) -> Optional[str]:
+        """
+        End timestamp column name of the SlowlyChangingData
+
+        Returns
+        -------
+        Optional[str]
+        """
         try:
             return self.cached_model.end_timestamp_column
         except RecordRetrievalException:
             return self.int_end_timestamp_column
 
     @property
-    def current_flag_column(self):
+    def current_flag_column(self) -> Optional[str]:
+        """
+        Current flag column name of the SlowlyChangingData
+
+        Returns
+        -------
+        Optional[str]
+        """
         try:
             return self.cached_model.current_flag_column
         except RecordRetrievalException:
@@ -96,7 +131,7 @@ class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
     @property
     def timestamp_column(self) -> Optional[str]:
         """
-        Effective timestamp column
+        Timestamp column name of the SlowlyChangingData
 
         Returns
         -------

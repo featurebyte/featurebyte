@@ -10,7 +10,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field, root_validator
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.config import Configurations
@@ -61,7 +61,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     """
 
     # class variables
-    _table_data_class: ClassVar[Type[AllTableDataT]]
+    _table_data_class: ClassVar[Type[AllTableDataT]]  # pylint: disable=abstract-class-instantiated
 
     # pydantic instance variable (public)
     tabular_source: TabularSource = Field(allow_mutation=False)
@@ -123,6 +123,14 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
+        """
+        List of column information of the dataset. Each column contains column name, column type, entity ID
+        associated with the column, semantic ID associated with the column.
+
+        Returns
+        -------
+        List[ColumnInfo]
+        """
         return self.int_columns_info
 
     @property
@@ -134,7 +142,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         -------
         BaseTableData
         """
-        return self._table_data_class(**{**self.json_dict(), "columns_info": self.columns_info})
+        return self._table_data_class(  # pylint: disable=abstract-class-instantiated
+            **{**self.json_dict(), "columns_info": self.columns_info}
+        )
 
     @property
     def frame(self) -> TableDataFrame:
@@ -332,4 +342,4 @@ class DatabaseTable(FrozenGenericTableData, AbstractTableData):
     DatabaseTable class to preview table
     """
 
-    _table_data_class: ClassVar[Type[BaseTableData]] = GenericTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = GenericTableData

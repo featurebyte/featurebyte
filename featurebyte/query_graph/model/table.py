@@ -44,6 +44,10 @@ class GenericTableData(FrozenGenericTableData, BaseTableData):
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
 
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return []
+
 
 class FrozenEventTableData(FrozenTableData):
     """FrozenEventTableData class"""

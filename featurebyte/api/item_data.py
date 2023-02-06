@@ -18,8 +18,7 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.table import FrozenItemTableData, ItemTableData
+from featurebyte.query_graph.model.table import AllTableDataT, FrozenItemTableData, ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 
@@ -35,7 +34,7 @@ class ItemData(FrozenItemTableData, FrozenDataModel, DataApiObject):
     _route = "/item_data"
     _update_schema_class = ItemDataUpdate
     _create_schema_class = ItemDataCreate
-    _table_data_class: ClassVar[Type[BaseTableData]] = ItemTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
@@ -75,14 +74,28 @@ class ItemData(FrozenItemTableData, FrozenDataModel, DataApiObject):
         return values
 
     @property
-    def event_id_column(self):
+    def event_id_column(self) -> str:
+        """
+        Event ID column name of the EventData associated with the ItemData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.event_id_column
         except RecordRetrievalException:
             return self.int_event_id_column
 
     @property
-    def item_id_column(self):
+    def item_id_column(self) -> str:
+        """
+        Item ID column name of the ItemData
+
+        Returns
+        -------
+        str
+        """
         try:
             return self.cached_model.item_id_column
         except RecordRetrievalException:

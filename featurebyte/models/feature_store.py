@@ -101,7 +101,9 @@ class ConstructGraphMixin:
         if graph is None:
             graph = QueryGraph()
 
-        table_data = cls._table_data_class(**table_data_dict)
+        table_data = cls._table_data_class(  # pylint: disable=abstract-class-instantiated
+            **table_data_dict
+        )
         input_node = table_data.construct_input_node(  # pylint: disable=no-member
             feature_store_details=feature_store_details
         )

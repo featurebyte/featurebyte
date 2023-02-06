@@ -158,6 +158,12 @@ class FrozenTableData(FeatureByteBaseModel):
 
         return graph_node
 
+    @property
+    def primary_key_columns(self) -> List[str]:
+        """
+        Primary key column names of the table data
+        """
+
     @abstractmethod
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         """

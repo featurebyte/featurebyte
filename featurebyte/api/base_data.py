@@ -46,6 +46,14 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
 
     @property
     def info(self) -> ColumnInfo:
+        """
+        Column information which contains column name, column type, associated entity ID & associated
+        semantic ID.
+
+        Returns
+        -------
+        ColumnInfo
+        """
         return next(col for col in self.parent.columns_info if col.name == self.name)
 
     @property
@@ -240,21 +248,35 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
     @property
     def columns_info(self) -> List[ColumnInfo]:
         try:
-            return self.cached_model.columns_info
+            return self.cached_model.columns_info  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.int_columns_info
 
     @property
-    def status(self):
+    def status(self) -> DataStatus:
+        """
+        Data status
+
+        Returns
+        -------
+        DataStatus
+        """
         try:
-            return self.cached_model.status
+            return self.cached_model.status  # pylint: disable=no-member
         except RecordRetrievalException:
             return DataStatus.DRAFT
 
     @property
-    def record_creation_date_column(self):
+    def record_creation_date_column(self) -> Optional[str]:
+        """
+        Record creation date column name
+
+        Returns
+        -------
+        Optional[str]
+        """
         try:
-            return self.cached_model.record_creation_date_column
+            return self.cached_model.record_creation_date_column  # pylint: disable=no-member
         except RecordRetrievalException:
             return self.int_record_creation_date_column
 
