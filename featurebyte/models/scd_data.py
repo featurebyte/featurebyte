@@ -3,12 +3,13 @@ This module contains SCD data related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Type
+from typing import Any, ClassVar, List, Type
 
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
+from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import SCDTableData
 
@@ -31,6 +32,21 @@ class SCDDataModel(SCDTableData, DataModel):
 
     _table_data_class: ClassVar[Type[BaseTableData]] = SCDTableData
 
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            columns_info_key="columns_info",
+            expected_column_field_name_type_pairs=[
+                ("record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("effective_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("natural_key_column", DBVarType.supported_id_types()),
+                ("surrogate_key_column", DBVarType.supported_id_types()),
+                ("current_flag_column", None),
+            ],
+        )
+    )
+
     @root_validator(pre=True)
     @classmethod
     def _handle_current_flag_name(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -38,33 +54,6 @@ class SCDDataModel(SCDTableData, DataModel):
         if "current_flag" in values:
             values["current_flag_column"] = values["current_flag"]
         return values
-
-    @validator("record_creation_date_column", "effective_timestamp_column", "end_timestamp_column")
-    @classmethod
-    def _check_timestamp_column_exists(
-        cls, value: Optional[str], values: dict[str, Any]
-    ) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value,
-            values=values,
-            expected_types={DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ},
-        )
-
-    @validator("natural_key_column", "surrogate_key_column")
-    @classmethod
-    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
-        )
-
-    @validator("current_flag_column")
-    @classmethod
-    def _check_current_flag_column_exists(
-        cls, value: Optional[str], values: dict[str, Any]
-    ) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value, values=values, expected_types=None
-        )
 
     @property
     def primary_key_columns(self) -> List[str]:
