@@ -23,7 +23,11 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
+from featurebyte.query_graph.model.table import (
+    AllTableDataT,
+    FrozenGenericTableData,
+    GenericTableData,
+)
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -66,30 +70,11 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     # pydantic instance variable (internal use)
     int_columns_info: List[ColumnInfo] = Field(alias="columns_info")
 
-    @root_validator(pre=True)
-    @classmethod
-    def _set_feature_store_and_graph_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """
-        Construct feature_store, input node & set the graph related parameters based on the given input dictionary
-
-        Parameters
-        ----------
-        values: dict[str, Any]
-            Dictionary contains parameter name to value mapping for the DatabaseTable object
-
-        Returns
-        -------
-        dict[str, Any]
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to retrieve table schema
-        """
+    def __init__(self, **values: Any):
         tabular_source = dict(values["tabular_source"])
         table_details = tabular_source["table_details"]
         if "feature_store" not in values:
-            # attempt to set feature_store object if it does not exist
+            # attempt to set feature_store object if it does not exist in the input
             from featurebyte.api.feature_store import (  # pylint: disable=import-outside-toplevel,cyclic-import
                 FeatureStore,
             )
@@ -132,7 +117,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
                     for name, var_type in recent_schema.items()
                 ]
                 values["columns_info"] = columns_info
-        return values
+
+        # call pydantic constructor to validate input parameters
+        super().__init__(**values)
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
@@ -340,9 +327,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         )
 
 
-class DatabaseTable(GenericTableData, AbstractTableData):
+class DatabaseTable(FrozenGenericTableData, AbstractTableData):
     """
     DatabaseTable class to preview table
     """
 
-    _table_data_class = GenericTableData
+    _table_data_class: ClassVar[Type[BaseTableData]] = GenericTableData

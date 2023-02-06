@@ -20,7 +20,7 @@ from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
-class GenericTableData(BaseTableData):
+class FrozenGenericTableData(FrozenTableData):
     """GenericTableData class"""
 
     type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC, const=True)
@@ -34,6 +34,15 @@ class GenericTableData(BaseTableData):
                 **self._get_common_input_node_parameters(),
             },
         )
+
+
+class GenericTableData(FrozenGenericTableData, BaseTableData):
+    """EventTableData class"""
+
+    columns_info: List[ColumnInfo]
+
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
 
 
 class FrozenEventTableData(FrozenTableData):
