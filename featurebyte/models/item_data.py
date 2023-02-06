@@ -3,12 +3,13 @@ This module contains ItemData related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Type
+from typing import ClassVar, List, Type
 
-from pydantic import validator
+from pydantic import root_validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
+from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import ItemTableData
 
@@ -41,23 +42,17 @@ class ItemDataModel(ItemTableData, DataModel):
 
     _table_data_class: ClassVar[Type[BaseTableData]] = ItemTableData
 
-    @validator("record_creation_date_column")
-    @classmethod
-    def _check_timestamp_column_exists(
-        cls, value: Optional[str], values: dict[str, Any]
-    ) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value,
-            values=values,
-            expected_types={DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ},
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            columns_info_key="columns_info",
+            expected_column_field_name_type_pairs=[
+                ("record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("event_id_column", DBVarType.supported_id_types()),
+                ("item_id_column", DBVarType.supported_id_types()),
+            ],
         )
-
-    @validator("event_id_column", "item_id_column")
-    @classmethod
-    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
-        )
+    )
 
     @property
     def primary_key_columns(self) -> List[str]:

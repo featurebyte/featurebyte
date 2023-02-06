@@ -7,12 +7,13 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 from datetime import datetime
 
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
+from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import EventTableData
 
@@ -169,23 +170,17 @@ class EventDataModel(EventTableData, DataModel):
     default_feature_job_setting: Optional[FeatureJobSetting]
     _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
 
-    @validator("event_timestamp_column", "record_creation_date_column")
-    @classmethod
-    def _check_timestamp_column_exists(
-        cls, value: Optional[str], values: dict[str, Any]
-    ) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value,
-            values=values,
-            expected_types={DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ},
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            columns_info_key="columns_info",
+            expected_column_field_name_type_pairs=[
+                ("event_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("event_id_column", DBVarType.supported_id_types()),
+            ],
         )
-
-    @validator("event_id_column")
-    @classmethod
-    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-        return DataModel.validate_column_exists(
-            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
-        )
+    )
 
     @property
     def primary_key_columns(self) -> List[str]:

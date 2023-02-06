@@ -131,6 +131,28 @@ class DBVarType(StrEnum):
     STRUCT = "STRUCT", "Struct column"
     UNKNOWN = "UNKNOWN", "Unknown column type"
 
+    @classmethod
+    def supported_timestamp_types(cls) -> set[DBVarType]:
+        """
+        Supported timestamp types
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.TIMESTAMP, cls.TIMESTAMP_TZ}
+
+    @classmethod
+    def supported_id_types(cls) -> set[DBVarType]:
+        """
+        Supported id column types
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.VARCHAR, cls.INT}
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string

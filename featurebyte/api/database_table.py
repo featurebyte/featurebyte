@@ -10,7 +10,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field, root_validator
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.config import Configurations
@@ -61,30 +61,13 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
     _table_data_class: ClassVar[Type[AllTableDataT]]
 
-    @root_validator(pre=True)
-    @classmethod
-    def _set_feature_store_and_graph_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """
-        Construct feature_store, input node & set the graph related parameters based on the given input dictionary
-
-        Parameters
-        ----------
-        values: dict[str, Any]
-            Dictionary contains parameter name to value mapping for the DatabaseTable object
-
-        Returns
-        -------
-        dict[str, Any]
-
-        Raises
-        ------
-        RecordRetrievalException
-            Failed to retrieve table schema
-        """
+    def __init__(self, **kwargs: Any):
+        # Construct feature_store, input node & set the graph related parameters based on the given input dictionary
+        values = kwargs
         tabular_source = dict(values["tabular_source"])
         table_details = tabular_source["table_details"]
         if "feature_store" not in values:
-            # attempt to set feature_store object if it does not exist
+            # attempt to set feature_store object if it does not exist in the input
             from featurebyte.api.feature_store import (  # pylint: disable=import-outside-toplevel,cyclic-import
                 FeatureStore,
             )
@@ -127,7 +110,9 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
                     for name, var_type in recent_schema.items()
                 ]
                 values["columns_info"] = columns_info
-        return values
+
+        # call pydantic constructor to validate input parameters
+        super().__init__(**values)
 
     @property
     def table_data(self) -> BaseTableData:
