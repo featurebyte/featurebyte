@@ -27,8 +27,6 @@ echo "│ jupyterlab-notebook    │ http://localhost:8090/lab/tree/samples/beta
 echo "└────────────────────────┴────────────────────────────────────────────────────────────────────────┘"
 echo ""
 
-source /app/.venv/bin/activate
-
 # Start notebook (Long running process, CTRL+C to stop)
 echo "Starting jupyter notebook"
 jupyter-lab \

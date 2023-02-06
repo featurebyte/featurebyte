@@ -7,7 +7,6 @@ while ! nc -zvw10 mongo-rs 27021 1>/dev/null 2>&1; do echo "Waiting for upstream
 sleep 3 # To allow mongodb container to create replicaset if necessary
 
 echo "Performing migration"
-source /app/.venv/bin/activate  # We need to source the python dependencies here
 PYTHONPATH=$PWD python /scripts/migration.py
 
 echo "Storing notebooks in directory: ~/.featurebyte/notebook"

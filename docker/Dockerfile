@@ -41,9 +41,10 @@ WORKDIR $USER_HOME
 USER $USER
 
 ## Copy binaries and build
-COPY --chown=$USER:$USER_GROUP --from=builder /app/.venv /app/.venv
-COPY --chown=$USER:$USER_GROUP ./dist /app/dist
-RUN bash -c "source /app/.venv/bin/activate; pip install --no-index -f /app/dist featurebyte"  # Install featurebyte into /app/.venv
+COPY --chown=$USER:$USER_GROUP --from=builder /app/.venv $USER_HOME/.venv
+COPY --chown=$USER:$USER_GROUP ./dist $USER_HOME/dist
+ENV PATH="${USER_HOME}/.venv/bin:${PATH}"
+RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /app/.venv
 
 ## Copy scripts
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
