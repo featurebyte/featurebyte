@@ -1,9 +1,9 @@
 """
 This module contains common table related models.
 """
-from typing import Any, ClassVar, Dict, Generic, Iterable, List, Literal, Optional, TypeVar, cast
+from typing import Any, Dict, Iterable, List, Literal, Optional, cast
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from pydantic import validator
 
@@ -30,10 +30,8 @@ SPECIFIC_DATA_TABLES = []
 DATA_TABLES = []
 
 
-class FrozenTableData(FeatureByteBaseModel):
-    """
-    FrozenTableData stores all the attributes that are fixed after object construction.
-    """
+class BaseTableData(FeatureByteBaseModel):
+    """Base data model used to capture input node info"""
 
     type: Literal[
         TableDataType.GENERIC,
@@ -42,10 +40,19 @@ class FrozenTableData(FeatureByteBaseModel):
         TableDataType.DIMENSION_DATA,
         TableDataType.SCD_DATA,
     ]
+    columns_info: List[ColumnInfo]
     tabular_source: TabularSource
 
-    # class variables (to be overriden by subclass' pydantic instance variable or property method)
-    columns_info: ClassVar[List[ColumnInfo]]
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
+
+    def __init_subclass__(cls, **kwargs: Any):
+        # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
+        table_type = cls.__fields__["type"]
+        if repr(table_type.type_).startswith("typing.Literal"):
+            DATA_TABLES.append(cls)
+        if table_type.default != TableDataType.GENERIC:
+            SPECIFIC_DATA_TABLES.append(cls)
 
     def _get_common_input_node_parameters(self) -> Dict[str, Any]:
         return {
@@ -158,12 +165,6 @@ class FrozenTableData(FeatureByteBaseModel):
 
         return graph_node
 
-    @property
-    def primary_key_columns(self) -> List[str]:
-        """
-        Primary key column names of the table data
-        """
-
     @abstractmethod
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         """
@@ -178,20 +179,3 @@ class FrozenTableData(FeatureByteBaseModel):
         -------
         InputNode
         """
-
-
-class BaseTableData(FrozenTableData, ABC):
-    """Base data model used to capture input node info"""
-
-    columns_info: List[ColumnInfo]  # type: ignore
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
-
-    def __init_subclass__(cls, **kwargs: Any):
-        # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
-        table_type = cls.__fields__["type"]
-        if repr(table_type.type_).startswith("typing.Literal"):
-            DATA_TABLES.append(cls)
-        if table_type.default != TableDataType.GENERIC:
-            SPECIFIC_DATA_TABLES.append(cls)

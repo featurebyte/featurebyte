@@ -17,7 +17,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.common_table import BaseTableData, FrozenTableData
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
@@ -143,7 +143,7 @@ class FrozenDataModel(FeatureByteBaseDocumentModel, ABC):
         ]
 
 
-class DataModel(BaseTableData, FrozenDataModel, FrozenTableData, ABC):
+class DataModel(BaseTableData, FrozenDataModel, ABC):
     """
     DataModel schema
 
