@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union, overload
+from typing import Any, Callable, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union, overload
 
 from functools import wraps
 
@@ -175,41 +175,30 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 f"Conditionally updating '{self}' with value '{value}' is not supported!"
             )
 
-    @overload
-    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None, Series]) -> None:
-        ...
-
-    @overload
-    def __setitem__(
-        self, mask: Series, column_name: str, value: Union[int, float, str, bool, None, Series]
-    ) -> None:
-        ...
-
     @typechecked
     def __setitem__(
         self,
-        key: Series,
-        value: Union[Union[int, float, str, bool, None, Series], str],
-        third_param: Optional[Union[int, float, str, bool, None, Series]],
+        key: Union[Series, Tuple[Series, str]],
+        value: Union[int, float, str, bool, None, Series],
     ) -> None:
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
 
-        value_to_use = value
         series_to_use = self
-        if third_param is not None:
-            value_to_use = third_param
-            series_to_use = self[value]  # apply mask onto series
+        key_to_use = key
+        if isinstance(key, Tuple) is not None:
+            series_to_use = self[key[1]]  # apply mask onto series
+            key_to_use = key[0]
 
-        series_to_use._assert_assignment_valid(value_to_use)
+        series_to_use._assert_assignment_valid(value)
         node_params = {}
-        input_nodes = [series_to_use.node, key.node]
-        if isinstance(value_to_use, Series):
-            input_nodes.append(value_to_use.node)
+        input_nodes = [series_to_use.node, key_to_use.node]
+        if isinstance(value, Series):
+            input_nodes.append(value.node)
         else:
-            node_params = {"value": value_to_use}
+            node_params = {"value": value}
 
         node = series_to_use.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
@@ -218,7 +207,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             input_nodes=input_nodes,
         )
         series_to_use.node_name = node.name
-        if isinstance(value_to_use, float) and series_to_use.dtype != DBVarType.FLOAT:
+        if isinstance(value, float) and series_to_use.dtype != DBVarType.FLOAT:
             # convert dtype to float if the assign value is float
             series_to_use.__dict__["dtype"] = DBVarType.FLOAT
 
