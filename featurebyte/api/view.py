@@ -320,14 +320,16 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[InputTypeT, Frame]:
+    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, InputTypeT, Frame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
         return output
 
     @typechecked
-    def __setitem__(self, key: str, value: Union[int, float, str, bool, InputTypeT]) -> None:
+    def __setitem__(
+        self, key: str, value: Union[int, float, str, bool, Series, InputTypeT]
+    ) -> None:
         if key in self.protected_columns:
             raise ValueError(f"Column '{key}' cannot be modified!")
         super().__setitem__(key, value)
