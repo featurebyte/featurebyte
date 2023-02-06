@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Literal, Optional, Sequence, Type, TypeVar, Union, overload
 
 from functools import wraps
 
@@ -175,40 +175,61 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 f"Conditionally updating '{self}' with value '{value}' is not supported!"
             )
 
-    @typechecked
+    @overload
     def __setitem__(self, key: Series, value: Union[int, float, str, bool, None, Series]) -> None:
+        ...
+
+    @overload
+    def __setitem__(
+        self, mask: Series, column_name: str, value: Union[int, float, str, bool, None, Series]
+    ) -> None:
+        ...
+
+    @typechecked
+    def __setitem__(
+        self,
+        key: Series,
+        value: Union[Union[int, float, str, bool, None, Series], str],
+        third_param: Optional[Union[int, float, str, bool, None, Series]],
+    ) -> None:
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
 
-        self._assert_assignment_valid(value)
-        node_params = {}
-        input_nodes = [self.node, key.node]
-        if isinstance(value, Series):
-            input_nodes.append(value.node)
-        else:
-            node_params = {"value": value}
+        value_to_use = value
+        series_to_use = self
+        if third_param is not None:
+            value_to_use = third_param
+            series_to_use = self[value]  # apply mask onto series
 
-        node = self.graph.add_operation(
+        series_to_use._assert_assignment_valid(value_to_use)
+        node_params = {}
+        input_nodes = [series_to_use.node, key.node]
+        if isinstance(value_to_use, Series):
+            input_nodes.append(value_to_use.node)
+        else:
+            node_params = {"value": value_to_use}
+
+        node = series_to_use.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
             node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
             input_nodes=input_nodes,
         )
-        self.node_name = node.name
-        if isinstance(value, float) and self.dtype != DBVarType.FLOAT:
+        series_to_use.node_name = node.name
+        if isinstance(value_to_use, float) and series_to_use.dtype != DBVarType.FLOAT:
             # convert dtype to float if the assign value is float
-            self.__dict__["dtype"] = DBVarType.FLOAT
+            series_to_use.__dict__["dtype"] = DBVarType.FLOAT
 
         # For Series with a parent, apply the change to the parent (either an EventView or a
         # FeatureGroup)
-        if self.parent is not None:
+        if series_to_use.parent is not None:
             # Update the EventView column / Feature by doing an assign operation
-            self.parent[self.name] = self
+            series_to_use.parent[series_to_use.name] = series_to_use
             # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
             # readable column name during series preview
-            self.node_name = self.parent[self.name].node_name
+            series_to_use.node_name = series_to_use.parent[series_to_use.name].node_name
 
     @staticmethod
     def _is_a_series_of_var_type(
