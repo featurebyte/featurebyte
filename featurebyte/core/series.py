@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union, overload
+from typing import Any, Callable, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 from functools import wraps
 
