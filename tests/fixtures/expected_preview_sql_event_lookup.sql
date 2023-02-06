@@ -9,13 +9,13 @@ WITH REQUEST_TABLE AS (
     CASE
       WHEN REQ."POINT_IN_TIME" < "T0"."ts"
       THEN NULL
-      ELSE "T0"."order_method_1455fa34bdedaabb"
-    END AS "order_method_1455fa34bdedaabb"
+      ELSE "T0"."order_method_ad6bcaedd29e2617"
+    END AS "order_method_ad6bcaedd29e2617"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "order_id" AS "ORDER_ID",
-      "order_method" AS "order_method_1455fa34bdedaabb",
+      "order_method" AS "order_method_ad6bcaedd29e2617",
       "ts"
     FROM (
       SELECT
@@ -31,5 +31,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."ORDER_ID",
-  "order_method_1455fa34bdedaabb" AS "Order Method"
+  "order_method_ad6bcaedd29e2617" AS "Order Method"
 FROM _FB_AGGREGATED AS AGG

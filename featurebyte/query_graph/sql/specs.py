@@ -465,9 +465,8 @@ class LookupSpec(NonTileBasedAggregationSpec):
         }
         if self.scd_parameters is not None:
             params["scd_parameters"] = self.scd_parameters.dict()
-        # No need to hash event_parameters since it is always set for EventData. source_expr is
-        # sufficiently unique (given the same source_expr, if it is from EventView, it will always
-        # have the same event_timestamp_column).
+        if self.event_parameters is not None:
+            params["event_parameters"] = self.event_parameters.dict()
         return params
 
     @classmethod
