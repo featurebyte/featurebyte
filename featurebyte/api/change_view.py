@@ -257,21 +257,21 @@ class ChangeView(View, GroupByMixin):
         )
         # We type:ignore these assignments as the right side variable has wrong type hints. We're looking to fix
         # this in DEV-918.
-        change_view[col_names.new_valid_from_column_name] = change_view[
-            scd_data.effective_timestamp_column
-        ]  # type: ignore
-        change_view[col_names.previous_valid_from_column_name] = change_view[
-            scd_data.effective_timestamp_column
-        ].lag(
+        new_ts_col, past_ts_col = (
+            col_names.new_valid_from_column_name,
+            col_names.previous_valid_from_column_name,
+        )
+        change_view[new_ts_col] = change_view[scd_data.effective_timestamp_column]  # type: ignore
+        change_view[past_ts_col] = change_view[scd_data.effective_timestamp_column].lag(
             change_view.natural_key_column
         )  # type: ignore
 
-        change_view[column_names_to_use.new_tracked_column_name] = change_view[track_changes_column]  # type: ignore
-        change_view[col_names.previous_tracked_column_name] = change_view[
-            col_names.new_tracked_column_name
-        ].lag(
-            change_view.natural_key_column
-        )  # type: ignore
+        new_col_name, past_col_name = (
+            col_names.new_tracked_column_name,
+            col_names.previous_tracked_column_name,
+        )
+        change_view[new_col_name] = change_view[track_changes_column]  # type: ignore
+        change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)  # type: ignore
 
         # select the 5 cols we want to present
         change_view = change_view[
