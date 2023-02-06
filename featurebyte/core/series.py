@@ -188,7 +188,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         series_to_use = self
         key_to_use = key
-        if isinstance(key, Tuple) is not None:
+        if isinstance(key, Tuple):
             series_to_use = self[key[1]]  # apply mask onto series
             key_to_use = key[0]
 
