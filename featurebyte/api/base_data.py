@@ -41,7 +41,20 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
-    info: ColumnInfo
+    # pydantic instance variable (public)
+    name: str
+
+    @property
+    def info(self) -> ColumnInfo:
+        """
+        Column information which contains column name, column type, associated entity ID & associated
+        semantic ID.
+        Returns
+        -------
+        ColumnInfo
+        """
+        column_info = next(col for col in self.parent.columns_info if col.name == self.name)
+        return cast(ColumnInfo, column_info)
 
     @property
     def feature_store(self) -> FeatureStoreModel:
@@ -97,7 +110,6 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
             update_payload={"columns_info": self._prepare_columns_info(column_info)},
             allow_update_local=True,
         )
-        self.info = column_info
 
     @typechecked
     def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
@@ -145,7 +157,6 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
             update_payload={"columns_info": self._prepare_columns_info(column_info)},
             allow_update_local=True,
         )
-        self.info = column_info
 
     def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
@@ -342,7 +353,7 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
                 info = col
         if info is None:
             raise KeyError(f'Column "{item}" does not exist!')
-        output = DataColumn(info=info)
+        output = DataColumn(name=item)
         output.set_parent(self)
         return output
 
