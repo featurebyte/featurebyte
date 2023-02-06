@@ -30,12 +30,13 @@ def test_change_view(scd_data):
     change_view = ChangeView.from_slowly_changing_data(scd_data, "User Status")
 
     # assert initialization
-    assert len(change_view.columns_info) == 4
-    assert change_view.timestamp_column == scd_data.effective_timestamp_column
+    assert len(change_view.columns_info) == 5
+    assert change_view.timestamp_column == "new_Effective Timestamp"
     assert change_view.natural_key_column == scd_data.natural_key_column
     assert change_view.columns == [
-        "Effective Timestamp",
         "User ID",
+        "new_Effective Timestamp",
+        "past_Effective Timestamp",
         "new_User Status",
         "past_User Status",
     ]
