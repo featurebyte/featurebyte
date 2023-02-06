@@ -16,17 +16,17 @@ from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.table import AllTableDataT, EventTableData, FrozenEventTableData
+from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
 
-class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
+class EventData(FrozenDataModel, DataApiObject):
     """
     EventData class
     """
@@ -39,6 +39,9 @@ class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
+
+    # pydantic instance variable
+    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
 
     # pydantic instance variable (internal use)
     int_default_feature_job_setting: Optional[FeatureJobSetting] = Field(

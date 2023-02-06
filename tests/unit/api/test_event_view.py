@@ -217,17 +217,6 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     }
 
 
-def test_from_event_data_without_event_id_column(snowflake_event_data):
-    """
-    Test from_event_data when using old EventData without event_id_column (backward compatibility)
-
-    Can probably be removed once DEV-556 is resolved
-    """
-    snowflake_event_data.__dict__.update({"event_id_column": None})
-    event_view = EventView.from_event_data(snowflake_event_data)
-    assert event_view.event_id_column is None
-
-
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
     """
     Test validate join

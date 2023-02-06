@@ -23,11 +23,7 @@ from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreMo
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.model.table import (
-    AllTableDataT,
-    FrozenGenericTableData,
-    GenericTableData,
-)
+from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
@@ -337,7 +333,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         )
 
 
-class DatabaseTable(FrozenGenericTableData, AbstractTableData):
+class DatabaseTable(AbstractTableData):
     """
     DatabaseTable class to preview table
     """

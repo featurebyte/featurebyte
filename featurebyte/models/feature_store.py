@@ -111,7 +111,7 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class FrozenDataModel(FrozenTableData, ConstructGraphMixin, FeatureByteBaseDocumentModel, ABC):
+class FrozenDataModel(FeatureByteBaseDocumentModel, ABC):
     """
     FrozenDataModel stores all the attributes that are fixed after object construction.
     """
@@ -143,7 +143,7 @@ class FrozenDataModel(FrozenTableData, ConstructGraphMixin, FeatureByteBaseDocum
         ]
 
 
-class DataModel(BaseTableData, FrozenDataModel, ABC):
+class DataModel(BaseTableData, FrozenDataModel, FrozenTableData, ABC):
     """
     DataModel schema
 
