@@ -10,6 +10,7 @@ from typeguard import typechecked
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar
+from featurebyte.core.series import DefaultSeriesBinaryOperator
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
@@ -192,8 +193,8 @@ class CountDictAccessor:
         op_struct = self._feature_obj.graph.extract_operation_structure(node=self._feature_obj.node)
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
 
-        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
-            other=key,
+        series_operator = DefaultSeriesBinaryOperator(self._feature_obj, key)
+        return series_operator.operate(
             node_type=NodeType.GET_VALUE,
             output_var_type=get_value_node.derive_var_type([op_struct]),
             additional_node_params=additional_node_params,
@@ -234,8 +235,8 @@ class CountDictAccessor:
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
-        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
-            other=key,
+        series_operator = DefaultSeriesBinaryOperator(self._feature_obj, key)
+        return series_operator.operate(
             node_type=NodeType.GET_RANK,
             output_var_type=DBVarType.FLOAT,
             additional_node_params=additional_node_params,
@@ -272,8 +273,8 @@ class CountDictAccessor:
             # We only need to assign value if we have been passed in a single scalar value.
             additional_node_params["value"] = key
 
-        return self._feature_obj._binary_op(  # type: ignore[return-value] # pylint: disable=protected-access
-            other=key,
+        series_operator = DefaultSeriesBinaryOperator(self._feature_obj, key)
+        return series_operator.operate(
             node_type=NodeType.GET_RELATIVE_FREQUENCY,
             output_var_type=DBVarType.FLOAT,
             additional_node_params=additional_node_params,
