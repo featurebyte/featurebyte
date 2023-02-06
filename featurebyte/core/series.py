@@ -264,14 +264,12 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         Series
             output of the binary operation
         """
-        binary_op_series_params = self.binary_op_series_params(other)
         series_operator = DefaultSeriesBinaryOperator(self, other)
         return series_operator.operate(
             node_type=node_type,
             output_var_type=output_var_type,
             right_op=right_op,
             additional_node_params=additional_node_params,
-            **binary_op_series_params,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:
