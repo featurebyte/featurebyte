@@ -7,7 +7,9 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import Feature, FeatureList, FeatureStore
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster

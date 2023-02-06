@@ -19,7 +19,16 @@ from featurebyte.query_graph.model.critical_data_info import (
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.model.table import DimensionTableData, EventTableData, GenericTableData
+from featurebyte.query_graph.model.table import (
+    DimensionTableData,
+    EventTableData,
+    FrozenDimensionTableData,
+    FrozenEventTableData,
+    FrozenGenericTableData,
+    FrozenItemTableData,
+    FrozenSCDTableData,
+    GenericTableData,
+)
 from featurebyte.query_graph.node.schema import (
     FeatureStoreDetails,
     SnowflakeDetails,
@@ -271,3 +280,16 @@ def test_validate_columns_info():
             ]
         )
     assert 'Column name "dup_col" is duplicated.' in str(exc.value)
+
+
+def test_columns_info_attribute_not_in_frozen_tables():
+    """Test that columns info attributes is not in the frozen tables"""
+    frozen_table_classes = [
+        FrozenGenericTableData,
+        FrozenEventTableData,
+        FrozenItemTableData,
+        FrozenDimensionTableData,
+        FrozenSCDTableData,
+    ]
+    for frozen_table_class in frozen_table_classes:
+        assert "columns_info" not in frozen_table_class.__fields__

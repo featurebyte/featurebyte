@@ -17,7 +17,6 @@ from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
@@ -28,6 +27,7 @@ from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import GroupBy
 from featurebyte.api.item_data import ItemData
+from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
@@ -36,12 +36,14 @@ from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
+from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
@@ -547,10 +549,13 @@ def cust_id_entity_fixture(customer_entity_id):
 
 
 @pytest.fixture(name="snowflake_event_data_with_entity")
-def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entity):
+def snowflake_event_data_with_entity_fixture(
+    snowflake_event_data, cust_id_entity, mock_api_object_cache
+):
     """
     Entity fixture that sets cust_id in snowflake_event_data as an Entity
     """
+    _ = mock_api_object_cache
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_data.col_int.as_entity(cust_id_entity.name)
     assert snowflake_event_data.cust_id.info.entity_id == cust_id_entity.id

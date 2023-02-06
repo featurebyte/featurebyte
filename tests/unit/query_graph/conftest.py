@@ -6,12 +6,12 @@ import copy
 import pytest
 from bson import ObjectId
 
-from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.node.schema import TableDetails
 from tests.util.helper import add_groupby_operation

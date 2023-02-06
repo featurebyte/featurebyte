@@ -60,13 +60,13 @@ class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
     )
 
     @property
-    def default_feature_job_setting(self) -> FeatureJobSetting:
+    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
         """
         Default feature job setting of the EventData
 
         Returns
         -------
-        FeatureJobSetting
+        Optional[FeatureJobSetting]
         """
         try:
             return self.cached_model.default_feature_job_setting
@@ -88,7 +88,7 @@ class EventData(FrozenEventTableData, FrozenDataModel, DataApiObject):
             return self.int_event_timestamp_column
 
     @property
-    def event_id_column(self) -> str:
+    def event_id_column(self) -> Optional[str]:
         """
         Event ID column name of the EventData associated with the ItemData
 

@@ -54,7 +54,8 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         -------
         ColumnInfo
         """
-        return next(col for col in self.parent.columns_info if col.name == self.name)
+        column_info = next(col for col in self.parent.columns_info if col.name == self.name)
+        return cast(ColumnInfo, column_info)
 
     @property
     def feature_store(self) -> FeatureStoreModel:

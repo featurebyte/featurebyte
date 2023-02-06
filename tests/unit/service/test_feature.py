@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-from featurebyte import FeatureStore
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureCreate

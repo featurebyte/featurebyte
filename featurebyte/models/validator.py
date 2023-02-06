@@ -27,7 +27,7 @@ def construct_data_model_root_validator(
     # Note: When `root_validator(pre=True)` is used to decorate this validator, alias key should be used.
     # When `root_validator(pre=False)` is used to decorate, non-alias key should be used.
 
-    def _root_validator(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _root_validator(cls: Any, values: dict[str, Any]) -> dict[str, Any]:
         _ = cls
         columns_info = values[columns_info_key]
         col_info_map = {}

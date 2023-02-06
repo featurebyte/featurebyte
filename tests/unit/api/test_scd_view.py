@@ -98,10 +98,11 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
     }
 
 
-def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):
+def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity, mock_api_object_cache):
     """
     Test SlowlyChangingView as_feature configures additional parameters
     """
+    _ = mock_api_object_cache
     snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
     scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
     feature = scd_view["col_float"].as_feature("FloatFeature", offset="7d")

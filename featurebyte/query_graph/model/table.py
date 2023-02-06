@@ -1,7 +1,7 @@
 """
 This module contains specialized table related models.
 """
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
@@ -39,7 +39,7 @@ class FrozenGenericTableData(FrozenTableData):
 class GenericTableData(FrozenGenericTableData, BaseTableData):
     """EventTableData class"""
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]  # type: ignore
 
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
@@ -79,7 +79,7 @@ class FrozenEventTableData(FrozenTableData):
 class EventTableData(FrozenEventTableData, BaseTableData):
     """EventTableData class"""
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]  # type: ignore
 
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
@@ -115,7 +115,7 @@ class FrozenItemTableData(FrozenTableData):
 class ItemTableData(FrozenItemTableData, BaseTableData):
     """ItemTableData class"""
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]  # type: ignore
 
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
@@ -147,7 +147,7 @@ class FrozenDimensionTableData(FrozenTableData):
 class DimensionTableData(FrozenDimensionTableData, BaseTableData):
     """DimensionTableData class"""
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]  # type: ignore
 
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
@@ -187,7 +187,12 @@ class FrozenSCDTableData(FrozenTableData):
 class SCDTableData(FrozenSCDTableData, BaseTableData):
     """SCDTableData class"""
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]  # type: ignore
+    natural_key_column: StrictStr
+    effective_timestamp_column: StrictStr
+    surrogate_key_column: Optional[StrictStr]
+    end_timestamp_column: Optional[StrictStr] = Field(default=None)
+    current_flag_column: Optional[StrictStr] = Field(default=None)
 
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)

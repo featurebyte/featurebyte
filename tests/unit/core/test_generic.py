@@ -7,11 +7,11 @@ import copy
 
 import pytest
 
-from featurebyte import SnowflakeDetails
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.generic import QueryObject
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.node.schema import SnowflakeDetails
 
 
 def check_graph_state(graph1, graph2):

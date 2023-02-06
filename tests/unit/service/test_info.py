@@ -4,9 +4,8 @@ Test for InfoService
 import pytest
 from bson import ObjectId
 
-from featurebyte import SnowflakeDetails
 from featurebyte.models.dimension_data import DimensionDataModel
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
     DataBriefInfo,

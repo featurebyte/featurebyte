@@ -7,7 +7,7 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte import SourceType
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec

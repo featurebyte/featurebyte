@@ -7,9 +7,9 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
-from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent

@@ -1,7 +1,7 @@
 """
 This module contains common table related models.
 """
-from typing import Any, ClassVar, Dict, Iterable, List, Literal, Optional, cast
+from typing import Any, ClassVar, Dict, Generic, Iterable, List, Literal, Optional, TypeVar, cast
 
 from abc import ABC, abstractmethod
 
@@ -183,7 +183,7 @@ class FrozenTableData(FeatureByteBaseModel):
 class BaseTableData(FrozenTableData, ABC):
     """Base data model used to capture input node info"""
 
-    columns_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]  # type: ignore
 
     # pydantic validators
     _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)

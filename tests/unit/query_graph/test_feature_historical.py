@@ -8,9 +8,13 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import exception
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
+from featurebyte.exception import (
+    MissingPointInTimeColumnError,
+    MissingServingNameError,
+    TooRecentPointInTimeError,
+)
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
@@ -57,7 +61,7 @@ async def test_get_historical_features__missing_point_in_time(
             "cust_id": ["C1", "C2", "C3"],
         }
     )
-    with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
+    with pytest.raises(MissingPointInTimeColumnError) as exc_info:
         await get_historical_features(
             session=mocked_session,
             graph=mock_snowflake_feature.graph,
@@ -84,7 +88,7 @@ async def test_get_historical_features__too_recent_point_in_time(
             "cust_id": ["C1", "C2"],
         }
     )
-    with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
+    with pytest.raises(TooRecentPointInTimeError) as exc_info:
         await get_historical_features(
             session=mocked_session,
             graph=mock_snowflake_feature.graph,
