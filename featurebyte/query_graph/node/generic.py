@@ -541,7 +541,7 @@ class SCDLookupParameters(SCDBaseParameters):
 class EventLookupParameters(BaseModel):
     """Parameters for EventData lookup"""
 
-    event_timestamp_column: str
+    event_timestamp_column: InColumnStr
 
 
 class LookupNode(AggregationOpStructMixin, BaseNode):
