@@ -255,12 +255,14 @@ class ChangeView(View, GroupByMixin):
             effective_timestamp_column=col_names.new_valid_from_column_name,
             default_feature_job_setting=feature_job_setting,
         )
-        change_view[col_names.new_valid_from_column_name] = change_view[scd_data.effective_timestamp_column]
-        change_view[col_names.previous_valid_from_column_name] = change_view[scd_data.effective_timestamp_column].lag(
-            change_view.natural_key_column
-        )
+        change_view[col_names.new_valid_from_column_name] = change_view[
+            scd_data.effective_timestamp_column
+        ]
+        change_view[col_names.previous_valid_from_column_name] = change_view[
+            scd_data.effective_timestamp_column
+        ].lag(change_view.natural_key_column)
 
-        past_col_name = col_names.previous_tracked_column_name,
+        past_col_name = (col_names.previous_tracked_column_name,)
         change_view[col_names.new_tracked_column_name] = change_view[track_changes_column]
         change_view[past_col_name] = change_view[new_col_name].lag(change_view.natural_key_column)  # type: ignore  # pylint: disable=no-member
 
