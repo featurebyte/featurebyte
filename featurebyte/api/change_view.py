@@ -268,11 +268,11 @@ class ChangeView(View, GroupByMixin):
 
         past_col_name = col_names.previous_tracked_column_name
         change_view[col_names.new_tracked_column_name] = change_view[track_changes_column]
-        new_columns = change_view[col_names.new_tracked_column_name]
-        assert isinstance(new_columns, ChangeViewColumn)
-        change_view[past_col_name] = new_columns.lag(
+        change_view[past_col_name] = change_view[
+            col_names.new_tracked_column_name
+        ].lag(  # pylint: disable=no-member
             change_view.natural_key_column
-        )  # pylint: disable=no-member
+        )
 
         # select the 5 cols we want to present
         change_view = change_view[
