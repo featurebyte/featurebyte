@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import pytz
 from pandas.testing import assert_series_equal
 
 from featurebyte import EventView, FeatureList
@@ -258,3 +259,61 @@ def test_item_view_joined_with_dimension_view(
     assert df_historical_features.sort_values("üser id")[
         "most_frequent_item_type_30d"
     ].tolist() == ["type_47", "type_88", "type_53", "type_92", "type_12"]
+
+
+def test_item_view_lookup_features(item_data, expected_joined_event_item_dataframe):
+    """
+    Test lookup features from ItemView are time based
+    """
+    view = ItemView.from_item_data(item_data)
+
+    df = expected_joined_event_item_dataframe
+    primary_key_column = "item_id"
+    primary_key_value = "item_42"
+    primary_key_serving_name = "item_id"
+    lookup_column_name = "item_type"
+    event_timestamp_column = "ËVENT_TIMESTAMP"
+    lookup_row = df[df[primary_key_column] == primary_key_value].iloc[0]
+    event_timestamp = lookup_row[event_timestamp_column].astimezone(pytz.utc).replace(tzinfo=None)
+
+    # Create lookup feature
+    feature = view[lookup_column_name].as_feature("lookup_feature")
+
+    # Lookup from event should be time based - value is NA is point in time is prior to event time
+    ts_before_event = event_timestamp - pd.Timedelta("7d")
+    ts_after_event = event_timestamp + pd.Timedelta("7d")
+    expected_feature_value_if_after_event = lookup_row[lookup_column_name]
+    # Make sure to pick a non-na value to test meaningfully
+    assert not pd.isna(expected_feature_value_if_after_event)
+
+    # Point in time after event time - non-NA
+    df = feature.preview(
+        {
+            "POINT_IN_TIME": ts_after_event,
+            primary_key_serving_name: primary_key_value,
+        }
+    )
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_after_event,
+            primary_key_serving_name: primary_key_value,
+            "lookup_feature": expected_feature_value_if_after_event,
+        }
+    )
+    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
+
+    # Point in time before event time - NA
+    df = feature.preview(
+        {
+            "POINT_IN_TIME": ts_before_event,
+            primary_key_serving_name: primary_key_value,
+        }
+    )
+    expected = pd.Series(
+        {
+            "POINT_IN_TIME": ts_before_event,
+            primary_key_serving_name: primary_key_value,
+            "lookup_feature": np.nan,
+        }
+    )
+    pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)

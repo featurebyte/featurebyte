@@ -342,16 +342,8 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
-@pytest.fixture(name="item_ids", scope="session")
-def item_ids_fixture():
-    """
-    Fixture to get item IDs used in test data.
-    """
-    return [f"item_{i}" for i in range(100)]
-
-
 @pytest.fixture(name="items_dataframe", scope="session")
-def items_dataframe_fixture(transaction_data_upper_case, item_ids):
+def items_dataframe_fixture(transaction_data_upper_case):
     """
     DataFrame fixture with item based data corresponding to the transaction data
     """
@@ -362,17 +354,24 @@ def items_dataframe_fixture(transaction_data_upper_case, item_ids):
     def generate_items_for_transaction(transaction_row):
         order_id = transaction_row["TRANSACTION_ID"]
         num_items = rng.randint(1, 10)
-        selected_item_ids = rng.choice(item_ids, num_items, replace=False)
         selected_item_types = rng.choice(item_types, num_items, replace=False)
         data["order_id"].extend([order_id] * num_items)
-        data["item_id"].extend(selected_item_ids)
         data["item_type"].extend(selected_item_types)
 
     for _, row in transaction_data_upper_case.iterrows():
         generate_items_for_transaction(row)
 
     df_items = pd.DataFrame(data)
+    df_items["item_id"] = [f"item_{i}" for i in range(df_items.shape[0])]
     return df_items
+
+
+@pytest.fixture(name="item_ids", scope="session")
+def item_ids_fixture(items_dataframe):
+    """
+    Fixture to get item IDs used in test data.
+    """
+    return sorted(items_dataframe["item_id"].unique())
 
 
 @pytest.fixture(name="dimension_dataframe", scope="session")

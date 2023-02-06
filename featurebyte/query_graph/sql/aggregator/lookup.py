@@ -22,9 +22,9 @@ from featurebyte.query_graph.sql.specs import LookupSpec
 
 
 @dataclass
-class LookupSubquery(LeftJoinableSubquery):
+class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     """
-    LeftJoinableSubquery for lookup features
+    SubqueryWithPointInTimeCutoff for lookup features
     """
 
     event_timestamp_column: Optional[str]
@@ -166,7 +166,7 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             else:
                 event_timestamp_column = None
 
-            result = LookupSubquery(
+            result = SubqueryWithPointInTimeCutoff(
                 expr=agg_expr,
                 column_names=[spec.agg_result_name for spec in specs],
                 join_keys=[serving_name],

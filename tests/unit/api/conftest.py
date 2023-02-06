@@ -202,8 +202,18 @@ def snowflake_item_data_fixture(
     yield item_data
 
 
+@pytest.fixture
+def item_entity():
+    """
+    Item entity fixture
+    """
+    entity = Entity(name="item", serving_names=["item_id"])
+    entity.save()
+    return entity
+
+
 @pytest.fixture(name="saved_item_data")
-def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data):
+def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data, item_entity):
     """
     Saved ItemData fixture
     """
@@ -216,14 +226,10 @@ def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data):
     assert isinstance(snowflake_item_data.created_at, datetime)
     assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
 
-    # create entity
-    entity = Entity(name="item", serving_names=["item_id"])
-    entity.save()
-
     item_id_col = snowflake_item_data.item_id_col
     assert isinstance(item_id_col, DataColumn)
-    snowflake_item_data.item_id_col.as_entity("item")
-    assert snowflake_item_data.item_id_col.info.entity_id == entity.id
+    snowflake_item_data.item_id_col.as_entity(item_entity.name)
+    assert snowflake_item_data.item_id_col.info.entity_id == item_entity.id
 
     # test list event data
     item_data_list = ItemData.list()
