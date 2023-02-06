@@ -258,13 +258,19 @@ class ChangeView(View, GroupByMixin):
         change_view[col_names.new_valid_from_column_name] = change_view[
             scd_data.effective_timestamp_column
         ]
-        change_view[col_names.previous_valid_from_column_name] = change_view[
+        change_view[
+            col_names.previous_valid_from_column_name
+        ] = change_view[  # pylint: disable=no-member
             scd_data.effective_timestamp_column
-        ].lag(change_view.natural_key_column)
+        ].lag(
+            change_view.natural_key_column
+        )
 
         past_col_name = col_names.previous_tracked_column_name
         change_view[col_names.new_tracked_column_name] = change_view[track_changes_column]
-        change_view[past_col_name] = change_view[col_names.new_tracked_column_name].lag(change_view.natural_key_column)  # type: ignore  # pylint: disable=no-member
+        change_view[past_col_name] = change_view[col_names.new_tracked_column_name].lag(
+            change_view.natural_key_column
+        )  # pylint: disable=no-member
 
         # select the 5 cols we want to present
         change_view = change_view[
