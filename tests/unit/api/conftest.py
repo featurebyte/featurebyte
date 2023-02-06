@@ -11,7 +11,9 @@ from bson.objectid import ObjectId
 from cachetools import TTLCache
 from pandas.testing import assert_frame_equal
 
+from featurebyte import Entity
 from featurebyte.api.api_object import ApiObject
+from featurebyte.api.base_data import DataColumn
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.event_data import EventData
@@ -213,6 +215,30 @@ def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data):
     assert snowflake_item_data.status == DataStatus.DRAFT
     assert isinstance(snowflake_item_data.created_at, datetime)
     assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
+
+    # create entity
+    entity = Entity(name="item", serving_names=["item_id"])
+    entity.save()
+
+    item_id_col = snowflake_item_data.item_id_col
+    assert isinstance(item_id_col, DataColumn)
+    snowflake_item_data.item_id_col.as_entity("item")
+    assert snowflake_item_data.item_id_col.info.entity_id == entity.id
+
+    # test list event data
+    item_data_list = ItemData.list()
+    assert_frame_equal(
+        item_data_list,
+        pd.DataFrame(
+            {
+                "name": [snowflake_item_data.name],
+                "type": [snowflake_item_data.type],
+                "status": [snowflake_item_data.status],
+                "entities": [["item"]],
+                "created_at": [snowflake_item_data.created_at],
+            }
+        ),
+    )
 
     yield snowflake_item_data
 
