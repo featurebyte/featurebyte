@@ -648,7 +648,7 @@ def snowflake_event_view_fixture(
 
 
 @pytest.fixture(name="snowflake_event_view_with_entity")
-def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity, cust_id_entity):
+def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     """
     Snowflake event view with entity
     """
@@ -672,7 +672,7 @@ def snowflake_event_view_entity_feature_job_fixture(
 
 
 @pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view_with_entity, cust_id_entity):
+def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
     EventViewGroupBy fixture
     """
