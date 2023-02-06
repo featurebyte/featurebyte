@@ -548,6 +548,16 @@ def cust_id_entity_fixture(customer_entity_id):
     yield entity
 
 
+@pytest.fixture(name="transaction_entity")
+def transaction_entity_fixture():
+    """
+    Event entity fixture
+    """
+    entity = Entity(name="transaction", serving_names=["transaction_id"])
+    entity.save()
+    yield entity
+
+
 @pytest.fixture(name="snowflake_event_data_with_entity")
 def snowflake_event_data_with_entity_fixture(
     snowflake_event_data, cust_id_entity, mock_api_object_cache
@@ -733,7 +743,7 @@ def get_non_time_based_feature_fixture(snowflake_item_data, transaction_entity):
 
     This is a non-time-based feature as it is built from ItemData.
     """
-    snowflake_item_data.event_id_col.as_entity("customer")
+    snowflake_item_data.event_id_col.as_entity(transaction_entity.name)
     item_data = ItemData(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
     item_view = ItemView.from_item_data(item_data, event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(

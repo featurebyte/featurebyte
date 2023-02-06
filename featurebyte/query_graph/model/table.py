@@ -116,7 +116,7 @@ class DimensionTableData(BaseTableData):
 
 
 class SCDTableData(BaseTableData):
-    """FrozenSCDTableData class"""
+    """SCDTableData class"""
 
     type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")

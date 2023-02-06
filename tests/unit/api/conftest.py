@@ -63,16 +63,6 @@ def expected_item_data_table_preview_query() -> str:
     ).strip()
 
 
-@pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture():
-    """
-    Event entity fixture
-    """
-    entity = Entity(name="transaction", serving_names=["transaction_id"])
-    entity.save()
-    yield entity
-
-
 @pytest.fixture(name="snowflake_database_table")
 def snowflake_database_table_fixture(
     snowflake_connector, snowflake_execute_query, snowflake_feature_store
