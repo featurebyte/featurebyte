@@ -960,7 +960,7 @@ def test_add_feature(event_view, non_time_based_feature):
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp(timestamp_str),
         "PRODUCT_ACTION": "purchase",
-        "transaction_count_sum_24h": 130,
+        "transaction_count_sum_24h": 108,
     }
 
 

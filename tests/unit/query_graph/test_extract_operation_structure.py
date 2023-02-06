@@ -595,6 +595,7 @@ def test_extract_operation__event_lookup_feature(
     op_struct = global_graph.extract_operation_structure(node=event_lookup_feature_node)
     common_data_params = extract_column_parameters(event_data_input_node)
     expected_columns = [
+        {"name": "ts", "dtype": "TIMESTAMP", **common_data_params},
         {"name": "order_method", "dtype": "VARCHAR", **common_data_params},
     ]
     expected_aggregations = [
@@ -609,7 +610,7 @@ def test_extract_operation__event_lookup_feature(
             "window": None,
             "category": None,
             "type": "aggregation",
-            "column": expected_columns[0],
+            "column": expected_columns[1],
             "aggregation_type": "lookup",
         }
     ]

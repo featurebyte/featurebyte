@@ -145,10 +145,7 @@ def test_item_data_update_critical_data_info(item_data):
     window_preview_df = window_feature.preview(
         {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
     )
-    assert window_preview_df.count_12h.iloc[0] == (
-        '{\n  "type_19": 1,\n  "type_38": 1,\n  "type_39": 1,\n  "type_44": 1,\n  "type_69": 1,\n  "type_85": 1,'
-        '\n  "type_87": 1,\n  "type_90": 1\n}'
-    )
+    assert window_preview_df.count_12h.iloc[0] == '{\n  "type_84": 1\n}'
 
     feature = item_view.groupby("order_id").aggregate(
         method="count",

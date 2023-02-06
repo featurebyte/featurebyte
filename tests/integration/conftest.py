@@ -362,7 +362,8 @@ def items_dataframe_fixture(transaction_data_upper_case):
         generate_items_for_transaction(row)
 
     df_items = pd.DataFrame(data)
-    df_items["item_id"] = [f"item_{i}" for i in range(df_items.shape[0])]
+    item_ids = pd.Series([f"item_{i}" for i in range(df_items.shape[0])])
+    df_items.insert(1, "item_id", item_ids)
     return df_items
 
 
@@ -371,7 +372,7 @@ def item_ids_fixture(items_dataframe):
     """
     Fixture to get item IDs used in test data.
     """
-    return sorted(items_dataframe["item_id"].unique())
+    return items_dataframe["item_id"].tolist()
 
 
 @pytest.fixture(name="dimension_dataframe", scope="session")
@@ -435,7 +436,7 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
     """
     df = pd.merge(
         transaction_data_upper_case[
-            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "PRODUCT_ACTION"]
+            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "CUST_ID", "PRODUCT_ACTION"]
         ],
         items_dataframe,
         left_on="TRANSACTION_ID",
