@@ -106,31 +106,50 @@ def test_get_new_column_names():
     Test _get_new_column_names
     """
     col_name = "col_name"
-    old_col, new_col = ChangeView._get_new_column_names(col_name, None)
-    assert old_col == f"past_{col_name}"
-    assert new_col == f"new_{col_name}"
+    timestamp_col_name = "timestamp_col"
+    column_names = ChangeView._get_new_column_names(col_name, timestamp_col_name, None)
+    assert column_names.previous_tracked_column_name == f"past_{col_name}"
+    assert column_names.new_tracked_column_name == f"new_{col_name}"
+    assert column_names.previous_valid_from_column_name == f"past_{timestamp_col_name}"
+    assert column_names.new_valid_from_column_name == f"new_{timestamp_col_name}"
 
-    old_col, new_col = ChangeView._get_new_column_names(col_name, (None, "updated_"))
-    assert old_col == f"past_{col_name}"
-    assert new_col == f"updated_{col_name}"
+    column_names = ChangeView._get_new_column_names(
+        col_name, timestamp_col_name, (None, "updated_")
+    )
+    assert column_names.previous_tracked_column_name == f"past_{col_name}"
+    assert column_names.new_tracked_column_name == f"updated_{col_name}"
+    assert column_names.previous_valid_from_column_name == f"past_{timestamp_col_name}"
+    assert column_names.new_valid_from_column_name == f"updated_{timestamp_col_name}"
 
-    old_col, new_col = ChangeView._get_new_column_names(col_name, ("prior_", None))
-    assert old_col == f"prior_{col_name}"
-    assert new_col == f"new_{col_name}"
+    column_names = ChangeView._get_new_column_names(col_name, timestamp_col_name, ("prior_", None))
+    assert column_names.previous_tracked_column_name == f"prior_{col_name}"
+    assert column_names.new_tracked_column_name == f"new_{col_name}"
+    assert column_names.previous_valid_from_column_name == f"prior_{timestamp_col_name}"
+    assert column_names.new_valid_from_column_name == f"new_{timestamp_col_name}"
 
-    old_col, new_col = ChangeView._get_new_column_names(col_name, ("prior_", "updated_"))
-    assert old_col == f"prior_{col_name}"
-    assert new_col == f"updated_{col_name}"
+    column_names = ChangeView._get_new_column_names(
+        col_name, timestamp_col_name, ("prior_", "updated_")
+    )
+    assert column_names.previous_tracked_column_name == f"prior_{col_name}"
+    assert column_names.new_tracked_column_name == f"updated_{col_name}"
+    assert column_names.previous_valid_from_column_name == f"prior_{timestamp_col_name}"
+    assert column_names.new_valid_from_column_name == f"updated_{timestamp_col_name}"
 
 
 def change_view_test_helper(snowflake_scd_data, change_view):
     """
     Helper method to do some asserts
     """
-    assert len(change_view.columns_info) == 4
-    assert change_view.timestamp_column == snowflake_scd_data.effective_timestamp_column
+    assert len(change_view.columns_info) == 5
+    assert change_view.timestamp_column == "new_effective_timestamp"
     assert change_view.natural_key_column == snowflake_scd_data.natural_key_column
-    assert change_view.columns == ["col_text", "effective_timestamp", "new_col_int", "past_col_int"]
+    assert change_view.columns == [
+        "col_text",
+        "new_effective_timestamp",
+        "past_effective_timestamp",
+        "new_col_int",
+        "past_col_int",
+    ]
 
 
 def test_from_scd_data__no_default_job_setting(snowflake_scd_data):
@@ -203,7 +222,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
             *,
             FLOOR(
               (
-                DATE_PART(EPOCH_SECOND, "effective_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
+                DATE_PART(EPOCH_SECOND, "new_effective_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMPNTZ))
               ) / 86400
             ) AS tile_index
           FROM (
@@ -212,12 +231,12 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
             FROM (
               SELECT
                 "col_text" AS "col_text",
-                "effective_timestamp" AS "effective_timestamp"
+                "effective_timestamp" AS "new_effective_timestamp"
               FROM "sf_database"."sf_schema"."scd_table"
             )
             WHERE
-              "effective_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "effective_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              "new_effective_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+              AND "new_effective_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
           )
         )
         GROUP BY
