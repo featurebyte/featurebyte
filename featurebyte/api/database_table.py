@@ -61,7 +61,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
     _table_data_class: ClassVar[Type[AllTableDataT]]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         # Construct feature_store, input node & set the graph related parameters based on the given input dictionary
         values = kwargs
         tabular_source = dict(values["tabular_source"])
