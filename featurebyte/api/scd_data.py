@@ -3,7 +3,7 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import ClassVar, Optional, Type
+from typing import ClassVar, Literal, Optional, Type
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
@@ -12,15 +12,15 @@ from typeguard import typechecked
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.table import AllTableDataT, FrozenSCDTableData, SCDTableData
+from featurebyte.query_graph.model.table import AllTableDataT, SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
-class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
+class SlowlyChangingData(FrozenDataModel, DataApiObject):
     """
     SlowlyChangingData class
     """
@@ -33,6 +33,9 @@ class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
     _update_schema_class = SCDDataUpdate
     _create_schema_class = SCDDataCreate
     _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
+
+    # pydantic instance variable (public)
+    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
 
     # pydantic instance variable (internal use)
     int_natural_key_column: StrictStr = Field(alias="natural_key_column")
@@ -49,11 +52,11 @@ class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
             columns_info_key="int_columns_info",
             expected_column_field_name_type_pairs=[
                 ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
-                ("natural_key_column", DBVarType.supported_id_types()),
-                ("effective_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("surrogate_key_column", DBVarType.supported_id_types()),
-                ("end_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("current_flag_column", None),
+                ("int_natural_key_column", DBVarType.supported_id_types()),
+                ("int_effective_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("int_surrogate_key_column", DBVarType.supported_id_types()),
+                ("int_end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("int_current_flag_column", None),
             ],
         )
     )
@@ -126,7 +129,7 @@ class SlowlyChangingData(FrozenSCDTableData, FrozenDataModel, DataApiObject):
         try:
             return self.cached_model.current_flag_column
         except RecordRetrievalException:
-            return self.current_flag_column
+            return self.int_current_flag_column
 
     @property
     def timestamp_column(self) -> Optional[str]:

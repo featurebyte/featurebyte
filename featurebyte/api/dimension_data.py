@@ -34,7 +34,7 @@ class DimensionData(FrozenDataModel, DataApiObject):
     _create_schema_class = DimensionDataCreate
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
 
-    # pydantic instance variable
+    # pydantic instance variable (public)
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
 
     # pydantic instance variable (internal use)

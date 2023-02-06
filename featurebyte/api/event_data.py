@@ -40,7 +40,7 @@ class EventData(FrozenDataModel, DataApiObject):
     _create_schema_class = EventDataCreate
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
-    # pydantic instance variable
+    # pydantic instance variable (public)
     type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
 
     # pydantic instance variable (internal use)

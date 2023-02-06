@@ -19,7 +19,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.table import AllTableDataT, FrozenItemTableData, ItemTableData
+from featurebyte.query_graph.model.table import AllTableDataT, ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 

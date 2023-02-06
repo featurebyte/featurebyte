@@ -1,26 +1,24 @@
 """
 This module contains specialized table related models.
 """
-from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, parse_obj_as, validator
+from pydantic import Field, StrictStr, parse_obj_as
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.model.column_info import ColumnInfo, validate_columns_info
 from featurebyte.query_graph.model.common_table import (
     DATA_TABLES,
     SPECIFIC_DATA_TABLES,
     BaseTableData,
-    FrozenTableData,
 )
 from featurebyte.query_graph.node.generic import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
-class FrozenGenericTableData(FrozenTableData):
+class GenericTableData(BaseTableData):
     """GenericTableData class"""
 
     type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC, const=True)
@@ -35,22 +33,13 @@ class FrozenGenericTableData(FrozenTableData):
             },
         )
 
-
-class GenericTableData(FrozenGenericTableData, BaseTableData):
-    """EventTableData class"""
-
-    columns_info: List[ColumnInfo]  # type: ignore
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
-
     @property
     def primary_key_columns(self) -> List[str]:
         return []
 
 
-class FrozenEventTableData(FrozenTableData):
-    """FrozenEventTableData class"""
+class EventTableData(BaseTableData):
+    """EventTableData class"""
 
     type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -76,17 +65,8 @@ class FrozenEventTableData(FrozenTableData):
         )
 
 
-class EventTableData(FrozenEventTableData, BaseTableData):
-    """EventTableData class"""
-
-    columns_info: List[ColumnInfo]  # type: ignore
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
-
-
-class FrozenItemTableData(FrozenTableData):
-    """FrozenItemTableData class"""
+class ItemTableData(BaseTableData):
+    """ItemTableData class"""
 
     type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -112,17 +92,8 @@ class FrozenItemTableData(FrozenTableData):
         )
 
 
-class ItemTableData(FrozenItemTableData, BaseTableData):
-    """ItemTableData class"""
-
-    columns_info: List[ColumnInfo]  # type: ignore
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
-
-
-class FrozenDimensionTableData(FrozenTableData):
-    """FrozenDimensionTableData class"""
+class DimensionTableData(BaseTableData):
+    """DimensionTableData class"""
 
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -144,16 +115,7 @@ class FrozenDimensionTableData(FrozenTableData):
         )
 
 
-class DimensionTableData(FrozenDimensionTableData, BaseTableData):
-    """DimensionTableData class"""
-
-    columns_info: List[ColumnInfo]  # type: ignore
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
-
-
-class FrozenSCDTableData(FrozenTableData):
+class SCDTableData(BaseTableData):
     """FrozenSCDTableData class"""
 
     type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
@@ -182,20 +144,6 @@ class FrozenSCDTableData(FrozenTableData):
                 **self._get_common_input_node_parameters(),
             },
         )
-
-
-class SCDTableData(FrozenSCDTableData, BaseTableData):
-    """SCDTableData class"""
-
-    columns_info: List[ColumnInfo]  # type: ignore
-    natural_key_column: StrictStr
-    effective_timestamp_column: StrictStr
-    surrogate_key_column: Optional[StrictStr]
-    end_timestamp_column: Optional[StrictStr] = Field(default=None)
-    current_flag_column: Optional[StrictStr] = Field(default=None)
-
-    # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
 
 
 if TYPE_CHECKING:
