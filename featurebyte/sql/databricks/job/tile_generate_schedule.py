@@ -33,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument("tile_end_date_placeholder", type=str)
     parser.add_argument("entity_column_names", type=str)
     parser.add_argument("value_column_names", type=str)
+    parser.add_argument("value_column_types", type=str)
     parser.add_argument("tile_type", type=str)
     parser.add_argument("monitor_periods", type=int)
     parser.add_argument("job_schedule_ts", type=str)
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     tile_end_date_placeholder = args.tile_end_date_placeholder
     entity_column_names = args.entity_column_names
     value_column_names = args.value_column_names
+    value_column_types = args.value_column_types
     tile_type = args.tile_type
     monitor_periods = args.monitor_periods
     job_schedule_ts = args.job_schedule_ts
@@ -69,6 +71,7 @@ if __name__ == "__main__":
     print("tile_end_date_placeholder: ", tile_end_date_placeholder)
     print("entity_column_names: ", entity_column_names)
     print("value_column_names: ", value_column_names)
+    print("value_column_types: ", value_column_types)
     print("tile_type: ", tile_type)
     print("monitor_periods: ", monitor_periods)
     print("job_schedule_ts: ", job_schedule_ts)

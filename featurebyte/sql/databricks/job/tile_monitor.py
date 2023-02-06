@@ -23,6 +23,7 @@ def main(args: Dict[str, Any]) -> None:
     frequency_minute = args["frequency_minute"]
     entity_column_names = args["entity_column_names"]
     value_column_names = args["value_column_names"]
+    value_column_types = args["value_column_types"]
     tile_id = args["tile_id"].upper()
     tile_type = args["tile_type"]
 
@@ -33,6 +34,7 @@ def main(args: Dict[str, Any]) -> None:
     print("frequency_minute: ", frequency_minute)
     print("entity_column_names: ", entity_column_names)
     print("value_column_names: ", value_column_names)
+    print("value_column_types: ", value_column_types)
     print("tile_id: ", tile_id)
     print("tile_type: ", tile_type)
 
@@ -143,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("frequency_minute", type=int)
     parser.add_argument("entity_column_names", type=str)
     parser.add_argument("value_column_names", type=str)
+    parser.add_argument("value_column_types", type=str)
     parser.add_argument("tile_id", type=str)
     parser.add_argument("tile_type", type=str)
 

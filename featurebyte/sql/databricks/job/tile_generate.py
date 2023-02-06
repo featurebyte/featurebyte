@@ -25,6 +25,7 @@ def main(args: Dict[str, Any]) -> None:
     frequency_minute = args["frequency_minute"]
     entity_column_names = args["entity_column_names"]
     value_column_names = args["value_column_names"]
+    value_column_types = args["value_column_types"]
     tile_id = args["tile_id"].upper()
     tile_type = args["tile_type"]
     last_tile_start_str = args["last_tile_start_str"]
@@ -38,6 +39,7 @@ def main(args: Dict[str, Any]) -> None:
     print("frequency_minute: ", frequency_minute)
     print("entity_column_names: ", entity_column_names)
     print("value_column_names: ", value_column_names)
+    print("value_column_types: ", value_column_types)
     print("tile_id: ", tile_id)
     print("tile_type: ", tile_type)
     print("last_tile_start_str: ", last_tile_start_str)
@@ -98,14 +100,26 @@ def main(args: Dict[str, Any]) -> None:
         print("creating tile table: ", tile_id)
         spark.sql(f"create table {tile_id} as {tile_sql}")
     else:
+
+        if entity_column_names:
+            on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
+            insert_str = f"INDEX, {entity_column_names}, {value_column_names}, CREATED_AT"
+            values_str = (
+                f"b.INDEX, {entity_insert_cols_str}, {value_insert_cols_str}, current_timestamp()"
+            )
+        else:
+            on_condition_str = "a.INDEX = b.INDEX"
+            insert_str = f"INDEX, {value_column_names}, CREATED_AT"
+            values_str = f"b.INDEX, {value_insert_cols_str}, current_timestamp()"
+
         merge_sql = f"""
             merge into {tile_id} a using ({tile_sql}) b
-                on a.index = b.index AND {entity_filter_cols_str}
+                on {on_condition_str}
                 when matched then
                     update set a.created_at = current_timestamp(), {value_update_cols_str}
                 when not matched then
-                    insert (index, {entity_column_names}, {value_column_names}, created_at)
-                        values (b.index, {entity_insert_cols_str}, {value_insert_cols_str}, current_timestamp())
+                    insert ({insert_str})
+                        values ({values_str})
         """
         print("merging data: ", merge_sql)
         spark.sql(merge_sql)
@@ -136,8 +150,9 @@ if __name__ == "__main__":
     parser.add_argument("tile_modulo_frequency_second", type=int)
     parser.add_argument("blind_spot_second", type=int)
     parser.add_argument("frequency_minute", type=int)
-    parser.add_argument("entity_column_names", type=str)
+    parser.add_argument("entity_column_names", type=str, default="")
     parser.add_argument("value_column_names", type=str)
+    parser.add_argument("value_column_types", type=str)
     parser.add_argument("tile_id", type=str)
     parser.add_argument("tile_type", type=str)
     parser.add_argument("last_tile_start_str", type=str)
