@@ -26,7 +26,7 @@ from featurebyte.api.join_utils import (
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.core.frame import Frame
+from featurebyte.core.frame import Frame, InputTypeT
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import Series
@@ -320,14 +320,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
+    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[InputTypeT, Series, Frame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
         return output
 
     @typechecked
-    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
+    def __setitem__(self, key: str, value: Union[int, float, str, bool, InputTypeT]) -> None:
         if key in self.protected_columns:
             raise ValueError(f"Column '{key}' cannot be modified!")
         super().__setitem__(key, value)
