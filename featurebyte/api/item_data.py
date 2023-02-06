@@ -3,7 +3,7 @@ ItemData class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Type
+from typing import Any, ClassVar, Literal, Optional, Type
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
@@ -13,8 +13,9 @@ from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
@@ -22,7 +23,7 @@ from featurebyte.query_graph.model.table import AllTableDataT, FrozenItemTableDa
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 
 
-class ItemData(FrozenItemTableData, FrozenDataModel, DataApiObject):
+class ItemData(FrozenDataModel, DataApiObject):
     """
     ItemData class
     """
@@ -37,6 +38,8 @@ class ItemData(FrozenItemTableData, FrozenDataModel, DataApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
+    type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
+    event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         exclude=True, allow_mutation=False
     )

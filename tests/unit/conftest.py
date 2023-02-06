@@ -733,9 +733,9 @@ def get_non_time_based_feature_fixture(snowflake_item_data, transaction_entity):
 
     This is a non-time-based feature as it is built from ItemData.
     """
-    snowflake_item_data.event_id_col.as_entity(transaction_entity.name)
-    snowflake_item_data.item_id_column = "event_id_col"
-    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    snowflake_item_data.event_id_col.as_entity("customer")
+    item_data = ItemData(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
+    item_view = ItemView.from_item_data(item_data, event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,
