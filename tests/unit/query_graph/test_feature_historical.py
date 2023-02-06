@@ -10,11 +10,7 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
-from featurebyte.exception import (
-    MissingPointInTimeColumnError,
-    MissingServingNameError,
-    TooRecentPointInTimeError,
-)
+from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (

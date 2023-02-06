@@ -165,6 +165,17 @@ class BaseTableData(FeatureByteBaseModel):
 
         return graph_node
 
+    @property
+    @abstractmethod
+    def primary_key_columns(self) -> List[str]:
+        """
+        List of primary key columns of the table data
+
+        Returns
+        -------
+        List[str]
+        """
+
     @abstractmethod
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         """
