@@ -94,7 +94,7 @@ beta-stop:
 	-docker container rm mongo-rs featurebyte-server featurebyte-docs
 
 beta-build:
-	poetry build   # We are exporting dist/ to the image
+	poetry build
 	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
 
 beta-bundle:

@@ -1,7 +1,4 @@
-FROM python:3.8-slim
-
-ARG USER=fb_user
-ARG UID=1000
+FROM python:3.8-slim AS builder
 
 ARG FEATUREBYTE_NP_PASSWORD
 ARG FEATUREBYTE_REPOSITORY=us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi
@@ -12,39 +9,45 @@ ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential netcat curl wkhtmltopdf && \
+    apt-get install -y build-essential curl wkhtmltopdf && \
     apt-get clean
 
 # install poetry
 RUN pip install poetry==1.3.1
 
-# Copy project files
 WORKDIR /app
 COPY poetry.lock pyproject.toml /app/
 
-# Install requirements
-RUN poetry config virtualenvs.create false && \
-    poetry install --only main --only docs --extras "server" --no-interaction --no-ansi && \
-    poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD} && \
-    rm -rf ~/.cache/pypoetry/artifacts && \
-    rm -rf ~/.cache/pypoetry/cache
+# Install into .venv
+RUN poetry config virtualenvs.in-project true && \
+    poetry install --only main --only docs --extras "server" --no-interaction --no-ansi  && \
+    poetry add jupyterlab==3.5.3
 
-# copy featurebyte
-COPY ./dist            /app/dist
+FROM python:3.8-slim AS runner
 
-RUN pip install jupyterlab==3.5.3 && \
-    pip install --no-index -f /app/dist featurebyte && \
-    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD && \
-    unset POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME && \
-    poetry config --unset http-basic.featurebyte_np
+ARG UID=1000
+ARG USER=fb_user
+ARG USER_GROUP=users
+ARG USER_HOME=/app
 
-# Copy scripts
+RUN useradd -m -r -d $USER_HOME -g users -u $UID $USER
+
+RUN apt-get update && \
+    apt-get install -y netcat && \
+    apt-get clean
+
+## copy featurebyte
+WORKDIR $USER_HOME
+USER $USER
+
+## Copy binaries and build
+COPY --chown=$USER:$USER_GROUP --from=builder /app/.venv $USER_HOME/.venv
+COPY --chown=$USER:$USER_GROUP ./dist $USER_HOME/dist
+ENV PATH="${USER_HOME}/.venv/bin:${PATH}"
+RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /app/.venv
+
+## Copy scripts
 COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
 COPY ./docker/samples/                  /samples
 
-RUN adduser --uid $UID --disabled-password --gecos '' $USER
-RUN chown -R $USER:$USER /app
-
-USER $USER
-
-ENTRYPOINT ["/bin/bash", "/scripts/entrypoint.sh"]
+CMD ["/bin/bash", "/scripts/entrypoint.sh"]
