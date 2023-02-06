@@ -3,7 +3,7 @@ DimensionData class
 """
 from __future__ import annotations
 
-from typing import ClassVar, Optional, Type
+from typing import ClassVar, Literal, Optional, Type
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
@@ -12,19 +12,15 @@ from typeguard import typechecked
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FrozenDataModel
 from featurebyte.models.validator import construct_data_model_root_validator
-from featurebyte.query_graph.model.table import (
-    AllTableDataT,
-    DimensionTableData,
-    FrozenDimensionTableData,
-)
+from featurebyte.query_graph.model.table import AllTableDataT, DimensionTableData
 from featurebyte.schema.dimension_data import DimensionDataCreate, DimensionDataUpdate
 
 
-class DimensionData(FrozenDimensionTableData, FrozenDataModel, DataApiObject):
+class DimensionData(FrozenDataModel, DataApiObject):
     """
     DimensionData class
     """
@@ -37,6 +33,9 @@ class DimensionData(FrozenDimensionTableData, FrozenDataModel, DataApiObject):
     _update_schema_class = DimensionDataUpdate
     _create_schema_class = DimensionDataCreate
     _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
+
+    # pydantic instance variable
+    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
 
     # pydantic instance variable (internal use)
     int_dimension_id_column: StrictStr = Field(alias="dimension_id_column")
