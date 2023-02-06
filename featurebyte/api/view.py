@@ -320,7 +320,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[InputTypeT, Series, Frame]:
+    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[InputTypeT, Frame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
