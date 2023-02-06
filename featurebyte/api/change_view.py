@@ -246,29 +246,29 @@ class ChangeView(View, GroupByMixin):
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting
         )
-        column_names_to_use = ChangeView._get_new_column_names(
+        col_names = ChangeView._get_new_column_names(
             track_changes_column, scd_data.effective_timestamp_column, prefixes
         )
         change_view = cls.from_data(
             scd_data,
             natural_key_column=scd_data.natural_key_column,
-            effective_timestamp_column=column_names_to_use.new_valid_from_column_name,
+            effective_timestamp_column=col_names.new_valid_from_column_name,
             default_feature_job_setting=feature_job_setting,
         )
         # We type:ignore these assignments as the right side variable has wrong type hints. We're looking to fix
         # this in DEV-918.
-        change_view[column_names_to_use.new_valid_from_column_name] = change_view[
+        change_view[col_names.new_valid_from_column_name] = change_view[
             scd_data.effective_timestamp_column
         ]  # type: ignore
-        change_view[column_names_to_use.previous_valid_from_column_name] = change_view[
+        change_view[col_names.previous_valid_from_column_name] = change_view[
             scd_data.effective_timestamp_column
         ].lag(
             change_view.natural_key_column
         )  # type: ignore
 
         change_view[column_names_to_use.new_tracked_column_name] = change_view[track_changes_column]  # type: ignore
-        change_view[column_names_to_use.previous_tracked_column_name] = change_view[
-            column_names_to_use.new_tracked_column_name
+        change_view[col_names.previous_tracked_column_name] = change_view[
+            col_names.new_tracked_column_name
         ].lag(
             change_view.natural_key_column
         )  # type: ignore
@@ -277,10 +277,10 @@ class ChangeView(View, GroupByMixin):
         change_view = change_view[
             [
                 change_view.natural_key_column,
-                column_names_to_use.new_valid_from_column_name,
-                column_names_to_use.new_tracked_column_name,
-                column_names_to_use.previous_valid_from_column_name,
-                column_names_to_use.previous_tracked_column_name,
+                col_names.new_valid_from_column_name,
+                col_names.new_tracked_column_name,
+                col_names.previous_valid_from_column_name,
+                col_names.previous_tracked_column_name,
             ]
         ]  # type: ignore
         return change_view
