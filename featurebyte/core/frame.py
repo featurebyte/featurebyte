@@ -3,7 +3,7 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, List, TypeVar, Union
+from typing import Any, List, TypeVar, Union, overload
 
 import pandas as pd
 from pydantic import Field
