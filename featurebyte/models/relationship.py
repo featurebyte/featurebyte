@@ -3,7 +3,6 @@ This module contains Relation mixin model
 """
 from typing import List
 
-from bson import ObjectId
 from pydantic import Field, validator
 
 from featurebyte.models.base import (
@@ -11,7 +10,7 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
-from featurebyte.models.validator import sort_ids_validator
+from featurebyte.models.validator import construct_sort_validator
 
 
 class Parent(FeatureByteBaseModel):
@@ -31,10 +30,7 @@ class Relationship(FeatureByteBaseDocumentModel):
     parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
 
     # pydantic validators
-    _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(sort_ids_validator)
-
-    @validator("parents")
-    @classmethod
-    def _validate_parents(cls, value: List[Parent]) -> List[Parent]:
-        # make sure list of parents is sorted
-        return sorted(value, key=lambda parent: parent.id)
+    _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(construct_sort_validator())
+    _sort_parent_validator = validator("parents", allow_reuse=True)(
+        construct_sort_validator(field="id")
+    )

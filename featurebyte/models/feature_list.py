@@ -12,7 +12,6 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
-from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -23,7 +22,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
-from featurebyte.models.validator import sort_ids_validator
+from featurebyte.models.validator import construct_sort_validator, version_validator
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
@@ -254,7 +253,7 @@ class FrozenFeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     # pydantic validators
     _sort_ids_validator = validator(
         "feature_namespace_ids", "entity_ids", "tabular_data_ids", allow_reuse=True
-    )(sort_ids_validator)
+    )(construct_sort_validator())
 
     @root_validator(pre=True)
     @classmethod
@@ -416,7 +415,7 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
 
     # pydantic validators
     _sort_feature_list_ids_validator = validator("feature_list_ids", allow_reuse=True)(
-        sort_ids_validator
+        construct_sort_validator()
     )
 
 
@@ -434,7 +433,10 @@ class FrozenFeatureListModel(FeatureByteBaseDocumentModel):
     feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(sort_ids_validator)
+    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @staticmethod
     def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
@@ -492,14 +494,6 @@ class FrozenFeatureListModel(FeatureByteBaseDocumentModel):
                 )
             )
         return feature_clusters
-
-    @validator("version", pre=True)
-    @classmethod
-    def _validate_version(cls, value: Any) -> Any:
-        # DEV-556: converted older record string value to dictionary format
-        if isinstance(value, str):
-            return convert_version_string_to_dict(value)
-        return value
 
     class Settings:
         """

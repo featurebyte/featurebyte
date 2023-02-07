@@ -8,7 +8,6 @@ from typing import Any, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
-from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -18,7 +17,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
-from featurebyte.models.validator import sort_ids_validator
+from featurebyte.models.validator import construct_sort_validator, version_validator
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -53,7 +52,7 @@ class FrozenFeatureNamespaceModel(FeatureByteBaseDocumentModel):
 
     # pydantic validators
     _sort_ids_validator = validator("entity_ids", "tabular_data_ids", allow_reuse=True)(
-        sort_ids_validator
+        construct_sort_validator()
     )
 
     @root_validator(pre=True)
@@ -123,7 +122,9 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
     )
 
     # pydantic validators
-    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(sort_ids_validator)
+    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
 
 class FrozenFeatureModel(FeatureByteBaseDocumentModel):
@@ -143,8 +144,9 @@ class FrozenFeatureModel(FeatureByteBaseDocumentModel):
 
     # pydantic validators
     _sort_ids_validator = validator("entity_ids", "tabular_data_ids", allow_reuse=True)(
-        sort_ids_validator
+        construct_sort_validator()
     )
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @root_validator(pre=True)
     @classmethod
@@ -184,14 +186,6 @@ class FrozenFeatureModel(FeatureByteBaseDocumentModel):
             if isinstance(values.get("node"), dict):
                 values["node_name"] = values["node"]["name"]
         return values
-
-    @validator("version", pre=True)
-    @classmethod
-    def _validate_version(cls, value: Any) -> Any:
-        # DEV-556: converted older record string value to dictionary format
-        if isinstance(value, str):
-            return convert_version_string_to_dict(value)
-        return value
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """

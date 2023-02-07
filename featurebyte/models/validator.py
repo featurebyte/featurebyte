@@ -3,8 +3,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Set, Tuple
 
-from bson import ObjectId
-
+from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType
 
 
@@ -51,20 +50,51 @@ def construct_data_model_root_validator(
     return _root_validator
 
 
-def sort_ids_validator(cls: Any, value: List[ObjectId]) -> List[ObjectId]:
+def construct_sort_validator(field: Optional[str] = None) -> Any:
     """
-    Validator function used to sort list of input ID values
+    Construct a sort validator function which will sort the input list & return
+
+    Parameters
+    ----------
+    field: Optional[str]
+        Field value used to sort. If the value is None, the whole object is used as sort key.
+
+    Returns
+    -------
+    Any
+    """
+
+    def _extract_key(elem: Any) -> Any:
+        assert isinstance(field, str)
+        return getattr(elem, field)
+
+    def _sort_validator(cls: Any, value: List[Any]) -> List[Any]:
+        _ = cls
+        if field:
+            return sorted(value, key=_extract_key)
+        return sorted(value)
+
+    return _sort_validator
+
+
+def version_validator(cls: Any, value: Any) -> Any:
+    """
+    Convert a version string into a version dictionary format
 
     Parameters
     ----------
     cls: Any
-        Class object handler
-    value: List[ObjectId]
-        List of ObjectId
+        Class handle
+    value: Any
+        Input version value
 
     Returns
     -------
-    List[ObjectId]
+    Any
     """
+
     _ = cls
-    return sorted(value)
+    # DEV-556: converted older record string value to dictionary format
+    if isinstance(value, str):
+        return convert_version_string_to_dict(value)
+    return value
