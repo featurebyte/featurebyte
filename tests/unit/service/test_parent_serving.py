@@ -21,16 +21,6 @@ async def test_get_join_steps__no_op(entity_a, entity_b, parent_entity_lookup_se
 
 
 @pytest.mark.asyncio
-async def test_get_join_steps__not_found(entity_a, entity_b, parent_entity_lookup_service):
-    """
-    Test no path can be found because no valid relationships are registered
-    """
-    entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
-    with pytest.raises(EntityJoinPathNotFoundError):
-        _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
-
-
-@pytest.mark.asyncio
 async def test_get_join_steps__one_step(
     entity_a, entity_b, b_is_parent_of_a, parent_entity_lookup_service
 ):
@@ -134,3 +124,29 @@ async def test_get_join_steps__two_branches(
             child_serving_name="B",
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_get_join_steps__not_found(entity_a, entity_b, parent_entity_lookup_service):
+    """
+    Test no path can be found because no valid relationships are registered
+    """
+    entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
+    with pytest.raises(EntityJoinPathNotFoundError):
+        _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+
+
+@pytest.mark.asyncio
+async def test_get_join_steps__not_found_with_relationships(
+    entity_a,
+    entity_c,
+    c_is_parent_of_b,
+    parent_entity_lookup_service,
+):
+    """
+    Test no path can be found because no valid relationships are registered
+    """
+    _ = c_is_parent_of_b
+    entity_info = EntityInfo(required_entities=[entity_c], provided_entities=[entity_a])
+    with pytest.raises(EntityJoinPathNotFoundError):
+        _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
