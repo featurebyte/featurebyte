@@ -5,8 +5,8 @@ from typing import List
 from bson import ObjectId
 from pydantic import validator
 
-from featurebyte.models import EntityModel
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.entity import EntityModel
 
 
 class EntityInfo(FeatureByteBaseModel):

@@ -504,7 +504,7 @@ async def entity_a_fixture(entity_service):
     """
     An entity A
     """
-    entity_a = await entity_service.create_document(EntityCreate(name="entity_a", serving_name="a"))
+    entity_a = await entity_service.create_document(EntityCreate(name="entity_a", serving_name="A"))
     return entity_a
 
 
@@ -513,7 +513,7 @@ async def entity_b_fixture(entity_service):
     """
     An entity B
     """
-    entity_b = await entity_service.create_document(EntityCreate(name="entity_b", serving_name="b"))
+    entity_b = await entity_service.create_document(EntityCreate(name="entity_b", serving_name="B"))
     return entity_b
 
 
@@ -522,7 +522,7 @@ async def entity_c_fixture(entity_service):
     """
     An entity C
     """
-    entity_c = await entity_service.create_document(EntityCreate(name="entity_c", serving_name="c"))
+    entity_c = await entity_service.create_document(EntityCreate(name="entity_c", serving_name="C"))
     return entity_c
 
 

@@ -7,9 +7,8 @@ from typing import Any, List, Tuple
 
 from collections import defaultdict
 
-from bson import ObjectId
-
 from featurebyte.exception import EntityJoinPathNotFoundError
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
 from featurebyte.persistent import Persistent
@@ -36,7 +35,7 @@ class ParentEntityLookupService(BaseService):
 
         all_join_steps = []
         for entity in entity_info.missing_entities:
-            join_path = await self.get_entity_join_path(entity.id, entity_info.provided_entity_ids)
+            join_path = await self.get_entity_join_path(entity, entity_info.provided_entities)
             join_steps = await self.get_join_steps_from_join_path(join_path)
             for join_step in join_steps:
                 if join_step not in all_join_steps:
@@ -44,11 +43,14 @@ class ParentEntityLookupService(BaseService):
 
         return all_join_steps
 
-    async def get_join_steps_from_join_path(self, join_path: list[ObjectId]) -> list[JoinStep]:
+    async def get_join_steps_from_join_path(self, join_path: list[EntityModel]) -> list[JoinStep]:
 
         join_steps = []
 
-        for child_entity_id, parent_entity_id in zip(join_path, join_path[1:]):
+        for child_entity, parent_entity in zip(join_path, join_path[1:]):
+
+            child_entity_id = child_entity.id
+            parent_entity_id = parent_entity.id
 
             parents = (await self.entity_service.get_document(child_entity_id)).parents
             relationship = next(parent for parent in parents if parent.id == parent_entity_id)
@@ -69,7 +71,9 @@ class ParentEntityLookupService(BaseService):
             join_step = JoinStep(
                 data=data.dict(by_alias=True),
                 parent_key=parent_key,
+                parent_serving_name=parent_entity.serving_names[0],
                 child_key=child_key,
+                child_serving_name=child_entity.serving_names[0],
             )
             join_steps.append(join_step)
 
@@ -77,28 +81,30 @@ class ParentEntityLookupService(BaseService):
 
     async def get_entity_join_path(
         self,
-        required_entity: ObjectId,
-        provided_entities: set[ObjectId],
-    ) -> list[ObjectId]:
+        required_entity: EntityModel,
+        provided_entities: list[EntityModel],
+    ) -> list[EntityModel]:
 
-        pending: List[Tuple[ObjectId, List[ObjectId]]] = [(required_entity, [])]
+        pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
 
         join_path = None
         visited = defaultdict(bool)
+
+        provided_entity_ids = set([entity.id for entity in provided_entities])
 
         while pending:
 
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 
-            if current_entity in provided_entities:
+            if current_entity.id in provided_entity_ids:
                 join_path = updated_path
                 break
 
-            visited[current_entity] = True
-            for child_entity in await self.entity_service.get_children_entities(current_entity):
+            visited[current_entity.id] = True
+            for child_entity in await self.entity_service.get_children_entities(current_entity.id):
                 if not visited[child_entity.id]:
-                    pending.append((child_entity.id, updated_path))
+                    pending.append((child_entity, updated_path))
 
         if join_path is None:
             raise EntityJoinPathNotFoundError(

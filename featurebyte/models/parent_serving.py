@@ -9,7 +9,8 @@ from featurebyte.models.tabular_data import TabularDataModel
 
 class JoinStep(FeatureByteBaseModel):
 
-    # TODO: serving names?
     data: TabularDataModel
     parent_key: str
+    parent_serving_name: str
     child_key: str
+    child_serving_name: str

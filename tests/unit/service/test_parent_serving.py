@@ -44,7 +44,9 @@ async def test_get_join_steps__one_step(
         JoinStep(
             data=data.dict(by_alias=True),
             parent_key="b",
+            parent_serving_name="B",
             child_key="a",
+            child_serving_name="A",
         )
     ]
 
@@ -68,11 +70,15 @@ async def test_get_join_steps__two_steps(
         JoinStep(
             data=data_a_to_b.dict(by_alias=True),
             parent_key="b",
+            parent_serving_name="B",
             child_key="a",
+            child_serving_name="A",
         ),
         JoinStep(
             data=data_b_to_c.dict(by_alias=True),
             parent_key="c",
+            parent_serving_name="C",
             child_key="b",
+            child_serving_name="B",
         ),
     ]
