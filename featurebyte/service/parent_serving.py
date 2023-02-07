@@ -7,6 +7,8 @@ from typing import Any, List, Tuple
 
 from collections import defaultdict
 
+from bson import ObjectId
+
 from featurebyte.exception import EntityJoinPathNotFoundError
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
@@ -46,7 +48,7 @@ class ParentEntityLookupService(BaseService):
             return []
 
         all_join_steps = []
-        current_available_entities = entity_info.provided_entities[:]
+        current_available_entities = entity_info.provided_entity_ids
 
         for entity in entity_info.missing_entities:
             join_path = await self.get_entity_join_path(entity, current_available_entities)
@@ -58,7 +60,7 @@ class ParentEntityLookupService(BaseService):
                     all_join_steps.append(join_step)
 
             # All the entities in the path are now available
-            current_available_entities.extend(join_path)
+            current_available_entities.update([entity.id for entity in join_path])
 
         return all_join_steps
 
@@ -113,7 +115,7 @@ class ParentEntityLookupService(BaseService):
     async def get_entity_join_path(
         self,
         required_entity: EntityModel,
-        provided_entities: list[EntityModel],
+        available_entity_ids: set[ObjectId],
     ) -> list[EntityModel]:
         """
         Get a join path given a required entity (missing but required for feature generation) and
@@ -126,7 +128,7 @@ class ParentEntityLookupService(BaseService):
         ----------
         required_entity: EntityModel
             Required entity
-        provided_entities: list[EntityModel]
+        available_entity_ids: set[ObjectId]
             List of currently available entities
 
         Returns
@@ -138,8 +140,6 @@ class ParentEntityLookupService(BaseService):
         EntityJoinPathNotFoundError
             If a join path cannot be identified
         """
-        provided_entity_ids = {entity.id for entity in provided_entities}
-
         # Perform a BFS traversal from the required entity and stop once any of the available
         # entities is reached. This should be the fastest way to join datas to obtain the required
         # entity (requiring the least number of joins) assuming all joins have the same cost.
@@ -152,7 +152,7 @@ class ParentEntityLookupService(BaseService):
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 
-            if current_entity.id in provided_entity_ids:
+            if current_entity.id in available_entity_ids:
                 join_path = updated_path
                 break
 
