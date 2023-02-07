@@ -8,6 +8,7 @@ import pytest
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.models import DimensionDataModel
 from featurebyte.models.feature_store import DataStatus
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
@@ -238,3 +239,27 @@ def test_info(saved_dimension_data):
     # setting verbose = true is a no-op for now
     info = saved_dimension_data.info(verbose=True)
     assert_info_helper(info)
+
+
+def test_accessing_dimension_data_attributes(snowflake_dimension_data):
+    """Test accessing event data object attributes"""
+    assert snowflake_dimension_data.saved is False
+    assert snowflake_dimension_data.record_creation_date_column == "created_at"
+    assert snowflake_dimension_data.dimension_id_column == "col_int"
+
+
+def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
+    """Test accessing event data object attributes"""
+    assert saved_dimension_data.saved
+    assert isinstance(saved_dimension_data.cached_model, DimensionDataModel)
+    assert saved_dimension_data.record_creation_date_column == "created_at"
+    assert saved_dimension_data.dimension_id_column == "col_int"
+
+    # check synchronization
+    cloned = DimensionData.get_by_id(id=saved_dimension_data.id)
+    assert cloned.record_creation_date_column == "created_at"
+    saved_dimension_data.update_record_creation_date_column(
+        record_creation_date_column="event_timestamp"
+    )
+    assert saved_dimension_data.record_creation_date_column == "event_timestamp"
+    assert cloned.record_creation_date_column == "event_timestamp"

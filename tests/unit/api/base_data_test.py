@@ -32,6 +32,7 @@ class BaseDataTestSuite:
     expected_data_sql = ""
     expected_data_column_sql = ""
     expected_clean_data_sql = ""
+    expected_attr_name_value_pairs = []
 
     @pytest.fixture(autouse=True)
     def immediately_expired_api_object_cache(self, mock_api_object_cache):

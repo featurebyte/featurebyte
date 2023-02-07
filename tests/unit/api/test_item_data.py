@@ -24,6 +24,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.item_data import ItemDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 
@@ -420,3 +421,29 @@ def test_info(saved_item_data):
     # setting verbose = true is a no-op for now
     info = saved_item_data.info(verbose=True)
     assert_info_helper(info)
+
+
+def test_accessing_item_data_attributes(snowflake_item_data):
+    """Test accessing event data object attributes"""
+    assert snowflake_item_data.saved is False
+    assert snowflake_item_data.record_creation_date_column is None
+    assert snowflake_item_data.event_id_column == "event_id_col"
+    assert snowflake_item_data.item_id_column == "item_id_col"
+
+
+def test_accessing_saved_item_data_attributes(saved_item_data):
+    """Test accessing event data object attributes"""
+    assert saved_item_data.saved
+    assert isinstance(saved_item_data.cached_model, ItemDataModel)
+    assert saved_item_data.record_creation_date_column is None
+    assert saved_item_data.event_id_column == "event_id_col"
+    assert saved_item_data.item_id_column == "item_id_col"
+
+    # check synchronization
+    entity = Entity(name="item_type", serving_names=["item_type"])
+    entity.save()
+    cloned = ItemData.get_by_id(id=saved_item_data.id)
+    assert cloned["item_type"].info.entity_id is None
+    saved_item_data["item_type"].as_entity(entity.name)
+    assert saved_item_data["item_type"].info.entity_id == entity.id
+    assert cloned["item_type"].info.entity_id == entity.id

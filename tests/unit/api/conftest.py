@@ -10,9 +10,9 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.base_data import DataColumn
-from featurebyte.api.entity import Entity
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.dimension_view import DimensionView
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
