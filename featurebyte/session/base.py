@@ -287,7 +287,7 @@ class BaseSession(BaseModel):
         query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
             results = await self.execute_query(query)
-        except self._no_schema_error:
+        except self._no_schema_error:  # pylint: disable=broad-except
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
             # more platforms.
