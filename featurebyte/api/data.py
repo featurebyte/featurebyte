@@ -28,6 +28,9 @@ class Data(TabularDataModel, DataListMixin):
         proxy_class="featurebyte.Data",
     )
 
+    # class variables
+    _get_schema = TabularDataModel
+
     _data_type_to_cls_mapping = {
         TableDataType.EVENT_DATA: EventData,
         TableDataType.ITEM_DATA: ItemData,
