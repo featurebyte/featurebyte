@@ -477,23 +477,21 @@ class GraphInterpreter:
         -------
         expressions.Expression
         """
-        return expressions.Anonymous(
-            this="TO_DECIMAL",
-            expressions=[
-                expressions.Concat(
-                    expressions=[
-                        make_literal_value("0"),
-                        expressions.Anonymous(
-                            this="SPLIT_PART",
-                            expressions=[
-                                timestamp_tz_expr,
-                                make_literal_value("+"),
-                                make_literal_value(2),
-                            ],
-                        ),
-                    ]
-                )
-            ],
+        return expressions.Cast(
+            this=expressions.Concat(
+                expressions=[
+                    make_literal_value("0"),
+                    expressions.Anonymous(
+                        this="SPLIT_PART",
+                        expressions=[
+                            timestamp_tz_expr,
+                            make_literal_value("+"),
+                            make_literal_value(2),
+                        ],
+                    ),
+                ]
+            ),
+            to="DECIMAL",
         )
 
     @property
@@ -597,13 +595,13 @@ class GraphInterpreter:
         )
         stats_expressions["mean"] = (
             lambda col_expr, _: expressions.Avg(
-                this=expressions.Anonymous(this="TO_DOUBLE", expressions=[col_expr])
+                this=expressions.Cast(this=col_expr, to="DOUBLE"),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["std"] = (
             lambda col_expr, _: expressions.Stddev(
-                this=expressions.Anonymous(this="TO_DOUBLE", expressions=[col_expr])
+                this=expressions.Cast(this=col_expr, to="DOUBLE"),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )

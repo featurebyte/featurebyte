@@ -209,7 +209,7 @@ class SparkSession(BaseSession):
         if spark_type.endswith("INT"):
             # BIGINT, INT, SMALLINT, TINYINT
             return DBVarType.INT
-        if spark_type.endswith("DECIMAL"):
+        if spark_type.startswith("DECIMAL"):
             # DECIMAL(10, 2)
             return DBVarType.FLOAT
 
@@ -246,6 +246,7 @@ class SparkSession(BaseSession):
         -------
         pa.types
         """
+        datatype = datatype.upper()
         mapping = {
             "TINYINT": pa.int8(),
             "SMALLINT": pa.int16(),
@@ -257,6 +258,7 @@ class SparkSession(BaseSession):
             "TIME": pa.time32("ms"),
             "DOUBLE": pa.float64(),
             "FLOAT": pa.float32(),
+            "DECIMAL": pa.decimal256(38, 0),
             "INTERVAL": pa.duration("ns"),
             "VOID": pa.null(),
             "TIMESTAMP": pa.timestamp("ns", tz=None),
@@ -265,7 +267,7 @@ class SparkSession(BaseSession):
             # "STRUCT": pa.struct(),
             "STRING": pa.string(),
         }
-        if datatype.startswith("DECIMAL"):
+        if datatype.startswith("DECIMAL") and "(" in datatype:
             args = datatype.split("(")[1][:-1].split(",")
             pyarrow_type = pa.decimal256(int_precision=int(args[0]), int_scale=int(args[1]))
         else:
