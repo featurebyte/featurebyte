@@ -43,11 +43,8 @@ class BaseTableData(FeatureByteBaseModel):
     columns_info: List[ColumnInfo]
     tabular_source: TabularSource
 
-    @validator("columns_info")
-    @classmethod
-    def _validate_columns_info(cls, values: List[ColumnInfo]) -> List[ColumnInfo]:
-        validate_columns_info(columns_info=values)
-        return values
+    # pydantic validators
+    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
 
     def __init_subclass__(cls, **kwargs: Any):
         # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
@@ -167,6 +164,16 @@ class BaseTableData(FeatureByteBaseModel):
             )
 
         return graph_node
+
+    @property
+    @abstractmethod
+    def primary_key_columns(self) -> List[str]:
+        """
+        List of primary key columns of the table data
+        Returns
+        -------
+        List[str]
+        """
 
     @abstractmethod
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:

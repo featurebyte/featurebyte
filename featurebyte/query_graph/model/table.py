@@ -1,7 +1,7 @@
 """
 This module contains specialized table related models.
 """
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
@@ -23,6 +23,10 @@ class GenericTableData(BaseTableData):
 
     type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC, const=True)
 
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return []
+
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             name="temp",
@@ -41,6 +45,12 @@ class EventTableData(BaseTableData):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_timestamp_column: StrictStr
     event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        if self.event_id_column:
+            return [self.event_id_column]
+        return []  # DEV-556: event_id_column should not be empty
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -64,6 +74,10 @@ class ItemTableData(BaseTableData):
     item_id_column: StrictStr
     event_data_id: PydanticObjectId
 
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.item_id_column]
+
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
             name="temp",
@@ -84,6 +98,10 @@ class DimensionTableData(BaseTableData):
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     dimension_id_column: StrictStr
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.dimension_id_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -107,6 +125,10 @@ class SCDTableData(BaseTableData):
     surrogate_key_column: Optional[StrictStr]
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
     current_flag_column: Optional[StrictStr] = Field(default=None)
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        return [self.natural_key_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(

@@ -63,10 +63,13 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view):
 
 
 @pytest.fixture
-def snowflake_dimension_view_with_entity(snowflake_dimension_data, cust_id_entity):
+def snowflake_dimension_view_with_entity(
+    snowflake_dimension_data, cust_id_entity, mock_api_object_cache
+):
     """
     Fixture of a DimensionView with entity tagged
     """
+    _ = mock_api_object_cache
     snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
     view = DimensionView.from_dimension_data(snowflake_dimension_data)
     return view
@@ -102,10 +105,11 @@ def test_as_features__duplicate_feature_names(snowflake_dimension_view):
     assert str(exc.value) == "feature_names contains duplicated value(s)"
 
 
-def test_as_features__primary_key_not_entity(snowflake_dimension_view):
+def test_as_features__primary_key_not_entity(snowflake_dimension_view, mock_api_object_cache):
     """
     Test as_features() when the primary key in not an entity
     """
+    _ = mock_api_object_cache
     with pytest.raises(ValueError) as exc:
         snowflake_dimension_view.as_features(["col_float", "col_char"], ["col_float", "col_char"])
     assert str(exc.value) == 'Column "col_int" is not an entity!'

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Type, Union
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from datetime import datetime
 from http import HTTPStatus
 
@@ -56,10 +56,15 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     AbstractTableDataFrame class represents the table data.
     """
 
-    columns_info: List[ColumnInfo]
+    # class variables
+    _table_data_class: ClassVar[Type[AllTableDataT]]
+
+    # pydantic instance variable (public)
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
-    _table_data_class: ClassVar[Type[AllTableDataT]]
+
+    # pydantic instance variable (internal use)
+    int_columns_info: List[ColumnInfo] = Field(alias="columns_info")
 
     def __init__(self, **kwargs: Any):
         # Construct feature_store, input node & set the graph related parameters based on the given input dictionary
@@ -187,10 +192,12 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformation output
+
         Parameters
         ----------
         limit: int
             maximum number of return rows
+
         Returns
         -------
         str
@@ -315,10 +322,26 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
             **kwargs,
         )
 
+    @property
+    @abstractmethod
+    def columns_info(self) -> List[ColumnInfo]:
+        """
+        List of column information of the dataset. Each column contains column name, column type, entity ID
+        associated with the column, semantic ID associated with the column.
 
-class DatabaseTable(GenericTableData, AbstractTableData):
+        Returns
+        -------
+        List[ColumnInfo]
+        """
+
+
+class DatabaseTable(AbstractTableData):
     """
     DatabaseTable class to preview table
     """
 
-    _table_data_class = GenericTableData
+    _table_data_class: ClassVar[Type[AllTableDataT]] = GenericTableData
+
+    @property
+    def columns_info(self) -> List[ColumnInfo]:
+        return self.int_columns_info

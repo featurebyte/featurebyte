@@ -112,7 +112,6 @@ def event_data_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": "DRAFT",
     }
 
 
@@ -137,8 +136,8 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     assert set(event_data.columns).issubset(dir(event_data))
     assert event_data._ipython_key_completions_() == set(event_data.columns)
 
-    output = event_data.dict()
-    event_data_dict["id"] = event_data.id
+    output = event_data.dict(by_alias=True)
+    event_data_dict["_id"] = event_data.id
     assert output == event_data_dict
 
     # user input validation
@@ -213,7 +212,7 @@ def test_deserialization__column_name_not_found(
         EventData.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
-    event_data_dict["record_created_date_column"] = "created_at"
+    event_data_dict["record_creation_date_column"] = "created_at"
     event_data_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
         EventData.parse_obj(event_data_dict)
@@ -427,10 +426,11 @@ def test_event_data__record_creation_exception(snowflake_event_data):
             snowflake_event_data.save()
 
 
-def test_update_default_job_setting(snowflake_event_data, config):
+def test_update_default_job_setting(snowflake_event_data, config, mock_api_object_cache):
     """
     Test update default job setting on non-saved event data
     """
+    _ = mock_api_object_cache
 
     # make sure the event data is not saved
     client = config.get_client()
@@ -454,10 +454,14 @@ def test_update_default_job_setting(snowflake_event_data, config):
     assert isinstance(feature_store_id, ObjectId)
 
 
-def test_update_default_job_setting__saved_event_data(saved_event_data, config):
+def test_update_default_job_setting__saved_event_data(
+    saved_event_data, config, mock_api_object_cache
+):
     """
     Test update default job setting on saved event data
     """
+    _ = mock_api_object_cache
+
     assert saved_event_data.default_feature_job_setting is None
     saved_event_data.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(

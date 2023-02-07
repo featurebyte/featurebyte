@@ -6,16 +6,19 @@ import json
 import os
 import tempfile
 from unittest import mock
+from unittest.mock import PropertyMock, patch
 
 import pandas as pd
 import pytest
 import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
+from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -107,6 +110,14 @@ def mock_config_path_env_fixture(config_file):
 
     with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
         mock_env_get.side_effect = mock_env_side_effect
+        yield
+
+
+@pytest.fixture(name="mock_api_object_cache")
+def mock_api_object_cache_fixture():
+    """Mock api object cache so that the time-to-live period is 0"""
+    with patch.object(ApiObject, "_cache", new_callable=PropertyMock) as mock_cache:
+        mock_cache.return_value = TTLCache(maxsize=1024, ttl=0)
         yield
 
 
@@ -538,10 +549,13 @@ def transaction_entity_fixture():
 
 
 @pytest.fixture(name="snowflake_event_data_with_entity")
-def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entity):
+def snowflake_event_data_with_entity_fixture(
+    snowflake_event_data, cust_id_entity, mock_api_object_cache
+):
     """
     Entity fixture that sets cust_id in snowflake_event_data as an Entity
     """
+    _ = mock_api_object_cache
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_data.col_int.as_entity(cust_id_entity.name)
     yield snowflake_event_data
@@ -718,8 +732,8 @@ def get_non_time_based_feature_fixture(snowflake_item_data, transaction_entity):
     This is a non-time-based feature as it is built from ItemData.
     """
     snowflake_item_data.event_id_col.as_entity(transaction_entity.name)
-    snowflake_item_data.item_id_column = "event_id_col"
-    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    item_data = ItemData(**{**snowflake_item_data.json_dict(), "item_id_column": "event_id_col"})
+    item_view = ItemView.from_item_data(item_data, event_suffix="_event_table")
     return item_view.groupby("event_id_col").aggregate(
         value_column="item_amount",
         method=AggFunc.SUM,

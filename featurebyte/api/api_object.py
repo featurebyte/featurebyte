@@ -73,14 +73,16 @@ class PrettyDict(Dict[str, Any]):
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
-def get_api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any) -> Any:
+def get_api_object_cache_key(
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
+) -> Any:
     """
     Construct cache key for a given document model object
 
     Parameters
     ----------
-    obj: FeatureByteBaseDocumentModel
-        Document model object
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel]
+        Api object or document model object
     args: Any
         Additional positional arguments
     kwargs: Any
@@ -91,7 +93,13 @@ def get_api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kw
     Any
     """
     # Return a cache key for _cache key retrieval (only collection name & object ID are used)
-    return hashkey(obj.Settings.collection_name, obj.id, *args, **kwargs)
+    if hasattr(obj, "_get_schema"):
+        collection_name = (
+            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
+        )
+    else:
+        collection_name = obj.Settings.collection_name
+    return hashkey(collection_name, obj.id, *args, **kwargs)
 
 
 class ApiObject(FeatureByteBaseDocumentModel):
