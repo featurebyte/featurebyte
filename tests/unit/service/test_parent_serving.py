@@ -36,6 +36,8 @@ async def test_get_join_steps__one_step(
 ):
     """
     Test looking up parent entity in one join
+
+    a (provided) --> b (required)
     """
     data = b_is_parent_of_a
     entity_info = EntityInfo(required_entities=[entity_a, entity_b], provided_entities=[entity_a])
@@ -61,6 +63,8 @@ async def test_get_join_steps__two_steps(
 ):
     """
     Test looking up parent entity in two joins
+
+    a (provided) --> b --> c (required)
     """
     data_a_to_b = b_is_parent_of_a
     data_b_to_c = c_is_parent_of_b
@@ -78,6 +82,54 @@ async def test_get_join_steps__two_steps(
             data=data_b_to_c.dict(by_alias=True),
             parent_key="c",
             parent_serving_name="C",
+            child_key="b",
+            child_serving_name="B",
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_join_steps__two_branches(
+    entity_a,
+    entity_c,
+    entity_d,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+    parent_entity_lookup_service,
+):
+    """
+    Test looking up parent entity in two joins
+
+    a (provided) --> b --> c (required)
+                      `--> d (required)
+    """
+    data_a_to_b = b_is_parent_of_a
+    data_b_to_c = c_is_parent_of_b
+    data_b_to_d = d_is_parent_of_b
+    entity_info = EntityInfo(
+        required_entities=[entity_a, entity_c, entity_d], provided_entities=[entity_a]
+    )
+    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    assert join_steps == [
+        JoinStep(
+            data=data_a_to_b.dict(by_alias=True),
+            parent_key="b",
+            parent_serving_name="B",
+            child_key="a",
+            child_serving_name="A",
+        ),
+        JoinStep(
+            data=data_b_to_c.dict(by_alias=True),
+            parent_key="c",
+            parent_serving_name="C",
+            child_key="b",
+            child_serving_name="B",
+        ),
+        JoinStep(
+            data=data_b_to_d.dict(by_alias=True),
+            parent_key="d",
+            parent_serving_name="D",
             child_key="b",
             child_serving_name="B",
         ),

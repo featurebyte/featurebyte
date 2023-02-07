@@ -102,13 +102,14 @@ class ParentEntityLookupService(BaseService):
                 break
 
             visited[current_entity.id] = True
-            for child_entity in await self.entity_service.get_children_entities(current_entity.id):
+            children_entities = await self.entity_service.get_children_entities(current_entity.id)
+            for child_entity in children_entities:
                 if not visited[child_entity.id]:
                     pending.append((child_entity, updated_path))
 
         if join_path is None:
             raise EntityJoinPathNotFoundError(
-                f"Cannot find a join path for entity {required_entity}"
+                f"Cannot find a join path for entity {required_entity.name}"
             )
 
         return join_path
