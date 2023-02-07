@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
+from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -22,7 +23,6 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
-from featurebyte.models.validator import construct_sort_validator, version_validator
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes

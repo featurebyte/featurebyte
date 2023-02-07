@@ -5,12 +5,12 @@ from typing import List
 
 from pydantic import Field, validator
 
+from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     PydanticObjectId,
 )
-from featurebyte.models.validator import construct_sort_validator
 
 
 class Parent(FeatureByteBaseModel):

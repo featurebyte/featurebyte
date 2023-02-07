@@ -10,10 +10,10 @@ from datetime import datetime
 from pydantic import root_validator
 
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
+from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
-from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.model.table import EventTableData
 

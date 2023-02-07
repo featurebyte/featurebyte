@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
+from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -17,7 +18,6 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
     VersionIdentifier,
 )
-from featurebyte.models.validator import construct_sort_validator, version_validator
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel

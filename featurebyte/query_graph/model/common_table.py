@@ -7,9 +7,9 @@ from abc import abstractmethod
 
 from pydantic import validator
 
+from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.validator import columns_info_validator
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo

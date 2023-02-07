@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.common.validator import version_validator
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureCluster,
@@ -15,7 +16,6 @@ from featurebyte.models.feature_list import (
     FeatureListNewVersionMode,
     FeatureReadinessDistribution,
 )
-from featurebyte.models.validator import version_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 

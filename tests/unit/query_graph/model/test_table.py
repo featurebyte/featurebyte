@@ -6,8 +6,8 @@ import textwrap
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType
-from featurebyte.models.validator import columns_info_validator
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
