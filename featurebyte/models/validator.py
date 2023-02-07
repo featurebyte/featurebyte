@@ -5,6 +5,7 @@ from typing import Any, List, Optional, Set, Tuple
 
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.column_info import ColumnInfo
 
 
 def construct_data_model_root_validator(
@@ -75,6 +76,39 @@ def construct_sort_validator(field: Optional[str] = None) -> Any:
         return sorted(value)
 
     return _sort_validator
+
+
+def columns_info_validator(
+    cls: Any, values: Optional[List[ColumnInfo]]
+) -> Optional[List[ColumnInfo]]:
+    """
+    Validate columns info list (check column name uniqueness)
+
+    Parameters
+    ----------
+    cls: Any
+        Class handle
+    values: List[ColumnInfo]
+        Input columns info list
+
+    Returns
+    -------
+    List[ColumnInfo]
+
+    Raises
+    ------
+    ValueError
+        If column name in columns_info is duplicated.
+    """
+    _ = cls
+    if isinstance(values, list):
+        # check column name uniqueness
+        column_names = set()
+        for column_info in values:
+            if column_info.name in column_names:
+                raise ValueError(f'Column name "{column_info.name}" is duplicated.')
+            column_names.add(column_info.name)
+    return values
 
 
 def version_validator(cls: Any, value: Any) -> Any:

@@ -11,7 +11,8 @@ from pydantic import Field, StrictStr, validator
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.tabular_data import TabularDataModel
-from featurebyte.query_graph.model.column_info import ColumnInfo, validate_columns_info
+from featurebyte.models.validator import columns_info_validator
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -27,11 +28,8 @@ class DataCreate(FeatureByteBaseModel):
     columns_info: List[ColumnInfo]
     record_creation_date_column: Optional[StrictStr]
 
-    @validator("columns_info")
-    @classmethod
-    def _validate_columns_info(cls, values: List[ColumnInfo]) -> List[ColumnInfo]:
-        validate_columns_info(columns_info=values)
-        return values
+    # pydantic validators
+    _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
 
 
 class DataUpdate(FeatureByteBaseModel):
@@ -43,14 +41,8 @@ class DataUpdate(FeatureByteBaseModel):
     status: Optional[DataStatus]
     record_creation_date_column: Optional[StrictStr]
 
-    @validator("columns_info")
-    @classmethod
-    def _validate_columns_info(
-        cls, values: Optional[List[ColumnInfo]]
-    ) -> Optional[List[ColumnInfo]]:
-        if values is not None:
-            validate_columns_info(columns_info=values)
-        return values
+    # pydantic validators
+    _columns_info_validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
 
 
 class DataServiceUpdate(DataUpdate, BaseDocumentServiceUpdateSchema):
