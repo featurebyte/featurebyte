@@ -21,7 +21,7 @@ from featurebyte.service.tabular_data import DataService
 
 class ParentEntityLookupService(BaseService):
     """
-    ParentEntityLookupService is responsible for identifying the joins require to lookup parent
+    ParentEntityLookupService is responsible for identifying the joins required to lookup parent
     entities in order to serve parent features given child entities
     """
 
@@ -85,9 +85,11 @@ class ParentEntityLookupService(BaseService):
             child_entity_id = child_entity.id
             parent_entity_id = parent_entity.id
 
+            # Retrieve the relationship for the data id defined in the relationship
             parents = (await self.entity_service.get_document(child_entity_id)).parents
             relationship = next(parent for parent in parents if parent.id == parent_entity_id)
 
+            # Retrieve the join keys from the data
             data = await self.data_service.get_document(relationship.data_id)
             child_key, parent_key = None, None
             for column_info in data.columns_info:
@@ -121,8 +123,8 @@ class ParentEntityLookupService(BaseService):
         Get a join path given a required entity (missing but required for feature generation) and
         a list of provided entities.
 
-        The result is a list of entities where each adjacent entities are related to each other. A
-        child appears before its parent in this list.
+        The result is a list of entities where each pair of adjacent entities are related to each
+        other. A child appears before its parent in this list.
 
         Parameters
         ----------
