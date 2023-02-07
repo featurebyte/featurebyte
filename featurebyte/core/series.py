@@ -181,16 +181,18 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         key: Union[Series, Tuple[Series, str]],
         value: Union[int, float, str, bool, None, Series],
     ) -> None:
-        if self.row_index_lineage != key.row_index_lineage:
-            raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
-        if key.dtype != DBVarType.BOOL:
-            raise TypeError("Only boolean Series filtering is supported!")
-
         series_to_use: Series = self
         key_to_use: Series = key
         if isinstance(key, Tuple):
             series_to_use = self[key[1]]  # apply mask onto series
             key_to_use = key[0]
+
+        if series_to_use.row_index_lineage != key_to_use.row_index_lineage:
+            raise ValueError(
+                f"Row indices between '{series_to_use}' and '{key_to_use}' are not aligned!"
+            )
+        if key_to_use.dtype != DBVarType.BOOL:
+            raise TypeError("Only boolean Series filtering is supported!")
 
         series_to_use._assert_assignment_valid(value)
         node_params = {}
