@@ -907,6 +907,15 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
 
+    def test_tabular_data_get_200(self, test_api_client_persistent, create_success_response):
+        """Test tabular get (success)"""
+        test_api_client, _ = test_api_client_persistent
+        success_response_dict = create_success_response.json()
+
+        # check that tabular_data route can be used to retrieve the created data
+        response = test_api_client.get(f"/tabular_data/{success_response_dict['_id']}")
+        assert response.json() == success_response_dict
+
     def test_tabular_data_list_200(
         self, test_api_client_persistent, create_multiple_success_responses
     ):
