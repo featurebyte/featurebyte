@@ -326,8 +326,8 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         self, key: Union[str, Tuple[Series, str]], value: Union[Feature, Union[Scalar, Series]]
     ) -> None:
         if isinstance(key, Tuple):
-            mask = key[0]
-            column = key[1]
+            mask: Series = key[0]
+            column: str = key[1]
             feature = self[column]
             feature[mask] = value
             return

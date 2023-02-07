@@ -217,8 +217,8 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         # view[mask, column_name] = new_value
         # syntax
         if isinstance(key, Tuple):
-            mask = key[0]
-            column_name = key[1]
+            mask: Series = key[0]
+            column_name: str = key[1]
             frame_of_column = self[column_name]
             frame_of_column[mask] = value
             return
