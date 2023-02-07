@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Set, Tuple
 
+from bson import ObjectId
+
 from featurebyte.enum import DBVarType
 
 
@@ -47,3 +49,22 @@ def construct_data_model_root_validator(
         return values
 
     return _root_validator
+
+
+def sort_ids_validator(cls: Any, value: List[ObjectId]) -> List[ObjectId]:
+    """
+    Validator function used to sort list of input ID values
+
+    Parameters
+    ----------
+    cls: Any
+        Class object handler
+    value: List[ObjectId]
+        List of ObjectId
+
+    Returns
+    -------
+    List[ObjectId]
+    """
+    _ = cls
+    return sorted(value)

@@ -11,6 +11,7 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     PydanticObjectId,
 )
+from featurebyte.models.validator import sort_ids_validator
 
 
 class Parent(FeatureByteBaseModel):
@@ -29,11 +30,8 @@ class Relationship(FeatureByteBaseDocumentModel):
     ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
 
-    @validator("ancestor_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids is sorted
-        return sorted(value)
+    # pydantic validators
+    _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(sort_ids_validator)
 
     @validator("parents")
     @classmethod

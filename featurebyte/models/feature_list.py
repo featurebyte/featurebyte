@@ -23,6 +23,7 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.validator import sort_ids_validator
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
@@ -250,6 +251,11 @@ class FrozenFeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
+    # pydantic validators
+    _sort_ids_validator = validator(
+        "feature_namespace_ids", "entity_ids", "tabular_data_ids", allow_reuse=True
+    )(sort_ids_validator)
+
     @root_validator(pre=True)
     @classmethod
     def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -347,12 +353,6 @@ class FrozenFeatureListNamespaceModel(FeatureByteBaseDocumentModel):
             values["tabular_data_ids"] = cls.derive_tabular_data_ids(features)
         return values
 
-    @validator("feature_namespace_ids", "entity_ids", "tabular_data_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids always sorted
-        return sorted(value)
-
     class Settings:
         """
         MongoDB settings
@@ -414,11 +414,10 @@ class FeatureListNamespaceModel(FrozenFeatureListNamespaceModel):
     )
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
 
-    @validator("feature_list_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids always sorted
-        return sorted(value)
+    # pydantic validators
+    _sort_feature_list_ids_validator = validator("feature_list_ids", allow_reuse=True)(
+        sort_ids_validator
+    )
 
 
 class FrozenFeatureListModel(FeatureByteBaseDocumentModel):
@@ -433,6 +432,9 @@ class FrozenFeatureListModel(FeatureByteBaseDocumentModel):
     )
     # DEV-556: no longer Optional once migrated
     feature_clusters: Optional[List[FeatureCluster]] = Field(allow_mutation=False)
+
+    # pydantic validators
+    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(sort_ids_validator)
 
     @staticmethod
     def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
@@ -490,12 +492,6 @@ class FrozenFeatureListModel(FeatureByteBaseDocumentModel):
                 )
             )
         return feature_clusters
-
-    @validator("feature_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids always sorted
-        return sorted(value)
 
     @validator("version", pre=True)
     @classmethod
