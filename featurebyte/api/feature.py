@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
 
 import time
 from http import HTTPStatus
@@ -177,6 +177,17 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         return feature_list
 
 
+class ListFeatureVersionDescriptor:
+    """
+    ListFeatureVersionDescriptor class used to list feature version.
+    """
+
+    def __get__(self, instance: Optional[Feature], owner: Type[Feature]) -> Any:
+        if instance is None:
+            return owner.list_versions_with_filter
+        return instance.list_versions_with_same_name
+
+
 class Feature(
     ProtectedColumnsQueryObject,
     Series,
@@ -192,7 +203,11 @@ class Feature(
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Feature"], proxy_class="featurebyte.Feature")
 
+    # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+
+    # descriptors
+    list_versions: ClassVar[Any] = ListFeatureVersionDescriptor()
 
     # class variables
     _route = "/feature"
@@ -271,7 +286,7 @@ class Feature(
         return features
 
     @classmethod
-    def list_versions(
+    def list_versions_with_filter(
         cls,
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
@@ -310,6 +325,22 @@ class Feature(
                 feature_list.data.apply(lambda data_list: data in data_list)
             ]
         return feature_list
+
+    def list_versions_with_same_name(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+        """
+        List feature versions with the same feature name
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of features with the same name
+        """
+        return self._list(include_id=include_id, params={"name": self.name})
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:
