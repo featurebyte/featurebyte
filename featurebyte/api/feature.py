@@ -184,7 +184,9 @@ class ListFeatureVersionDescriptor:
 
     def __get__(self, instance: Optional[Feature], owner: Type[Feature]) -> Any:
         if instance is None:
+            # caller is a class
             return owner.list_versions_with_filter
+        # caller is an instance
         return instance.list_versions_with_same_name
 
 
