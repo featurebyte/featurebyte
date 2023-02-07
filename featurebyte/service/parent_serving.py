@@ -29,6 +29,18 @@ class ParentEntityLookupService(BaseService):
         self.data_service = DataService(user, persistent)
 
     async def get_required_join_steps(self, entity_info: EntityInfo) -> list[JoinStep]:
+        """
+        Get the list of required JoinStep to lookup the missing entities in the request
+
+        Parameters
+        ----------
+        entity_info: EntityInfo
+            Entity information
+
+        Returns
+        -------
+        list[JoinStep]
+        """
 
         if entity_info.are_all_required_entities_provided():
             return []
@@ -51,6 +63,18 @@ class ParentEntityLookupService(BaseService):
         return all_join_steps
 
     async def get_join_steps_from_join_path(self, join_path: list[EntityModel]) -> list[JoinStep]:
+        """
+        Convert a list of join path (list of EntityModel) into a list of JoinStep
+
+        Parameters
+        ----------
+        join_path: list[EntityModel]
+            A list of related entities from a given entity to a target entity
+
+        Returns
+        -------
+        list[JoinStep]
+        """
 
         join_steps = []
 
@@ -91,13 +115,37 @@ class ParentEntityLookupService(BaseService):
         required_entity: EntityModel,
         provided_entities: list[EntityModel],
     ) -> list[EntityModel]:
+        """
+        Get a join path given a required entity (missing but required for feature generation) and
+        a list of provided entities.
 
+        The result is a list of entities where each adjacent entities are related to each other. A
+        child appears before its parent in this list.
+
+        Parameters
+        ----------
+        required_entity: EntityModel
+            Required entity
+        provided_entities: list[EntityModel]
+            List of currently available entities
+
+        Returns
+        -------
+        list[EntityModel]
+
+        Raises
+        ------
+        EntityJoinPathNotFoundError
+            If a join path cannot be identified
+        """
+        provided_entity_ids = {entity.id for entity in provided_entities}
+
+        # Perform a BFS traversal from the required entity and stop once any of the available
+        # entities is reached. This should be the fastest way to join datas to obtain the required
+        # entity (requiring the least number of joins) assuming all joins have the same cost.
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
-
-        join_path = None
         visited = defaultdict(bool)
-
-        provided_entity_ids = set([entity.id for entity in provided_entities])
+        join_path = None
 
         while pending:
 
