@@ -20,8 +20,8 @@ COPY poetry.lock pyproject.toml /app/
 
 # Install into .venv
 RUN poetry config virtualenvs.in-project true && \
-    poetry install --only main --only docs --extras "server" --no-interaction --no-ansi  && \
-    poetry add jupyterlab==3.5.3
+    poetry install --only main --extras "server" --no-interaction --no-ansi && \
+    poetry run pip install jupyterlab==3.5.3
 
 FROM python:3.8-slim AS runner
 
