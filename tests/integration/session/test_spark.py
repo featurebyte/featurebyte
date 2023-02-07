@@ -142,7 +142,7 @@ async def test_register_udfs(config, spark_feature_store):
         pd.DataFrame(
             {
                 "group": ["A", "B"],
-                "mode": ["apple", "apple"],
+                "mode": ["orange", "orange"],
             }
         ),
     )

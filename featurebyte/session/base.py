@@ -80,7 +80,7 @@ class BaseSession(BaseModel):
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
-    _no_schema_error: Any
+    _no_schema_error: Any = Exception
 
     async def initialize(self) -> None:
         """
