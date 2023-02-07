@@ -27,6 +27,10 @@ def test_get_event_data(saved_event_data, snowflake_event_data):
     assert loaded_event_data == snowflake_event_data
     assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 
+    # load the event data use get_by_id
+    loaded_data = Data.get_by_id(snowflake_event_data.id)
+    assert loaded_data == loaded_event_data
+
     with pytest.raises(RecordRetrievalException) as exc:
         lazy_event_data = Data.get("unknown_event_data")
         _ = lazy_event_data.name
