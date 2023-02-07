@@ -3,8 +3,11 @@ Models related to serving parent features
 """
 from __future__ import annotations
 
+from typing import List
+
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.tabular_data import TabularDataModel
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
 class JoinStep(FeatureByteBaseModel):
@@ -29,3 +32,9 @@ class JoinStep(FeatureByteBaseModel):
     parent_serving_name: str
     child_key: str
     child_serving_name: str
+
+
+class ParentServingPreparation(FeatureByteBaseModel):
+
+    join_steps: List[JoinStep]
+    feature_store_details: FeatureStoreDetails

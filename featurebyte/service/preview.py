@@ -12,8 +12,10 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DocumentNotFoundError, MissingPointInTimeColumnError
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
@@ -344,13 +346,17 @@ class PreviewService(BaseService):
         group_join_keys = list(point_in_time_and_serving_name.keys())
         for feature_cluster in featurelist_preview.feature_clusters:
             request_column_names = set(point_in_time_and_serving_name.keys())
-            await self.entity_validation_service.validate_provided_entities(
+            join_steps = await self.entity_validation_service.validate_provided_entities(
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
                 request_column_names=request_column_names,
             )
             feature_store = await self.feature_store_service.get_document(
                 feature_cluster.feature_store_id
+            )
+            feature_store_details = FeatureStoreDetails(**feature_store.dict())
+            parent_serving_preparation = ParentServingPreparation(
+                join_steps=join_steps, feature_store_details=feature_store_details
             )
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
@@ -362,6 +368,7 @@ class PreviewService(BaseService):
                 nodes=feature_cluster.nodes,
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
                 source_type=feature_store.type,
+                parent_serving_preparation=parent_serving_preparation,
             )
             _result = await db_session.execute_query(preview_sql)
             if result is None:

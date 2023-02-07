@@ -3,16 +3,18 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List, Optional
 
-from featurebyte.exception import RequiredEntityNotProvidedError
+from featurebyte.exception import EntityJoinPathNotFoundError, RequiredEntityNotProvidedError
 from featurebyte.models.entity_validation import EntityInfo
+from featurebyte.models.parent_serving import JoinStep
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.parent_serving import ParentEntityLookupService
 
 
 class EntityValidationService(BaseService):
@@ -24,6 +26,7 @@ class EntityValidationService(BaseService):
     def __init__(self, user: Any, persistent: Persistent):
         super().__init__(user, persistent)
         self.entity_service = EntityService(user, persistent)
+        self.parent_entity_lookup_service = ParentEntityLookupService(user, persistent)
 
     async def get_entity_info_from_request(
         self,
@@ -87,7 +90,7 @@ class EntityValidationService(BaseService):
         nodes: list[Node],
         request_column_names: set[str],
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> None:
+    ) -> Optional[List[JoinStep]]:
         """
         Validate that entities are provided correctly in feature requests
 
@@ -116,7 +119,17 @@ class EntityValidationService(BaseService):
             serving_names_mapping=serving_names_mapping,
         )
 
-        if not entity_info.are_all_required_entities_provided():
+        if entity_info.are_all_required_entities_provided():
+            return None
+
+        try:
+            join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+                entity_info
+            )
+        except EntityJoinPathNotFoundError:
+            join_steps = None
+
+        if join_steps is None:
             missing_entities = sorted(entity_info.missing_entities, key=lambda x: x.name)  # type: ignore
             formatted_pairs = []
             for entity in missing_entities:
@@ -125,3 +138,5 @@ class EntityValidationService(BaseService):
             raise RequiredEntityNotProvidedError(
                 f"Required entities are not provided in the request: {formatted_pairs_str}"
             )
+
+        return join_steps

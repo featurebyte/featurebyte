@@ -274,16 +274,19 @@ def test_aggregate_asat(scd_data, scd_dataframe):
         method="count", feature_name="Current Number of Users With This Status"
     )
 
-    # check preview but provides children id (not yet supported)
-    with pytest.raises(RecordRetrievalException) as exc:
-        FeatureList([feature], name="mylist").preview(
-            {
-                "POINT_IN_TIME": "2001-10-25 10:00:00",
-                "üser id": 1,
-            }
-        )
-    expected = 'Required entities are not provided in the request: UserStatus (serving name: "user_status")'
-    assert str(exc.value) == expected
+    # check preview but provides children id
+    df = FeatureList([feature], name="mylist").preview(
+        {
+            "POINT_IN_TIME": "2001-10-25 10:00:00",
+            "üser id": 1,
+        }
+    )
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
+        "üser id": 1,
+        "Current Number of Users With This Status": 1,
+    }
+    assert df.iloc[0].to_dict() == expected
 
     # check preview
     df = feature.preview(
