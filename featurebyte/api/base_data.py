@@ -9,6 +9,7 @@ from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from pandas import DataFrame
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
@@ -19,7 +20,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin, SampleMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import DataStatus, FeatureStoreModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -41,7 +42,21 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
-    info: ColumnInfo
+    # pydantic instance variable (public)
+    name: str
+
+    @property
+    def info(self) -> ColumnInfo:
+        """
+        Column information which contains column name, column type, associated entity ID & associated
+        semantic ID.
+
+        Returns
+        -------
+        ColumnInfo
+        """
+        column_info = next(col for col in self.parent.columns_info if col.name == self.name)
+        return cast(ColumnInfo, column_info)
 
     @property
     def feature_store(self) -> FeatureStoreModel:
@@ -96,8 +111,8 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         self.parent.update(
             update_payload={"columns_info": self._prepare_columns_info(column_info)},
             allow_update_local=True,
+            add_internal_prefix=True,
         )
-        self.info = column_info
 
     @typechecked
     def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
@@ -144,12 +159,13 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         self.parent.update(
             update_payload={"columns_info": self._prepare_columns_info(column_info)},
             allow_update_local=True,
+            add_internal_prefix=True,
         )
-        self.info = column_info
 
     def extract_pruned_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
         Extract pruned graph & node from the global query graph
+
         Returns
         -------
         tuple[QueryGraphModel, Node]
@@ -172,10 +188,12 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformation output
+
         Parameters
         ----------
         limit: int
             maximum number of return rows
+
         Returns
         -------
         str
@@ -193,7 +211,6 @@ class DataListMixin(ApiObject):
 
     _route = "/tabular_data"
     _list_schema = TabularDataModel
-    _get_schema = TabularDataModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
     _list_foreign_keys = [
         ("columns_info.entity_id", Entity, "entities"),
@@ -228,6 +245,44 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
     """
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+
+    # pydantic instance variable (internal use)
+    internal_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
+
+    @property
+    def columns_info(self) -> List[ColumnInfo]:
+        try:
+            return self.cached_model.columns_info  # pylint: disable=no-member
+        except RecordRetrievalException:
+            return self.internal_columns_info
+
+    @property
+    def status(self) -> DataStatus:
+        """
+        Data status
+
+        Returns
+        -------
+        DataStatus
+        """
+        try:
+            return self.cached_model.status  # pylint: disable=no-member
+        except RecordRetrievalException:
+            return DataStatus.DRAFT
+
+    @property
+    def record_creation_date_column(self) -> Optional[str]:
+        """
+        Record creation date column name
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.record_creation_date_column  # pylint: disable=no-member
+        except RecordRetrievalException:
+            return self.internal_record_creation_date_column
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
@@ -342,7 +397,7 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
                 info = col
         if info is None:
             raise KeyError(f'Column "{item}" does not exist!')
-        output = DataColumn(info=info)
+        output = DataColumn(name=item)
         output.set_parent(self)
         return output
 
@@ -359,4 +414,5 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
         self.update(
             update_payload={"record_creation_date_column": record_creation_date_column},
             allow_update_local=True,
+            add_internal_prefix=True,
         )
