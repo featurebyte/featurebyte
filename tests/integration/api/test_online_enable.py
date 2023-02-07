@@ -88,5 +88,5 @@ async def test_online_enable_non_time_aware_feature(item_data, config):
 
     assert res.status_code == 200
     assert res.json() == {
-        "features": [{"order_id": "T1", "my_item_feature_for_online_enable_test": 9}]
+        "features": [{"order_id": "T1", "my_item_feature_for_online_enable_test": 3}]
     }

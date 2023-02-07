@@ -347,3 +347,11 @@ class ItemView(View, GroupByMixin):
 
     def get_join_column(self) -> str:
         return self.item_id_column
+
+    def _get_as_feature_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+        _ = offset
+        return {
+            "event_parameters": {
+                "event_timestamp_column": self.timestamp_column,
+            }
+        }

@@ -20,6 +20,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
     AggregateAsAtParameters,
+    EventLookupParameters,
     GroupbyNode,
     ItemGroupbyNode,
     ItemGroupbyParameters,
@@ -446,6 +447,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
     serving_names: list[str]
     source_expr: Select
     scd_parameters: Optional[SCDLookupParameters]
+    event_parameters: Optional[EventLookupParameters]
 
     @property
     def agg_result_name(self) -> str:
@@ -463,6 +465,8 @@ class LookupSpec(NonTileBasedAggregationSpec):
         }
         if self.scd_parameters is not None:
             params["scd_parameters"] = self.scd_parameters.dict()
+        if self.event_parameters is not None:
+            params["event_parameters"] = self.event_parameters.dict()
         return params
 
     @classmethod
@@ -485,6 +489,7 @@ class LookupSpec(NonTileBasedAggregationSpec):
                 serving_names_mapping=serving_names_mapping,
                 source_expr=source_expr,
                 scd_parameters=params.scd_parameters,
+                event_parameters=params.event_parameters,
             )
             specs.append(spec)
         return specs

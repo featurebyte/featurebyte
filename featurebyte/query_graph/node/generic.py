@@ -538,6 +538,12 @@ class SCDLookupParameters(SCDBaseParameters):
     offset: Optional[str]
 
 
+class EventLookupParameters(BaseModel):
+    """Parameters for EventData lookup"""
+
+    event_timestamp_column: InColumnStr
+
+
 class LookupNode(AggregationOpStructMixin, BaseNode):
     """LookupNode class"""
 
@@ -550,6 +556,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         serving_name: str
         entity_id: PydanticObjectId
         scd_parameters: Optional[SCDLookupParameters]
+        event_parameters: Optional[EventLookupParameters]
 
         @root_validator(skip_on_failure=True)
         @classmethod
@@ -570,7 +577,10 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         return parent_columns
 
     def _is_time_based(self) -> bool:
-        return self.parameters.scd_parameters is not None
+        return (
+            self.parameters.scd_parameters is not None
+            or self.parameters.event_parameters is not None
+        )
 
     def _get_aggregations(
         self,

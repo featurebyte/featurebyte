@@ -342,16 +342,8 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
-@pytest.fixture(name="item_ids", scope="session")
-def item_ids_fixture():
-    """
-    Fixture to get item IDs used in test data.
-    """
-    return [f"item_{i}" for i in range(100)]
-
-
 @pytest.fixture(name="items_dataframe", scope="session")
-def items_dataframe_fixture(transaction_data_upper_case, item_ids):
+def items_dataframe_fixture(transaction_data_upper_case):
     """
     DataFrame fixture with item based data corresponding to the transaction data
     """
@@ -362,17 +354,25 @@ def items_dataframe_fixture(transaction_data_upper_case, item_ids):
     def generate_items_for_transaction(transaction_row):
         order_id = transaction_row["TRANSACTION_ID"]
         num_items = rng.randint(1, 10)
-        selected_item_ids = rng.choice(item_ids, num_items, replace=False)
         selected_item_types = rng.choice(item_types, num_items, replace=False)
         data["order_id"].extend([order_id] * num_items)
-        data["item_id"].extend(selected_item_ids)
         data["item_type"].extend(selected_item_types)
 
     for _, row in transaction_data_upper_case.iterrows():
         generate_items_for_transaction(row)
 
     df_items = pd.DataFrame(data)
+    item_ids = pd.Series([f"item_{i}" for i in range(df_items.shape[0])])
+    df_items.insert(1, "item_id", item_ids)
     return df_items
+
+
+@pytest.fixture(name="item_ids", scope="session")
+def item_ids_fixture(items_dataframe):
+    """
+    Fixture to get item IDs used in test data.
+    """
+    return items_dataframe["item_id"].tolist()
 
 
 @pytest.fixture(name="dimension_dataframe", scope="session")
@@ -436,7 +436,7 @@ def expected_joined_event_item_dataframe_fixture(transaction_data_upper_case, it
     """
     df = pd.merge(
         transaction_data_upper_case[
-            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "PRODUCT_ACTION"]
+            ["TRANSACTION_ID", "ËVENT_TIMESTAMP", "ÜSER ID", "CUST_ID", "PRODUCT_ACTION"]
         ],
         items_dataframe,
         left_on="TRANSACTION_ID",
@@ -905,6 +905,7 @@ def create_transactions_event_data_from_feature_store(
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
+    event_data["TRANSACTION_ID"].as_entity("Order")
     event_data["ÜSER ID"].as_entity("User")
     event_data["PRODUCT_ACTION"].as_entity("ProductAction")
     event_data["CUST_ID"].as_entity("Customer")
@@ -920,11 +921,13 @@ def snowflake_event_data_fixture(
     user_entity,
     product_action_entity,
     customer_entity,
+    order_entity,
 ):
     """Fixture for an EventData in integration tests"""
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
+    _ = order_entity
     event_data = create_transactions_event_data_from_feature_store(
         snowflake_feature_store,
         database_name=snowflake_session.database,

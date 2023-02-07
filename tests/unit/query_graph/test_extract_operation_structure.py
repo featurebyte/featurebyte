@@ -585,12 +585,49 @@ def test_extract_operation__lookup_feature(
     assert op_struct.is_time_based is False
 
 
+def test_extract_operation__event_lookup_feature(
+    global_graph,
+    event_lookup_feature_node,
+    event_data_input_node,
+):
+    """Test extract_operation_structure: event lookup features"""
+
+    op_struct = global_graph.extract_operation_structure(node=event_lookup_feature_node)
+    common_data_params = extract_column_parameters(event_data_input_node)
+    expected_columns = [
+        {"name": "ts", "dtype": "TIMESTAMP", **common_data_params},
+        {"name": "order_method", "dtype": "VARCHAR", **common_data_params},
+    ]
+    expected_aggregations = [
+        {
+            "name": "Order Method",
+            "dtype": "VARCHAR",
+            "filter": False,
+            "node_names": {"lookup_1", "input_1", "project_1"},
+            "node_name": "lookup_1",
+            "method": None,
+            "keys": ["order_id"],
+            "window": None,
+            "category": None,
+            "type": "aggregation",
+            "column": expected_columns[1],
+            "aggregation_type": "lookup",
+        }
+    ]
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("lookup_1",)
+    assert op_struct.is_time_based is True
+
+
 def test_extract_operation__scd_lookup_feature(
     global_graph,
     scd_lookup_feature_node,
     scd_data_input_node,
 ):
-    """Test extract_operation_strucure: SCD lookup features"""
+    """Test extract_operation_structure: SCD lookup features"""
 
     op_struct = global_graph.extract_operation_structure(node=scd_lookup_feature_node)
     common_data_params = extract_column_parameters(scd_data_input_node)

@@ -19,7 +19,7 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
     """
     item_view = ItemView.from_item_data(item_data)
     df_preview = item_view.preview(limit=50)
-    assert df_preview.columns.tolist() == [
+    expected_columns = [
         "ËVENT_TIMESTAMP",
         "CUST_ID",
         "ÜSER ID",
@@ -28,16 +28,19 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
         "item_id",
         "item_type",
     ]
+    assert df_preview.columns.tolist() == expected_columns
     assert df_preview.shape[0] == 50
 
     # Check preview result with the expected joined events-items data
-    for _, row in df_preview.iterrows():
-        # Check if each row in the preview result appears in the expected joined DataFrame
-        mask = expected_joined_event_item_dataframe["ËVENT_TIMESTAMP"] == row["ËVENT_TIMESTAMP"]
-        for col in ["ÜSER ID", "PRODUCT_ACTION", "order_id", "item_id", "item_type"]:
-            mask &= expected_joined_event_item_dataframe[col] == row[col]
-        matched = expected_joined_event_item_dataframe[mask]
-        assert matched.shape[0] == 1, f"Preview row {row.to_dict()} not found"
+    df_expected_subset = pd.merge(
+        df_preview[["order_id", "item_id"]],
+        expected_joined_event_item_dataframe,
+        left_on=["order_id", "item_id"],
+        right_on=["order_id", "item_id"],
+        how="left",
+    )
+    df_expected_subset = df_expected_subset[expected_columns]
+    pd.testing.assert_frame_equal(df_preview, df_expected_subset)
 
 
 @pytest.fixture
@@ -68,8 +71,8 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     )
     assert df.iloc[0].to_dict() == {
         "order_id": "T42",
-        "most_frequent_item_type": "type_13",
-        "item_type_entropy": 0.6931471805599451,
+        "most_frequent_item_type": "type_21",
+        "item_type_entropy": 1.791759469228055,
     }
 
     # check historical features
@@ -82,8 +85,8 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
         )
     )
     df = df.sort_values("order_id")
-    assert df["most_frequent_item_type"].tolist() == ["type_18", "type_40", "type_42"]
-    np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 2.19722458, 2.07944154])
+    assert df["most_frequent_item_type"].tolist() == ["type_2", "type_18", "type_13"]
+    np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 1.09861229, 2.19722458])
 
     # check add_feature (note added feature value is the same as the preview above)
     event_view = EventView.from_event_data(event_data)
@@ -93,10 +96,10 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
         "TRANSACTION_ID",
     )
     df = event_view[event_view["TRANSACTION_ID"] == "T42"].preview()
-    assert df.iloc[0]["most_frequent_item_type"] == "type_13"
+    assert df.iloc[0]["most_frequent_item_type"] == "type_21"
 
 
-def test_item_view_ops(item_data):
+def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView operations
     """
@@ -130,7 +133,7 @@ def test_item_view_ops(item_data):
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
-        "count_30d": '{\n  "TYPE_42": 2\n}',
+        "count_30d": '{\n  "TYPE_42": 4\n}',
     }
     df_training_events = pd.DataFrame(
         {
@@ -141,15 +144,15 @@ def test_item_view_ops(item_data):
     feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.get_historical_features(df_training_events)
     assert df_historical_features["count_30d"].tolist() == [
+        '{\n  "TYPE_42": 4\n}',
+        None,
         '{\n  "TYPE_42": 2\n}',
-        None,
-        None,
-        '{\n  "TYPE_42": 1\n}',
         '{\n  "TYPE_42": 2\n}',
-        None,
         '{\n  "TYPE_42": 5\n}',
-        '{\n  "TYPE_42": 5\n}',
+        '{\n  "TYPE_42": 4\n}',
+        '{\n  "TYPE_42": 2\n}',
         '{\n  "TYPE_42": 3\n}',
+        '{\n  "TYPE_42": 2\n}',
         None,
     ]
 
@@ -158,12 +161,8 @@ def test_item_view_ops(item_data):
         method="count",
         feature_name="order_size",
     )
-    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"})
-    assert df.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "order_id": "T236",
-        "order_size": 1,
-    }
+    df = feature.preview({"order_id": "T30"})
+    assert df.iloc[0].to_dict() == {"order_id": "T30", "order_size": 1}
 
 
 def assert_match(item_id: str, item_name: str, item_type: str):
@@ -257,4 +256,4 @@ def test_item_view_joined_with_dimension_view(
     df_historical_features = feature_list.get_historical_features(df_training_events)
     assert df_historical_features.sort_values("üser id")[
         "most_frequent_item_type_30d"
-    ].tolist() == ["type_47", "type_88", "type_53", "type_92", "type_12"]
+    ].tolist() == ["type_10140", "type_1008", "type_11333", "type_10261", "type_10657"]

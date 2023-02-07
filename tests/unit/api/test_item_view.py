@@ -8,6 +8,7 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -620,3 +621,38 @@ def test_non_time_feature__create_new_version(saved_item_data, transaction_entit
 
     expected_msg = "Feature job setting has no effect in feature value derivation."
     assert expected_msg in str(exc.value)
+
+
+def test_as_feature__from_view_column(saved_item_data, item_entity):
+    """
+    Test calling as_feature() from ItemView column
+    """
+    view = ItemView.from_item_data(saved_item_data, event_suffix="_event_data")
+    feature = view["item_amount"].as_feature("ItemAmountFeature")
+    assert feature.name == "ItemAmountFeature"
+    assert feature.dtype == DBVarType.FLOAT
+
+    feature_dict = feature.dict()
+    graph_dict = feature_dict["graph"]
+    feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
+    lookup_node_dict = get_node(graph_dict, "lookup_1")
+    assert feature_node_dict == {
+        "name": "project_1",
+        "type": "project",
+        "output_type": "series",
+        "parameters": {"columns": ["ItemAmountFeature"]},
+    }
+    assert lookup_node_dict == {
+        "name": "lookup_1",
+        "type": "lookup",
+        "output_type": "frame",
+        "parameters": {
+            "input_column_names": ["item_amount"],
+            "feature_names": ["ItemAmountFeature"],
+            "entity_column": "item_id_col",
+            "serving_name": "item_id",
+            "entity_id": item_entity.id,
+            "scd_parameters": None,
+            "event_parameters": {"event_timestamp_column": "event_timestamp_event_data"},
+        },
+    }
