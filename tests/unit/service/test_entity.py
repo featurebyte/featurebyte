@@ -2,68 +2,7 @@
 Unit tests for EntityService
 """
 import pytest
-import pytest_asyncio
 from bson import ObjectId
-
-from featurebyte.models.entity import ParentEntity
-from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
-
-
-@pytest_asyncio.fixture(name="entity_a")
-async def entity_a_fixture(entity_service):
-    """
-    An entity A
-    """
-    entity_a = await entity_service.create_document(EntityCreate(name="entity_a", serving_name="a"))
-    return entity_a
-
-
-@pytest_asyncio.fixture(name="entity_b")
-async def entity_b_fixture(entity_service):
-    """
-    An entity B
-    """
-    entity_b = await entity_service.create_document(EntityCreate(name="entity_b", serving_name="b"))
-    return entity_b
-
-
-@pytest_asyncio.fixture(name="entity_c")
-async def entity_c_fixture(entity_service):
-    """
-    An entity C
-    """
-    entity_c = await entity_service.create_document(EntityCreate(name="entity_c", serving_name="c"))
-    return entity_c
-
-
-@pytest_asyncio.fixture(name="b_is_parent_of_a")
-async def b_is_parent_of_a_fixture(entity_a, entity_b, event_data, entity_service):
-    """
-    Fixture to make B a parent of A
-    """
-    parent = ParentEntity(id=entity_b.id, data_type=event_data.type, data_id=event_data.id)
-    update_entity_a = EntityServiceUpdate(parents=[parent])
-    await entity_service.update_document(entity_a.id, update_entity_a)
-
-
-@pytest_asyncio.fixture(name="c_is_parent_of_b")
-async def c_is_parent_of_b_fixture(entity_b, entity_c, event_data, entity_service):
-    """
-    Fixture to make C a parent of B
-    """
-    parent = ParentEntity(id=entity_c.id, data_type=event_data.type, data_id=event_data.id)
-    update_entity_b = EntityServiceUpdate(parents=[parent])
-    await entity_service.update_document(entity_b.id, update_entity_b)
-
-
-@pytest.fixture
-def relationships(b_is_parent_of_a, c_is_parent_of_b):
-    """
-    Fixture to register all relationships
-    """
-    _ = b_is_parent_of_a
-    _ = c_is_parent_of_b
-    yield
 
 
 def _sorted_entities(entities):

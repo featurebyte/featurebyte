@@ -13,9 +13,10 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType, SourceType
+from featurebyte.models.entity import ParentEntity
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_data import DimensionDataCreate
-from featurebyte.schema.entity import EntityCreate
+from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataCreate, EventDataServiceUpdate
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
@@ -207,6 +208,12 @@ def deploy_service_fixture(app_container):
 def entity_validation_service_fixture(app_container):
     """EntityValidationService fixture"""
     return app_container.entity_validation_service
+
+
+@pytest.fixture(name="parent_entity_lookup_service")
+def parent_entity_lookup_service(app_container):
+    """ParentEntityLookupService fixture"""
+    return app_container.parent_entity_lookup_service
 
 
 @pytest_asyncio.fixture(name="feature_store")
@@ -463,3 +470,117 @@ async def setup_for_feature_readiness_fixture(
     assert flist_namespace.default_feature_list_id == feature_list.id
     assert flist_namespace.readiness_distribution.__root__ == [{"readiness": "DRAFT", "count": 1}]
     yield new_feature_id, new_flist.id
+
+
+async def create_event_data_with_entities(data_name, test_dir, event_data_service, columns):
+    """Helper function to create an EventData with provided columns and entities"""
+
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+
+    def _update_columns_info(columns_info):
+        new_columns_info = []
+        keep_cols = ["event_timestamp", "created_at", "col_int"]
+        for col_info in columns_info:
+            if col_info["name"] in keep_cols:
+                new_columns_info.append(col_info)
+        for col_name, col_entity_id in columns:
+            col_info = {"name": col_name, "entity_id": col_entity_id, "dtype": "INT"}
+            new_columns_info.append(col_info)
+        return new_columns_info
+
+    payload.pop("_id")
+    payload["tabular_source"]["table_details"]["table_name"] = data_name
+    payload["columns_info"] = _update_columns_info(payload["columns_info"])
+    payload["name"] = data_name
+
+    event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
+    return event_data
+
+
+@pytest_asyncio.fixture(name="entity_a")
+async def entity_a_fixture(entity_service):
+    """
+    An entity A
+    """
+    entity_a = await entity_service.create_document(EntityCreate(name="entity_a", serving_name="a"))
+    return entity_a
+
+
+@pytest_asyncio.fixture(name="entity_b")
+async def entity_b_fixture(entity_service):
+    """
+    An entity B
+    """
+    entity_b = await entity_service.create_document(EntityCreate(name="entity_b", serving_name="b"))
+    return entity_b
+
+
+@pytest_asyncio.fixture(name="entity_c")
+async def entity_c_fixture(entity_service):
+    """
+    An entity C
+    """
+    entity_c = await entity_service.create_document(EntityCreate(name="entity_c", serving_name="c"))
+    return entity_c
+
+
+@pytest_asyncio.fixture(name="b_is_parent_of_a")
+async def b_is_parent_of_a_fixture(
+    entity_a,
+    entity_b,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make B a parent of A
+    """
+    _ = feature_store
+    data = await create_event_data_with_entities(
+        "b_is_parent_of_a_data",
+        test_dir,
+        event_data_service,
+        [("a", entity_a.id), ("b", entity_b.id)],
+    )
+    parent = ParentEntity(id=entity_b.id, data_type=data.type, data_id=data.id)
+    update_entity_a = EntityServiceUpdate(parents=[parent])
+    await entity_service.update_document(entity_a.id, update_entity_a)
+    return data
+
+
+@pytest_asyncio.fixture(name="c_is_parent_of_b")
+async def c_is_parent_of_b_fixture(
+    entity_b,
+    entity_c,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make C a parent of B
+    """
+    _ = feature_store
+    data = await create_event_data_with_entities(
+        "c_is_parent_of_b_data",
+        test_dir,
+        event_data_service,
+        [("b", entity_b.id), ("c", entity_c.id)],
+    )
+    parent = ParentEntity(id=entity_c.id, data_type=data.type, data_id=data.id)
+    update_entity_b = EntityServiceUpdate(parents=[parent])
+    await entity_service.update_document(entity_b.id, update_entity_b)
+    return data
+
+
+@pytest.fixture
+def relationships(b_is_parent_of_a, c_is_parent_of_b):
+    """
+    Fixture to register all relationships
+    """
+    _ = b_is_parent_of_a
+    _ = c_is_parent_of_b
+    yield
