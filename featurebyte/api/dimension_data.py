@@ -39,15 +39,15 @@ class DimensionData(DataApiObject):
     type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
 
     # pydantic instance variable (internal use)
-    int_dimension_id_column: StrictStr = Field(alias="dimension_id_column")
+    internal_dimension_id_column: StrictStr = Field(alias="dimension_id_column")
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
-            columns_info_key="int_columns_info",
+            columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
-                ("int_dimension_id_column", DBVarType.supported_id_types()),
+                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("internal_dimension_id_column", DBVarType.supported_id_types()),
             ],
         )
     )
@@ -64,7 +64,7 @@ class DimensionData(DataApiObject):
         try:
             return self.cached_model.dimension_id_column
         except RecordRetrievalException:
-            return self.int_dimension_id_column
+            return self.internal_dimension_id_column
 
     @classmethod
     @typechecked

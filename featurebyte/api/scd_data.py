@@ -39,25 +39,27 @@ class SlowlyChangingData(DataApiObject):
     type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
 
     # pydantic instance variable (internal use)
-    int_natural_key_column: StrictStr = Field(alias="natural_key_column")
-    int_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
-    int_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
-    int_end_timestamp_column: Optional[StrictStr] = Field(
+    internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
+    internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
+    internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
+    internal_end_timestamp_column: Optional[StrictStr] = Field(
         default=None, alias="end_timestamp_column"
     )
-    int_current_flag_column: Optional[StrictStr] = Field(default=None, alias="current_flag_column")
+    internal_current_flag_column: Optional[StrictStr] = Field(
+        default=None, alias="current_flag_column"
+    )
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
-            columns_info_key="int_columns_info",
+            columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
-                ("int_natural_key_column", DBVarType.supported_id_types()),
-                ("int_effective_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("int_surrogate_key_column", DBVarType.supported_id_types()),
-                ("int_end_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("int_current_flag_column", None),
+                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("internal_natural_key_column", DBVarType.supported_id_types()),
+                ("internal_effective_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_surrogate_key_column", DBVarType.supported_id_types()),
+                ("internal_end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_current_flag_column", None),
             ],
         )
     )
@@ -74,7 +76,7 @@ class SlowlyChangingData(DataApiObject):
         try:
             return self.cached_model.natural_key_column
         except RecordRetrievalException:
-            return self.int_natural_key_column
+            return self.internal_natural_key_column
 
     @property
     def effective_timestamp_column(self) -> str:
@@ -88,7 +90,7 @@ class SlowlyChangingData(DataApiObject):
         try:
             return self.cached_model.effective_timestamp_column
         except RecordRetrievalException:
-            return self.int_effective_timestamp_column
+            return self.internal_effective_timestamp_column
 
     @property
     def surrogate_key_column(self) -> Optional[str]:
@@ -102,7 +104,7 @@ class SlowlyChangingData(DataApiObject):
         try:
             return self.cached_model.surrogate_key_column
         except RecordRetrievalException:
-            return self.int_surrogate_key_column
+            return self.internal_surrogate_key_column
 
     @property
     def end_timestamp_column(self) -> Optional[str]:
@@ -116,7 +118,7 @@ class SlowlyChangingData(DataApiObject):
         try:
             return self.cached_model.end_timestamp_column
         except RecordRetrievalException:
-            return self.int_end_timestamp_column
+            return self.internal_end_timestamp_column
 
     @property
     def current_flag_column(self) -> Optional[str]:
@@ -130,7 +132,7 @@ class SlowlyChangingData(DataApiObject):
         try:
             return self.cached_model.current_flag_column
         except RecordRetrievalException:
-            return self.int_current_flag_column
+            return self.internal_current_flag_column
 
     @property
     def timestamp_column(self) -> Optional[str]:

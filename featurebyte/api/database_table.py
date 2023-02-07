@@ -64,7 +64,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     feature_store: FeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
     # pydantic instance variable (internal use)
-    int_columns_info: List[ColumnInfo] = Field(alias="columns_info")
+    internal_columns_info: List[ColumnInfo] = Field(alias="columns_info")
 
     def __init__(self, **kwargs: Any):
         # Construct feature_store, input node & set the graph related parameters based on the given input dictionary
@@ -344,4 +344,4 @@ class DatabaseTable(AbstractTableData):
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
-        return self.int_columns_info
+        return self.internal_columns_info

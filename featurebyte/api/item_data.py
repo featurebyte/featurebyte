@@ -46,17 +46,17 @@ class ItemData(DataApiObject):
     )
 
     # pydantic instance variable (internal use)
-    int_event_id_column: StrictStr = Field(alias="event_id_column")
-    int_item_id_column: StrictStr = Field(alias="item_id_column")
+    internal_event_id_column: StrictStr = Field(alias="event_id_column")
+    internal_item_id_column: StrictStr = Field(alias="item_id_column")
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
-            columns_info_key="int_columns_info",
+            columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
-                ("int_event_id_column", DBVarType.supported_id_types()),
-                ("int_item_id_column", DBVarType.supported_id_types()),
+                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("internal_event_id_column", DBVarType.supported_id_types()),
+                ("internal_item_id_column", DBVarType.supported_id_types()),
             ],
         )
     )
@@ -89,7 +89,7 @@ class ItemData(DataApiObject):
         try:
             return self.cached_model.event_id_column
         except RecordRetrievalException:
-            return self.int_event_id_column
+            return self.internal_event_id_column
 
     @property
     def item_id_column(self) -> str:
@@ -103,7 +103,7 @@ class ItemData(DataApiObject):
         try:
             return self.cached_model.item_id_column
         except RecordRetrievalException:
-            return self.int_item_id_column
+            return self.internal_item_id_column
 
     @classmethod
     @typechecked

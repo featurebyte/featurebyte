@@ -484,8 +484,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
         allow_update_local: bool
             Whether to allow update load object if the object has not been saved
         add_internal_prefix: bool
-            Whether to add internal prefix (`int`) to the update key (used when the attribute to be updated
-            starts with `int_`). This flag only affects local update behavior (no effect if `allow_update_local`
+            Whether to add internal prefix (`internal_`) to the update key (used when the attribute to be updated
+            starts with `internal_`). This flag only affects local update behavior (no effect if `allow_update_local`
             is disabled).
 
         Raises
@@ -516,7 +516,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             )
         elif response.status_code == HTTPStatus.NOT_FOUND and allow_update_local:
             for key, value in update_payload.items():
-                key = f"int_{key}" if add_internal_prefix else key
+                key = f"internal_{key}" if add_internal_prefix else key
                 setattr(self, key, value)
         elif response.status_code == HTTPStatus.CONFLICT:
             raise DuplicatedRecordException(response=response)

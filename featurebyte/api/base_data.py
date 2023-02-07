@@ -247,14 +247,14 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     # pydantic instance variable (internal use)
-    int_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
+    internal_record_creation_date_column: Optional[str] = Field(alias="record_creation_date_column")
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
         try:
             return self.cached_model.columns_info  # pylint: disable=no-member
         except RecordRetrievalException:
-            return self.int_columns_info
+            return self.internal_columns_info
 
     @property
     def status(self) -> DataStatus:
@@ -282,7 +282,7 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
         try:
             return self.cached_model.record_creation_date_column  # pylint: disable=no-member
         except RecordRetrievalException:
-            return self.int_record_creation_date_column
+            return self.internal_record_creation_date_column
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None

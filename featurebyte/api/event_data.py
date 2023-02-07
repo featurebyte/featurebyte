@@ -44,20 +44,20 @@ class EventData(DataApiObject):
     type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
 
     # pydantic instance variable (internal use)
-    int_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         alias="default_feature_job_setting"
     )
-    int_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    int_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+    internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
+    internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
         construct_data_model_root_validator(
-            columns_info_key="int_columns_info",
+            columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
-                ("int_record_creation_date_column", DBVarType.supported_timestamp_types()),
-                ("int_event_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("int_event_id_column", DBVarType.supported_id_types()),
+                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("internal_event_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_event_id_column", DBVarType.supported_id_types()),
             ],
         )
     )
@@ -74,7 +74,7 @@ class EventData(DataApiObject):
         try:
             return self.cached_model.default_feature_job_setting
         except RecordRetrievalException:
-            return self.int_default_feature_job_setting
+            return self.internal_default_feature_job_setting
 
     @property
     def event_timestamp_column(self) -> str:
@@ -88,7 +88,7 @@ class EventData(DataApiObject):
         try:
             return self.cached_model.event_timestamp_column
         except RecordRetrievalException:
-            return self.int_event_timestamp_column
+            return self.internal_event_timestamp_column
 
     @property
     def event_id_column(self) -> Optional[str]:
@@ -102,7 +102,7 @@ class EventData(DataApiObject):
         try:
             return self.cached_model.event_id_column
         except RecordRetrievalException:
-            return self.int_event_id_column
+            return self.internal_event_id_column
 
     @property
     def timestamp_column(self) -> Optional[str]:
