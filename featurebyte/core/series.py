@@ -186,8 +186,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
 
-        series_to_use = self
-        key_to_use = key
+        series_to_use: Series = self
+        key_to_use: Series = key
         if isinstance(key, Tuple):
             series_to_use = self[key[1]]  # apply mask onto series
             key_to_use = key[0]
