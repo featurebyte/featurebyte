@@ -3,7 +3,7 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, List, Union
+from typing import Any, List, Tuple, Union
 
 import pandas as pd
 from pydantic import Field
@@ -194,14 +194,17 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         )
 
     @typechecked
-    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
+    def __setitem__(
+        self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
+    ) -> None:
         """
         Assign a scalar value or Series object of the same `dtype` to the `Frame` object
 
         Parameters
         ----------
-        key: str
-            column name to store the item
+        key: Union[str, Tuple[Series, str]]
+            column name to store the item. Alternatively, if a tuple is passed in, we will perform the masking
+            operation.
         value: Union[int, float, str, bool, Series]
             value to be assigned to the column
 
@@ -210,6 +213,16 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         ValueError
             when the row indices between the Frame object & value object are not aligned
         """
+        # This is required in order to allow us to support the
+        # view[mask, column_name] = new_value
+        # syntax
+        if isinstance(key, Tuple):
+            mask = key[0]
+            column_name = key[1]
+            frame_of_column = self[column_name]
+            frame_of_column[mask] = value
+            return
+
         if isinstance(value, Series):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")

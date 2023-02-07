@@ -467,8 +467,7 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
 
     # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
-    mask = feature_count_24h == 14.0
-    feature_count_24h[mask] = 900
+    feature_group[feature_count_24h == 14.0, "COUNT_24h"] = 900
     result = feature_count_24h.preview(preview_param)
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 900})
     result = feature_group.preview(preview_param)

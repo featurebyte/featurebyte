@@ -48,6 +48,7 @@ from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
+from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     dataframe_from_json,
@@ -55,6 +56,7 @@ from featurebyte.common.utils import (
 )
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
+from featurebyte.core.series import Series
 from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
@@ -320,7 +322,16 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         return output
 
     @typechecked
-    def __setitem__(self, key: str, value: Feature) -> None:
+    def __setitem__(
+        self, key: Union[str, Tuple[Series, str]], value: Union[Feature, Union[Scalar, Series]]
+    ) -> None:
+        if isinstance(key, Tuple):
+            mask = key[0]
+            column = key[1]
+            feature = self[column]
+            feature[mask] = value
+            return
+
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
         # Feature object
         value = parse_obj_as(Feature, value)
