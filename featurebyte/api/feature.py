@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import time
 from http import HTTPStatus
@@ -19,6 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
+from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.common.utils import dataframe_from_json
@@ -177,19 +178,6 @@ class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
         return feature_list
 
 
-class ListFeatureVersionDescriptor:
-    """
-    ListFeatureVersionDescriptor class used to list feature version.
-    """
-
-    def __get__(self, instance: Optional[Feature], owner: Type[Feature]) -> Any:
-        if instance is None:
-            # caller is a class
-            return owner.list_versions_with_filter
-        # caller is an instance
-        return instance.list_versions_with_same_name
-
-
 class Feature(
     ProtectedColumnsQueryObject,
     Series,
@@ -207,9 +195,6 @@ class Feature(
 
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
-
-    # descriptors
-    list_versions: ClassVar[Any] = ListFeatureVersionDescriptor()
 
     # class variables
     _route = "/feature"
@@ -288,7 +273,7 @@ class Feature(
         return features
 
     @classmethod
-    def list_versions_with_filter(
+    def _list_versions(
         cls,
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
@@ -328,13 +313,13 @@ class Feature(
             ]
         return feature_list
 
-    def list_versions_with_same_name(self, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
         """
-        List feature versions with the same feature name
+        List feature versions with the same name
 
         Parameters
         ----------
-        include_id: Optional[bool]
+        include_id: bool
             Whether to include id in the list
 
         Returns
@@ -734,3 +719,9 @@ class Feature(
             other
         """
         assert_is_lookup_feature(self.node_types_lineage)
+
+    # descriptors
+    list_versions: ClassVar[ClassInstanceMethodDescriptor] = ClassInstanceMethodDescriptor(
+        class_method=_list_versions,
+        instance_method=_list_versions_with_same_name,
+    )
