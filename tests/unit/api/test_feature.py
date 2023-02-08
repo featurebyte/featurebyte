@@ -641,7 +641,7 @@ def test_list_filter(saved_feature):
     feature_list = Feature.list(data="sf_event_data")
     assert feature_list.shape[0] == 1
 
-    feature_list = Feature.list(data="other_data")
+    feature_list = Feature.list(data="other_data", include_id=True)
     assert feature_list.shape[0] == 0
 
     feature_list = Feature.list(entity="customer")

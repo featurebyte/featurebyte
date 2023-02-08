@@ -904,7 +904,7 @@ def test_list_filter(saved_feature_list):
     feature_lists = FeatureList.list(data="sf_event_data")
     assert feature_lists.shape[0] == 1
 
-    feature_lists = FeatureList.list(data="other_data")
+    feature_lists = FeatureList.list(data="other_data", include_id=True)
     assert feature_lists.shape[0] == 0
 
     feature_lists = FeatureList.list(entity="customer")
