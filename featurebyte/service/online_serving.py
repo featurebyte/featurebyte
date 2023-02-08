@@ -79,14 +79,16 @@ class OnlineServingService(BaseService):
         tic = time.time()
         feature_cluster = feature_list.feature_clusters[0]
 
-        await self.entity_validation_service.validate_provided_entities(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            request_column_names=set(entity_serving_names[0].keys()),
-        )
-
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
+        )
+        parent_serving_preparation = (
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=feature_cluster.graph,
+                nodes=feature_cluster.nodes,
+                request_column_names=set(entity_serving_names[0].keys()),
+                feature_store=feature_store,
+            )
         )
 
         df_request_table = pd.DataFrame(entity_serving_names)

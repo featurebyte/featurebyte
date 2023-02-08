@@ -7,10 +7,12 @@ from typing import Any, List, Optional
 
 from featurebyte.exception import EntityJoinPathNotFoundError, RequiredEntityNotProvidedError
 from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.parent_serving import JoinStep
+from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.parent_serving import JoinStep, ParentServingPreparation
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
@@ -89,6 +91,32 @@ class EntityValidationService(BaseService):
             provided_entities=provided_entities,
             required_entities=required_entities,
         )
+
+    async def validate_entities_or_prepare_for_parent_serving(
+        self,
+        graph: QueryGraphModel,
+        nodes: list[Node],
+        request_column_names: set[str],
+        feature_store: FeatureStoreModel,
+        serving_names_mapping: dict[str, str] | None = None,
+    ) -> Optional[ParentServingPreparation]:
+
+        join_steps = await self.validate_provided_entities(
+            graph=graph,
+            nodes=nodes,
+            request_column_names=request_column_names,
+            serving_names_mapping=serving_names_mapping,
+        )
+
+        if join_steps is None:
+            parent_serving_preparation = None
+        else:
+            feature_store_details = FeatureStoreDetails(**feature_store.dict())
+            parent_serving_preparation = ParentServingPreparation(
+                join_steps=join_steps, feature_store_details=feature_store_details
+            )
+
+        return parent_serving_preparation
 
     async def validate_provided_entities(
         self,

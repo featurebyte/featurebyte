@@ -12,6 +12,7 @@ from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -346,6 +347,7 @@ def get_online_store_retrieval_sql(
     request_table_columns: list[str],
     request_table_name: Optional[str] = None,
     request_table_expr: Optional[expressions.Select] = None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
 ) -> str:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -369,7 +371,12 @@ def get_online_store_retrieval_sql(
     -------
     str
     """
-    planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=True)
+    planner = FeatureExecutionPlanner(
+        graph,
+        source_type=source_type,
+        is_online_serving=True,
+        parent_serving_preparation=parent_serving_preparation,
+    )
     plan = planner.generate_plan(nodes)
 
     # Form a request table as a common table expression (CTE) and add the point in time column
