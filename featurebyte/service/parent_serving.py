@@ -57,10 +57,10 @@ class ParentEntityLookupService(BaseService):
         current_available_entities = entity_info.provided_entity_ids
 
         for entity in entity_info.missing_entities:
-            join_path = await self.get_entity_join_path(entity, current_available_entities)
+            join_path = await self._get_entity_join_path(entity, current_available_entities)
 
             # Extract list of JoinStep
-            join_steps = await self.get_join_steps_from_join_path(join_path)
+            join_steps = await self._get_join_steps_from_join_path(join_path)
             for join_step in join_steps:
                 if join_step not in all_join_steps:
                     all_join_steps.append(join_step)
@@ -70,7 +70,7 @@ class ParentEntityLookupService(BaseService):
 
         return all_join_steps
 
-    async def get_join_steps_from_join_path(self, join_path: list[EntityModel]) -> list[JoinStep]:
+    async def _get_join_steps_from_join_path(self, join_path: list[EntityModel]) -> list[JoinStep]:
         """
         Convert a list of join path (list of EntityModel) into a list of JoinStep
 
@@ -124,7 +124,7 @@ class ParentEntityLookupService(BaseService):
 
         return join_steps
 
-    async def get_entity_join_path(
+    async def _get_entity_join_path(
         self,
         required_entity: EntityModel,
         available_entity_ids: set[ObjectId],
