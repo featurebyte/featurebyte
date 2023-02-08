@@ -325,8 +325,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     def __setitem__(
         self, key: Union[str, Tuple[Series, str]], value: Union[Feature, Union[Scalar, Series]]
     ) -> None:
-        if isinstance(key, Tuple):
-            mask: Series = key[0]
+        if isinstance(key, tuple):
+            mask = key[0]
+            assert isinstance(mask, Series)
             column: str = key[1]
             feature = self[column]
             feature[mask] = value

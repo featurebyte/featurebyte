@@ -216,8 +216,9 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         # This is required in order to allow us to support the
         # view[mask, column_name] = new_value
         # syntax
-        if isinstance(key, Tuple):
-            mask: Series = key[0]
+        if isinstance(key, tuple):
+            mask = key[0]
+            assert isinstance(mask, Series)
             column_name: str = key[1]
             frame_of_column = self[column_name]
             frame_of_column[mask] = value
