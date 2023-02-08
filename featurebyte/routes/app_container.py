@@ -42,6 +42,7 @@ from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
+from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.scd_data import SCDDataService
@@ -114,6 +115,14 @@ app_container_config = {
             "extra_deps": [
                 "session_manager_service",
                 "feature_store_service",
+            ],
+        },
+        {
+            "name": "parent_entity_lookup_service",
+            "clazz": ParentEntityLookupService,
+            "extra_deps": [
+                "entity_service",
+                "tabular_data_service",
             ],
         },
     ],

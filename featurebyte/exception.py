@@ -105,6 +105,13 @@ class RequiredEntityNotProvidedError(Exception):
     """
 
 
+class EntityJoinPathNotFoundError(Exception):
+    """
+    Raised when it is not possible to identify a join path to an entity using the provided entities
+    as children entities
+    """
+
+
 class InvalidSettingsError(Exception):
     """
     Raised when configuration has invalid settings
