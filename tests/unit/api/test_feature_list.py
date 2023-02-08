@@ -349,7 +349,11 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
     new_feature = production_ready_feature + 123
     with pytest.raises(TypeError) as exc_info:
         feature_group[None] = new_feature
-    assert str(exc_info.value) == 'type of argument "key" must be str; got NoneType instead'
+    assert (
+        str(exc_info.value)
+        == 'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.Series, '
+        "str]); got NoneType instead"
+    )
 
 
 def test_feature_group__preview_zero_feature():
