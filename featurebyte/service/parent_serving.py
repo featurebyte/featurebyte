@@ -86,13 +86,17 @@ class ParentEntityLookupService(BaseService):
 
         join_steps = []
 
+        # Retrieve all entities in batch
+        all_entities = await self.entity_service.get_entities({entity.id for entity in join_path})
+        entities_by_id = {entity.id: entity for entity in all_entities}
+
         for child_entity, parent_entity in zip(join_path, join_path[1:]):
 
             child_entity_id = child_entity.id
             parent_entity_id = parent_entity.id
 
             # Retrieve the relationship for the data id defined in the relationship
-            parents = (await self.entity_service.get_document(child_entity_id)).parents
+            parents = entities_by_id[child_entity_id].parents
             relationship = next(parent for parent in parents if parent.id == parent_entity_id)
 
             # Retrieve the join keys from the data
@@ -153,7 +157,6 @@ class ParentEntityLookupService(BaseService):
         # entity (requiring the least number of joins) assuming all joins have the same cost.
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
         visited = defaultdict(bool)
-        join_path = None
 
         while pending:
 
