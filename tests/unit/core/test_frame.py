@@ -264,7 +264,10 @@ def test__setitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
-    assert 'type of argument "key" must be str; got float instead' in str(exc.value)
+    assert (
+        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.Series, str]); got float '
+        "instead" in str(exc.value)
+    )
 
 
 def test_multiple_statements(dataframe):
