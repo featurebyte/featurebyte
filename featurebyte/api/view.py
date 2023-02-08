@@ -3,7 +3,7 @@ View class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -327,8 +327,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return output
 
     @typechecked
-    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
-        if key in self.protected_columns:
+    def __setitem__(
+        self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
+    ) -> None:
+        if not isinstance(key, tuple) and key in self.protected_columns:
             raise ValueError(f"Column '{key}' cannot be modified!")
         super().__setitem__(key, value)
 
