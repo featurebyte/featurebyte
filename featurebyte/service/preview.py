@@ -256,12 +256,14 @@ class PreviewService(BaseService):
         nodes: list[Node],
         request_column_names: set[str],
         feature_store: FeatureStoreModel,
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> Optional[ParentServingPreparation]:
 
         join_steps = await self.entity_validation_service.validate_provided_entities(
             graph=graph,
             nodes=nodes,
             request_column_names=request_column_names,
+            serving_names_mapping=serving_names_mapping,
         )
 
         if join_steps is None:
@@ -308,17 +310,17 @@ class PreviewService(BaseService):
         ).tz_localize(None)
 
         request_column_names = set(point_in_time_and_serving_name.keys())
-        await self.entity_validation_service.validate_provided_entities(
-            graph=graph,
-            nodes=[feature_node],
-            request_column_names=request_column_names,
-        )
-
         feature_store, session = await self._get_feature_store_session(
             graph=graph,
             node_name=feature_preview.node_name,
             feature_store_name=feature_preview.feature_store_name,
             get_credential=get_credential,
+        )
+        parent_serving_preparation = await self._validate_entities_or_prepare_for_parent_serving(
+            graph=graph,
+            nodes=[feature_node],
+            request_column_names=request_column_names,
+            feature_store=feature_store,
         )
         preview_sql = get_feature_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
@@ -326,6 +328,7 @@ class PreviewService(BaseService):
             nodes=[feature_node],
             point_in_time_and_serving_name=point_in_time_and_serving_name,
             source_type=feature_store.type,
+            parent_serving_preparation=parent_serving_preparation,
         )
         result = await session.execute_query(preview_sql)
         if result is None:
@@ -442,10 +445,11 @@ class PreviewService(BaseService):
         )
 
         request_column_names = set(training_events.columns)
-        await self.entity_validation_service.validate_provided_entities(
+        parent_serving_preparation = await self._validate_entities_or_prepare_for_parent_serving(
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_column_names=request_column_names,
+            feature_store=feature_store,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
 
@@ -472,6 +476,7 @@ class PreviewService(BaseService):
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
             source_type=feature_store.type,
             is_feature_list_deployed=is_feature_list_deployed,
+            parent_serving_preparation=parent_serving_preparation,
         )
 
     async def feature_sql(self, feature_sql: FeatureSQL) -> str:

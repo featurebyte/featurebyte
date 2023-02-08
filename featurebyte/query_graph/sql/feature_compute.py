@@ -317,6 +317,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         request_table_columns: list[str],
     ) -> expressions.Select:
+        assert self.parent_serving_preparation is not None
         table_expr = construct_request_table_with_parent_entities(
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
