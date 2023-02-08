@@ -220,8 +220,9 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             mask = key[0]
             assert isinstance(mask, Series)
             column_name: str = key[1]
-            frame_of_column = self[column_name]
-            frame_of_column[mask] = value
+            column = self[column_name]
+            assert isinstance(column, Series)
+            column[mask] = value
             return
 
         if isinstance(value, Series):

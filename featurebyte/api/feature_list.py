@@ -330,6 +330,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             assert isinstance(mask, Series)
             column: str = key[1]
             feature = self[column]
+            assert isinstance(feature, Series)
             feature[mask] = value
             return
 
