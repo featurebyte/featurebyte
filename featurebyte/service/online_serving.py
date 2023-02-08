@@ -29,12 +29,16 @@ class OnlineServingService(BaseService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, session_manager_service: SessionManagerService
+        self,
+        user: Any,
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        entity_validation_service: EntityValidationService,
     ):
         super().__init__(user, persistent)
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.session_manager_service = session_manager_service
-        self.entity_validation_service = EntityValidationService(user=user, persistent=persistent)
+        self.entity_validation_service = entity_validation_service
 
     async def get_online_features_from_feature_list(
         self,

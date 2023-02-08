@@ -88,25 +88,10 @@ app_container_config = {
             ],
         },
         {
-            "name": "online_serving_service",
-            "clazz": OnlineServingService,
-            "extra_deps": [
-                "session_manager_service",
-            ],
-        },
-        {
             "name": "deploy_service",
             "clazz": DeployService,
             "extra_deps": [
                 "online_enable_service",
-            ],
-        },
-        {
-            "name": "preview_service",
-            "clazz": PreviewService,
-            "extra_deps": [
-                "session_manager_service",
-                "feature_list_service",
             ],
         },
         {
@@ -123,6 +108,31 @@ app_container_config = {
             "extra_deps": [
                 "entity_service",
                 "tabular_data_service",
+            ],
+        },
+        {
+            "name": "entity_validation_service",
+            "clazz": EntityValidationService,
+            "extra_deps": [
+                "entity_service",
+                "parent_entity_lookup_service",
+            ],
+        },
+        {
+            "name": "preview_service",
+            "clazz": PreviewService,
+            "extra_deps": [
+                "session_manager_service",
+                "feature_list_service",
+                "entity_validation_service",
+            ],
+        },
+        {
+            "name": "online_serving_service",
+            "clazz": OnlineServingService,
+            "extra_deps": [
+                "session_manager_service",
+                "entity_validation_service",
             ],
         },
     ],
@@ -211,10 +221,6 @@ app_container_config = {
         {
             "name": "info_service",
             "clazz": InfoService,
-        },
-        {
-            "name": "entity_validation_service",
-            "clazz": EntityValidationService,
         },
     ],
     # Controllers can depend on any object defined above.

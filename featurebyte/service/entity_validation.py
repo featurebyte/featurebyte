@@ -23,10 +23,16 @@ class EntityValidationService(BaseService):
     provided in feature requests during preview, historical features, and online serving.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        entity_service: EntityService,
+        parent_entity_lookup_service: ParentEntityLookupService,
+    ):
         super().__init__(user, persistent)
-        self.entity_service = EntityService(user, persistent)
-        self.parent_entity_lookup_service = ParentEntityLookupService(user, persistent)
+        self.entity_service = entity_service
+        self.parent_entity_lookup_service = parent_entity_lookup_service
 
     async def get_entity_info_from_request(
         self,

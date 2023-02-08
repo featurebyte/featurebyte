@@ -54,12 +54,13 @@ class PreviewService(BaseService):
         persistent: Persistent,
         session_manager_service: SessionManagerService,
         feature_list_service: FeatureListService,
+        entity_validation_service: EntityValidationService,
     ):
         super().__init__(user, persistent)
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.session_manager_service = session_manager_service
         self.feature_list_service = feature_list_service
-        self.entity_validation_service = EntityValidationService(user=user, persistent=persistent)
+        self.entity_validation_service = entity_validation_service
 
     async def _get_feature_store_session(
         self, graph: QueryGraph, node_name: str, feature_store_name: str, get_credential: Any
