@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
-from featurebyte.common.model_util import convert_version_string_to_dict
+from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -50,11 +50,10 @@ class FrozenFeatureNamespaceModel(FeatureByteBaseDocumentModel):
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
-    @validator("entity_ids", "tabular_data_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids is sorted
-        return sorted(value)
+    # pydantic validators
+    _sort_ids_validator = validator("entity_ids", "tabular_data_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @root_validator(pre=True)
     @classmethod
@@ -122,11 +121,10 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
 
-    @validator("feature_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids is sorted
-        return sorted(value)
+    # pydantic validators
+    _sort_feature_ids_validator = validator("feature_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
 
 class FrozenFeatureModel(FeatureByteBaseDocumentModel):
@@ -143,6 +141,12 @@ class FrozenFeatureModel(FeatureByteBaseDocumentModel):
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+
+    # pydantic validators
+    _sort_ids_validator = validator("entity_ids", "tabular_data_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
     @root_validator(pre=True)
     @classmethod
@@ -182,20 +186,6 @@ class FrozenFeatureModel(FeatureByteBaseDocumentModel):
             if isinstance(values.get("node"), dict):
                 values["node_name"] = values["node"]["name"]
         return values
-
-    @validator("entity_ids", "tabular_data_ids")
-    @classmethod
-    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids is sorted
-        return sorted(value)
-
-    @validator("version", pre=True)
-    @classmethod
-    def _validate_version(cls, value: Any) -> Any:
-        # DEV-556: converted older record string value to dictionary format
-        if isinstance(value, str):
-            return convert_version_string_to_dict(value)
-        return value
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """

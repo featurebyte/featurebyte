@@ -13,12 +13,12 @@ from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.event_data import EventData
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.item_data import ItemDataModel
-from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.table import AllTableDataT, ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 

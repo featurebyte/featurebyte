@@ -7,11 +7,12 @@ from abc import abstractmethod
 
 from pydantic import validator
 
+from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model.column_info import ColumnInfo, validate_columns_info
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CleaningOperation
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
@@ -44,7 +45,7 @@ class BaseTableData(FeatureByteBaseModel):
     tabular_source: TabularSource
 
     # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(validate_columns_info)
+    _validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
 
     def __init_subclass__(cls, **kwargs: Any):
         # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)

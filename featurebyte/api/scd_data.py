@@ -12,10 +12,10 @@ from typeguard import typechecked
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.scd_data import SCDDataModel
-from featurebyte.models.validator import construct_data_model_root_validator
 from featurebyte.query_graph.model.table import AllTableDataT, SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
