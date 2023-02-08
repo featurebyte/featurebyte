@@ -25,10 +25,16 @@ class ParentEntityLookupService(BaseService):
     entities in order to serve parent features given child entities
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        entity_service: EntityService,
+        data_service: DataService,
+    ):
         super().__init__(user, persistent)
-        self.entity_service = EntityService(user, persistent)
-        self.data_service = DataService(user, persistent)
+        self.entity_service = entity_service
+        self.data_service = data_service
 
     async def get_required_join_steps(self, entity_info: EntityInfo) -> list[JoinStep]:
         """
@@ -155,8 +161,7 @@ class ParentEntityLookupService(BaseService):
             updated_path = [current_entity] + current_path
 
             if current_entity.id in available_entity_ids:
-                join_path = updated_path
-                break
+                return updated_path
 
             visited[current_entity.id] = True
             children_entities = await self.entity_service.get_children_entities(current_entity.id)
@@ -164,9 +169,6 @@ class ParentEntityLookupService(BaseService):
                 if not visited[child_entity.id]:
                     pending.append((child_entity, updated_path))
 
-        if join_path is None:
-            raise EntityJoinPathNotFoundError(
-                f"Cannot find a join path for entity {required_entity.name}"
-            )
-
-        return join_path
+        raise EntityJoinPathNotFoundError(
+            f"Cannot find a join path for entity {required_entity.name}"
+        )

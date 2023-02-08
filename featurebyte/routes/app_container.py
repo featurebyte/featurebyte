@@ -117,6 +117,14 @@ app_container_config = {
                 "feature_store_service",
             ],
         },
+        {
+            "name": "parent_entity_lookup_service",
+            "clazz": ParentEntityLookupService,
+            "extra_deps": [
+                "entity_service",
+                "tabular_data_service",
+            ],
+        },
     ],
     # These services only require the user, and persistent dependencies.
     "services": [
@@ -207,10 +215,6 @@ app_container_config = {
         {
             "name": "entity_validation_service",
             "clazz": EntityValidationService,
-        },
-        {
-            "name": "parent_entity_lookup_service",
-            "clazz": ParentEntityLookupService,
         },
     ],
     # Controllers can depend on any object defined above.

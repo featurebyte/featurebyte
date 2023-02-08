@@ -18,7 +18,7 @@ class EntityInfo(FeatureByteBaseModel):
 
     required_entities: List[EntityModel]
         List of entities required to by the feature / feature list
-    available_entities: List[EntityModel]
+    provided_entities: List[EntityModel]
         List of entities provided in the request
     """
 
