@@ -448,9 +448,12 @@ class LookupSpec(NonTileBasedAggregationSpec):
     source_expr: Select
     scd_parameters: Optional[SCDLookupParameters]
     event_parameters: Optional[EventLookupParameters]
+    is_parent_lookup: bool = False
 
     @property
     def agg_result_name(self) -> str:
+        if self.is_parent_lookup:
+            return self.feature_name
         name = f"{self.input_column_name}_{self.source_hash}"
         return name
 

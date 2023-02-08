@@ -67,14 +67,6 @@ def apply_join_step(
         current_query_index=0,
     )
 
-    # joined_table_expr = select(
-    #     *[quoted_identifier(col) for col in current_columns],
-    #     alias_(
-    #         quoted_identifier(spec.agg_result_name),
-    #         alias=join_step.parent_serving_name,
-    #         quoted=True,
-    #     ),
-    # ).from_(aggregation_result.updated_table_expr.subquery(alias="REQ"))
     joined_table_expr = select(
         *[get_qualified_column_identifier(col, "REQ") for col in current_columns],
         alias_(
@@ -125,4 +117,5 @@ def get_lookup_spec_from_join_step(
         event_parameters=event_parameters,
         serving_names_mapping=None,
         entity_ids=[],
+        is_parent_lookup=True,
     )
