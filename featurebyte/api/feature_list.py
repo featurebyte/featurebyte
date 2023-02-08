@@ -4,7 +4,19 @@ FeatureListVersion class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Sequence, Tuple, Union, cast
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    OrderedDict,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
 import collections
 import json
@@ -32,6 +44,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
@@ -731,7 +744,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         return feature_lists
 
     @classmethod
-    def list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
+    def _list_versions(cls, include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved feature list versions
 
@@ -746,6 +759,22 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             Table of feature lists
         """
         return super().list(include_id=include_id)
+
+    def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
+        """
+        List feature list versions with the same name
+
+        Parameters
+        ----------
+        include_id: bool
+            Whether to include id in the list
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of features with the same name
+        """
+        return self._list(include_id=include_id, params={"name": self.name})
 
     @classmethod
     def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
@@ -1069,3 +1098,9 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                 entity_serving_names=entity_serving_names,
             )
         )
+
+    # descriptors
+    list_versions: ClassVar[ClassInstanceMethodDescriptor] = ClassInstanceMethodDescriptor(
+        class_method=_list_versions,
+        instance_method=_list_versions_with_same_name,
+    )

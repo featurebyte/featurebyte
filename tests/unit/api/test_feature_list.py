@@ -581,9 +581,42 @@ def test_list(saved_feature_list):
 
 def test_list_versions(saved_feature_list):
     """Test listing feature list versions"""
-    feature_lists = FeatureList.list_versions()
+    # save a few more feature list
+    feature_group = FeatureGroup(items=[])
+    feat = saved_feature_list["sum_1d"]
+    feature_group[f"new_feat1"] = feat + 1
+    feature_group[f"new_feat2"] = feat + 2
+    feature_group.save()
+    flist_1 = FeatureList([feat, feature_group["new_feat1"]], name="new_flist_1")
+    flist_2 = FeatureList([feat, feature_group["new_feat2"]], name="new_flist_2")
+    flist_1.save()
+    flist_2.save()
+
+    # check feature list class list_version & feature list object list_versions
     assert_frame_equal(
-        feature_lists,
+        FeatureList.list_versions(),
+        pd.DataFrame(
+            {
+                "name": [flist_2.name, flist_1.name, saved_feature_list.name],
+                "feature_list_namespace_id": [
+                    flist_2.feature_list_namespace_id,
+                    flist_1.feature_list_namespace_id,
+                    saved_feature_list.feature_list_namespace.id,
+                ],
+                "num_features": [2, 2, 1],
+                "online_frac": [0.0] * 3,
+                "deployed": [False, False, saved_feature_list.deployed],
+                "created_at": [
+                    flist_2.created_at,
+                    flist_1.created_at,
+                    saved_feature_list.created_at,
+                ],
+            }
+        ),
+    )
+
+    assert_frame_equal(
+        saved_feature_list.list_versions(),
         pd.DataFrame(
             {
                 "name": [saved_feature_list.name],
@@ -594,6 +627,13 @@ def test_list_versions(saved_feature_list):
                 "created_at": [saved_feature_list.created_at],
             }
         ),
+    )
+
+    # check documentation of the list_versions
+    assert FeatureList.list_versions.__doc__ == FeatureList._list_versions.__doc__
+    assert (
+        saved_feature_list.list_versions.__doc__
+        == saved_feature_list._list_versions_with_same_name.__doc__
     )
 
 

@@ -68,8 +68,8 @@ lint-safety: | lint-requirements-txt
 	# Exporting dependencies to requirements.txt
 	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
 	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r
-
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
+
 #* Testing
 test: test-setup
 	poetry run pytest --timeout=240 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt

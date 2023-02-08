@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import time
 from http import HTTPStatus
@@ -19,6 +19,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.feature_validation_util import assert_is_lookup_feature
+from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.common.utils import dataframe_from_json
@@ -192,6 +193,7 @@ class Feature(
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Feature"], proxy_class="featurebyte.Feature")
 
+    # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
     # class variables
@@ -271,7 +273,7 @@ class Feature(
         return features
 
     @classmethod
-    def list_versions(
+    def _list_versions(
         cls,
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
@@ -310,6 +312,22 @@ class Feature(
                 feature_list.data.apply(lambda data_list: data in data_list)
             ]
         return feature_list
+
+    def _list_versions_with_same_name(self, include_id: bool = False) -> pd.DataFrame:
+        """
+        List feature versions with the same name
+
+        Parameters
+        ----------
+        include_id: bool
+            Whether to include id in the list
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of features with the same name
+        """
+        return self._list(include_id=include_id, params={"name": self.name})
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:
@@ -701,3 +719,9 @@ class Feature(
             other
         """
         assert_is_lookup_feature(self.node_types_lineage)
+
+    # descriptors
+    list_versions: ClassVar[ClassInstanceMethodDescriptor] = ClassInstanceMethodDescriptor(
+        class_method=_list_versions,
+        instance_method=_list_versions_with_same_name,
+    )

@@ -683,9 +683,34 @@ def test_list_versions(saved_feature):
     """
     Test list_versions
     """
-    feature_version_list = saved_feature.list_versions()
+    # save a few more features
+    feature_group = FeatureGroup(items=[])
+    feature_group[f"new_feat1"] = saved_feature + 1
+    feature_group[f"new_feat2"] = saved_feature + 2
+    feature_group.save()
+
+    # check feature class list_version & feature object list_versions
     assert_frame_equal(
-        feature_version_list,
+        Feature.list_versions(),
+        pd.DataFrame(
+            {
+                "name": ["new_feat2", "new_feat1", saved_feature.name],
+                "version": [saved_feature.version.to_str()] * 3,
+                "dtype": [saved_feature.dtype] * 3,
+                "readiness": [saved_feature.readiness] * 3,
+                "online_enabled": [saved_feature.online_enabled] * 3,
+                "data": [["sf_event_data"]] * 3,
+                "entities": [["customer"]] * 3,
+                "created_at": [
+                    feature_group["new_feat2"].created_at,
+                    feature_group["new_feat1"].created_at,
+                    saved_feature.created_at,
+                ],
+            }
+        ),
+    )
+    assert_frame_equal(
+        saved_feature.list_versions(),
         pd.DataFrame(
             {
                 "name": [saved_feature.name],
@@ -698,6 +723,12 @@ def test_list_versions(saved_feature):
                 "created_at": [saved_feature.created_at],
             }
         ),
+    )
+
+    # check documentation of the list_versions
+    assert Feature.list_versions.__doc__ == Feature._list_versions.__doc__
+    assert (
+        saved_feature.list_versions.__doc__ == saved_feature._list_versions_with_same_name.__doc__
     )
 
 
