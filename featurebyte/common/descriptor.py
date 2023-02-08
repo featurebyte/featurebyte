@@ -21,5 +21,10 @@ class ClassInstanceMethodDescriptor:
     def __get__(self, instance: Optional[T], owner: Type[T]) -> MethodT:
         if instance is None:
             # @classmethod decorated method should have __func__ attribute
-            return partial(self._class_method.__func__, cls=owner)  # type: ignore
-        return partial(self._instance_method, self=instance)
+            class_method = self._class_method.__func__  # type: ignore
+            method = partial(class_method, cls=owner)
+            method.__doc__ = class_method.__doc__
+        else:
+            method = partial(self._instance_method, self=instance)
+            method.__doc__ = self._instance_method.__doc__
+        return method
