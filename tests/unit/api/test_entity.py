@@ -219,24 +219,27 @@ def test_get_entity():
 
     # test list entity names
     entity_list = Entity.list()
-    assert_frame_equal(
-        entity_list,
-        pd.DataFrame(
-            {
-                "name": [region_entity.name, prod_entity.name, cust_entity.name],
-                "serving_names": [
-                    region_entity.serving_names,
-                    prod_entity.serving_names,
-                    cust_entity.serving_names,
-                ],
-                "created_at": [
-                    region_entity.created_at,
-                    prod_entity.created_at,
-                    cust_entity.created_at,
-                ],
-            }
-        ),
+    expected_entity_list = pd.DataFrame(
+        {
+            "name": [region_entity.name, prod_entity.name, cust_entity.name],
+            "serving_names": [
+                region_entity.serving_names,
+                prod_entity.serving_names,
+                cust_entity.serving_names,
+            ],
+            "created_at": [
+                region_entity.created_at,
+                prod_entity.created_at,
+                cust_entity.created_at,
+            ],
+        }
     )
+    assert_frame_equal(entity_list, expected_entity_list)
+
+    # test list with include_id=True
+    entity_list = Entity.list(include_id=True)
+    expected_entity_list["id"] = [region_entity.id, prod_entity.id, cust_entity.id]
+    assert_frame_equal(entity_list, expected_entity_list[entity_list.columns])
 
     # test unexpected retrieval exception for Entity.list
     with mock.patch("featurebyte.api.api_object.Configurations"):

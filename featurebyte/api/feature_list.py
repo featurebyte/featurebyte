@@ -447,9 +447,10 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         # add information about default feature list version
         feature_list_versions = FeatureList.list_versions(include_id=True)
         feature_lists = feature_lists.merge(
-            feature_list_versions[["id", "online_frac", "deployed"]],
-            left_on="default_feature_list_id",
-            right_on="id",
+            feature_list_versions[["id", "online_frac", "deployed"]].rename(
+                columns={"id": "default_feature_list_id"}
+            ),
+            on="default_feature_list_id",
         )
 
         feature_lists["num_features"] = feature_lists.feature_namespace_ids.apply(len)

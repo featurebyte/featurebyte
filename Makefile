@@ -42,7 +42,7 @@ install:
 format:
 	poetry run pyupgrade --py38-plus **/*.py
 	poetry run isort .
-	poetry run black .
+	poetry run black . --exclude=docker
 	poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
