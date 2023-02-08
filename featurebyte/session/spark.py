@@ -75,11 +75,16 @@ class SparkSession(BaseSession):
     def _initialize_storage(self) -> None:
         """
         Initialize storage object
+
+        Raises
+        ------
+        NotImplementedError
+            Storage type not supported
         """
         # add prefix to compartmentalize assets
         url_prefix = "/featurebyte"
-        self.storage_url = self.storage_url.strip("/") + url_prefix
-        self.storage_spark_url = self.storage_spark_url.strip("/") + url_prefix
+        self.storage_url = self.storage_url.rstrip("/") + url_prefix
+        self.storage_spark_url = self.storage_spark_url.rstrip("/") + url_prefix
 
         if self.storage_type == StorageType.LOCAL:
             self._storage = FileSimpleStorage(storage_url=self.storage_url)
@@ -178,6 +183,8 @@ class SparkSession(BaseSession):
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
             for _, (column_name, var_info) in schema[["col_name", "data_type"]].iterrows():
+                # Sometimes describe include metadata after column details with and empty row as a separator.
+                # Skip the remaining entries once we run into an empty column name
                 if column_name == "":
                     break
                 column_name_type_map[column_name] = self._convert_to_internal_variable_type(

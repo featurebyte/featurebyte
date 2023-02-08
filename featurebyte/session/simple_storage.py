@@ -51,6 +51,11 @@ class SimpleStorage(ABC):
     def delete_object(self, path: str) -> None:
         """
         Delete object from storage
+
+        Parameters
+        ----------
+        path: str
+            Path of object to delete
         """
 
     @contextmanager
@@ -67,7 +72,8 @@ class SimpleStorage(ABC):
 
         Yields
         -------
-        A file-like object.
+        Any
+            A file-like object
         """
         path = path.lstrip("/")
         yield remote_open(

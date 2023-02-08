@@ -85,11 +85,6 @@ class SessionManager(BaseModel):
         -------
         BaseSession
             Session that can be used to connect to the specified database
-
-        Raises
-        ------
-        ValueError
-            When credentials do not contain the specified data source info
         """
         if feature_store_name not in self.credentials:
             logger.warning(

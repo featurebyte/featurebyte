@@ -91,11 +91,6 @@ jobs:
       with:
         fetch-depth: '0'  # Used for checking diff
 
-    - name: Start Sandbox
-      run: |
-        git clone https://kchua:${{ secrets.SPARK_REPO_ACCESS_TOKEN }}@github.com/featurebyte/spark-datalake-sandbox.git
-        cd spark-datalake-sandbox && make start
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:

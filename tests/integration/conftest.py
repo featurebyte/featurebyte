@@ -253,7 +253,7 @@ def spark_feature_store_fixture(mock_get_persistent):
             http_path="cliservice",
             use_http_transport=False,
             storage_type="file",
-            storage_url="~/.spark-datalake-sandbox/data/staging/",
+            storage_url="~/.spark/data/staging/",
             storage_spark_url="file:///data/staging/",
             featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,

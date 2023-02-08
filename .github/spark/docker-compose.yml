@@ -1,0 +1,34 @@
+version: '3'
+services:
+  spark-thrift:
+    image: featurebyte/cluster-apache-spark:3.3.1
+    container_name: spark-thrift
+    ports:
+      - "10000:10000"
+      - "4040:4040"
+      - "8080:8080"
+    volumes:
+      - ~/.spark/data:/data
+    environment:
+      - SPARK_MASTER=local
+      - SPARK_LOCAL_IP=spark-thrift
+    command:
+      - /bin/sh
+      - -c
+      - |
+        /opt/spark/bin/spark-submit \
+        --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 \
+        --name Thrift JDBC/ODBC Server \
+        --hiveconf hive.server2.thrift.port=10000 \
+        --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
+        --hiveconf derby.system.home=/data/ \
+        --master=local[2] \
+        --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
+        --conf spark.executor.memory=2G \
+        --conf spark.driver.memory=1G \
+        --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+        --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+        --conf spark.sql.catalogImplementation=hive  \
+        --conf spark.sql.warehouse.dir=file:///data/warehouse/ \
+        --conf spark.sql.hive.thriftServer.singleSession=true \
+        --conf spark.hadoop.metastore.catalog.default=spark

@@ -124,7 +124,6 @@ async def test_session_manager__wrong_configuration_file(snowflake_feature_store
 
         assert len(mock_handler.records) > 0
         parts = mock_handler.records[0].split("|")
-        assert "|".join(parts[1:]) == (
-            " WARNING  | featurebyte.session.manager:get_session_with_params:95 - "
+        assert "|".join(parts[1:]).endswith(
             'Credentials do not contain info for the feature store "sf_featurestore"!'
         )

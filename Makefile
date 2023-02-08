@@ -76,7 +76,7 @@ lint-safety: | lint-requirements-txt
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
-test: test-setup build-hive-udf-jar
+test: test-setup build-hive-udf-jar spark-start
 	poetry run pytest --timeout=240 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 	${MAKE} test-teardown
 
@@ -90,6 +90,13 @@ test-routes:
 	uvicorn featurebyte.app:app --reload
 
 #* Docker
+spark-start:
+	mkdir -p ~/.spark/data
+	cd .github/spark && docker compose up -d
+
+spark-stop:
+	cd .github/spark && docker compose down
+
 beta-start: beta-build
 	cd docker/dev && docker compose -f docker-compose.yml up
 	$(MAKE) beta-stop
