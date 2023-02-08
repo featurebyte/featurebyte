@@ -63,13 +63,12 @@ def apply_join_step(
         current_query_index=0,
     )
 
+    # Ensure the newly joined in column is available for subsequent joins under the REQ table
+    # qualifier. This is already done by LookupAggregator for the case of SCD lookup.
     if spec.scd_parameters is None:
-        joined_table_expr = select(
-            *[
-                get_qualified_column_identifier(col, "REQ")
-                for col in current_columns + [spec.agg_result_name]
-            ]
-        ).from_(aggregation_result.updated_table_expr.subquery(alias="REQ"))
+        joined_table_expr = LookupAggregator.wrap_in_nested_query(
+            aggregation_result.updated_table_expr, current_columns + [spec.agg_result_name]
+        )
     else:
         joined_table_expr = aggregation_result.updated_table_expr
 

@@ -1,16 +1,7 @@
 import pandas as pd
 import pytest
 
-from featurebyte import (
-    DimensionData,
-    DimensionView,
-    Entity,
-    EventData,
-    EventView,
-    FeatureList,
-    SlowlyChangingData,
-    SlowlyChangingView,
-)
+from featurebyte import DimensionData, DimensionView, Entity, EventData, SlowlyChangingData
 
 
 @pytest.mark.asyncio
@@ -129,12 +120,15 @@ async def test_serving_parent_features_multiple_joins(snowflake_session, snowfla
     dimension_view = DimensionView.from_dimension_data(dimension_data_2)
     feature = dimension_view["country"].as_feature("Country Name")
 
-    try:
-        df = feature.preview(
-            {
-                "POINT_IN_TIME": "2022-05-01 10:00:00",
-                "serving_event_id": 1,
-            }
-        )
-    except:
-        raise
+    df = feature.preview(
+        {
+            "POINT_IN_TIME": "2022-05-01 10:00:00",
+            "serving_event_id": 1,
+        }
+    )
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2022-05-01 10:00:00"),
+        "serving_event_id": 1,
+        "Country Name": "japan",
+    }
+    assert df.iloc[0].to_dict() == expected

@@ -252,7 +252,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         return updated_table_expr
 
     @staticmethod
-    def _wrap_in_nested_query(table_expr: Select, columns: list[str]) -> Select:
+    def wrap_in_nested_query(table_expr: Select, columns: list[str]) -> Select:
         """
         Wrap table_expr in a nested query with a REQ alias
 

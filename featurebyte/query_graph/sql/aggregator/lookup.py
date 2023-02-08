@@ -259,7 +259,7 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             scd_agg_result_names.extend(agg_result_names)
 
         if scd_agg_result_names:
-            table_expr = self._wrap_in_nested_query(table_expr=table_expr, columns=current_columns)
+            table_expr = self.wrap_in_nested_query(table_expr=table_expr, columns=current_columns)
 
         return table_expr, scd_agg_result_names
 
