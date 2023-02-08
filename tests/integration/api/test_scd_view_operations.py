@@ -13,7 +13,6 @@ from featurebyte import (
     SlowlyChangingData,
     SlowlyChangingView,
 )
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 

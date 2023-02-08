@@ -10,7 +10,11 @@ from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLooku
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    SQLType,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.specs import LookupSpec
 
 
@@ -22,7 +26,9 @@ def construct_request_table_with_parent_entities(
     feature_store_details: FeatureStoreDetails,
 ) -> Select:
 
-    table_expr = select("*").from_(expressions.alias_(request_table_name, "REQ"))
+    table_expr = select(
+        *[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]
+    ).from_(expressions.alias_(request_table_name, "REQ"))
 
     current_columns = request_table_columns[:]
     for join_step in join_steps:
@@ -61,10 +67,18 @@ def apply_join_step(
         current_query_index=0,
     )
 
+    # joined_table_expr = select(
+    #     *[quoted_identifier(col) for col in current_columns],
+    #     alias_(
+    #         quoted_identifier(spec.agg_result_name),
+    #         alias=join_step.parent_serving_name,
+    #         quoted=True,
+    #     ),
+    # ).from_(aggregation_result.updated_table_expr.subquery(alias="REQ"))
     joined_table_expr = select(
-        *[quoted_identifier(col) for col in current_columns],
+        *[get_qualified_column_identifier(col, "REQ") for col in current_columns],
         alias_(
-            quoted_identifier(spec.agg_result_name),
+            get_qualified_column_identifier(spec.agg_result_name, "REQ"),
             alias=join_step.parent_serving_name,
             quoted=True,
         ),
