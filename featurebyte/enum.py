@@ -214,11 +214,12 @@ class SourceType(StrEnum):
     TEST = "test", "For testing only"
 
 
-class DistributeStorageType(StrEnum):
+class StorageType(StrEnum):
     """
     Distributed storage type
     """
 
+    LOCAL = "file"
     S3 = "s3", "s3 Storage"
 
 

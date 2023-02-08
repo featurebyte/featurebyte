@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, List, Optional, OrderedDict
+from typing import Any, AsyncGenerator, ClassVar, List, Optional, OrderedDict
 
 import asyncio
 
@@ -80,7 +80,7 @@ class BaseSession(BaseModel):
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
-    _no_schema_error: Any = Exception
+    _no_schema_error: ClassVar[Any] = Exception
 
     async def initialize(self) -> None:
         """

@@ -7,7 +7,7 @@ from typing import ClassVar, Optional, Union
 
 from pydantic import StrictStr
 
-from featurebyte.enum import DBVarType, DistributeStorageType, SourceType
+from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel
 
 
@@ -49,9 +49,9 @@ class SparkDetails(BaseDatabaseDetails):
     port: int
     http_path: StrictStr
     use_http_transport: bool
-    remote_storage_type: DistributeStorageType
-    remote_storage_url: str
-    remote_storage_spark_url: StrictStr
+    storage_type: StorageType
+    storage_url: str
+    storage_spark_url: StrictStr
     featurebyte_catalog: StrictStr
     featurebyte_schema: StrictStr
 

@@ -4,26 +4,30 @@ SparkSession class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, OrderedDict, cast
+from typing import Any, List, Optional, OrderedDict, cast
 
 import collections
 import os
 
-import boto3
 import pandas as pd
 import pyarrow as pa
 from impala.dbapi import connect
 from impala.error import OperationalError
 from impala.hiveserver2 import HiveServer2Cursor
-from pydantic import Field
-from smart_open import open as remote_open
+from pydantic import Field, PrivateAttr
 
 from featurebyte.common.path_util import get_package_root
-from featurebyte.enum import DBVarType, DistributeStorageType, InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType, StorageType
 from featurebyte.logger import logger
-from featurebyte.models.credential import RemoteStorageCredentialType, S3Credential
+from featurebyte.models.credential import StorageCredentialType
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
+from featurebyte.session.simple_storage import (
+    FileMode,
+    FileSimpleStorage,
+    S3SimpleStorage,
+    SimpleStorage,
+)
 
 
 class SparkSession(BaseSession):
@@ -32,20 +36,17 @@ class SparkSession(BaseSession):
     """
 
     _no_schema_error = OperationalError
+    _storage: SimpleStorage = PrivateAttr()
 
     host: str
     http_path: str
     port: int
     use_http_transport: bool
     access_token: Optional[str]
-    remote_storage_type: DistributeStorageType
-    remote_storage_url: str = Field(
-        default="http://localhost:9000/staging", description="Remote storage host"
-    )
-    remote_storage_spark_url: str = Field(
-        default="s3a://staging", description="Base url to use in spark"
-    )
-    storage_credential: RemoteStorageCredentialType
+    storage_type: StorageType
+    storage_url: str
+    storage_spark_url: str
+    storage_credential: Optional[StorageCredentialType]
     region_name: Optional[str]
     featurebyte_catalog: str
     featurebyte_schema: str
@@ -60,19 +61,7 @@ class SparkSession(BaseSession):
             auth_mechanism = "JWT"
             connect_params["jwt"] = self.access_token
 
-        # ensure urls don't have trailing /
-        self.remote_storage_url = self.remote_storage_url.strip("/")
-        self.remote_storage_spark_url = self.remote_storage_spark_url.strip("/")
-
-        # test remote storage connectivity
-        transport_params = self._get_storage_transport_params()
-        with remote_open(
-            f"{self.remote_storage_type}://featurebyte/_conn_test",
-            "w",
-            transport_params=transport_params,
-        ) as file_obj:
-            file_obj.write("OK")
-
+        self._initialize_storage()
         self._connection = connect(
             host=data["host"],
             http_path=data["http_path"],
@@ -82,6 +71,29 @@ class SparkSession(BaseSession):
             auth_mechanism=auth_mechanism,
             **connect_params,
         )
+
+    def _initialize_storage(self) -> None:
+        """
+        Initialize storage object
+        """
+        # add prefix to compartmentalize assets
+        url_prefix = "/featurebyte"
+        self.storage_url = self.storage_url.strip("/") + url_prefix
+        self.storage_spark_url = self.storage_spark_url.strip("/") + url_prefix
+
+        if self.storage_type == StorageType.LOCAL:
+            self._storage = FileSimpleStorage(storage_url=self.storage_url)
+        elif self.storage_type == StorageType.S3:
+            self._storage = S3SimpleStorage(
+                storage_url=self.storage_url,
+                storage_credential=self.storage_credential,
+                region_name=self.region_name,
+            )
+        else:
+            raise NotImplementedError("Unsupported remote storage type")
+
+        # test connectivity
+        self._storage.test_connection()
 
     def upload_file_to_storage(
         self, local_path: str, remote_path: str, is_binary: bool = True
@@ -98,49 +110,18 @@ class SparkSession(BaseSession):
         is_binary: bool
             Upload as binary
         """
-        remote_path = remote_path.lstrip("/")
-        full_remote_path = f"{self.remote_storage_type}://featurebyte/{remote_path}"
-        read_mode = "rb" if is_binary else "r"
-        write_mode = "wb" if is_binary else "w"
+        read_mode = cast(FileMode, "rb" if is_binary else "r")
+        write_mode = cast(FileMode, "wb" if is_binary else "w")
         logger.debug(
             "Upload file to storage",
-            extra={"remote_path": full_remote_path, "is_binary": is_binary},
+            extra={"remote_path": remote_path, "is_binary": is_binary},
         )
-        transport_params = self._get_storage_transport_params()
         with open(local_path, mode=read_mode) as in_file_obj:
-            with remote_open(
-                full_remote_path, mode=write_mode, transport_params=transport_params
+            with self._storage.open(
+                path=remote_path,
+                mode=write_mode,
             ) as out_file_obj:
                 out_file_obj.write(in_file_obj.read())
-
-    def _get_storage_transport_params(self) -> Dict[str, Any]:
-        """
-        Get transport parameters for smart_open
-
-        Returns
-        -------
-        Dict[str, Any]
-
-        Raises
-        ------
-        NotImplementedError
-            Storage type or credential type not supported
-        """
-        # use appropriate client and credentials
-        if self.remote_storage_type == DistributeStorageType.S3:
-            session_params = {
-                "region_name": self.region_name,
-            }
-            if isinstance(self.storage_credential, S3Credential):
-                session_params["aws_access_key_id"] = self.storage_credential.s3_access_key_id
-                session_params[
-                    "aws_secret_access_key"
-                ] = self.storage_credential.s3_secret_access_key
-            else:
-                raise NotImplementedError("Unsupported remote storage credential")
-            session = boto3.Session(**session_params)
-            return {"client": session.client("s3", endpoint_url=self.remote_storage_url)}
-        raise NotImplementedError("Unsupported remote storage type")
 
     def initializer(self) -> BaseSchemaInitializer:
         return SparkSchemaInitializer(self)
@@ -416,7 +397,7 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
         """
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
         session = cast(SparkSession, self.session)
-        return f"{session.remote_storage_spark_url}/featurebyte/{udf_jar_file_name}"
+        return f"{session.storage_spark_url}/{udf_jar_file_name}"
 
     async def register_missing_objects(self) -> None:
         # upload jar file to storage

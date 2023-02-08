@@ -91,14 +91,6 @@ def config_fixture():
                 "credential_type": "ACCESS_TOKEN",
                 "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             },
-            {
-                "feature_store": "spark_featurestore",
-                "credential_type": "S3",
-                "storage_credential": {
-                    "s3_access_key_id": "username",
-                    "s3_secret_access_key": "password",
-                },
-            },
         ],
         "profile": [
             {
@@ -260,9 +252,9 @@ def spark_feature_store_fixture(mock_get_persistent):
             port=10000,
             http_path="cliservice",
             use_http_transport=False,
-            remote_storage_type="s3",
-            remote_storage_url="http://localhost:9000/staging/",
-            remote_storage_spark_url="s3a://staging/",
+            storage_type="file",
+            storage_url="~/.spark-datalake-sandbox/data/staging/",
+            storage_spark_url="file:///data/staging/",
             featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,
         ),

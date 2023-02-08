@@ -91,25 +91,25 @@ class SessionManager(BaseModel):
         ValueError
             When credentials do not contain the specified data source info
         """
-        if feature_store_name in self.credentials:
-            credential = self.credentials[feature_store_name]
-            credential_params = credential.credential.dict() if credential else {}
-            json_str = json.dumps(
-                {
-                    "type": session_type,
-                    "details": details.json_dict(),
-                },
-                sort_keys=True,
+        if feature_store_name not in self.credentials:
+            logger.warning(
+                f'Credentials do not contain info for the feature store "{feature_store_name}"!'
             )
-            session = await get_session(
-                item=json_str,
-                credential_params=json.dumps(credential_params, sort_keys=True),
-            )
-            assert isinstance(session, BaseSession)
-            return session
-        raise ValueError(
-            f'Credentials do not contain info for the feature store "{feature_store_name}"!'
+        credential = self.credentials.get(feature_store_name)
+        credential_params = credential.credential.dict() if credential else {}
+        json_str = json.dumps(
+            {
+                "type": session_type,
+                "details": details.json_dict(),
+            },
+            sort_keys=True,
         )
+        session = await get_session(
+            item=json_str,
+            credential_params=json.dumps(credential_params, sort_keys=True),
+        )
+        assert isinstance(session, BaseSession)
+        return session
 
     async def get_session(self, item: FeatureStoreModel) -> BaseSession:
         """

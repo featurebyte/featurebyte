@@ -45,26 +45,24 @@ class S3Credential(FeatureByteBaseModel):
     s3_secret_access_key: StrictStr
 
 
-RemoteStorageCredentialType = Union[S3Credential]
+StorageCredentialType = Union[S3Credential]
 
 
-class RemoteStorageCredential(FeatureByteBaseModel):
+class StorageCredential(FeatureByteBaseModel):
     """
     Include remote storage credential
     """
 
-    storage_credential: RemoteStorageCredentialType
+    storage_credential: StorageCredentialType
 
 
-class UsernamePasswordWithRemoteStorageCredential(
-    UsernamePasswordCredential, RemoteStorageCredential
-):
+class UsernamePasswordWithRemoteStorageCredential(UsernamePasswordCredential, StorageCredential):
     """
     Username and Password with staging storage credential
     """
 
 
-class AccessTokenWithRemoteStorageCredential(AccessTokenCredential, RemoteStorageCredential):
+class AccessTokenWithRemoteStorageCredential(AccessTokenCredential, StorageCredential):
     """
     Access token with staging storage credential
     """
@@ -80,8 +78,7 @@ class Credential(FeatureByteBaseModel):
     credential: Union[
         UsernamePasswordCredential,
         AccessTokenCredential,
-        S3Credential,
-        RemoteStorageCredential,
+        StorageCredential,
         UsernamePasswordWithRemoteStorageCredential,
         AccessTokenWithRemoteStorageCredential,
     ]
