@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.common.model_util import convert_version_string_to_dict
+from featurebyte.common.validator import version_validator
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureCluster,
@@ -38,13 +38,8 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     name: str
     version: VersionIdentifier
 
-    @validator("version", pre=True)
-    @classmethod
-    def _validate_version(cls, value: Any) -> Any:
-        # convert version string into version dictionary
-        if isinstance(value, str):
-            return convert_version_string_to_dict(value)
-        return value
+    # pydantic validators
+    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
 
 
 class FeatureListNewVersionCreate(FeatureByteBaseModel):

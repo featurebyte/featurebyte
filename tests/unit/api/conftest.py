@@ -3,33 +3,22 @@ Common test fixtures used across api test directories
 """
 import textwrap
 from datetime import datetime
-from unittest.mock import PropertyMock, patch
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
-from cachetools import TTLCache
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Entity
-from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_data import DataColumn
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.dimension_view import DimensionView
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.models.feature_store import DataStatus
-
-
-@pytest.fixture(name="mock_api_object_cache")
-def mock_api_object_cache_fixture():
-    """Mock api object cache so that the time-to-live period is 0"""
-    with patch.object(ApiObject, "_cache", new_callable=PropertyMock) as mock_cache:
-        mock_cache.return_value = TTLCache(maxsize=1024, ttl=0)
-        yield
 
 
 @pytest.fixture()

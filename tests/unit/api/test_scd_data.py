@@ -10,6 +10,7 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.scd_data import SCDDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 
@@ -162,7 +163,6 @@ def scd_data_dict_fixture(snowflake_database_table_scd_data):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": DataStatus.DRAFT,
     }
 
 
@@ -190,8 +190,8 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     assert set(scd_data.columns).issubset(dir(scd_data))
     assert scd_data._ipython_key_completions_() == set(scd_data.columns)
 
-    output = scd_data.dict()
-    scd_data_dict["id"] = scd_data.id
+    output = scd_data.dict(by_alias=True)
+    scd_data_dict["_id"] = scd_data.id
     scd_data_dict["current_flag_column"] = scd_data_dict.pop("current_flag")  # DEV-556
     assert output == scd_data_dict
 
@@ -299,3 +299,37 @@ def test_scd_data__entity_relation_auto_tagging(saved_scd_data):
     saved_scd_data.col_text.as_entity(None)
     updated_entity_a = Entity.get_by_id(id=entity_a.id)
     assert updated_entity_a.parents == []
+
+
+def test_accessing_scd_data_attributes(snowflake_scd_data):
+    """Test accessing event data object attributes"""
+    assert snowflake_scd_data.saved is False
+    assert snowflake_scd_data.record_creation_date_column is None
+    assert snowflake_scd_data.natural_key_column == "col_text"
+    assert snowflake_scd_data.effective_timestamp_column == "effective_timestamp"
+    assert snowflake_scd_data.surrogate_key_column == "col_int"
+    assert snowflake_scd_data.end_timestamp_column == "end_timestamp"
+    assert snowflake_scd_data.current_flag_column == "is_active"
+    assert snowflake_scd_data.timestamp_column == "effective_timestamp"
+
+
+def test_accessing_saved_scd_data_attributes(saved_scd_data):
+    """Test accessing event data object attributes"""
+    assert saved_scd_data.saved
+    assert isinstance(saved_scd_data.cached_model, SCDDataModel)
+    assert saved_scd_data.record_creation_date_column is None
+    assert saved_scd_data.natural_key_column == "col_text"
+    assert saved_scd_data.effective_timestamp_column == "effective_timestamp"
+    assert saved_scd_data.surrogate_key_column == "col_int"
+    assert saved_scd_data.end_timestamp_column == "end_timestamp"
+    assert saved_scd_data.current_flag_column == "is_active"
+    assert saved_scd_data.timestamp_column == "effective_timestamp"
+
+    # check synchronization
+    cloned = SlowlyChangingData.get_by_id(id=saved_scd_data.id)
+    assert cloned.record_creation_date_column is None
+    saved_scd_data.update_record_creation_date_column(
+        record_creation_date_column="effective_timestamp"
+    )
+    assert saved_scd_data.record_creation_date_column == "effective_timestamp"
+    assert cloned.record_creation_date_column == "effective_timestamp"

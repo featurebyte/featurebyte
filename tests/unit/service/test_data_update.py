@@ -199,7 +199,8 @@ async def test_update_entity_data_references(
     request, data_update_service, fixture_name, update_class, primary_key_column
 ):
     """Test update_entity_data_references"""
-    data_model = request.getfixturevalue(fixture_name)
+    data = request.getfixturevalue(fixture_name)
+    data_model = data._get_schema(**data._get_create_payload())
     columns_info = data_model.json_dict()["columns_info"]
     primary_index = [
         i

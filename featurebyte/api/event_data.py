@@ -3,50 +3,128 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Type, Union
 
 from datetime import datetime
 
 import pandas as pd
 from bson.objectid import ObjectId
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.exception import InvalidSettingsError
+from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
 
-class EventData(EventDataModel, DataApiObject):
+class EventData(DataApiObject):
     """
     EventData class
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(
-        section=["Data"],
-        proxy_class="featurebyte.EventData",
-    )
+    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.EventData")
 
     # class variables
     _route = "/event_data"
     _update_schema_class = EventDataUpdate
     _create_schema_class = EventDataCreate
+    _get_schema = EventDataModel
+    _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
+
+    # pydantic instance variable (public)
+    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
+
+    # pydantic instance variable (internal use)
+    internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+        alias="default_feature_job_setting"
+    )
+    internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
+    internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column")  # DEV-556
+
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            columns_info_key="internal_columns_info",
+            expected_column_field_name_type_pairs=[
+                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("internal_event_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_event_id_column", DBVarType.supported_id_types()),
+            ],
+        )
+    )
+
+    @property
+    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+        """
+        Default feature job setting of the EventData
+
+        Returns
+        -------
+        Optional[FeatureJobSetting]
+        """
+        try:
+            return self.cached_model.default_feature_job_setting
+        except RecordRetrievalException:
+            return self.internal_default_feature_job_setting
+
+    @property
+    def event_timestamp_column(self) -> str:
+        """
+        Event timestamp column name of the EventData
+
+        Returns
+        -------
+        str
+        """
+        try:
+            return self.cached_model.event_timestamp_column
+        except RecordRetrievalException:
+            return self.internal_event_timestamp_column
+
+    @property
+    def event_id_column(self) -> Optional[str]:
+        """
+        Event ID column name of the EventData associated with the ItemData
+
+        Returns
+        -------
+        str
+        """
+        try:
+            return self.cached_model.event_id_column
+        except RecordRetrievalException:
+            return self.internal_event_id_column
 
     @property
     def timestamp_column(self) -> Optional[str]:
         """
-        Event timestamp column
+        Timestamp column name of the EventData
 
         Returns
         -------
         Optional[str]
         """
         return self.event_timestamp_column
+
+    @property
+    def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
+        """
+        List of default_job_setting history entries
+
+        Returns
+        -------
+        list[dict[str, Any]]
+        """
+        return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
     @typechecked
@@ -147,18 +225,8 @@ class EventData(EventDataModel, DataApiObject):
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},
             allow_update_local=True,
+            add_internal_prefix=True,
         )
-
-    @property
-    def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
-        """
-        List of default_job_setting history entries
-
-        Returns
-        -------
-        list[dict[str, Any]]
-        """
-        return self._get_audit_history(field_name="default_feature_job_setting")
 
     @typechecked
     def create_new_feature_job_setting_analysis(

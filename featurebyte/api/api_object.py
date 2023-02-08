@@ -73,14 +73,16 @@ class PrettyDict(Dict[str, Any]):
         return pretty_repr(dict(self), expand_all=True, indent_size=2)
 
 
-def get_api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any) -> Any:
+def get_api_object_cache_key(
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
+) -> Any:
     """
     Construct cache key for a given document model object
 
     Parameters
     ----------
-    obj: FeatureByteBaseDocumentModel
-        Document model object
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel]
+        Api object or document model object
     args: Any
         Additional positional arguments
     kwargs: Any
@@ -91,7 +93,13 @@ def get_api_object_cache_key(obj: FeatureByteBaseDocumentModel, *args: Any, **kw
     Any
     """
     # Return a cache key for _cache key retrieval (only collection name & object ID are used)
-    return hashkey(obj.Settings.collection_name, obj.id, *args, **kwargs)
+    if hasattr(obj, "_get_schema"):
+        collection_name = (
+            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
+        )
+    else:
+        collection_name = obj.Settings.collection_name
+    return hashkey(collection_name, obj.id, *args, **kwargs)
 
 
 class ApiObject(FeatureByteBaseDocumentModel):
@@ -106,6 +114,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _get_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
     _list_foreign_keys: List[Tuple[str, Any, str]] = []
+
+    # global api object cache shared by all the ApiObject class & its child classes
     _cache: Any = TTLCache(maxsize=1024, ttl=1)
 
     # other ApiObject attributes
@@ -458,7 +468,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return item_list
 
     @typechecked
-    def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
+    def update(
+        self,
+        update_payload: Dict[str, Any],
+        allow_update_local: bool,
+        add_internal_prefix: bool = False,
+    ) -> None:
         """
         Update object in the persistent
 
@@ -468,6 +483,10 @@ class ApiObject(FeatureByteBaseDocumentModel):
             Fields to update in dictionary format
         allow_update_local: bool
             Whether to allow update load object if the object has not been saved
+        add_internal_prefix: bool
+            Whether to add internal prefix (`internal_`) to the update key (used when the attribute to be updated
+            starts with `internal_`). This flag only affects local update behavior (no effect if `allow_update_local`
+            is disabled).
 
         Raises
         ------
@@ -482,7 +501,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             raise NotImplementedError
 
         data = self._update_schema_class(  # pylint: disable=not-callable
-            **{**self.dict(), **update_payload}
+            **{**self.json_dict(), **update_payload}
         )
         client = Configurations().get_client()
         response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
@@ -497,6 +516,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             )
         elif response.status_code == HTTPStatus.NOT_FOUND and allow_update_local:
             for key, value in update_payload.items():
+                key = f"internal_{key}" if add_internal_prefix else key
                 setattr(self, key, value)
         elif response.status_code == HTTPStatus.CONFLICT:
             raise DuplicatedRecordException(response=response)

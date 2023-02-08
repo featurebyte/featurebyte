@@ -85,7 +85,6 @@ class SeriesBinaryOperator:
         output_var_type: DBVarType,
         right_op: bool = False,
         additional_node_params: dict[str, Any] | None = None,
-        **kwargs: Any,
     ) -> SeriesT:
         """
         Perform the series binary operation.
@@ -100,8 +99,6 @@ class SeriesBinaryOperator:
             whether the binary operation is from right object or not
         additional_node_params: dict[str, Any] | None
             additional parameters to include as node parameters
-        kwargs : Any
-            Other series parameters
 
         Returns
         -------
@@ -115,7 +112,7 @@ class SeriesBinaryOperator:
             output_var_type=output_var_type,
             right_op=right_op,
             additional_node_params=additional_node_params,
-            **kwargs,
+            **self.input_series.binary_op_series_params(self.other),
         )
 
 

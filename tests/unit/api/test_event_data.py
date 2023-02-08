@@ -21,7 +21,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
@@ -112,7 +112,6 @@ def event_data_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": "DRAFT",
     }
 
 
@@ -137,8 +136,8 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     assert set(event_data.columns).issubset(dir(event_data))
     assert event_data._ipython_key_completions_() == set(event_data.columns)
 
-    output = event_data.dict()
-    event_data_dict["id"] = event_data.id
+    output = event_data.dict(by_alias=True)
+    event_data_dict["_id"] = event_data.id
     assert output == event_data_dict
 
     # user input validation
@@ -213,7 +212,7 @@ def test_deserialization__column_name_not_found(
         EventData.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
-    event_data_dict["record_created_date_column"] = "created_at"
+    event_data_dict["record_creation_date_column"] = "created_at"
     event_data_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
         EventData.parse_obj(event_data_dict)
@@ -427,10 +426,11 @@ def test_event_data__record_creation_exception(snowflake_event_data):
             snowflake_event_data.save()
 
 
-def test_update_default_job_setting(snowflake_event_data, config):
+def test_update_default_job_setting(snowflake_event_data, config, mock_api_object_cache):
     """
     Test update default job setting on non-saved event data
     """
+    _ = mock_api_object_cache
 
     # make sure the event data is not saved
     client = config.get_client()
@@ -454,10 +454,14 @@ def test_update_default_job_setting(snowflake_event_data, config):
     assert isinstance(feature_store_id, ObjectId)
 
 
-def test_update_default_job_setting__saved_event_data(saved_event_data, config):
+def test_update_default_job_setting__saved_event_data(
+    saved_event_data, config, mock_api_object_cache
+):
     """
     Test update default job setting on saved event data
     """
+    _ = mock_api_object_cache
+
     assert saved_event_data.default_feature_job_setting is None
     saved_event_data.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
@@ -957,3 +961,34 @@ def test_event_data__entity_relation_auto_tagging(saved_event_data):
     saved_event_data.col_int.as_entity(None)
     updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
     assert updated_transaction_entity.parents == []
+
+
+def test_accessing_event_data_attributes(snowflake_event_data):
+    """Test accessing event data object attributes"""
+    assert snowflake_event_data.saved is False
+    assert snowflake_event_data.record_creation_date_column == "created_at"
+    assert snowflake_event_data.default_feature_job_setting is None
+    assert snowflake_event_data.event_timestamp_column == "event_timestamp"
+    assert snowflake_event_data.event_id_column == "col_int"
+    assert snowflake_event_data.timestamp_column == "event_timestamp"
+
+
+def test_accessing_saved_event_data_attributes(saved_event_data):
+    """Test accessing event data object attributes"""
+    assert saved_event_data.saved
+    assert isinstance(saved_event_data.cached_model, EventDataModel)
+    assert saved_event_data.record_creation_date_column == "created_at"
+    assert saved_event_data.default_feature_job_setting is None
+    assert saved_event_data.event_timestamp_column == "event_timestamp"
+    assert saved_event_data.event_id_column == "col_int"
+    assert saved_event_data.timestamp_column == "event_timestamp"
+
+    # check synchronization
+    feature_job_setting = FeatureJobSetting(
+        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+    )
+    cloned = EventData.get_by_id(id=saved_event_data.id)
+    assert cloned.default_feature_job_setting is None
+    saved_event_data.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
+    assert saved_event_data.default_feature_job_setting == feature_job_setting
+    assert cloned.default_feature_job_setting == feature_job_setting

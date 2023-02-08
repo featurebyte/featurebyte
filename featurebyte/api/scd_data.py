@@ -3,19 +3,24 @@ SlowlyChangingData class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Literal, Optional, Type
 
 from bson.objectid import ObjectId
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.scd_data import SCDDataModel
+from featurebyte.query_graph.model.table import AllTableDataT, SCDTableData
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 
-class SlowlyChangingData(SCDDataModel, DataApiObject):
+class SlowlyChangingData(DataApiObject):
     """
     SlowlyChangingData class
     """
@@ -27,11 +32,112 @@ class SlowlyChangingData(SCDDataModel, DataApiObject):
     _route = "/scd_data"
     _update_schema_class = SCDDataUpdate
     _create_schema_class = SCDDataCreate
+    _get_schema = SCDDataModel
+    _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
+
+    # pydantic instance variable (public)
+    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
+
+    # pydantic instance variable (internal use)
+    internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
+    internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
+    internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column")
+    internal_end_timestamp_column: Optional[StrictStr] = Field(
+        default=None, alias="end_timestamp_column"
+    )
+    internal_current_flag_column: Optional[StrictStr] = Field(
+        default=None, alias="current_flag_column"
+    )
+
+    # pydantic validators
+    _root_validator = root_validator(allow_reuse=True)(
+        construct_data_model_root_validator(
+            columns_info_key="internal_columns_info",
+            expected_column_field_name_type_pairs=[
+                ("internal_record_creation_date_column", DBVarType.supported_timestamp_types()),
+                ("internal_natural_key_column", DBVarType.supported_id_types()),
+                ("internal_effective_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_surrogate_key_column", DBVarType.supported_id_types()),
+                ("internal_end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_current_flag_column", None),
+            ],
+        )
+    )
+
+    @property
+    def natural_key_column(self) -> str:
+        """
+        Natural key column name of the SlowlyChangingData
+
+        Returns
+        -------
+        str
+        """
+        try:
+            return self.cached_model.natural_key_column
+        except RecordRetrievalException:
+            return self.internal_natural_key_column
+
+    @property
+    def effective_timestamp_column(self) -> str:
+        """
+        Effective timestamp column name of the SlowlyChangingData
+
+        Returns
+        -------
+        str
+        """
+        try:
+            return self.cached_model.effective_timestamp_column
+        except RecordRetrievalException:
+            return self.internal_effective_timestamp_column
+
+    @property
+    def surrogate_key_column(self) -> Optional[str]:
+        """
+        Surrogate key column name of the SlowlyChangingData
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.surrogate_key_column
+        except RecordRetrievalException:
+            return self.internal_surrogate_key_column
+
+    @property
+    def end_timestamp_column(self) -> Optional[str]:
+        """
+        End timestamp column name of the SlowlyChangingData
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.end_timestamp_column
+        except RecordRetrievalException:
+            return self.internal_end_timestamp_column
+
+    @property
+    def current_flag_column(self) -> Optional[str]:
+        """
+        Current flag column name of the SlowlyChangingData
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.current_flag_column
+        except RecordRetrievalException:
+            return self.internal_current_flag_column
 
     @property
     def timestamp_column(self) -> Optional[str]:
         """
-        Effective timestamp column
+        Timestamp column name of the SlowlyChangingData
 
         Returns
         -------

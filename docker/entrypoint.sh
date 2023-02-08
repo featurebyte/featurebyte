@@ -1,9 +1,10 @@
 #!/bin/bash
 
 echo "Storing notebooks in directory: ~/.featurebyte/notebook"
-if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir /app/.featurebyte/notebook; fi
+if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir -p /app/.featurebyte/notebook; fi
 
 # Soft link featurebyte config file
+if [[ ! -f /app/.featurebyte/config.yaml ]]; then echo "# featurebyte configuration file here" > /app/.featurebyte/config.yaml; fi
 ln -s /app/.featurebyte/config.yaml /app/.featurebyte/notebook/config.yaml
 
 echo "Writing additional samples in ~/.featurebyte/notebook/samples"

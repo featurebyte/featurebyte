@@ -7,6 +7,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.routes.common.schema import (
     NameQuery,
     PageQuery,
@@ -43,3 +45,15 @@ async def list_tabular_data(
         name=name,
     )
     return tabular_data_list
+
+
+@router.get("/{tabular_data_id}", response_model=TabularDataModel)
+async def get_tabular_data(request: Request, tabular_data_id: PydanticObjectId) -> TabularDataModel:
+    """
+    Retrieve Tabular Data
+    """
+    controller = request.state.app_container.tabular_data_controller
+    tabular_data: TabularDataModel = await controller.get(
+        document_id=tabular_data_id,
+    )
+    return tabular_data

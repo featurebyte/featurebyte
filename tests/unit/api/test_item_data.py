@@ -24,6 +24,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.item_data import ItemDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 
 
@@ -78,11 +79,10 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
         "created_at": None,
         "event_data_id": ObjectId("6337f9651050ee7d5980660d"),
         "event_id_column": "event_id_col",
-        "id": ObjectId("636a240ec2c2c3f335193e7f"),
+        "_id": ObjectId("636a240ec2c2c3f335193e7f"),
         "item_id_column": "item_id_col",
         "name": "sf_item_data",
         "record_creation_date_column": None,
-        "status": DataStatus.DRAFT,
         "tabular_source": {
             "feature_store_id": snowflake_database_table_item_data.tabular_source.feature_store_id,
             "table_details": {
@@ -118,8 +118,8 @@ def test_from_tabular_source(snowflake_database_table_item_data, item_data_dict,
     assert set(item_data.columns).issubset(dir(item_data))
     assert item_data._ipython_key_completions_() == set(item_data.columns)
 
-    output = item_data.dict()
-    item_data_dict["id"] = item_data.id
+    output = item_data.dict(by_alias=True)
+    item_data_dict["_id"] = item_data.id
     assert output == item_data_dict
 
     # user input validation
@@ -261,10 +261,12 @@ class TestItemDataTestSuite(BaseDataTestSuite):
     """
 
 
-def test_item_data_column__as_entity(snowflake_item_data):
+def test_item_data_column__as_entity(snowflake_item_data, mock_api_object_cache):
     """
     Test setting a column in the ItemData as entity
     """
+    _ = mock_api_object_cache
+
     # check no column associate with any entity
     assert all([col.entity_id is None for col in snowflake_item_data.columns_info])
 
@@ -316,8 +318,11 @@ def test_event_data__record_creation_exception(snowflake_item_data):
             snowflake_item_data.save()
 
 
-def test_update_record_creation_date_column__unsaved_object(snowflake_item_data):
+def test_update_record_creation_date_column__unsaved_object(
+    snowflake_item_data, mock_api_object_cache
+):
     """Test update record creation date column (unsaved ItemData)"""
+    _ = mock_api_object_cache
     assert snowflake_item_data.record_creation_date_column is None
     snowflake_item_data.update_record_creation_date_column("created_at")
     assert snowflake_item_data.record_creation_date_column == "created_at"
@@ -336,7 +341,10 @@ def test_update_record_creation_date_column__saved_object(saved_item_data):
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_item_data.update_record_creation_date_column("item_id_col")
-    expected_msg = "Column \"item_id_col\" is expected to have type(s): ['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+    expected_msg = (
+        'Column "item_id_col" is expected to have type(s): '
+        "['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -413,3 +421,29 @@ def test_info(saved_item_data):
     # setting verbose = true is a no-op for now
     info = saved_item_data.info(verbose=True)
     assert_info_helper(info)
+
+
+def test_accessing_item_data_attributes(snowflake_item_data):
+    """Test accessing event data object attributes"""
+    assert snowflake_item_data.saved is False
+    assert snowflake_item_data.record_creation_date_column is None
+    assert snowflake_item_data.event_id_column == "event_id_col"
+    assert snowflake_item_data.item_id_column == "item_id_col"
+
+
+def test_accessing_saved_item_data_attributes(saved_item_data):
+    """Test accessing event data object attributes"""
+    assert saved_item_data.saved
+    assert isinstance(saved_item_data.cached_model, ItemDataModel)
+    assert saved_item_data.record_creation_date_column is None
+    assert saved_item_data.event_id_column == "event_id_col"
+    assert saved_item_data.item_id_column == "item_id_col"
+
+    # check synchronization
+    entity = Entity(name="item_type", serving_names=["item_type"])
+    entity.save()
+    cloned = ItemData.get_by_id(id=saved_item_data.id)
+    assert cloned["item_type"].info.entity_id is None
+    saved_item_data["item_type"].as_entity(entity.name)
+    assert saved_item_data["item_type"].info.entity_id == entity.id
+    assert cloned["item_type"].info.entity_id == entity.id
