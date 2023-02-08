@@ -25,24 +25,15 @@ RUN poetry config virtualenvs.in-project true && \
 
 FROM python:3.8-slim AS runner
 
-ARG UID=1000
-ARG USER=fb_user
-ARG USER_GROUP=users
 ARG USER_HOME=/app
-
-RUN useradd -m -r -d $USER_HOME -g users -u $UID $USER
 
 RUN apt-get update && \
     apt-get install -y netcat && \
     apt-get clean
 
-## copy featurebyte
 WORKDIR $USER_HOME
-USER $USER
-
-## Copy binaries and build
-COPY --chown=$USER:$USER_GROUP --from=builder /app/.venv $USER_HOME/.venv
-COPY --chown=$USER:$USER_GROUP ./dist $USER_HOME/dist
+COPY --from=builder /app/.venv $USER_HOME/.venv
+COPY ./dist $USER_HOME/dist
 ENV PATH="${USER_HOME}/.venv/bin:${PATH}"
 RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /app/.venv
 

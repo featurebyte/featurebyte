@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Storing notebooks in directory: ~/.featurebyte/notebook"
-if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir /app/.featurebyte/notebook; fi
+if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir -p /app/.featurebyte/notebook; fi
 
 # Soft link featurebyte config file
 ln -s /app/.featurebyte/config.yaml /app/.featurebyte/notebook/config.yaml
