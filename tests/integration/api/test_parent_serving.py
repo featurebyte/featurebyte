@@ -1,13 +1,22 @@
+import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 
-from featurebyte import DimensionData, DimensionView, Entity, EventData, SlowlyChangingData
+from featurebyte import (
+    DimensionData,
+    DimensionView,
+    Entity,
+    EventData,
+    FeatureList,
+    SlowlyChangingData,
+)
 
 
-@pytest.mark.asyncio
-async def test_serving_parent_features_multiple_joins(snowflake_session, snowflake_feature_store):
+@pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
+async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_feature_store):
     """
-    Test serving parent features requiring multiple joins with different types of data
+    Fixture for a feature that can be obtained from a child entity using one or more joins
     """
     df_events = pd.DataFrame(
         {
@@ -24,9 +33,11 @@ async def test_serving_parent_features_multiple_joins(snowflake_session, snowfla
     )
     df_scd = pd.DataFrame(
         {
-            "effective_ts": pd.to_datetime(["2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
-            "scd_cust_id": [1000, 1000],
-            "scd_city": ["paris", "tokyo"],
+            "effective_ts": pd.to_datetime(
+                ["2020-01-01 10:00:00", "2022-04-12 10:00:00", "2022-04-20 10:00:00"]
+            ),
+            "scd_cust_id": [1000, 1000, 1000],
+            "scd_city": ["tokyo", "paris", "tokyo"],
         }
     )
     df_dimension_1 = pd.DataFrame(
@@ -120,15 +131,40 @@ async def test_serving_parent_features_multiple_joins(snowflake_session, snowfla
     dimension_view = DimensionView.from_dimension_data(dimension_data_2)
     feature = dimension_view["country"].as_feature("Country Name")
 
-    df = feature.preview(
+    feature_list = FeatureList([feature], name=f"{table_prefix}_feature_list")
+    return feature_list
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "point_in_time, provided_entity, expected",
+    [
+        # Case 1: event_id: 1 -> cust_id: 1000 -> city: tokyo -> state: kanto -> country: japan
+        ("2022-05-01 10:00:00", {"serving_event_id": 1}, "japan"),
+        # Case 2: event_id: 1 -> cust_id: 1000 -> city: paris -> state: île-de-france -> country: france
+        ("2022-04-16 10:00:00", {"serving_event_id": 1}, "france"),
+        # Case 3: nan because point in time is prior to the timestamp of event_id 1
+        ("2022-01-01 10:00:00", {"serving_event_id": 1}, np.nan),
+    ],
+)
+async def test_preview(feature_list_with_child_entities, point_in_time, provided_entity, expected):
+    """
+    Test serving parent features requiring multiple joins with different types of data
+    """
+    preview_params = {"POINT_IN_TIME": point_in_time, **provided_entity}
+    expected = pd.Series(
         {
-            "POINT_IN_TIME": "2022-05-01 10:00:00",
-            "serving_event_id": 1,
+            "POINT_IN_TIME": pd.Timestamp(point_in_time),
+            "Country Name": expected,
+            **provided_entity,
         }
     )
-    expected = {
-        "POINT_IN_TIME": pd.Timestamp("2022-05-01 10:00:00"),
-        "serving_event_id": 1,
-        "Country Name": "japan",
-    }
-    assert df.iloc[0].to_dict() == expected
+
+    # Preview feature
+    feature = feature_list_with_child_entities["Country Name"]
+    df = feature.preview(preview_params)
+    pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
+
+    # Preview feature list
+    df = feature_list_with_child_entities.preview(preview_params)
+    pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
