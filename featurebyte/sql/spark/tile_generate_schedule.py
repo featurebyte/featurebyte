@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import dateutil.parser
 from tile_common import TileCommon
 
-from .tile_generate import TileGenerate
-from .tile_monitor import TileMonitor
-from .tile_schedule_online_store import TileScheduleOnlineStore
+from featurebyte.sql.spark.tile_generate import TileGenerate
+from featurebyte.sql.spark.tile_monitor import TileMonitor
+from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineStore
 
 
 class TileGenerateSchedule(TileCommon):
