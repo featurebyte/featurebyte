@@ -434,7 +434,16 @@ def get_test_aggregator_and_feature_fixture(snowflake_event_view_with_entity_and
         feature_names=["feat_30m"],
     )
     feature = feature_group["feat_30m"]
-    return BaseAggregatorTest(group_by), feature
+    return (
+        BaseAggregatorTest(
+            group_by.view_obj,
+            group_by.category,
+            group_by.entity_ids,
+            group_by.keys,
+            group_by.serving_names,
+        ),
+        feature,
+    )
 
 
 def test__fill_feature_noop(test_aggregator_and_sum_feature):
@@ -467,7 +476,16 @@ def get_test_aggregator_and_count_feature_fixture(snowflake_event_view_with_enti
         feature_names=["feat_30m"],
     )
     feature = feature_group["feat_30m"]
-    return BaseAggregatorTest(group_by), feature
+    return (
+        BaseAggregatorTest(
+            group_by.view_obj,
+            group_by.category,
+            group_by.entity_ids,
+            group_by.keys,
+            group_by.serving_names,
+        ),
+        feature,
+    )
 
 
 def test__fill_feature_count_fill_with_0(test_aggregator_and_count_feature):
