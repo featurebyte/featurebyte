@@ -323,7 +323,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
     @typechecked
     def __setitem__(
-        self, key: Union[str, Tuple[Series, str]], value: Union[Feature, Union[Scalar, Series]]
+        self, key: Union[str, Tuple[Feature, str]], value: Union[Feature, Union[Scalar, Series]]
     ) -> None:
         if isinstance(key, tuple):
             if len(key) != 2:
