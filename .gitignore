@@ -559,3 +559,5 @@ MigrationBackup/
 featurebyte_beta/
 featurebyte_beta.tar.gz
 featurebyte_beta.zip
+spark-warehouse/
+metastore_db/

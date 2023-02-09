@@ -1,17 +1,19 @@
 """
 Databricks Tile Generate Job Script
 """
-from tile_common import TileCommon
-from tile_registry import TileRegistry
+from typing import Optional
+
+from .tile_common import TileCommon
+from .tile_registry import TileRegistry
 
 
 class TileGenerate(TileCommon):
     tile_start_date_column: str
-    last_tile_start_str: str
     tile_type: str
-    tile_last_start_date_column: str
+    last_tile_start_str: Optional[str]
+    tile_last_start_date_column: Optional[str]
 
-    def execute(self):
+    def execute(self) -> None:
 
         tile_table_exist = self._spark.catalog.tableExists(self.tile_id)
         tile_table_exist_flag = "Y" if tile_table_exist else "N"
@@ -77,9 +79,9 @@ class TileGenerate(TileCommon):
         # insert new records and update existing records
         if not tile_table_exist:
             print("creating tile table: ", self.tile_id)
-            self._spark.sql(f"create table {self.tile_id} as {tile_sql}")
-        else:
+            self._spark.sql(f"create table {self.tile_id} using delta as {tile_sql}")
 
+        else:
             if self.entity_column_names:
                 on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
                 insert_str = (

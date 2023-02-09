@@ -1,6 +1,8 @@
 """
 Tile Generate entity tracking Job script for SP_TILE_GENERATE_ENTITY_TRACKING
 """
+from typing import Any
+
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pyspark.sql import SparkSession
@@ -15,7 +17,7 @@ class TileGenerateEntityTracking(BaseModel):
 
     _spark: SparkSession = PrivateAttr()
 
-    def __init__(self, spark_session: SparkSession, **kwargs):
+    def __init__(self, spark_session: SparkSession, **kwargs: Any):
         """
         Initialize Tile Generate Entity Tracking
 
@@ -23,12 +25,14 @@ class TileGenerateEntityTracking(BaseModel):
         ----------
         spark_session: SparkSession
             input SparkSession
+        kwargs: Any
+            constructor arguments
         """
         super().__init__(**kwargs)
         self._spark = spark_session
         self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
 
-    def execute(self):
+    def execute(self) -> None:
 
         tracking_table_name = self.tile_id + "_ENTITY_TRACKER"
         tracking_table_exist = self._spark.catalog.tableExists(tracking_table_name)

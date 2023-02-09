@@ -1,6 +1,8 @@
 """
 Tile Generate online store Job Script for SP_TILE_SCHEDULE_ONLINE_STORE
 """
+from typing import Any
+
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pyspark.sql import SparkSession
@@ -13,7 +15,7 @@ class TileScheduleOnlineStore(BaseModel):
 
     _spark: SparkSession = PrivateAttr()
 
-    def __init__(self, spark_session: SparkSession, **kwargs):
+    def __init__(self, spark_session: SparkSession, **kwargs: Any):
         """
         Initialize Tile Schedule Online Store Instance
 
@@ -21,6 +23,8 @@ class TileScheduleOnlineStore(BaseModel):
         ----------
         spark_session: SparkSession
             input SparkSession
+        kwargs: Any
+            constructor arguments
         """
         super().__init__(**kwargs)
         self._spark = spark_session

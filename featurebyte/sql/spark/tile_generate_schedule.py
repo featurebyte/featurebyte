@@ -4,10 +4,11 @@ Tile Generate Schedule script for SP_TILE_GENERATE
 from datetime import datetime, timedelta
 
 import dateutil.parser
-import tile_generate
-import tile_monitor
-import tile_schedule_online_store
 from tile_common import TileCommon
+
+from .tile_generate import TileGenerate
+from .tile_monitor import TileMonitor
+from .tile_schedule_online_store import TileScheduleOnlineStore
 
 
 class TileGenerateSchedule(TileCommon):
@@ -21,7 +22,7 @@ class TileGenerateSchedule(TileCommon):
     monitor_periods: int
     job_schedule_ts: str
 
-    def execute(self):
+    def execute(self) -> None:
 
         tile_end_ts = dateutil.parser.isoparse(self.job_schedule_ts)
         cron_residue_seconds = self.tile_modulo_frequency_second % 60
@@ -62,11 +63,16 @@ class TileGenerateSchedule(TileCommon):
         last_tile_start_ts = tile_end_ts - timedelta(minutes=self.frequency_minute)
         last_tile_start_str = last_tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
 
+        # TODO: instantiate tile workers
+        tile_monitor_ins = TileMonitor(spark_session=self._spark)
+        tile_generate_ins = TileGenerate(spark_session=self._spark)
+        tile_schedule_online_store_ins = TileScheduleOnlineStore(spark_session=self._spark)
+
         step_specs = [
             {
                 "name": "tile_monitor",
                 "data": {"monitor_sql": monitor_input_sql},
-                "trigger": tile_monitor.main,
+                "trigger": tile_monitor_ins,
                 "status": {
                     "fail": "MONITORED_FAILED",
                     "success": "MONITORED",
@@ -75,7 +81,7 @@ class TileGenerateSchedule(TileCommon):
             {
                 "name": "tile_generate",
                 "data": {"sql": generate_input_sql, "last_tile_start_str": last_tile_start_str},
-                "trigger": tile_generate.main,
+                "trigger": tile_generate_ins,
                 "status": {
                     "fail": "GENERATED_FAILED",
                     "success": "GENERATED",
@@ -84,7 +90,7 @@ class TileGenerateSchedule(TileCommon):
             {
                 "name": "tile_online_store",
                 "data": {"job_schedule_ts_str": self.job_schedule_ts},
-                "trigger": tile_schedule_online_store.main,
+                "trigger": tile_schedule_online_store_ins,
                 "status": {
                     "fail": "ONLINE_STORE_FAILED",
                     "success": "COMPLETED",
@@ -94,26 +100,25 @@ class TileGenerateSchedule(TileCommon):
 
         for spec in step_specs:
             new_args = self.dict()
-            new_args.update(spec["data"])  # type: ignore[call-overload]
+            new_args.update(spec["data"])
 
             try:
                 print(f"Calling {spec['name']}\n")
                 print(f"new_args: {new_args}\n")
-                spec["trigger"](new_args)  # type: ignore[operator]
+                spec["trigger"].execute()
                 print(f"End of calling {spec['name']}\n")
             except Exception as e:
                 message = str(e).replace("'", "")
                 ex_insert_sql = audit_insert_sql.replace(
                     "<STATUS>", spec["status"]["fail"]
                 ).replace(
-                    # type: ignore[index]
                     "<MESSAGE>",
                     message,
                 )
                 print("fail_insert_sql: ", ex_insert_sql)
                 self._spark.sql(ex_insert_sql)
                 raise e
-            insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["success"]).replace(  # type: ignore[index]
+            insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["success"]).replace(
                 "<MESSAGE>", ""
             )
             print("success_insert_sql: ", insert_sql)

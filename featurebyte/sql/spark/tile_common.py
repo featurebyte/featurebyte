@@ -1,6 +1,8 @@
 """
 Base Class for Tile Schedule Instance
 """
+from typing import Any
+
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pyspark.sql import SparkSession
@@ -21,7 +23,7 @@ class TileCommon(BaseModel):
 
     _spark: SparkSession = PrivateAttr()
 
-    def __init__(self, spark_session: SparkSession, **kwargs):
+    def __init__(self, spark_session: SparkSession, **kwargs: Any):
         """
         Initialize Tile Schedule Instance
 
@@ -29,20 +31,12 @@ class TileCommon(BaseModel):
         ----------
         spark_session: SparkSession
             input SparkSession
+        kwargs: Any
+            constructor arguments
         """
         super().__init__(**kwargs)
         self._spark = spark_session
         self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
-
-    # offline_period_minute: int
-    # tile_start_date_column: str
-    # tile_last_start_date_column: str
-    # tile_start_date_placeholder: str
-    # tile_end_date_placeholder: str
-
-    # tile_type: str
-    # monitor_periods: int
-    # job_schedule_ts: str
 
     # _spark: SparkSession = PrivateAttr()
     #

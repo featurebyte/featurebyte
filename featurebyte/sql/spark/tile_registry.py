@@ -3,14 +3,14 @@ Tile Registry Job Script for SP_TILE_REGISTRY
 """
 
 
-from tile_common import TileCommon
+from .tile_common import TileCommon
 
 
 class TileRegistry(TileCommon):
     table_name: str
     table_exist: str
 
-    def execute(self):
+    def execute(self) -> None:
 
         df = self._spark.sql(
             f"select VALUE_COLUMN_NAMES as names, VALUE_COLUMN_TYPES as types from tile_registry where tile_id = '{self.tile_id}'"
@@ -111,9 +111,9 @@ class TileRegistry(TileCommon):
             for i, input_column in enumerate(input_value_columns):
                 if input_column not in cols:
                     element_type = input_value_columns_types[i]
-                    add_statements.append(f"{input_column} {element_type} DEFAULT NULL")
+                    add_statements.append(f"{input_column} {element_type}")
                     if "_MONITOR" in self.table_name:
-                        add_statements.append(f"OLD_{input_column} {element_type} DEFAULT NULL")
+                        add_statements.append(f"OLD_{input_column} {element_type}")
 
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
