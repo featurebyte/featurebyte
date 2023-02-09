@@ -217,8 +217,11 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         # view[mask, column_name] = new_value
         # syntax
         if isinstance(key, tuple):
+            if len(key) != 2:
+                raise ValueError(f"{len(key)} elements found, when we only expect 2.")
             mask = key[0]
-            assert isinstance(mask, Series)
+            if not isinstance(mask, Series):
+                raise ValueError("The mask provided should be a Series.")
             column_name: str = key[1]
             column = self[column_name]
             assert isinstance(column, Series)
