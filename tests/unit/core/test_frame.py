@@ -270,6 +270,19 @@ def test__setitem__type_not_supported(dataframe):
     )
 
 
+def test__set_item__assigning_feature_not_supported(dataframe, production_ready_feature):
+    """
+    Test that applying a feature mask with a column name on a frame fails. We should only allow a Series mask to be
+    applied.
+    """
+    feature_mask = production_ready_feature == 14.0
+
+    dataframe["amount"] = dataframe["VALUE"]
+    with pytest.raises(ValueError) as exc:
+        dataframe[feature_mask, "amount"] = 100
+    assert "The mask provided should be a Series" in str(exc)
+
+
 def test_multiple_statements(dataframe):
     """
     Test multiple statements

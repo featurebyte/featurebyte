@@ -220,7 +220,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             if len(key) != 2:
                 raise ValueError(f"{len(key)} elements found, when we only expect 2.")
             mask = key[0]
-            if not isinstance(mask, Series):
+            if type(mask) != Series:
                 raise ValueError("The mask provided should be a Series.")
             column_name: str = key[1]
             column = self[column_name]
