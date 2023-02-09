@@ -425,3 +425,30 @@ def test_get_feature_preview_sql__with_missing_value_imputation(
         "tests/fixtures/expected_preview_sql_with_missing_value_imputation.sql",
         update_fixture=update_fixtures,
     )
+
+
+def test_get_feature_preview_sql__with_parent_serving_preparation(
+    query_graph_with_cleaning_ops_and_groupby,
+    parent_serving_preparation,
+    update_fixtures,
+):
+    """Test sql generation with parent serving preparation"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph, node = query_graph_with_cleaning_ops_and_groupby
+
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+        parent_serving_preparation=parent_serving_preparation,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_with_parent_serving_prepration.sql",
+        update_fixture=update_fixtures,
+    )
