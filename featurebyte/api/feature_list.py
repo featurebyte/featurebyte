@@ -329,8 +329,8 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             if len(key) != 2:
                 raise ValueError(f"{len(key)} elements found, when we only expect 2.")
             mask = key[0]
-            if not isinstance(mask, Series):
-                raise ValueError("The mask provided should be a Series.")
+            if not isinstance(mask, Feature):
+                raise ValueError("The mask provided should be a Feature.")
             column: str = key[1]
             feature = self[column]
             assert isinstance(feature, Series)
