@@ -100,6 +100,28 @@ class EntityValidationService(BaseService):
         feature_store: FeatureStoreModel,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> Optional[ParentServingPreparation]:
+        """
+        Validate that entities are provided correctly in feature requests. If joins are required to
+        retrieve parent entities, returns a corresponding ParentServingPreparation object.
+
+        Parameters
+        ----------
+        graph : QueryGraphModel
+            Query graph
+        nodes : list[Node]
+            List of query graph node
+        request_column_names: set[str]
+            Column names provided in the request
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object to be used to extract FeatureStoreDetails
+        serving_names_mapping : dict[str, str] | None
+            Optional serving names mapping if the entities are provided under different serving
+            names in the request
+
+        Returns
+        -------
+        Optional[ParentServingPreparation]
+        """
 
         join_steps = await self.validate_provided_entities(
             graph=graph,
@@ -140,10 +162,15 @@ class EntityValidationService(BaseService):
             Optional serving names mapping if the entities are provided under different serving
             names in the request
 
+        Returns
+        -------
+        Optional[List[JoinStep]]
+
         Raises
         ------
         RequiredEntityNotProvidedError
-            When any of the required entities is not provided in the request
+            When any of the required entities is not provided in the request and it is not possible
+            to retrieve the parent entities using existing relationships
         """
 
         entity_info = await self.get_entity_info_from_request(

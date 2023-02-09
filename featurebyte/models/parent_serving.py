@@ -35,6 +35,14 @@ class JoinStep(FeatureByteBaseModel):
 
 
 class ParentServingPreparation(FeatureByteBaseModel):
+    """
+    Operations required to serve parent features from children entities
+
+    join_steps: List[JoinStep]
+        List of JoinSteps identified based on the provided entities
+    feature_store_details: FeatureStoreDetails
+        Feature store information
+    """
 
     join_steps: List[JoinStep]
     feature_store_details: FeatureStoreDetails

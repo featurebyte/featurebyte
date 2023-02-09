@@ -347,7 +347,7 @@ def get_online_store_retrieval_sql(
     request_table_columns: list[str],
     request_table_name: Optional[str] = None,
     request_table_expr: Optional[expressions.Select] = None,
-    parent_serving_preparation: ParentServingPreparation | None = None,
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> str:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -366,6 +366,8 @@ def get_online_store_retrieval_sql(
         Name of the request table
     request_table_expr: Optional[expressions.Select]
         Select statement for the request table
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------

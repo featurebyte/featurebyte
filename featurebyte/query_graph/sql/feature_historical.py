@@ -115,6 +115,8 @@ def get_historical_features_sql(
         Source type information
     serving_names_mapping : dict[str, str] | None
         Optional mapping from original serving name to new serving name
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------
@@ -169,6 +171,8 @@ async def get_historical_features(
         Whether the feature list that triggered this historical request is deployed. If so, tile
         tables would have already been back-filled and there is no need to check and calculate tiles
         on demand.
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------

@@ -4,7 +4,7 @@ Feature preview SQL generation
 # pylint: disable=too-many-locals
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import time
 
@@ -44,6 +44,8 @@ def get_feature_preview_sql(
     point_in_time_and_serving_name : Optional[dict[str, Any]]
         Dictionary consisting the point in time and entity ids based on which the feature
         preview will be computed
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------
