@@ -139,15 +139,15 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
-        # Case 1: event_id: 1 -> cust_id: 1000 -> city: tokyo -> state: kanto -> country: japan
+        # event_id: 1 -> cust_id: 1000 -> city: tokyo -> state: kanto -> country: japan
         ("2022-05-01 10:00:00", {"serving_event_id": 1}, "japan"),
-        # Case 2: event_id: 1 -> cust_id: 1000 -> city: paris -> state: île-de-france -> country: france
+        # event_id: 1 -> cust_id: 1000 -> city: paris -> state: île-de-france -> country: france
         ("2022-04-16 10:00:00", {"serving_event_id": 1}, "france"),
-        # Case 3: nan because point in time is prior to the timestamp of event_id 1
+        # nan because point in time is prior to the timestamp of event_id 1
         ("2022-01-01 10:00:00", {"serving_event_id": 1}, np.nan),
     ],
 )
-async def test_preview(feature_list_with_child_entities, point_in_time, provided_entity, expected):
+def test_preview(feature_list_with_child_entities, point_in_time, provided_entity, expected):
     """
     Test serving parent features requiring multiple joins with different types of data
     """
@@ -168,3 +168,36 @@ async def test_preview(feature_list_with_child_entities, point_in_time, provided
     # Preview feature list
     df = feature_list_with_child_entities.preview(preview_params)
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
+
+
+def test_historical_features(feature_list_with_child_entities):
+    """
+    Test get historical features
+    """
+    observations_set_with_expected_feature = pd.DataFrame(
+        [
+            {"POINT_IN_TIME": "2022-01-01 10:00:00", "serving_event_id": 1, "Country Name": np.nan},
+            {
+                "POINT_IN_TIME": "2022-04-16 10:00:00",
+                "serving_event_id": 1,
+                "Country Name": "france",
+            },
+            {
+                "POINT_IN_TIME": "2022-05-01 10:00:00",
+                "serving_event_id": 1,
+                "Country Name": "japan",
+            },
+        ]
+    )
+
+    observations_set = observations_set_with_expected_feature[["POINT_IN_TIME", "serving_event_id"]]
+    df = feature_list_with_child_entities.get_historical_features(observations_set)
+
+    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
+    observations_set_with_expected_feature = observations_set_with_expected_feature.sort_values(
+        ["POINT_IN_TIME", "serving_event_id"]
+    )
+    observations_set_with_expected_feature["POINT_IN_TIME"] = pd.to_datetime(
+        observations_set_with_expected_feature["POINT_IN_TIME"]
+    )
+    pd.testing.assert_frame_equal(df, observations_set_with_expected_feature)
