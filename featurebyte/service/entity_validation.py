@@ -3,12 +3,12 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from featurebyte.exception import EntityJoinPathNotFoundError, RequiredEntityNotProvidedError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.models.parent_serving import JoinStep, ParentServingPreparation
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -101,8 +101,7 @@ class EntityValidationService(BaseService):
         serving_names_mapping: dict[str, str] | None = None,
     ) -> Optional[ParentServingPreparation]:
         """
-        Validate that entities are provided correctly in feature requests. If joins are required to
-        retrieve parent entities, returns a corresponding ParentServingPreparation object.
+        Validate that entities are provided correctly in feature requests
 
         Parameters
         ----------
@@ -120,51 +119,7 @@ class EntityValidationService(BaseService):
 
         Returns
         -------
-        Optional[ParentServingPreparation]
-        """
-
-        join_steps = await self.validate_provided_entities(
-            graph=graph,
-            nodes=nodes,
-            request_column_names=request_column_names,
-            serving_names_mapping=serving_names_mapping,
-        )
-
-        if join_steps is None:
-            parent_serving_preparation = None
-        else:
-            feature_store_details = FeatureStoreDetails(**feature_store.dict())
-            parent_serving_preparation = ParentServingPreparation(
-                join_steps=join_steps, feature_store_details=feature_store_details
-            )
-
-        return parent_serving_preparation
-
-    async def validate_provided_entities(
-        self,
-        graph: QueryGraphModel,
-        nodes: list[Node],
-        request_column_names: set[str],
-        serving_names_mapping: dict[str, str] | None = None,
-    ) -> Optional[List[JoinStep]]:
-        """
-        Validate that entities are provided correctly in feature requests
-
-        Parameters
-        ----------
-        graph : QueryGraphModel
-            Query graph
-        nodes : list[Node]
-            List of query graph node
-        request_column_names: set[str]
-            Column names provided in the request
-        serving_names_mapping : dict[str, str] | None
-            Optional serving names mapping if the entities are provided under different serving
-            names in the request
-
-        Returns
-        -------
-        Optional[List[JoinStep]]
+        Optional[List[ParentServingPreparation]]
 
         Raises
         ------
@@ -183,21 +138,22 @@ class EntityValidationService(BaseService):
         if entity_info.are_all_required_entities_provided():
             return None
 
+        # Try to see if missing entities can be obtained using the provided entities as children
         try:
             join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                 entity_info
             )
         except EntityJoinPathNotFoundError:
-            join_steps = None
-
-        if join_steps is None:
             missing_entities = sorted(entity_info.missing_entities, key=lambda x: x.name)  # type: ignore
             formatted_pairs = []
             for entity in missing_entities:
                 formatted_pairs.append(f'{entity.name} (serving name: "{entity.serving_names[0]}")')
             formatted_pairs_str = ", ".join(formatted_pairs)
-            raise RequiredEntityNotProvidedError(
+            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
                 f"Required entities are not provided in the request: {formatted_pairs_str}"
             )
 
-        return join_steps
+        feature_store_details = FeatureStoreDetails(**feature_store.dict())
+        return ParentServingPreparation(
+            join_steps=join_steps, feature_store_details=feature_store_details
+        )
