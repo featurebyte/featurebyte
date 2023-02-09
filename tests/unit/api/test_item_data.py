@@ -396,7 +396,7 @@ def test_list_filter(saved_item_data):
     feature_list = ItemData.list(entity="item")
     assert feature_list.shape[0] == 1
 
-    feature_list = ItemData.list(entity="other_entity")
+    feature_list = ItemData.list(entity="other_entity", include_id=True)
     assert feature_list.shape[0] == 0
 
 

@@ -42,7 +42,7 @@ install:
 format:
 	poetry run pyupgrade --py38-plus **/*.py
 	poetry run isort .
-	poetry run black .
+	poetry run black . --exclude=docker
 	poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
@@ -67,7 +67,7 @@ lint-requirements-txt:
 lint-safety: | lint-requirements-txt
 	# Exporting dependencies to requirements.txt
 	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r GHSA-x4qr-2fvf-3mr5
+	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
