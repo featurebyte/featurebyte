@@ -3,8 +3,8 @@ Databricks Tile Generate Job Script
 """
 from typing import Optional
 
-from .tile_common import TileCommon
-from .tile_registry import TileRegistry
+from featurebyte.sql.spark.tile_common import TileCommon
+from featurebyte.sql.spark.tile_registry import TileRegistry
 
 
 class TileGenerate(TileCommon):

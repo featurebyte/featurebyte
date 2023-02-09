@@ -1,8 +1,8 @@
 """
 Tile Monitor Job for SP_TILE_MONITOR
 """
-from tile_common import TileCommon
-from tile_registry import TileRegistry
+from featurebyte.sql.spark.tile_common import TileCommon
+from featurebyte.sql.spark.tile_registry import TileRegistry
 
 
 class TileMonitor(TileCommon):
