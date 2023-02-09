@@ -159,7 +159,6 @@ class FeatureExecutionPlan:
             request_table_name=request_table_name,
             request_table_columns=request_table_columns,
             join_steps=self.parent_serving_preparation.join_steps,
-            source_type=self.source_type,
             feature_store_details=self.parent_serving_preparation.feature_store_details,
         )
         return table_expr

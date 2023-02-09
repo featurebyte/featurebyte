@@ -6,7 +6,7 @@ from __future__ import annotations
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
-from featurebyte.enum import SourceType, SpecialColumnName, TableDataType
+from featurebyte.enum import SpecialColumnName, TableDataType
 from featurebyte.models.parent_serving import JoinStep
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
@@ -21,7 +21,6 @@ def construct_request_table_with_parent_entities(
     request_table_name: str,
     request_table_columns: list[str],
     join_steps: list[JoinStep],
-    source_type: SourceType,
     feature_store_details: FeatureStoreDetails,
 ) -> Select:
     """
@@ -36,8 +35,6 @@ def construct_request_table_with_parent_entities(
     join_steps: list[JoinStep]
         The list of join steps to be applied. Each step joins a parent entity into the request
         table. Subsequent joins can use the newly joined columns as the join key.
-    source_type: SourceType
-        Source type information
     feature_store_details: FeatureStoreDetails
         Information about the feature store
 
@@ -54,7 +51,6 @@ def construct_request_table_with_parent_entities(
         table_expr = _apply_join_step(
             table_expr=table_expr,
             join_step=join_step,
-            source_type=source_type,
             feature_store_details=feature_store_details,
             current_columns=current_columns,
         )
@@ -66,16 +62,17 @@ def construct_request_table_with_parent_entities(
 def _apply_join_step(
     table_expr: Select,
     join_step: JoinStep,
-    source_type: SourceType,
     feature_store_details: FeatureStoreDetails,
     current_columns: list[str],
 ) -> Select:
 
-    aggregator = LookupAggregator(source_type=source_type)
+    # Use a LookupAggregator to join in the parent entity since the all the different types of
+    # lookup logic dependent on the data type still apply (SCD lookup, time based event data lookup,
+    # etc)
+    aggregator = LookupAggregator(source_type=feature_store_details.type)
     spec = _get_lookup_spec_from_join_step(
         join_step=join_step,
         feature_store_details=feature_store_details,
-        source_type=source_type,
     )
     aggregator.update(spec)
     aggregation_result = aggregator.update_aggregation_table_expr(
@@ -91,15 +88,9 @@ def _apply_join_step(
 def _get_lookup_spec_from_join_step(
     join_step: JoinStep,
     feature_store_details: FeatureStoreDetails,
-    source_type: SourceType,
 ) -> LookupSpec:
 
-    graph = QueryGraph()
-    input_node = graph.add_node(
-        node=join_step.data.construct_input_node(feature_store_details=feature_store_details),
-        input_nodes=[],
-    )
-
+    # Set up data specific parameters
     if join_step.data.type == TableDataType.SCD_DATA:
         scd_parameters = SCDLookupParameters(**join_step.data.dict())
     else:
@@ -110,8 +101,14 @@ def _get_lookup_spec_from_join_step(
     else:
         event_parameters = None
 
+    # Get the sql expression for the data
+    graph = QueryGraph()
+    input_node = graph.add_node(
+        node=join_step.data.construct_input_node(feature_store_details=feature_store_details),
+        input_nodes=[],
+    )
     sql_operation_graph = SQLOperationGraph(
-        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=source_type
+        query_graph=graph, sql_type=SQLType.AGGREGATION, source_type=feature_store_details.type
     )
     sql_input_node = sql_operation_graph.build(input_node)
     source_expr = sql_input_node.sql
@@ -125,6 +122,6 @@ def _get_lookup_spec_from_join_step(
         scd_parameters=scd_parameters,
         event_parameters=event_parameters,
         serving_names_mapping=None,
-        entity_ids=[],
+        entity_ids=[],  # entity_ids doesn't matter in this case, passing empty list for convenience
         is_parent_lookup=True,
     )

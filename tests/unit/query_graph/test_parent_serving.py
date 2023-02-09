@@ -11,7 +11,6 @@ def test_construct_request_table_with_parent_entities(parent_serving_preparation
         "REQUEST_TABLE",
         request_table_columns=["a", "b"],
         join_steps=parent_serving_preparation.join_steps,
-        source_type=parent_serving_preparation.feature_store_details.type,
         feature_store_details=parent_serving_preparation.feature_store_details,
     )
     expected = textwrap.dedent(
