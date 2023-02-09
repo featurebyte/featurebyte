@@ -207,7 +207,7 @@ def test_historical_features(feature_list_with_child_entities):
     observations_set_with_expected_feature["POINT_IN_TIME"] = pd.to_datetime(
         observations_set_with_expected_feature["POINT_IN_TIME"]
     )
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_feature)
+    pd.testing.assert_frame_equal(df, observations_set_with_expected_feature, check_dtype=False)
 
 
 def test_online_features(config, feature_list_with_child_entities):

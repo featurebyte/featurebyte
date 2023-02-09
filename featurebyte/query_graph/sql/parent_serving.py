@@ -1,3 +1,6 @@
+"""
+SQL generation for looking up parent entities
+"""
 from __future__ import annotations
 
 from sqlglot import expressions
@@ -21,7 +24,27 @@ def construct_request_table_with_parent_entities(
     source_type: SourceType,
     feature_store_details: FeatureStoreDetails,
 ) -> Select:
+    """
+    Construct a query to join parent entities into the request table
 
+    Parameters
+    ----------
+    request_table_name: str
+        Request table name
+    request_table_columns: list[str]
+        Column names in the request table
+    join_steps: list[JoinStep]
+        The list of join steps to be applied. Each step joins a parent entity into the request
+        table. Subsequent joins can use the newly joined columns as the join key.
+    source_type: SourceType
+        Source type information
+    feature_store_details: FeatureStoreDetails
+        Information about the feature store
+
+    Returns
+    -------
+    Select
+    """
     table_expr = select(
         *[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]
     ).from_(expressions.alias_(request_table_name, "REQ"))
@@ -55,7 +78,6 @@ def apply_join_step(
         source_type=source_type,
     )
     aggregator.update(spec)
-
     aggregation_result = aggregator.update_aggregation_table_expr(
         table_expr=table_expr,
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
@@ -63,16 +85,7 @@ def apply_join_step(
         current_query_index=0,
     )
 
-    # Ensure the newly joined in column is available for subsequent joins under the REQ table
-    # qualifier. This is already done by LookupAggregator for the case of SCD lookup.
-    if spec.scd_parameters is None:
-        joined_table_expr = LookupAggregator.wrap_in_nested_query(
-            aggregation_result.updated_table_expr, current_columns + [spec.agg_result_name]
-        )
-    else:
-        joined_table_expr = aggregation_result.updated_table_expr
-
-    return joined_table_expr
+    return aggregation_result.updated_table_expr
 
 
 def get_lookup_spec_from_join_step(

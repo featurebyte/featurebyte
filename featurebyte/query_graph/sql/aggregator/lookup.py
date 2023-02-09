@@ -3,7 +3,7 @@ SQL generation for lookup features
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Any, Iterable, Optional, Sequence, Tuple
 
 from dataclasses import dataclass
 
@@ -65,6 +65,10 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
     LookupAggregator is responsible for generating SQL for lookup features
     """
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.is_parent_lookup = False
+
     @property
     def lookup_specs(self) -> Iterable[LookupSpec]:
         """
@@ -79,7 +83,8 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             yield from specs
 
     def additional_update(self, aggregation_spec: LookupSpec) -> None:
-        pass
+        if aggregation_spec.is_parent_lookup:
+            self.is_parent_lookup = True
 
     def iterate_grouped_lookup_specs(self, is_scd: bool) -> Iterable[list[LookupSpec]]:
         """
@@ -199,6 +204,15 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
 
         # Update result column names to account for both types of lookups
         result.column_names = scd_agg_result_names + result.column_names
+
+        if self.is_parent_lookup and not scd_agg_result_names:
+            # In case of looking up parent entities, wrap the result in a subquery so that the newly
+            # joined column is available under the REQ table qualifier for subsequent joins. This is
+            # already done for the SCD case.
+            result.updated_table_expr = self._wrap_in_nested_query(
+                table_expr=result.updated_table_expr, columns=current_columns + result.column_names
+            )
+
         return result
 
     def _update_with_scd_lookups(
@@ -259,7 +273,7 @@ class LookupAggregator(NonTileBasedAggregator[LookupSpec]):
             scd_agg_result_names.extend(agg_result_names)
 
         if scd_agg_result_names:
-            table_expr = self.wrap_in_nested_query(table_expr=table_expr, columns=current_columns)
+            table_expr = self._wrap_in_nested_query(table_expr=table_expr, columns=current_columns)
 
         return table_expr, scd_agg_result_names
 
