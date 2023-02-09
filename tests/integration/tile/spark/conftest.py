@@ -71,6 +71,19 @@ def spark_session_fixture():
         to_timestamp(col("__FB_TILE_START_DATE_COLUMN"), "yyyy-MM-dd'T'HH:mm:ss'Z'"),
     )
 
+    df2 = df2.withColumn(
+        "VALUE",
+        col("VALUE").cast("int"),
+    )
+    df2 = df2.withColumn(
+        "VALUE_2",
+        col("VALUE_2").cast("int"),
+    )
+    df2 = df2.withColumn(
+        "VALUE_3",
+        col("VALUE_3").cast("int"),
+    )
+
     df2.write.format("delta").saveAsTable(name=table_name, mode="overwrite")
 
     yield spark
