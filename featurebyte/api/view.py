@@ -330,7 +330,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     def __setitem__(
         self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
     ) -> None:
-        if not isinstance(key, tuple) and key in self.protected_columns:
+        key_to_check = key if not isinstance(key, tuple) else key[1]
+        if key_to_check in self.protected_columns:
             raise ValueError(f"Column '{key}' cannot be modified!")
         super().__setitem__(key, value)
 
