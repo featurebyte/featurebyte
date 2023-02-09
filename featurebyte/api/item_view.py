@@ -230,15 +230,15 @@ class ItemView(View, GroupByMixin):
         return params
 
     def validate_aggregate_over_parameters(
-        self, groupby_obj: GroupBy, value_column: Optional[str]
+        self, keys: list[str], value_column: Optional[str]
     ) -> None:
         """
         Check whether aggregate_over parameters are valid for ItemView.
 
         Parameters
         ----------
-        groupby_obj: GroupBy
-            GroupBy object
+        keys: list[str]
+            keys
         value_column: Optional[str]
             Column to be aggregated
 
@@ -247,16 +247,16 @@ class ItemView(View, GroupByMixin):
         ValueError
             raised when groupby keys contains the event ID column
         """
-        if self.event_id_column in groupby_obj.keys:
+        if self.event_id_column in keys:
             raise ValueError(
                 f"GroupBy keys must NOT contain the event ID column ({self.event_id_column}) when performing "
                 "aggregate_over functions."
             )
 
-        self._assert_not_all_columns_are_from_event_data(groupby_obj, value_column)
+        self._assert_not_all_columns_are_from_event_data(keys, value_column)
 
     def validate_simple_aggregate_parameters(
-        self, groupby_obj: GroupBy, value_column: Optional[str]
+        self, keys: list[str], value_column: Optional[str]
     ) -> None:
         """
         Check whether aggregation parameters are valid for ItemView
@@ -267,8 +267,8 @@ class ItemView(View, GroupByMixin):
 
         Parameters
         ----------
-        groupby_obj: GroupBy
-            GroupBy object
+        keys: list[str]
+            keys
         value_column: Optional[str]
             Column to be aggregated
 
@@ -278,24 +278,24 @@ class ItemView(View, GroupByMixin):
             If aggregation is using an EventData derived column and the groupby key is an Entity
             from EventData
         """
-        if self.event_id_column not in groupby_obj.keys:
+        if self.event_id_column not in keys:
             raise ValueError(
                 f"GroupBy keys must contain the event ID column ({self.event_id_column}) to prevent time leakage "
                 "when performing simple aggregates."
             )
 
-        self._assert_not_all_columns_are_from_event_data(groupby_obj, value_column)
+        self._assert_not_all_columns_are_from_event_data(keys, value_column)
 
     def _assert_not_all_columns_are_from_event_data(
-        self, groupby_obj: GroupBy, value_column: Optional[str]
+        self, keys: list[str], value_column: Optional[str]
     ) -> None:
         """
         Helper method to validate whether columns are from event data.
 
         Parameters
         ----------
-        groupby_obj: GroupBy
-            GroupBy object
+        keys: list[str]
+            keys
         value_column: Optional[str]
             Column to be aggregated
 
@@ -307,7 +307,6 @@ class ItemView(View, GroupByMixin):
         if value_column is None:
             return
 
-        keys = groupby_obj.keys
         columns_to_check = [*keys, value_column]
         if self._are_columns_derived_only_from_event_data(columns_to_check):
             raise ValueError(
