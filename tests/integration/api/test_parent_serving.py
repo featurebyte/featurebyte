@@ -11,6 +11,7 @@ from featurebyte import (
     FeatureList,
     SlowlyChangingData,
 )
+from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
@@ -132,7 +133,13 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     feature = dimension_view["country"].as_feature("Country Name")
 
     feature_list = FeatureList([feature], name=f"{table_prefix}_feature_list")
-    return feature_list
+    feature_list.save()
+
+    try:
+        feature_list.deploy(enable=True, make_production_ready=True)
+        yield feature_list
+    finally:
+        feature_list.deploy(enable=False)
 
 
 @pytest.mark.asyncio
@@ -201,3 +208,16 @@ def test_historical_features(feature_list_with_child_entities):
         observations_set_with_expected_feature["POINT_IN_TIME"]
     )
     pd.testing.assert_frame_equal(df, observations_set_with_expected_feature)
+
+
+def test_online_features(config, feature_list_with_child_entities):
+    """
+    Test requesting online features
+    """
+    data = FeatureListGetOnlineFeatures(entity_serving_names=[{"serving_event_id": 1}])
+    res = config.get_client().post(
+        f"/feature_list/{str(feature_list_with_child_entities.id)}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 200
+    assert res.json() == {"features": [{"serving_event_id": 1, "Country Name": "japan"}]}

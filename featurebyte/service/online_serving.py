@@ -100,6 +100,7 @@ class OnlineServingService(BaseService):
             source_type=feature_store.type,
             request_table_columns=df_request_table.columns.tolist(),
             request_table_expr=df_expr,
+            parent_serving_preparation=parent_serving_preparation,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
