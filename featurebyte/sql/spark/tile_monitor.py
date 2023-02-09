@@ -93,7 +93,7 @@ class TileMonitor(TileCommon):
             print("tile_monitor_exist: ", tile_monitor_exist)
 
             if not tile_monitor_exist:
-                self._spark.sql(f"create table {monitor_table_name} as {compare_sql}")
+                self._spark.sql(f"create table {monitor_table_name} using delta as {compare_sql}")
             else:
                 tile_registry_ins = TileRegistry(
                     spark_session=self._spark,
@@ -123,14 +123,14 @@ class TileMonitor(TileCommon):
                 print(insert_sql)
                 self._spark.sql(insert_sql)
 
-                insert_monitor_summary_sql = f"""
-                    INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
-                    SELECT
-                        '{self.tile_id}' as TILE_ID,
-                        {self.tile_start_date_column} as TILE_START_DATE,
-                        TILE_TYPE,
-                        current_timestamp()
-                    FROM ({compare_sql})
-                """
-                print(insert_monitor_summary_sql)
-                self._spark.sql(insert_monitor_summary_sql)
+            insert_monitor_summary_sql = f"""
+                INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
+                SELECT
+                    '{self.tile_id}' as TILE_ID,
+                    {self.tile_start_date_column} as TILE_START_DATE,
+                    TILE_TYPE,
+                    current_timestamp()
+                FROM ({compare_sql})
+            """
+            print(insert_monitor_summary_sql)
+            self._spark.sql(insert_monitor_summary_sql)
