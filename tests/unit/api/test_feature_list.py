@@ -351,7 +351,7 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
         feature_group[None] = new_feature
     assert (
         str(exc_info.value)
-        == 'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.Series, '
+        == 'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, '
         "str]); got NoneType instead"
     )
 
