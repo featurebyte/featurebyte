@@ -23,6 +23,7 @@ from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import OptionalScalar, get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
@@ -39,8 +40,19 @@ class BaseAggregator(ABC):
     BaseAggregator is the base class for aggregators in groupby
     """
 
-    def __init__(self, groupby_obj: "GroupBy"):
-        self.groupby_obj = groupby_obj
+    def __init__(
+        self,
+        view: View,
+        category: Optional[str],
+        entity_ids: list[PydanticObjectId],
+        keys: list[str],
+        serving_names: list[str],
+    ):
+        self.view = view
+        self.category = category
+        self.entity_ids = entity_ids
+        self.keys = keys
+        self.serving_names = serving_names
         if not isinstance(self.view, tuple(self.supported_views)):
             supported_views_formatted = ", ".join(
                 [view_cls.__name__ for view_cls in self.supported_views]
@@ -48,28 +60,6 @@ class BaseAggregator(ABC):
             raise AggregationNotSupportedForViewError(
                 f"{self.aggregation_method_name}() is only available for {supported_views_formatted}"
             )
-
-    @property
-    def view(self) -> View:
-        """
-        Returns the underlying View object that the groupby operates on
-
-        Returns
-        -------
-        View
-        """
-        return self.groupby_obj.view_obj
-
-    @property
-    def groupby(self) -> "GroupBy":
-        """
-        Returns the associated GroupBy object
-
-        Returns
-        -------
-        GroupBy
-        """
-        return self.groupby_obj
 
     @property
     @abstractmethod
@@ -132,14 +122,14 @@ class BaseAggregator(ABC):
             )
 
         var_type = agg_method.derive_output_var_type(
-            input_var_type=input_var_type, category=self.groupby.category
+            input_var_type=input_var_type, category=self.category
         )
 
         feature = self.view._project_feature_from_node(  # pylint: disable=protected-access
             node=groupby_node,
             feature_name=feature_name,
             feature_dtype=var_type,
-            entity_ids=self.groupby.entity_ids,
+            entity_ids=self.entity_ids,
         )
         self._fill_feature(feature, method, feature_name, fill_value)
         return feature
@@ -174,10 +164,10 @@ class BaseAggregator(ABC):
         ValueError
             If both fill_value and category parameters are specified
         """
-        if fill_value is not None and self.groupby.category is not None:
+        if fill_value is not None and self.category is not None:
             raise ValueError("fill_value is not supported for aggregation per category")
 
-        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.groupby.category is None:
+        if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
             # Count features should be 0 instead of NaN when there are no records
             value_to_fill = get_or_default(fill_value, 0)
             feature.fillna(value_to_fill)
@@ -247,7 +237,7 @@ class WindowAggregator(BaseAggregator):
             feature_job_setting=feature_job_setting,
         )
         self.view.validate_aggregate_over_parameters(
-            groupby_obj=self.groupby,
+            keys=self.keys,
             value_column=value_column,
         )
 
@@ -257,7 +247,7 @@ class WindowAggregator(BaseAggregator):
             windows=windows,
             feature_names=feature_names,
             timestamp_column=timestamp_column,
-            value_by_column=self.groupby.category,
+            value_by_column=self.category,
             feature_job_setting=feature_job_setting,
         )
         groupby_node = add_pruning_sensitive_operation(
@@ -318,7 +308,7 @@ class WindowAggregator(BaseAggregator):
             if method != AggFunc.LATEST:
                 raise ValueError('Unbounded window is only supported for the "latest" method')
 
-            if self.groupby.category is not None:
+            if self.category is not None:
                 raise ValueError("category is not supported for aggregation with unbounded window")
 
         if windows is not None:
@@ -378,7 +368,7 @@ class WindowAggregator(BaseAggregator):
 
         parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
         return {
-            "keys": self.groupby.keys,
+            "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
             "value_by": value_by_column,
@@ -388,8 +378,8 @@ class WindowAggregator(BaseAggregator):
             "time_modulo_frequency": parsed_feature_job_setting.time_modulo_frequency_seconds,
             "frequency": parsed_feature_job_setting.frequency_seconds,
             "names": feature_names,
-            "serving_names": self.groupby.serving_names,
-            "entity_ids": self.groupby.entity_ids,
+            "serving_names": self.serving_names,
+            "entity_ids": self.entity_ids,
         }
 
 
@@ -460,13 +450,13 @@ class AsAtAggregator(BaseAggregator):
 
         view = cast(SlowlyChangingView, self.view)
         node_params = {
-            "keys": self.groupby.keys,
+            "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
-            "value_by": self.groupby.category,
+            "value_by": self.category,
             "name": feature_name,
-            "serving_names": self.groupby.serving_names,
-            "entity_ids": self.groupby.entity_ids,
+            "serving_names": self.serving_names,
+            "entity_ids": self.entity_ids,
             "offset": offset,
             "backward": backward,
             **view.get_common_scd_parameters().dict(),
@@ -507,11 +497,11 @@ class AsAtAggregator(BaseAggregator):
         if feature_name is None:
             raise ValueError("feature_name is required")
 
-        if self.groupby.category is not None:
+        if self.category is not None:
             raise ValueError("category is not supported for aggregate_asat")
 
         view = cast(SlowlyChangingView, self.view)
-        for key in self.groupby.keys:
+        for key in self.keys:
             if key == view.natural_key_column:
                 raise ValueError(
                     "Natural key column cannot be used as a groupby key in aggregate_asat"
@@ -562,18 +552,18 @@ class SimpleAggregator(BaseAggregator):
         """
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self.view.validate_simple_aggregate_parameters(
-            groupby_obj=self.groupby,
+            keys=self.keys,
             value_column=value_column,
         )
 
         node_params = {
-            "keys": self.groupby.keys,
+            "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
-            "value_by": self.groupby.category,
+            "value_by": self.category,
             "name": feature_name,
-            "serving_names": self.groupby.serving_names,
-            "entity_ids": self.groupby.entity_ids,
+            "serving_names": self.serving_names,
+            "entity_ids": self.entity_ids,
         }
         groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
@@ -718,7 +708,9 @@ class GroupBy:
         - [FeatureGroup](/reference/featurebyte.api.feature_list.FeatureGroup/): FeatureGroup object
         - [Feature](/reference/featurebyte.api.feature.Feature/): Feature object
         """
-        return WindowAggregator(self).aggregate_over(
+        return WindowAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).aggregate_over(
             value_column=value_column,
             method=method,
             windows=windows,
@@ -783,7 +775,9 @@ class GroupBy:
         >>> feature  # doctest: +SKIP
         Feature[FLOAT](name=Number of Credit Cards, node_name=alias_1)
         """
-        return AsAtAggregator(self).aggregate_asat(
+        return AsAtAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).aggregate_asat(
             value_column=value_column,
             method=method,
             feature_name=feature_name,
@@ -820,7 +814,9 @@ class GroupBy:
         -------
         Feature
         """
-        return SimpleAggregator(self).aggregate(
+        return SimpleAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).aggregate(
             value_column=value_column,
             method=method,
             feature_name=feature_name,
