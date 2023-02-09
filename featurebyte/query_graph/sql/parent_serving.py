@@ -51,7 +51,7 @@ def construct_request_table_with_parent_entities(
 
     current_columns = request_table_columns[:]
     for join_step in join_steps:
-        table_expr = apply_join_step(
+        table_expr = _apply_join_step(
             table_expr=table_expr,
             join_step=join_step,
             source_type=source_type,
@@ -63,7 +63,7 @@ def construct_request_table_with_parent_entities(
     return table_expr
 
 
-def apply_join_step(
+def _apply_join_step(
     table_expr: Select,
     join_step: JoinStep,
     source_type: SourceType,
@@ -72,7 +72,7 @@ def apply_join_step(
 ) -> Select:
 
     aggregator = LookupAggregator(source_type=source_type)
-    spec = get_lookup_spec_from_join_step(
+    spec = _get_lookup_spec_from_join_step(
         join_step=join_step,
         feature_store_details=feature_store_details,
         source_type=source_type,
@@ -88,7 +88,7 @@ def apply_join_step(
     return aggregation_result.updated_table_expr
 
 
-def get_lookup_spec_from_join_step(
+def _get_lookup_spec_from_join_step(
     join_step: JoinStep,
     feature_store_details: FeatureStoreDetails,
     source_type: SourceType,

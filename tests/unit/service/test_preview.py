@@ -24,6 +24,15 @@ def empty_graph_fixture():
     }
 
 
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture():
+    """Mock get_feature_store_session method"""
+    with patch(
+        "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
+    ) as mock_get_feature_store_session:
+        yield mock_get_feature_store_session
+
+
 @pytest.mark.asyncio
 async def test_preview_feature__time_based_feature_without_point_in_time_errors(
     preview_service, float_feature
@@ -61,6 +70,7 @@ async def test_preview_feature__non_time_based_feature_without_point_in_time_doe
     await preview_service.preview_feature(feature_preview, get_credential)
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_preview_feature__missing_entity(
     preview_service, production_ready_feature, get_credential

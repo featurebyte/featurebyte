@@ -135,6 +135,35 @@ class FeatureExecutionPlan:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
 
+    def construct_request_table_with_parent_entities(
+        self,
+        request_table_name: str,
+        request_table_columns: list[str],
+    ) -> expressions.Select:
+        """
+        Construct updated request table with parent entities added
+
+        Parameters
+        ----------
+        request_table_name: str
+            Name of the request table
+        request_table_columns: list[str]
+            Columns in the request table
+
+        Returns
+        -------
+        expressions.Select
+        """
+        assert self.parent_serving_preparation is not None
+        table_expr = construct_request_table_with_parent_entities(
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            join_steps=self.parent_serving_preparation.join_steps,
+            source_type=self.source_type,
+            feature_store_details=self.parent_serving_preparation.feature_store_details,
+        )
+        return table_expr
+
     def construct_combined_aggregation_cte(
         self,
         request_table_name: str,
@@ -311,21 +340,6 @@ class FeatureExecutionPlan:
             exclude_columns=exclude_columns,
         )
         return post_aggregation_sql
-
-    def construct_request_table_with_parent_entities(
-        self,
-        request_table_name: str,
-        request_table_columns: list[str],
-    ) -> expressions.Select:
-        assert self.parent_serving_preparation is not None
-        table_expr = construct_request_table_with_parent_entities(
-            request_table_name=request_table_name,
-            request_table_columns=request_table_columns,
-            join_steps=self.parent_serving_preparation.join_steps,
-            source_type=self.source_type,
-            feature_store_details=self.parent_serving_preparation.feature_store_details,
-        )
-        return table_expr
 
 
 class FeatureExecutionPlanner:
