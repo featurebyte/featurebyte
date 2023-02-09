@@ -59,14 +59,14 @@ class TileMonitor(TileCommon):
                 [f"a.{c} = b.{c}" for c in self.entity_column_names.split(",")]
             )
             value_select_cols_str = " , ".join(
-                [f"b.{c} as old_{c}" for c in existing_value_columns.split(",")]
+                [f"b.{c} as OLD_{c}" for c in existing_value_columns.split(",")]
             )
             value_insert_cols_str = " , ".join(
-                [f"old_{c}" for c in existing_value_columns.split(",")]
+                [f"OLD_{c}" for c in existing_value_columns.split(",")]
             )
             value_filter_cols_str = " OR ".join(
                 [
-                    f"{c} != old_{c} or ({c} is not null and old_{c} is null)"
+                    f"{c} != OLD_{c} or ({c} is not null and OLD_{c} is null)"
                     for c in existing_value_columns.split(",")
                 ]
             )
@@ -117,7 +117,10 @@ class TileMonitor(TileCommon):
 
                 insert_sql = f"""
                     insert into {monitor_table_name}
-                        ({self.tile_start_date_column}, INDEX, {self.entity_column_names}, {existing_value_columns}, {value_insert_cols_str}, TILE_TYPE, EXPECTED_CREATED_AT, CREATED_AT)
+                        (
+                            {self.tile_start_date_column}, INDEX, {self.entity_column_names}, {existing_value_columns},
+                            {value_insert_cols_str}, TILE_TYPE, EXPECTED_CREATED_AT, CREATED_AT
+                        )
                         {compare_sql}
                 """
                 print(insert_sql)
