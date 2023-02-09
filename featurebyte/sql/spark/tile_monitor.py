@@ -10,7 +10,7 @@ class TileMonitor(TileCommon):
     tile_start_date_column: str
     tile_type: str
 
-    def execute(self):
+    def execute(self) -> None:
 
         tile_table_exist = self._spark.catalog.tableExists(self.tile_id)
         print("tile_table_exist: ", tile_table_exist)
