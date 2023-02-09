@@ -294,8 +294,8 @@ class ItemView(View, GroupByMixin):
 
         Parameters
         ----------
-        groupby_obj: GroupBy
-            GroupBy object
+        keys: list[str]
+            keys
         value_column: Optional[str]
             Column to be aggregated
 
