@@ -48,7 +48,9 @@ class BaseCredential(FeatureByteBaseModel):
     Storage credential only
     """
 
-    storage_credential_type: StorageCredentialType
+    storage_credential_type: Optional[StorageCredentialType] = Field(
+        default=StorageCredentialType.NONE
+    )
     storage_credential: Optional[BaseStorageCredential]
 
     @root_validator(pre=True)
@@ -76,9 +78,9 @@ class BaseCredential(FeatureByteBaseModel):
         values["storage_credential_type"] = values.get(
             "storage_credential_type", StorageCredentialType.NONE
         )
-        values["storage_credential"] = type_class_mapping[
-            values.get("storage_credential_type", StorageCredentialType.NONE)
-        ](**storage_credential)
+        values["storage_credential"] = type_class_mapping[values["storage_credential_type"]](
+            **storage_credential
+        )
         return values
 
 
