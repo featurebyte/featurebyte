@@ -118,7 +118,7 @@ jobs:
     - name: Install dependencies
       if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
-        sudo apt-get install wkhtmltopdf
+        sudo apt-get install wkhtmltopdf libsasl2-dev
         make install
 
     - name: Run tests

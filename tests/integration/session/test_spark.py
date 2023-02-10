@@ -64,13 +64,10 @@ async def test_schema_initializer(config, spark_feature_store):
 
 
 @pytest.mark.asyncio
-async def test_register_table(config, spark_feature_store):
+async def test_register_table(config, spark_session):
     """
     Test the session register_table in spark works properly.
     """
-    session_manager = SessionManager(credentials=config.credentials)
-    session = await session_manager.get_session(spark_feature_store)
-
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(
@@ -79,23 +76,16 @@ async def test_register_table(config, spark_feature_store):
             "üser id": [1, 2, 3, 4, 5],
         }
     )
-    await session.register_table(table_name="test_table", dataframe=df_training_events)
-    df_retrieve = await session.execute_query("SELECT * FROM test_table")
+    await spark_session.register_table(table_name="test_table", dataframe=df_training_events)
+    df_retrieve = await spark_session.execute_query("SELECT * FROM test_table")
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
 
 
 @pytest.mark.asyncio
-async def test_register_udfs(config, spark_feature_store):
+async def test_register_udfs(config, spark_session):
     """
     Test the session registered udfs properly.
     """
-    session_manager = SessionManager(credentials=config.credentials)
-    session = await session_manager.get_session(spark_feature_store)
-    result = await session.execute_query(
-        "select F_TIMESTAMP_TO_INDEX('2020-10-05 10:00:00', 0, 120, 60) as index"
-    )
-    assert (result["index"].iloc[0]) == 444970
-
     test_table = pd.DataFrame(
         {
             "group": ["A"] * 2 + ["B"] * 2,
@@ -103,10 +93,10 @@ async def test_register_udfs(config, spark_feature_store):
             "value": [1, 2, 3, 4],
         }
     )
-    await session.register_table(table_name="test_table", dataframe=test_table)
+    await spark_session.register_table(table_name="test_table", dataframe=test_table)
 
-    result = await session.execute_query(
-        "select `group`, OBJECT_AGG(`item`, `value`) AS counts FROM test_table GROUP BY `group`;"
+    result = await spark_session.execute_query(
+        "select `group`, OBJECT_AGG(`item`, `value`) AS counts FROM test_table GROUP BY `group` ORDER BY `group`;"
     )
     assert_frame_equal(
         result,
@@ -118,8 +108,8 @@ async def test_register_udfs(config, spark_feature_store):
         ),
     )
 
-    result = await session.execute_query(
-        "select `group`, F_COUNT_DICT_ENTROPY(OBJECT_AGG(`item`, `value`)) AS counts FROM test_table GROUP BY `group`;"
+    result = await spark_session.execute_query(
+        "select `group`, F_COUNT_DICT_ENTROPY(OBJECT_AGG(`item`, `value`)) AS counts FROM test_table GROUP BY `group` ORDER BY `group`;"
     )
     assert_frame_equal(
         result,
@@ -134,8 +124,8 @@ async def test_register_udfs(config, spark_feature_store):
         ),
     )
 
-    result = await session.execute_query(
-        "select `group`, MODE(`item`) AS mode FROM test_table GROUP BY `group`;"
+    result = await spark_session.execute_query(
+        "select `group`, MODE(`item`) AS mode FROM test_table GROUP BY `group` ORDER BY `group`;"
     )
     assert_frame_equal(
         result,

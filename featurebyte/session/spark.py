@@ -8,9 +8,11 @@ from typing import Any, List, Optional, OrderedDict, cast
 
 import collections
 import os
+from io import BytesIO
 
 import pandas as pd
 import pyarrow as pa
+from bson import ObjectId
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
@@ -23,7 +25,6 @@ from featurebyte.models.credential import (
     BaseStorageCredential,
     StorageCredentialType,
 )
-from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 from featurebyte.session.hive import AuthType, HiveConnection
 from featurebyte.session.simple_storage import (
@@ -95,7 +96,7 @@ class SparkSession(BaseSession):
             Storage type not supported
         """
         # add prefix to compartmentalize assets
-        url_prefix = "/featurebyte"
+        url_prefix = f"/{self.database_name}/{self.schema_name}"
         self.storage_url = self.storage_url.rstrip("/") + url_prefix
         self.storage_spark_url = self.storage_spark_url.rstrip("/") + url_prefix
 
@@ -312,16 +313,36 @@ class SparkSession(BaseSession):
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
     ) -> None:
-        date_cols = dataframe.select_dtypes(include=["datetime64"]).columns.tolist()
-        table_expr = construct_dataframe_sql_expr(dataframe, date_cols).sql(
-            pretty=True, dialect="spark"
-        )
+        buffer = BytesIO()
+        dataframe.to_parquet(buffer)
+        buffer.flush()
+        temp_filename = f"temp_{ObjectId()}.parquet"
+        with self._storage.open(path=temp_filename, mode="wb") as out_file_obj:
+            out_file_obj.write(buffer.getvalue())
+            out_file_obj.close()
+
         if temporary:
-            create_command = "CREATE OR REPLACE TEMPORARY VIEW"
+            # create cached temp view
+            await self.execute_query(
+                f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
+                f"(path '{self.storage_spark_url}/{temp_filename}')"
+            )
+            # cache table so we can remove the temp file
+            await self.execute_query(f"CACHE TABLE `{table_name}`")
         else:
-            create_command = "CREATE OR REPLACE VIEW"
-        query = f"{create_command} {table_name} AS {table_expr}"
-        await self.execute_query(query)
+            # register a permanent table from uncached temp view
+            request_id = self.generate_session_unique_id()
+            temp_view_name = f"__TEMP_TABLE_{request_id}"
+            await self.execute_query(
+                f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
+                f"(path '{self.storage_spark_url}/{temp_filename}')"
+            )
+            await self.execute_query(
+                f"CREATE TABLE `{table_name}` AS SELECT * FROM `{temp_view_name}`"
+            )
+
+        # clean up staging file
+        self._storage.delete_object(path=temp_filename)
 
 
 class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):
@@ -421,7 +442,9 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
         await super().register_missing_functions(functions)
-        # register UDF functions
+        # Note that Spark does not seem to be able to reload the same class until the spark app is restarted.
+        # To ensure functionality is updated for a function we should create a new class
+        # and re-register the function with the new class
         udf_functions = [
             ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
             ("MODE", "com.featurebyte.hive.udf.Mode"),

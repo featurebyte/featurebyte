@@ -45,6 +45,7 @@ from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, Tab
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.session.spark import SparkSession
 from featurebyte.tile.databricks_tile import TileManagerDatabricks
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
@@ -591,6 +592,25 @@ async def databricks_session_fixture(config, databricks_feature_store):
 
     await session.execute_query(
         f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema} CASCADE"
+    )
+
+
+@pytest_asyncio.fixture(name="spark_session", scope="session")
+async def spark_session_fixture(config, dataset_registration_helper, spark_feature_store):
+    """
+    Spark session
+    """
+    session_manager = SessionManager(credentials=config.credentials)
+    session = await session_manager.get_session(spark_feature_store)
+    assert isinstance(session, SparkSession)
+
+    await dataset_registration_helper(session)
+
+    yield session
+
+    # NEED TO CLEAN UP STORAGE
+    await session.execute_query(
+        f"DROP SCHEMA IF EXISTS {spark_feature_store.details.featurebyte_schema} CASCADE"
     )
 
 
