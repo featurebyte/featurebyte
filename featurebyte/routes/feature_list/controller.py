@@ -18,6 +18,7 @@ from featurebyte.exception import (
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
     TooRecentPointInTimeError,
+    UnexpectedServingNamesMappingError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
@@ -259,6 +260,7 @@ class FeatureListController(
             MissingPointInTimeColumnError,
             TooRecentPointInTimeError,
             RequiredEntityNotProvidedError,
+            UnexpectedServingNamesMappingError,
         ) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
