@@ -358,11 +358,14 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
 
 
 def test_feature_group__setitem__with_series_not_allowed(
-    production_ready_feature, scd_view_with_entity
+    production_ready_feature, saved_scd_data, cust_id_entity, snowflake_event_data
 ):
     """
     Test that FeatureGroup.__setitem__ for a series is not allowed.
     """
+    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
+    snowflake_event_data.save()
+    scd_view_with_entity = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
     series = scd_view_with_entity["col_boolean"]
     feature_group = FeatureGroup([production_ready_feature])
     with pytest.raises(TypeError) as exc:
@@ -1143,17 +1146,12 @@ def test_get_online_serving_code_unsupported_language(feature_list):
     assert "Supported languages: ['python', 'sh']" in str(exc.value)
 
 
-@pytest.fixture(name="scd_view_with_entity")
-def get_scd_view_with_entity(saved_scd_data, cust_id_entity, snowflake_event_data):
-    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
-    snowflake_event_data.save()
-    return SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
-
-
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def test_get_feature_jobs_status_feature_without_tile(
     mock_execute_query,
-    scd_view_with_entity,
+    saved_scd_data,
+    cust_id_entity,
+    snowflake_event_data,
     float_feature,
     feature_job_logs,
 ):
@@ -1161,7 +1159,10 @@ def test_get_feature_jobs_status_feature_without_tile(
     Test get_feature_jobs_status for feature without tile
     """
     mock_execute_query.return_value = feature_job_logs[:0]
-    feature = scd_view_with_entity["effective_timestamp"].as_feature("Latest Record Change Date")
+    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
+    snowflake_event_data.save()
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature_list = FeatureList([feature, float_feature], name="FeatureList")
     feature_list.save()
     job_status_result = feature_list.get_feature_jobs_status()
