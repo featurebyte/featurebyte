@@ -171,12 +171,9 @@ class SparkSession(BaseSession):
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
         tables = await self.execute_query(f"SHOW TABLES IN `{database_name}`.`{schema_name}`")
-        views = await self.execute_query(f"SHOW VIEWS IN `{database_name}`.`{schema_name}`")
         output = []
         if tables is not None:
             output.extend(tables["tableName"])
-        if views is not None:
-            output.extend(views["viewName"])
         return output
 
     async def list_table_schema(

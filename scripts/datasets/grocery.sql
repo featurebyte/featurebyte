@@ -1,22 +1,12 @@
-from impala.dbapi import connect
-from impala.util import as_pandas
+-- url: https://storage.googleapis.com/featurebyte-public-datasets/grocery.tar.gz
 
-conn = connect(
-    host="localhost",
-    http_path="cliservice",
-    database="default",
-    port=10000,
-    auth_mechanism="PLAIN",
-)
-
-SQL = """
 DROP DATABASE GROCERY CASCADE;
 CREATE DATABASE GROCERY;
 
 -- populate GroceryCustomer
 CREATE OR REPLACE TEMP VIEW temp_table
 USING parquet OPTIONS (
-    path 'file:///data/staging/grocery/GroceryCustomer.parquet'
+    path '{staging_path}/GroceryCustomer.parquet'
 );
 CREATE TABLE GROCERY.__GROCERYCUSTOMER USING DELTA AS SELECT * FROM temp_table;
 CREATE OR REPLACE VIEW GROCERY.GROCERYCUSTOMER(
@@ -47,7 +37,7 @@ WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 -- populate GroceryInvoice
 CREATE OR REPLACE TEMP VIEW temp_table
 USING parquet OPTIONS (
-    path 'file:///data/staging/grocery/GroceryInvoice.parquet'
+    path '{staging_path}/GroceryInvoice.parquet'
 );
 CREATE TABLE GROCERY.__GROCERYINVOICE USING DELTA AS SELECT * FROM temp_table;
 CREATE OR REPLACE VIEW GROCERY.GROCERYINVOICE(
@@ -63,7 +53,7 @@ WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 -- populate InvoiceItems
 CREATE OR REPLACE TEMP VIEW temp_table
 USING parquet OPTIONS (
-    path 'file:///data/staging/grocery/InvoiceItems.parquet'
+    path '{staging_path}/InvoiceItems.parquet'
 );
 CREATE TABLE GROCERY.__INVOICEITEMS USING DELTA AS SELECT * FROM temp_table;
 CREATE OR REPLACE VIEW GROCERY.INVOICEITEMS(
@@ -82,24 +72,8 @@ WHERE `record_available_at` <= CURRENT_TIMESTAMP();
 -- populate GroceryProduct
 CREATE OR REPLACE TEMP VIEW temp_table
 USING parquet OPTIONS (
-    path 'file:///data/staging/grocery/GroceryProduct.parquet'
+    path '{staging_path}/GroceryProduct.parquet'
 );
 CREATE TABLE GROCERY.GROCERYPRODUCT USING DELTA AS SELECT * FROM temp_table;
 
 DROP VIEW temp_table;
-"""
-
-for statement in SQL.split(";"):
-    cursor = conn.cursor()
-    statement = statement.strip()
-    if not statement:
-        continue
-    print("\n------------------ QUERY ----------------------\n")
-    print(statement)
-    print("\n------------------ RESULT ---------------------\n")
-    try:
-        cursor.execute(statement)
-        print(as_pandas(cursor))
-    except:
-        continue
-    print("\n-----------------------------------------------\n")
