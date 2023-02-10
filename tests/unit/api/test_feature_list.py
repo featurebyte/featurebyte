@@ -357,16 +357,12 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
     )
 
 
-def test_feature_group__setitem__with_series_not_allowed(
-    production_ready_feature, saved_scd_data, cust_id_entity, snowflake_event_data
-):
+def test_feature_group__setitem__with_series_not_allowed(production_ready_feature, saved_scd_data):
     """
     Test that FeatureGroup.__setitem__ for a series is not allowed.
     """
-    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
-    snowflake_event_data.save()
-    scd_view_with_entity = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
-    series = scd_view_with_entity["col_boolean"]
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    series = scd_view["col_int"]
     feature_group = FeatureGroup([production_ready_feature])
     with pytest.raises(TypeError) as exc:
         feature_group[series, "production_ready_feature"] = 900
