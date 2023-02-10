@@ -3,7 +3,7 @@ Unit tests for EntityValidationService
 """
 import pytest
 
-from featurebyte.exception import RequiredEntityNotProvidedError
+from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
 
 
 @pytest.mark.asyncio
@@ -56,3 +56,21 @@ async def test_required_entity__serving_names_mapping(
         serving_names_mapping={"cust_id": "new_cust_id"},
         feature_store=feature_store,
     )
+
+
+@pytest.mark.asyncio
+async def test_required_entity__serving_names_mapping_invalid(
+    entity_validation_service, production_ready_feature, feature_store
+):
+    """
+    Test validating with serving names mapping that is invalid
+    """
+    with pytest.raises(UnexpectedServingNamesMappingError) as exc:
+        await entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+            graph=production_ready_feature.graph,
+            nodes=[production_ready_feature.node],
+            request_column_names=["new_cust_id"],
+            serving_names_mapping={"cust_idz": "new_cust_id"},
+            feature_store=feature_store,
+        )
+    assert str(exc.value) == "Unexpected serving names provided in serving_names_mapping: cust_idz"

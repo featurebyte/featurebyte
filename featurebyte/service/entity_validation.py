@@ -5,7 +5,11 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from featurebyte.exception import EntityJoinPathNotFoundError, RequiredEntityNotProvidedError
+from featurebyte.exception import (
+    EntityJoinPathNotFoundError,
+    RequiredEntityNotProvidedError,
+    UnexpectedServingNamesMappingError,
+)
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -127,6 +131,8 @@ class EntityValidationService(BaseService):
         RequiredEntityNotProvidedError
             When any of the required entities is not provided in the request and it is not possible
             to retrieve the parent entities using existing relationships
+        UnexpectedServingNamesMappingError
+            When unexpected keys are provided in serving_names_mapping
         """
 
         entity_info = await self.get_entity_info_from_request(
@@ -135,6 +141,19 @@ class EntityValidationService(BaseService):
             request_column_names=request_column_names,
             serving_names_mapping=serving_names_mapping,
         )
+
+        if serving_names_mapping is not None:
+            provided_serving_names = {
+                entity.serving_names[0] for entity in entity_info.provided_entities
+            }
+            unexpected_keys = {
+                k for k in serving_names_mapping.keys() if k not in provided_serving_names
+            }
+            if unexpected_keys:
+                unexpected_keys_str = ", ".join(sorted(unexpected_keys))
+                raise UnexpectedServingNamesMappingError(
+                    f"Unexpected serving names provided in serving_names_mapping: {unexpected_keys_str}"
+                )
 
         if entity_info.are_all_required_entities_provided():
             return None
