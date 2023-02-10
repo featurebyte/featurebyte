@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 
 from bson import ObjectId
 
@@ -53,7 +53,9 @@ class ParentEntityLookupService(BaseService):
         if entity_info.are_all_required_entities_provided():
             return []
 
-        all_join_steps = []
+        # all_join_steps is a mapping from parent serving name to JoinStep. Each parent serving name
+        # should be looked up exactly once and then reused.
+        all_join_steps: dict[str, JoinStep] = OrderedDict()
         current_available_entities = entity_info.provided_entity_ids
 
         for entity in entity_info.missing_entities:
@@ -62,13 +64,13 @@ class ParentEntityLookupService(BaseService):
             # Extract list of JoinStep
             join_steps = await self._get_join_steps_from_join_path(entity_info, join_path)
             for join_step in join_steps:
-                if join_step not in all_join_steps:
-                    all_join_steps.append(join_step)
+                if join_step.parent_serving_name not in all_join_steps:
+                    all_join_steps[join_step.parent_serving_name] = join_step
 
             # All the entities in the path are now available
             current_available_entities.update([entity.id for entity in join_path])
 
-        return all_join_steps
+        return list(all_join_steps.values())
 
     async def _get_join_steps_from_join_path(
         self, entity_info: EntityInfo, join_path: list[EntityModel]
