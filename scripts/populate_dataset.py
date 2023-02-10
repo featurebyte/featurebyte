@@ -80,7 +80,7 @@ def upload_dataset(dataset_name: str) -> None:
     shutil.rmtree(Path(local_staging_path).expanduser())
 
 
-def main():
+def main() -> None:
 
     parser = argparse.ArgumentParser(
         description="Populate sample datasets to local Spark datastore"
@@ -88,7 +88,7 @@ def main():
 
     # add argument
     parser.add_argument(
-        "-l", "--list", action="store_true", dest="list", help="Shows all the datasets available"
+        "-l", "--list", action="store_true", dest="list", help="List datasets available"
     )
     parser.add_argument(
         "-a",
