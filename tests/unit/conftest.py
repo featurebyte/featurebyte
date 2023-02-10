@@ -9,7 +9,6 @@ import pandas as pd
 import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
-from conftest_config import *
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
@@ -45,6 +44,7 @@ from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from tests.unit.conftest_config import *
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
