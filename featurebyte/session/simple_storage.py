@@ -1,7 +1,7 @@
 """
 SimpleStorage classes for basic object store operations
 """
-from typing import Any, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import os
 from abc import ABC, abstractmethod
@@ -11,7 +11,7 @@ from pathlib import Path
 import boto3
 from smart_open import open as remote_open
 
-from featurebyte.models.credential import S3Credential, StorageCredentialType
+from featurebyte.models.credential import BaseStorageCredential, S3Credential
 
 FileMode = Literal["r", "w", "rb", "wb"]
 
@@ -22,7 +22,7 @@ class SimpleStorage(ABC):
     """
 
     def __init__(
-        self, storage_url: str, storage_credential: Optional[StorageCredentialType] = None
+        self, storage_url: str, storage_credential: Optional[BaseStorageCredential] = None
     ) -> None:
         """
         Initialize storage class
@@ -34,18 +34,25 @@ class SimpleStorage(ABC):
         storage_credential: Optional[StorageCredentialType]
             Credential for storage access
         """
-        self.client: Any = None
         self.storage_url = storage_url
         self.storage_credential = storage_credential
         self.base_url: str = ""
 
+    def _get_transport_params(self) -> Dict[str, Any]:
+        """
+        Get transport parameters
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        return {}
+
+    @abstractmethod
     def test_connection(self) -> None:
         """
         Test connection to storage
         """
-        with self.open(path="_conn_test", mode="w") as file_obj:
-            file_obj.write("OK")
-        self.delete_object(path="_conn_test")
 
     @abstractmethod
     def delete_object(self, path: str) -> None:
@@ -79,7 +86,7 @@ class SimpleStorage(ABC):
         yield remote_open(
             f"{self.base_url}/{path}",
             mode=mode,
-            transport_params={"client": self.client} if self.client else {},
+            transport_params=self._get_transport_params(),
         )
 
 
@@ -94,6 +101,12 @@ class FileSimpleStorage(SimpleStorage):
         path.mkdir(parents=True, exist_ok=True)
         self.base_url = f"file://{str(path)}"
 
+    def test_connection(self) -> None:
+        with self.open(path="_conn_test", mode="w") as file_obj:
+            file_obj.write("OK")
+            file_obj.close()
+        self.delete_object(path="_conn_test")
+
     def delete_object(self, path: str) -> None:
         base_path = self.base_url.replace("file://", "")
         os.remove(f"{base_path}/{path}")
@@ -107,7 +120,7 @@ class S3SimpleStorage(SimpleStorage):
     def __init__(
         self,
         storage_url: str,
-        storage_credential: Optional[StorageCredentialType] = None,
+        storage_credential: Optional[BaseStorageCredential] = None,
         region_name: Optional[str] = None,
     ) -> None:
         super().__init__(storage_url=storage_url, storage_credential=storage_credential)
@@ -117,12 +130,28 @@ class S3SimpleStorage(SimpleStorage):
             session_params["aws_secret_access_key"] = storage_credential.s3_secret_access_key
         else:
             raise NotImplementedError("Unsupported remote storage credential")
+
+        protocol, path = storage_url.split("//")
+        parts = path.split("/")
+        if len(parts) == 1:
+            raise ValueError("Bucket is missing in storage url")
+        endpoint_url = f"{protocol}//{parts[0]}"
+        self.bucket = parts[1]
+        if len(parts) > 2:
+            self.key_prefix = "/".join(parts[2:])
+            self.base_url = f"s3://{self.bucket}/{self.key_prefix}"
+        else:
+            self.key_prefix = ""
+            self.base_url = f"s3://{self.bucket}"
         self.session = boto3.Session(**session_params)
-        self.client = self.session.client("s3", endpoint_url=storage_url)
-        self.base_url = "s3://"
-        parts = storage_url.split("//")[1:]
-        self.bucket = parts[0]
-        self.key_prefix = "/".join(parts[1:])
+        self.client = self.session.client("s3", endpoint_url=endpoint_url)
+
+    def _get_transport_params(self) -> Dict[str, Any]:
+        return {"client": self.client}
+
+    def test_connection(self) -> None:
+        # should raise exception if connection is not valid
+        self.client.list_objects(Bucket=self.bucket)
 
     def delete_object(self, path: str) -> None:
         path = path.rstrip("/")

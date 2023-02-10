@@ -17,7 +17,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.credential import Credential, UsernamePasswordCredential
+from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
 
 # data source to credential mapping
 Credentials = Dict[str, Optional[Credential]]
@@ -266,17 +266,18 @@ class Configurations:
             name = credential.pop("feature_store", "unnamed")
             try:
                 # parse and store credentials
-                try:
-                    new_credential = Credential(
-                        name=name,
-                        credential_type=credential["credential_type"],
-                        credential=credential,
-                    )
-                except KeyError:
-                    new_credential = None
+                new_credential = Credential(
+                    **{
+                        "name": name,
+                        "credential_type": credential.get("credential_type", CredentialType.NONE),
+                        "credential": credential,
+                    },
+                )
                 self.credentials[name] = new_credential
             except ValidationError as exc:
-                raise InvalidSettingsError(f"Invalid settings for feature store: {name}") from exc
+                raise InvalidSettingsError(
+                    f"Invalid settings for feature store: {name}\n{str(exc)}"
+                ) from exc
 
         logging_settings = self.settings.pop("logging", None)
         if logging_settings:

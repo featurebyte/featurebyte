@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Optional, Union
 
-from pydantic import StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -45,10 +45,11 @@ class DatabricksDetails(BaseDatabaseDetails):
 class SparkDetails(BaseDatabaseDetails):
     """Model for Spark data source information"""
 
-    host: StrictStr
-    port: int
-    http_path: StrictStr
-    use_http_transport: bool
+    host: StrictStr = Field(default="localhost")
+    port: int = Field(default=10000)
+    http_path: StrictStr = Field(default="cliservice")
+    use_http_transport: bool = Field(default=False)
+    use_ssl: bool = Field(default=False)
     storage_type: StorageType
     storage_url: str
     storage_spark_url: StrictStr

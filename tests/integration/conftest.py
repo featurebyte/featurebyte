@@ -34,7 +34,7 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.config import Configurations
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, StorageType
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.event_data import FeatureJobSetting
@@ -252,7 +252,7 @@ def spark_feature_store_fixture(mock_get_persistent):
             port=10000,
             http_path="cliservice",
             use_http_transport=False,
-            storage_type="file",
+            storage_type=StorageType.FILE,
             storage_url="~/.spark/data/staging/",
             storage_spark_url="file:///data/staging/",
             featurebyte_catalog="spark_catalog",

@@ -6,7 +6,6 @@ services:
     ports:
       - "10000:10000"
       - "4040:4040"
-      - "8080:8080"
     volumes:
       - ~/.spark/data:/data
     environment:
@@ -30,5 +29,5 @@ services:
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
         --conf spark.sql.catalogImplementation=hive  \
         --conf spark.sql.warehouse.dir=file:///data/warehouse/ \
-        --conf spark.sql.hive.thriftServer.singleSession=true \
+        --conf spark.sql.hive.thriftServer.singleSession=false \
         --conf spark.hadoop.metastore.catalog.default=spark

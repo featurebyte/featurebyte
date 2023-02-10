@@ -125,6 +125,11 @@ beta-bundle:
 	tar czvf featurebyte_beta.tar.gz featurebyte_beta/
 	zip -9 featurebyte_beta.zip -r featurebyte_beta/
 
+# Populate test data
+populate-data:
+	cd ~/.spark/data/staging/ && curl -L https://storage.googleapis.com/featurebyte-public-datasets/grocery.tar.gz | tar zxf -
+	python scripts/populate_datasets.py
+
 #* Cleaning
 clean:
 	git stash -u

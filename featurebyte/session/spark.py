@@ -11,17 +11,21 @@ import os
 
 import pandas as pd
 import pyarrow as pa
-from impala.dbapi import connect
-from impala.error import OperationalError
-from impala.hiveserver2 import HiveServer2Cursor
 from pydantic import Field, PrivateAttr
+from pyhive.exc import OperationalError
+from pyhive.hive import Cursor
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, InternalName, SourceType, StorageType
 from featurebyte.logger import logger
-from featurebyte.models.credential import StorageCredentialType
+from featurebyte.models.credential import (
+    BaseCredential,
+    BaseStorageCredential,
+    StorageCredentialType,
+)
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
+from featurebyte.session.hive import AuthType, HiveConnection
 from featurebyte.session.simple_storage import (
     FileMode,
     FileSimpleStorage,
@@ -32,7 +36,7 @@ from featurebyte.session.simple_storage import (
 
 class SparkSession(BaseSession):
     """
-    Databricks session class
+    Spark session class
     """
 
     _no_schema_error = OperationalError
@@ -42,11 +46,13 @@ class SparkSession(BaseSession):
     http_path: str
     port: int
     use_http_transport: bool
+    use_ssl: bool
     access_token: Optional[str]
     storage_type: StorageType
     storage_url: str
     storage_spark_url: str
-    storage_credential: Optional[StorageCredentialType]
+    storage_credential_type: Optional[StorageCredentialType]
+    storage_credential: Optional[BaseStorageCredential]
     region_name: Optional[str]
     featurebyte_catalog: str
     featurebyte_schema: str
@@ -54,22 +60,29 @@ class SparkSession(BaseSession):
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
-
-        connect_params = {}
-        auth_mechanism = "PLAIN"
-        if self.access_token:
-            auth_mechanism = "JWT"
-            connect_params["jwt"] = self.access_token
-
+        self.storage_credential = BaseCredential(**data).storage_credential
         self._initialize_storage()
-        self._connection = connect(
-            host=data["host"],
-            http_path=data["http_path"],
-            database=f"{self.featurebyte_catalog}.{self.featurebyte_schema}",
-            port=data["port"],
-            use_http_transport=data["use_http_transport"],
-            auth_mechanism=auth_mechanism,
-            **connect_params,
+
+        auth = None
+        scheme = None
+
+        # determine transport scheme
+        if self.use_http_transport:
+            scheme = "https" if self.use_ssl else "http"
+
+        # determine auth mechanism
+        if self.access_token:
+            auth = AuthType.TOKEN
+
+        self._connection = HiveConnection(
+            host=self.host,
+            http_path=self.http_path,
+            catalog=self.database_name,
+            database=self.schema_name,
+            port=self.port,
+            access_token=self.access_token,
+            auth=auth,
+            scheme=scheme,
         )
 
     def _initialize_storage(self) -> None:
@@ -86,7 +99,7 @@ class SparkSession(BaseSession):
         self.storage_url = self.storage_url.rstrip("/") + url_prefix
         self.storage_spark_url = self.storage_spark_url.rstrip("/") + url_prefix
 
-        if self.storage_type == StorageType.LOCAL:
+        if self.storage_type == StorageType.FILE:
             self._storage = FileSimpleStorage(storage_url=self.storage_url)
         elif self.storage_type == StorageType.S3:
             self._storage = S3SimpleStorage(
@@ -147,17 +160,12 @@ class SparkSession(BaseSession):
         return output
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
-        # allow listing of schemas even if schema specified in connection does not exist
-        default_db = self._connection.default_db
-        self._connection.default_db = None
-        try:
-            schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
-            output = []
-            if schemas is not None:
-                output.extend(schemas["namespace"])
-            return output
-        finally:
-            self._connection.default_db = default_db
+        schemas = await self.execute_query(f"SHOW SCHEMAS IN `{database_name}`")
+        output = []
+        if schemas is not None:
+            output.extend(schemas.get("namespace", schemas.get("databaseName")))
+            # in DataBricks the header is databaseName instead of namespace
+        return output
 
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
@@ -236,28 +244,27 @@ class SparkSession(BaseSession):
         """
         datatype = datatype.upper()
         mapping = {
-            "TINYINT": pa.int8(),
-            "SMALLINT": pa.int16(),
-            "INT": pa.int32(),
-            "BIGINT": pa.int64(),
-            "BINARY": pa.large_binary(),
-            "BOOLEAN": pa.bool_(),
-            "DATE": pa.date64(),
-            "TIME": pa.time32("ms"),
-            "DOUBLE": pa.float64(),
-            "FLOAT": pa.float32(),
-            "DECIMAL": pa.decimal256(38, 0),
-            "INTERVAL": pa.duration("ns"),
-            "VOID": pa.null(),
-            "TIMESTAMP": pa.timestamp("ns", tz=None),
-            # "ARRAY": pa.large_list(),
-            # "MAP": pa.map_(),
-            # "STRUCT": pa.struct(),
-            "STRING": pa.string(),
+            "STRING_TYPE": pa.string(),
+            "TINYINT_TYPE": pa.int8(),
+            "SMALLINT_TYPE": pa.int16(),
+            "INT_TYPE": pa.int32(),
+            "BIGINT_TYPE": pa.int64(),
+            "BINARY_TYPE": pa.large_binary(),
+            "BOOLEAN_TYPE": pa.bool_(),
+            "DATE_TYPE": pa.date64(),
+            "TIME_TYPE": pa.time32("ms"),
+            "DOUBLE_TYPE": pa.float64(),
+            "FLOAT_TYPE": pa.float32(),
+            "DECIMAL_TYPE": pa.decimal256(38, 0),
+            "INTERVAL_TYPE": pa.duration("ns"),
+            "NULL_TYPE": pa.null(),
+            "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
+            "ARRAY_TYPE": pa.string(),
+            "MAP_TYPE": pa.string(),
+            "STRUCT_TYPE": pa.string(),
         }
-        if datatype.startswith("DECIMAL") and "(" in datatype:
-            args = datatype.split("(")[1][:-1].split(",")
-            pyarrow_type = pa.decimal256(int_precision=int(args[0]), int_scale=int(args[1]))
+        if datatype.startswith("INTERVAL"):
+            pyarrow_type = pa.int64()
         else:
             pyarrow_type = mapping.get(datatype)
 
@@ -268,13 +275,13 @@ class SparkSession(BaseSession):
         return pyarrow_type
 
     @staticmethod
-    def fetchall_arrow(cursor: HiveServer2Cursor) -> pa.Table:
+    def fetchall_arrow(cursor: Cursor) -> pa.Table:
         """
         Fetch all (remaining) rows of a query result, returning them as a PyArrow table.
 
         Parameters
         ----------
-        cursor: HiveServer2Cursor
+        cursor: Cursor
             Cursor to fetch data from
 
         Returns
@@ -364,6 +371,7 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
 
     def __init__(self, session: SparkSession):
         super().__init__(session=session)
+        self.spark_session = cast(SparkSession, self.session)
         self.metadata_schema_initializer = SparkMetadataSchemaInitializer(session)
 
     async def drop_all_objects_in_working_schema(self) -> None:
@@ -403,15 +411,15 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
         str
         """
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        session = cast(SparkSession, self.session)
-        return f"{session.storage_spark_url}/{udf_jar_file_name}"
+        return f"{self.spark_session.storage_spark_url}/{udf_jar_file_name}"
 
     async def register_missing_objects(self) -> None:
         # upload jar file to storage
-        session = cast(SparkSession, self.session)
         local_udf_jar_path = self.udf_jar_local_path
         udf_jar_file_name = os.path.basename(local_udf_jar_path)
-        session.upload_file_to_storage(local_path=local_udf_jar_path, remote_path=udf_jar_file_name)
+        self.spark_session.upload_file_to_storage(
+            local_path=local_udf_jar_path, remote_path=udf_jar_file_name
+        )
         await super().register_missing_objects()
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
@@ -445,14 +453,8 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
 
     async def create_schema(self) -> None:
         # allow creation of schema even if schema specified in connection does not exist
-        session_conn = self.session._connection  # pylint: disable=protected-access
-        default_db = session_conn.default_db
-        session_conn.default_db = None
-        try:
-            create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
-            await self.session.execute_query(create_schema_query)
-        finally:
-            session_conn.default_db = default_db
+        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        await self.session.execute_query(create_schema_query)
 
     async def list_functions(self) -> list[str]:
         def _function_name_to_identifier(function_name: str) -> str:

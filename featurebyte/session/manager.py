@@ -85,12 +85,21 @@ class SessionManager(BaseModel):
         -------
         BaseSession
             Session that can be used to connect to the specified database
+
+        Raises
+        ------
+        ValueError
+            When credentials do not contain the specified data source info
         """
-        if feature_store_name not in self.credentials:
-            logger.warning(
+        if feature_store_name in self.credentials:
+            credential = self.credentials[feature_store_name]
+        elif session_type not in SourceType.credential_required_types():
+            credential = None
+        else:
+            raise ValueError(
                 f'Credentials do not contain info for the feature store "{feature_store_name}"!'
             )
-        credential = self.credentials.get(feature_store_name)
+
         credential_params = credential.credential.dict() if credential else {}
         json_str = json.dumps(
             {

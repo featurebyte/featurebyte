@@ -6,15 +6,13 @@ import tempfile
 from unittest.mock import Mock, patch
 
 import pytest
-from pydantic.error_wrappers import ValidationError
+from loguru import logger
 from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
-from featurebyte.logger import logger
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.session.manager import SessionManager, session_cache
-from tests.unit.test_logger import MockLogHandler
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")
@@ -106,24 +104,12 @@ async def test_session_manager__wrong_configuration_file(snowflake_feature_store
     """
     Test exception raised when wrong configuration file is used
     """
-    mock_handler = MockLogHandler()
-    logger.add(mock_handler)
-    mock_handler.records.clear()
-
     with tempfile.TemporaryDirectory() as temp_dir:
         non_existent_path = os.path.join(temp_dir, "non", "existent", "path")
         config = Configurations(non_existent_path)
         session_manager = SessionManager(credentials=config.credentials)
-        with pytest.raises(ValidationError) as exc:
+        with pytest.raises(ValueError) as exc:
             _ = await session_manager.get_session(snowflake_feature_store)
-        assert (
-            "2 validation errors for SnowflakeSession\n"
-            "username\n  field required (type=value_error.missing)\n"
-            "password\n  field required (type=value_error.missing)"
-        ) in str(exc.value)
-
-        assert len(mock_handler.records) > 0
-        parts = mock_handler.records[0].split("|")
-        assert "|".join(parts[1:]).endswith(
-            'Credentials do not contain info for the feature store "sf_featurestore"!'
+        assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
+            exc.value
         )
