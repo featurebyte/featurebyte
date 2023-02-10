@@ -3,16 +3,20 @@ Module to support serving using parent-child relationship
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
-from featurebyte.exception import RequiredEntityNotProvidedError
+from featurebyte.exception import EntityJoinPathNotFoundError, RequiredEntityNotProvidedError
 from featurebyte.models.entity_validation import EntityInfo
+from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.entity import EntityService
+from featurebyte.service.parent_serving import ParentEntityLookupService
 
 
 class EntityValidationService(BaseService):
@@ -21,9 +25,16 @@ class EntityValidationService(BaseService):
     provided in feature requests during preview, historical features, and online serving.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        entity_service: EntityService,
+        parent_entity_lookup_service: ParentEntityLookupService,
+    ):
         super().__init__(user, persistent)
-        self.entity_service = EntityService(user, persistent)
+        self.entity_service = entity_service
+        self.parent_entity_lookup_service = parent_entity_lookup_service
 
     async def get_entity_info_from_request(
         self,
@@ -81,13 +92,14 @@ class EntityValidationService(BaseService):
             required_entities=required_entities,
         )
 
-    async def validate_provided_entities(
+    async def validate_entities_or_prepare_for_parent_serving(
         self,
         graph: QueryGraphModel,
         nodes: list[Node],
         request_column_names: set[str],
+        feature_store: FeatureStoreModel,
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> None:
+    ) -> Optional[ParentServingPreparation]:
         """
         Validate that entities are provided correctly in feature requests
 
@@ -99,14 +111,21 @@ class EntityValidationService(BaseService):
             List of query graph node
         request_column_names: set[str]
             Column names provided in the request
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object to be used to extract FeatureStoreDetails
         serving_names_mapping : dict[str, str] | None
             Optional serving names mapping if the entities are provided under different serving
             names in the request
 
+        Returns
+        -------
+        Optional[List[ParentServingPreparation]]
+
         Raises
         ------
         RequiredEntityNotProvidedError
-            When any of the required entities is not provided in the request
+            When any of the required entities is not provided in the request and it is not possible
+            to retrieve the parent entities using existing relationships
         """
 
         entity_info = await self.get_entity_info_from_request(
@@ -116,12 +135,25 @@ class EntityValidationService(BaseService):
             serving_names_mapping=serving_names_mapping,
         )
 
-        if not entity_info.are_all_required_entities_provided():
+        if entity_info.are_all_required_entities_provided():
+            return None
+
+        # Try to see if missing entities can be obtained using the provided entities as children
+        try:
+            join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
+                entity_info
+            )
+        except EntityJoinPathNotFoundError:
             missing_entities = sorted(entity_info.missing_entities, key=lambda x: x.name)  # type: ignore
             formatted_pairs = []
             for entity in missing_entities:
                 formatted_pairs.append(f'{entity.name} (serving name: "{entity.serving_names[0]}")')
             formatted_pairs_str = ", ".join(formatted_pairs)
-            raise RequiredEntityNotProvidedError(
+            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
                 f"Required entities are not provided in the request: {formatted_pairs_str}"
             )
+
+        feature_store_details = FeatureStoreDetails(**feature_store.dict())
+        return ParentServingPreparation(
+            join_steps=join_steps, feature_store_details=feature_store_details
+        )

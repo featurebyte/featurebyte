@@ -122,6 +122,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_ids": [entity_id],
             "scd_parameters": None,
             "event_parameters": None,
+            "is_parent_lookup": False,
         },
         {
             "serving_names": ["CUSTOMER_ID"],
@@ -132,6 +133,7 @@ def test_lookup_aggregator__offline_dimension_only(
             "entity_ids": [entity_id],
             "scd_parameters": None,
             "event_parameters": None,
+            "is_parent_lookup": False,
         },
     ]
 
@@ -172,6 +174,7 @@ def test_lookup_aggregator__offline_scd_only(
                 offset=None,
             ),
             "event_parameters": None,
+            "is_parent_lookup": False,
         }
     ]
 
@@ -209,6 +212,7 @@ def test_lookup_aggregator__online_with_current_flag(
                 offset=None,
             ),
             "event_parameters": None,
+            "is_parent_lookup": False,
         }
     ]
 
@@ -274,6 +278,7 @@ def test_lookup_aggregator__online_without_current_flag(
                 offset=None,
             ),
             "event_parameters": None,
+            "is_parent_lookup": False,
         }
     ]
 
@@ -314,6 +319,7 @@ def test_lookup_aggregator__online_with_offset(
                 offset="14d",
             ),
             "event_parameters": None,
+            "is_parent_lookup": False,
         }
     ]
 
@@ -340,6 +346,7 @@ def test_lookup_aggregator__event_data(offline_lookup_aggregator, event_lookup_s
             "entity_column": "order_id",
             "scd_parameters": None,
             "event_parameters": EventLookupParameters(event_timestamp_column="ts"),
+            "is_parent_lookup": False,
         }
     ]
 

@@ -29,12 +29,16 @@ class OnlineServingService(BaseService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, session_manager_service: SessionManagerService
+        self,
+        user: Any,
+        persistent: Persistent,
+        session_manager_service: SessionManagerService,
+        entity_validation_service: EntityValidationService,
     ):
         super().__init__(user, persistent)
         self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
         self.session_manager_service = session_manager_service
-        self.entity_validation_service = EntityValidationService(user=user, persistent=persistent)
+        self.entity_validation_service = entity_validation_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -75,14 +79,16 @@ class OnlineServingService(BaseService):
         tic = time.time()
         feature_cluster = feature_list.feature_clusters[0]
 
-        await self.entity_validation_service.validate_provided_entities(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            request_column_names=set(entity_serving_names[0].keys()),
-        )
-
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
+        )
+        parent_serving_preparation = (
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph=feature_cluster.graph,
+                nodes=feature_cluster.nodes,
+                request_column_names=set(entity_serving_names[0].keys()),
+                feature_store=feature_store,
+            )
         )
 
         df_request_table = pd.DataFrame(entity_serving_names)
@@ -94,6 +100,7 @@ class OnlineServingService(BaseService):
             source_type=feature_store.type,
             request_table_columns=df_request_table.columns.tolist(),
             request_table_expr=df_expr,
+            parent_serving_preparation=parent_serving_preparation,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 

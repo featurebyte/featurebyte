@@ -2,6 +2,7 @@
 Common test fixtures used across unit test directories related to query_graph
 """
 import copy
+import json
 
 import pytest
 from bson import ObjectId
@@ -9,11 +10,13 @@ from bson import ObjectId
 from featurebyte import MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
+from featurebyte.models import DimensionDataModel
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.node import construct_node
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from tests.util.helper import add_groupby_operation
 
 
@@ -1208,3 +1211,27 @@ def query_graph_with_cleaning_ops_and_groupby_fixture(
     node_params = groupby_node_params
     groupby_node = add_groupby_operation(graph, node_params, graph_node)
     return graph, groupby_node
+
+
+@pytest.fixture(name="parent_serving_preparation")
+def parent_serving_preparation_fixture():
+
+    with open("tests/fixtures/request_payloads/dimension_data.json") as f:
+        data_model = DimensionDataModel(**json.load(f))
+
+    with open("tests/fixtures/request_payloads/feature_store.json") as f:
+        feature_store_details = FeatureStoreDetails(**json.load(f))
+
+    parent_serving_preparation = ParentServingPreparation(
+        join_steps=[
+            {
+                "data": data_model,
+                "parent_key": "col_int",
+                "parent_serving_name": "COL_INT",
+                "child_key": "col_text",
+                "child_serving_name": "COL_TEXT",
+            }
+        ],
+        feature_store_details=feature_store_details,
+    )
+    return parent_serving_preparation

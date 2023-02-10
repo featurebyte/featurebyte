@@ -12,6 +12,7 @@ import pandas as pd
 
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.logger import logger
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -26,6 +27,7 @@ def get_feature_preview_sql(
     nodes: list[Node],
     source_type: SourceType,
     point_in_time_and_serving_name: Optional[dict[str, Any]] = None,
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> str:
     """Get SQL code for previewing SQL
 
@@ -42,12 +44,19 @@ def get_feature_preview_sql(
     point_in_time_and_serving_name : Optional[dict[str, Any]]
         Dictionary consisting the point in time and entity ids based on which the feature
         preview will be computed
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------
     str
     """
-    planner = FeatureExecutionPlanner(graph, source_type=source_type, is_online_serving=False)
+    planner = FeatureExecutionPlanner(
+        graph,
+        source_type=source_type,
+        is_online_serving=False,
+        parent_serving_preparation=parent_serving_preparation,
+    )
     execution_plan = planner.generate_plan(nodes)
 
     if point_in_time_and_serving_name:

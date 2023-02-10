@@ -10,6 +10,7 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.enum import SourceType
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -23,6 +24,7 @@ from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
+from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
     AggregationSpec,
@@ -45,7 +47,12 @@ class FeatureExecutionPlan:
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
-    def __init__(self, source_type: SourceType, is_online_serving: bool) -> None:
+    def __init__(
+        self,
+        source_type: SourceType,
+        is_online_serving: bool,
+        parent_serving_preparation: ParentServingPreparation | None = None,
+    ) -> None:
         aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
@@ -57,6 +64,7 @@ class FeatureExecutionPlan:
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.adapter = get_sql_adapter(source_type)
         self.source_type = source_type
+        self.parent_serving_preparation = parent_serving_preparation
 
     @property
     def required_serving_names(self) -> set[str]:
@@ -126,6 +134,34 @@ class FeatureExecutionPlan:
         if key in self.feature_specs:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
+
+    def construct_request_table_with_parent_entities(
+        self,
+        request_table_name: str,
+        request_table_columns: list[str],
+    ) -> expressions.Select:
+        """
+        Construct updated request table with parent entities added
+
+        Parameters
+        ----------
+        request_table_name: str
+            Name of the request table
+        request_table_columns: list[str]
+            Columns in the request table
+
+        Returns
+        -------
+        expressions.Select
+        """
+        assert self.parent_serving_preparation is not None
+        table_expr = construct_request_table_with_parent_entities(
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            join_steps=self.parent_serving_preparation.join_steps,
+            feature_store_details=self.parent_serving_preparation.feature_store_details,
+        )
+        return table_expr
 
     def construct_combined_aggregation_cte(
         self,
@@ -276,6 +312,14 @@ class FeatureExecutionPlan:
             assert isinstance(prior_cte_statements, list)
             cte_statements.extend(prior_cte_statements)
 
+        if self.parent_serving_preparation is not None:
+            updated_request_table_expr = self.construct_request_table_with_parent_entities(
+                request_table_name=request_table_name,
+                request_table_columns=request_table_columns,
+            )
+            request_table_name = "JOINED_PARENTS_" + request_table_name
+            cte_statements.append((request_table_name, updated_request_table_expr))
+
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
@@ -318,11 +362,16 @@ class FeatureExecutionPlanner:
         is_online_serving: bool,
         serving_names_mapping: dict[str, str] | None = None,
         source_type: SourceType | None = None,
+        parent_serving_preparation: ParentServingPreparation | None = None,
     ):
         if source_type is None:
             source_type = SourceType.SNOWFLAKE
         self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
-        self.plan = FeatureExecutionPlan(source_type, is_online_serving)
+        self.plan = FeatureExecutionPlan(
+            source_type,
+            is_online_serving,
+            parent_serving_preparation=parent_serving_preparation,
+        )
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
         self.is_online_serving = is_online_serving

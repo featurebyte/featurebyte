@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 import datetime
 import time
@@ -14,6 +14,7 @@ from pandas.api.types import is_datetime64_any_dtype
 from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logger import logger
+from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
@@ -96,6 +97,7 @@ def get_historical_features_sql(
     request_table_columns: list[str],
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> str:
     """Construct the SQL code that extracts historical features
 
@@ -113,6 +115,8 @@ def get_historical_features_sql(
         Source type information
     serving_names_mapping : dict[str, str] | None
         Optional mapping from original serving name to new serving name
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------
@@ -123,6 +127,7 @@ def get_historical_features_sql(
         serving_names_mapping=serving_names_mapping,
         source_type=source_type,
         is_online_serving=False,
+        parent_serving_preparation=parent_serving_preparation,
     )
     plan = planner.generate_plan(nodes)
 
@@ -143,6 +148,7 @@ async def get_historical_features(
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
+    parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> AsyncGenerator[bytes, None]:
     """Get historical features
 
@@ -165,6 +171,8 @@ async def get_historical_features(
         Whether the feature list that triggered this historical request is deployed. If so, tile
         tables would have already been back-filled and there is no need to check and calculate tiles
         on demand.
+    parent_serving_preparation: Optional[ParentServingPreparation]
+        Preparation required for serving parent features
 
     Returns
     -------
@@ -188,6 +196,7 @@ async def get_historical_features(
         serving_names_mapping=serving_names_mapping,
         source_type=source_type,
         request_table_name=request_table_name,
+        parent_serving_preparation=parent_serving_preparation,
     )
 
     # Execute feature SQL code
