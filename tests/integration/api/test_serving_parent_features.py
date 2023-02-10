@@ -177,11 +177,9 @@ def test_preview(feature_list_with_child_entities, point_in_time, provided_entit
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 
-def test_historical_features(feature_list_with_child_entities):
-    """
-    Test get historical features
-    """
-    observations_set_with_expected_feature = pd.DataFrame(
+@pytest.fixture(name="observations_set_with_expected_features")
+def observations_set_with_expected_features_fixture():
+    observations_set_with_expected_features = pd.DataFrame(
         [
             {"POINT_IN_TIME": "2022-01-01 10:00:00", "serving_event_id": 1, "Country Name": np.nan},
             {
@@ -196,18 +194,46 @@ def test_historical_features(feature_list_with_child_entities):
             },
         ]
     )
-
-    observations_set = observations_set_with_expected_feature[["POINT_IN_TIME", "serving_event_id"]]
-    df = feature_list_with_child_entities.get_historical_features(observations_set)
-
-    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
-    observations_set_with_expected_feature = observations_set_with_expected_feature.sort_values(
+    observations_set_with_expected_features["POINT_IN_TIME"] = pd.to_datetime(
+        observations_set_with_expected_features["POINT_IN_TIME"]
+    )
+    observations_set_with_expected_features= observations_set_with_expected_features.sort_values(
         ["POINT_IN_TIME", "serving_event_id"]
     )
-    observations_set_with_expected_feature["POINT_IN_TIME"] = pd.to_datetime(
-        observations_set_with_expected_feature["POINT_IN_TIME"]
+    return observations_set_with_expected_features
+
+
+def test_historical_features(
+    feature_list_with_child_entities,
+    observations_set_with_expected_features,
+):
+    """
+    Test get historical features
+    """
+    observations_set = observations_set_with_expected_features[["POINT_IN_TIME", "serving_event_id"]]
+    df = feature_list_with_child_entities.get_historical_features(observations_set)
+    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
+    pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
+
+
+def test_historical_features_with_serving_names_mapping(
+    feature_list_with_child_entities,
+    observations_set_with_expected_features,
+):
+    """
+    Test get historical features with serving_names_mapping
+    """
+    observations_set_with_expected_features.rename(
+        {"serving_event_id": "new_serving_event_id"},
+        axis=1,
+        inplace=True
     )
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_feature, check_dtype=False)
+    observations_set = observations_set_with_expected_features[["POINT_IN_TIME", "new_serving_event_id"]]
+    df = feature_list_with_child_entities.get_historical_features(
+        observations_set, serving_names_mapping={"serving_event_id": "new_serving_event_id"},
+    )
+    df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
+    pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
 def test_online_features(config, feature_list_with_child_entities):
