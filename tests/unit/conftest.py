@@ -3,7 +3,6 @@
 Common test fixtures used across unit test directories
 """
 import json
-import os
 import tempfile
 from unittest import mock
 from unittest.mock import PropertyMock, patch
@@ -11,9 +10,9 @@ from unittest.mock import PropertyMock, patch
 import pandas as pd
 import pytest
 import pytest_asyncio
-import yaml
 from bson.objectid import ObjectId
 from cachetools import TTLCache
+from conftest_config import *
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
@@ -31,7 +30,6 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
-from featurebyte.config import Configurations
 from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
@@ -53,64 +51,6 @@ from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
-
-
-@pytest.fixture(name="config_file")
-def config_file_fixture():
-    """
-    Config file for unit testing
-    """
-    config_dict = {
-        "credential": [
-            {
-                "feature_store": "sf_featurestore",
-                "credential_type": "USERNAME_PASSWORD",
-                "username": "sf_user",
-                "password": "sf_password",
-            },
-            {
-                "feature_store": "sq_featurestore",
-            },
-        ],
-        "profile": [
-            {
-                "name": "local",
-                "api_url": "http://localhost:8080",
-                "api_token": "token",
-            },
-        ],
-    }
-    with tempfile.TemporaryDirectory() as tempdir:
-        config_file_path = os.path.join(tempdir, "config.yaml")
-        with open(config_file_path, "w") as file_handle:
-            file_handle.write(yaml.dump(config_dict))
-            file_handle.flush()
-            yield config_file_path
-
-
-@pytest.fixture(name="config")
-def config_fixture(config_file):
-    """
-    Config object for unit testing
-    """
-    yield Configurations(config_file_path=config_file)
-
-
-@pytest.fixture(name="mock_config_path_env")
-def mock_config_path_env_fixture(config_file):
-    """
-    Mock FEATUREBYTE_HOME in featurebyte/config.py
-    """
-
-    def mock_env_side_effect(*args, **kwargs):
-        if args[0] == "FEATUREBYTE_HOME":
-            return os.path.dirname(config_file)
-        env = dict(os.environ)
-        return env.get(*args, **kwargs)
-
-    with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
-        mock_env_get.side_effect = mock_env_side_effect
-        yield
 
 
 @pytest.fixture(name="mock_api_object_cache")
