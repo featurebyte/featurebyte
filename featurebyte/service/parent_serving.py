@@ -60,7 +60,7 @@ class ParentEntityLookupService(BaseService):
             join_path = await self._get_entity_join_path(entity, current_available_entities)
 
             # Extract list of JoinStep
-            join_steps = await self._get_join_steps_from_join_path(join_path)
+            join_steps = await self._get_join_steps_from_join_path(entity_info, join_path)
             for join_step in join_steps:
                 if join_step not in all_join_steps:
                     all_join_steps.append(join_step)
@@ -70,12 +70,16 @@ class ParentEntityLookupService(BaseService):
 
         return all_join_steps
 
-    async def _get_join_steps_from_join_path(self, join_path: list[EntityModel]) -> list[JoinStep]:
+    async def _get_join_steps_from_join_path(
+        self, entity_info: EntityInfo, join_path: list[EntityModel]
+    ) -> list[JoinStep]:
         """
         Convert a list of join path (list of EntityModel) into a list of JoinStep
 
         Parameters
         ----------
+        entity_info: EntityInfo
+            Entity information
         join_path: list[EntityModel]
             A list of related entities from a given entity to a target entity
 
@@ -116,9 +120,9 @@ class ParentEntityLookupService(BaseService):
             join_step = JoinStep(
                 data=data.dict(by_alias=True),
                 parent_key=parent_key,
-                parent_serving_name=parent_entity.serving_names[0],
+                parent_serving_name=entity_info.get_effective_serving_name(parent_entity),
                 child_key=child_key,
-                child_serving_name=child_entity.serving_names[0],
+                child_serving_name=entity_info.get_effective_serving_name(child_entity),
             )
             join_steps.append(join_step)
 

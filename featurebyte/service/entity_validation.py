@@ -90,6 +90,7 @@ class EntityValidationService(BaseService):
         return EntityInfo(
             provided_entities=provided_entities,
             required_entities=required_entities,
+            serving_names_mapping=serving_names_mapping,
         )
 
     async def validate_entities_or_prepare_for_parent_serving(
