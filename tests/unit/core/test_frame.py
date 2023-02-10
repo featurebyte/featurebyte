@@ -180,6 +180,32 @@ def test__setitem__str_key_scalar_value(
     assert dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "assign_1"}]
 
 
+def test__setitem__tuple_assignment_with_mask(dataframe):
+    """
+    Test tuple assignment
+    """
+    mask = dataframe["MASK"]
+    key_to_use = "VALUE"
+    dataframe[mask, key_to_use] = 1
+    dataframe_dict = dataframe.dict()
+    node = get_node(dataframe_dict["graph"], "conditional_1")
+    assert node == {
+        "name": "conditional_1",
+        "type": "conditional",
+        "parameters": {"value": 1},
+        "output_type": NodeOutputType.SERIES,
+    }
+    assert len(dataframe.column_var_type_map.keys()) == 6
+    assert dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_2", "target": "conditional_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "conditional_1", "target": "assign_1"},
+    ]
+
+
 @pytest.mark.parametrize(
     "key,value_key,expected_type,expected_column_count",
     [
@@ -238,7 +264,23 @@ def test__setitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
-    assert 'type of argument "key" must be str; got float instead' in str(exc.value)
+    assert (
+        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.Series, str]); got float '
+        "instead" in str(exc.value)
+    )
+
+
+def test__set_item__assigning_feature_not_supported(dataframe, production_ready_feature):
+    """
+    Test that applying a feature mask with a column name on a frame fails. We should only allow a Series mask to be
+    applied.
+    """
+    feature_mask = production_ready_feature == 14.0
+
+    dataframe["amount"] = dataframe["VALUE"]
+    with pytest.raises(ValueError) as exc:
+        dataframe[feature_mask, "amount"] = 100
+    assert "The mask provided should be a Series" in str(exc)
 
 
 def test_multiple_statements(dataframe):

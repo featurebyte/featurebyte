@@ -10,6 +10,7 @@ import pytest
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
+from featurebyte import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import (
     BaseFeatureGroup,
@@ -349,7 +350,26 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
     new_feature = production_ready_feature + 123
     with pytest.raises(TypeError) as exc_info:
         feature_group[None] = new_feature
-    assert str(exc_info.value) == 'type of argument "key" must be str; got NoneType instead'
+    assert (
+        str(exc_info.value)
+        == 'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, '
+        "str]); got NoneType instead"
+    )
+
+
+def test_feature_group__setitem__with_series_not_allowed(production_ready_feature, saved_scd_data):
+    """
+    Test that FeatureGroup.__setitem__ for a series is not allowed.
+    """
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    series = scd_view["col_int"]
+    feature_group = FeatureGroup([production_ready_feature])
+    with pytest.raises(TypeError) as exc:
+        feature_group[series, "production_ready_feature"] = 900
+    assert (
+        'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, str]); got tuple instead'
+        in str(exc)
+    )
 
 
 def test_feature_group__preview_zero_feature():
