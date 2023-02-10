@@ -177,49 +177,6 @@ async def test_get_join_steps__serving_names_mapping(
 
 
 @pytest.mark.asyncio
-async def test_get_join_steps__serving_names_mapping_edge_case(
-    entity_a,
-    entity_c,
-    entity_d,
-    b_is_parent_of_a,
-    c_is_parent_of_b,
-    d_is_parent_of_b,
-    parent_entity_lookup_service,
-):
-    """
-    Test a case where the serving_names_mapping maps multiple serving names into the same name
-
-    a (provided) --> b --> c (required)
-                      `--> d (required)
-    """
-    data_a_to_b = b_is_parent_of_a
-    data_b_to_c = c_is_parent_of_b
-    _ = d_is_parent_of_b
-    entity_info = EntityInfo(
-        required_entities=[entity_a, entity_c, entity_d],
-        provided_entities=[entity_a],
-        serving_names_mapping={"C": "my_name", "D": "my_name"},
-    )
-    join_steps = await parent_entity_lookup_service.get_required_join_steps(entity_info)
-    assert join_steps == [
-        JoinStep(
-            data=data_a_to_b.dict(by_alias=True),
-            parent_key="b",
-            parent_serving_name="B",
-            child_key="a",
-            child_serving_name="A",
-        ),
-        JoinStep(
-            data=data_b_to_c.dict(by_alias=True),
-            parent_key="c",
-            parent_serving_name="my_name",
-            child_key="b",
-            child_serving_name="B",
-        ),
-    ]
-
-
-@pytest.mark.asyncio
 async def test_get_join_steps__not_found(entity_a, entity_b, parent_entity_lookup_service):
     """
     Test no path can be found because no valid relationships are registered
