@@ -2,7 +2,7 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Union
+from typing import List, Literal, Optional, Sequence, Tuple, Union
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,13 @@ from featurebyte.query_graph.node.base import (
     BinaryRelationalOpNode,
 )
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ExpressionStr,
+    StatementT,
+    StyleConfig,
+    VariableNameGenerator,
+    VarNameExpression,
+)
 
 
 class AndNode(BinaryLogicalOpNode):
@@ -23,11 +30,17 @@ class AndNode(BinaryLogicalOpNode):
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} & {right_operand}"
+
 
 class OrNode(BinaryLogicalOpNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} | {right_operand}"
 
 
 class EqualNode(BinaryRelationalOpNode):
@@ -35,11 +48,17 @@ class EqualNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} == {right_operand}"
+
 
 class NotEqualNode(BinaryRelationalOpNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} != {right_operand}"
 
 
 class GreaterThanNode(BinaryRelationalOpNode):
@@ -47,11 +66,17 @@ class GreaterThanNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} > {right_operand}"
+
 
 class GreaterEqualNode(BinaryRelationalOpNode):
     """GreaterEqualNode class"""
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} >= {right_operand}"
 
 
 class LessThanNode(BinaryRelationalOpNode):
@@ -59,11 +84,17 @@ class LessThanNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} < {right_operand}"
+
 
 class LessEqualNode(BinaryRelationalOpNode):
     """LessEqualNode class"""
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} <= {right_operand}"
 
 
 class AddNode(BinaryArithmeticOpNode):
@@ -71,11 +102,17 @@ class AddNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} + {right_operand}"
+
 
 class SubtractNode(BinaryArithmeticOpNode):
     """SubtractNode class"""
 
     type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} - {right_operand}"
 
 
 class MultiplyNode(BinaryArithmeticOpNode):
@@ -83,17 +120,26 @@ class MultiplyNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} * {right_operand}"
+
 
 class DivideNode(BinaryArithmeticOpNode):
     """DivideNode class"""
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} / {right_operand}"
+
 
 class ModuloNode(BinaryArithmeticOpNode):
     """ModuloNode class"""
 
     type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} % {right_operand}"
 
 
 class PowerNode(BaseSeriesOutputWithAScalarParamNode):
@@ -103,6 +149,9 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand}.pow({right_operand})"
 
 
 class IsInNode(BaseSeriesOutputNode):
@@ -118,3 +167,18 @@ class IsInNode(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
+
+    def _derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpression],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpression]:
+        left_operand = input_var_name_expressions[0]
+        right_operand = f"{self.parameters.value}"
+        if len(input_var_name_expressions) == 2:
+            right_operand = input_var_name_expressions[1]
+        expression = ExpressionStr(f"{left_operand}.isin({right_operand})")
+        return [], expression

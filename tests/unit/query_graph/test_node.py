@@ -1,16 +1,22 @@
 """
 Unit tests for featurebyte/query_graph/node/base.py
 """
-from typing import Any, List, Literal
+from typing import Any, List, Literal, Tuple
 
 import pytest
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.count_dict import CountDictTransformNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    StatementT,
+    StyleConfig,
+    VariableNameGenerator,
+    VarNameExpression,
+)
 
 
 @pytest.fixture(name="node")
@@ -39,6 +45,16 @@ def node_fixture():
             return OperationStructure(
                 output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
             )
+
+        def _derive_sdk_codes(
+            self,
+            input_var_name_expressions: List[VarNameExpression],
+            input_node_types: List[NodeType],
+            var_name_generator: VariableNameGenerator,
+            operation_structure: OperationStructure,
+            style_config: StyleConfig,
+        ) -> Tuple[List[StatementT], VarNameExpression]:
+            return [], input_var_name_expressions[0]
 
     return Node(
         name="node_name",

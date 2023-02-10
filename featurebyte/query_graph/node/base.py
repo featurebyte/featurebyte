@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 from abc import ABC, abstractmethod
 
@@ -18,6 +18,14 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
+)
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ExpressionStr,
+    LiteralStr,
+    StatementT,
+    StyleConfig,
+    VariableNameGenerator,
+    VarNameExpression,
 )
 
 NODE_TYPES = []
@@ -45,6 +53,9 @@ class BaseNode(BaseModel):
     type: NodeType
     output_type: NodeOutputType
     parameters: BaseModel
+
+    # class variables
+    _auto_convert_expression_to_variable: ClassVar[bool] = True
 
     class Config:
         """Model configuration"""
@@ -185,6 +196,57 @@ class BaseNode(BaseModel):
         }
         return OperationStructure(**{**operation_info.dict(), **update_args})
 
+    def derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpression],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpression]:
+        """
+        Derive SDK codes based on the graph traversal from starting node(s) to this node
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpression]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        style_config: StyleConfig
+            Style configuration to control whether to introduce a new variable
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpression]
+        """
+        statements, var_name_expression = self._derive_sdk_codes(
+            input_var_name_expressions=input_var_name_expressions,
+            input_node_types=input_node_types,
+            var_name_generator=var_name_generator,
+            operation_structure=operation_structure,
+            style_config=style_config,
+        )
+        if (
+            self._auto_convert_expression_to_variable
+            and isinstance(var_name_expression, ExpressionStr)
+            and len(var_name_expression) > style_config.max_expression_length
+        ):
+            # if the output of the var_name_expression is an expression and
+            # the length of expression exceeds limit specified in style_config,
+            # assign a new variable.
+            var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+            )
+            statements.append((var_name, var_name_expression))
+            return statements, var_name
+        return statements, var_name_expression
+
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """
         Clone an existing object with certain update
@@ -244,6 +306,36 @@ class BaseNode(BaseModel):
         Returns
         -------
         OperationStructure
+        """
+
+    @abstractmethod
+    def _derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpression],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpression]:
+        """
+        Derive SDK codes based to be implemented at the concrete node class
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpression]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        style_config: StyleConfig
+            Style configuration to control whether to introduce a new variable
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpression]
         """
 
 
@@ -356,22 +448,44 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
+    def _handle_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+        _ = self
+        return left_operand, right_operand
 
-class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return ""
+
+    def _derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpression],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpression]:
+        left_operand = input_var_name_expressions[0]
+        right_operand = LiteralStr.create(self.parameters.value)
+        if len(input_var_name_expressions) == 2:
+            right_operand = input_var_name_expressions[1]
+        left_operand, right_operand = self._handle_operands(left_operand, right_operand)
+        return [], ExpressionStr(self._generate_expression(left_operand, right_operand))
+
+
+class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode, ABC):
     """BinaryLogicalOpNode class"""
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
 
-class BinaryRelationalOpNode(BaseSeriesOutputWithAScalarParamNode):
+class BinaryRelationalOpNode(BaseSeriesOutputWithAScalarParamNode, ABC):
     """BinaryRelationalOpNode class"""
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
 
-class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
+class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode, ABC):
     """BinaryArithmeticOpNode class"""
 
     parameters: ValueWithRightOpNodeParameters
@@ -381,6 +495,11 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
         if DBVarType.FLOAT in input_var_types:
             return DBVarType.FLOAT
         return inputs[0].series_output_dtype
+
+    def _handle_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+        if self.parameters.right_op:
+            return right_operand, left_operand
+        return left_operand, right_operand
 
 
 class BasePrunableNode(BaseNode):

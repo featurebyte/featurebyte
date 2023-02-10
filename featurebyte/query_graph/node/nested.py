@@ -2,7 +2,7 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence, cast
+from typing import List, Literal, Sequence, Tuple, cast
 
 from pydantic import BaseModel, Field
 
@@ -12,6 +12,12 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
     OperationStructureInfo,
+)
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    StatementT,
+    StyleConfig,
+    VariableNameGenerator,
+    VarNameExpression,
 )
 
 
@@ -49,6 +55,16 @@ class ProxyInputNode(BaseNode):
             output_category=operation_structure.output_category,
             row_index_lineage=operation_structure.row_index_lineage,
         )
+
+    def _derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpression],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpression]:
+        raise NotImplementedError
 
 
 class GraphNodeParameters(BaseModel):
@@ -96,3 +112,13 @@ class BaseGraphNode(BaseNode):
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")
+
+    def _derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpression],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpression]:
+        raise NotImplementedError
