@@ -2,13 +2,14 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal
+from typing import List, Literal, Optional, Sequence, Union
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
+    BaseSeriesOutputNode,
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryLogicalOpNode,
@@ -104,10 +105,16 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
         return DBVarType.FLOAT
 
 
-class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
-    """ConditionalNode class"""
+class IsInNode(BaseSeriesOutputNode):
+    """IsInNode class"""
 
-    type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        value: Optional[Sequence[Union[bool, int, float, str]]]
+
+    type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
+    parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return inputs[0].series_output_dtype
+        return DBVarType.BOOL
