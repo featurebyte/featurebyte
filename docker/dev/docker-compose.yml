@@ -22,6 +22,7 @@ services:
       - ./entrypoint.sh:/scripts/entrypoint.sh
       - ./migration.py:/scripts/migration.py
       - ~/.featurebyte:/app/.featurebyte
+      - ~/.spark/data:/data
       - /tmp:/tmp
     environment:
       FEATUREBYTE_HOME: /app/.featurebyte

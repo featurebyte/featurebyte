@@ -26,7 +26,11 @@ class InputNode(TableNode):
 
     def from_query_impl(self, select_expr: Select) -> Select:
         dbtable: Expression
-        if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
+        if self.feature_store["type"] in {
+            SourceType.SNOWFLAKE,
+            SourceType.DATABRICKS,
+            SourceType.SPARK,
+        }:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
             table = self.dbtable["table_name"]

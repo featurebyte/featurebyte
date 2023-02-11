@@ -86,6 +86,7 @@ jobs:
       matrix:
         python-version: ["3.8.0"]
     steps:
+
     - uses: actions/checkout@v3
       with:
         fetch-depth: '0'  # Used for checking diff
@@ -117,7 +118,7 @@ jobs:
     - name: Install dependencies
       if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
-        sudo apt-get install wkhtmltopdf
+        sudo apt-get install wkhtmltopdf libsasl2-dev
         make install
 
     - name: Run tests
@@ -315,10 +316,11 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
-
     - name: Install dependencies
       if: ${{ needs.flags.outputs.changes != 0 }}
-      run: make install
+      run: |
+        sudo apt-get install libsasl2-dev
+        make install
 
     - name: Lint Checks
       if: ${{ needs.flags.outputs.changes != 0 }}

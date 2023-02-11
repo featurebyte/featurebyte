@@ -35,7 +35,12 @@ init: install
 	poetry run pre-commit install
 
 #* Installation
-install:
+build-hive-udf-jar:
+	cd hive-udf && gradle clean && gradle test && ./gradlew shadowJar
+	rm -f featurebyte/sql/spark/*.jar
+	cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
+
+install: build-hive-udf-jar
 	poetry install -n --sync --extras=server
 
 #* Formatters
@@ -71,7 +76,7 @@ lint-safety: | lint-requirements-txt
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
-test: test-setup
+test: test-setup build-hive-udf-jar spark-start
 	poetry run pytest --timeout=240 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 	${MAKE} test-teardown
 
@@ -85,6 +90,13 @@ test-routes:
 	uvicorn featurebyte.app:app --reload
 
 #* Docker
+spark-start:
+	mkdir -p ~/.spark/data
+	cd .github/spark && docker compose up -d
+
+spark-stop:
+	cd .github/spark && docker compose down
+
 beta-start: beta-build
 	cd docker/dev && docker compose -f docker-compose.yml up
 	$(MAKE) beta-stop
@@ -93,7 +105,7 @@ beta-stop:
 	cd docker/dev && docker compose -f docker-compose.yml down
 	-docker container rm mongo-rs featurebyte-server featurebyte-docs
 
-beta-build:
+beta-build: build-hive-udf-jar
 	poetry build
 	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
 

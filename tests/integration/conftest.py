@@ -1,18 +1,21 @@
 """
 Common test fixtures used across files in integration directory
 """
-# pylint: disable=too-many-lines
 from typing import AsyncIterator
 
 import asyncio
 import json
 import os
+
+# pylint: disable=too-many-lines
+import shutil
 import sqlite3
 import tempfile
 import textwrap
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 
 import numpy as np
@@ -34,17 +37,18 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.config import Configurations
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, StorageType
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import SQLiteDetails, TableDetails
+from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.session.spark import SparkSession
 from featurebyte.tile.databricks_tile import TileManagerDatabricks
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
@@ -229,6 +233,33 @@ def databricks_feature_store_fixture(mock_get_persistent):
             server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
+            featurebyte_schema=temp_schema_name,
+        ),
+    )
+    feature_store.save()
+    return feature_store
+
+
+@pytest.fixture(name="spark_feature_store", scope="session")
+def spark_feature_store_fixture(mock_get_persistent):
+    """
+    Spark database source fixture
+    """
+    _ = mock_get_persistent
+    schema_name = "featurebyte"
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    feature_store = FeatureStore(
+        name="spark_featurestore",
+        type="spark",
+        details=SparkDetails(
+            host="localhost",
+            port=10000,
+            http_path="cliservice",
+            use_http_transport=False,
+            storage_type=StorageType.FILE,
+            storage_url=f"~/.spark/data/staging/{temp_schema_name}",
+            storage_spark_url=f"file:///data/staging/{temp_schema_name}",
+            featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,
         ),
     )
@@ -565,6 +596,27 @@ async def databricks_session_fixture(config, databricks_feature_store):
     await session.execute_query(
         f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema} CASCADE"
     )
+
+
+@pytest_asyncio.fixture(name="spark_session", scope="session")
+async def spark_session_fixture(config, dataset_registration_helper, spark_feature_store):
+    """
+    Spark session
+    """
+    session_manager = SessionManager(credentials=config.credentials)
+    session = await session_manager.get_session(spark_feature_store)
+    assert isinstance(session, SparkSession)
+
+    await dataset_registration_helper(session)
+
+    yield session
+
+    # clean up database and storage
+    await session.execute_query(
+        f"DROP SCHEMA IF EXISTS {spark_feature_store.details.featurebyte_schema} CASCADE"
+    )
+    # clean up storage
+    shutil.rmtree(Path(spark_feature_store.details.storage_url).expanduser())
 
 
 @pytest_asyncio.fixture(scope="session")

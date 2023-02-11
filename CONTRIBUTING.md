@@ -1,7 +1,10 @@
 # How to contribute
 
 ## Python
-Python 3.8 and higher is required.
+Python 3.8 or higher is required.
+
+## Java
+Java 11 or higher is required.
 
 ## Dependencies
 

@@ -19,12 +19,14 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.session.spark import SparkSession
 from featurebyte.session.sqlite import SQLiteSession
 
 SOURCE_TYPE_SESSION_MAP = {
     SourceType.SQLITE: SQLiteSession,
     SourceType.SNOWFLAKE: SnowflakeSession,
     SourceType.DATABRICKS: DatabricksSession,
+    SourceType.SPARK: SparkSession,
 }
 
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
@@ -91,23 +93,27 @@ class SessionManager(BaseModel):
         """
         if feature_store_name in self.credentials:
             credential = self.credentials[feature_store_name]
-            credential_params = credential.credential.dict() if credential else {}
-            json_str = json.dumps(
-                {
-                    "type": session_type,
-                    "details": details.json_dict(),
-                },
-                sort_keys=True,
+        elif session_type not in SourceType.credential_required_types():
+            credential = None
+        else:
+            raise ValueError(
+                f'Credentials do not contain info for the feature store "{feature_store_name}"!'
             )
-            session = await get_session(
-                item=json_str,
-                credential_params=json.dumps(credential_params, sort_keys=True),
-            )
-            assert isinstance(session, BaseSession)
-            return session
-        raise ValueError(
-            f'Credentials do not contain info for the feature store "{feature_store_name}"!'
+
+        credential_params = credential.credential.dict() if credential else {}
+        json_str = json.dumps(
+            {
+                "type": session_type,
+                "details": details.json_dict(),
+            },
+            sort_keys=True,
         )
+        session = await get_session(
+            item=json_str,
+            credential_params=json.dumps(credential_params, sort_keys=True),
+        )
+        assert isinstance(session, BaseSession)
+        return session
 
     async def get_session(self, item: FeatureStoreModel) -> BaseSession:
         """

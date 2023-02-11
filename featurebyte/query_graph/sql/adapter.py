@@ -508,6 +508,6 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     BaseAdapter
         Instance of BaseAdapter
     """
-    if source_type == SourceType.DATABRICKS:
+    if source_type in [SourceType.DATABRICKS, SourceType.SPARK]:
         return DatabricksAdapter()
     return SnowflakeAdapter()

@@ -9,7 +9,7 @@ ENV POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD=${FEATUREBYTE_NP_PASSWORD?missing_
 
 # install build tools
 RUN apt-get update && \
-    apt-get install -y build-essential curl wkhtmltopdf && \
+    apt-get install -y build-essential curl libsasl2-dev && \
     apt-get clean
 
 # install poetry
@@ -28,7 +28,7 @@ FROM python:3.8-slim AS runner
 ARG USER_HOME=/app
 
 RUN apt-get update && \
-    apt-get install -y netcat && \
+    apt-get install -y netcat libsasl2-dev wkhtmltopdf && \
     apt-get clean
 
 WORKDIR $USER_HOME

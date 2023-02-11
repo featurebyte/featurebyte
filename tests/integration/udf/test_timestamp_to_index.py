@@ -12,6 +12,8 @@ def db_session_fixture(request):
         return request.getfixturevalue("snowflake_session")
     elif request.param == "databricks":
         return request.getfixturevalue("databricks_session")
+    elif request.param == "spark":
+        return request.getfixturevalue("spark_session")
     raise NotImplementedError(f"{request.param}")
 
 
@@ -20,6 +22,7 @@ def db_session_fixture(request):
     [
         "snowflake",
         # "databricks",
+        "spark",
     ],
     indirect=True,
 )
@@ -39,7 +42,7 @@ async def test_timestamp_to_index(
         tile_index,
     ) = timestamp_to_index_fixture
 
-    sql = f"SELECT F_TIMESTAMP_TO_INDEX('{test_input}', {time_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as INDEX"
+    sql = f"SELECT F_TIMESTAMP_TO_INDEX(CAST('{test_input}' AS TIMESTAMP), {time_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as INDEX"
     assert isinstance(db_session, BaseSession)
     result = await db_session.execute_query(sql)
     res = result["INDEX"].iloc[0]

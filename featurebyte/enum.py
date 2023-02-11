@@ -208,9 +208,30 @@ class SourceType(StrEnum):
     SNOWFLAKE = "snowflake", "Snowflake connection details"
     SQLITE = "sqlite", "SQLite connection details"
     DATABRICKS = "databricks", "DataBricks connection details"
+    SPARK = "spark", "Spark connection details"
 
     # TEST source type should only be used for mocking in unit tests.
     TEST = "test", "For testing only"
+
+    @classmethod
+    def credential_required_types(cls) -> list[str]:
+        """
+        List all types that require credential
+
+        Returns
+        -------
+        list[str]
+        """
+        return [cls.SNOWFLAKE, cls.DATABRICKS]
+
+
+class StorageType(StrEnum):
+    """
+    Distributed storage type
+    """
+
+    FILE = "file"
+    S3 = "s3", "s3 Storage"
 
 
 class SpecialColumnName(StrEnum):

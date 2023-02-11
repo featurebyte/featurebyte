@@ -99,7 +99,7 @@ def get_dialect_from_source_type(source_type: SourceType) -> str:
     -------
     str
     """
-    if source_type == SourceType.DATABRICKS:
+    if source_type in [SourceType.DATABRICKS, SourceType.SPARK]:
         dialect = "spark"
     else:
         assert source_type == SourceType.SNOWFLAKE
