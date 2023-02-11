@@ -95,9 +95,8 @@ class SparkSession(BaseSession):
             Storage type not supported
         """
         # add prefix to compartmentalize assets
-        url_prefix = f"/{self.database_name}/{self.schema_name}"
-        self.storage_url = self.storage_url.rstrip("/") + url_prefix
-        self.storage_spark_url = self.storage_spark_url.rstrip("/") + url_prefix
+        self.storage_url = self.storage_url.rstrip("/")
+        self.storage_spark_url = self.storage_spark_url.rstrip("/")
 
         if self.storage_type == StorageType.FILE:
             self._storage = FileSimpleStorage(storage_url=self.storage_url)
@@ -316,6 +315,7 @@ class SparkSession(BaseSession):
         temp_filename = f"temp_{ObjectId()}.parquet"
         with self._storage.open(path=temp_filename, mode="wb") as out_file_obj:
             dataframe.to_parquet(out_file_obj)
+            out_file_obj.flush()
 
         try:
             if temporary:

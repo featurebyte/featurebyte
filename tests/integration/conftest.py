@@ -257,8 +257,8 @@ def spark_feature_store_fixture(mock_get_persistent):
             http_path="cliservice",
             use_http_transport=False,
             storage_type=StorageType.FILE,
-            storage_url="~/.spark/data/staging/",
-            storage_spark_url="file:///data/staging/",
+            storage_url=f"~/.spark/data/staging/{temp_schema_name}",
+            storage_spark_url=f"file:///data/staging/{temp_schema_name}",
             featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,
         ),
@@ -616,8 +616,7 @@ async def spark_session_fixture(config, dataset_registration_helper, spark_featu
         f"DROP SCHEMA IF EXISTS {spark_feature_store.details.featurebyte_schema} CASCADE"
     )
     # clean up storage
-    feature_store_storage = f"{spark_feature_store.details.featurebyte_catalog}/{spark_feature_store.details.featurebyte_schema}"
-    shutil.rmtree(Path(f"~/.spark/data/staging/{feature_store_storage}").expanduser())
+    shutil.rmtree(Path(spark_feature_store.details.storage_url).expanduser())
 
 
 @pytest_asyncio.fixture(scope="session")
