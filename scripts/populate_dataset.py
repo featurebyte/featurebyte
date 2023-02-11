@@ -38,46 +38,41 @@ def upload_dataset(dataset_name: str) -> None:
     if not os.path.exists(path):
         raise FileNotFoundError(path)
 
-    local_staging_path = f"~/.spark/data/staging/datasets/{dataset_name}"
-    hive_staging_path = f"file:///data/staging/datasets/{dataset_name}"
+    local_staging_basepath = Path(f"~/.spark/data/staging/datasets").expanduser()
+    with tempfile.TemporaryDirectory(dir=local_staging_basepath) as local_staging_path:
 
-    # parse sql
-    with open(path) as file_obj:
-        sql = file_obj.read()
-        sql = sql.format(staging_path=hive_staging_path)
+        # parse sql
+        hive_staging_path = (
+            f"file:///data/staging/datasets/{os.path.basename(local_staging_path)}/{dataset_name}"
+        )
+        with open(path) as file_obj:
+            sql = file_obj.read()
+            sql = sql.format(staging_path=hive_staging_path)
 
-    first_line = sql.split("\n")[0]
-    matches = re.findall(r"url:[\s]+([^\s]+)", first_line)
-    if matches:
-        with tempfile.TemporaryDirectory() as tempdir:
-            # download tar file
-            local_path = os.path.join(tempdir, "data.tar.gz")
-            print(f"Downloading data from: {matches[0]} -> {local_path}")
-            request.urlretrieve(matches[0], local_path)
+        first_line = sql.split("\n")[0]
+        matches = re.findall(r"url:[\s]+([^\s]+)", first_line)
+        if matches:
+            with tempfile.TemporaryDirectory() as tempdir:
+                # download tar file
+                local_path = os.path.join(tempdir, "data.tar.gz")
+                print(f"Downloading data from: {matches[0]} -> {local_path}")
+                request.urlretrieve(matches[0], local_path)
 
-            # extracting files to staging location
-            print(f"Extracting files to staging location: {local_staging_path}")
-            file = tarfile.open(local_path)
-            file.extractall(local_staging_path)
-            file.close()
+                # extracting files to staging location
+                print(f"Extracting files to staging location: {local_staging_path}")
+                with tarfile.open(local_path) as file_obj:
+                    file_obj.extractall(local_staging_path)
 
-    # execute sql
-    conn = HiveConnection()
-    for statement in sql.split(";"):
-        cursor = conn.cursor()
-        statement = statement.strip()
-        if not statement:
-            continue
-        print(statement)
-        try:
+        # execute sql
+        conn = HiveConnection()
+        for statement in sql.split(";"):
+            cursor = conn.cursor()
+            statement = statement.strip()
+            if not statement:
+                continue
+            print(statement)
             cursor.execute(statement)
             print(cursor.fetchall())
-        except:
-            continue
-
-    # delete staging files
-    print("Cleaning up staging files")
-    shutil.rmtree(Path(local_staging_path).expanduser())
 
 
 def main() -> None:

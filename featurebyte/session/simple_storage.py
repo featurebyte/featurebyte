@@ -83,11 +83,12 @@ class SimpleStorage(ABC):
             A file-like object
         """
         path = path.lstrip("/")
-        yield remote_open(
+        with remote_open(
             f"{self.base_url}/{path}",
             mode=mode,
             transport_params=self._get_transport_params(),
-        )
+        ) as file_obj:
+            yield file_obj
 
 
 class FileSimpleStorage(SimpleStorage):
@@ -104,7 +105,6 @@ class FileSimpleStorage(SimpleStorage):
     def test_connection(self) -> None:
         with self.open(path="_conn_test", mode="w") as file_obj:
             file_obj.write("OK")
-            file_obj.close()
         self.delete_object(path="_conn_test")
 
     def delete_object(self, path: str) -> None:

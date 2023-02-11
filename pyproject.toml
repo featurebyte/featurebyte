@@ -68,12 +68,12 @@ warn_unused_ignores = true
 
 [tool.poetry]
 authors = ["FeatureByte <it-admin@featurebyte.com>"]
-classifiers = [  #! Update me
-  "Development Status :: 3 - Alpha",
+classifiers = [
+  "Development Status :: 4 - Alpha",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "License :: OSI Approved :: Apache Software License",
+  "License :: Other/Proprietary License :: Elastic License 2.0",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
@@ -83,8 +83,8 @@ homepage = "https://github.com/featurebyte/featurebyte"
 include = [
     "featurebyte/sql/spark/*.jar"
 ]
-keywords = []  #! Update me
-license = "Apache Software License 2.0"
+keywords = []
+license = "Elastic License 2.0"
 name = "featurebyte"
 readme = "README.md"
 repository = "https://github.com/featurebyte/featurebyte"

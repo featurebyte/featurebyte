@@ -8,7 +8,6 @@ from typing import Any, List, Optional, OrderedDict, cast
 
 import collections
 import os
-from io import BytesIO
 
 import pandas as pd
 import pyarrow as pa
@@ -313,36 +312,34 @@ class SparkSession(BaseSession):
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
     ) -> None:
-        buffer = BytesIO()
-        dataframe.to_parquet(buffer)
-        buffer.flush()
+        # write to parquet file
         temp_filename = f"temp_{ObjectId()}.parquet"
         with self._storage.open(path=temp_filename, mode="wb") as out_file_obj:
-            out_file_obj.write(buffer.getvalue())
-            out_file_obj.close()
+            dataframe.to_parquet(out_file_obj)
 
-        if temporary:
-            # create cached temp view
-            await self.execute_query(
-                f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
-                f"(path '{self.storage_spark_url}/{temp_filename}')"
-            )
-            # cache table so we can remove the temp file
-            await self.execute_query(f"CACHE TABLE `{table_name}`")
-        else:
-            # register a permanent table from uncached temp view
-            request_id = self.generate_session_unique_id()
-            temp_view_name = f"__TEMP_TABLE_{request_id}"
-            await self.execute_query(
-                f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
-                f"(path '{self.storage_spark_url}/{temp_filename}')"
-            )
-            await self.execute_query(
-                f"CREATE TABLE `{table_name}` AS SELECT * FROM `{temp_view_name}`"
-            )
-
-        # clean up staging file
-        self._storage.delete_object(path=temp_filename)
+        try:
+            if temporary:
+                # create cached temp view
+                await self.execute_query(
+                    f"CREATE OR REPLACE TEMPORARY VIEW `{table_name}` USING parquet OPTIONS "
+                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                )
+                # cache table so we can remove the temp file
+                await self.execute_query(f"CACHE TABLE `{table_name}`")
+            else:
+                # register a permanent table from uncached temp view
+                request_id = self.generate_session_unique_id()
+                temp_view_name = f"__TEMP_TABLE_{request_id}"
+                await self.execute_query(
+                    f"CREATE OR REPLACE TEMPORARY VIEW `{temp_view_name}` USING parquet OPTIONS "
+                    f"(path '{self.storage_spark_url}/{temp_filename}')"
+                )
+                await self.execute_query(
+                    f"CREATE TABLE `{table_name}` AS SELECT * FROM `{temp_view_name}`"
+                )
+        finally:
+            # clean up staging file
+            self._storage.delete_object(path=temp_filename)
 
 
 class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):

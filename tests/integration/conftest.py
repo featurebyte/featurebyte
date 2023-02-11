@@ -1,18 +1,21 @@
 """
 Common test fixtures used across files in integration directory
 """
-# pylint: disable=too-many-lines
 from typing import AsyncIterator
 
 import asyncio
 import json
 import os
+
+# pylint: disable=too-many-lines
+import shutil
 import sqlite3
 import tempfile
 import textwrap
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 
 import numpy as np
@@ -608,10 +611,13 @@ async def spark_session_fixture(config, dataset_registration_helper, spark_featu
 
     yield session
 
-    # NEED TO CLEAN UP STORAGE
+    # clean up database and storage
     await session.execute_query(
         f"DROP SCHEMA IF EXISTS {spark_feature_store.details.featurebyte_schema} CASCADE"
     )
+    # clean up storage
+    feature_store_storage = f"{spark_feature_store.details.featurebyte_catalog}/{spark_feature_store.details.featurebyte_schema}"
+    shutil.rmtree(Path(f"~/.spark/data/staging/{feature_store_storage}").expanduser())
 
 
 @pytest_asyncio.fixture(scope="session")
