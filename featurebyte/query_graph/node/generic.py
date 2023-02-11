@@ -14,6 +14,7 @@ from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
     BaseSeriesOutputNode,
+    BaseSeriesOutputWithAScalarParamNode,
     NodeT,
 )
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
@@ -130,8 +131,10 @@ class InputNode(BaseNode):
     @classmethod
     def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         # DEV-556: set default table data type when it is not present
-        if "parameters" in values:
-            if "type" not in values["parameters"]:
+        if values.get("type") == NodeType.INPUT:
+            # only attempt to fix this if it is an INPUT node
+            # otherwise, it may cause issue when deserializing the graph in fastapi response
+            if "parameters" in values and "type" not in values["parameters"]:
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
 
@@ -904,3 +907,12 @@ class AliasNode(BaseNode):
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
         )
+
+
+class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
+    """ConditionalNode class"""
+
+    type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
+
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+        return inputs[0].series_output_dtype

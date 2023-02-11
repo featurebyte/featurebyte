@@ -2,7 +2,7 @@
 This module contains unary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Sequence, Union
+from typing import List, Literal
 
 from pydantic import BaseModel, Field
 
@@ -104,21 +104,6 @@ class CastNode(BaseSeriesOutputNode):
         if self.parameters.type == "str":
             return DBVarType.VARCHAR
         return DBVarType.UNKNOWN  # type: ignore[unreachable]
-
-
-class IsInNode(BaseSeriesOutputNode):
-    """IsInNode class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Sequence[Union[bool, int, float, str]]]
-
-    type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
-    parameters: Parameters
-
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
 
 
 class IsStringNode(BaseSeriesOutputNode):
