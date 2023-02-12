@@ -104,7 +104,7 @@ class ImportTag(Enum):
     ImportTag enum is used to store the python package import tagging for specific classes or objects
     """
 
-    EVENT_DATA = ("featurebyte.api.event_data", "EventData")
+    EVENT_DATA = ("featurebyte", "EventData")
 
 
 class StyleConfig(BaseModel):
