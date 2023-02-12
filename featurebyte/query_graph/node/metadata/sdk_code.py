@@ -40,7 +40,7 @@ class ValueStr(str):
         """
         if isinstance(value, str):
             return ValueStr(json.dumps(value))
-        return ValueStr(f"{value}")
+        return ValueStr(value)
 
     def as_input(self) -> str:
         """
