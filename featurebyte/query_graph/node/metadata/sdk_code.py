@@ -194,7 +194,7 @@ class CodeGenerator(BaseModel):
     @staticmethod
     def _get_template() -> Template:
         template_path = os.path.join(os.path.dirname(__file__), "templates")
-        environment = Environment(loader=FileSystemLoader(template_path))
+        environment = Environment(loader=FileSystemLoader(template_path), autoescape=True)
         return environment.get_template("sdk_code.tpl")
 
     def add_statements(self, statements: List[StatementStrT], imports: List[ImportTag]) -> None:
