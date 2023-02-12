@@ -56,7 +56,8 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
 class FeatureNamespace(FrozenFeatureNamespaceModel, ApiObject):
     """
-    FeatureNamespace class
+    FeatureNamespace represents a Feature set, in which all the features in the set have the same name. The different
+    elements typically refer to different versions of a Feature.
     """
 
     # class variables
