@@ -71,7 +71,7 @@ async def test_register_table(config, spark_session):
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(
-                ["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3
+                ["2001-01-02 10:00:00.123456789"] * 2 + ["2001-01-03 10:00:00.123456789"] * 3
             ),
             "üser id": [1, 2, 3, 4, 5],
         }
