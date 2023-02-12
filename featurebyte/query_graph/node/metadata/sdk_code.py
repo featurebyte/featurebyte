@@ -95,7 +95,8 @@ class StatementStr(str):
 
 
 VarNameExpression = Union[VariableNameStr, ExpressionStr]
-StatementStrT = Union[StatementStr, Tuple[VariableNameStr, VarNameExpression]]
+RightHandSideT = Union[ValueStr, VariableNameStr, ExpressionStr]
+StatementStrT = Union[StatementStr, Tuple[VariableNameStr, RightHandSideT]]
 
 
 class ImportTag(Enum):
