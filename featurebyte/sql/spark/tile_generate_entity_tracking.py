@@ -7,6 +7,8 @@ from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pyspark.sql import SparkSession
 
+from featurebyte.logger import logger
+
 
 class TileGenerateEntityTracking(BaseModel):
     featurebyte_database: str
@@ -46,13 +48,13 @@ class TileGenerateEntityTracking(BaseModel):
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)
-        print("entity_insert_cols_str: ", entity_insert_cols_str)
-        print("entity_filter_cols_str: ", entity_filter_cols_str)
+        logger.debug(f"entity_insert_cols_str: {entity_insert_cols_str}")
+        logger.debug(f"entity_filter_cols_str: {entity_filter_cols_str}")
 
         # create table or insert new records or update existing records
         if not tracking_table_exist:
             create_sql = f"create table {tracking_table_name} as SELECT * FROM {self.entity_table}"
-            print("create_sql: ", create_sql)
+            logger.debug("create_sql: ", create_sql)
             self._spark.sql(create_sql)
         else:
             merge_sql = f"""
@@ -64,5 +66,5 @@ class TileGenerateEntityTracking(BaseModel):
                         insert ({self.entity_column_names}, {self.tile_last_start_date_column})
                             values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
             """
-            print("merge_sql: ", merge_sql)
+            logger.debug("merge_sql: ", merge_sql)
             self._spark.sql(merge_sql)
