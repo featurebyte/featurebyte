@@ -9,8 +9,8 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
     CodeGenerator,
-    StyleConfig,
     VariableNameGenerator,
     VarNameExpressionStr,
 )
@@ -31,8 +31,8 @@ class SDKCodeGlobalState(BaseModel):
         Cache to store node name to _post_compute_output (to remove redundant graph node traversals)
     node_name_to_operation_structure: Dict[str, OperationStructure]
         Operation structure mapping for each node in the graph
-    style_config: StyleConfig
-        Configuration to control style of generated codes (for example, maximum expression width)
+    code_generation_config: CodeGenerationConfig
+        Code generation configuration
     var_name_generator: VariableNameGenerator
         Variable name generator is used to generate variable names used in the generated SDK codes
     code_generator: CodeGenerator
@@ -41,7 +41,7 @@ class SDKCodeGlobalState(BaseModel):
 
     node_name_to_post_compute_output: Dict[str, VarNameExpNodeType] = Field(default_factory=dict)
     node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
-    style_config: StyleConfig = Field(default_factory=StyleConfig)
+    code_generation_config: CodeGenerationConfig = Field(default_factory=CodeGenerationConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
 
@@ -92,7 +92,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             input_node_types=input_node_types,
             var_name_generator=global_state.var_name_generator,
             operation_structure=op_struct,
-            style_config=global_state.style_config,
+            config=global_state.code_generation_config,
         )
         global_state.code_generator.add_statements(statements=statements)
 
@@ -114,7 +114,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
-        final_output_name = global_state.style_config.final_output_name
+        final_output_name = global_state.code_generation_config.final_output_name
         output_var = global_state.var_name_generator.convert_to_variable_name(final_output_name)
         global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
         return global_state

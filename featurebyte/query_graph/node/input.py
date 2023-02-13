@@ -24,9 +24,9 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
+    CodeGenerationConfig,
     ObjectClass,
     StatementT,
-    StyleConfig,
     ValueStr,
     VariableNameGenerator,
     VarNameExpressionStr,
@@ -312,21 +312,21 @@ class InputNode(BaseNode):
         input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        style_config: StyleConfig,
+        config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         statements = []
         table_type = self.parameters.type
         data_class_enum = self._data_to_data_class_enum[table_type]
 
         # construct data sdk statement
-        if style_config.to_use_saved_data and self.parameters.id:
+        if config.to_use_saved_data and self.parameters.id:
             object_id = ClassEnum.OBJECT_ID(ValueStr.create(self.parameters.id))
             right_op = data_class_enum(object_id, method="get_by_id")
         else:
-            object_id = ClassEnum.OBJECT_ID(ValueStr.create(style_config.feature_store_id))
+            object_id = ClassEnum.OBJECT_ID(ValueStr.create(config.feature_store_id))
             right_op = data_class_enum(
                 feature_store=self.parameters.get_feature_store_object(
-                    feature_store_name=style_config.feature_store_name
+                    feature_store_name=config.feature_store_name
                 ),
                 tabular_source=self.parameters.get_tabular_source_object(
                     feature_store_id=object_id
@@ -343,7 +343,7 @@ class InputNode(BaseNode):
         if table_type != TableDataType.GENERIC:
             # construct view sdk statement
             view_class_enum = self._data_to_view_class_enum[table_type]
-            right_op = view_class_enum(data_var_name, method=self.parameters.from_data_method)
+            right_op = view_class_enum(data_var_name, _method_name=self.parameters.from_data_method)
 
             view_pre_var_name = f"{self.parameters.pre_variable_prefix}view"
             view_var_name = var_name_generator.convert_to_variable_name(

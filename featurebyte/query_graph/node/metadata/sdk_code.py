@@ -105,7 +105,7 @@ class ObjectClass(BaseModel):
     class_name: str
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
-    method: Optional[str] = Field(default=None)
+    method_name: Optional[str] = Field(default=None)
 
     def __str__(self):
         params = []
@@ -121,8 +121,8 @@ class ObjectClass(BaseModel):
             else:
                 params.append(f"{key}={value}")
 
-        if self.method:
-            return f"{self.class_name}.{self.method}({', '.join(params)})"
+        if self.method_name:
+            return f"{self.class_name}.{self.method_name}({', '.join(params)})"
         return f"{self.class_name}({', '.join(params)})"
 
     def __repr__(self):
@@ -199,12 +199,12 @@ class ClassEnum(Enum):
     DIMENSION_VIEW = ("featurebyte", "DimensionView")
     SCD_VIEW = ("featurebyte", "SlowlyChangingView")
 
-    def __call__(self, *args, method=None, **kwargs):
+    def __call__(self, *args, _method_name=None, **kwargs):
         module_path, class_name = self.value
         return ObjectClass(
             module_path=module_path,
             class_name=class_name,
-            method=method,
+            method_name=_method_name,
             positional_args=args,
             keyword_args=kwargs,
         )
@@ -215,7 +215,7 @@ RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
 StatementT = Union[StatementStr, Tuple[VariableNameStr, RightHandSide]]
 
 
-class StyleConfig(BaseModel):
+class CodeGenerationConfig(BaseModel):
     """
     StyleConfig is used to control the code generating style like whether to introduce a new variable to
     store some intermediate results.

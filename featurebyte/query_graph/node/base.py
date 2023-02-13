@@ -20,9 +20,9 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
     ExpressionStr,
     StatementT,
-    StyleConfig,
     VariableNameGenerator,
     VarNameExpressionStr,
 )
@@ -203,7 +203,7 @@ class BaseNode(BaseModel):
         input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        style_config: StyleConfig,
+        config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         """
         Derive SDK codes based on the graph traversal from starting node(s) to this node
@@ -218,8 +218,8 @@ class BaseNode(BaseModel):
             Variable name generator
         operation_structure: OperationStructure
             Operation structure of current node
-        style_config: StyleConfig
-            Style configuration to control whether to introduce a new variable
+        config: CodeGenerationConfig
+            Code generation configuration
 
         Returns
         -------
@@ -230,13 +230,13 @@ class BaseNode(BaseModel):
             input_node_types=input_node_types,
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
-            style_config=style_config,
+            config=config,
         )
 
         if (
             self._auto_convert_expression_to_variable
             and isinstance(var_name_expression, ExpressionStr)
-            and len(var_name_expression) > style_config.max_expression_length
+            and len(var_name_expression) > config.max_expression_length
         ):
             # if the output of the var_name_expression is an expression and
             # the length of expression exceeds limit specified in style_config,
@@ -316,7 +316,7 @@ class BaseNode(BaseModel):
         input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-        style_config: StyleConfig,
+        config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         """
         Derive SDK codes based to be implemented at the concrete node class
@@ -331,15 +331,15 @@ class BaseNode(BaseModel):
             Variable name generator
         operation_structure: OperationStructure
             Operation structure of current node
-        style_config: StyleConfig
-            Style configuration to control whether to introduce a new variable
+        config: CodeGenerationConfig
+            Code generation configuration
 
         Returns
         -------
         Tuple[List[StatementT], VarNameExpression]
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
-        _ = input_node_types, var_name_generator, operation_structure, style_config
+        _ = input_node_types, var_name_generator, operation_structure, config
         input_params = ", ".join(input_var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
