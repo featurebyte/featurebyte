@@ -312,7 +312,8 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     FeatureGroup represents a collection of Feature's.
 
     These Features are typically not production ready, and are mostly used as an in-memory representation while
-    users are still building up their features in the SDK. Note that while this object can be saved, the entity that
+    users are still building up their features in the SDK. Note that while this object has a `save` function, it is
+    actually the individual features within this feature group that get persisted. Similarly, the object that
     gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
     is called a FeatureList.
     """
