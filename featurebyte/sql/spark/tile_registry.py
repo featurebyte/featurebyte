@@ -3,6 +3,7 @@ Tile Registry Job Script for SP_TILE_REGISTRY
 """
 
 
+from featurebyte.logger import logger
 from featurebyte.sql.spark.tile_common import TileCommon
 
 
@@ -17,23 +18,23 @@ class TileRegistry(TileCommon):
         )
 
         res = df.select("names", "types").collect()
-        print("res: ", res)
+        logger.debug(f"res: {res}")
 
         input_value_columns = [
             value for value in self.value_column_names.split(",") if value.strip()
         ]
-        print("input_value_columns: ", input_value_columns)
+        logger.debug(f"input_value_columns: {input_value_columns}")
 
         input_value_columns_types = [
             value for value in self.value_column_types.split(",") if value.strip()
         ]
-        print("input_value_columns_types: ", input_value_columns_types)
+        logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
         if res:
             value_cols = res[0].names
             value_cols_types = res[0].types
-            print("value_cols: ", value_cols)
-            print("value_cols_types: ", value_cols_types)
+            logger.debug("value_cols: ", value_cols)
+            logger.debug("value_cols_types: ", value_cols_types)
 
             exist_columns = [value for value in value_cols.split(",") if value.strip()]
             exist_columns_types = [value for value in value_cols_types.split(",") if value.strip()]
@@ -47,9 +48,9 @@ class TileRegistry(TileCommon):
                     exist_columns_types.append(input_column_type)
 
             new_value_columns_str = ",".join(exist_columns)
-            print("new_value_columns_str: ", new_value_columns_str)
+            logger.debug("new_value_columns_str: ", new_value_columns_str)
             new_value_columns_types_str = ",".join(exist_columns_types)
-            print("new_value_columns_types_str: ", new_value_columns_types_str)
+            logger.debug("new_value_columns_types_str: ", new_value_columns_types_str)
 
             update_sql = f"""
                             UPDATE TILE_REGISTRY SET
@@ -59,7 +60,7 @@ class TileRegistry(TileCommon):
                          """
             self._spark.sql(update_sql)
         else:
-            print("No value columns")
+            logger.info("No value columns")
             escape_sql = self.sql.replace("'", "''")
             insert_sql = f"""
                 insert into tile_registry(
@@ -95,7 +96,7 @@ class TileRegistry(TileCommon):
                     null
                 )
             """
-            print("insert_sql: ", insert_sql)
+            logger.debug("insert_sql: ", insert_sql)
             self._spark.sql(insert_sql)
 
         if self.table_exist == "Y":
@@ -104,7 +105,7 @@ class TileRegistry(TileCommon):
             for col in df.collect():
                 cols.append(col.col_name)
 
-            print("cols: ", cols)
+            logger.debug("cols: ", cols)
 
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
             add_statements = []
@@ -117,5 +118,5 @@ class TileRegistry(TileCommon):
 
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
-                print("tile_add_sql: ", tile_add_sql)
+                logger.debug("tile_add_sql: ", tile_add_sql)
                 self._spark.sql(tile_add_sql)

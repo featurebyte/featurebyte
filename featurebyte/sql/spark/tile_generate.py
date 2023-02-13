@@ -3,6 +3,7 @@ Databricks Tile Generate Job Script
 """
 from typing import Optional
 
+from featurebyte.logger import logger
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
@@ -38,18 +39,22 @@ class TileGenerate(TileCommon):
             tile_id=self.tile_id,
             tile_type=self.tile_type,
         )
-        print("\n\nCalling tile_registry.execute\n")
+        logger.info("\n\nCalling tile_registry.execute\n")
         tile_registry_ins.execute()
-        print("\nEnd of calling tile_registry.execute\n\n")
+        logger.info("\nEnd of calling tile_registry.execute\n\n")
 
         tile_sql = f"""
             select
-                F_TIMESTAMP_TO_INDEX({self.tile_start_date_column}, {self.tile_modulo_frequency_second}, {self.blind_spot_second}, {self.frequency_minute}) as index,
+                F_TIMESTAMP_TO_INDEX({self.tile_start_date_column},
+                    {self.tile_modulo_frequency_second},
+                    {self.blind_spot_second},
+                    {self.frequency_minute}
+                ) as index,
                 {self.entity_column_names}, {self.value_column_names},
                 current_timestamp() as created_at
             from ({self.sql})
         """
-        print("tile_sql:", tile_sql)
+        logger.debug("tile_sql:", tile_sql)
 
         entity_insert_cols = []
         entity_filter_cols = []
@@ -71,14 +76,14 @@ class TileGenerate(TileCommon):
         value_insert_cols_str = ",".join(value_insert_cols)
         value_update_cols_str = ",".join(value_update_cols)
 
-        print("entity_insert_cols_str: ", entity_insert_cols_str)
-        print("entity_filter_cols_str: ", entity_filter_cols_str)
-        print("value_insert_cols_str: ", value_insert_cols_str)
-        print("value_update_cols_str: ", value_update_cols_str)
+        logger.debug("entity_insert_cols_str: ", entity_insert_cols_str)
+        logger.debug("entity_filter_cols_str: ", entity_filter_cols_str)
+        logger.debug("value_insert_cols_str: ", value_insert_cols_str)
+        logger.debug("value_update_cols_str: ", value_update_cols_str)
 
         # insert new records and update existing records
         if not tile_table_exist:
-            print("creating tile table: ", self.tile_id)
+            logger.info("creating tile table: ", self.tile_id)
             self._spark.sql(f"create table {self.tile_id} using delta as {tile_sql}")
 
         else:
@@ -102,11 +107,11 @@ class TileGenerate(TileCommon):
                         insert ({insert_str})
                             values ({values_str})
             """
-            print("merging data: ", merge_sql)
+            logger.debug("merging data: ", merge_sql)
             self._spark.sql(merge_sql)
 
         if self.last_tile_start_str:
-            print("last_tile_start_str: ", self.last_tile_start_str)
+            logger.debug("last_tile_start_str: ", self.last_tile_start_str)
 
             df = self._spark.sql(
                 f"select F_TIMESTAMP_TO_INDEX('{self.last_tile_start_str}', {self.tile_modulo_frequency_second}, {self.blind_spot_second}, {self.frequency_minute}) as value"
@@ -117,5 +122,5 @@ class TileGenerate(TileCommon):
                 UPDATE TILE_REGISTRY SET LAST_TILE_INDEX_{self.tile_type} = {ind_value}, {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
                 WHERE TILE_ID = '{self.tile_id}'
             """
-            print(update_tile_last_ind_sql)
+            logger.debug(update_tile_last_ind_sql)
             self._spark.sql(update_tile_last_ind_sql)

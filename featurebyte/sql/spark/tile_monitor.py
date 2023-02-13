@@ -1,6 +1,7 @@
 """
 Tile Monitor Job for SP_TILE_MONITOR
 """
+from featurebyte.logger import logger
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
@@ -13,10 +14,10 @@ class TileMonitor(TileCommon):
     def execute(self) -> None:
 
         tile_table_exist = self._spark.catalog.tableExists(self.tile_id)
-        print("tile_table_exist: ", tile_table_exist)
+        logger.debug(f"tile_table_exist: {tile_table_exist}")
 
         if not tile_table_exist:
-            print(f"tile table {self.tile_id} does not exist")
+            logger.info(f"tile table {self.tile_id} does not exist")
         else:
             df = self._spark.sql(
                 f"select value_column_names from tile_registry where tile_id = '{self.tile_id}'"
@@ -41,9 +42,9 @@ class TileMonitor(TileCommon):
                 tile_id=self.tile_id,
                 tile_type=self.tile_type,
             )
-            print("\n\nCalling tile_registry.execute\n")
+            logger.info("\n\nCalling tile_registry.execute\n")
             tile_registry_ins.execute()
-            print("\nEnd of calling tile_registry.execute\n\n")
+            logger.info("\nEnd of calling tile_registry.execute\n\n")
 
             new_tile_sql = f"""
                 select
@@ -53,7 +54,7 @@ class TileMonitor(TileCommon):
                     {existing_value_columns}
                 from ({self.monitor_sql})
             """
-            print("new_tile_sql: ", new_tile_sql)
+            logger.debug(f"new_tile_sql: {new_tile_sql}")
 
             entity_filter_cols_str = " AND ".join(
                 [f"a.{c} = b.{c}" for c in self.entity_column_names.split(",")]
@@ -85,12 +86,12 @@ class TileMonitor(TileCommon):
                         a.INDEX = b.INDEX AND {entity_filter_cols_str})
                 where {value_filter_cols_str}
             """
-            print("compare_sql: ", compare_sql)
+            logger.debug(f"compare_sql: {compare_sql}")
 
             monitor_table_name = f"{self.tile_id}_MONITOR"
 
             tile_monitor_exist = self._spark.catalog.tableExists(monitor_table_name)
-            print("tile_monitor_exist: ", tile_monitor_exist)
+            logger.debug("tile_monitor_exist: ", tile_monitor_exist)
 
             if not tile_monitor_exist:
                 self._spark.sql(f"create table {monitor_table_name} using delta as {compare_sql}")
@@ -111,9 +112,9 @@ class TileMonitor(TileCommon):
                     tile_id=self.tile_id,
                     tile_type=self.tile_type,
                 )
-                print("\n\nCalling tile_registry.execute\n")
+                logger.info("\n\nCalling tile_registry.execute\n")
                 tile_registry_ins.execute()
-                print("\nEnd of calling tile_registry.execute\n\n")
+                logger.info("\nEnd of calling tile_registry.execute\n\n")
 
                 insert_sql = f"""
                     insert into {monitor_table_name}
@@ -123,7 +124,7 @@ class TileMonitor(TileCommon):
                         )
                         {compare_sql}
                 """
-                print(insert_sql)
+                logger.debug(insert_sql)
                 self._spark.sql(insert_sql)
 
             insert_monitor_summary_sql = f"""
@@ -135,5 +136,5 @@ class TileMonitor(TileCommon):
                     current_timestamp()
                 FROM ({compare_sql})
             """
-            print(insert_monitor_summary_sql)
+            logger.debug(insert_monitor_summary_sql)
             self._spark.sql(insert_monitor_summary_sql)
