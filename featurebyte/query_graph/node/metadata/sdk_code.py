@@ -3,18 +3,20 @@ This module contains models used for sdk code extractor.
 """
 from __future__ import annotations
 
-from typing import DefaultDict, List, Sequence, Set, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import json
 import os
 from collections import defaultdict
 from enum import Enum
 
-from jinja2 import Environment, FileSystemLoader, Template
+from bson import ObjectId
+from jinja2 import Template
 from pydantic import BaseModel, Field
 
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import get_version
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 
@@ -25,13 +27,13 @@ class ValueStr(str):
     """
 
     @classmethod
-    def create(cls, value: Union[Scalar, Sequence[Scalar]]) -> ValueStr:
+    def create(cls, value: Union[ObjectId, Scalar, Sequence[Scalar]]) -> ValueStr:
         """
         Create expression from a given value
 
         Parameters
         ----------
-        value: Union[Scalar, Sequence[Scalar]]
+        value: Union[ObjectId, Scalar, Sequence[Scalar]]
             Input value
 
         Returns
@@ -94,26 +96,149 @@ class StatementStr(str):
     """
 
 
-VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
-RightHandSideStr = Union[ValueStr, VariableNameStr, ExpressionStr]
-StatementStrT = Union[StatementStr, Tuple[VariableNameStr, RightHandSideStr]]
-
-
-class ImportTag(Enum):
+class ObjectClass(BaseModel):
     """
-    ImportTag enum is used to store the python package import tagging for specific classes or objects
+    ObjectClass used to capture class and input arguments
     """
 
+    module_path: str
+    class_name: str
+    positional_args: List[Any]
+    keyword_args: Dict[str, Any]
+    method: Optional[str] = Field(default=None)
+
+    def __str__(self):
+        params = []
+        for elem in self.positional_args:
+            if not isinstance(elem, VariableNameStr) and not isinstance(elem, ExpressionStr):
+                params.append(ValueStr.create(elem))
+            else:
+                params.append(elem)
+
+        for key, value in self.keyword_args.items():
+            if not isinstance(value, VariableNameStr) and not isinstance(value, ExpressionStr):
+                params.append(f"{key}={ValueStr.create(value)}")
+            else:
+                params.append(f"{key}={value}")
+
+        if self.method:
+            return f"{self.class_name}.{self.method}({', '.join(params)})"
+        return f"{self.class_name}({', '.join(params)})"
+
+    def __repr__(self):
+        return str(self)
+
+    @classmethod
+    def _extract_import_helper(cls, obj: Any) -> Set[Tuple[str, str]]:
+        output = set()
+        if isinstance(obj, ObjectClass):
+            output.update(cls._extract_import(obj))
+        if isinstance(obj, list):
+            for elem in obj:
+                output.update(cls._extract_import_helper(elem))
+        if isinstance(obj, dict):
+            for value in obj.values():
+                output.update(cls._extract_import_helper(value))
+        return output
+
+    @classmethod
+    def _extract_import(cls, obj: ObjectClass) -> Set[Tuple[str, str]]:
+        output = {(obj.module_path, obj.class_name)}
+        for pos_arg in obj.positional_args:
+            output.update(cls._extract_import_helper(pos_arg))
+        for val_arg in obj.keyword_args.values():
+            output.update(cls._extract_import_helper(val_arg))
+        return output
+
+    def extract_import(self) -> Set[Tuple[str, str]]:
+        """
+        Extract set of required (module_path, class_name) tuple for this object
+
+        Returns
+        -------
+        Set[Tuple[str, str]]
+        """
+        return self._extract_import(self)
+
+
+class ClassEnum(Enum):
+    """
+    ClassEnum is used to store the python package import tagging for specific classes or objects
+    """
+
+    # non-featurebyte related
+    OBJECT_ID = ("bson", "ObjectId")
+
+    # feature store
+    FEATURE_STORE = ("featurebyte", "FeatureStore")
+
+    # database details
+    SNOWFLAKE_DETAILS = ("featurebyte", "SnowflakeDetails")
+    DATABRICK_DETAILS = ("featurebyte", "DatabricksDetails")
+    SPARK_DETAILS = ("featurebyte", "SparkDetails")
+    SQLITE_DETAILS = ("featurebyte.query_graph.node.schema", "SQLiteDetails")
+    TESTDB_DETAILS = ("featurebyte.query_graph.node.schema", "TestDatabaseDetails")
+
+    # table details & tabular source
+    TABLE_DETAILS = ("featurebyte.query_graph.node.schema", "TableDetails")
+    TABULAR_SOURCE = ("featurebyte.query_graph.model.common_table", "TabularSource")
+
+    # column
+    COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
+
+    # data
+    DATABASE_TABLE = ("featurebyte.api.database_table", "DatabaseTable")
     EVENT_DATA = ("featurebyte", "EventData")
+    ITEM_DATA = ("featurebyte", "ItemData")
+    DIMENSION_DATA = ("featurebyte", "DimensionData")
+    SCD_DATA = ("featurebyte", "SlowlyChangingData")
+
+    # view
+    EVENT_VIEW = ("featurebyte", "EventView")
+    ITEM_VIEW = ("featurebyte", "ItemView")
+    DIMENSION_VIEW = ("featurebyte", "DimensionView")
+    SCD_VIEW = ("featurebyte", "SlowlyChangingView")
+
+    def __call__(self, *args, method=None, **kwargs):
+        module_path, class_name = self.value
+        return ObjectClass(
+            module_path=module_path,
+            class_name=class_name,
+            method=method,
+            positional_args=args,
+            keyword_args=kwargs,
+        )
+
+
+VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
+RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
+StatementT = Union[StatementStr, Tuple[VariableNameStr, RightHandSide]]
 
 
 class StyleConfig(BaseModel):
     """
     StyleConfig is used to control the code generating style like whether to introduce a new variable to
     store some intermediate results.
+
+    feature_store_name: str
+        Feature store name used to construct unsaved data object
+    final_output_name: str
+        Variable name which contains final output
+    to_use_saved_data: str
+        When enabled, load the data object from the persistent, otherwise construct the data from
+        feature store explicitly
+    max_expression_length: int
+        Maximum expression length used to decide whether to assign the expression into a variable
+        to reduce overall statement's line width.
     """
 
+    # values not controlled by the query graph (can be configured outside graph)
+    feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
+    feature_store_name: str = Field(default="feature_store")
     final_output_name: str = Field(default="output")
+
+    # other configurations
+    to_use_saved_data: bool = Field(default=False)
     max_expression_length: int = Field(default=60)
 
 
@@ -189,16 +314,15 @@ class CodeGenerator(BaseModel):
         b) Tuple[VariableName, Expression]: (VariableName("col"), Expression("event_view['amount']"))
     """
 
-    imports: Set[ImportTag] = Field(default_factory=set)
-    statements: List[StatementStrT] = Field(default_factory=list)
+    statements: List[StatementT] = Field(default_factory=list)
 
     @staticmethod
     def _get_template() -> Template:
-        template_path = os.path.join(os.path.dirname(__file__), "templates")
-        environment = Environment(loader=FileSystemLoader(template_path), autoescape=True)
-        return environment.get_template("sdk_code.tpl")
+        template_path = os.path.join(os.path.dirname(__file__), "templates/sdk_code.tpl")
+        with open(template_path) as file_handle:
+            return Template(file_handle.read())
 
-    def add_statements(self, statements: List[StatementStrT], imports: List[ImportTag]) -> None:
+    def add_statements(self, statements: List[StatementT]) -> None:
         """
         Add statement to the list of statements
 
@@ -206,38 +330,49 @@ class CodeGenerator(BaseModel):
         ----------
         statements: List[Union[Statement, Tuple[VariableNameStr, ExpressionStr]]]
             Statements to be inserted
-        imports: List[ImportTag]
-            List of import tags to be inserted
         """
         self.statements.extend(statements)
-        self.imports.update(imports)
 
-    def generate(self) -> str:
+    def generate(self, to_format: bool = False) -> str:
         """
         Generate code as string using list of stored statements
+
+        Parameters
+        ----------
+        to_format: bool
+            Whether to format the final code
 
         Returns
         -------
         str
         """
-        import_lines = []
-        for import_tag in self.imports:
-            package_path, name = import_tag.value
-            import_lines.append(f"from {package_path} import {name}")
-        imports = "\n".join(import_lines)
-
+        # process statements & extract required imports
         statement_lines = []
+        import_pairs = set()
         for statement in self.statements:
             if isinstance(statement, tuple):
-                var_name, var_name_or_expr = statement
-                statement_lines.append(f"{var_name} = {var_name_or_expr}")
+                var_name, right_hand_side = statement
+                if isinstance(right_hand_side, ObjectClass):
+                    import_pairs.update(right_hand_side.extract_import())
+                statement_lines.append(f"{var_name} = {right_hand_side}")
             else:
                 statement_lines.append(statement)
         statements = "\n".join(statement_lines)
 
+        # process imports and generate import statements
+        import_statements = []
+        for module_path, name in sorted(import_pairs):
+            import_statements.append(f"from {module_path} import {name}")
+        imports = "\n".join(import_statements)
+
+        # prepare final SDK code
         code = self._get_template().render(
             header_comment=f"# Generated by SDK version: {get_version()}",
             imports=imports,
             statements=statements,
         )
+        if to_format:
+            from black import FileMode, format_str
+
+            return format_str(code, mode=FileMode())
         return code

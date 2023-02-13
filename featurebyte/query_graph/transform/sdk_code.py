@@ -87,14 +87,14 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         if inputs:
             input_var_name_expressions, input_node_types = zip(*inputs)
 
-        statements, imports, var_name_or_expr = node.derive_sdk_codes(
+        statements, var_name_or_expr = node.derive_sdk_codes(
             input_var_name_expressions=input_var_name_expressions,
             input_node_types=input_node_types,
             var_name_generator=global_state.var_name_generator,
             operation_structure=op_struct,
             style_config=global_state.style_config,
         )
-        global_state.code_generator.add_statements(statements=statements, imports=imports)
+        global_state.code_generator.add_statements(statements=statements)
 
         # update global state
         global_state.node_name_to_post_compute_output[node.name] = (var_name_or_expr, node.type)
@@ -116,7 +116,5 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         )
         final_output_name = global_state.style_config.final_output_name
         output_var = global_state.var_name_generator.convert_to_variable_name(final_output_name)
-        global_state.code_generator.add_statements(
-            statements=[(output_var, var_name_or_expr)], imports=[]
-        )
+        global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
         return global_state

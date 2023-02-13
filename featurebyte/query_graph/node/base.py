@@ -21,8 +21,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
-    ImportTag,
-    StatementStrT,
+    StatementT,
     StyleConfig,
     VariableNameGenerator,
     VarNameExpressionStr,
@@ -205,7 +204,7 @@ class BaseNode(BaseModel):
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         style_config: StyleConfig,
-    ) -> Tuple[List[StatementStrT], List[ImportTag], VarNameExpressionStr]:
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         """
         Derive SDK codes based on the graph traversal from starting node(s) to this node
 
@@ -224,13 +223,14 @@ class BaseNode(BaseModel):
 
         Returns
         -------
-        Tuple[List[StatementT], List[ImportTag], VarNameExpressionStr]
+        Tuple[List[StatementT], VarNameExpressionStr]
         """
-        statements, imports, var_name_expression = self._derive_sdk_codes(
+        statements, var_name_expression = self._derive_sdk_codes(
             input_var_name_expressions=input_var_name_expressions,
             input_node_types=input_node_types,
             var_name_generator=var_name_generator,
             operation_structure=operation_structure,
+            style_config=style_config,
         )
 
         if (
@@ -246,8 +246,8 @@ class BaseNode(BaseModel):
                 node_output_category=operation_structure.output_category,
             )
             statements.append((var_name, var_name_expression))
-            return statements, imports, var_name
-        return statements, imports, var_name_expression
+            return statements, var_name
+        return statements, var_name_expression
 
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """
@@ -316,7 +316,8 @@ class BaseNode(BaseModel):
         input_node_types: List[NodeType],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
-    ) -> Tuple[List[StatementStrT], List[ImportTag], VarNameExpressionStr]:
+        style_config: StyleConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         """
         Derive SDK codes based to be implemented at the concrete node class
 
@@ -330,16 +331,18 @@ class BaseNode(BaseModel):
             Variable name generator
         operation_structure: OperationStructure
             Operation structure of current node
+        style_config: StyleConfig
+            Style configuration to control whether to introduce a new variable
 
         Returns
         -------
-        Tuple[List[StatementT], List[ImportTag], VarNameExpression]
+        Tuple[List[StatementT], VarNameExpression]
         """
         # TODO: convert this method to an abstract method and remove the following dummy implementation
-        _ = input_node_types, var_name_generator, operation_structure
+        _ = input_node_types, var_name_generator, operation_structure, style_config
         input_params = ", ".join(input_var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
-        return [], [], expression
+        return [], expression
 
 
 class SeriesOutputNodeOpStructMixin:
