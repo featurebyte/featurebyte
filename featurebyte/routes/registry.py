@@ -66,6 +66,14 @@ app_container_config.add_service_with_extra_deps(
     ],
 )
 app_container_config.add_service_with_extra_deps(
+    "parent_entity_lookup_service",
+    ParentEntityLookupService,
+    [
+        "entity_service",
+        "tabular_data_service",
+    ],
+)
+app_container_config.add_service_with_extra_deps(
     "online_enable_service", OnlineEnableService, ["session_manager_service"]
 )
 app_container_config.add_service_with_extra_deps(
@@ -96,14 +104,6 @@ app_container_config.add_service_with_extra_deps(
     [
         "session_manager_service",
         "feature_store_service",
-    ],
-)
-app_container_config.add_service_with_extra_deps(
-    "parent_entity_lookup_service",
-    ParentEntityLookupService,
-    [
-        "entity_service",
-        "tabular_data_service",
     ],
 )
 

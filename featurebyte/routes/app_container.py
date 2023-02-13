@@ -55,33 +55,33 @@ class AppContainer:
 
         # build no dependency objects
         for item in app_config.no_dependency_objects:
-            self.instance_map[item.name] = item.clazz()
+            self.instance_map[item.name] = item.class_()
 
         # build services
         for item in app_config.basic_services:
-            name, clazz = item.name, item.clazz
-            service_instance = clazz(user=user, persistent=persistent)
+            name, class_ = item.name, item.class_
+            service_instance = class_(user=user, persistent=persistent)
             self.instance_map[name] = service_instance
 
         # build services with other dependencies
         for item in app_config.service_with_extra_deps:
-            name, clazz = item.name, item.clazz
+            name, class_ = item.name, item.class_
             extra_depends = item.dependencies
             # seed depend_instances with the normal user and persistent objects
             depend_instances = [user, persistent]
             for s_name in extra_depends:
                 depend_instances.append(self.instance_map[s_name])
-            instance = clazz(*depend_instances)
+            instance = class_(*depend_instances)
             self.instance_map[name] = instance
 
         # build controllers
         for item in app_config.controllers:
-            name, clazz = item.name, item.clazz
+            name, class_ = item.name, item.class_
             depends = item.dependencies
             depend_instances = []
             for s_name in depends:
                 depend_instances.append(self.instance_map[s_name])
-            instance = clazz(*depend_instances)
+            instance = class_(*depend_instances)
             self.instance_map[name] = instance
 
     def __getattr__(self, key: str) -> Any:
