@@ -319,7 +319,7 @@ class CodeGenerator(BaseModel):
     @staticmethod
     def _get_template() -> Template:
         template_path = os.path.join(os.path.dirname(__file__), "templates/sdk_code.tpl")
-        with open(template_path) as file_handle:
+        with open(template_path, mode="r", encoding="utf-8") as file_handle:
             return Template(file_handle.read())
 
     def add_statements(self, statements: List[StatementT]) -> None:
@@ -372,7 +372,7 @@ class CodeGenerator(BaseModel):
             statements=statements,
         )
         if to_format:
-            from black import FileMode, format_str
+            from black import FileMode, format_str  # pylint: disable=import-outside-toplevel
 
             return format_str(code, mode=FileMode())
         return code

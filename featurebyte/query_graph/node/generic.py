@@ -5,7 +5,7 @@ This module contains SQL operation related node classes
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 from typing_extensions import Annotated
 
-from abc import abstractmethod
+from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, root_validator, validator
@@ -94,6 +94,18 @@ class BaseParameters(BaseModel):
         """
 
     def get_feature_store_object(self, feature_store_name: str) -> ObjectClass:
+        """
+        Construct feature store object for SDK code generation
+
+        Parameters
+        ----------
+        feature_store_name: str
+            Feature store name
+
+        Returns
+        -------
+        ObjectClass
+        """
         source_type = self.feature_store_details.type
         source_details = self._source_type_to_import[source_type]
         return ClassEnum.FEATURE_STORE(
@@ -103,6 +115,18 @@ class BaseParameters(BaseModel):
         )
 
     def get_tabular_source_object(self, feature_store_id: ObjectId) -> ObjectClass:
+        """
+        Construct tabular source object for SDK code generation
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+
+        Returns
+        -------
+        ObjectClass
+        """
         return ClassEnum.TABULAR_SOURCE(
             feature_store_id=feature_store_id,
             table_details=ClassEnum.TABLE_DETAILS(
@@ -113,6 +137,13 @@ class BaseParameters(BaseModel):
         )
 
     def get_columns_info_object(self) -> List[ObjectClass]:
+        """
+        Construct list of column info objects for SDK code generation
+
+        Returns
+        -------
+        List[ObjectClass]
+        """
         return [ClassEnum.COLUMN_INFO(name=col.name, dtype=col.dtype) for col in self.columns]
 
 
