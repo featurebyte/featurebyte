@@ -94,9 +94,9 @@ class StatementStr(str):
     """
 
 
-VarNameExpression = Union[VariableNameStr, ExpressionStr]
-RightHandSideT = Union[ValueStr, VariableNameStr, ExpressionStr]
-StatementStrT = Union[StatementStr, Tuple[VariableNameStr, RightHandSideT]]
+VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
+RightHandSideStr = Union[ValueStr, VariableNameStr, ExpressionStr]
+StatementStrT = Union[StatementStr, Tuple[VariableNameStr, RightHandSideStr]]
 
 
 class ImportTag(Enum):
@@ -113,6 +113,7 @@ class StyleConfig(BaseModel):
     store some intermediate results.
     """
 
+    final_output_name: str = Field(default="output")
     max_expression_length: int = Field(default=60)
 
 

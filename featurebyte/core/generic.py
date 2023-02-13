@@ -20,6 +20,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
@@ -111,6 +112,18 @@ class QueryObject(FeatureByteBaseModel):
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
+
+    def generate_code(self) -> str:
+        """
+        Generate SDK codes this graph & node
+
+        Returns
+        -------
+        str
+        """
+        pruned_graph, node = self.extract_pruned_graph_and_node()
+        state = SDKCodeExtractor(graph=pruned_graph).extract(node=node)
+        return state.code_generator.generate()
 
     def _preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
