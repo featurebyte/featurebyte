@@ -22,7 +22,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
 
 
 class EventViewColumn(LaggableViewColumn):
