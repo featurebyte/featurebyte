@@ -239,7 +239,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             )
             node_name = inserted_graph_node.name
 
-        return cls(
+        view = cls(
             feature_store=data.feature_store,
             tabular_source=data.tabular_source,
             columns_info=data.columns_info,
@@ -247,6 +247,16 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_data_ids=[data.id],
             **kwargs,
         )
+
+        # Remove record_creation_date_column from view.
+        if "record_creation_date_column" not in kwargs:
+            return view
+        record_creation_date_column = kwargs["record_creation_date_column"]
+        cols_to_keep = [column_info.name for column_info in view.columns_info]
+        if record_creation_date_column in cols_to_keep:
+            cols_to_keep.remove(record_creation_date_column)
+        view = view[cols_to_keep]  # type: ignore
+        return view
 
     @property
     def entity_columns(self) -> list[str]:
