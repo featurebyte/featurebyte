@@ -9,22 +9,22 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ClazzDefinition:
+class ClassDefinition:
     """
-    Basic clazz definition
+    Basic class definition
     """
 
     # Note that we have a custom name, instead of using the name of the type directly.
     # This allows us to provide overrides to the names, and also allows us to better support multiple classes with
     # the same name.
     name: str
-    clazz: type
+    class_: type
 
 
 @dataclass
-class ClazzDefinitionWithDependencies(ClazzDefinition):
+class ClassDefinitionWithDependencies(ClassDefinition):
     """
-    Clazz definition with dependencies
+    Class definition with dependencies
     """
 
     dependencies: List[str]
@@ -37,26 +37,15 @@ class AppContainerConfig:
 
     def __init__(self) -> None:
         # These are objects which don't take in any dependencies, and can be instantiated as is.
-        self.no_dependency_objects: List[ClazzDefinition] = []
+        self.no_dependency_objects: List[ClassDefinition] = []
         # These services have dependencies in addition to the normal user, and persistent dependencies.
-        self.service_with_extra_deps: List[ClazzDefinitionWithDependencies] = []
+        self.service_with_extra_deps: List[ClassDefinitionWithDependencies] = []
         # These services only require the user, and persistent dependencies.
-        self.basic_services: List[ClazzDefinition] = []
+        self.basic_services: List[ClassDefinition] = []
         # Controllers can depend on any object defined above.
-        self.controllers: List[ClazzDefinitionWithDependencies] = []
+        self.controllers: List[ClassDefinitionWithDependencies] = []
 
-    def get_no_dep_objects(self) -> List[ClazzDefinition]:
-        """
-        Get clazz definitions with no dependencies.
-
-        Returns
-        -------
-        list[ClazzDefinition]
-            classes that have no dependencies
-        """
-        return self.no_dependency_objects
-
-    def add_no_dep_objects(self, name: str, clazz: type) -> None:
+    def add_no_dep_objects(self, name: str, class_: type) -> None:
         """
         Register a class with no dependencies.
 
@@ -64,23 +53,12 @@ class AppContainerConfig:
         ----------
         name: str
             name of the object
-        clazz: type
+        class_: type
             type we are registering
         """
-        self.no_dependency_objects.append(ClazzDefinition(name=name, clazz=clazz))
+        self.no_dependency_objects.append(ClassDefinition(name=name, class_=class_))
 
-    def get_services_with_extra_deps(self) -> List[ClazzDefinitionWithDependencies]:
-        """
-        Get services definitions with extra dependencies.
-
-        Returns
-        -------
-        list[ClazzDefinitionWithDependencies]
-            services that have extra dependencies
-        """
-        return self.service_with_extra_deps
-
-    def add_service_with_extra_deps(self, name: str, clazz: type, dependencies: List[str]) -> None:
+    def add_service_with_extra_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
         """
         Register a service with extra dependencies
 
@@ -88,31 +66,20 @@ class AppContainerConfig:
         ----------
         name: str
             name of the object
-        clazz: type
+        class_: type
             type we are registering
         dependencies: list[str]
             dependencies
         """
         self.service_with_extra_deps.append(
-            ClazzDefinitionWithDependencies(
+            ClassDefinitionWithDependencies(
                 name=name,
-                clazz=clazz,
+                class_=class_,
                 dependencies=dependencies,
             )
         )
 
-    def get_basic_services(self) -> List[ClazzDefinition]:
-        """
-        Get services definitions with no extra dependencies.
-
-        Returns
-        -------
-        list[ClazzDefinition]
-            services that have no extra dependencies, apart from user and persistent
-        """
-        return self.basic_services
-
-    def add_basic_service(self, name: str, clazz: type) -> None:
+    def add_basic_service(self, name: str, class_: type) -> None:
         """
         Register a basic service
 
@@ -120,28 +87,17 @@ class AppContainerConfig:
         ----------
         name: str
             name of the object
-        clazz: type
+        class_: type
             type we are registering
         """
         self.basic_services.append(
-            ClazzDefinition(
+            ClassDefinition(
                 name=name,
-                clazz=clazz,
+                class_=class_,
             )
         )
 
-    def get_controllers(self) -> List[ClazzDefinitionWithDependencies]:
-        """
-        Get controllers.
-
-        Returns
-        -------
-        list[ClazzDefinitionWithDependencies]
-            controllers
-        """
-        return self.controllers
-
-    def add_controller(self, name: str, clazz: type, dependencies: List[str]) -> None:
+    def add_controller(self, name: str, class_: type, dependencies: List[str]) -> None:
         """
         Register a controller
 
@@ -149,20 +105,20 @@ class AppContainerConfig:
         ----------
         name: str
             name of the object
-        clazz: type
+        class_: type
             type we are registering
         dependencies: list[str]
             dependencies
         """
         self.controllers.append(
-            ClazzDefinitionWithDependencies(
+            ClassDefinitionWithDependencies(
                 name=name,
-                clazz=clazz,
+                class_=class_,
                 dependencies=dependencies,
             )
         )
 
-    def _all_dependencies(self) -> List[ClazzDefinition]:
+    def _all_dependencies(self) -> List[ClassDefinition]:
         output = []
         output.extend(self.no_dependency_objects)
         output.extend(self.basic_services)

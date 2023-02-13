@@ -69,6 +69,11 @@ app_container_config.add_service_with_extra_deps(
     "online_enable_service", OnlineEnableService, ["session_manager_service"]
 )
 app_container_config.add_service_with_extra_deps(
+    "entity_validation_service",
+    EntityValidationService,
+    ["entity_service", "parent_entity_lookup_service"],
+)
+app_container_config.add_service_with_extra_deps(
     "online_serving_service",
     OnlineServingService,
     ["session_manager_service", "entity_validation_service"],
@@ -127,11 +132,6 @@ app_container_config.add_basic_service("version_service", VersionService)
 app_container_config.add_basic_service("entity_relationship_service", EntityRelationshipService)
 app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
 app_container_config.add_basic_service("info_service", InfoService)
-app_container_config.add_service_with_extra_deps(
-    "entity_validation_service",
-    EntityValidationService,
-    ["entity_service", "parent_entity_lookup_service"],
-)
 
 app_container_config.add_controller("context_controller", ContextController, ["context_service"])
 app_container_config.add_controller(
