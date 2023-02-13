@@ -311,6 +311,14 @@ class SparkSession(BaseSession):
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True
     ) -> None:
+        # truncate timestamps to microseconds to avoid parquet and Spark issues
+        if dataframe.shape[0] > 0:
+            for colname in dataframe.columns:
+                if pd.api.types.is_datetime64_any_dtype(
+                    dataframe[colname]
+                ) or pd.api.types.is_datetime64tz_dtype(dataframe[colname]):
+                    dataframe[colname] = dataframe[colname].dt.floor("us")
+
         # write to parquet file
         temp_filename = f"temp_{ObjectId()}.parquet"
         with self._storage.open(path=temp_filename, mode="wb") as out_file_obj:
