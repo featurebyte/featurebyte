@@ -105,6 +105,12 @@ class RequiredEntityNotProvidedError(Exception):
     """
 
 
+class UnexpectedServingNamesMappingError(Exception):
+    """
+    Raised when unexpected keys are provided in serving names mapping
+    """
+
+
 class EntityJoinPathNotFoundError(Exception):
     """
     Raised when it is not possible to identify a join path to an entity using the provided entities
