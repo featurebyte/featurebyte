@@ -107,6 +107,8 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     """
     BaseFeatureGroup class
 
+    This class represents a collection of Feature's that users create.
+
     Parameters
     ----------
     items: Sequence[Union[Feature, BaseFeatureGroup]]
@@ -307,7 +309,13 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
-    FeatureGroup class
+    FeatureGroup represents a collection of Feature's.
+
+    These Features are typically not production ready, and are mostly used as an in-memory representation while
+    users are still building up their features in the SDK. Note that while this object has a `save` function, it is
+    actually the individual features within this feature group that get persisted. Similarly, the object that
+    gets constructed on the read path does not become a FeatureGroup. The persisted version that users interact with
+    is called a FeatureList.
     """
 
     # documentation metadata
@@ -365,7 +373,21 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
 class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     """
-    FeatureListNamespace class
+    FeatureListNamespace represents all the versions of the FeatureList that have the same FeatureList name.
+
+    For example, a user might have created a FeatureList called "my feature list". That feature list might in turn
+    contain 2 features:
+    - feature_1,
+    - feature_2
+
+    The FeatureListNamespace object is primarily concerned with keeping track of version changes to the feature list,
+    and not so much the version of the features within. This means that if a user creates a new version of "my feature
+    list", the feature list namespace will contain a reference to the two versions. A simplified model would look like
+
+      feature_list_namespace = ["my feature list_v1", "my feature list_v2"]
+
+    Even if a user saves a new version of the feature in the feature list (eg. feature_1_v2), the
+    feature_list_namespace will not change.
     """
 
     # class variable
@@ -515,7 +537,9 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
 
 class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, FeatureJobMixin):
     """
-    FeatureList class
+    FeatureList represents the persisted version of a collection of a features.
+
+    The FeatureList is typically how a user interacts with their collection of features.
 
     items : list[Union[Feature, BaseFeatureGroup]]
         List of feature like objects to be used to create the FeatureList
