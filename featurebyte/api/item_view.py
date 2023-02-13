@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, cast
+from typing import Any, List, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -26,11 +26,6 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
-
-if TYPE_CHECKING:
-    from featurebyte.api.groupby import GroupBy
-else:
-    GroupBy = TypeVar("GroupBy")
 
 
 class ItemViewColumn(ViewColumn):
