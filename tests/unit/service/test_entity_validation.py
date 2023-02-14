@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
-from featurebyte.models.entity_validation import EntityInfo
 
 
 @pytest.mark.asyncio
@@ -81,12 +80,7 @@ async def test_required_entity__serving_names_mapping_invalid(
 
 @pytest.mark.asyncio
 async def test_required_entity__ambiguous_relationships(
-    entity_a,
-    entity_e,
-    b_is_parent_of_a,
-    c_is_parent_of_b,
-    d_is_parent_of_b,
-    e_is_parent_of_c_and_d,
+    entity_info_with_ambiguous_relationships,
     entity_validation_service,
 ):
     """
@@ -95,20 +89,10 @@ async def test_required_entity__ambiguous_relationships(
     a (provided) --> b --> c ---> e (required)
                       `--> d --´
     """
-    _ = b_is_parent_of_a
-    _ = c_is_parent_of_b
-    _ = d_is_parent_of_b
-    _ = e_is_parent_of_c_and_d
-    entity_info = EntityInfo(
-        required_entities=[entity_e],
-        provided_entities=[entity_a],
-        serving_names_mapping={"A": "new_A"},
-    )
-
     with patch(
         "featurebyte.service.entity_validation.EntityValidationService.get_entity_info_from_request"
     ) as p:
-        p.return_value = entity_info
+        p.return_value = entity_info_with_ambiguous_relationships
         with pytest.raises(RequiredEntityNotProvidedError) as exc_info:
             await entity_validation_service.validate_entities_or_prepare_for_parent_serving(
                 Mock(name="graph"),

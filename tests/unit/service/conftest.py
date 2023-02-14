@@ -14,6 +14,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.entity import ParentEntity
+from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_data import DimensionDataCreate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
@@ -678,6 +679,34 @@ async def e_is_parent_of_c_and_d_fixture(
         child_column="d",
         parent_column="e",
     )
+
+
+@pytest.fixture
+def entity_info_with_ambiguous_relationships(
+    entity_a,
+    entity_e,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+    e_is_parent_of_c_and_d,
+    parent_entity_lookup_service,
+) -> EntityInfo:
+    """
+    EntityInfo the arises from ambiguous relationships
+
+    a (provided) --> b --> c ---> e (required)
+                      `--> d --´
+    """
+    _ = b_is_parent_of_a
+    _ = c_is_parent_of_b
+    _ = d_is_parent_of_b
+    _ = e_is_parent_of_c_and_d
+    entity_info = EntityInfo(
+        required_entities=[entity_e],
+        provided_entities=[entity_a],
+        serving_names_mapping={"A": "new_A"},
+    )
+    return entity_info
 
 
 @pytest.fixture
