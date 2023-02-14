@@ -72,7 +72,6 @@ class TileScheduleOnlineStore(BaseModel):
                 create_sql = (
                     f"create table {fs_table} using delta as (select {columns_str} from ({f_sql}))"
                 )
-                logger.debug(create_sql)
                 self._spark.sql(create_sql)
 
             else:
@@ -110,5 +109,4 @@ class TileScheduleOnlineStore(BaseModel):
                             insert ({f_entity_columns}, {f_name})
                                 values ({entity_insert_cols_str}, b.{f_name})
                 """
-                logger.debug(merge_sql)
                 self._spark.sql(merge_sql)

@@ -54,7 +54,6 @@ class TileMonitor(TileCommon):
                     {existing_value_columns}
                 from ({self.monitor_sql})
             """
-            logger.debug(f"new_tile_sql: {new_tile_sql}")
 
             entity_filter_cols_str = " AND ".join(
                 [f"a.{c} = b.{c}" for c in self.entity_column_names.split(",")]
@@ -86,7 +85,6 @@ class TileMonitor(TileCommon):
                         a.INDEX = b.INDEX AND {entity_filter_cols_str})
                 where {value_filter_cols_str}
             """
-            logger.debug(f"compare_sql: {compare_sql}")
 
             monitor_table_name = f"{self.tile_id}_MONITOR"
 
@@ -124,7 +122,6 @@ class TileMonitor(TileCommon):
                         )
                         {compare_sql}
                 """
-                logger.debug(insert_sql)
                 self._spark.sql(insert_sql)
 
             insert_monitor_summary_sql = f"""
@@ -136,5 +133,4 @@ class TileMonitor(TileCommon):
                     current_timestamp()
                 FROM ({compare_sql})
             """
-            logger.debug(insert_monitor_summary_sql)
             self._spark.sql(insert_monitor_summary_sql)

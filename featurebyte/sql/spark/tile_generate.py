@@ -54,7 +54,6 @@ class TileGenerate(TileCommon):
                 current_timestamp() as created_at
             from ({self.sql})
         """
-        logger.debug("tile_sql:", tile_sql)
 
         entity_insert_cols = []
         entity_filter_cols = []
@@ -107,7 +106,6 @@ class TileGenerate(TileCommon):
                         insert ({insert_str})
                             values ({values_str})
             """
-            logger.debug("merging data: ", merge_sql)
             self._spark.sql(merge_sql)
 
         if self.last_tile_start_str:
@@ -122,5 +120,4 @@ class TileGenerate(TileCommon):
                 UPDATE TILE_REGISTRY SET LAST_TILE_INDEX_{self.tile_type} = {ind_value}, {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
                 WHERE TILE_ID = '{self.tile_id}'
             """
-            logger.debug(update_tile_last_ind_sql)
             self._spark.sql(update_tile_last_ind_sql)
