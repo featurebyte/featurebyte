@@ -545,84 +545,6 @@ async def entity_e_fixture(entity_service):
     return entity_e
 
 
-@pytest_asyncio.fixture(name="b_is_parent_of_a")
-async def b_is_parent_of_a_fixture(
-    entity_a,
-    entity_b,
-    entity_service,
-    event_data_service,
-    test_dir,
-    feature_store,
-):
-    """
-    Fixture to make B a parent of A
-    """
-    _ = feature_store
-    data = await create_event_data_with_entities(
-        "b_is_parent_of_a_data",
-        test_dir,
-        event_data_service,
-        [("a", entity_a.id), ("b", entity_b.id)],
-    )
-    parent = ParentEntity(id=entity_b.id, data_type=data.type, data_id=data.id)
-    update_entity_a = EntityServiceUpdate(parents=[parent])
-    await entity_service.update_document(entity_a.id, update_entity_a)
-    return data
-
-
-@pytest_asyncio.fixture(name="c_is_parent_of_b")
-async def c_is_parent_of_b_fixture(
-    entity_b,
-    entity_c,
-    entity_service,
-    event_data_service,
-    test_dir,
-    feature_store,
-):
-    """
-    Fixture to make C a parent of B
-    """
-    _ = feature_store
-    data = await create_event_data_with_entities(
-        "c_is_parent_of_b_data",
-        test_dir,
-        event_data_service,
-        [("b", entity_b.id), ("c", entity_c.id)],
-    )
-    parents = (await entity_service.get_document(entity_b.id)).parents
-    parents += [ParentEntity(id=entity_c.id, data_type=data.type, data_id=data.id)]
-    update_entity_b = EntityServiceUpdate(parents=parents)
-    await entity_service.update_document(entity_b.id, update_entity_b)
-    return data
-
-
-@pytest_asyncio.fixture(name="d_is_parent_of_b")
-async def d_is_parent_of_b_fixture(
-    entity_b,
-    entity_d,
-    entity_service,
-    event_data_service,
-    test_dir,
-    feature_store,
-):
-    """
-    Fixture to make D a parent of B
-    """
-    _ = feature_store
-    data = await create_event_data_with_entities(
-        "d_is_parent_of_b_data",
-        test_dir,
-        event_data_service,
-        [("b", entity_b.id), ("d", entity_d.id)],
-    )
-    parents = (await entity_service.get_document(entity_b.id)).parents
-    parents += [ParentEntity(id=entity_d.id, data_type=data.type, data_id=data.id)]
-    update_entity_b = EntityServiceUpdate(parents=parents)
-    await entity_service.update_document(entity_b.id, update_entity_b)
-
-    return data
-
-
 async def create_data_and_add_parent(
     test_dir,
     event_data_service,
@@ -645,6 +567,79 @@ async def create_data_and_add_parent(
     parents += [ParentEntity(id=parent_entity.id, data_type=data.type, data_id=data.id)]
     update_parents = EntityServiceUpdate(parents=parents)
     await entity_service.update_document(child_entity.id, update_parents)
+    return data
+
+
+@pytest_asyncio.fixture(name="b_is_parent_of_a")
+async def b_is_parent_of_a_fixture(
+    entity_a,
+    entity_b,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make B a parent of A
+    """
+    _ = feature_store
+    return await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_a,
+        parent_entity=entity_b,
+        child_column="a",
+        parent_column="b",
+    )
+
+
+@pytest_asyncio.fixture(name="c_is_parent_of_b")
+async def c_is_parent_of_b_fixture(
+    entity_b,
+    entity_c,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make C a parent of B
+    """
+    _ = feature_store
+    return await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_b,
+        parent_entity=entity_c,
+        child_column="b",
+        parent_column="c",
+    )
+
+
+@pytest_asyncio.fixture(name="d_is_parent_of_b")
+async def d_is_parent_of_b_fixture(
+    entity_b,
+    entity_d,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make D a parent of B
+    """
+    _ = feature_store
+    return await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_b,
+        parent_entity=entity_d,
+        child_column="b",
+        parent_column="d",
+    )
 
 
 @pytest_asyncio.fixture(name="e_is_parent_of_c_and_d")
