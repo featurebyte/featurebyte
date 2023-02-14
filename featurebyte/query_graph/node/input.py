@@ -93,7 +93,7 @@ class BaseInputNodeParameters(BaseModel):
         ObjectClass
         """
         return ClassEnum.TABULAR_SOURCE(
-            feature_store_id=feature_store_id,
+            feature_store_id=ClassEnum.OBJECT_ID(feature_store_id),
             table_details=ClassEnum.TABLE_DETAILS(
                 database_name=self.table_details.database_name,
                 schema_name=self.table_details.schema_name,
@@ -170,7 +170,7 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
         return values
 
     @property
-    def pre_variable_name(self):
+    def pre_variable_name(self) -> str:
         return "event_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -191,7 +191,7 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
     event_id_column: Optional[InColumnStr] = Field(default=None)
 
     @property
-    def pre_variable_name(self):
+    def pre_variable_name(self) -> str:
         return "item_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -211,7 +211,7 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
     @property
-    def pre_variable_name(self):
+    def pre_variable_name(self) -> str:
         return "dimension_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -234,7 +234,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
     current_flag_column: Optional[InColumnStr] = Field(default=None)
 
     @property
-    def pre_variable_name(self):
+    def pre_variable_name(self) -> str:
         return "scd_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -316,7 +316,7 @@ class InputNode(BaseNode):
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        statements = []
+        statements: List[StatementT] = []
         table_type = self.parameters.type
         data_class_enum = self._data_to_data_class_enum[table_type]
 
@@ -328,14 +328,13 @@ class InputNode(BaseNode):
             object_id = ClassEnum.OBJECT_ID(self.parameters.id)
             right_op = data_class_enum(object_id, _method_name="get_by_id")
         else:
-            object_id = ClassEnum.OBJECT_ID(config.feature_store_id)
             right_op = data_class_enum(
                 name=str(data_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name
                 ),
                 tabular_source=self.parameters.extract_tabular_source_object(
-                    feature_store_id=object_id
+                    feature_store_id=config.feature_store_id
                 ),
                 columns_info=self.parameters.extract_columns_info_objects(),
                 **self.parameters.extract_other_constructor_parameters(),

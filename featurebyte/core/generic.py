@@ -129,7 +129,7 @@ class QueryObject(FeatureByteBaseModel):
         str
         """
         pruned_graph, node = self.extract_pruned_graph_and_node()
-        extract_kwargs = {
+        extract_kwargs: dict[str, Any] = {
             "to_use_saved_data": to_use_saved_data,
             "feature_store_name": self.feature_store.name,
             "feature_store_id": self.feature_store.id,

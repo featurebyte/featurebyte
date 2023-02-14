@@ -75,7 +75,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         branch_state: BaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        inputs: List[Tuple[str, NodeType]],
+        inputs: List[VarNameExpNodeType],
         skip_post: bool,
     ) -> VarNameExpNodeType:
         if node.name in global_state.node_name_to_post_compute_output:
@@ -85,8 +85,9 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         op_struct = global_state.node_name_to_operation_structure[node.name]
         input_var_name_expressions: List[VarNameExpressionStr] = []
         input_node_types: List[NodeType] = []
-        if inputs:
-            input_var_name_expressions, input_node_types = zip(*inputs)
+        for var_name_expr, node_type in inputs:
+            input_var_name_expressions.append(var_name_expr)
+            input_node_types.append(node_type)
 
         statements, var_name_or_expr = node.derive_sdk_codes(
             input_var_name_expressions=input_var_name_expressions,
@@ -114,7 +115,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
 
-        code_generation_config = {"to_use_saved_data": to_use_saved_data}
+        code_generation_config: Dict[str, Any] = {"to_use_saved_data": to_use_saved_data}
         if feature_store_name:
             code_generation_config["feature_store_name"] = feature_store_name
         if feature_store_id:

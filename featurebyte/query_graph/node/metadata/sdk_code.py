@@ -100,7 +100,9 @@ class StatementStr(str):
 
 class ObjectClass(BaseModel):
     """
-    ObjectClass used to capture class and input arguments
+    ObjectClass is used as a mock class object which are used to
+    - capture the method/function input parameters
+    - import objects
     """
 
     module_path: str
@@ -109,8 +111,8 @@ class ObjectClass(BaseModel):
     keyword_args: Dict[str, Any]
     method_name: Optional[str] = Field(default=None)
 
-    def __str__(self):
-        params = []
+    def __str__(self) -> str:
+        params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
         for elem in self.positional_args:
             if not isinstance(elem, VariableNameStr) and not isinstance(elem, ExpressionStr):
                 params.append(ValueStr.create(elem))
@@ -127,7 +129,7 @@ class ObjectClass(BaseModel):
             return f"{self.class_name}.{self.method_name}({', '.join(params)})"
         return f"{self.class_name}({', '.join(params)})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
     @classmethod
@@ -201,7 +203,9 @@ class ClassEnum(Enum):
     DIMENSION_VIEW = ("featurebyte", "DimensionView")
     SCD_VIEW = ("featurebyte", "SlowlyChangingView")
 
-    def __call__(self, *args, _method_name=None, **kwargs):
+    def __call__(
+        self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
+    ) -> ObjectClass:
         module_path, class_name = self.value
         return ObjectClass(
             module_path=module_path,
