@@ -44,7 +44,7 @@ class ItemData(DataApiObject):
     - the semantic of the data field
     - critical data information on the data quality that requires cleaning before feature engineering
 
-    To create features from an ItemData, users create an ItemView (ItemView).
+    To create features from an ItemData, users create an ItemView.
     """
 
     # documentation metadata

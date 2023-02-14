@@ -36,8 +36,7 @@ class EventData(DataApiObject):
     - critical data information on the data quality that requires cleaning before feature engineering.
 
     Before registering a new EventData, users are asked to set the default for the FeatureJob scheduling for features
-    that will be extracted from the EventData. The default feature job setting can be automatically set if a
-    record_creation_date_column has been specified.
+    that will be extracted from the EventData.
 
     To build features, users create Event Views from EventData.
     """
