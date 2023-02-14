@@ -246,7 +246,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 for col_info in column_infos
                 if col_info.name != data.internal_record_creation_date_column
             ]
-        view = cls(
+        return cls(
             feature_store=data.feature_store,
             tabular_source=data.tabular_source,
             columns_info=column_infos,
@@ -254,7 +254,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             tabular_data_ids=[data.id],
             **kwargs,
         )
-        return view
 
     @property
     def entity_columns(self) -> list[str]:
