@@ -239,8 +239,8 @@ class BaseNode(BaseModel):
             and len(var_name_expression) > config.max_expression_length
         ):
             # if the output of the var_name_expression is an expression and
-            # the length of expression exceeds limit specified in style_config,
-            # assign a new variable.
+            # the length of expression exceeds limit specified in code generation config,
+            # then assign a new variable to reduce line width.
             var_name = var_name_generator.generate_variable_name(
                 node_output_type=operation_structure.output_type,
                 node_output_category=operation_structure.output_category,

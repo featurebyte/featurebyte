@@ -223,7 +223,7 @@ StatementT = Union[StatementStr, Tuple[VariableNameStr, RightHandSide]]
 
 class CodeGenerationConfig(BaseModel):
     """
-    StyleConfig is used to control the code generating style like whether to introduce a new variable to
+    CodeGenerationConfig is used to control the code generating style like whether to introduce a new variable to
     store some intermediate results.
 
     feature_store_name: str
