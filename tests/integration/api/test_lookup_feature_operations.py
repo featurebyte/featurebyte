@@ -52,7 +52,6 @@ def check_lookup_feature_is_time_aware(
 
     # Create lookup feature
     feature = view[lookup_column_name].as_feature("lookup_feature")
-
     # Lookup from event should be time based - value is NA is point in time is prior to event time
     ts_before_event = event_timestamp - pd.Timedelta("7d")
     ts_after_event = event_timestamp + pd.Timedelta("7d")
@@ -93,12 +92,12 @@ def check_lookup_feature_is_time_aware(
     pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
 
 
-def test_event_view_lookup_features(event_data, transaction_data_upper_case):
+def test_event_view_lookup_features(snowflake_event_data, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=EventView.from_event_data(event_data),
+        view=EventView.from_event_data(snowflake_event_data),
         df=transaction_data_upper_case,
         primary_key_column="TRANSACTION_ID",
         primary_key_value="T42",

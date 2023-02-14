@@ -9,13 +9,13 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
-def online_enabled_feature_list_fixture(event_data, config):
+def online_enabled_feature_list_fixture(snowflake_event_data, config):
     """
     Fixture for an online enabled feature
 
     To avoid side effects, this should not be shared with other tests.
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     event_view["ÀMOUNT"] = event_view["ÀMOUNT"] + 12345
 
     # Aggregate using a different entity than "ÜSER ID". Otherwise, it will be creating a feature

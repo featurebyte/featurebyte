@@ -61,13 +61,13 @@ def test_dimension_lookup_features(dimension_view):
 
 
 def test_is_in_dictionary__target_is_dictionary_feature(
-    item_type_dimension_lookup_feature, event_data
+    item_type_dimension_lookup_feature, snowflake_event_data
 ):
     """
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     feature_group = event_view.groupby("CUST_ID", category="ÜSER ID").aggregate_over(
         value_column="PRODUCT_ACTION",
         method="latest",
@@ -135,12 +135,12 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
     }
 
 
-def test_get_value_in_dictionary__target_is_scalar(event_data):
+def test_get_value_in_dictionary__target_is_scalar(snowflake_event_data):
     """
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     feature_name = "SUM_AMOUNT_DICT_30d"
     feature_group = event_view.groupby("CUST_ID", category="PRODUCT_ACTION").aggregate_over(
         value_column="ÀMOUNT",

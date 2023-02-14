@@ -258,9 +258,9 @@ async def test_update_feature_list_error__state_is_reverted_after_feature_list_n
         """
 
         def __bool__(self):
-            raise Exception("return_document throws error!!")
+            raise ValueError("return_document throws error!!")
 
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(ValueError) as exc:
         _ = await deploy_service.update_feature_list(
             feature_list_id=feature_list.id,
             deployed=True,

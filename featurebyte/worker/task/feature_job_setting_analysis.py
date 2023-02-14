@@ -90,11 +90,11 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             table_details=event_data.tabular_source.table_details.dict(),
             creation_date_column=event_data.record_creation_date_column,
             event_timestamp_column=event_data.event_timestamp_column,
-            sql_query_func=db_session.execute_query_blocking,
+            sql_query_func=db_session.execute_query,
         )
 
         self.update_progress(percent=5, message="Running Analysis")
-        analysis = create_feature_job_settings_analysis(
+        analysis = await create_feature_job_settings_analysis(
             event_dataset=event_dataset,
             **payload.json_dict(),
         )

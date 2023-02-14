@@ -10,7 +10,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 

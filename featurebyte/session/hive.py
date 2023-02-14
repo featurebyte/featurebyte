@@ -78,20 +78,20 @@ class HiveConnection(Connection):
                 raise ValueError(f"Invalid value for auth: {auth}")
             host, port, auth, kerberos_service_name, password = (None, None, None, None, None)
 
-        params = dict(
-            host=host,
-            port=port,
-            scheme=scheme,
-            username=username,
-            database=database,
-            auth=auth,
-            configuration=configuration,
-            kerberos_service_name=kerberos_service_name,
-            password=password,
-            check_hostname=check_hostname,
-            ssl_cert=ssl_cert,
-            thrift_transport=thrift_transport,
-        )
+        params = {
+            "host": host,
+            "port": port,
+            "scheme": scheme,
+            "username": username,
+            "database": database,
+            "auth": auth,
+            "configuration": configuration,
+            "kerberos_service_name": kerberos_service_name,
+            "password": password,
+            "check_hostname": check_hostname,
+            "ssl_cert": ssl_cert,
+            "thrift_transport": thrift_transport,
+        }
         try:
             super().__init__(**params)
         except OperationalError:

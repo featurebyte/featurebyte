@@ -246,6 +246,22 @@ class BaseAdapter:
             expression which returns the value for a key provided
         """
 
+    @classmethod
+    @abstractmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        """
+        Expression to convert timestamp to UTC time
+
+        Parameters
+        ----------
+        timestamp_expr : Expression
+            Expression for the timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -392,6 +408,12 @@ class SnowflakeAdapter(BaseAdapter):
             this="GET", expressions=[dictionary_expression, key_expression]
         )
 
+    @classmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        return expressions.Anonymous(
+            this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
+        )
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -492,6 +514,11 @@ class DatabricksAdapter(BaseAdapter):
         cls, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
         raise NotImplementedError()
+
+    @classmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        # timestamps do not have timezone information
+        return timestamp_expr
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:

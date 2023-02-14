@@ -603,7 +603,31 @@ class BaseSchemaInitializer(ABC):
             self.current_working_schema_version
         )
 
+    @staticmethod
+    def _sort_sql_objects(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """
+        Order sql objects taking into account dependencies between then
+
+        Parameters
+        ----------
+        items: list[dict[str, Any]
+            SQL items to sort
+
+        Returns
+        -------
+        list[dict[str, Any]
+        """
+        depended_items = []
+        dependant_items = []
+        for item in items:
+            if item["identifier"] == "F_COUNT_DICT_MOST_FREQUENT_KEY_VALUE":
+                depended_items.append(item)
+            else:
+                dependant_items.append(item)
+        return depended_items + dependant_items
+
     async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
+        items = self._sort_sql_objects(items)
         for item in items:
             logger.debug(f'Registering {item["identifier"]}')
             async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:

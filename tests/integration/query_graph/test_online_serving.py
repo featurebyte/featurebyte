@@ -16,11 +16,11 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="features", scope="session")
-def features_fixture(event_data):
+def features_fixture(snowflake_event_data):
     """
     Fixture for feature
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",

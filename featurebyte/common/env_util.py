@@ -50,4 +50,4 @@ def display_html_in_notebook(html_content: str) -> None:
         # pylint: disable=import-outside-toplevel
         from IPython.display import HTML, display  # pylint: disable=import-error
 
-        display(HTML(html_content), metadata=dict(isolated=True))
+        display(HTML(html_content), metadata={"isolated": True})

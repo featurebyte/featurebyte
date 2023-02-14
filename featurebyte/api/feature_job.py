@@ -336,11 +336,11 @@ class FeatureJobMixin(ApiObject):
             data = []
             for tile_spec in tile_spec_list:
                 data.append(
-                    dict(
+                    {
                         **tile_spec.dict(),
-                        aggregation_hash=tile_spec.aggregation_id.split("_")[-1][:8],
-                        feature_name=feature_name,
-                    )
+                        "aggregation_hash": tile_spec.aggregation_id.split("_")[-1][:8],
+                        "feature_name": feature_name,
+                    }
                 )
             tile_specs.append(pd.DataFrame.from_dict(data))
 

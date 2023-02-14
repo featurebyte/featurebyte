@@ -24,11 +24,11 @@ def user():
 
 
 @pytest.fixture(name="deployed_feature_list", scope="module")
-def deployed_feature_list_fixture(event_data):
+def deployed_feature_list_fixture(snowflake_event_data):
     """
     Fixture for a deployed feature list
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",

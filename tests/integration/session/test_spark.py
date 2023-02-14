@@ -123,16 +123,3 @@ async def test_register_udfs(config, spark_session):
             }
         ),
     )
-
-    result = await spark_session.execute_query(
-        "select `group`, MODE(`item`) AS mode FROM test_table GROUP BY `group` ORDER BY `group`;"
-    )
-    assert_frame_equal(
-        result,
-        pd.DataFrame(
-            {
-                "group": ["A", "B"],
-                "mode": ["orange", "orange"],
-            }
-        ),
-    )

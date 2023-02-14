@@ -126,14 +126,14 @@ def test_from_item_data__auto_join_columns(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp_event_table",
+          CAST(L."event_timestamp" AS STRING) AS "event_timestamp_event_table",
           L."cust_id" AS "cust_id_event_table",
           R."event_id_col" AS "event_id_col",
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
-          CAST(R."created_at" AS VARCHAR) AS "created_at",
-          CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp"
+          CAST(R."created_at" AS STRING) AS "created_at",
+          CAST(R."event_timestamp" AS STRING) AS "event_timestamp"
         FROM (
           SELECT
             "col_int" AS "col_int",
@@ -283,9 +283,9 @@ def test_join_event_data_attributes__more_columns(
           R."item_id_col" AS "item_id_col",
           R."item_type" AS "item_type",
           R."item_amount" AS "item_amount",
-          CAST(R."created_at" AS VARCHAR) AS "created_at",
-          CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp",
-          CAST(R."event_timestamp_event_table" AS VARCHAR) AS "event_timestamp_event_table",
+          CAST(R."created_at" AS STRING) AS "created_at",
+          CAST(R."event_timestamp" AS STRING) AS "event_timestamp",
+          CAST(R."event_timestamp_event_table" AS STRING) AS "event_timestamp_event_table",
           R."cust_id_event_table" AS "cust_id_event_table"
         FROM (
           SELECT

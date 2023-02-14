@@ -198,9 +198,9 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
 
 
 @pytest.fixture(name="event_view")
-def event_view_fixture(event_data):
+def event_view_fixture(snowflake_event_data):
     # create event view
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     assert event_view.columns == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
