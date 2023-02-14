@@ -155,6 +155,9 @@ def compare_generated_data_object_sdk_code(
         formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
         if data_id:
             formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
+
+        # for item data, there is an additional `event_data_id`. Replace the actual `event_data_id` value
+        # to {event_data_id} placeholder through kwargs
         for key, value in kwargs.items():
             formatted_sdk_code = formatted_sdk_code.replace(f"{value}", "{key}".replace("key", key))
         with open(fixture_path, mode="w", encoding="utf-8") as file_handle:

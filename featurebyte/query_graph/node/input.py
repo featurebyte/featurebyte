@@ -113,7 +113,7 @@ class BaseInputNodeParameters(BaseModel):
 
     @property
     @abstractmethod
-    def pre_variable_name(self) -> str:
+    def variable_name_prefix(self) -> str:
         """
         Pre-variable name used by the specific table data
 
@@ -140,7 +140,7 @@ class GenericInputNodeParameters(BaseInputNodeParameters):
     id: Optional[PydanticObjectId] = Field(default=None)
 
     @property
-    def pre_variable_name(self) -> str:
+    def variable_name_prefix(self) -> str:
         return "data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -170,7 +170,7 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
         return values
 
     @property
-    def pre_variable_name(self) -> str:
+    def variable_name_prefix(self) -> str:
         return "event_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -191,7 +191,7 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
     event_id_column: Optional[InColumnStr] = Field(default=None)
 
     @property
-    def pre_variable_name(self) -> str:
+    def variable_name_prefix(self) -> str:
         return "item_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -211,7 +211,7 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
     @property
-    def pre_variable_name(self) -> str:
+    def variable_name_prefix(self) -> str:
         return "dimension_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -234,7 +234,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
     current_flag_column: Optional[InColumnStr] = Field(default=None)
 
     @property
-    def pre_variable_name(self) -> str:
+    def variable_name_prefix(self) -> str:
         return "scd_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
@@ -322,12 +322,20 @@ class InputNode(BaseNode):
 
         # construct data sdk statement
         data_var_name = var_name_generator.convert_to_variable_name(
-            pre_variable_name=self.parameters.pre_variable_name
+            variable_name_prefix=self.parameters.variable_name_prefix
         )
         if config.to_use_saved_data and self.parameters.id:
+            # to generate `*Data.get_by_id(ObjectId("<data_id>"))` statement
             object_id = ClassEnum.OBJECT_ID(self.parameters.id)
             right_op = data_class_enum(object_id, _method_name="get_by_id")
         else:
+            # to generate `*Data(
+            #     name="<data_name>",
+            #     feature_store=FeatureStore(...),
+            #     tabular_source=TabularSource(...),
+            #     columns_info=[ColumnInfo(...), ...],
+            #     ...
+            # )` statement
             right_op = data_class_enum(
                 name=str(data_var_name),
                 feature_store=self.parameters.extract_feature_store_object(

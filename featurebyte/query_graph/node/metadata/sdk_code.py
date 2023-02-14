@@ -287,26 +287,26 @@ class VariableNameGenerator(BaseModel):
             else:
                 pre_variable_name = "feat"
 
-        return self.convert_to_variable_name(pre_variable_name=pre_variable_name)
+        return self.convert_to_variable_name(variable_name_prefix=pre_variable_name)
 
-    def convert_to_variable_name(self, pre_variable_name: str) -> VariableNameStr:
+    def convert_to_variable_name(self, variable_name_prefix: str) -> VariableNameStr:
         """
         Convert an input variable name into a valid variable name (no name collision).
 
         Parameters
         ----------
-        pre_variable_name: str
+        variable_name_prefix: str
             Variable name before name collision check
 
         Returns
         -------
         VariableNameStr
         """
-        count = self.var_name_counter[pre_variable_name]
-        self.var_name_counter[pre_variable_name] += 1
+        count = self.var_name_counter[variable_name_prefix]
+        self.var_name_counter[variable_name_prefix] += 1
         if count:
-            return VariableNameStr(f"{pre_variable_name}_{count}")
-        return VariableNameStr(pre_variable_name)
+            return VariableNameStr(f"{variable_name_prefix}_{count}")
+        return VariableNameStr(variable_name_prefix)
 
 
 class CodeGenerator(BaseModel):
