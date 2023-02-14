@@ -14,14 +14,17 @@ def test_schedule_generate_tile_online(spark_session, tile_task_prep_spark):
 
     tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep_spark
 
-    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
-    value_col_names = "VALUE"
-    value_col_types = "FLOAT"
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    value_col_names = ["VALUE"]
+    value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
+
+    entity_col_names_str = ",".join(entity_col_names)
+    value_col_names_str = ",".join(value_col_names)
     tile_sql = (
-        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -79,16 +82,19 @@ def test_schedule_monitor_tile_online(spark_session):
     """
     Test the stored procedure of monitoring tiles
     """
-    entity_col_names = "PRODUCT_ACTION,CUST_ID"
-    value_col_names = "VALUE"
-    value_col_types = "FLOAT"
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    value_col_names = ["VALUE"]
+    value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
     tile_id = f"TEMP_TABLE_{suffix}"
     agg_id = f"some_agg_id_{suffix}"
     tile_end_ts = "2022-06-05T23:53:00Z"
+
+    entity_col_names_str = ",".join(entity_col_names)
+    value_col_names_str = ",".join(value_col_names)
     tile_sql = (
-        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )

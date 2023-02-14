@@ -1,7 +1,7 @@
 """
 Tile Generate entity tracking Job script for SP_TILE_GENERATE_ENTITY_TRACKING
 """
-from typing import Any
+from typing import Any, List
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
@@ -17,7 +17,7 @@ class TileGenerateEntityTracking(BaseModel):
 
     featurebyte_database: str
     tile_last_start_date_column: str
-    entity_column_names: str
+    entity_column_names: List[str]
     tile_id: str
     entity_table: str
 
@@ -48,7 +48,7 @@ class TileGenerateEntityTracking(BaseModel):
 
         entity_insert_cols = []
         entity_filter_cols = []
-        for element in self.entity_column_names.split(","):
+        for element in self.entity_column_names:
             element = element.strip()
             entity_insert_cols.append("b." + element)
             entity_filter_cols.append("a." + element + " = b." + element)
@@ -63,13 +63,14 @@ class TileGenerateEntityTracking(BaseModel):
             create_sql = f"create table {tracking_table_name} as SELECT * FROM {self.entity_table}"
             self._spark.sql(create_sql)
         else:
+            entity_column_names_str = ",".join(self.entity_column_names)
             merge_sql = f"""
                 merge into {tracking_table_name} a using {self.entity_table} b
                     on {entity_filter_cols_str}
                     when matched then
                         update set a.{self.tile_last_start_date_column} = b.{self.tile_last_start_date_column}
                     when not matched then
-                        insert ({self.entity_column_names}, {self.tile_last_start_date_column})
+                        insert ({entity_column_names_str}, {self.tile_last_start_date_column})
                             values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
             """
             self._spark.sql(merge_sql)

@@ -28,14 +28,10 @@ class TileRegistry(TileCommon):
         res = registry_df.select("names", "types").collect()
         logger.debug(f"res: {res}")
 
-        input_value_columns = [
-            value for value in self.value_column_names.split(",") if value.strip()
-        ]
+        input_value_columns = [value for value in self.value_column_names if value.strip()]
         logger.debug(f"input_value_columns: {input_value_columns}")
 
-        input_value_columns_types = [
-            value for value in self.value_column_types.split(",") if value.strip()
-        ]
+        input_value_columns_types = [value for value in self.value_column_types if value.strip()]
         logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
         if res:
@@ -90,9 +86,9 @@ class TileRegistry(TileCommon):
                 VALUES (
                     '{self.tile_id}',
                     '{escape_sql}',
-                    '{self.entity_column_names}',
-                    '{self.value_column_names}',
-                    '{self.value_column_types}',
+                    '{self.entity_column_names_str}',
+                    '{self.value_column_names_str}',
+                    '{self.value_column_types_str}',
                     {self.frequency_minute},
                     {self.tile_modulo_frequency_second},
                     {self.blind_spot_second},
