@@ -218,5 +218,3 @@ async def test_get_join_steps__ambiguous_relationships(
             entity_info_with_ambiguous_relationships
         )
     assert str(exc_info.value) == "Cannot find an unambiguous join path for entity entity_e"
-    assert exc_info.value.ambiguous_entity_name == "entity_b"
-    assert exc_info.value.ambiguous_entity_serving_name == "B"

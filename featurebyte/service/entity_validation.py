@@ -173,17 +173,10 @@ class EntityValidationService(BaseService):
             join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                 entity_info
             )
-        except EntityJoinPathNotFoundError:
+        except (EntityJoinPathNotFoundError, AmbiguousEntityRelationshipError):
             formatted_missing_entities = _format_missing_entities(entity_info.missing_entities)
             raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
                 f"Required entities are not provided in the request: {formatted_missing_entities}"
-            )
-        except AmbiguousEntityRelationshipError as exc:
-            formatted_missing_entities = _format_missing_entities(entity_info.missing_entities)
-            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                f"Required entities are not provided in the request: {formatted_missing_entities}. "
-                f"Alternatively, consider providing the entity: {exc.ambiguous_entity_name}"
-                f' (serving_name: "{exc.ambiguous_entity_serving_name}").'
             )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())

@@ -124,13 +124,6 @@ class AmbiguousEntityRelationshipError(Exception):
     features is not possible
     """
 
-    def __init__(
-        self, message: str, ambiguous_entity_name: str, ambiguous_entity_serving_name: str
-    ):
-        super().__init__(message)
-        self.ambiguous_entity_name = ambiguous_entity_name
-        self.ambiguous_entity_serving_name = ambiguous_entity_serving_name
-
 
 class InvalidSettingsError(Exception):
     """

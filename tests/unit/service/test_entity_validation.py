@@ -101,6 +101,5 @@ async def test_required_entity__ambiguous_relationships(
                 Mock(name="feature_store"),
             )
         assert str(exc_info.value) == (
-            'Required entities are not provided in the request: entity_e (serving name: "E").'
-            ' Alternatively, consider providing the entity: entity_b (serving_name: "B").'
+            'Required entities are not provided in the request: entity_e (serving name: "E")'
         )

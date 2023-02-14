@@ -3,7 +3,7 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple, cast
+from typing import Any, List, Tuple
 
 from collections import OrderedDict
 
@@ -183,9 +183,7 @@ class ParentEntityLookupService(BaseService):
                     # There should be only one way to obtain the parent entity. Raise an error
                     # otherwise.
                     raise AmbiguousEntityRelationshipError(
-                        f"Cannot find an unambiguous join path for entity {required_entity.name}",
-                        ambiguous_entity_name=cast(str, child_entity.name),
-                        ambiguous_entity_serving_name=child_entity.serving_names[0],
+                        f"Cannot find an unambiguous join path for entity {required_entity.name}"
                     )
 
         if result is not None:
