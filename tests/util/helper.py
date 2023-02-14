@@ -5,8 +5,6 @@ import sys
 from contextlib import contextmanager
 from unittest.mock import Mock
 
-from jinja2 import Template
-
 from featurebyte.api.database_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -125,14 +123,15 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False):
     else:
         raise ValueError("Unexpected api_object!!")
 
-    # execute SDK code & run the function to generate output
+    # execute SDK code & generate output object
     local_vars = {}
     sdk_codes = query_object.generate_code(to_use_saved_data=to_use_saved_data)
-    exec(sdk_codes, {}, local_vars)
+    exec(sdk_codes, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
     if isinstance(output, AbstractTableData):
         output = output.frame
 
+    # compare the output
     pruned_graph, node = output.extract_pruned_graph_and_node()
     expected_pruned_graph, expected_node = query_object.extract_pruned_graph_and_node()
     _check_pruned_graph_and_nodes(
