@@ -239,23 +239,21 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             )
             node_name = inserted_graph_node.name
 
+        column_infos = data.columns_info
+        if data.internal_record_creation_date_column is not None:
+            column_infos = [
+                col_info
+                for col_info in column_infos
+                if col_info.name != data.internal_record_creation_date_column
+            ]
         view = cls(
             feature_store=data.feature_store,
             tabular_source=data.tabular_source,
-            columns_info=data.columns_info,
+            columns_info=column_infos,
             node_name=node_name,
             tabular_data_ids=[data.id],
             **kwargs,
         )
-
-        # Remove record_creation_date_column from view.
-        if "record_creation_date_column" not in kwargs:
-            return view
-        record_creation_date_column = kwargs["record_creation_date_column"]
-        cols_to_keep = [column_info.name for column_info in view.columns_info]
-        if record_creation_date_column in cols_to_keep:
-            cols_to_keep.remove(record_creation_date_column)
-        view = view[cols_to_keep]  # type: ignore
         return view
 
     @property
