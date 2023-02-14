@@ -7,14 +7,14 @@ if [[ ! -d /app/.featurebyte/notebook ]]; then mkdir -p /app/.featurebyte/notebo
 if [[ ! -f /app/.featurebyte/config.yaml ]]; then echo "# featurebyte configuration file here" > /app/.featurebyte/config.yaml; fi
 ln -s /app/.featurebyte/config.yaml /app/.featurebyte/notebook/config.yaml
 
+echo "Writing additional samples in ~/.featurebyte/notebook/samples"
+mkdir -p /app/.featurebyte/notebook/samples  # This will not replace
+
 echo "Overriding solutions-beta"
 if [[ ! -f /app/.featurebyte/notebook/samples/.overridden ]]; then
   rm /app/.featurebyte/notebook/samples/solutions-beta-testing-tutorials.ipynb
-  touch /app/.featurebyte/notebook/samples/.overridden
+  touch /app/.featurebyte/notebook/samples/.overridden # At this state solution will be
 fi
-
-echo "Writing additional samples in ~/.featurebyte/notebook/samples"
-mkdir -p /app/.featurebyte/notebook/samples  # This will not replace
 cp -nr /samples/* /app/.featurebyte/notebook/samples/  # Copy without replacement
 
 echo "Persistent Configuration Files"
