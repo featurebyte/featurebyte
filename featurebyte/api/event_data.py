@@ -27,12 +27,14 @@ from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAna
 
 class EventData(DataApiObject):
     """
-    EventData is an object connected with an event table in the data warehouse that has:\n
-    - an event timestamp\n
-    - and an event_id column as a primary key
+    EventData is an object connected with an event table in the data warehouse. These tables must have the following
+    properties:\n
+    - and an event_id column as a primary key\n
+    - an event timestamp
 
-    Users are strongly encouraged to annotate the data by tagging entities and defining:\n
-    - the semantic of the data field\n
+    Users are strongly encouraged to annotate the data by tagging entities and defining:
+
+    - the semantic of the data field
     - critical data information on the data quality that requires cleaning before feature engineering.
 
     Before registering a new EventData, users are asked to set the default for the FeatureJob scheduling for features

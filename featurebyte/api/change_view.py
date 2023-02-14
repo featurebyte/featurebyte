@@ -52,9 +52,10 @@ class ChangeView(View, GroupByMixin):
 
     To support such important features, users can create a Change View from SCD Data.
 
-    This new view tracks all changes for a given column. The resulting view has 4 columns:\n
-    - change_timestamp (which is the event timestamp of the event view and equal to the effective, or start, timestamp
-      of the SCD)\n
+    This new view tracks all changes for a given column. The resulting view has 5 columns:\n
+    - past_valid_from_timestamp\n
+    - new_valid_from_timestamp (which is the event timestamp of the event view and equal to the effective, or start,
+      timestamp of the SCD)\n
     - the natural key of the SCD View\n
     - past_NAME_OF_COLUMN: value of the column before the change\n
     - new_NAME_OF_COLUMN: value of the column after the change
