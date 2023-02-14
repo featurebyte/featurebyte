@@ -42,7 +42,8 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import InputNode, ProjectNode
+from featurebyte.query_graph.node.generic import ProjectNode
+from featurebyte.query_graph.node.input import InputNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy

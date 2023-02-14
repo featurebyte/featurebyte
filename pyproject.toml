@@ -38,6 +38,7 @@ line_length = 100
 multi_line_output = 3
 profile = "black"
 sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip_glob = ["tests/fixtures/sdk_code/*"]
 
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 allow_redefinition = false
@@ -217,6 +218,6 @@ ignore-signatures = true
 min-similarity-lines = 10
 
 [tool.pytest.ini_options]
-addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure"] # Extra options:
+addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]

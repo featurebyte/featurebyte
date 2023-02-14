@@ -2,12 +2,11 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
-from typing_extensions import Annotated
+from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple
 
 from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import (
@@ -26,141 +25,10 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
-    SourceDataColumn,
     ViewDataColumn,
 )
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
-from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.util import append_to_lineage
-
-
-class InputNode(BaseNode):
-    """InputNode class"""
-
-    class BaseParameters(BaseModel):
-        """BaseParameters"""
-
-        columns: List[ColumnSpec]
-        table_details: TableDetails
-        feature_store_details: FeatureStoreDetails
-
-        @root_validator(pre=True)
-        @classmethod
-        def _convert_columns_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            # DEV-556: convert list of string to list of dictionary
-            columns = values.get("columns")
-            if columns and isinstance(columns[0], str):
-                values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
-            return values
-
-    class GenericParameters(BaseParameters):
-        """GenericParameters"""
-
-        type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC)
-        id: Optional[PydanticObjectId] = Field(default=None)
-
-    class EventDataParameters(BaseParameters):
-        """EventDataParameters"""
-
-        type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
-        id: Optional[PydanticObjectId] = Field(default=None)
-        timestamp_column: Optional[InColumnStr] = Field(
-            default=None
-        )  # DEV-556: this should be compulsory
-        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-
-        @root_validator(pre=True)
-        @classmethod
-        def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            # DEV-556: converted older record (parameters) into a newer format
-            if "dbtable" in values:
-                values["table_details"] = values["dbtable"]
-            if "feature_store" in values:
-                values["feature_store_details"] = values["feature_store"]
-            if "timestamp" in values:
-                values["timestamp_column"] = values["timestamp"]
-            return values
-
-    class ItemDataParameters(BaseParameters):
-        """ItemDataParameters"""
-
-        type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
-        id: Optional[PydanticObjectId] = Field(default=None)
-        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-        event_data_id: Optional[PydanticObjectId] = Field(default=None)
-        event_id_column: Optional[InColumnStr] = Field(default=None)
-
-    class DimensionDataParameters(BaseParameters):
-        """DimensionDataParameters"""
-
-        type: Literal[TableDataType.DIMENSION_DATA] = Field(
-            TableDataType.DIMENSION_DATA, const=True
-        )
-        id: Optional[PydanticObjectId] = Field(default=None)
-        id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
-
-    class SCDDataParameters(BaseParameters):
-        """SCDDataParameters"""
-
-        type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
-        id: Optional[PydanticObjectId] = Field(default=None)
-        natural_key_column: Optional[InColumnStr] = Field(
-            default=None
-        )  # DEV-556: this should be compulsory
-        effective_timestamp_column: Optional[InColumnStr] = Field(
-            default=None
-        )  # DEV-556: this should be compulsory
-        surrogate_key_column: Optional[InColumnStr] = Field(default=None)
-        end_timestamp_column: Optional[InColumnStr] = Field(default=None)
-        current_flag_column: Optional[InColumnStr] = Field(default=None)
-
-    type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Annotated[
-        Union[
-            EventDataParameters,
-            ItemDataParameters,
-            GenericParameters,
-            DimensionDataParameters,
-            SCDDataParameters,
-        ],
-        Field(discriminator="type"),
-    ]
-
-    @root_validator(pre=True)
-    @classmethod
-    def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # DEV-556: set default table data type when it is not present
-        if values.get("type") == NodeType.INPUT:
-            # only attempt to fix this if it is an INPUT node
-            # otherwise, it may cause issue when deserializing the graph in fastapi response
-            if "parameters" in values and "type" not in values["parameters"]:
-                values["parameters"]["type"] = TableDataType.EVENT_DATA
-        return values
-
-    def _derive_node_operation_info(
-        self,
-        inputs: List[OperationStructure],
-        branch_state: OperationStructureBranchState,
-        global_state: OperationStructureInfo,
-    ) -> OperationStructure:
-        _ = branch_state, global_state
-        return OperationStructure(
-            columns=[
-                SourceDataColumn(
-                    name=column.name,
-                    tabular_data_id=self.parameters.id,
-                    tabular_data_type=self.parameters.type,
-                    node_names={self.name},
-                    node_name=self.name,
-                    dtype=column.dtype,
-                )
-                for column in self.parameters.columns
-            ],
-            output_type=NodeOutputType.FRAME,
-            output_category=NodeOutputCategory.VIEW,
-            row_index_lineage=(self.name,),
-        )
 
 
 class ProjectNode(BaseNode):

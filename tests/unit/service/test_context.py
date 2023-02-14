@@ -7,7 +7,8 @@ from bson import ObjectId
 from featurebyte.exception import DocumentNotFoundError, DocumentUpdateError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.generic import InputNode, JoinNode
+from featurebyte.query_graph.node.generic import JoinNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.context import ContextCreate, ContextUpdate
 
 

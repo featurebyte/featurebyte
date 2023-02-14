@@ -13,7 +13,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.util import hash_node
 
 

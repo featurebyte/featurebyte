@@ -25,7 +25,7 @@ from featurebyte.query_graph.model.common_table import BaseTableData, TabularSou
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, GenericTableData
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import TableDetails
 
 
