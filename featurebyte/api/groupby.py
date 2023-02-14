@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 
 from typeguard import typechecked
 
+from featurebyte.api.as_at_aggregator import AsAtAggregator
+from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
@@ -16,11 +18,9 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SlowlyChangingView
-from featurebyte.api.view import View
-from featurebyte.api.base_aggregator import BaseAggregator
-from featurebyte.api.window_aggregator import WindowAggregator
-from featurebyte.api.as_at_aggregator import AsAtAggregator
 from featurebyte.api.simple_aggregator import SimpleAggregator
+from featurebyte.api.view import View
+from featurebyte.api.window_aggregator import WindowAggregator
 from featurebyte.api.window_validator import validate_window
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_offset_string
