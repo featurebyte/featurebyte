@@ -6,11 +6,16 @@ from typing import Any
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 from pyspark.sql import SparkSession
+from pyspark.sql.utils import AnalysisException
 
 from featurebyte.logger import logger
 
 
 class TileScheduleOnlineStore(BaseModel):
+    """
+    Tile Schedule Online Store script corresponding to SP_TILE_SCHEDULE_ONLINE_STORE stored procedure
+    """
+
     featurebyte_database: str
     agg_id: str
     job_schedule_ts_str: str
@@ -33,6 +38,9 @@ class TileScheduleOnlineStore(BaseModel):
         self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
 
     def execute(self) -> None:
+        """
+        Execute tile schedule online store operation
+        """
 
         select_sql = f"""
             SELECT
@@ -46,9 +54,9 @@ class TileScheduleOnlineStore(BaseModel):
               AGGREGATION_ID ILIKE '{self.agg_id}' AND IS_DELETED = FALSE
         """
 
-        df = self._spark.sql(select_sql)
+        online_store_df = self._spark.sql(select_sql)
 
-        for row in df.collect():
+        for row in online_store_df.collect():
             f_name = row["RESULT_ID"]
             f_sql = row["SQL_QUERY"]
             fs_table = row["ONLINE_STORE_TABLE_NAME"]
@@ -88,7 +96,7 @@ class TileScheduleOnlineStore(BaseModel):
                 # check whether feature value column exists, if not add the new column
                 try:
                     self._spark.sql(f"SELECT {f_name} FROM {fs_table} LIMIT 1")
-                except:
+                except AnalysisException:
                     self._spark.sql(f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}")
 
                 # TODO: local spark does not support update subquery

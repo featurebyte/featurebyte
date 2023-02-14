@@ -11,6 +11,10 @@ from featurebyte.logger import logger
 
 
 class TileGenerateEntityTracking(BaseModel):
+    """
+    Tile Generate entity tracking script corresponding to SP_TILE_GENERATE_ENTITY_TRACKING stored procedure
+    """
+
     featurebyte_database: str
     tile_last_start_date_column: str
     entity_column_names: str
@@ -35,6 +39,9 @@ class TileGenerateEntityTracking(BaseModel):
         self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
 
     def execute(self) -> None:
+        """
+        Execute tile generate entity tracking operation
+        """
 
         tracking_table_name = self.tile_id + "_ENTITY_TRACKER"
         tracking_table_exist = self._spark.catalog.tableExists(tracking_table_name)

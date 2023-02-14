@@ -7,11 +7,18 @@ from featurebyte.sql.spark.tile_registry import TileRegistry
 
 
 class TileMonitor(TileCommon):
+    """
+    Tile Monitor script corresponding to SP_TILE_MONITOR stored procedure
+    """
+
     monitor_sql: str
     tile_start_date_column: str
     tile_type: str
 
     def execute(self) -> None:
+        """
+        Execute tile monitor operation
+        """
 
         tile_table_exist = self._spark.catalog.tableExists(self.tile_id)
         logger.debug(f"tile_table_exist: {tile_table_exist}")
@@ -19,10 +26,10 @@ class TileMonitor(TileCommon):
         if not tile_table_exist:
             logger.info(f"tile table {self.tile_id} does not exist")
         else:
-            df = self._spark.sql(
+            col_names_df = self._spark.sql(
                 f"select value_column_names from tile_registry where tile_id = '{self.tile_id}'"
             )
-            existing_value_columns = df.collect()[0].value_column_names
+            existing_value_columns = col_names_df.collect()[0].value_column_names
 
             tile_sql = self.monitor_sql.replace("'", "''")
 

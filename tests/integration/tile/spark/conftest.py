@@ -31,16 +31,6 @@ def spark_session_fixture():
         )
         .getOrCreate()
     )
-    py_files = [
-        "tile_common.py",
-        "tile_registry.py",
-        "tile_monitor.py",
-        "tile_generate.py",
-        "tile_generate_entity_tracking.py",
-        "tile_schedule_online_store.py",
-    ]
-    for py_file in py_files:
-        spark.sparkContext.addPyFile(f"{script_path}/{py_file}")
 
     test_db = "TEST_DB_1"
     spark.sql(f"CREATE DATABASE IF NOT EXISTS {test_db}")
@@ -52,13 +42,13 @@ def spark_session_fixture():
     )
 
     sql_table_files = [
-        ("T_TILE_REGISTRY.sql", "TILE_REGISTRY"),
-        ("T_ONLINE_STORE_MAPPING.sql", "ONLINE_STORE_MAPPING"),
-        ("T_TILE_FEATURE_MAPPING.sql", "TILE_FEATURE_MAPPING"),
-        ("T_TILE_JOB_MONITOR.sql", "TILE_JOB_MONITOR"),
-        ("T_TILE_MONITOR_SUMMARY.sql", "TILE_MONITOR_SUMMARY"),
+        "T_TILE_REGISTRY.sql",
+        "T_ONLINE_STORE_MAPPING.sql",
+        "T_TILE_FEATURE_MAPPING.sql",
+        "T_TILE_JOB_MONITOR.sql",
+        "T_TILE_MONITOR_SUMMARY.sql",
     ]
-    for sql_file, sql_table in sql_table_files:
+    for sql_file in sql_table_files:
         with open(f"{script_path}/{sql_file}", "r") as file:
             spark.sql(file.read())
 

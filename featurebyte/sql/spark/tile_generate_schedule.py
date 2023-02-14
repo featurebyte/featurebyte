@@ -1,6 +1,8 @@
 """
 Tile Generate Schedule script for SP_TILE_GENERATE
 """
+from typing import Any, Dict, List
+
 from datetime import datetime, timedelta
 
 import dateutil.parser
@@ -14,6 +16,10 @@ from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineS
 
 
 class TileGenerateSchedule(TileCommon):
+    """
+    Tile Generate Schedule script corresponding to SP_TILE_GENERATE_SCHEDULE stored procedure
+    """
+
     offline_period_minute: int
     tile_start_date_column: str
     tile_last_start_date_column: str
@@ -24,7 +30,16 @@ class TileGenerateSchedule(TileCommon):
     agg_id: str
     job_schedule_ts: str
 
+    # pylint: disable=too-many-locals
     def execute(self) -> None:
+        """
+        Execute tile generate schedule operation
+
+        Raises
+        ------
+        Exception
+            Related exception from the triggered stored procedures if it fails
+        """
 
         tile_end_ts = dateutil.parser.isoparse(self.job_schedule_ts)
         cron_residue_seconds = self.tile_modulo_frequency_second % 60
@@ -124,7 +139,7 @@ class TileGenerateSchedule(TileCommon):
             job_schedule_ts_str=self.job_schedule_ts,
         )
 
-        step_specs = [
+        step_specs: List[Dict[str, Any]] = [
             {
                 "name": "tile_monitor",
                 "trigger": tile_monitor_ins,
@@ -154,21 +169,21 @@ class TileGenerateSchedule(TileCommon):
         for spec in step_specs:
             try:
                 logger.info(f"Calling {spec['name']}\n")
-                spec["trigger"].execute()
+                tile_ins: TileCommon = spec["trigger"]
+                tile_ins.execute()
                 logger.info(f"End of calling {spec['name']}\n")
-            except Exception as e:
-                message = str(e).replace("'", "")
-                ex_insert_sql = audit_insert_sql.replace(
-                    "<STATUS>", spec["status"]["fail"]
-                ).replace(
-                    "<MESSAGE>",
-                    message,
+            except Exception as exception:
+                message = str(exception).replace("'", "")
+                fail_code = spec["status"]["fail"]
+
+                ex_insert_sql = audit_insert_sql.replace("<STATUS>", fail_code).replace(
+                    "<MESSAGE>", message
                 )
                 logger.error("fail_insert_sql: ", ex_insert_sql)
                 self._spark.sql(ex_insert_sql)
-                raise e
-            insert_sql = audit_insert_sql.replace("<STATUS>", spec["status"]["success"]).replace(
-                "<MESSAGE>", ""
-            )
+                raise exception
+
+            success_code = spec["status"]["success"]
+            insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
             logger.info("success_insert_sql: ", insert_sql)
             self._spark.sql(insert_sql)

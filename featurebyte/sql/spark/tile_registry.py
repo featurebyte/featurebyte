@@ -8,16 +8,24 @@ from featurebyte.sql.spark.tile_common import TileCommon
 
 
 class TileRegistry(TileCommon):
+    """
+    Tile Registry script corresponding to SP_TILE_REGISTRY stored procedure
+    """
+
     table_name: str
     table_exist: str
 
+    # pylint: disable=too-many-locals
     def execute(self) -> None:
+        """
+        Execute tile registry operation
+        """
 
-        df = self._spark.sql(
+        registry_df = self._spark.sql(
             f"select VALUE_COLUMN_NAMES as names, VALUE_COLUMN_TYPES as types from tile_registry where tile_id = '{self.tile_id}'"
         )
 
-        res = df.select("names", "types").collect()
+        res = registry_df.select("names", "types").collect()
         logger.debug(f"res: {res}")
 
         input_value_columns = [
@@ -99,9 +107,9 @@ class TileRegistry(TileCommon):
             self._spark.sql(insert_sql)
 
         if self.table_exist == "Y":
-            df = self._spark.sql(f"SHOW COLUMNS IN {self.table_name}")
+            cols_df = self._spark.sql(f"SHOW COLUMNS IN {self.table_name}")
             cols = []
-            for col in df.collect():
+            for col in cols_df.collect():
                 cols.append(col.col_name)
 
             logger.debug("cols: ", cols)
