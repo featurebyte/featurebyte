@@ -689,7 +689,6 @@ def entity_info_with_ambiguous_relationships(
     c_is_parent_of_b,
     d_is_parent_of_b,
     e_is_parent_of_c_and_d,
-    parent_entity_lookup_service,
 ) -> EntityInfo:
     """
     EntityInfo the arises from ambiguous relationships

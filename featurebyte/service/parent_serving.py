@@ -3,7 +3,7 @@ Module to support serving parent features using child entities
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, cast
 
 from collections import OrderedDict
 
@@ -157,12 +157,15 @@ class ParentEntityLookupService(BaseService):
         ------
         EntityJoinPathNotFoundError
             If a join path cannot be identified
+        AmbiguousEntityRelationshipError
+            If no unique join path can be identified due to ambiguous relationships
         """
         # Perform a BFS traversal from the required entity and stop once any of the available
         # entities is reached. This should be the fastest way to join datas to obtain the required
         # entity (requiring the least number of joins) assuming all joins have the same cost.
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
         queued = set()
+        result = None
 
         while pending:
 
@@ -170,7 +173,9 @@ class ParentEntityLookupService(BaseService):
             updated_path = [current_entity] + current_path
 
             if current_entity.id in available_entity_ids:
-                return updated_path
+                # Do not exit early, continue to see if there are multiple join paths (can be
+                # detected when an entity is queued more than once)
+                result = updated_path
 
             children_entities = await self.entity_service.get_children_entities(current_entity.id)
             for child_entity in children_entities:
@@ -180,9 +185,12 @@ class ParentEntityLookupService(BaseService):
                 else:
                     raise AmbiguousEntityRelationshipError(
                         f"Cannot find an unambiguous join path for entity {required_entity.name}",
-                        ambiguous_entity_name=child_entity.name,
+                        ambiguous_entity_name=cast(str, child_entity.name),
                         ambiguous_entity_serving_name=child_entity.serving_names[0],
                     )
+
+        if result is not None:
+            return result
 
         raise EntityJoinPathNotFoundError(
             f"Cannot find a join path for entity {required_entity.name}"

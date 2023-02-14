@@ -11,6 +11,7 @@ from featurebyte.exception import (
     RequiredEntityNotProvidedError,
     UnexpectedServingNamesMappingError,
 )
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.parent_serving import ParentServingPreparation
@@ -159,7 +160,7 @@ class EntityValidationService(BaseService):
         if entity_info.are_all_required_entities_provided():
             return None
 
-        def _format_missing_entities(missing_entities):
+        def _format_missing_entities(missing_entities: list[EntityModel]) -> str:
             missing_entities = sorted(missing_entities, key=lambda x: x.name)  # type: ignore
             formatted_pairs = []
             for entity in missing_entities:
