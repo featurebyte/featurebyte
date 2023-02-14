@@ -1,8 +1,6 @@
 """
 Tile Generate Schedule script for SP_TILE_GENERATE
 """
-from typing import Optional
-
 from datetime import datetime, timedelta
 
 import dateutil.parser
@@ -88,32 +86,32 @@ class TileGenerateSchedule(TileCommon):
 
         tile_monitor_ins = TileMonitor(
             spark_session=self._spark,
-            featurebyte_database="TEST_DB_1",
+            featurebyte_database=self.featurebyte_database,
             tile_id=tile_id,
-            tile_modulo_frequency_second=183,
-            blind_spot_second=3,
-            frequency_minute=5,
+            tile_modulo_frequency_second=self.tile_modulo_frequency_second,
+            blind_spot_second=self.blind_spot_second,
+            frequency_minute=self.frequency_minute,
             sql=generate_input_sql,
             monitor_sql=monitor_input_sql,
             entity_column_names=self.entity_column_names,
             value_column_names=self.value_column_names,
             value_column_types=self.value_column_types,
-            tile_type="ONLINE",
+            tile_type=self.tile_type,
             tile_start_date_column=InternalName.TILE_START_DATE,
         )
 
         tile_generate_ins = TileGenerate(
             spark_session=self._spark,
-            featurebyte_database="TEST_DB_1",
+            featurebyte_database=self.featurebyte_database,
             tile_id=tile_id,
-            tile_modulo_frequency_second=183,
-            blind_spot_second=3,
-            frequency_minute=5,
+            tile_modulo_frequency_second=self.tile_modulo_frequency_second,
+            blind_spot_second=self.blind_spot_second,
+            frequency_minute=self.frequency_minute,
             sql=generate_input_sql,
             entity_column_names=self.entity_column_names,
             value_column_names=self.value_column_names,
             value_column_types=self.value_column_types,
-            tile_type="ONLINE",
+            tile_type=self.tile_type,
             tile_start_date_column=InternalName.TILE_START_DATE,
             last_tile_start_str=last_tile_start_str,
             tile_last_start_date_column=self.tile_last_start_date_column,
@@ -121,7 +119,7 @@ class TileGenerateSchedule(TileCommon):
 
         tile_online_store_ins = TileScheduleOnlineStore(
             spark_session=self._spark,
-            featurebyte_database="TEST_DB_1",
+            featurebyte_database=self.featurebyte_database,
             agg_id=self.agg_id,
             job_schedule_ts_str=self.job_schedule_ts,
         )

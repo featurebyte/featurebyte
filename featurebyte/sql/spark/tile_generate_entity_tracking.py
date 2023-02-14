@@ -54,7 +54,6 @@ class TileGenerateEntityTracking(BaseModel):
         # create table or insert new records or update existing records
         if not tracking_table_exist:
             create_sql = f"create table {tracking_table_name} as SELECT * FROM {self.entity_table}"
-            logger.debug("create_sql: ", create_sql)
             self._spark.sql(create_sql)
         else:
             merge_sql = f"""
@@ -66,5 +65,4 @@ class TileGenerateEntityTracking(BaseModel):
                         insert ({self.entity_column_names}, {self.tile_last_start_date_column})
                             values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
             """
-            logger.debug("merge_sql: ", merge_sql)
             self._spark.sql(merge_sql)

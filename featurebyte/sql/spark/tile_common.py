@@ -37,31 +37,3 @@ class TileCommon(BaseModel):
         super().__init__(**kwargs)
         self._spark = spark_session
         self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
-
-    # _spark: SparkSession = PrivateAttr()
-    #
-    # def __init__(self, script_path: str, **kwargs):
-    #     """
-    #     Initialize SparkSession
-    #
-    #     Parameters
-    #     ----------
-    #     script_path
-    #
-    #     Returns
-    #     -------
-    #     SparkSession instance
-    #     """
-    #     super().__init__(**kwargs)
-    #
-    #     spark = SparkSession.builder.appName("TileManagement").getOrCreate()
-    #     spark.sparkContext.addPyFile(f"{script_path}/tile_common.py")
-    #     spark.sparkContext.addPyFile(f"{script_path}/tile_registry.py")
-    #     spark.sparkContext.addPyFile(f"{script_path}/tile_monitor.py")
-    #     spark.sparkContext.addPyFile(f"{script_path}/tile_generate.py")
-    #     spark.sparkContext.addPyFile(f"{script_path}/tile_generate_entity_tracking.py")
-    #     spark.sparkContext.addPyFile(f"{script_path}/tile_schedule_online_store.py")
-    #
-    #     spark.sql(f"USE DATABASE {kwargs['featurebyte_database']}")
-    #
-    #     self._spark = spark

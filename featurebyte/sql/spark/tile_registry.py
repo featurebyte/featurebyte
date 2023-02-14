@@ -96,7 +96,6 @@ class TileRegistry(TileCommon):
                     null
                 )
             """
-            logger.debug("insert_sql: ", insert_sql)
             self._spark.sql(insert_sql)
 
         if self.table_exist == "Y":
@@ -118,5 +117,4 @@ class TileRegistry(TileCommon):
 
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
-                logger.debug("tile_add_sql: ", tile_add_sql)
                 self._spark.sql(tile_add_sql)
