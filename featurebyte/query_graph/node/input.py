@@ -350,12 +350,17 @@ class InputNode(BaseNode):
         data_class_enum = self._data_to_data_class_enum[table_type]
 
         # construct data sdk statement
+        data_pre_var_name = f"{self.parameters.pre_variable_prefix}data"
+        data_var_name = var_name_generator.convert_to_variable_name(
+            pre_variable_name=data_pre_var_name
+        )
         if config.to_use_saved_data and self.parameters.id:
             object_id = ClassEnum.OBJECT_ID(ValueStr.create(self.parameters.id))
             right_op = data_class_enum(object_id, method="get_by_id")
         else:
             object_id = ClassEnum.OBJECT_ID(ValueStr.create(config.feature_store_id))
             right_op = data_class_enum(
+                name=str(data_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name
                 ),
@@ -366,10 +371,6 @@ class InputNode(BaseNode):
                 **self.parameters.extract_other_constructor_parameters(),
             )
 
-        data_pre_var_name = f"{self.parameters.pre_variable_prefix}data"
-        data_var_name = var_name_generator.convert_to_variable_name(
-            pre_variable_name=data_pre_var_name
-        )
         statements.append((data_var_name, right_op))
 
         if table_type != TableDataType.GENERIC:
