@@ -59,6 +59,59 @@ class BaseInputNodeParameters(BaseModel):
             values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
         return values
 
+    def extract_feature_store_object(self, feature_store_name: str) -> ObjectClass:
+        """
+        Construct feature store object for SDK code generation
+
+        Parameters
+        ----------
+        feature_store_name: str
+            Feature store name
+
+        Returns
+        -------
+        ObjectClass
+        """
+        source_type = self.feature_store_details.type
+        source_details = self._source_type_to_import[source_type]
+        return ClassEnum.FEATURE_STORE(
+            name=feature_store_name,
+            type=self.feature_store_details.type,
+            details=source_details(**self.feature_store_details.details.dict()),
+        )
+
+    def extract_tabular_source_object(self, feature_store_id: ObjectId) -> ObjectClass:
+        """
+        Construct tabular source object for SDK code generation
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+
+        Returns
+        -------
+        ObjectClass
+        """
+        return ClassEnum.TABULAR_SOURCE(
+            feature_store_id=feature_store_id,
+            table_details=ClassEnum.TABLE_DETAILS(
+                database_name=self.table_details.database_name,
+                schema_name=self.table_details.schema_name,
+                table_name=self.table_details.table_name,
+            ),
+        )
+
+    def extract_columns_info_objects(self) -> List[ObjectClass]:
+        """
+        Construct list of column info objects for SDK code generation
+
+        Returns
+        -------
+        List[ObjectClass]
+        """
+        return [ClassEnum.COLUMN_INFO(name=col.name, dtype=col.dtype) for col in self.columns]
+
     @property
     @abstractmethod
     def pre_variable_prefix(self) -> str:
@@ -81,58 +134,15 @@ class BaseInputNodeParameters(BaseModel):
         str
         """
 
-    def get_feature_store_object(self, feature_store_name: str) -> ObjectClass:
+    @abstractmethod
+    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
         """
-        Construct feature store object for SDK code generation
-
-        Parameters
-        ----------
-        feature_store_name: str
-            Feature store name
+        Extract other constructor parameters used in SDK code generation
 
         Returns
         -------
-        ObjectClass
+        Dict[str, Any]
         """
-        source_type = self.feature_store_details.type
-        source_details = self._source_type_to_import[source_type]
-        return ClassEnum.FEATURE_STORE(
-            name=feature_store_name,
-            type=self.feature_store_details.type,
-            details=source_details(**self.feature_store_details.details.dict()),
-        )
-
-    def get_tabular_source_object(self, feature_store_id: ObjectId) -> ObjectClass:
-        """
-        Construct tabular source object for SDK code generation
-
-        Parameters
-        ----------
-        feature_store_id: ObjectId
-            Feature store ID
-
-        Returns
-        -------
-        ObjectClass
-        """
-        return ClassEnum.TABULAR_SOURCE(
-            feature_store_id=feature_store_id,
-            table_details=ClassEnum.TABLE_DETAILS(
-                database_name=self.table_details.database_name,
-                schema_name=self.table_details.schema_name,
-                table_name=self.table_details.table_name,
-            ),
-        )
-
-    def get_columns_info_object(self) -> List[ObjectClass]:
-        """
-        Construct list of column info objects for SDK code generation
-
-        Returns
-        -------
-        List[ObjectClass]
-        """
-        return [ClassEnum.COLUMN_INFO(name=col.name, dtype=col.dtype) for col in self.columns]
 
 
 class GenericInputNodeParameters(BaseInputNodeParameters):
@@ -148,6 +158,9 @@ class GenericInputNodeParameters(BaseInputNodeParameters):
     @property
     def from_data_method(self) -> str:
         return ""
+
+    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+        return {}
 
 
 class EventDataInputNodeParameters(BaseInputNodeParameters):
@@ -180,6 +193,9 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
     def from_data_method(self) -> str:
         return "from_event_data"
 
+    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+        return {"event_id_column": self.id_column, "event_timestamp_column": self.timestamp_column}
+
 
 class ItemDataInputNodeParameters(BaseInputNodeParameters):
     """ItemDataParameters"""
@@ -198,6 +214,9 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
     def from_data_method(self) -> str:
         return "from_item_data"
 
+    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+        return {"item_id_column": self.id_column, "event_id_column": self.event_id_column}
+
 
 class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     """DimensionDataParameters"""
@@ -213,6 +232,9 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     @property
     def from_data_method(self) -> str:
         return "from_dimension_data"
+
+    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+        return {"dimension_id_column": self.id_column}
 
 
 class SCDDataInputNodeParameters(BaseInputNodeParameters):
@@ -237,6 +259,15 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
     @property
     def from_data_method(self) -> str:
         return "from_slowly_changing_data"
+
+    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+        return {
+            "natural_key_column": self.natural_key_column,
+            "effective_timestamp_column": self.effective_timestamp_column,
+            "end_timestamp_column": self.end_timestamp_column,
+            "surrogate_key_column": self.surrogate_key_column,
+            "current_flag_column": self.current_flag_column,
+        }
 
 
 class InputNode(BaseNode):
@@ -325,13 +356,14 @@ class InputNode(BaseNode):
         else:
             object_id = ClassEnum.OBJECT_ID(ValueStr.create(config.feature_store_id))
             right_op = data_class_enum(
-                feature_store=self.parameters.get_feature_store_object(
+                feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name
                 ),
-                tabular_source=self.parameters.get_tabular_source_object(
+                tabular_source=self.parameters.extract_tabular_source_object(
                     feature_store_id=object_id
                 ),
-                columns_info=self.parameters.get_columns_info_object(),
+                columns_info=self.parameters.extract_columns_info_objects(),
+                **self.parameters.extract_other_constructor_parameters(),
             )
 
         data_pre_var_name = f"{self.parameters.pre_variable_prefix}data"
