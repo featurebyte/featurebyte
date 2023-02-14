@@ -182,7 +182,7 @@ class EntityValidationService(BaseService):
             raise RequiredEntityNotProvidedError(
                 f"Required entities are not provided in the request: {formatted_missing_entities}. "
                 f"Alternatively, consider providing the entity: {e.ambiguous_entity_name}"
-                f" (serving_name: {e.ambiguous_entity_serving_name})."
+                f' (serving_name: "{e.ambiguous_entity_serving_name}").'
             )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())
