@@ -160,9 +160,6 @@ class ParentEntityLookupService(BaseService):
         AmbiguousEntityRelationshipError
             If no unique join path can be identified due to ambiguous relationships
         """
-        # Perform a BFS traversal from the required entity and stop once any of the available
-        # entities is reached. This should be the fastest way to join datas to obtain the required
-        # entity (requiring the least number of joins) assuming all joins have the same cost.
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
         queued = set()
         result = None
@@ -183,6 +180,8 @@ class ParentEntityLookupService(BaseService):
                     queued.add(child_entity.name)
                     pending.append((child_entity, updated_path))
                 else:
+                    # There should be only one way to obtain the parent entity. Raise an error
+                    # otherwise.
                     raise AmbiguousEntityRelationshipError(
                         f"Cannot find an unambiguous join path for entity {required_entity.name}",
                         ambiguous_entity_name=cast(str, child_entity.name),
