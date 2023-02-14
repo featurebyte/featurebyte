@@ -31,7 +31,7 @@ class TileGenerate(TileCommon):
 
         tile_sql = self.sql.replace("'", "''")
 
-        tile_registry_ins = TileRegistry(
+        TileRegistry(
             spark_session=self._spark,
             sql=tile_sql,
             table_name=self.tile_id,
@@ -46,10 +46,7 @@ class TileGenerate(TileCommon):
             value_column_types=self.value_column_types,
             tile_id=self.tile_id,
             tile_type=self.tile_type,
-        )
-        logger.info("\n\nCalling tile_registry.execute\n")
-        tile_registry_ins.execute()
-        logger.info("\nEnd of calling tile_registry.execute\n\n")
+        ).execute()
 
         tile_sql = f"""
             select
