@@ -218,6 +218,6 @@ ignore-signatures = true
 min-similarity-lines = 10
 
 [tool.pytest.ini_options]
-addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure"] # Extra options:
+addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
