@@ -31,6 +31,7 @@ class TileGenerate(TileCommon):
 
         tile_sql = self.sql.replace("'", "''")
 
+        # pylint: disable=duplicate-code
         TileRegistry(
             spark_session=self._spark,
             sql=tile_sql,
