@@ -87,7 +87,6 @@ async def test_required_entity__ambiguous_relationships(
     c_is_parent_of_b,
     d_is_parent_of_b,
     e_is_parent_of_c_and_d,
-    parent_entity_lookup_service,
     entity_validation_service,
 ):
     """
