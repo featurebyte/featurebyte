@@ -9,7 +9,6 @@ from featurebyte.api.database_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
