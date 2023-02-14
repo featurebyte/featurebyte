@@ -26,22 +26,22 @@ from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 class ItemData(DataApiObject):
     """
     ItemData is an object connected with an item table that has a ‘one to many’ relationship with an event table.
-    Example:
-    - Order item table -> Order table
+    Example:\n
+    - Order item table -> Order table\n
     - Drug prescriptions -> Doctor visits.
 
     The table does not explicitly contain any timestamp, but is implicitly related to an event timestamp via its
     relationship with the event table.
 
-    To register a new ItemData, users are asked to provide:
-    - the name of the column of the item id
-    - the name of the column of the event id
+    To register a new ItemData, users are asked to provide:\n
+    - the name of the column of the item id\n
+    - the name of the column of the event id\n
     - the name of the event data it is related to
 
     The ItemData inherits the default FeatureJob setting of the Event data.
 
-    Like for Event Data, users are strongly encouraged to annotate the data by tagging entities and defining:
-    - the semantic of the data field
+    Like for Event Data, users are strongly encouraged to annotate the data by tagging entities and defining:\n
+    - the semantic of the data field\n
     - critical data information on the data quality that requires cleaning before feature engineering
 
     To create features from an ItemData, users create an ItemView.

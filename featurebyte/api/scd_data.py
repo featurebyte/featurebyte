@@ -23,15 +23,17 @@ from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 class SlowlyChangingData(DataApiObject):
     """
     SlowlyChangingData is a data source object connected with a Slowly Changing Dimension table of Type 2 in
-    the data warehouse that has:
-    - a natural key (key for which there is one unique active record)
-    - a surrogate key (the primary key of the SCD)
-    - an effective date or timestamp
-    and optionally,
-    - an end date or timestamp and
+    the data warehouse that has:\n
+    - a natural key (key for which there is one unique active record)\n
+    - a surrogate key (the primary key of the SCD)\n
+    - an effective date or timestamp\n
+
+    and optionally,\n
+    - an end date or timestamp and\n
     - a current flag
 
     To create an instance of this class, see the `from_tabular_source` method.
+
     To build features, users can create SlowlyChangingViews from SlowlyChangingData.
     """
 

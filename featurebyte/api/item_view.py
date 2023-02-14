@@ -49,13 +49,13 @@ class ItemView(View, GroupByMixin):
     When an ItemView is created, the event_timestamp and the entities of the event data the item data is associated
     with are automatically added. Users can join more columns from the event data if desired.
 
-    Transformations supported are the same as for EventView except for:
+    Transformations supported are the same as for EventView except for:\n
     - lag (and inter event time) can be computed only for entities that are not inherited from the event data
 
     Features can be easily created from ItemViews in a similar way as for features created from EventViews, with a
-    few differences:
+    few differences:\n
     - features for the event_id and its children (item_id) are not time based. Features for other entities are time
-      based like for EventViews.
+      based like for EventViews.\n
     - columns imported from the event data or their derivatives can not be aggregated per an entity inherited from
       the event data. Those features should be engineered directly from the event data.
     """
