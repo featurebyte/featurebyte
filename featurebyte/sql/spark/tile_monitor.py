@@ -56,14 +56,19 @@ class TileMonitor(TileCommon):
             new_tile_sql = f"""
                 select
                     {self.tile_start_date_column},
-                    F_TIMESTAMP_TO_INDEX({self.tile_start_date_column}, {self.tile_modulo_frequency_second}, {self.blind_spot_second}, {self.frequency_minute}) as INDEX,
-                    {self.entity_column_names},
+                    F_TIMESTAMP_TO_INDEX(
+                        {self.tile_start_date_column},
+                        {self.tile_modulo_frequency_second},
+                        {self.blind_spot_second},
+                        {self.frequency_minute}
+                    ) as INDEX,
+                    {self.entity_column_names_str},
                     {existing_value_columns}
                 from ({self.monitor_sql})
             """
 
             entity_filter_cols_str = " AND ".join(
-                [f"a.{c} = b.{c}" for c in self.entity_column_names.split(",")]
+                [f"a.{c} = b.{c}" for c in self.entity_column_names]
             )
             value_select_cols_str = " , ".join(
                 [f"b.{c} as OLD_{c}" for c in existing_value_columns.split(",")]
@@ -84,7 +89,11 @@ class TileMonitor(TileCommon):
                         a.*,
                         {value_select_cols_str},
                         cast('{self.tile_type}' as string) as TILE_TYPE,
-                        DATEADD(SECOND, ({self.blind_spot_second}+{self.frequency_minute}*60), a.{self.tile_start_date_column}) as EXPECTED_CREATED_AT,
+                        DATEADD(
+                            SECOND,
+                            ({self.blind_spot_second}+{self.frequency_minute}*60),
+                            a.{self.tile_start_date_column}
+                        ) as EXPECTED_CREATED_AT,
                         current_timestamp() as CREATED_AT
                     from
                         ({new_tile_sql}) a left outer join {self.tile_id} b
@@ -124,8 +133,14 @@ class TileMonitor(TileCommon):
                 insert_sql = f"""
                     insert into {monitor_table_name}
                         (
-                            {self.tile_start_date_column}, INDEX, {self.entity_column_names}, {existing_value_columns},
-                            {value_insert_cols_str}, TILE_TYPE, EXPECTED_CREATED_AT, CREATED_AT
+                            {self.tile_start_date_column},
+                            INDEX,
+                            {self.entity_column_names_str},
+                            {existing_value_columns},
+                            {value_insert_cols_str},
+                            TILE_TYPE,
+                            EXPECTED_CREATED_AT,
+                            CREATED_AT
                         )
                         {compare_sql}
                 """

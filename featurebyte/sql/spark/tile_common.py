@@ -1,7 +1,7 @@
 """
 Base Class for Tile Schedule Instance
 """
-from typing import Any
+from typing import Any, List
 
 from abc import ABC, abstractmethod
 
@@ -22,9 +22,9 @@ class TileCommon(BaseModel, ABC):
     frequency_minute: int
 
     sql: str
-    entity_column_names: str
-    value_column_names: str
-    value_column_types: str
+    entity_column_names: List[str]
+    value_column_names: List[str]
+    value_column_types: List[str]
 
     _spark: SparkSession = PrivateAttr()
 
@@ -42,6 +42,42 @@ class TileCommon(BaseModel, ABC):
         super().__init__(**kwargs)
         self._spark = spark_session
         self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
+
+    @property
+    def entity_column_names_str(self) -> str:
+        """
+        Format entity_column_names into comma-separated string
+
+        Returns
+        -------
+            string representation of entity_column_names
+        """
+
+        return ",".join(self.entity_column_names)
+
+    @property
+    def value_column_names_str(self) -> str:
+        """
+        Format value_column_names into comma-separated string
+
+        Returns
+        -------
+            string representation of value_column_names
+        """
+
+        return ",".join(self.value_column_names)
+
+    @property
+    def value_column_types_str(self) -> str:
+        """
+        Format value_column_types into comma-separated string
+
+        Returns
+        -------
+            string representation of value_column_types
+        """
+
+        return ",".join(self.value_column_types)
 
     @abstractmethod
     def execute(self) -> None:

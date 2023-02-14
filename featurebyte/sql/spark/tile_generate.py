@@ -58,14 +58,15 @@ class TileGenerate(TileCommon):
                     {self.blind_spot_second},
                     {self.frequency_minute}
                 ) as index,
-                {self.entity_column_names}, {self.value_column_names},
+                {self.entity_column_names_str},
+                {self.value_column_names_str},
                 current_timestamp() as created_at
             from ({self.sql})
         """
 
         entity_insert_cols = []
         entity_filter_cols = []
-        for element in self.entity_column_names.split(","):
+        for element in self.entity_column_names:
             element = element.strip()
             entity_insert_cols.append("b." + element)
             entity_filter_cols.append("a." + element + " = b." + element)
@@ -75,7 +76,7 @@ class TileGenerate(TileCommon):
 
         value_insert_cols = []
         value_update_cols = []
-        for element in self.value_column_names.split(","):
+        for element in self.value_column_names:
             element = element.strip()
             value_insert_cols.append("b." + element)
             value_update_cols.append("a." + element + " = b." + element)
@@ -96,13 +97,11 @@ class TileGenerate(TileCommon):
         else:
             if self.entity_column_names:
                 on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
-                insert_str = (
-                    f"INDEX, {self.entity_column_names}, {self.value_column_names}, CREATED_AT"
-                )
+                insert_str = f"INDEX, {self.entity_column_names_str}, {self.value_column_names_str}, CREATED_AT"
                 values_str = f"b.INDEX, {entity_insert_cols_str}, {value_insert_cols_str}, current_timestamp()"
             else:
                 on_condition_str = "a.INDEX = b.INDEX"
-                insert_str = f"INDEX, {self.value_column_names}, CREATED_AT"
+                insert_str = f"INDEX, {self.value_column_names_str}, CREATED_AT"
                 values_str = f"b.INDEX, {value_insert_cols_str}, current_timestamp()"
 
             merge_sql = f"""
@@ -132,7 +131,10 @@ class TileGenerate(TileCommon):
             ind_value = index_df.select("value").collect()[0].value
 
             update_tile_last_ind_sql = f"""
-                UPDATE TILE_REGISTRY SET LAST_TILE_INDEX_{self.tile_type} = {ind_value}, {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
+                UPDATE TILE_REGISTRY
+                    SET
+                        LAST_TILE_INDEX_{self.tile_type} = {ind_value},
+                        {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
                 WHERE TILE_ID = '{self.tile_id}'
             """
             self._spark.sql(update_tile_last_ind_sql)

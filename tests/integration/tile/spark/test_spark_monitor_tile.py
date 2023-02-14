@@ -12,13 +12,16 @@ def test_monitor_tile_missing_tile(spark_session):
     """
     Test monitoring with missing tiles
     """
-    entity_col_names = "PRODUCT_ACTION,CUST_ID,`客户`"
-    value_col_names = "VALUE"
-    value_col_types = "FLOAT"
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    value_col_names = ["VALUE"]
+    value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 95"
-    monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 100"
+
+    entity_col_names_str = ",".join(entity_col_names)
+    value_col_names_str = ",".join(value_col_names)
+    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 95"
+    monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 100"
 
     tile_generate_ins = TileGenerate(
         spark_session=spark_session,
@@ -69,12 +72,15 @@ def test_monitor_tile_updated_tile(spark_session):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
-    entity_col_names = "PRODUCT_ACTION,CUST_ID,`客户`"
-    value_col_names = "VALUE"
-    value_col_types = "FLOAT"
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    value_col_names = ["VALUE"]
+    value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 10"
+
+    entity_col_names_str = ",".join(entity_col_names)
+    value_col_names_str = ",".join(value_col_names)
+    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 10"
     monitor_tile_sql = tile_sql
 
     tile_generate_ins = TileGenerate(
@@ -130,12 +136,15 @@ def test_monitor_tile_updated_tile_new_column(spark_session):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
-    entity_col_names = "PRODUCT_ACTION,CUST_ID,`客户`"
-    value_col_names = "VALUE"
-    value_col_types = "FLOAT"
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    value_col_names = ["VALUE"]
+    value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 10"
+
+    entity_col_names_str = ",".join(entity_col_names)
+    value_col_names_str = ",".join(value_col_names)
+    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} limit 10"
 
     tile_generate_ins = TileGenerate(
         spark_session=spark_session,
@@ -156,9 +165,10 @@ def test_monitor_tile_updated_tile_new_column(spark_session):
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1"
     spark_session.sql(sql)
 
-    value_col_names_2 = "VALUE,VALUE_2"
-    value_col_types_2 = "FLOAT,FLOAT"
-    monitor_tile_sql_2 = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names_2} FROM {table_name} limit 10"
+    value_col_names_2 = ["VALUE", "VALUE_2"]
+    value_col_types_2 = ["FLOAT", "FLOAT"]
+    value_col_names_2_str = ",".join(value_col_names_2)
+    monitor_tile_sql_2 = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_2_str} FROM {table_name} limit 10"
 
     tile_monitor_ins = TileMonitor(
         spark_session=spark_session,
