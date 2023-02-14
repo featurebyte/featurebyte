@@ -4,6 +4,7 @@ Unit tests for featurebyte.query_graph.node.metadata.sdk_code
 import importlib
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
@@ -57,13 +58,18 @@ def test_class_enum__module_import():
 
 def test_class_enum_and_object_class():
     """Test ClassEnum & ObjectClass interaction"""
-    event_data = ClassEnum.EVENT_DATA(1234, name="event_data")
-    assert str(event_data) == repr(event_data) == 'EventData(1234, name="event_data")'
-    assert event_data.extract_import() == {ClassEnum.EVENT_DATA.value}
+    object_id = ObjectId("63eaeafcbe3a62da29705ad1")
+    event_data = ClassEnum.EVENT_DATA(ClassEnum.OBJECT_ID(object_id), name="event_data")
+    assert (
+        str(event_data)
+        == repr(event_data)
+        == 'EventData(ObjectId("63eaeafcbe3a62da29705ad1"), name="event_data")'
+    )
+    assert event_data.extract_import() == {ClassEnum.EVENT_DATA.value, ClassEnum.OBJECT_ID.value}
 
     # check ObjectClass object inside containers (list & dict)
     event_data = ClassEnum.EVENT_DATA(
-        id=ClassEnum.OBJECT_ID(1234),
+        id=ClassEnum.OBJECT_ID(object_id),
         list_value=[ClassEnum.COLUMN_INFO(name="column")],
         dict_value={
             "key": ClassEnum.TABULAR_SOURCE("some_value"),
@@ -71,7 +77,7 @@ def test_class_enum_and_object_class():
         },
     )
     expected_str = (
-        'EventData(id=ObjectId(1234), list_value=[ColumnInfo(name="column")], '
+        'EventData(id=ObjectId("63eaeafcbe3a62da29705ad1"), list_value=[ColumnInfo(name="column")], '
         "dict_value={'key': TabularSource(\"some_value\"), 'list_value': [ColumnInfo(name=\"other_column\")]})"
     )
     assert str(event_data) == repr(event_data) == expected_str

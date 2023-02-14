@@ -3,13 +3,10 @@ Unit test for ItemData class
 """
 from __future__ import annotations
 
-from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pandas as pd
 import pytest
 from bson.objectid import ObjectId
-from pandas.testing import assert_frame_equal
 
 from featurebyte.api.base_data import DataColumn
 from featurebyte.api.entity import Entity
@@ -23,9 +20,9 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.item_data import ItemDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="item_data_dict")
@@ -447,3 +444,24 @@ def test_accessing_saved_item_data_attributes(saved_item_data):
     saved_item_data["item_type"].as_entity(entity.name)
     assert saved_item_data["item_type"].info.entity_id == entity.id
     assert cloned["item_type"].info.entity_id == entity.id
+
+
+def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_data):
+    """Check SDK code generation for unsaved data"""
+    item_data = ItemData.from_tabular_source(
+        tabular_source=snowflake_database_table_item_data,
+        name="sf_item_data",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_data_name="sf_event_data",
+    )
+    check_sdk_code_generation(item_data.frame, to_use_saved_data=False)
+    expected_substring = 'item_data = ItemData(name="item_data", '
+    assert expected_substring in item_data.frame.generate_code()
+
+
+def test_sdk_code_generation_on_saved_data(saved_item_data):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(saved_item_data.frame, to_use_saved_data=True)
+    expected_statement = f'item_data = ItemData.get_by_id(ObjectId("{saved_item_data.id}"))'
+    assert expected_statement in saved_item_data.frame.generate_code(to_use_saved_data=True)

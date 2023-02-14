@@ -113,17 +113,29 @@ class QueryObject(FeatureByteBaseModel):
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
-    def generate_code(self) -> str:
+    def generate_code(self, to_format: bool = False, to_use_saved_data: bool = False) -> str:
         """
         Generate SDK codes this graph & node
+
+        Parameters
+        ----------
+        to_format: bool
+            Whether to format generated code (require `black` python package)
+        to_use_saved_data: bool
+            Whether to use saved data in the SDK codes
 
         Returns
         -------
         str
         """
         pruned_graph, node = self.extract_pruned_graph_and_node()
-        state = SDKCodeExtractor(graph=pruned_graph).extract(node=node)
-        return state.code_generator.generate()
+        extract_kwargs = {
+            "to_use_saved_data": to_use_saved_data,
+            "feature_store_name": self.feature_store.name,
+            "feature_store_id": self.feature_store.id,
+        }
+        state = SDKCodeExtractor(graph=pruned_graph).extract(node=node, **extract_kwargs)
+        return state.code_generator.generate(to_format=to_format)
 
     def _preview_sql(self, limit: int = 10, **kwargs: Any) -> str:
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)

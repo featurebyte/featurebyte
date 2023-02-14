@@ -24,6 +24,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="event_data_dict")
@@ -992,3 +993,24 @@ def test_accessing_saved_event_data_attributes(saved_event_data):
     saved_event_data.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
     assert saved_event_data.default_feature_job_setting == feature_job_setting
     assert cloned.default_feature_job_setting == feature_job_setting
+
+
+def test_sdk_code_generation(snowflake_database_table):
+    """Check SDK code generation for unsaved data"""
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_event_data",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_date_column="created_at",
+    )
+    check_sdk_code_generation(event_data.frame, to_use_saved_data=False)
+    expected_substring = 'event_data = EventData(name="event_data", '
+    assert expected_substring in event_data.frame.generate_code()
+
+
+def test_sdk_code_generation_on_saved_data(saved_event_data):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(saved_event_data.frame, to_use_saved_data=True)
+    expected_statement = f'event_data = EventData.get_by_id(ObjectId("{saved_event_data.id}"))'
+    assert expected_statement in saved_event_data.frame.generate_code(to_use_saved_data=True)

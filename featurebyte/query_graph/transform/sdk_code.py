@@ -1,8 +1,9 @@
 """
 This module contains an extractor class to generate SDK codes from a query graph.
 """
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeType
@@ -103,10 +104,25 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         # it can be passed as `inputs` to the next node's post compute operation
         return var_name_or_expr, node.type
 
-    def extract(self, node: Node, **kwargs: Any) -> SDKCodeGlobalState:
+    def extract(
+        self,
+        node: Node,
+        to_use_saved_data: bool = False,
+        feature_store_name: Optional[str] = None,
+        feature_store_id: Optional[ObjectId] = None,
+        **kwargs: Any,
+    ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
+
+        code_generation_config = {"to_use_saved_data": to_use_saved_data}
+        if feature_store_name:
+            code_generation_config["feature_store_name"] = feature_store_name
+        if feature_store_id:
+            code_generation_config["feature_store_id"] = feature_store_id
+
         global_state = SDKCodeGlobalState(
-            node_name_to_operation_structure=op_struct_info.operation_structure_map
+            node_name_to_operation_structure=op_struct_info.operation_structure_map,
+            code_generation_config=CodeGenerationConfig(**code_generation_config),
         )
         var_name_or_expr, _ = self._extract(
             node=node,

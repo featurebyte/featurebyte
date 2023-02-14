@@ -27,7 +27,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ObjectClass,
     StatementT,
-    ValueStr,
     VariableNameGenerator,
     VarNameExpressionStr,
 )
@@ -114,20 +113,9 @@ class BaseInputNodeParameters(BaseModel):
 
     @property
     @abstractmethod
-    def pre_variable_prefix(self) -> str:
+    def pre_variable_name(self) -> str:
         """
-        Pre-variable name prefix used by the specific table data
-
-        Returns
-        -------
-        str
-        """
-
-    @property
-    @abstractmethod
-    def from_data_method(self) -> str:
-        """
-        Method name used to construct view from data
+        Pre-variable name used by the specific table data
 
         Returns
         -------
@@ -152,12 +140,8 @@ class GenericInputNodeParameters(BaseInputNodeParameters):
     id: Optional[PydanticObjectId] = Field(default=None)
 
     @property
-    def pre_variable_prefix(self) -> str:
-        return ""
-
-    @property
-    def from_data_method(self) -> str:
-        return ""
+    def pre_variable_name(self) -> str:
+        return "data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
         return {}
@@ -186,15 +170,15 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
         return values
 
     @property
-    def pre_variable_prefix(self):
-        return "event_"
-
-    @property
-    def from_data_method(self) -> str:
-        return "from_event_data"
+    def pre_variable_name(self):
+        return "event_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
-        return {"event_id_column": self.id_column, "event_timestamp_column": self.timestamp_column}
+        return {
+            "event_id_column": self.id_column,
+            "event_timestamp_column": self.timestamp_column,
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
 
 
 class ItemDataInputNodeParameters(BaseInputNodeParameters):
@@ -207,15 +191,16 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
     event_id_column: Optional[InColumnStr] = Field(default=None)
 
     @property
-    def pre_variable_prefix(self):
-        return "item_"
-
-    @property
-    def from_data_method(self) -> str:
-        return "from_item_data"
+    def pre_variable_name(self):
+        return "item_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
-        return {"item_id_column": self.id_column, "event_id_column": self.event_id_column}
+        return {
+            "item_id_column": self.id_column,
+            "event_id_column": self.event_id_column,
+            "event_data_id": ClassEnum.OBJECT_ID(self.event_data_id),
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
 
 
 class DimensionDataInputNodeParameters(BaseInputNodeParameters):
@@ -226,15 +211,11 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
 
     @property
-    def pre_variable_prefix(self):
-        return "dimension_"
-
-    @property
-    def from_data_method(self) -> str:
-        return "from_dimension_data"
+    def pre_variable_name(self):
+        return "dimension_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
-        return {"dimension_id_column": self.id_column}
+        return {"dimension_id_column": self.id_column, "_id": ClassEnum.OBJECT_ID(self.id)}
 
 
 class SCDDataInputNodeParameters(BaseInputNodeParameters):
@@ -253,12 +234,8 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
     current_flag_column: Optional[InColumnStr] = Field(default=None)
 
     @property
-    def pre_variable_prefix(self):
-        return "scd_"
-
-    @property
-    def from_data_method(self) -> str:
-        return "from_slowly_changing_data"
+    def pre_variable_name(self):
+        return "scd_data"
 
     def extract_other_constructor_parameters(self) -> Dict[str, Any]:
         return {
@@ -267,6 +244,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
             "end_timestamp_column": self.end_timestamp_column,
             "surrogate_key_column": self.surrogate_key_column,
             "current_flag_column": self.current_flag_column,
+            "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
 
@@ -293,13 +271,6 @@ class InputNode(BaseNode):
         TableDataType.ITEM_DATA: ClassEnum.ITEM_DATA,
         TableDataType.DIMENSION_DATA: ClassEnum.DIMENSION_DATA,
         TableDataType.SCD_DATA: ClassEnum.SCD_DATA,
-    }
-    _data_to_view_class_enum: ClassVar[Dict[TableDataType, Optional[ClassEnum]]] = {
-        TableDataType.GENERIC: None,
-        TableDataType.EVENT_DATA: ClassEnum.EVENT_VIEW,
-        TableDataType.ITEM_DATA: ClassEnum.ITEM_VIEW,
-        TableDataType.DIMENSION_DATA: ClassEnum.DIMENSION_VIEW,
-        TableDataType.SCD_DATA: ClassEnum.SCD_VIEW,
     }
 
     @root_validator(pre=True)
@@ -350,15 +321,14 @@ class InputNode(BaseNode):
         data_class_enum = self._data_to_data_class_enum[table_type]
 
         # construct data sdk statement
-        data_pre_var_name = f"{self.parameters.pre_variable_prefix}data"
         data_var_name = var_name_generator.convert_to_variable_name(
-            pre_variable_name=data_pre_var_name
+            pre_variable_name=self.parameters.pre_variable_name
         )
         if config.to_use_saved_data and self.parameters.id:
-            object_id = ClassEnum.OBJECT_ID(ValueStr.create(self.parameters.id))
-            right_op = data_class_enum(object_id, method="get_by_id")
+            object_id = ClassEnum.OBJECT_ID(self.parameters.id)
+            right_op = data_class_enum(object_id, _method_name="get_by_id")
         else:
-            object_id = ClassEnum.OBJECT_ID(ValueStr.create(config.feature_store_id))
+            object_id = ClassEnum.OBJECT_ID(config.feature_store_id)
             right_op = data_class_enum(
                 name=str(data_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
@@ -372,16 +342,4 @@ class InputNode(BaseNode):
             )
 
         statements.append((data_var_name, right_op))
-
-        if table_type != TableDataType.GENERIC:
-            # construct view sdk statement
-            view_class_enum = self._data_to_view_class_enum[table_type]
-            right_op = view_class_enum(data_var_name, _method_name=self.parameters.from_data_method)
-
-            view_pre_var_name = f"{self.parameters.pre_variable_prefix}view"
-            view_var_name = var_name_generator.convert_to_variable_name(
-                pre_variable_name=view_pre_var_name
-            )
-            statements.append((view_var_name, right_op))
-            return statements, view_var_name
         return statements, data_var_name

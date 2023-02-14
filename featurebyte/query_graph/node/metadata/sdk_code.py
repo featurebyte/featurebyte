@@ -3,7 +3,7 @@ This module contains models used for sdk code extractor.
 """
 from __future__ import annotations
 
-from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 import json
 import os
@@ -11,7 +11,7 @@ from collections import defaultdict
 from enum import Enum
 
 from bson import ObjectId
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
 from pydantic import BaseModel, Field
 
 from featurebyte.common.typing import Scalar
@@ -42,6 +42,8 @@ class ValueStr(str):
         """
         if isinstance(value, str):
             return ValueStr(json.dumps(value))
+        if isinstance(value, ObjectId):
+            return ValueStr(f'"{value}"')
         return ValueStr(value)
 
     def as_input(self) -> str:

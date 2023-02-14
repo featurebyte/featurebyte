@@ -5,6 +5,10 @@ import sys
 from contextlib import contextmanager
 from unittest.mock import Mock
 
+from jinja2 import Template
+
+from featurebyte.api.database_table import AbstractTableData
+from featurebyte.core.generic import QueryObject
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
@@ -104,3 +108,36 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
         aggressive=True,
     )
     assert left_pruned_graph == right_pruned_graph
+
+
+def _check_pruned_graph_and_nodes(pruned_graph, node, expected_pruned_graph, expected_node):
+    # helper method to check pruned graph & node
+    assert pruned_graph == expected_pruned_graph
+    assert node == expected_node
+
+
+def check_sdk_code_generation(api_object, to_use_saved_data=False):
+    """Check SDK code generation"""
+    if isinstance(api_object, AbstractTableData):
+        query_object = api_object.frame
+    elif isinstance(api_object, QueryObject):
+        query_object = api_object
+    else:
+        raise ValueError("Unexpected api_object!!")
+
+    # execute SDK code & run the function to generate output
+    local_vars = {}
+    sdk_codes = query_object.generate_code(to_use_saved_data=to_use_saved_data)
+    exec(sdk_codes, {}, local_vars)
+    output = local_vars["output"]
+    if isinstance(output, AbstractTableData):
+        output = output.frame
+
+    pruned_graph, node = output.extract_pruned_graph_and_node()
+    expected_pruned_graph, expected_node = query_object.extract_pruned_graph_and_node()
+    _check_pruned_graph_and_nodes(
+        pruned_graph=pruned_graph,
+        node=node,
+        expected_pruned_graph=expected_pruned_graph,
+        expected_node=expected_node,
+    )
