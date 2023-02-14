@@ -118,6 +118,20 @@ class EntityJoinPathNotFoundError(Exception):
     """
 
 
+class AmbiguousEntityRelationshipError(Exception):
+    """
+    Raised when the relationship between entities is ambiguous and automatic serving of parent
+    features is not possible
+    """
+
+    def __init__(
+        self, message: str, ambiguous_entity_name: str, ambiguous_entity_serving_name: str
+    ):
+        super().__init__(message)
+        self.ambiguous_entity_name = ambiguous_entity_name
+        self.ambiguous_entity_serving_name = ambiguous_entity_serving_name
+
+
 class InvalidSettingsError(Exception):
     """
     Raised when configuration has invalid settings

@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from featurebyte.exception import (
+    AmbiguousEntityRelationshipError,
     EntityJoinPathNotFoundError,
     RequiredEntityNotProvidedError,
     UnexpectedServingNamesMappingError,
@@ -158,19 +159,30 @@ class EntityValidationService(BaseService):
         if entity_info.are_all_required_entities_provided():
             return None
 
+        def _format_missing_entities(missing_entities):
+            missing_entities = sorted(missing_entities, key=lambda x: x.name)  # type: ignore
+            formatted_pairs = []
+            for entity in missing_entities:
+                formatted_pairs.append(f'{entity.name} (serving name: "{entity.serving_names[0]}")')
+            formatted_pairs_str = ", ".join(formatted_pairs)
+            return formatted_pairs_str
+
         # Try to see if missing entities can be obtained using the provided entities as children
         try:
             join_steps = await self.parent_entity_lookup_service.get_required_join_steps(
                 entity_info
             )
         except EntityJoinPathNotFoundError:
-            missing_entities = sorted(entity_info.missing_entities, key=lambda x: x.name)  # type: ignore
-            formatted_pairs = []
-            for entity in missing_entities:
-                formatted_pairs.append(f'{entity.name} (serving name: "{entity.serving_names[0]}")')
-            formatted_pairs_str = ", ".join(formatted_pairs)
+            formatted_missing_entities = _format_missing_entities(entity_info.missing_entities)
             raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                f"Required entities are not provided in the request: {formatted_pairs_str}"
+                f"Required entities are not provided in the request: {formatted_missing_entities}"
+            )
+        except AmbiguousEntityRelationshipError as e:
+            formatted_missing_entities = _format_missing_entities(entity_info.missing_entities)
+            raise RequiredEntityNotProvidedError(
+                f"Required entities are not provided in the request: {formatted_missing_entities}. "
+                f"Alternatively, consider providing the entity: {e.ambiguous_entity_name}"
+                f" (serving_name: {e.ambiguous_entity_serving_name})."
             )
 
         feature_store_details = FeatureStoreDetails(**feature_store.dict())

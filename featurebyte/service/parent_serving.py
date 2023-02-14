@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 
 from bson import ObjectId
 
-from featurebyte.exception import EntityJoinPathNotFoundError
+from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPathNotFoundError
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
@@ -162,7 +162,7 @@ class ParentEntityLookupService(BaseService):
         # entities is reached. This should be the fastest way to join datas to obtain the required
         # entity (requiring the least number of joins) assuming all joins have the same cost.
         pending: List[Tuple[EntityModel, List[EntityModel]]] = [(required_entity, [])]
-        visited = defaultdict(bool)
+        queued = set()
 
         while pending:
 
@@ -172,11 +172,17 @@ class ParentEntityLookupService(BaseService):
             if current_entity.id in available_entity_ids:
                 return updated_path
 
-            visited[current_entity.id] = True
             children_entities = await self.entity_service.get_children_entities(current_entity.id)
             for child_entity in children_entities:
-                if not visited[child_entity.id]:
+                if child_entity.name not in queued:
+                    queued.add(child_entity.name)
                     pending.append((child_entity, updated_path))
+                else:
+                    raise AmbiguousEntityRelationshipError(
+                        f"Cannot find an unambiguous join path for entity {required_entity.name}",
+                        ambiguous_entity_name=child_entity.name,
+                        ambiguous_entity_serving_name=child_entity.serving_names[0],
+                    )
 
         raise EntityJoinPathNotFoundError(
             f"Cannot find a join path for entity {required_entity.name}"

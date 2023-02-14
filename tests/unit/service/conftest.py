@@ -535,6 +535,15 @@ async def entity_d_fixture(entity_service):
     return entity_d
 
 
+@pytest_asyncio.fixture(name="entity_e")
+async def entity_e_fixture(entity_service):
+    """
+    An entity E
+    """
+    entity_e = await entity_service.create_document(EntityCreate(name="entity_e", serving_name="E"))
+    return entity_e
+
+
 @pytest_asyncio.fixture(name="b_is_parent_of_a")
 async def b_is_parent_of_a_fixture(
     entity_a,
@@ -611,6 +620,64 @@ async def d_is_parent_of_b_fixture(
     await entity_service.update_document(entity_b.id, update_entity_b)
 
     return data
+
+
+async def create_data_and_add_parent(
+    test_dir,
+    event_data_service,
+    entity_service,
+    child_entity,
+    parent_entity,
+    child_column,
+    parent_column,
+):
+    """
+    Helper function to create data and add a relationship between two entities
+    """
+    data = await create_event_data_with_entities(
+        f"{parent_entity.name}_is_parent_of_{child_entity.name}_data",
+        test_dir,
+        event_data_service,
+        [(child_column, child_entity.id), (parent_column, parent_entity.id)],
+    )
+    parents = (await entity_service.get_document(child_entity.id)).parents
+    parents += [ParentEntity(id=parent_entity.id, data_type=data.type, data_id=data.id)]
+    update_parents = EntityServiceUpdate(parents=parents)
+    await entity_service.update_document(child_entity.id, update_parents)
+
+
+@pytest_asyncio.fixture(name="e_is_parent_of_c_and_d")
+async def e_is_parent_of_c_and_d_fixture(
+    entity_c,
+    entity_d,
+    entity_e,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make E a parent of C and D
+    """
+    _ = feature_store
+    await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_c,
+        parent_entity=entity_e,
+        child_column="c",
+        parent_column="e",
+    )
+    await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_d,
+        parent_entity=entity_e,
+        child_column="d",
+        parent_column="e",
+    )
 
 
 @pytest.fixture

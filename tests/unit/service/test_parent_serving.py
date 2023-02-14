@@ -3,7 +3,7 @@ Unit tests for ParentEntityLookupService
 """
 import pytest
 
-from featurebyte.exception import EntityJoinPathNotFoundError
+from featurebyte.exception import AmbiguousEntityRelationshipError, EntityJoinPathNotFoundError
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.parent_serving import JoinStep
 
@@ -200,3 +200,35 @@ async def test_get_join_steps__not_found_with_relationships(
     entity_info = EntityInfo(required_entities=[entity_c], provided_entities=[entity_a])
     with pytest.raises(EntityJoinPathNotFoundError):
         _ = await parent_entity_lookup_service.get_required_join_steps(entity_info)
+
+
+@pytest.mark.asyncio
+async def test_get_join_steps__ambiguous_relationships(
+    entity_a,
+    entity_e,
+    b_is_parent_of_a,
+    c_is_parent_of_b,
+    d_is_parent_of_b,
+    e_is_parent_of_c_and_d,
+    parent_entity_lookup_service,
+):
+    """
+    Test looking up parent entity when there are ambiguous relationships
+
+    a (provided) --> b --> c ---> e (required)
+                      `--> d --´
+    """
+    _ = b_is_parent_of_a
+    _ = c_is_parent_of_b
+    _ = d_is_parent_of_b
+    _ = e_is_parent_of_c_and_d
+    entity_info = EntityInfo(
+        required_entities=[entity_e],
+        provided_entities=[entity_a],
+        serving_names_mapping={"A": "new_A"},
+    )
+    with pytest.raises(AmbiguousEntityRelationshipError) as exc_info:
+        await parent_entity_lookup_service.get_required_join_steps(entity_info)
+    assert str(exc_info.value) == "Cannot find an unambiguous join path for entity entity_e"
+    assert exc_info.value.ambiguous_entity_name == "entity_b"
+    assert exc_info.value.ambiguous_entity_serving_name == "B"
