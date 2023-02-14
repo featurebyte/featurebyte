@@ -3,34 +3,16 @@ This module contains simple aggregator related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, Union, cast
-
-from abc import ABC, abstractmethod
-
-from typeguard import typechecked
+from typing import List, Optional, Type, cast
 
 from featurebyte.api.base_aggregator import BaseAggregator
-from featurebyte.api.change_view import ChangeView
-from featurebyte.api.entity import Entity
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.item_view import ItemView
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.api.view import View
-from featurebyte.api.window_validator import validate_window
-from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import validate_offset_string
-from featurebyte.common.typing import OptionalScalar, get_or_default
-from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.exception import AggregationNotSupportedForViewError
-from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.agg_func import AggFuncType, construct_agg_func
+from featurebyte.common.typing import OptionalScalar
+from featurebyte.enum import AggFunc
+from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
-    GroupbyNode,
     ItemGroupbyNode,
     add_pruning_sensitive_operation,
 )
