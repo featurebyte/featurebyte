@@ -9,6 +9,7 @@ from featurebyte.api.database_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.transform.sdk_code import SDKCodeExtractor
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
@@ -125,7 +126,7 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False):
 
     # execute SDK code & generate output object
     local_vars = {}
-    sdk_codes = query_object.generate_code(to_use_saved_data=to_use_saved_data)
+    sdk_codes = query_object._generate_code(to_use_saved_data=to_use_saved_data)
     exec(sdk_codes, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
     if isinstance(output, AbstractTableData):
@@ -140,3 +141,25 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False):
         expected_pruned_graph=expected_pruned_graph,
         expected_node=expected_node,
     )
+
+
+def compare_generated_data_object_sdk_code(data_object, fixture_path, update_fixtures, **kwargs):
+    """Compare generated SDK code for data object"""
+    feature_store_id = data_object.frame.feature_store.id
+    data_id = getattr(data_object, "id", None)
+    if update_fixtures:
+        formatted_sdk_code = data_object.frame._generate_code(to_format=True)
+        formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
+        if data_id:
+            formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
+        for key, value in kwargs.items():
+            formatted_sdk_code = formatted_sdk_code.replace(f"{value}", "{key}".replace("key", key))
+        with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
+            file_handle.write(formatted_sdk_code)
+
+    sdk_code = data_object.frame._generate_code(to_format=True)
+    with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
+        expected = file_handle.read().format(
+            feature_store_id=feature_store_id, data_id=data_id, **kwargs
+        )
+        assert expected == sdk_code

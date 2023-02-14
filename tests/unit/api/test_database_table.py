@@ -4,7 +4,7 @@ Unit test for DatabaseTable
 import pandas as pd
 
 from featurebyte.enum import DBVarType, TableDataType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_generated_data_object_sdk_code
 
 
 def test_database_table(snowflake_database_table, expected_snowflake_table_preview_query):
@@ -42,12 +42,15 @@ def test_database_table_get_input_node(snowflake_database_table):
     assert input_node_dict["parameters"]["type"] == "generic"
 
 
-def test_sdk_code_generation(snowflake_database_table):
+def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved data"""
     check_sdk_code_generation(snowflake_database_table.frame, to_use_saved_data=False)
-    sdk_code = snowflake_database_table.frame.generate_code(to_use_saved_data=True)
-    expected_substring = 'data = DatabaseTable(name="data",'
-    assert expected_substring in sdk_code
+    compare_generated_data_object_sdk_code(
+        data_object=snowflake_database_table,
+        fixture_path="tests/fixtures/sdk_code/generic_data.py",
+        update_fixtures=update_fixtures,
+    )
 
     # check that unsaved & saved version generate the same result for generic table
-    assert sdk_code == snowflake_database_table.frame.generate_code(to_use_saved_data=False)
+    sdk_code = snowflake_database_table.frame._generate_code(to_use_saved_data=True)
+    assert sdk_code == snowflake_database_table.frame._generate_code(to_use_saved_data=False)

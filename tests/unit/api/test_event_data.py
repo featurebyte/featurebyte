@@ -24,7 +24,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation
+from tests.util.helper import check_sdk_code_generation, compare_generated_data_object_sdk_code
 
 
 @pytest.fixture(name="event_data_dict")
@@ -995,7 +995,7 @@ def test_accessing_saved_event_data_attributes(saved_event_data):
     assert cloned.default_feature_job_setting == feature_job_setting
 
 
-def test_sdk_code_generation(snowflake_database_table):
+def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved data"""
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
@@ -1005,12 +1005,18 @@ def test_sdk_code_generation(snowflake_database_table):
         record_creation_date_column="created_at",
     )
     check_sdk_code_generation(event_data.frame, to_use_saved_data=False)
-    expected_substring = 'event_data = EventData(name="event_data", '
-    assert expected_substring in event_data.frame.generate_code()
+    compare_generated_data_object_sdk_code(
+        data_object=event_data,
+        fixture_path="tests/fixtures/sdk_code/event_data.py",
+        update_fixtures=update_fixtures,
+    )
 
 
-def test_sdk_code_generation_on_saved_data(saved_event_data):
+def test_sdk_code_generation_on_saved_data(saved_event_data, update_fixtures):
     """Check SDK code generation for saved data"""
     check_sdk_code_generation(saved_event_data.frame, to_use_saved_data=True)
-    expected_statement = f'event_data = EventData.get_by_id(ObjectId("{saved_event_data.id}"))'
-    assert expected_statement in saved_event_data.frame.generate_code(to_use_saved_data=True)
+    compare_generated_data_object_sdk_code(
+        data_object=saved_event_data,
+        fixture_path="tests/fixtures/sdk_code/saved_event_data.py",
+        update_fixtures=update_fixtures,
+    )

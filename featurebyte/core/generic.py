@@ -113,7 +113,7 @@ class QueryObject(FeatureByteBaseModel):
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
-    def generate_code(self, to_format: bool = False, to_use_saved_data: bool = False) -> str:
+    def _generate_code(self, to_format: bool = False, to_use_saved_data: bool = False) -> str:
         """
         Generate SDK codes this graph & node
 

@@ -197,7 +197,7 @@ class BaseNode(BaseModel):
         }
         return OperationStructure(**{**operation_info.dict(), **update_args})
 
-    def derive_sdk_codes(
+    def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],

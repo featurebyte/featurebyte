@@ -38,6 +38,7 @@ line_length = 100
 multi_line_output = 3
 profile = "black"
 sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip_glob = ["tests/fixtures/sdk_code/*"]
 
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 allow_redefinition = false

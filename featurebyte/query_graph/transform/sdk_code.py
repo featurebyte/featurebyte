@@ -89,7 +89,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             input_var_name_expressions.append(var_name_expr)
             input_node_types.append(node_type)
 
-        statements, var_name_or_expr = node.derive_sdk_codes(
+        statements, var_name_or_expr = node.derive_sdk_code(
             input_var_name_expressions=input_var_name_expressions,
             input_node_types=input_node_types,
             var_name_generator=global_state.var_name_generator,
