@@ -90,7 +90,7 @@ test-routes:
 	uvicorn featurebyte.app:app --reload
 
 #* Docker
-spark-start: build-hive-udf-jar
+spark-start:
 	mkdir -p ~/.spark/data
 	cd .github/spark && docker compose up --wait -d
 
@@ -105,7 +105,7 @@ beta-stop:
 	cd docker/dev && docker compose -f docker-compose.yml down
 	-docker container rm mongo-rs featurebyte-server featurebyte-docs
 
-beta-build:
+beta-build: build-hive-udf-jar
 	poetry build
 	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
 
