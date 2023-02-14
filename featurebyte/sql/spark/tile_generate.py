@@ -8,13 +8,21 @@ from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
 
+# pylint: disable=too-many-locals
 class TileGenerate(TileCommon):
+    """
+    Tile Generate script corresponding to SP_TILE_GENERATE stored procedure
+    """
+
     tile_start_date_column: str
     tile_type: str
     last_tile_start_str: Optional[str]
     tile_last_start_date_column: Optional[str]
 
     def execute(self) -> None:
+        """
+        Execute tile generate operation
+        """
 
         tile_table_exist = self._spark.catalog.tableExists(self.tile_id)
         tile_table_exist_flag = "Y" if tile_table_exist else "N"
@@ -111,10 +119,17 @@ class TileGenerate(TileCommon):
         if self.last_tile_start_str:
             logger.debug("last_tile_start_str: ", self.last_tile_start_str)
 
-            df = self._spark.sql(
-                f"select F_TIMESTAMP_TO_INDEX('{self.last_tile_start_str}', {self.tile_modulo_frequency_second}, {self.blind_spot_second}, {self.frequency_minute}) as value"
+            index_df = self._spark.sql(
+                f"""
+                    select F_TIMESTAMP_TO_INDEX(
+                        '{self.last_tile_start_str}',
+                        {self.tile_modulo_frequency_second},
+                        {self.blind_spot_second},
+                        {self.frequency_minute}
+                    ) as value
+                """
             )
-            ind_value = df.select("value").collect()[0].value
+            ind_value = index_df.select("value").collect()[0].value
 
             update_tile_last_ind_sql = f"""
                 UPDATE TILE_REGISTRY SET LAST_TILE_INDEX_{self.tile_type} = {ind_value}, {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
