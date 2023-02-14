@@ -21,7 +21,7 @@ mkdir -p /app/.featurebyte/notebook/samples  # This will not replace
 echo "Overriding solutions-beta"
 if [[ ! -f /app/.featurebyte/notebook/samples/.overridden ]]; then
   rm /app/.featurebyte/notebook/samples/solutions-beta-testing-tutorials.ipynb
-  touch /app/.featurebyte/notebook/samples/.overridden # At this state solution will be
+  touch /app/.featurebyte/notebook/samples/.overridden # Setting an overridden marker
 fi
 cp -nr /samples/* /app/.featurebyte/notebook/samples/  # Copy without replacement
 
