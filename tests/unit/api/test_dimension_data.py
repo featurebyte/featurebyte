@@ -278,6 +278,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
         data_object=dimension_data,
         fixture_path="tests/fixtures/sdk_code/dimension_data.py",
         update_fixtures=update_fixtures,
+        to_use_saved_data=False,
     )
 
 
@@ -288,4 +289,5 @@ def test_sdk_code_generation_on_saved_data(saved_dimension_data, update_fixtures
         data_object=saved_dimension_data,
         fixture_path="tests/fixtures/sdk_code/saved_dimension_data.py",
         update_fixtures=update_fixtures,
+        to_use_saved_data=True,
     )

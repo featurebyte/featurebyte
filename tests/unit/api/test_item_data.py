@@ -460,6 +460,7 @@ def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_dat
         data_object=item_data,
         fixture_path="tests/fixtures/sdk_code/item_data.py",
         update_fixtures=update_fixtures,
+        to_use_saved_data=False,
         event_data_id=saved_event_data.id,
     )
 
@@ -471,4 +472,5 @@ def test_sdk_code_generation_on_saved_data(saved_item_data, update_fixtures):
         data_object=saved_item_data,
         fixture_path="tests/fixtures/sdk_code/saved_item_data.py",
         update_fixtures=update_fixtures,
+        to_use_saved_data=True,
     )

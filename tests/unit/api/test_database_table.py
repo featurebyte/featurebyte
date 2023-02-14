@@ -49,6 +49,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
         data_object=snowflake_database_table,
         fixture_path="tests/fixtures/sdk_code/generic_data.py",
         update_fixtures=update_fixtures,
+        to_use_saved_data=False,
     )
 
     # check that unsaved & saved version generate the same result for generic table
