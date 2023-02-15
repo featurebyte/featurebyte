@@ -133,7 +133,11 @@ app_container_config.add_basic_service(
 )
 app_container_config.add_basic_service("feature_namespace_service", FeatureNamespaceService)
 app_container_config.add_basic_service("data_update_service", DataUpdateService)
-app_container_config.add_basic_service("default_version_mode_service", DefaultVersionModeService)
+app_container_config.add_service_with_extra_deps(
+    "default_version_mode_service",
+    DefaultVersionModeService,
+    ["feature_namespace_service" "feature_readiness_service", "feature_list_namespace_service"],
+)
 app_container_config.add_basic_service("feature_store_service", FeatureStoreService)
 app_container_config.add_basic_service("semantic_service", SemanticService)
 app_container_config.add_basic_service("tabular_data_service", DataService)

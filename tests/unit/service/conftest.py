@@ -151,9 +151,9 @@ def feature_readiness_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="default_version_mode_service")
-def default_version_mode_service_fixture(user, persistent):
+def default_version_mode_service_fixture(app_container):
     """DefaultVersionModeService fixture"""
-    return DefaultVersionModeService(user=user, persistent=persistent)
+    return app_container.default_version_mode_service
 
 
 @pytest.fixture(name="online_enable_service")
