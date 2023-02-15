@@ -56,12 +56,9 @@ from tests.unit.conftest_config import (
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
 
-
-def fixture_registrations():
-    """
-    Registering fixtures.
-    """
-    _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
+# "Registering" fixtures so that they'll be available for use as if they were defined here.
+# We keep the definition in a separate file for readability
+_ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
 
 @pytest.fixture(name="mock_api_object_cache")
