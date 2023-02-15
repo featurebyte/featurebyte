@@ -198,7 +198,7 @@ class SnowflakeSession(BaseSession):
             create_command = "CREATE OR REPLACE TABLE"
         await self.execute_query(
             f"""
-            {create_command} {table_name}(
+            {create_command} "{self.database_name}"."{self.schema_name}".{table_name}(
                 {", ".join([f'"{colname}" {coltype}' for colname, coltype in schema])}
             )
             """
