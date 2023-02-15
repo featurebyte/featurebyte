@@ -750,7 +750,9 @@ class Feature(
 
     @typechecked
     def update_readiness(
-        self, readiness: Literal[tuple(FeatureReadiness)]  # type: ignore[misc]
+        self,
+        readiness: Literal[tuple(FeatureReadiness)],  # type: ignore[misc]
+        ignore_guardrails: bool = False,
     ) -> None:
         """
         Update feature readiness
@@ -759,8 +761,15 @@ class Feature(
         ----------
         readiness: Literal[tuple(FeatureReadiness)]
             Feature readiness level
+        ignore_guardrails: bool
+            Allow a user to specify if they want to  ignore any guardrails when updating this feature. This should
+            currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
+            be a no-op for all other scenarios.
         """
-        self.update(update_payload={"readiness": str(readiness)}, allow_update_local=False)
+        self.update(
+            update_payload={"readiness": str(readiness), "ignore_guardrails": ignore_guardrails},
+            allow_update_local=False,
+        )
 
     @typechecked
     def update_default_version_mode(

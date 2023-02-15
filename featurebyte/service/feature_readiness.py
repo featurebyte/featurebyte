@@ -24,10 +24,13 @@ from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.tabular_data import DataService
+from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
 class FeatureReadinessService(BaseService):
@@ -45,12 +48,17 @@ class FeatureReadinessService(BaseService):
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
+        event_data_service: EventDataService,
+        data_service: DataService,
     ):
         super().__init__(user, persistent, workspace_id)
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
+        self.production_ready_validator = ProductionReadyValidator(
+            event_data_service, self.feature_namespace_service, data_service
+        )
 
     async def update_feature_list_namespace(
         self,
@@ -214,6 +222,7 @@ class FeatureReadinessService(BaseService):
         self,
         feature_id: ObjectId,
         readiness: FeatureReadiness,
+        ignore_guardrails: bool = False,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
         """
@@ -225,14 +234,32 @@ class FeatureReadinessService(BaseService):
             Target feature ID
         readiness: FeatureReadiness
             Target feature readiness status
+        ignore_guardrails: bool
+            Allow a user to specify if they want to  ignore any guardrails when updating this feature. This should
+            currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
+            be a no-op for all other scenarios.
         return_document: bool
             Whether to return updated document
 
         Returns
         -------
         Optional[FeatureModel]
+
+        Raises
+        ------
+        ValueError
+            raised if the feature has no name
         """
         document = await self.feature_service.get_document(document_id=feature_id)
+
+        # If we are updating the feature readiness status to PRODUCTION_READY, perform some additional validation.
+        if readiness == FeatureReadiness.PRODUCTION_READY:
+            if document.name is None:
+                raise ValueError("feature document has no name")
+            await self.production_ready_validator.validate(
+                document.name, document.node, document.graph, ignore_guardrails
+            )
+
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(

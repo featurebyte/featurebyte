@@ -657,7 +657,7 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
 @pytest.fixture(name="feature_group_feature_job_setting")
 def feature_group_feature_job_setting():
     """
-    Get feature group featuer job setting
+    Get feature group feature job setting
     """
     return {
         "blind_spot": "10m",
