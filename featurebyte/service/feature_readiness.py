@@ -36,14 +36,20 @@ class FeatureReadinessService(BaseService):
     consistencies between feature & feature list (version & namespace).
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
+    def __init__(
+        self,
+        user: Any,
+        persistent: Persistent,
+        feature_service: FeatureService,
+        feature_namespace_service: FeatureNamespaceService,
+        feature_list_service: FeatureListService,
+        feature_list_namespace_service: FeatureListNamespaceService,
+    ):
         super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
-        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
-        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
-        self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent
-        )
+        self.feature_service = feature_service
+        self.feature_namespace_service = feature_namespace_service
+        self.feature_list_service = feature_list_service
+        self.feature_list_namespace_service = feature_list_namespace_service
 
     async def update_feature_list_namespace(
         self,
