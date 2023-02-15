@@ -12,7 +12,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerator,
     ExpressionStr,
-    ObjectClass,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
