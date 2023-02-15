@@ -28,7 +28,7 @@ class GraphFlatteningTransformer(
         global_state: GraphFlatteningGlobalState, node: BaseGraphNode, graph_input_nodes: List[Node]
     ) -> None:
         # flatten the nested graph first before inserting those nested graph nodes back to global one
-        # flat_node_name_map: nested graph's node name => flattened nested graph's node-name
+        # nested_flat_node_name_map: nested graph's node name => flattened nested graph's node-name
         nested_flat_graph, nested_flat_node_name_map = GraphFlatteningTransformer(
             graph=node.parameters.graph
         ).transform()
@@ -54,7 +54,7 @@ class GraphFlatteningTransformer(
                 nested_node_name_map[nested_node.name] = inserted_node.name
 
             # node.parameters.output_node_name refers to the node name in the nested graph
-            # we should map it into the flattened nested graph's node name
+            # we should map it into the flattened nested graph's node name for comparison.
             if nested_node.name == nested_flat_node_name_map[node.parameters.output_node_name]:
                 global_state.node_name_map[node.name] = nested_node_name_map[nested_node.name]
 
