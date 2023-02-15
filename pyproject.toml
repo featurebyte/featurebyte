@@ -102,6 +102,7 @@ databricks-cli = { version = "^0.17.3", optional = true }
 fastapi = { version =  "^0.92.0", optional = true }
 featurebyte-databricks-sql-connector = { version = "^2.2.0", source = "featurebyte_np" }
 featurebyte-freeware = { version = "^0.1.9", allow-prereleases = true, source = "featurebyte_np", optional = true }
+httpx = "^0.23.3"
 humanize = "^4.4.0"
 importlib_metadata = { version = "^4.5.0", python = "^3.8"}
 jinja2 = { version = "^3.1.2", optional = true }
