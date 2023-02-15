@@ -27,7 +27,6 @@ from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.schema.scd_data import SCDDataCreate
 from featurebyte.service.context import ContextService
 from featurebyte.service.data_update import DataUpdateService
-from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
@@ -35,7 +34,6 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.scd_data import SCDDataService
@@ -145,9 +143,9 @@ def data_update_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="feature_readiness_service")
-def feature_readiness_service_fixture(user, persistent):
+def feature_readiness_service_fixture(app_container):
     """FeatureReadinessService fixture"""
-    return FeatureReadinessService(user=user, persistent=persistent)
+    return app_container.feature_readiness_service
 
 
 @pytest.fixture(name="default_version_mode_service")
