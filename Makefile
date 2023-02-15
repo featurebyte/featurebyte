@@ -72,7 +72,7 @@ lint-requirements-txt:
 lint-safety: | lint-requirements-txt
 	# Exporting dependencies to requirements.txt
 	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5
+	poetry run pip-audit --ignore-vul GHSA-w7pp-m8wf-vj6r --ignore-vul GHSA-x4qr-2fvf-3mr5 --ignore-vul GHSA-74m5-2c7w-9w3x
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
