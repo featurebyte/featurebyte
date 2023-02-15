@@ -35,8 +35,8 @@ def expected_snowflake_table_preview_query() -> str:
           "col_text" AS "col_text",
           "col_binary" AS "col_binary",
           "col_boolean" AS "col_boolean",
-          CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
-          CAST("created_at" AS VARCHAR) AS "created_at",
+          CAST("event_timestamp" AS STRING) AS "event_timestamp",
+          CAST("created_at" AS STRING) AS "created_at",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."sf_table"
         LIMIT 10
@@ -56,8 +56,8 @@ def expected_item_data_table_preview_query() -> str:
           "item_id_col" AS "item_id_col",
           "item_type" AS "item_type",
           "item_amount" AS "item_amount",
-          CAST("created_at" AS VARCHAR) AS "created_at",
-          CAST("event_timestamp" AS VARCHAR) AS "event_timestamp"
+          CAST("created_at" AS STRING) AS "created_at",
+          CAST("event_timestamp" AS STRING) AS "event_timestamp"
         FROM "sf_database"."sf_schema"."items_table"
         LIMIT 10
         """

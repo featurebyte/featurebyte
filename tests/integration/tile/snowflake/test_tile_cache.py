@@ -11,13 +11,13 @@ from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, SnowflakeTil
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
-def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
+def feature_for_tile_cache_tests_fixture(snowflake_event_data, groupby_category):
     """Fixture for a feature used for tile cache test
 
     Should not be shared with other tests because of side effects after running on-demand tiles
     computation, get_historical_features(), etc.
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     feature_group = event_view.groupby("ÜSER ID", category=groupby_category).aggregate_over(
         method="count",
         windows=["48h"],

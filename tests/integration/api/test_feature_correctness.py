@@ -306,7 +306,7 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
-    event_data,
+    snowflake_event_data,
     config,
 ):
     """
@@ -352,8 +352,8 @@ def test_aggregate_over(
         ),
     ]
 
-    event_view = EventView.from_event_data(event_data)
-    feature_job_setting = event_data.default_feature_job_setting
+    event_view = EventView.from_event_data(snowflake_event_data)
+    feature_job_setting = snowflake_event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
         time_modulo_frequency=feature_job_setting.time_modulo_frequency,

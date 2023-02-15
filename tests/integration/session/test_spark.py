@@ -64,7 +64,16 @@ async def test_schema_initializer(config, spark_feature_store):
 
 
 @pytest.mark.asyncio
-async def test_register_table(config, spark_session):
+async def test_session_timezone(spark_session):
+    """
+    Test session configurations
+    """
+    result = await spark_session.execute_query("SELECT current_timezone() AS timezone")
+    assert result["timezone"].iloc[0] == "UTC"
+
+
+@pytest.mark.asyncio
+async def test_register_table(spark_session):
     """
     Test the session register_table in spark works properly.
     """
@@ -82,7 +91,7 @@ async def test_register_table(config, spark_session):
 
 
 @pytest.mark.asyncio
-async def test_register_udfs(config, spark_session):
+async def test_register_udfs(spark_session):
     """
     Test the session registered udfs properly.
     """
@@ -120,19 +129,6 @@ async def test_register_udfs(config, spark_session):
                     -(np.log(1 / 3) * 1 / 3 + np.log(2 / 3) * 2 / 3),
                     -(np.log(3 / 7) * 3 / 7 + np.log(4 / 7) * 4 / 7),
                 ],
-            }
-        ),
-    )
-
-    result = await spark_session.execute_query(
-        "select `group`, MODE(`item`) AS mode FROM test_table GROUP BY `group` ORDER BY `group`;"
-    )
-    assert_frame_equal(
-        result,
-        pd.DataFrame(
-            {
-                "group": ["A", "B"],
-                "mode": ["orange", "orange"],
             }
         ),
     )

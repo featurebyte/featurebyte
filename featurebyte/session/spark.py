@@ -84,6 +84,8 @@ class SparkSession(BaseSession):
             auth=auth,
             scheme=scheme,
         )
+        # Always use UTC for session timezone
+        self._connection.cursor().execute("SET TIME ZONE 'UTC'")
 
     def _initialize_storage(self) -> None:
         """
@@ -452,9 +454,13 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
         # and re-register the function with the new class
         udf_functions = [
             ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
-            ("MODE", "com.featurebyte.hive.udf.Mode"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),
             ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropy"),
+            ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequent"),
+            (
+                "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+                "com.featurebyte.hive.udf.CountDictMostFrequentValue",
+            ),
         ]
         for (function_name, class_name) in udf_functions:
             logger.debug(

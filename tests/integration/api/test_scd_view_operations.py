@@ -51,7 +51,7 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     Fixture for expected result when joining the transaction data with scd data
     """
     df = get_expected_scd_join_result(
-        df_left=transaction_data_upper_case,
+        df_left=transaction_data_upper_case.copy(),
         df_right=scd_dataframe,
         left_key="ÜSER ID",
         right_key="User ID",
@@ -136,11 +136,13 @@ async def test_scd_join_small(snowflake_session, snowflake_feature_store):
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
 
 
-def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_dataframe_scd_join):
+def test_event_view_join_scd_view__preview_view(
+    snowflake_event_data, scd_data, expected_dataframe_scd_join
+):
     """
     Test joining an EventView with and SCDView
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
     event_view.join(scd_data, on="ÜSER ID")
     df = event_view.preview(1000)
@@ -160,11 +162,11 @@ def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_d
     )
 
 
-def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
+def test_event_view_join_scd_view__preview_feature(snowflake_event_data, scd_data):
     """
     Test joining an EventView with and SCDView
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
     event_view.join(scd_data, on="ÜSER ID")
 
@@ -184,7 +186,7 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     }
 
 
-def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe):
+def test_scd_lookup_feature(snowflake_event_data, dimension_data, scd_data, scd_dataframe):
     """
     Test creating lookup feature from a SlowlyChangingView
     """
@@ -197,7 +199,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     dimension_lookup_feature = dimension_view["item_name"].as_feature("Item Name Feature")
 
     # Window feature that depends on an SCD join
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     event_view.join(scd_view, on="ÜSER ID")
     window_feature = event_view.groupby("ÜSER ID", "User Status").aggregate_over(
         method="count",
@@ -363,12 +365,12 @@ def test_aggregate_asat__no_entity(scd_data, scd_dataframe, config):
 
 
 @pytest.fixture(name="snowflake_scd_data_with_minimal_cols", scope="session")
-def snowflake_scd_data_fixture_with_minimal_cols(scd_data_tabular_source):
+def snowflake_scd_data_fixture_with_minimal_cols(snowflake_scd_data_tabular_source):
     """
     Fixture for a SlowlyChangingData in integration tests
     """
     return SlowlyChangingData.from_tabular_source(
-        tabular_source=scd_data_tabular_source,
+        tabular_source=snowflake_scd_data_tabular_source,
         name="snowflake_scd_data_with_minimal_cols",
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
@@ -383,11 +385,11 @@ def test_scd_view__create_with_minimal_params(snowflake_scd_data_with_minimal_co
     SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data_with_minimal_cols)
 
 
-def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
+def test_columns_joined_from_scd_view_as_groupby_keys(snowflake_event_data, scd_data):
     """
     Test aggregate_over using a key column joined from another view
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
 
     event_view.join(scd_view, on="ÜSER ID")

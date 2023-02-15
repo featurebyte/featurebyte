@@ -8,19 +8,17 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 import java.util.Map;
 
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
 
-@Description(name = "F_COUNT_DICT_ENTROPY",
-    value = "_FUNC_(counts) "
-        + "- compute entropy value from count dictionary"
+@Description(name = "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+  value = "_FUNC_(counts) "
+    + "- compute most frequent value from count dictionary"
 )
-public class CountDictEntropy extends GenericUDF {
-  final private DoubleWritable output = new DoubleWritable();
+public class CountDictMostFrequentValue extends GenericUDF {
   private transient MapObjectInspector inputMapOI;
   final private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
   final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
@@ -52,7 +50,7 @@ public class CountDictEntropy extends GenericUDF {
       throw new UDFArgumentTypeException(0, "Map value must be numeric");
     }
 
-    return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    return inputMapOI.getMapValueObjectInspector();
   }
 
   @Override
@@ -61,30 +59,20 @@ public class CountDictEntropy extends GenericUDF {
       return null;
     }
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    int index = 0;
-    double total = 0.0;
-    double[] values = new double[counts.size()];
-    for (Object value : counts.values()) {
-      if (value != null) {
-        double doubleValue = ((DoubleWritable) converters[1].convert(value)).get();
-        total += doubleValue;
-        values[index++] = doubleValue;
+    double most_frequent_count = 0.0;
+    Object most_frquent_count_value = null;
+    for (Map.Entry<String, Object> entry : counts.entrySet()) {
+      double doubleValue = ((DoubleWritable) converters[1].convert(entry.getValue())).get();
+      if (doubleValue > most_frequent_count) {
+        most_frequent_count = doubleValue;
+        most_frquent_count_value = entry.getValue();
       }
     }
-
-    double entropy = 0.0;
-    int count_length = values.length;
-    for (index = 0; index < count_length; index++) {
-      double p = values[index] / total;
-      entropy += p * Math.log(p);
-    }
-    entropy *= -1.0;
-    output.set(entropy);
-    return output;
+    return most_frquent_count_value;
   }
 
   @Override
   public String getDisplayString(String[] children) {
-      return "F_COUNT_DICT_ENTROPY";
+    return "F_COUNT_DICT_MOST_FREQUENT_VALUE";
   }
 }

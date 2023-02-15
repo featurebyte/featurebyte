@@ -112,7 +112,7 @@ async def bad_feature_stores_fixture(snowflake_feature_store, persistent, user):
 async def test_data_warehouse_migration_v6(
     user,
     persistent,
-    event_data,
+    snowflake_event_data,
     snowflake_session,
     bad_feature_stores,
 ):
@@ -120,7 +120,7 @@ async def test_data_warehouse_migration_v6(
     Test data warehouse migration
     """
     _ = bad_feature_stores
-    event_view = EventView.from_event_data(event_data)
+    event_view = EventView.from_event_data(snowflake_event_data)
     features_1 = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["7d"],

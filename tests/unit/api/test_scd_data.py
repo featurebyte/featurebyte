@@ -38,9 +38,9 @@ class TestSlowChangingDataTestSuite(BaseDataTestSuite):
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
-      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
-      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
+      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10
@@ -59,9 +59,9 @@ class TestSlowChangingDataTestSuite(BaseDataTestSuite):
       "col_text" AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
-      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
-      CAST("created_at" AS VARCHAR) AS "created_at",
+      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
+      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
     LIMIT 10

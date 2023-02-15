@@ -224,8 +224,9 @@ class GraphInterpreter:
         )
         return generator.construct_tile_gen_sql(flat_starting_node)
 
+    @staticmethod
     def _apply_type_conversions(
-        self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
+        sql_tree: expressions.Select, columns: List[ViewDataColumn]
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """
         Apply type conversions for data retrieval
@@ -262,7 +263,7 @@ class GraphInterpreter:
                         alias = col_expr.name
                     else:
                         alias = None
-                    casted_col_expr = expressions.Cast(this=col_expr, to=parse_one("VARCHAR"))
+                    casted_col_expr = expressions.Cast(this=col_expr, to=parse_one("STRING"))
                     if alias:
                         casted_col_expr = expressions.alias_(casted_col_expr, alias, quoted=True)
                     sql_tree.expressions[idx] = casted_col_expr
@@ -277,6 +278,7 @@ class GraphInterpreter:
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
+        skip_conversion: bool = False,
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -294,6 +296,8 @@ class GraphInterpreter:
             End of date range to filter on
         timestamp_column: Optional[str]
             Column to apply date range filtering on
+        skip_conversion: bool
+            Whether to skip data conversion
 
         Returns
         -------
@@ -318,9 +322,12 @@ class GraphInterpreter:
         operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
             self.query_graph.get_node_by_name(node_name)
         )
-        sql_tree, type_conversions = self._apply_type_conversions(
-            sql_tree=sql_tree, columns=operation_structure.columns
-        )
+        if skip_conversion:
+            type_conversions: dict[Optional[str], DBVarType] = {}
+        else:
+            sql_tree, type_conversions = self._apply_type_conversions(
+                sql_tree=sql_tree, columns=operation_structure.columns
+            )
 
         # apply timestamp filtering
         if timestamp_column:
@@ -559,7 +566,7 @@ class GraphInterpreter:
         )
         stats_expressions["entropy"] = (None, {DBVarType.CHAR, DBVarType.VARCHAR})
         stats_expressions["top"] = (
-            lambda col_expr, _: expressions.Anonymous(this="MODE", expressions=[col_expr]),
+            None,
             {
                 DBVarType.BOOL,
                 DBVarType.FLOAT,
@@ -571,18 +578,7 @@ class GraphInterpreter:
             },
         )
         stats_expressions["freq"] = (
-            lambda col_expr, column_idx: expressions.Anonymous(
-                this="COUNT_IF",
-                expressions=[
-                    expressions.EQ(
-                        this=col_expr,
-                        expression=expressions.Column(
-                            this=quoted_identifier(f"mode__{column_idx}"),
-                            table="mode_values",
-                        ),
-                    )
-                ],
-            ),
+            None,
             {
                 DBVarType.BOOL,
                 DBVarType.FLOAT,
@@ -672,6 +668,104 @@ class GraphInterpreter:
             return True
         return dtype in supported_dtypes
 
+    def _construct_count_stats_sql(
+        self, col_expr: expressions.Expression, column_idx: int, col_dtype: DBVarType
+    ) -> expressions.Select:
+        """
+        Construct sql to compute count statistics for a column
+
+        Parameters
+        ----------
+        col_expr: expressions.Expression
+            Expression for column
+        column_idx: int
+            Column index
+        col_dtype: DBVarType
+            DBVarType of column
+
+        Returns
+        -------
+        expressions.Select
+        """
+        cat_counts = (
+            expressions.select(
+                col_expr,
+                expressions.alias_(
+                    expressions.Count(this=make_literal_value("*")),
+                    alias="COUNTS",
+                    quoted=True,
+                ),
+            )
+            .from_("data")
+            .group_by(col_expr)
+            .order_by("COUNTS DESC")
+            .limit(500)
+        )
+        cat_count_dict = expressions.select(
+            expressions.alias_(
+                expression=expressions.Anonymous(
+                    this="object_agg",
+                    expressions=[
+                        expressions.Cast(this=col_expr, to=parse_one("STRING")),
+                        quoted_identifier("COUNTS"),
+                    ],
+                ),
+                alias="COUNT_DICT",
+                quoted=True,
+            )
+        ).from_(expressions.Subquery(this=cat_counts, alias="cat_counts"))
+        selections = []
+        if self._is_dtype_supported(col_dtype, self.stats_expressions["entropy"][1]):
+            # compute entropy
+            selections.append(
+                expressions.alias_(
+                    expression=expressions.Anonymous(
+                        this="F_COUNT_DICT_ENTROPY",
+                        expressions=[
+                            expressions.Column(
+                                this=quoted_identifier("COUNT_DICT"), table="count_dict"
+                            )
+                        ],
+                    ),
+                    alias=f"entropy__{column_idx}",
+                    quoted=True,
+                )
+            )
+        if self._is_dtype_supported(col_dtype, self.stats_expressions["top"][1]):
+            # compute most frequent value
+            selections.append(
+                expressions.alias_(
+                    expression=expressions.Anonymous(
+                        this="F_COUNT_DICT_MOST_FREQUENT",
+                        expressions=[
+                            expressions.Column(
+                                this=quoted_identifier("COUNT_DICT"), table="count_dict"
+                            )
+                        ],
+                    ),
+                    alias=f"top__{column_idx}",
+                    quoted=True,
+                )
+            )
+            # compute most frequent count
+            selections.append(
+                expressions.alias_(
+                    expression=expressions.Anonymous(
+                        this="F_COUNT_DICT_MOST_FREQUENT_VALUE",
+                        expressions=[
+                            expressions.Column(
+                                this=quoted_identifier("COUNT_DICT"), table="count_dict"
+                            )
+                        ],
+                    ),
+                    alias=f"freq__{column_idx}",
+                    quoted=True,
+                )
+            )
+        return expressions.select(*selections).from_(
+            expressions.Subquery(this=cat_count_dict, alias="count_dict")
+        )
+
     def _construct_stats_sql(
         self, sql_tree: expressions.Select, columns: List[ViewDataColumn]
     ) -> Tuple[expressions.Select, List[str], List[ViewDataColumn]]:
@@ -695,10 +789,8 @@ class GraphInterpreter:
         }
         cte_statements = [("data", sql_tree)]
 
-        # get modes
         stats_selections = []
-        mode_selections = []
-        entropy_tables = []
+        count_tables = []
         final_selections = []
         output_columns = []
         for column_idx, col_expr in enumerate(sql_tree.expressions):
@@ -712,55 +804,15 @@ class GraphInterpreter:
                 expressions.alias_(make_literal_value(column.dtype), f"dtype__{column_idx}")
             )
 
-            if self._is_dtype_supported(column.dtype, self.stats_expressions["top"][1]):
-                stats_func = self.stats_expressions["top"][0]
-                assert stats_func
-                # compute mode values
-                mode_selections.append(
-                    expressions.alias_(
-                        stats_func(col_expr, column_idx),
-                        f"mode__{column_idx}",
-                        quoted=True,
-                    )
+            if self._is_dtype_supported(
+                column.dtype, self.stats_expressions["entropy"][1]
+            ) or self._is_dtype_supported(column.dtype, self.stats_expressions["top"][1]):
+                table_name = f"counts__{column_idx}"
+                count_stats_sql = self._construct_count_stats_sql(
+                    col_expr=col_expr, column_idx=column_idx, col_dtype=column.dtype
                 )
-            if self._is_dtype_supported(column.dtype, self.stats_expressions["entropy"][1]):
-                # counts
-                cat_counts = (
-                    expressions.select(
-                        col_expr,
-                        expressions.alias_(
-                            expressions.Count(this=make_literal_value("*")),
-                            alias="COUNTS",
-                            quoted=True,
-                        ),
-                    )
-                    .from_("data")
-                    .group_by(col_expr)
-                    .order_by("COUNTS DESC")
-                    .limit(500)
-                )
-                table_name = f"entropy__{column_idx}"
-                cte_statements.append(
-                    (
-                        table_name,
-                        expressions.select(
-                            expressions.alias_(
-                                expression=expressions.Anonymous(
-                                    this="F_COUNT_DICT_ENTROPY",
-                                    expressions=[
-                                        expressions.Anonymous(
-                                            this="object_agg",
-                                            expressions=[col_expr, quoted_identifier("COUNTS")],
-                                        )
-                                    ],
-                                ),
-                                alias=f"entropy__{column_idx}",
-                                quoted=True,
-                            )
-                        ).from_(expressions.Subquery(this=cat_counts, alias="cat_counts")),
-                    )
-                )
-                entropy_tables.append(table_name)
+                cte_statements.append((table_name, count_stats_sql))
+                count_tables.append(table_name)
 
             # stats
             for stats_name, (stats_func, supported_dtypes) in self.stats_expressions.items():
@@ -779,15 +831,42 @@ class GraphInterpreter:
                         )
 
                 if stats_name == "entropy":
-                    entropy_name = f"entropy__{column_idx}"
+                    stats_name = f"entropy__{column_idx}"
+                    count_table_name = f"counts__{column_idx}"
                     final_selections.append(
                         (
                             expressions.Column(
-                                this=quoted_identifier(entropy_name), table=entropy_name
+                                this=quoted_identifier(stats_name), table=count_table_name
                             )
                         )
-                        if entropy_name in entropy_tables
-                        else self._empty_value_expr(entropy_name)
+                        if self._is_dtype_supported(
+                            column.dtype, self.stats_expressions["entropy"][1]
+                        )
+                        else self._empty_value_expr(stats_name)
+                    )
+                elif stats_name == "top":
+                    stats_name = f"top__{column_idx}"
+                    count_table_name = f"counts__{column_idx}"
+                    final_selections.append(
+                        (
+                            expressions.Column(
+                                this=quoted_identifier(stats_name), table=count_table_name
+                            )
+                        )
+                        if self._is_dtype_supported(column.dtype, self.stats_expressions["top"][1])
+                        else self._empty_value_expr(stats_name)
+                    )
+                elif stats_name == "freq":
+                    stats_name = f"freq__{column_idx}"
+                    count_table_name = f"counts__{column_idx}"
+                    final_selections.append(
+                        (
+                            expressions.Column(
+                                this=quoted_identifier(stats_name), table=count_table_name
+                            )
+                        )
+                        if self._is_dtype_supported(column.dtype, self.stats_expressions["freq"][1])
+                        else self._empty_value_expr(stats_name)
                     )
                 else:
                     final_selections.append(
@@ -798,16 +877,10 @@ class GraphInterpreter:
 
         # get statistics
         sql_tree = expressions.select(*stats_selections).from_("data")
-        if mode_selections:
-            # get mode values
-            cte_statements.append(
-                ("mode_values", expressions.select(*mode_selections).from_("data").limit(1))
-            )
-            sql_tree = sql_tree.join(expression="mode_values", join_type="LEFT")
         cte_statements.append(("stats", sql_tree))
 
         sql_tree = construct_cte_sql(cte_statements).select(*final_selections).from_("stats")
-        for table_name in entropy_tables:
+        for table_name in count_tables:
             sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
 
         return sql_tree, ["dtype"] + list(self.stats_expressions.keys()), output_columns
@@ -854,6 +927,7 @@ class GraphInterpreter:
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
+            skip_conversion=True,
         )
 
         sql_tree, row_indices, columns = self._construct_stats_sql(
