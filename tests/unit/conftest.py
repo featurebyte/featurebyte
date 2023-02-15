@@ -3,9 +3,12 @@
 Common test fixtures used across unit test directories
 """
 import json
+import tempfile
+from unittest import mock
 from unittest.mock import PropertyMock, patch
 
 import pandas as pd
+import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 from cachetools import TTLCache
@@ -44,10 +47,21 @@ from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-from tests.unit.conftest_config import *
+from tests.unit.conftest_config import (
+    config_file_fixture,
+    config_fixture,
+    mock_config_path_env_fixture,
+)
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
+
+
+def fixture_registrations():
+    """
+    Registering fixtures.
+    """
+    _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
 
 @pytest.fixture(name="mock_api_object_cache")
