@@ -108,9 +108,12 @@ class GraphNodeType(StrEnum):
     GraphNodeType enum is used to tag the purpose of the graph node.
     """
 
+    # graph contains critical data info cleaning operations
     CLEANING = "cleaning"
+
+    # graph contains view specific operations
     EVENT_VIEW = "event_view"
     ITEM_VIEW = "item_view"
-    SCD_VIEW = "scd_view"
     DIMENSION_VIEW = "dimension_view"
+    SCD_VIEW = "scd_view"
     CHANGE_VIEW = "change_view"

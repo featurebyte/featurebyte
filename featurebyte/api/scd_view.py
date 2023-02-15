@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from pydantic import Field
 from typeguard import typechecked
@@ -13,6 +13,7 @@ from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 
 
@@ -38,8 +39,11 @@ class SlowlyChangingView(View, GroupByMixin):
         proxy_class="featurebyte.SlowlyChangingView",
     )
 
+    # class variables
     _series_class = SlowlyChangingViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.SCD_VIEW
 
+    # pydantic instance variables
     natural_key_column: str = Field(allow_mutation=False)
     effective_timestamp_column: str = Field(allow_mutation=False)
     surrogate_key_column: Optional[str] = Field(allow_mutation=False)

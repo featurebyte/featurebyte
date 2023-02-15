@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any, ClassVar, Optional, Tuple
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -17,6 +17,7 @@ from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import ChangeViewNoJoinColumnError
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.enum import GraphNodeType
 
 
 class ChangeViewColumn(LaggableViewColumn):
@@ -79,8 +80,11 @@ class ChangeView(View, GroupByMixin):
         proxy_class="featurebyte.ChangeView",
     )
 
+    # class variables
     _series_class = ChangeViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.CHANGE_VIEW
 
+    # pydantic instance variables
     default_feature_job_setting: FeatureJobSetting
     effective_timestamp_column: str = Field(allow_mutation=False)
     natural_key_column: str = Field(allow_mutation=False)

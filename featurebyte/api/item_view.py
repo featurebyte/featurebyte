@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
+from typing import Any, ClassVar, List, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -24,7 +24,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 
@@ -61,8 +61,11 @@ class ItemView(View, GroupByMixin):
         proxy_class="featurebyte.ItemView",
     )
 
+    # class variables
     _series_class = ItemViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.ITEM_VIEW
 
+    # pydantic instance variables
     event_id_column: str = Field(allow_mutation=False)
     item_id_column: str = Field(allow_mutation=False)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)

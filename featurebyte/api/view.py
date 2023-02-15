@@ -3,7 +3,19 @@ View class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from abc import ABC, abstractmethod
 
@@ -38,8 +50,9 @@ from featurebyte.exception import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import ProjectNode
@@ -203,6 +216,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     View class that is the base class of any View (e.g. EventView)
     """
 
+    # class variables
+    _view_graph_node_type: ClassVar[GraphNodeType]
+
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
@@ -210,6 +226,48 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @classmethod
+    def _prepare_view_columns_info(cls, data: DataApiObject):
+        return [col for col in data.columns_info]
+
+    @classmethod
+    def _construct_view_graph_node(cls, data: DataApiObject):
+        # load the most update to data frame into the global graph and then construct the data node
+        global_graph, node_name_map = GlobalQueryGraph().load(data.frame.graph)
+        node_name = node_name_map[data.frame.node.name]
+        data_node = global_graph.get_node_by_name(node_name=node_name)
+        assert isinstance(data_node, InputNode)
+
+        # record creation date column should not be available in the view
+        columns_info = cls._prepare_view_columns_info(data)
+        project_columns = [col.name for col in columns_info]
+
+        # prepare view graph node
+        cleaning_graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data_node)
+        if cleaning_graph_node:
+            view_graph_node, proxy_input_nodes = GraphNode.create(
+                node_type=NodeType.GRAPH,
+                node_params=cleaning_graph_node.parameters.dict(by_alias=True),
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[data_node],
+                graph_node_type=cls._view_graph_node_type,
+            )
+            view_graph_node.add_operation(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": project_columns},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[view_graph_node.output_node],
+            )
+        else:
+            view_graph_node, proxy_input_nodes = GraphNode.create(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": project_columns},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[data_node],
+                graph_node_type=cls._view_graph_node_type,
+            )
+        return view_graph_node, proxy_input_nodes, data_node
 
     @classmethod
     @typechecked
@@ -229,21 +287,16 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ViewT
             constructed View object
         """
-        global_graph, node_name_map = GlobalQueryGraph().load(data.frame.graph)
-        node_name = node_name_map[data.frame.node.name]
-        data_node = global_graph.get_node_by_name(node_name=node_name)
-        assert isinstance(data_node, InputNode)
-        graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data_node)
-        if graph_node:
-            inserted_graph_node = GlobalQueryGraph().add_node(
-                node=graph_node, input_nodes=[data_node]
-            )
-            node_name = inserted_graph_node.name
-
+        view_graph_node, _, data_node = cls._construct_view_graph_node(data=data)
+        columns_info = cls._prepare_view_columns_info(data=data)
+        inserted_graph_node = GlobalQueryGraph().add_node(
+            node=view_graph_node, input_nodes=[data_node]
+        )
+        node_name = inserted_graph_node.name
         return cls(
             feature_store=data.feature_store,
             tabular_source=data.tabular_source,
-            columns_info=data.columns_info,
+            columns_info=columns_info,
             node_name=node_name,
             tabular_data_ids=[data.id],
             **kwargs,
