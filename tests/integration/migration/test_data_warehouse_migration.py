@@ -42,7 +42,7 @@ def get_aggregation_id(feature: Feature):
 
 
 @contextlib.asynccontextmanager
-async def revert_when_done(session, table_name):
+async def revert_table_when_done(session, table_name):
     """
     Backup a table and revert it at the end of a context
 
@@ -181,7 +181,7 @@ async def test_data_warehouse_migration_v6(
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup
     df_expected = await _retrieve_tile_registry()
 
-    async with revert_when_done(snowflake_session, "TILE_REGISTRY"):
+    async with revert_table_when_done(snowflake_session, "TILE_REGISTRY"):
 
         # Simulate migration scenario where VALUE_COLUMN_TYPES column is missing
         await snowflake_session.execute_query(
