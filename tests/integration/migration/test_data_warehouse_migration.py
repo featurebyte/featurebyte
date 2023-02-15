@@ -1,4 +1,3 @@
-import contextlib
 from copy import deepcopy
 from unittest.mock import Mock
 
@@ -11,6 +10,7 @@ from featurebyte import EventView, Feature, FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
 from featurebyte.utils.credential import get_credential
+from tests.util.helper import revert_object_when_done
 
 
 @pytest.fixture(scope="session")
@@ -39,22 +39,6 @@ def get_aggregation_id(feature: Feature):
     graph, _ = feature.extract_pruned_graph_and_node()
     groupby_node = graph.get_node_by_name("groupby_1")
     return groupby_node.parameters.dict()["aggregation_id"]
-
-
-@contextlib.asynccontextmanager
-async def revert_table_when_done(session, table_name):
-    """
-    Backup a table and revert it at the end of a context
-
-    Mainly used to prevent unintended interference between tests (a failed migration test should not
-    cause other tests to fail)
-    """
-    backup_name = f"{table_name}_BACKUP"
-    await session.execute_query(f"CREATE OR REPLACE TABLE {backup_name} CLONE {table_name}")
-    try:
-        yield
-    finally:
-        await session.execute_query(f"CREATE OR REPLACE TABLE {table_name} CLONE {backup_name}")
 
 
 @pytest_asyncio.fixture(name="bad_feature_stores")
@@ -181,7 +165,7 @@ async def test_data_warehouse_migration_v6(
     # New TILE_REGISTRY always has VALUE_COLUMN_TYPES column correctly setup
     df_expected = await _retrieve_tile_registry()
 
-    async with revert_table_when_done(snowflake_session, "TILE_REGISTRY"):
+    async with revert_object_when_done(snowflake_session, "TABLE", "TILE_REGISTRY"):
 
         # Simulate migration scenario where VALUE_COLUMN_TYPES column is missing
         await snowflake_session.execute_query(

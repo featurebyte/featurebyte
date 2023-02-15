@@ -1,4 +1,3 @@
-import contextlib
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -12,6 +11,7 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from featurebyte.service.working_schema import drop_all_objects
 from featurebyte.utils.credential import get_credential
+from tests.util.helper import revert_object_when_done
 
 
 @pytest.fixture(scope="session")
@@ -80,23 +80,6 @@ def migration_service_fixture(user, persistent):
     return service
 
 
-@contextlib.asynccontextmanager
-async def revert_schema_when_done(session, name):
-    """
-    Backup a schema and revert it at the end of a context
-
-    Mainly used to prevent unintended interference between tests (a failed migration test should not
-    cause other tests to fail)
-    """
-    backup_name = f"{name}_BACKUP"
-    await session.execute_query(f"CREATE OR REPLACE SCHEMA {backup_name} CLONE {name}")
-    try:
-        yield
-    finally:
-        await session.execute_query(f"CREATE OR REPLACE SCHEMA {name} CLONE {backup_name}")
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {backup_name}")
-
-
 @pytest.mark.asyncio
 async def test_drop_all_and_recreate(
     config,
@@ -108,7 +91,7 @@ async def test_drop_all_and_recreate(
     """
     Test dropping all objects first then use WorkingSchemaService to restore it
     """
-    async with revert_schema_when_done(snowflake_session, snowflake_session.schema_name):
+    async with revert_object_when_done(snowflake_session, "SCHEMA", snowflake_session.schema_name):
         await _run_test_drop_all_and_recreate(
             config,
             dataset_registration_helper,

@@ -1,6 +1,7 @@
 """
 This module contains utility functions used in tests
 """
+import contextlib
 import sys
 from contextlib import contextmanager
 from unittest.mock import Mock
@@ -169,3 +170,24 @@ def compare_generated_data_object_sdk_code(
             feature_store_id=feature_store_id, data_id=data_id, **kwargs
         )
         assert expected == sdk_code
+
+
+@contextlib.asynccontextmanager
+async def revert_object_when_done(session, object_type, name):
+    """
+    Backup an object and revert it at the end of a context
+
+    Mainly used to prevent unintended interference between tests (a failed migration test should not
+    cause other tests to fail)
+    """
+    object_type = object_type.upper()
+    assert object_type in {"TABLE", "SCHEMA"}
+
+    backup_name = f"{name}_BACKUP"
+    await session.execute_query(f"CREATE OR REPLACE {object_type} {backup_name} CLONE {name}")
+
+    try:
+        yield
+    finally:
+        await session.execute_query(f"CREATE OR REPLACE {object_type} {name} CLONE {backup_name}")
+        await session.execute_query(f"DROP {object_type} IF EXISTS {backup_name}")
