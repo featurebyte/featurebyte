@@ -109,3 +109,8 @@ class GraphNodeType(StrEnum):
     """
 
     CLEANING = "cleaning"
+    EVENT_VIEW = "event_view"
+    ITEM_VIEW = "item_view"
+    SCD_VIEW = "scd_view"
+    DIMENSION_VIEW = "dimension_view"
+    CHANGE_VIEW = "change_view"
