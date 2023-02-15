@@ -5,9 +5,9 @@ from typing import Any, List
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
-from pyspark.sql import SparkSession
 
 from featurebyte.logger import logger
+from featurebyte.session.spark import SparkSession
 
 
 class TileGenerateEntityTracking(BaseModel):
@@ -15,7 +15,6 @@ class TileGenerateEntityTracking(BaseModel):
     Tile Generate entity tracking script corresponding to SP_TILE_GENERATE_ENTITY_TRACKING stored procedure
     """
 
-    featurebyte_database: str
     tile_last_start_date_column: str
     entity_column_names: List[str]
     tile_id: str
@@ -36,15 +35,18 @@ class TileGenerateEntityTracking(BaseModel):
         """
         super().__init__(**kwargs)
         self._spark = spark_session
-        self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
 
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Execute tile generate entity tracking operation
         """
 
         tracking_table_name = self.tile_id + "_ENTITY_TRACKER"
-        tracking_table_exist = self._spark.catalog.tableExists(tracking_table_name)
+        tracking_table_exist_flag = True
+        try:
+            await self._spark.execute_query(f"select * from {tracking_table_name} limit 1")
+        except Exception:  # pylint: disable=broad-except
+            tracking_table_exist_flag = False
 
         entity_insert_cols = []
         entity_filter_cols = []
@@ -59,9 +61,9 @@ class TileGenerateEntityTracking(BaseModel):
         logger.debug(f"entity_filter_cols_str: {entity_filter_cols_str}")
 
         # create table or insert new records or update existing records
-        if not tracking_table_exist:
+        if not tracking_table_exist_flag:
             create_sql = f"create table {tracking_table_name} as SELECT * FROM {self.entity_table}"
-            self._spark.sql(create_sql)
+            await self._spark.execute_query(create_sql)
         else:
             entity_column_names_str = ",".join(self.entity_column_names)
             merge_sql = f"""
@@ -73,4 +75,4 @@ class TileGenerateEntityTracking(BaseModel):
                         insert ({entity_column_names_str}, {self.tile_last_start_date_column})
                             values ({entity_insert_cols_str}, b.{self.tile_last_start_date_column})
             """
-            self._spark.sql(merge_sql)
+            await self._spark.execute_query(merge_sql)

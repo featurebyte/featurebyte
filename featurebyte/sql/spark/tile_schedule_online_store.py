@@ -5,10 +5,9 @@ from typing import Any
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
-from pyspark.sql import SparkSession
-from pyspark.sql.utils import AnalysisException
 
 from featurebyte.logger import logger
+from featurebyte.session.spark import SparkSession
 
 
 class TileScheduleOnlineStore(BaseModel):
@@ -16,7 +15,6 @@ class TileScheduleOnlineStore(BaseModel):
     Tile Schedule Online Store script corresponding to SP_TILE_SCHEDULE_ONLINE_STORE stored procedure
     """
 
-    featurebyte_database: str
     agg_id: str
     job_schedule_ts_str: str
 
@@ -35,9 +33,8 @@ class TileScheduleOnlineStore(BaseModel):
         """
         super().__init__(**kwargs)
         self._spark = spark_session
-        self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
 
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Execute tile schedule online store operation
         """
@@ -54,9 +51,11 @@ class TileScheduleOnlineStore(BaseModel):
               AGGREGATION_ID ILIKE '{self.agg_id}' AND IS_DELETED = FALSE
         """
 
-        online_store_df = self._spark.sql(select_sql)
+        online_store_df = await self._spark.execute_query(select_sql)
+        if online_store_df is None or len(online_store_df) == 0:
+            return
 
-        for row in online_store_df.collect():
+        for _, row in online_store_df.iterrows():
             f_name = row["RESULT_ID"]
             f_sql = row["SQL_QUERY"]
             fs_table = row["ONLINE_STORE_TABLE_NAME"]
@@ -67,12 +66,15 @@ class TileScheduleOnlineStore(BaseModel):
             )
 
             logger.debug(f"{f_name}, {fs_table}, {f_entity_columns}, {f_value_type}")
-            logger.debug(f_sql)
 
-            fs_table_exist = self._spark.catalog.tableExists(fs_table)
-            logger.debug("fs_table_exist: ", fs_table_exist)
+            fs_table_exist_flag = True
+            try:
+                await self._spark.execute_query(f"select * from {fs_table} limit 1")
+            except Exception:  # pylint: disable=broad-except
+                fs_table_exist_flag = False
+            logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
-            if not fs_table_exist:
+            if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
                 columns = f_entity_columns.split(",")
                 columns.append(f_name)
@@ -80,7 +82,7 @@ class TileScheduleOnlineStore(BaseModel):
                 create_sql = (
                     f"create table {fs_table} using delta as (select {columns_str} from ({f_sql}))"
                 )
-                self._spark.sql(create_sql)
+                await self._spark.execute_query(create_sql)
 
             else:
                 # feature store table already exists, insert records with the input feature sql
@@ -95,9 +97,11 @@ class TileScheduleOnlineStore(BaseModel):
 
                 # check whether feature value column exists, if not add the new column
                 try:
-                    self._spark.sql(f"SELECT {f_name} FROM {fs_table} LIMIT 1")
-                except AnalysisException:
-                    self._spark.sql(f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}")
+                    await self._spark.execute_query(f"SELECT {f_name} FROM {fs_table} LIMIT 1")
+                except Exception:  # pylint: disable=broad-except
+                    await self._spark.execute_query(
+                        f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}"
+                    )
 
                 # TODO: local spark does not support update subquery
                 # remove feature values for entities that are not in entity universe
@@ -117,4 +121,4 @@ class TileScheduleOnlineStore(BaseModel):
                             insert ({f_entity_columns}, {f_name})
                                 values ({entity_insert_cols_str}, b.{f_name})
                 """
-                self._spark.sql(merge_sql)
+                await self._spark.execute_query(merge_sql)

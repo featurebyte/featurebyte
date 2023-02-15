@@ -13,20 +13,20 @@ class TileRegistry(TileCommon):
     """
 
     table_name: str
-    table_exist: str
+    table_exist: bool
 
     # pylint: disable=too-many-locals
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Execute tile registry operation
         """
 
-        registry_df = self._spark.sql(
-            f"select VALUE_COLUMN_NAMES as names, VALUE_COLUMN_TYPES as types from tile_registry where tile_id = '{self.tile_id}'"
+        registry_df = await self._spark.execute_query(
+            f"select VALUE_COLUMN_NAMES, VALUE_COLUMN_TYPES from tile_registry where tile_id = '{self.tile_id}'"
         )
 
-        res = registry_df.select("names", "types").collect()
-        logger.debug(f"res: {res}")
+        # res = registry_df.select("names", "types").collect()
+        # logger.debug(f"res: {res}")
 
         input_value_columns = [value for value in self.value_column_names if value.strip()]
         logger.debug(f"input_value_columns: {input_value_columns}")
@@ -34,11 +34,11 @@ class TileRegistry(TileCommon):
         input_value_columns_types = [value for value in self.value_column_types if value.strip()]
         logger.debug(f"input_value_columns_types: {input_value_columns_types}")
 
-        if res:
-            value_cols = res[0].names
-            value_cols_types = res[0].types
-            logger.debug("value_cols: ", value_cols)
-            logger.debug("value_cols_types: ", value_cols_types)
+        if registry_df is not None and len(registry_df) > 0:
+            value_cols = registry_df["VALUE_COLUMN_NAMES"].iloc[0]
+            value_cols_types = registry_df["VALUE_COLUMN_TYPES"].iloc[0]
+            logger.debug(f"value_cols: {value_cols}")
+            logger.debug(f"value_cols_types: {value_cols_types}")
 
             exist_columns = [value for value in value_cols.split(",") if value.strip()]
             exist_columns_types = [value for value in value_cols_types.split(",") if value.strip()]
@@ -52,9 +52,9 @@ class TileRegistry(TileCommon):
                     exist_columns_types.append(input_column_type)
 
             new_value_columns_str = ",".join(exist_columns)
-            logger.debug("new_value_columns_str: ", new_value_columns_str)
+            logger.debug(f"new_value_columns_str: {new_value_columns_str}")
             new_value_columns_types_str = ",".join(exist_columns_types)
-            logger.debug("new_value_columns_types_str: ", new_value_columns_types_str)
+            logger.debug(f"new_value_columns_types_str: {new_value_columns_types_str}")
 
             update_sql = f"""
                             UPDATE TILE_REGISTRY SET
@@ -62,7 +62,7 @@ class TileRegistry(TileCommon):
                                 VALUE_COLUMN_TYPES = '{new_value_columns_types_str}'
                             WHERE TILE_ID = '{self.tile_id}'
                          """
-            self._spark.sql(update_sql)
+            await self._spark.execute_query(update_sql)
         else:
             logger.info("No value columns")
             escape_sql = self.sql.replace("'", "''")
@@ -100,15 +100,17 @@ class TileRegistry(TileCommon):
                     null
                 )
             """
-            self._spark.sql(insert_sql)
+            await self._spark.execute_query(insert_sql)
 
-        if self.table_exist == "Y":
-            cols_df = self._spark.sql(f"SHOW COLUMNS IN {self.table_name}")
+        if self.table_exist:
+            cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {self.table_name}")
             cols = []
-            for col in cols_df.collect():
-                cols.append(col.col_name)
 
-            logger.debug("cols: ", cols)
+            if cols_df is not None:
+                for _, row in cols_df.iterrows():
+                    cols.append(row["col_name"])
+
+            logger.debug(f"cols: {cols}")
 
             tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
             add_statements = []
@@ -121,4 +123,4 @@ class TileRegistry(TileCommon):
 
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
-                self._spark.sql(tile_add_sql)
+                await self._spark.execute_query(tile_add_sql)

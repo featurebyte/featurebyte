@@ -3,11 +3,14 @@ Tile Generate tests for Spark Session
 """
 from datetime import datetime
 
+import pytest
+
 from featurebyte.enum import InternalName
 from featurebyte.sql.spark.tile_generate import TileGenerate
 
 
-def test_generate_tile(spark_session):
+@pytest.mark.asyncio
+async def test_generate_tile(spark_session):
     """
     Test normal generation of tiles
     """
@@ -41,18 +44,21 @@ def test_generate_tile(spark_session):
         tile_start_date_column=InternalName.TILE_START_DATE,
     )
 
-    tile_generate_ins.execute()
+    await tile_generate_ins.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = spark_session.sql(sql).collect()
-    assert result[0].TILE_COUNT == 2
+    result = await spark_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 2
 
-    result = spark_session.sql(f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'").collect()
-    assert result[0].VALUE_COLUMN_NAMES == "VALUE"
-    assert result[0].VALUE_COLUMN_TYPES == "FLOAT"
+    result = await spark_session.execute_query(
+        f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    )
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
+    assert result["VALUE_COLUMN_TYPES"].iloc[0] == "FLOAT"
 
 
-def test_generate_tile_no_data(spark_session):
+@pytest.mark.asyncio
+async def test_generate_tile_no_data(spark_session):
     """
     Test generation of tile with no tile data
     """
@@ -85,14 +91,15 @@ def test_generate_tile_no_data(spark_session):
         tile_start_date_column=InternalName.TILE_START_DATE,
     )
 
-    tile_generate_ins.execute()
+    await tile_generate_ins.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = spark_session.sql(sql).collect()
-    assert result[0].TILE_COUNT == 0
+    result = await spark_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 0
 
 
-def test_generate_tile_new_value_column(spark_session):
+@pytest.mark.asyncio
+async def test_generate_tile_new_value_column(spark_session):
     """
     Test normal generation of tiles
     """
@@ -112,7 +119,6 @@ def test_generate_tile_new_value_column(spark_session):
 
     tile_generate_ins = TileGenerate(
         spark_session=spark_session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -125,16 +131,16 @@ def test_generate_tile_new_value_column(spark_session):
         tile_start_date_column=InternalName.TILE_START_DATE,
     )
 
-    tile_generate_ins.execute()
+    await tile_generate_ins.execute()
 
     sql = f"SELECT {value_col_names_str} FROM {tile_id}"
-    result = spark_session.sql(sql).collect()
+    result = await spark_session.execute_query(sql)
     assert len(result) == 2
 
     sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    result = spark_session.sql(sql).collect()
+    result = await spark_session.execute_query(sql)
     assert len(result) == 1
-    assert result[0].VALUE_COLUMN_NAMES == "VALUE"
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
 
     value_col_names_2 = ["VALUE", "VALUE_2"]
     value_col_types_2 = ["FLOAT", "FLOAT"]
@@ -147,7 +153,6 @@ def test_generate_tile_new_value_column(spark_session):
 
     tile_generate_ins = TileGenerate(
         spark_session=spark_session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -160,13 +165,13 @@ def test_generate_tile_new_value_column(spark_session):
         tile_start_date_column=InternalName.TILE_START_DATE,
     )
 
-    tile_generate_ins.execute()
+    await tile_generate_ins.execute()
 
     sql = f"SELECT {value_col_names_2_str} FROM {tile_id}"
-    result = spark_session.sql(sql).collect()
+    result = await spark_session.execute_query(sql)
     assert len(result) == 2
 
     sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    result = spark_session.sql(sql).collect()
+    result = await spark_session.execute_query(sql)
     assert len(result) == 1
-    assert result[0].VALUE_COLUMN_NAMES == "VALUE,VALUE_2"
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE,VALUE_2"

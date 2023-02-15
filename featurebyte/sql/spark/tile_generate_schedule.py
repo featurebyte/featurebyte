@@ -31,7 +31,7 @@ class TileGenerateSchedule(TileCommon):
     job_schedule_ts: str
 
     # pylint: disable=too-many-locals
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Execute tile generate schedule operation
 
@@ -82,7 +82,7 @@ class TileGenerateSchedule(TileCommon):
 
         insert_sql = audit_insert_sql.replace("<STATUS>", "STARTED").replace("<MESSAGE>", "")
         logger.debug(insert_sql)
-        self._spark.sql(insert_sql)
+        await self._spark.execute_query(insert_sql)
 
         tile_start_ts_str = tile_start_ts.strftime("%Y-%m-%d %H:%M:%S")
         tile_end_ts_str = tile_end_ts.strftime("%Y-%m-%d %H:%M:%S")
@@ -101,7 +101,6 @@ class TileGenerateSchedule(TileCommon):
 
         tile_monitor_ins = TileMonitor(
             spark_session=self._spark,
-            featurebyte_database=self.featurebyte_database,
             tile_id=tile_id,
             tile_modulo_frequency_second=self.tile_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
@@ -117,7 +116,6 @@ class TileGenerateSchedule(TileCommon):
 
         tile_generate_ins = TileGenerate(
             spark_session=self._spark,
-            featurebyte_database=self.featurebyte_database,
             tile_id=tile_id,
             tile_modulo_frequency_second=self.tile_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
@@ -134,7 +132,6 @@ class TileGenerateSchedule(TileCommon):
 
         tile_online_store_ins = TileScheduleOnlineStore(
             spark_session=self._spark,
-            featurebyte_database=self.featurebyte_database,
             agg_id=self.agg_id,
             job_schedule_ts_str=self.job_schedule_ts,
         )
@@ -170,7 +167,7 @@ class TileGenerateSchedule(TileCommon):
             try:
                 logger.info(f"Calling {spec['name']}\n")
                 tile_ins: TileCommon = spec["trigger"]
-                tile_ins.execute()
+                await tile_ins.execute()
                 logger.info(f"End of calling {spec['name']}\n")
             except Exception as exception:
                 message = str(exception).replace("'", "")
@@ -180,10 +177,10 @@ class TileGenerateSchedule(TileCommon):
                     "<MESSAGE>", message
                 )
                 logger.error("fail_insert_sql: ", ex_insert_sql)
-                self._spark.sql(ex_insert_sql)
+                await self._spark.execute_query(ex_insert_sql)
                 raise exception
 
             success_code = spec["status"]["success"]
             insert_sql = audit_insert_sql.replace("<STATUS>", success_code).replace("<MESSAGE>", "")
             logger.info("success_insert_sql: ", insert_sql)
-            self._spark.sql(insert_sql)
+            await self._spark.execute_query(insert_sql)

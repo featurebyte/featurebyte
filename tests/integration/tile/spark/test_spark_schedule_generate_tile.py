@@ -3,11 +3,14 @@ This module contains integration tests for scheduled tile generation stored proc
 """
 from datetime import datetime
 
+import pytest
+
 from featurebyte.enum import InternalName
 from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
 
 
-def test_schedule_generate_tile_online(spark_session, tile_task_prep_spark):
+@pytest.mark.asyncio
+async def test_schedule_generate_tile_online(spark_session, tile_task_prep_spark):
     """
     Test the stored procedure of generating tiles
     """
@@ -31,7 +34,6 @@ def test_schedule_generate_tile_online(spark_session, tile_task_prep_spark):
 
     tile_schedule_ins = TileGenerateSchedule(
         spark_session=spark_session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -50,46 +52,51 @@ def test_schedule_generate_tile_online(spark_session, tile_task_prep_spark):
         agg_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
-    tile_schedule_ins.execute()
+    await tile_schedule_ins.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = spark_session.sql(sql).collect()
-    assert result[0]["TILE_COUNT"] == (tile_monitor + 1)
+    result = await spark_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
 
     # verify that feature store has been updated
     sql = f"SELECT COUNT(*) as COUNT FROM {feature_store_table_name}"
-    result = spark_session.sql(sql).collect()
-    assert result[0]["COUNT"] == 2
+    result = await spark_session.execute_query(sql)
+    assert result["COUNT"].iloc[0] == 2
 
     # verify tile job monitor using sql
-    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
-    result = spark_session.sql(sql).orderBy("CREATED_AT").collect()
+    sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}' ORDER BY CREATED_AT"
+    result = await spark_session.execute_query(sql)
     assert len(result) == 4
-    assert result[0]["STATUS"] == "STARTED"
-    assert result[1]["STATUS"] == "MONITORED"
-    assert result[2]["STATUS"] == "GENERATED"
-    assert result[3]["STATUS"] == "COMPLETED"
+    assert result["STATUS"].iloc[0] == "STARTED"
+    assert result["STATUS"].iloc[1] == "MONITORED"
+    assert result["STATUS"].iloc[2] == "GENERATED"
+    assert result["STATUS"].iloc[3] == "COMPLETED"
 
-    session_id = result[0]["SESSION_ID"]
+    session_id = result["SESSION_ID"].iloc[0]
     assert "|" in session_id
-    assert result[0]["SESSION_ID"] == session_id
-    assert result[1]["CREATED_AT"] > result[0]["CREATED_AT"]
-    assert result[2]["CREATED_AT"] > result[1]["CREATED_AT"]
-    assert result[3]["CREATED_AT"] > result[2]["CREATED_AT"]
+    assert result["SESSION_ID"].iloc[0] == session_id
+    assert result["CREATED_AT"].iloc[1] > result["CREATED_AT"].iloc[0]
+    assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
+    assert result["CREATED_AT"].iloc[3] > result["CREATED_AT"].iloc[2]
 
 
-def test_schedule_monitor_tile_online(spark_session):
+@pytest.mark.asyncio
+async def test_schedule_monitor_tile_online(spark_session):
     """
     Test the stored procedure of monitoring tiles
     """
     entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
-    table_name = "TEMP_TABLE"
     suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
     tile_id = f"TEMP_TABLE_{suffix}"
     agg_id = f"some_agg_id_{suffix}"
     tile_end_ts = "2022-06-05T23:53:00Z"
+
+    table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    await spark_session.execute_query(
+        f"create table {table_name} using delta as select * from TEMP_TABLE"
+    )
 
     entity_col_names_str = ",".join(entity_col_names)
     value_col_names_str = ",".join(value_col_names)
@@ -101,7 +108,6 @@ def test_schedule_monitor_tile_online(spark_session):
 
     tile_schedule_ins = TileGenerateSchedule(
         spark_session=spark_session,
-        featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -120,7 +126,7 @@ def test_schedule_monitor_tile_online(spark_session):
         agg_id=agg_id,
         job_schedule_ts=tile_end_ts,
     )
-    tile_schedule_ins.execute()
+    await tile_schedule_ins.execute()
 
     sql = f"""
             UPDATE {table_name} SET VALUE = VALUE + 1
@@ -129,7 +135,7 @@ def test_schedule_monitor_tile_online(spark_session):
                 to_timestamp('2022-06-05 23:48:00', 'yyyy-MM-dd HH:mm:ss')
             )
           """
-    spark_session.sql(sql)
+    await spark_session.execute_query(sql)
 
     tile_end_ts_2 = "2022-06-05T23:58:00Z"
     tile_schedule_ins = TileGenerateSchedule(
@@ -153,12 +159,12 @@ def test_schedule_monitor_tile_online(spark_session):
         agg_id=agg_id,
         job_schedule_ts=tile_end_ts_2,
     )
-    tile_schedule_ins.execute()
+    await tile_schedule_ins.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-    result = spark_session.sql(sql).collect()
-    assert result[0]["TILE_COUNT"] == 2
+    result = await spark_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 2
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = spark_session.sql(sql).collect()
-    assert result[0]["TILE_COUNT"] == 2
+    result = await spark_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 2

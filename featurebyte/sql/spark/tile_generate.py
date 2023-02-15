@@ -19,25 +19,26 @@ class TileGenerate(TileCommon):
     last_tile_start_str: Optional[str]
     tile_last_start_date_column: Optional[str]
 
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Execute tile generate operation
         """
 
-        tile_table_exist = self._spark.catalog.tableExists(self.tile_id)
-        tile_table_exist_flag = "Y" if tile_table_exist else "N"
+        tile_table_exist_flag = True
+        try:
+            await self._spark.execute_query(f"select * from {self.tile_id} limit 1")
+        except Exception:  # pylint: disable=broad-except
+            tile_table_exist_flag = False
 
         # 2. Update TILE_REGISTRY & Add New Columns TILE Table
-
         tile_sql = self.sql.replace("'", "''")
 
         # pylint: disable=duplicate-code
-        TileRegistry(
+        await TileRegistry(
             spark_session=self._spark,
             sql=tile_sql,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
-            featurebyte_database=self.featurebyte_database,
             tile_start_date_column=self.tile_start_date_column,
             tile_modulo_frequency_second=self.tile_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
@@ -82,15 +83,17 @@ class TileGenerate(TileCommon):
         value_insert_cols_str = ",".join(value_insert_cols)
         value_update_cols_str = ",".join(value_update_cols)
 
-        logger.debug("entity_insert_cols_str: ", entity_insert_cols_str)
-        logger.debug("entity_filter_cols_str: ", entity_filter_cols_str)
-        logger.debug("value_insert_cols_str: ", value_insert_cols_str)
-        logger.debug("value_update_cols_str: ", value_update_cols_str)
+        logger.debug(f"entity_insert_cols_str: {entity_insert_cols_str}")
+        logger.debug(f"entity_filter_cols_str: {entity_filter_cols_str}")
+        logger.debug(f"value_insert_cols_str: {value_insert_cols_str}")
+        logger.debug(f"value_update_cols_str: {value_update_cols_str}")
 
         # insert new records and update existing records
-        if not tile_table_exist:
+        if not tile_table_exist_flag:
             logger.info("creating tile table: ", self.tile_id)
-            self._spark.sql(f"create table {self.tile_id} using delta as {tile_sql}")
+            await self._spark.execute_query(
+                f"create table {self.tile_id} using delta as {tile_sql}"
+            )
 
         else:
             if self.entity_column_names:
@@ -111,12 +114,12 @@ class TileGenerate(TileCommon):
                         insert ({insert_str})
                             values ({values_str})
             """
-            self._spark.sql(merge_sql)
+            await self._spark.execute_query(merge_sql)
 
         if self.last_tile_start_str:
             logger.debug("last_tile_start_str: ", self.last_tile_start_str)
 
-            index_df = self._spark.sql(
+            index_df = await self._spark.execute_query(
                 f"""
                     select F_TIMESTAMP_TO_INDEX(
                         '{self.last_tile_start_str}',
@@ -126,7 +129,11 @@ class TileGenerate(TileCommon):
                     ) as value
                 """
             )
-            ind_value = index_df.select("value").collect()[0].value
+
+            if index_df is None or len(index_df) == 0:
+                return
+
+            ind_value = index_df["value"].iloc[0]
 
             update_tile_last_ind_sql = f"""
                 UPDATE TILE_REGISTRY
@@ -135,4 +142,4 @@ class TileGenerate(TileCommon):
                         {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
                 WHERE TILE_ID = '{self.tile_id}'
             """
-            self._spark.sql(update_tile_last_ind_sql)
+            await self._spark.execute_query(update_tile_last_ind_sql)

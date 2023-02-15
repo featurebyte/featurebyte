@@ -7,7 +7,8 @@ from abc import ABC, abstractmethod
 
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
-from pyspark.sql import SparkSession
+
+from featurebyte.session.spark import SparkSession
 
 
 class TileCommon(BaseModel, ABC):
@@ -15,7 +16,6 @@ class TileCommon(BaseModel, ABC):
     Base class for Tile Operation Classes
     """
 
-    featurebyte_database: str
     tile_id: str
     tile_modulo_frequency_second: int
     blind_spot_second: int
@@ -41,7 +41,6 @@ class TileCommon(BaseModel, ABC):
         """
         super().__init__(**kwargs)
         self._spark = spark_session
-        self._spark.sql(f"USE DATABASE {self.featurebyte_database}")
 
     @property
     def entity_column_names_str(self) -> str:
@@ -80,7 +79,7 @@ class TileCommon(BaseModel, ABC):
         return ",".join(self.value_column_types)
 
     @abstractmethod
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Base abstract method for tile related subclass
         """
