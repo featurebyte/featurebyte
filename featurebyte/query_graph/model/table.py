@@ -14,7 +14,7 @@ from featurebyte.query_graph.model.common_table import (
     SPECIFIC_DATA_TABLES,
     BaseTableData,
 )
-from featurebyte.query_graph.node.generic import InputNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 

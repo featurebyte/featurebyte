@@ -184,7 +184,9 @@ class OnlineStorePrecomputePlan:
             exclude_post_aggregation=True,
         )
         sql = sql_to_string(sql_expr, source_type)
-        table_name = get_online_store_table_name_from_entity_ids(set(params.agg_spec.entity_ids))
+        table_name = get_online_store_table_name_from_entity_ids(
+            set(params.agg_spec.entity_ids if params.agg_spec.entity_ids is not None else [])
+        )
 
         op_struct = (
             OperationStructureExtractor(graph=params.pruned_graph)

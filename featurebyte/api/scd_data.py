@@ -22,7 +22,19 @@ from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 class SlowlyChangingData(DataApiObject):
     """
-    SlowlyChangingData class
+    SlowlyChangingData is a data source object connected with a Slowly Changing Dimension table of Type 2 in
+    the data warehouse that has:\n
+    - a natural key (key for which there is one unique active record)\n
+    - a surrogate key (the primary key of the SCD)\n
+    - an effective date or timestamp\n
+
+    and optionally,\n
+    - an end date or timestamp and\n
+    - a current flag
+
+    To create an instance of this class, see the `from_tabular_source` method.
+
+    To build features, users can create SlowlyChangingViews from SlowlyChangingData.
     """
 
     # documentation metadata
@@ -186,6 +198,29 @@ class SlowlyChangingData(DataApiObject):
         Returns
         -------
         SlowlyChangingData
+
+        Examples
+        --------
+        Create SlowlyChangingData from a table in the feature store
+
+        >>> user_profiles = SlowlyChangingData.from_tabular_source(  # doctest: +SKIP
+        ...    name="User Profiles",
+        ...    tabular_source=feature_store.get_table(
+        ...      database_name="DEMO",
+        ...      schema_name="USER",
+        ...      table_name="PROFILES"
+        ...    ),
+        ...    natural_key_column="USER_ID",
+        ...    effective_timestamp_column="EFFECTIVE_AT",
+        ...    end_timestamp_column="END_AT",
+        ...    surrogate_key_column="ID",
+        ...    current_flag_column="IS_CURRENT",
+        ...    record_creation_date_column="RECORD_AVAILABLE_AT",
+        ... )
+
+        Get information about the SlowlyChangingData
+
+        >>> user_profiles.info(verbose=True)  # doctest: +SKIP
         """
         return super().create(
             tabular_source=tabular_source,

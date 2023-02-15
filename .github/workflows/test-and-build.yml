@@ -115,10 +115,15 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
+    - name: Adding C headers
+      if: ${{ needs.flags.outputs.changes != 0 }}
+      run: |
+        sudo apt-get install python-dev libsasl2-dev gcc
+
     - name: Install dependencies
       if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
-        sudo apt-get install wkhtmltopdf libsasl2-dev
+        sudo apt-get install wkhtmltopdf
         make install
 
     - name: Run tests
@@ -316,10 +321,14 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
+    - name: Adding C headers
+      if: ${{ needs.flags.outputs.changes != 0 }}
+      run: |
+        sudo apt-get install python-dev libsasl2-dev gcc
+
     - name: Install dependencies
       if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
-        sudo apt-get install libsasl2-dev
         make install
 
     - name: Lint Checks

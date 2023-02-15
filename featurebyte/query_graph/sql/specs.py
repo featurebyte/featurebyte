@@ -55,7 +55,7 @@ class AggregationSpec(ABC):
     Base class of all aggregation specifications
     """
 
-    entity_ids: list[ObjectId]
+    entity_ids: list[ObjectId] | None  # DEV-556: should not be None for new features
     serving_names: list[str]
     serving_names_mapping: Optional[dict[str, str]]
 

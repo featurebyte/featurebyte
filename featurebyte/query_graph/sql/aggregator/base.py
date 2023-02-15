@@ -121,7 +121,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
             Aggregation specification
         """
         self.required_serving_names.update(aggregation_spec.serving_names)
-        self.required_entity_ids.update(aggregation_spec.entity_ids)
+        if aggregation_spec.entity_ids is not None:
+            self.required_entity_ids.update(aggregation_spec.entity_ids)
         self.additional_update(aggregation_spec)
 
     @abstractmethod
@@ -315,7 +316,7 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         super().update(aggregation_spec)
         if self.is_online_serving:
             table_name = get_online_store_table_name_from_entity_ids(
-                set(aggregation_spec.entity_ids)
+                set(aggregation_spec.entity_ids if aggregation_spec.entity_ids is not None else [])
             )
             self.agg_result_names_by_online_store_table[table_name].add(
                 aggregation_spec.agg_result_name

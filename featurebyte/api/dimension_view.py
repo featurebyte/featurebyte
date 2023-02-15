@@ -27,7 +27,9 @@ class DimensionViewColumn(ViewColumn):
 
 class DimensionView(View):
     """
-    DimensionView class
+    Dimension Views allow users to transform Dimension Data.
+
+    Transformations supported are the same as for EventView or ItemView except for lag that is not supported.
     """
 
     # documentation metadata

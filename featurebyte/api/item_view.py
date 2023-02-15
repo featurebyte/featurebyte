@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, cast
+from typing import Any, List, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -27,11 +27,6 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
-if TYPE_CHECKING:
-    from featurebyte.api.groupby import GroupBy
-else:
-    GroupBy = TypeVar("GroupBy")
-
 
 class ItemViewColumn(ViewColumn):
     """
@@ -44,7 +39,20 @@ class ItemViewColumn(ViewColumn):
 
 class ItemView(View, GroupByMixin):
     """
-    ItemView class
+    ItemViews allow users to transform ItemData to support the data preparation necessary before creating features.
+
+    When an ItemView is created, the event_timestamp and the entities of the event data the item data is associated
+    with are automatically added. Users can join more columns from the event data if desired.
+
+    Transformations supported are the same as for EventView except for:\n
+    - lag (and inter event time) can be computed only for entities that are not inherited from the event data
+
+    Features can be easily created from ItemViews in a similar way as for features created from EventViews, with a
+    few differences:\n
+    - features for the event_id and its children (item_id) are not time based. Features for other entities are time
+      based like for EventViews.\n
+    - columns imported from the event data or their derivatives can not be aggregated per an entity inherited from
+      the event data. Those features should be engineered directly from the event data.
     """
 
     # documentation metadata

@@ -9,9 +9,9 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.scd_data import SCDDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation, compare_generated_data_object_sdk_code
 
 
 class TestSlowChangingDataTestSuite(BaseDataTestSuite):
@@ -333,3 +333,35 @@ def test_accessing_saved_scd_data_attributes(saved_scd_data):
     )
     assert saved_scd_data.record_creation_date_column == "effective_timestamp"
     assert cloned.record_creation_date_column == "effective_timestamp"
+
+
+def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures):
+    """Check SDK code generation for unsaved data"""
+    scd_data = SlowlyChangingData.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_data,
+        name="sf_scd_data",
+        natural_key_column="col_text",
+        surrogate_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+        record_creation_date_column="created_at",
+    )
+    check_sdk_code_generation(scd_data.frame, to_use_saved_data=False)
+    compare_generated_data_object_sdk_code(
+        data_object=scd_data,
+        fixture_path="tests/fixtures/sdk_code/scd_data.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=False,
+    )
+
+
+def test_sdk_code_generation_on_saved_data(saved_scd_data, update_fixtures):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(saved_scd_data.frame, to_use_saved_data=True)
+    compare_generated_data_object_sdk_code(
+        data_object=saved_scd_data,
+        fixture_path="tests/fixtures/sdk_code/saved_scd_data.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=True,
+    )

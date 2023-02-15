@@ -16,7 +16,8 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CleaningOperation
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.generic import InputNode, ProjectNode
+from featurebyte.query_graph.node.generic import ProjectNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 
 

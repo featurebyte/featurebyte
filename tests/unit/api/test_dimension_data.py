@@ -9,8 +9,8 @@ from featurebyte.api.dimension_data import DimensionData
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models import DimensionDataModel
-from featurebyte.models.feature_store import DataStatus
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
+from tests.util.helper import check_sdk_code_generation, compare_generated_data_object_sdk_code
 
 
 class TestDimensionDataTestSuite(BaseDataTestSuite):
@@ -263,3 +263,31 @@ def test_accessing_saved_dimension_data_attributes(saved_dimension_data):
     )
     assert saved_dimension_data.record_creation_date_column == "event_timestamp"
     assert cloned.record_creation_date_column == "event_timestamp"
+
+
+def test_sdk_code_generation(snowflake_database_table, update_fixtures):
+    """Check SDK code generation for unsaved data"""
+    dimension_data = DimensionData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_dimension_data",
+        dimension_id_column="col_int",
+        record_creation_date_column="created_at",
+    )
+    check_sdk_code_generation(dimension_data.frame, to_use_saved_data=False)
+    compare_generated_data_object_sdk_code(
+        data_object=dimension_data,
+        fixture_path="tests/fixtures/sdk_code/dimension_data.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=False,
+    )
+
+
+def test_sdk_code_generation_on_saved_data(saved_dimension_data, update_fixtures):
+    """Check SDK code generation for saved data"""
+    check_sdk_code_generation(saved_dimension_data.frame, to_use_saved_data=True)
+    compare_generated_data_object_sdk_code(
+        data_object=saved_dimension_data,
+        fixture_path="tests/fixtures/sdk_code/saved_dimension_data.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=True,
+    )

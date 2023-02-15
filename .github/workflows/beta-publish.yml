@@ -56,6 +56,10 @@ jobs:
           poetry config virtualenvs.in-project true
           poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+
       - name: Build featurebyte
         run: |
           make install

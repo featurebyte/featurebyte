@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 from abc import ABC, abstractmethod
 
@@ -18,6 +18,13 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructureBranchState,
     OperationStructureInfo,
     PostAggregationColumn,
+)
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
+    ExpressionStr,
+    StatementT,
+    VariableNameGenerator,
+    VarNameExpressionStr,
 )
 
 NODE_TYPES = []
@@ -45,6 +52,11 @@ class BaseNode(BaseModel):
     type: NodeType
     output_type: NodeOutputType
     parameters: BaseModel
+
+    # class variables
+    # _auto_convert_expression_to_variable: when the expression is long, it will convert to a new
+    # variable to limit the line width of the generated SDK code.
+    _auto_convert_expression_to_variable: ClassVar[bool] = True
 
     class Config:
         """Model configuration"""
@@ -185,6 +197,58 @@ class BaseNode(BaseModel):
         }
         return OperationStructure(**{**operation_info.dict(), **update_args})
 
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        """
+        Derive SDK codes based on the graph traversal from starting node(s) to this node
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpressionStr]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        config: CodeGenerationConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpressionStr]
+        """
+        statements, var_name_expression = self._derive_sdk_codes(
+            input_var_name_expressions=input_var_name_expressions,
+            input_node_types=input_node_types,
+            var_name_generator=var_name_generator,
+            operation_structure=operation_structure,
+            config=config,
+        )
+
+        if (
+            self._auto_convert_expression_to_variable
+            and isinstance(var_name_expression, ExpressionStr)
+            and len(var_name_expression) > config.max_expression_length
+        ):
+            # if the output of the var_name_expression is an expression and
+            # the length of expression exceeds limit specified in code generation config,
+            # then assign a new variable to reduce line width.
+            var_name = var_name_generator.generate_variable_name(
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+            )
+            statements.append((var_name, var_name_expression))
+            return statements, var_name
+        return statements, var_name_expression
+
     def clone(self: NodeT, **kwargs: Any) -> NodeT:
         """
         Clone an existing object with certain update
@@ -245,6 +309,40 @@ class BaseNode(BaseModel):
         -------
         OperationStructure
         """
+
+    def _derive_sdk_codes(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        """
+        Derive SDK codes based to be implemented at the concrete node class
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpression]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        config: CodeGenerationConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpression]
+        """
+        # TODO: convert this method to an abstract method and remove the following dummy implementation
+        _ = input_node_types, var_name_generator, operation_structure, config
+        input_params = ", ".join(input_var_name_expressions)
+        expression = ExpressionStr(f"{self.type}({input_params})")
+        return [], expression
 
 
 class SeriesOutputNodeOpStructMixin:
