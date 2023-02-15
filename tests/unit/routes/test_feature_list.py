@@ -533,11 +533,11 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         mock_session.source_type = SourceType.SNOWFLAKE
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
-        response = test_api_client.post(
+        response = test_api_client.stream(
+            "POST",
             f"{self.base_route}/historical_features",
             data={"payload": json.dumps(featurelist_get_historical_features_payload)},
             files={"training_events": dataframe_to_arrow_bytes(training_events)},
-            stream=True,
         )
         assert response.status_code == HTTPStatus.OK, response.json()
 
