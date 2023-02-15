@@ -1,6 +1,8 @@
 """
 Unit tests for EntityValidationService
 """
+from unittest.mock import Mock, patch
+
 import pytest
 
 from featurebyte.exception import RequiredEntityNotProvidedError, UnexpectedServingNamesMappingError
@@ -74,3 +76,30 @@ async def test_required_entity__serving_names_mapping_invalid(
             feature_store=feature_store,
         )
     assert str(exc.value) == "Unexpected serving names provided in serving_names_mapping: cust_idz"
+
+
+@pytest.mark.asyncio
+async def test_required_entity__ambiguous_relationships(
+    entity_info_with_ambiguous_relationships,
+    entity_validation_service,
+):
+    """
+    Test looking up parent entity when there are ambiguous relationships
+
+    a (provided) --> b --> c ---> e (required)
+                      `--> d --´
+    """
+    with patch(
+        "featurebyte.service.entity_validation.EntityValidationService.get_entity_info_from_request"
+    ) as p:
+        p.return_value = entity_info_with_ambiguous_relationships
+        with pytest.raises(RequiredEntityNotProvidedError) as exc_info:
+            await entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                Mock(name="graph"),
+                Mock(name="nodes"),
+                Mock(name="request_column_names"),
+                Mock(name="feature_store"),
+            )
+        assert str(exc_info.value) == (
+            'Required entities are not provided in the request: entity_e (serving name: "E")'
+        )

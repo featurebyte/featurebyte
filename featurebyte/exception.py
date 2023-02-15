@@ -118,6 +118,13 @@ class EntityJoinPathNotFoundError(Exception):
     """
 
 
+class AmbiguousEntityRelationshipError(Exception):
+    """
+    Raised when the relationship between entities is ambiguous and automatic serving of parent
+    features is not possible
+    """
+
+
 class InvalidSettingsError(Exception):
     """
     Raised when configuration has invalid settings
