@@ -47,7 +47,7 @@ from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-from tests.unit.conftest_config import (
+from tests.unit.conftest_config import (  # pylint: disable=unused-import
     config_file_fixture,
     config_fixture,
     mock_config_path_env_fixture,
@@ -58,7 +58,7 @@ pytest.register_assert_rewrite("tests.unit.routes.base")
 
 # "Registering" fixtures so that they'll be available for use as if they were defined here.
 # We keep the definition in a separate file for readability
-_ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
+# _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
 
 @pytest.fixture(name="mock_api_object_cache")
