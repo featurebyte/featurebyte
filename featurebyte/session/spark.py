@@ -84,6 +84,8 @@ class SparkSession(BaseSession):
             auth=auth,
             scheme=scheme,
         )
+        # Always use UTC for session timezone
+        self._connection.cursor().execute("SET TIME ZONE 'UTC'")
 
     def _initialize_storage(self) -> None:
         """

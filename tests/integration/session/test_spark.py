@@ -64,7 +64,16 @@ async def test_schema_initializer(config, spark_feature_store):
 
 
 @pytest.mark.asyncio
-async def test_register_table(config, spark_session):
+async def test_session_timezone(spark_session):
+    """
+    Test session configurations
+    """
+    result = await spark_session.execute_query("SELECT current_timezone() AS timezone")
+    assert result["timezone"].iloc[0] == "UTC"
+
+
+@pytest.mark.asyncio
+async def test_register_table(spark_session):
     """
     Test the session register_table in spark works properly.
     """
@@ -82,7 +91,7 @@ async def test_register_table(config, spark_session):
 
 
 @pytest.mark.asyncio
-async def test_register_udfs(config, spark_session):
+async def test_register_udfs(spark_session):
     """
     Test the session registered udfs properly.
     """
