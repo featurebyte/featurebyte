@@ -533,8 +533,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         mock_session.source_type = SourceType.SNOWFLAKE
         mock_session.generate_session_unique_id = Mock(return_value="1")
 
-        response = test_api_client.stream(
-            "POST",
+        response = test_api_client.post(
             f"{self.base_route}/historical_features",
             data={"payload": json.dumps(featurelist_get_historical_features_payload)},
             files={"training_events": dataframe_to_arrow_bytes(training_events)},
@@ -542,9 +541,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.status_code == HTTPStatus.OK, response.json()
 
         # test streaming download works
-        content = b""
-        for chunk in response.iter_content(chunk_size=8192):
-            content += chunk
+        content = response.content
 
         df = dataframe_from_arrow_stream(content)
         assert_frame_equal(df, expected_df)
