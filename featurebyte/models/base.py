@@ -17,6 +17,8 @@ from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
+DEFAULT_WORKSPACE_ID = ObjectId("63eda344d0313fb925f7883a")
+
 
 class PydanticObjectId(ObjectId):
     """
@@ -313,3 +315,11 @@ class VersionIdentifier(BaseModel):
             name, suffix = version.split("_", 1)
             version_identifier = cls(name=name, suffix=suffix)
         return version_identifier
+
+
+class FeatureByteWorkspaceBaseDocumentModel(FeatureByteBaseDocumentModel):
+    """
+    FeatureByte Workspace-specific BaseDocumentModel
+    """
+
+    workspace_id: Optional[PydanticObjectId] = Field(default=DEFAULT_WORKSPACE_ID)

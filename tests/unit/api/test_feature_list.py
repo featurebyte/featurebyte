@@ -26,6 +26,7 @@ from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordRetrievalException,
 )
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -87,6 +88,7 @@ def test_feature_list_creation__success(
         "updated_at": None,
         "user_id": None,
         "feature_clusters": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -194,6 +196,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "feature_clusters": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -558,6 +561,7 @@ def test_get_feature_list(saved_feature_list):
             ("user_id", None),
             ("version.name", saved_feature_list.version.name),
             ("version.suffix", None),
+            ("workspace_id", str(DEFAULT_WORKSPACE_ID)),
         ],
         columns=["field_name", "new_value"],
     )

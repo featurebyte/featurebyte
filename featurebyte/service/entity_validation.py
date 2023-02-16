@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from bson import ObjectId
+
 from featurebyte.exception import (
     AmbiguousEntityRelationshipError,
     EntityJoinPathNotFoundError,
@@ -35,10 +37,11 @@ class EntityValidationService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
+        workspace_id: ObjectId,
         entity_service: EntityService,
         parent_entity_lookup_service: ParentEntityLookupService,
     ):
-        super().__init__(user, persistent)
+        super().__init__(user, persistent, workspace_id)
         self.entity_service = entity_service
         self.parent_entity_lookup_service = parent_entity_lookup_service
 

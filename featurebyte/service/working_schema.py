@@ -41,9 +41,11 @@ class WorkingSchemaService(BaseService):
     WorkingSchemaService is responsible for managing the working schema in the data warehouse
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.feature_service = FeatureService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession

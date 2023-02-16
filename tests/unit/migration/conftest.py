@@ -10,6 +10,7 @@ from bson import ObjectId
 from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.persistent.mongo import MongoDB
 
 
@@ -40,4 +41,6 @@ async def persistent_fixture():
 @pytest.fixture(name="schema_metadata_service")
 def schema_metadata_service_fixture(user, persistent):
     """Schema metadata service fixture"""
-    return SchemaMetadataService(user=user, persistent=persistent)
+    return SchemaMetadataService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )

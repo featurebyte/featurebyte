@@ -4,8 +4,10 @@ Tests for Workspace route
 from http import HTTPStatus
 
 import pytest
+import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -81,10 +83,33 @@ class TestWorkspaceApi(BaseApiTestSuite):
         assert res_healthcare.json()["_id"] == workspace_id3
         return [workspace_id1, workspace_id2, workspace_id3]
 
+    @pytest_asyncio.fixture()
+    async def create_multiple_success_responses(self, test_api_client_persistent):
+        """Post multiple success responses"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        output = []
+        for index, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+            # skip first payload since default workspace is created automatically
+            if index == 0:
+                continue
+            # payload name is set here as we need the exact name value for test_list_200 test
+            response = test_api_client.post(f"{self.base_route}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+            output.append(response)
+        return output
+
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
-        for i in range(3):
+
+        # default workspace
+        payload = self.payload.copy()
+        payload["_id"] = str(DEFAULT_WORKSPACE_ID)
+        payload["name"] = "Default Workspace"
+        yield payload
+
+        for i in range(2):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'

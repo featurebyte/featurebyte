@@ -5,6 +5,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import SnowflakeDetails
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
@@ -30,7 +31,7 @@ from featurebyte.service.info import InfoService
 @pytest.fixture(name="info_service")
 def info_service_fixture(user, persistent):
     """InfoService fixture"""
-    return InfoService(user=user, persistent=persistent)
+    return InfoService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.mark.asyncio

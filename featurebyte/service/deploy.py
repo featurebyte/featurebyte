@@ -29,14 +29,22 @@ class DeployService(BaseService):
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, online_enable_service: OnlineEnableService
+        self,
+        user: Any,
+        persistent: Persistent,
+        workspace_id: ObjectId,
+        online_enable_service: OnlineEnableService,
     ):
-        super().__init__(user, persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
+        super().__init__(user, persistent, workspace_id)
+        self.feature_service = FeatureService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.online_enable_service = online_enable_service
-        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+        self.feature_list_service = FeatureListService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
 
     @classmethod

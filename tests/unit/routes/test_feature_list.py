@@ -21,20 +21,21 @@ from featurebyte.common.utils import (
     dataframe_to_arrow_bytes,
 )
 from featurebyte.enum import SourceType
-from tests.unit.routes.base import BaseApiTestSuite
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many-public-methods
     """
     TestFeatureListApi class
     """
 
     class_name = "FeatureList"
     base_route = "/feature_list"
-    payload = BaseApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_single.json"
     )
-    payload_multi = BaseApiTestSuite.load_payload(
+    payload_multi = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_multi.json"
     )
     object_id = str(ObjectId())
@@ -77,7 +78,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         ),
     ]
 
-    def setup_creation_route(self, api_client):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
@@ -89,7 +90,9 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
+            response = api_client.post(
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+            )
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
@@ -143,6 +146,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
                 "_id": ObjectId(),
                 "user_id": ObjectId(user_id),
                 "readiness": "PRODUCTION_READY",
+                "workspace_id": DEFAULT_WORKSPACE_ID,
             },
             user_id=user_id,
         )

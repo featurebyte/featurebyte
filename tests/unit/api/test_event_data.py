@@ -880,6 +880,7 @@ def test_default_feature_job_setting_history(saved_event_data):
         "type",
         "updated_at",
         "user_id",
+        "workspace_id",
     }
 
 

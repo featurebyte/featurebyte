@@ -8,6 +8,7 @@ from datetime import datetime
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, SourceDataColumn
 
@@ -31,6 +32,7 @@ def feature_name_space_dict_fixture():
         "entity_ids": entity_ids,
         "tabular_data_ids": tabular_data_ids,
         "user_id": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
 
@@ -82,6 +84,7 @@ def test_feature_model(feature_model_dict, test_dir):
         "updated_at": None,
         "user_id": None,
         "version": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
     # DEV-556: check older record can be loaded

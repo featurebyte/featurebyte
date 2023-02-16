@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 import time
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.common.utils import prepare_dataframe_for_json
 from featurebyte.exception import FeatureListNotOnlineEnabledError
@@ -32,11 +33,14 @@ class OnlineServingService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
+        workspace_id: ObjectId,
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
     ):
-        super().__init__(user, persistent)
-        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        super().__init__(user, persistent, workspace_id)
+        self.feature_store_service = FeatureStoreService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.session_manager_service = session_manager_service
         self.entity_validation_service = entity_validation_service
 

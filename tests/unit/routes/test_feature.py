@@ -16,18 +16,21 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
-from tests.unit.routes.base import BaseApiTestSuite
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureApi(BaseApiTestSuite):
+class TestFeatureApi(BaseWorkspaceApiTestSuite):
     """
     TestFeatureApi class
     """
 
     class_name = "Feature"
     base_route = "/feature"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-    namespace_payload = BaseApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/feature_sum_30m.json"
+    )
+    namespace_payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_namespace.json"
     )
     object_id = str(ObjectId())
@@ -120,7 +123,7 @@ class TestFeatureApi(BaseApiTestSuite):
         ),
     ]
 
-    def setup_creation_route(self, api_client):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
@@ -131,7 +134,9 @@ class TestFeatureApi(BaseApiTestSuite):
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
+            response = api_client.post(
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+            )
             assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

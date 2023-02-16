@@ -467,6 +467,7 @@ def test_get_feature(saved_feature):
         "graph.edges",
         "graph.nodes",
         "dtype",
+        "workspace_id",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

@@ -28,8 +28,8 @@ from featurebyte_freeware.feature_job_analysis.schema import MissingJobsInfo as 
 from pydantic import BaseModel, validator
 
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -45,7 +45,7 @@ class AnalysisResult(FeatureByteBaseModel):
     recommended_feature_job_setting: FeatureJobSetting
 
 
-class FeatureJobSettingAnalysisModel(FeatureByteBaseDocumentModel):
+class FeatureJobSettingAnalysisModel(FeatureByteWorkspaceBaseDocumentModel):
     """
     FeatureJobSettingAnalysis persistent model
     """

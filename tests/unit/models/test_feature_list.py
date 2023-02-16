@@ -4,6 +4,7 @@ Tests for Feature list related models
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -29,6 +30,7 @@ def feature_list_model_dict_fixture():
         "deployed": False,
         "online_enabled_feature_ids": [],
         "feature_clusters": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
 
@@ -57,6 +59,7 @@ def feature_list_namespace_model_dict_fixture():
         "user_id": None,
         "entity_ids": entity_ids,
         "tabular_data_ids": tabular_data_ids,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
 

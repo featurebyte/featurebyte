@@ -17,6 +17,7 @@ from featurebyte_freeware.feature_job_analysis.schema import (
 )
 from pandas.testing import assert_frame_equal
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
@@ -135,18 +136,22 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         _ = snowflake_execute_query
         yield
 
-    def setup_creation_route(self, api_client):
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
         """
         Setup for post route
         """
         # save feature store
         payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
-        response = api_client.post("/feature_store", json=payload)
+        response = api_client.post(
+            "/feature_store", params={"workspace_id": workspace_id}, json=payload
+        )
         assert response.status_code == HTTPStatus.CREATED
 
         # save event data
         payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
-        response = api_client.post("/event_data", json=payload)
+        response = api_client.post(
+            "/event_data", params={"workspace_id": workspace_id}, json=payload
+        )
         assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

@@ -62,26 +62,48 @@ class InfoService(BaseService):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.data_service = DataService(user=user, persistent=persistent)
-        self.event_data_service = EventDataService(user=user, persistent=persistent)
-        self.item_data_service = ItemDataService(user=user, persistent=persistent)
-        self.dimension_data_service = DimensionDataService(user=user, persistent=persistent)
-        self.scd_data_service = SCDDataService(user=user, persistent=persistent)
-        self.semantic_service = SemanticService(user=user, persistent=persistent)
-        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
-        self.entity_service = EntityService(user=user, persistent=persistent)
-        self.feature_service = FeatureService(user=user, persistent=persistent)
-        self.feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
-        self.feature_list_service = FeatureListService(user=user, persistent=persistent)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
+        self.event_data_service = EventDataService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.item_data_service = ItemDataService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.dimension_data_service = DimensionDataService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.scd_data_service = SCDDataService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.semantic_service = SemanticService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.feature_store_service = FeatureStoreService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.entity_service = EntityService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.feature_service = FeatureService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.feature_namespace_service = FeatureNamespaceService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.feature_list_service = FeatureListService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.feature_job_setting_analysis_service = FeatureJobSettingAnalysisService(
-            user=user, persistent=persistent
+            user=user, persistent=persistent, workspace_id=workspace_id
         )
-        self.workspace_service = WorkspaceService(user=user, persistent=persistent)
+        self.workspace_service = WorkspaceService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     @staticmethod
     async def _get_list_object(

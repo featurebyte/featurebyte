@@ -15,7 +15,11 @@ from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import (
+    DEFAULT_WORKSPACE_ID,
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+)
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -133,7 +137,9 @@ async def migrate_method_generator(
         migrate_method_data = migrate_methods[version]
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
-        migrate_service = migrate_service_class(user=user, persistent=persistent)
+        migrate_service = migrate_service_class(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
             if not include_data_warehouse_migrations:
                 continue
@@ -188,7 +194,9 @@ async def run_migration(
     include_data_warehouse_migrations: bool
         Whether to include data warehouse migrations
     """
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata_service = SchemaMetadataService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA
     )

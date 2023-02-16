@@ -7,8 +7,8 @@ from pydantic import Field, validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
 )
 
@@ -21,7 +21,7 @@ class Parent(FeatureByteBaseModel):
     id: PydanticObjectId
 
 
-class Relationship(FeatureByteBaseDocumentModel):
+class Relationship(FeatureByteWorkspaceBaseDocumentModel):
     """
     Relationship model used to track parent (or ancestor) and child relationship
     """

@@ -39,11 +39,17 @@ class DataUpdateService(BaseService):
     DataStatusService is responsible to update the data status.
     """
 
-    def __init__(self, user: Any, persistent: Persistent):
-        super().__init__(user, persistent)
-        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
-        self.semantic_service = SemanticService(user=user, persistent=persistent)
-        self.entity_service = EntityService(user=user, persistent=persistent)
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+        super().__init__(user, persistent, workspace_id)
+        self.feature_store_service = FeatureStoreService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.semantic_service = SemanticService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.entity_service = EntityService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
 
     @staticmethod
     async def update_data_status(
