@@ -14,9 +14,6 @@ class TestClassA:
     def __init__(self):
         self.a = "a"
 
-    def get_value(self) -> str:
-        return self.a
-
 
 class TestClassB:
     """
