@@ -177,81 +177,38 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="snowflake_details", scope="session")
-def get_snowflake_details_fixture():
-    """
-    Get snowflake details
-    """
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    details = SnowflakeDetails(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-        sf_schema=temp_schema_name,
-        database=os.getenv("SNOWFLAKE_DATABASE"),
-    )
-    return details
+@pytest.fixture(name="source_type", scope="session", params=["snowflake", "spark"])
+def source_type_fixture(request):
+    return request.param
 
 
-@pytest.fixture(name="snowflake_featurestore_name", scope="session")
-def get_snowflake_featurestore_name_fixture():
-    """
-    Returns the featurestore name that is used by the default feature store in integration tests.
-    """
-    return "snowflake_featurestore"
+@pytest.fixture(name="feature_store_details", scope="session")
+def feature_store_details_fixture(source_type, sqlite_filename):
 
+    if source_type == "snowflake":
+        schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return SnowflakeDetails(
+            account=os.getenv("SNOWFLAKE_ACCOUNT"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+            sf_schema=temp_schema_name,
+            database=os.getenv("SNOWFLAKE_DATABASE"),
+        )
 
-@pytest.fixture(name="snowflake_feature_store", scope="session")
-def snowflake_feature_store_fixture(
-    mock_get_persistent, snowflake_details, snowflake_featurestore_name
-):
-    """
-    Snowflake feature store fixture
-    """
-    _ = mock_get_persistent
-    feature_store = FeatureStore(
-        name=snowflake_featurestore_name,
-        type="snowflake",
-        details=snowflake_details,
-    )
-    feature_store.save()
-    return feature_store
-
-
-@pytest.fixture(name="databricks_feature_store", scope="session")
-def databricks_feature_store_fixture(mock_get_persistent):
-    """
-    Databricks database source fixture
-    """
-    _ = mock_get_persistent
-    schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    feature_store = FeatureStore(
-        name="databricks_featurestore",
-        type="databricks",
-        details=DatabricksDetails(
+    if source_type == "databricks":
+        schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return DatabricksDetails(
             server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
             featurebyte_schema=temp_schema_name,
-        ),
-    )
-    feature_store.save()
-    return feature_store
+        )
 
-
-@pytest.fixture(name="spark_feature_store", scope="session")
-def spark_feature_store_fixture(mock_get_persistent):
-    """
-    Spark database source fixture
-    """
-    _ = mock_get_persistent
-    schema_name = "featurebyte"
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    feature_store = FeatureStore(
-        name="spark_featurestore",
-        type="spark",
-        details=SparkDetails(
+    if source_type == "spark":
+        schema_name = "featurebyte"
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return SparkDetails(
             host="localhost",
             port=10000,
             http_path="cliservice",
@@ -261,23 +218,140 @@ def spark_feature_store_fixture(mock_get_persistent):
             storage_spark_url=f"file:///data/staging/{temp_schema_name}",
             featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,
-        ),
+        )
+
+    if source_type == "sqlite":
+        return SQLiteDetails(filename=sqlite_filename)
+
+    return NotImplementedError(f"Unexpected source_type: {source_type}")
+
+
+@pytest.fixture(name="feature_store_name", scope="session")
+def feature_store_name_fixture(source_type):
+    """
+    Feature store name fixture
+    """
+    return f"{source_type}_featurestore"
+
+
+@pytest.fixture(name="feature_store", scope="session")
+def feature_store_fixture(
+    source_type, feature_store_name, feature_store_details, mock_get_persistent
+):
+    """
+    Feature store fixture
+    """
+    _ = mock_get_persistent
+    feature_store = FeatureStore(
+        name=feature_store_name,
+        type=source_type,
+        details=feature_store_details,
     )
     feature_store.save()
     return feature_store
 
 
-@pytest.fixture(name="sqlite_feature_store", scope="session")
-def sqlite_feature_store_fixture(mock_get_persistent, sqlite_filename):
-    """
-    Sqlite source fixture
-    """
-    _ = mock_get_persistent
-    return FeatureStore(
-        name="sqlite_datasource",
-        type="sqlite",
-        details=SQLiteDetails(filename=sqlite_filename),
-    )
+# @pytest.fixture(name="snowflake_details", scope="session")
+# def get_snowflake_details_fixture():
+#     """
+#     Get snowflake details
+#     """
+#     schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+#     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+#     details = SnowflakeDetails(
+#         account=os.getenv("SNOWFLAKE_ACCOUNT"),
+#         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+#         sf_schema=temp_schema_name,
+#         database=os.getenv("SNOWFLAKE_DATABASE"),
+#     )
+#     return details
+#
+#
+# @pytest.fixture(name="snowflake_featurestore_name", scope="session")
+# def get_snowflake_featurestore_name_fixture():
+#     """
+#     Returns the featurestore name that is used by the default feature store in integration tests.
+#     """
+#     return "snowflake_featurestore"
+#
+#
+# @pytest.fixture(name="snowflake_feature_store", scope="session")
+# def snowflake_feature_store_fixture(
+#     mock_get_persistent, snowflake_details, snowflake_featurestore_name
+# ):
+#     """
+#     Snowflake feature store fixture
+#     """
+#     _ = mock_get_persistent
+#     feature_store = FeatureStore(
+#         name=snowflake_featurestore_name,
+#         type="snowflake",
+#         details=snowflake_details,
+#     )
+#     feature_store.save()
+#     return feature_store
+#
+#
+# @pytest.fixture(name="databricks_feature_store", scope="session")
+# def databricks_feature_store_fixture(mock_get_persistent):
+#     """
+#     Databricks database source fixture
+#     """
+#     _ = mock_get_persistent
+#     schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
+#     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+#     feature_store = FeatureStore(
+#         name="databricks_featurestore",
+#         type="databricks",
+#         details=DatabricksDetails(
+#             server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+#             http_path=os.getenv("DATABRICKS_HTTP_PATH"),
+#             featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
+#             featurebyte_schema=temp_schema_name,
+#         ),
+#     )
+#     feature_store.save()
+#     return feature_store
+#
+#
+# @pytest.fixture(name="spark_feature_store", scope="session")
+# def spark_feature_store_fixture(mock_get_persistent):
+#     """
+#     Spark database source fixture
+#     """
+#     _ = mock_get_persistent
+#     schema_name = "featurebyte"
+#     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+#     feature_store = FeatureStore(
+#         name="spark_featurestore",
+#         type="spark",
+#         details=SparkDetails(
+#             host="localhost",
+#             port=10000,
+#             http_path="cliservice",
+#             use_http_transport=False,
+#             storage_type=StorageType.FILE,
+#             storage_url=f"~/.spark/data/staging/{temp_schema_name}",
+#             storage_spark_url=f"file:///data/staging/{temp_schema_name}",
+#             featurebyte_catalog="spark_catalog",
+#             featurebyte_schema=temp_schema_name,
+#         ),
+#     )
+#     feature_store.save()
+#     return feature_store
+#
+#
+# @pytest.fixture(name="sqlite_feature_store", scope="session")
+# def sqlite_feature_store_fixture(mock_get_persistent, sqlite_filename):
+#     """
+#     Sqlite source fixture
+#     """
+#     _ = mock_get_persistent
+#     return FeatureStore(
+#         name="sqlite_datasource",
+#         type="sqlite",
+#         details=SQLiteDetails(filename=sqlite_filename),
+#     )
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -594,80 +668,111 @@ async def datasets_registration_helper_fixture(
     yield helper
 
 
-@pytest_asyncio.fixture(name="snowflake_session", scope="session")
-async def snowflake_session_fixture(
-    session_manager,
-    dataset_registration_helper,
-    snowflake_feature_store,
-):
-    """
-    Snowflake session
-    """
-    session = await session_manager.get_session(snowflake_feature_store)
-    assert isinstance(session, SnowflakeSession)
+@pytest_asyncio.fixture(name="session", scope="session")
+async def session_fixture(source_type, session_manager, dataset_registration_helper, feature_store):
+
+    session = await session_manager.get_session(feature_store)
 
     await dataset_registration_helper.register_datasets(session)
 
-    yield session
-
-    await session.execute_query(
-        f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}"
-    )
-
-
-@pytest_asyncio.fixture(name="databricks_session", scope="session")
-async def databricks_session_fixture(config, databricks_feature_store):
-    """
-    Databricks session
-    """
-    session_manager = SessionManager(credentials=config.credentials)
-    session = await session_manager.get_session(databricks_feature_store)
-    assert isinstance(session, DatabricksSession)
-
-    await session.execute_query(
-        """
-        CREATE TABLE TEST_TABLE
-        USING CSV
-        OPTIONS (header "true", inferSchema "true")
-        LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
-        """
-    )
+    if source_type == "databricks":
+        await session.execute_query(
+            """
+            CREATE TABLE TEST_TABLE
+            USING CSV
+            OPTIONS (header "true", inferSchema "true")
+            LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
+            """
+        )
 
     yield session
 
-    await session.execute_query(
-        f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema} CASCADE"
-    )
+    if source_type == "snowflake":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name}")
+
+    if source_type == "databricks":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+
+    if source_type == "spark":
+        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+        # clean up storage
+        shutil.rmtree(Path(feature_store.details.storage_url).expanduser())
 
 
-@pytest_asyncio.fixture(name="spark_session", scope="session")
-async def spark_session_fixture(config, dataset_registration_helper, spark_feature_store):
-    """
-    Spark session
-    """
-    session_manager = SessionManager(credentials=config.credentials)
-    session = await session_manager.get_session(spark_feature_store)
-    assert isinstance(session, SparkSession)
-
-    await dataset_registration_helper.register_datasets(session)
-
-    yield session
-
-    # clean up database and storage
-    await session.execute_query(
-        f"DROP SCHEMA IF EXISTS {spark_feature_store.details.featurebyte_schema} CASCADE"
-    )
-    # clean up storage
-    shutil.rmtree(Path(spark_feature_store.details.storage_url).expanduser())
-
-
-@pytest_asyncio.fixture(scope="session")
-async def sqlite_session(config, sqlite_feature_store):
-    """
-    SQLite session
-    """
-    session_manager = SessionManager(credentials=config.credentials)
-    return await session_manager.get_session(sqlite_feature_store)
+# @pytest_asyncio.fixture(name="snowflake_session", scope="session")
+# async def snowflake_session_fixture(
+#     session_manager,
+#     dataset_registration_helper,
+#     snowflake_feature_store,
+# ):
+#     """
+#     Snowflake session
+#     """
+#     session = await session_manager.get_session(snowflake_feature_store)
+#     assert isinstance(session, SnowflakeSession)
+#
+#     await dataset_registration_helper.register_datasets(session)
+#
+#     yield session
+#
+#     await session.execute_query(
+#         f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}"
+#     )
+#
+#
+# @pytest_asyncio.fixture(name="databricks_session", scope="session")
+# async def databricks_session_fixture(config, databricks_feature_store):
+#     """
+#     Databricks session
+#     """
+#     session_manager = SessionManager(credentials=config.credentials)
+#     session = await session_manager.get_session(databricks_feature_store)
+#     assert isinstance(session, DatabricksSession)
+#
+#     await session.execute_query(
+#         """
+#         CREATE TABLE TEST_TABLE
+#         USING CSV
+#         OPTIONS (header "true", inferSchema "true")
+#         LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
+#         """
+#     )
+#
+#     yield session
+#
+#     await session.execute_query(
+#         f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema} CASCADE"
+#     )
+#
+#
+# @pytest_asyncio.fixture(name="spark_session", scope="session")
+# async def spark_session_fixture(config, dataset_registration_helper, spark_feature_store):
+#     """
+#     Spark session
+#     """
+#     session_manager = SessionManager(credentials=config.credentials)
+#     session = await session_manager.get_session(spark_feature_store)
+#     assert isinstance(session, SparkSession)
+#
+#     await dataset_registration_helper.register_datasets(session)
+#
+#     yield session
+#
+#     # clean up database and storage
+#     await session.execute_query(
+#         f"DROP SCHEMA IF EXISTS {spark_feature_store.details.featurebyte_schema} CASCADE"
+#     )
+#     # clean up storage
+#     shutil.rmtree(Path(spark_feature_store.details.storage_url).expanduser())
+#
+#
+# @pytest_asyncio.fixture(scope="session")
+# async def sqlite_session(config, sqlite_feature_store):
+#     """
+#     SQLite session
+#     """
+#     session_manager = SessionManager(credentials=config.credentials)
+#     return await session_manager.get_session(sqlite_feature_store)
 
 
 @pytest_asyncio.fixture
@@ -1010,10 +1115,16 @@ def create_transactions_event_data_from_feature_store(
     return event_data
 
 
-@pytest.fixture(name="snowflake_event_data", scope="session")
-def snowflake_event_data_fixture(
-    snowflake_session,
-    snowflake_feature_store,
+@pytest.fixture(name="event_data_name", scope="session")
+def event_data_name_fixture(source_type):
+    return f"{source_type}_event_data"
+
+
+@pytest.fixture(name="event_data", scope="session")
+def event_data_fixture(
+    session,
+    feature_store,
+    event_data_name,
     user_entity,
     product_action_entity,
     customer_entity,
@@ -1025,36 +1136,41 @@ def snowflake_event_data_fixture(
     _ = customer_entity
     _ = order_entity
     event_data = create_transactions_event_data_from_feature_store(
-        snowflake_feature_store,
-        database_name=snowflake_session.database,
-        schema_name=snowflake_session.sf_schema,
+        feature_store,
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name="TEST_TABLE",
-        event_data_name="snowflake_event_data",
+        event_data_name=event_data_name,
     )
     return event_data
 
 
-@pytest.fixture(name="snowflake_item_data", scope="session")
-def snowflake_item_data_fixture(
-    snowflake_session,
-    snowflake_feature_store,
-    snowflake_event_data,
+@pytest.fixture(name="item_data_name", scope="session")
+def item_data_name_fixture(source_type):
+    return f"{source_type}_item_data"
+
+
+@pytest.fixture(name="item_data", scope="session")
+def item_data_fixture(
+    session,
+    feature_store,
+    item_data_name,
+    event_data,
     order_entity,
     item_entity,
 ):
     """Fixture for an ItemData in integration tests"""
-    database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database_name,
-        schema_name=snowflake_session.sf_schema,
+    database_table = feature_store.get_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name="ITEM_DATA_TABLE",
     )
-    item_data_name = "snowflake_item_data"
     item_data = ItemData.from_tabular_source(
         tabular_source=database_table,
         name=item_data_name,
         event_id_column="order_id",
         item_id_column="item_id",
-        event_data_name=snowflake_event_data.name,
+        event_data_name=event_data.name,
     )
     item_data.save()
     item_data = ItemData.get(item_data_name)
@@ -1063,22 +1179,27 @@ def snowflake_item_data_fixture(
     return item_data
 
 
-@pytest.fixture(name="snowflake_dimension_data", scope="session")
-def snowflake_dimension_data_fixture(
-    snowflake_session,
-    snowflake_feature_store,
+@pytest.fixture(name="dimension_data_name", scope="session")
+def dimension_data_name_fixture(source_type):
+    return f"{source_type}_dimension_data"
+
+
+@pytest.fixture(name="dimension_data", scope="session")
+def dimension_data_fixture(
+    session,
+    feature_store,
     dimension_data_table_name,
+    dimension_data_name,
     item_entity,
 ):
     """
     Fixture for a DimensionData in integration tests
     """
-    database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database_name,
-        schema_name=snowflake_session.sf_schema,
+    database_table = feature_store.get_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name=dimension_data_table_name,
     )
-    dimension_data_name = "snowflake_dimension_data"
     dimension_data = DimensionData.from_tabular_source(
         tabular_source=database_table,
         name=dimension_data_name,
@@ -1090,188 +1211,322 @@ def snowflake_dimension_data_fixture(
     return dimension_data
 
 
-@pytest.fixture(name="snowflake_scd_data_tabular_source", scope="session")
-def get_snowflake_scd_data_tabular_source_fixture(
-    snowflake_session,
-    snowflake_feature_store,
+@pytest.fixture(name="scd_data_tabular_source", scope="session")
+def scd_data_tabular_source_fixture(
+    session,
+    feature_store,
     scd_data_table_name,
 ):
     """
     Fixture for scd data tabular source
     """
-    database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database_name,
-        schema_name=snowflake_session.sf_schema,
+    database_table = feature_store.get_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
         table_name=scd_data_table_name,
     )
     return database_table
 
 
-@pytest.fixture(name="snowflake_scd_data", scope="session")
-def snowflake_scd_data_fixture(
-    snowflake_scd_data_tabular_source,
+@pytest.fixture(name="scd_data_name", scope="session")
+def scd_data_name_fixture(source_type):
+    return f"{source_type}_scd_data"
+
+
+@pytest.fixture(name="scd_data", scope="session")
+def scd_data_fixture(
+    scd_data_tabular_source,
+    scd_data_name,
     user_entity,
     status_entity,
 ):
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    name = "snowflake_scd_data"
     data = SlowlyChangingData.from_tabular_source(
-        tabular_source=snowflake_scd_data_tabular_source,
-        name=name,
+        tabular_source=scd_data_tabular_source,
+        name=scd_data_name,
         natural_key_column="User ID",
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
     )
     data.save()
-    data = SlowlyChangingData.get(name)
+    data = SlowlyChangingData.get(scd_data_name)
     data["User ID"].as_entity(user_entity.name)
     data["User Status"].as_entity(status_entity.name)
     return data
 
 
-@pytest.fixture(name="databricks_event_data", scope="session")
-def databricks_event_data_fixture(
-    databricks_session,
-    databricks_feature_store,
-    user_entity,
-    product_action_entity,
-    customer_entity,
-):
-    """Fixture for an EventData in integration tests"""
-    _ = user_entity
-    _ = product_action_entity
-    _ = customer_entity
-    event_data = create_transactions_event_data_from_feature_store(
-        databricks_feature_store,
-        database_name=databricks_session.featurebyte_catalog,
-        schema_name=databricks_session.featurebyte_schema,
-        table_name="TEST_TABLE",
-        event_data_name="databricks_event_data",
-    )
-    return event_data
-
-
-@pytest.fixture(name="spark_event_data", scope="session")
-def spark_event_data_fixture(
-    spark_session,
-    spark_feature_store,
-    user_entity,
-    product_action_entity,
-    customer_entity,
-    order_entity,
-):
-    """Fixture for an EventData in integration tests"""
-    _ = user_entity
-    _ = product_action_entity
-    _ = customer_entity
-    _ = order_entity
-    event_data = create_transactions_event_data_from_feature_store(
-        spark_feature_store,
-        database_name=spark_session.database_name,
-        schema_name=spark_session.schema_name,
-        table_name="TEST_TABLE",
-        event_data_name="spark_event_data",
-    )
-    return event_data
-
-
-@pytest.fixture(name="spark_item_data", scope="session")
-def spark_item_data_fixture(
-    spark_session,
-    spark_feature_store,
-    spark_event_data,
-    order_entity,
-    item_entity,
-):
-    """Fixture for an ItemData in integration tests"""
-    database_table = spark_feature_store.get_table(
-        database_name=spark_session.database_name,
-        schema_name=spark_session.sf_schema,
-        table_name="ITEM_DATA_TABLE",
-    )
-    item_data_name = "spark_item_data"
-    item_data = ItemData.from_tabular_source(
-        tabular_source=database_table,
-        name=item_data_name,
-        event_id_column="order_id",
-        item_id_column="item_id",
-        event_data_name=spark_event_data.name,
-    )
-    item_data.save()
-    item_data = ItemData.get(item_data_name)
-    item_data["order_id"].as_entity(order_entity.name)
-    item_data["item_id"].as_entity(item_entity.name)
-    return item_data
-
-
-@pytest.fixture(name="spark_scd_data_tabular_source", scope="session")
-def get_spark_scd_data_tabular_source_fixture(
-    spark_session,
-    spark_feature_store,
-    scd_data_table_name,
-):
+@pytest.fixture(name="dimension_view", scope="session")
+def dimension_view_fixture(dimension_data):
     """
-    Fixture for scd data tabular source
+    Fixture for a DimensionView
     """
-    database_table = spark_feature_store.get_table(
-        database_name=spark_session.database_name,
-        schema_name=spark_session.schema_name,
-        table_name=scd_data_table_name,
-    )
-    return database_table
+    return DimensionView.from_dimension_data(dimension_data)
 
 
-@pytest.fixture(name="spark_scd_data", scope="session")
-def spark_scd_data_fixture(
-    spark_scd_data_tabular_source,
-    user_entity,
-    status_entity,
-):
-    """
-    Fixture for a SlowlyChangingData in integration tests
-    """
-    name = "spark_scd_data"
-    data = SlowlyChangingData.from_tabular_source(
-        tabular_source=spark_scd_data_tabular_source,
-        name=name,
-        natural_key_column="User ID",
-        effective_timestamp_column="Effective Timestamp",
-        surrogate_key_column="ID",
-    )
-    data.save()
-    data = SlowlyChangingData.get(name)
-    data["User ID"].as_entity(user_entity.name)
-    data["User Status"].as_entity(status_entity.name)
-    return data
+# @pytest.fixture(name="snowflake_event_data", scope="session")
+# def snowflake_event_data_fixture(
+#     snowflake_session,
+#     snowflake_feature_store,
+#     user_entity,
+#     product_action_entity,
+#     customer_entity,
+#     order_entity,
+# ):
+#     """Fixture for an EventData in integration tests"""
+#     _ = user_entity
+#     _ = product_action_entity
+#     _ = customer_entity
+#     _ = order_entity
+#     event_data = create_transactions_event_data_from_feature_store(
+#         snowflake_feature_store,
+#         database_name=snowflake_session.database,
+#         schema_name=snowflake_session.sf_schema,
+#         table_name="TEST_TABLE",
+#         event_data_name="snowflake_event_data",
+#     )
+#     return event_data
 
 
-@pytest.fixture(name="spark_dimension_data", scope="session")
-def spark_dimension_data_fixture(
-    spark_session,
-    spark_feature_store,
-    dimension_data_table_name,
-    item_entity,
-):
-    """
-    Fixture for a DimensionData in integration tests
-    """
-    database_table = spark_feature_store.get_table(
-        database_name=spark_session.database_name,
-        schema_name=spark_session.sf_schema,
-        table_name=dimension_data_table_name,
-    )
-    dimension_data_name = "spark_dimension_data"
-    dimension_data = DimensionData.from_tabular_source(
-        tabular_source=database_table,
-        name=dimension_data_name,
-        dimension_id_column="item_id",
-    )
-    dimension_data.save()
-    dimension_data = DimensionData.get(dimension_data_name)
-    dimension_data["item_id"].as_entity(item_entity.name)
-    return dimension_data
+# @pytest.fixture(name="snowflake_item_data", scope="session")
+# def snowflake_item_data_fixture(
+#     snowflake_session,
+#     snowflake_feature_store,
+#     snowflake_event_data,
+#     order_entity,
+#     item_entity,
+# ):
+#     """Fixture for an ItemData in integration tests"""
+#     database_table = snowflake_feature_store.get_table(
+#         database_name=snowflake_session.database_name,
+#         schema_name=snowflake_session.sf_schema,
+#         table_name="ITEM_DATA_TABLE",
+#     )
+#     item_data_name = "snowflake_item_data"
+#     item_data = ItemData.from_tabular_source(
+#         tabular_source=database_table,
+#         name=item_data_name,
+#         event_id_column="order_id",
+#         item_id_column="item_id",
+#         event_data_name=snowflake_event_data.name,
+#     )
+#     item_data.save()
+#     item_data = ItemData.get(item_data_name)
+#     item_data["order_id"].as_entity(order_entity.name)
+#     item_data["item_id"].as_entity(item_entity.name)
+#     return item_data
+
+
+# @pytest.fixture(name="snowflake_dimension_data", scope="session")
+# def snowflake_dimension_data_fixture(
+#     snowflake_session,
+#     snowflake_feature_store,
+#     dimension_data_table_name,
+#     item_entity,
+# ):
+#     """
+#     Fixture for a DimensionData in integration tests
+#     """
+#     database_table = snowflake_feature_store.get_table(
+#         database_name=snowflake_session.database_name,
+#         schema_name=snowflake_session.sf_schema,
+#         table_name=dimension_data_table_name,
+#     )
+#     dimension_data_name = "snowflake_dimension_data"
+#     dimension_data = DimensionData.from_tabular_source(
+#         tabular_source=database_table,
+#         name=dimension_data_name,
+#         dimension_id_column="item_id",
+#     )
+#     dimension_data.save()
+#     dimension_data = DimensionData.get(dimension_data_name)
+#     dimension_data["item_id"].as_entity(item_entity.name)
+#     return dimension_data
+
+
+# @pytest.fixture(name="snowflake_scd_data_tabular_source", scope="session")
+# def get_snowflake_scd_data_tabular_source_fixture(
+#     snowflake_session,
+#     snowflake_feature_store,
+#     scd_data_table_name,
+# ):
+#     """
+#     Fixture for scd data tabular source
+#     """
+#     database_table = snowflake_feature_store.get_table(
+#         database_name=snowflake_session.database_name,
+#         schema_name=snowflake_session.sf_schema,
+#         table_name=scd_data_table_name,
+#     )
+#     return database_table
+
+
+# @pytest.fixture(name="snowflake_scd_data", scope="session")
+# def snowflake_scd_data_fixture(
+#     snowflake_scd_data_tabular_source,
+#     user_entity,
+#     status_entity,
+# ):
+#     """
+#     Fixture for a SlowlyChangingData in integration tests
+#     """
+#     name = "snowflake_scd_data"
+#     data = SlowlyChangingData.from_tabular_source(
+#         tabular_source=snowflake_scd_data_tabular_source,
+#         name=name,
+#         natural_key_column="User ID",
+#         effective_timestamp_column="Effective Timestamp",
+#         surrogate_key_column="ID",
+#     )
+#     data.save()
+#     data = SlowlyChangingData.get(name)
+#     data["User ID"].as_entity(user_entity.name)
+#     data["User Status"].as_entity(status_entity.name)
+#     return data
+
+
+# @pytest.fixture(name="databricks_event_data", scope="session")
+# def databricks_event_data_fixture(
+#     databricks_session,
+#     databricks_feature_store,
+#     user_entity,
+#     product_action_entity,
+#     customer_entity,
+# ):
+#     """Fixture for an EventData in integration tests"""
+#     _ = user_entity
+#     _ = product_action_entity
+#     _ = customer_entity
+#     event_data = create_transactions_event_data_from_feature_store(
+#         databricks_feature_store,
+#         database_name=databricks_session.featurebyte_catalog,
+#         schema_name=databricks_session.featurebyte_schema,
+#         table_name="TEST_TABLE",
+#         event_data_name="databricks_event_data",
+#     )
+#     return event_data
+
+
+# @pytest.fixture(name="spark_event_data", scope="session")
+# def spark_event_data_fixture(
+#     spark_session,
+#     spark_feature_store,
+#     user_entity,
+#     product_action_entity,
+#     customer_entity,
+#     order_entity,
+# ):
+#     """Fixture for an EventData in integration tests"""
+#     _ = user_entity
+#     _ = product_action_entity
+#     _ = customer_entity
+#     _ = order_entity
+#     event_data = create_transactions_event_data_from_feature_store(
+#         spark_feature_store,
+#         database_name=spark_session.database_name,
+#         schema_name=spark_session.schema_name,
+#         table_name="TEST_TABLE",
+#         event_data_name="spark_event_data",
+#     )
+#     return event_data
+
+
+# @pytest.fixture(name="spark_item_data", scope="session")
+# def spark_item_data_fixture(
+#     spark_session,
+#     spark_feature_store,
+#     spark_event_data,
+#     order_entity,
+#     item_entity,
+# ):
+#     """Fixture for an ItemData in integration tests"""
+#     database_table = spark_feature_store.get_table(
+#         database_name=spark_session.database_name,
+#         schema_name=spark_session.sf_schema,
+#         table_name="ITEM_DATA_TABLE",
+#     )
+#     item_data_name = "spark_item_data"
+#     item_data = ItemData.from_tabular_source(
+#         tabular_source=database_table,
+#         name=item_data_name,
+#         event_id_column="order_id",
+#         item_id_column="item_id",
+#         event_data_name=spark_event_data.name,
+#     )
+#     item_data.save()
+#     item_data = ItemData.get(item_data_name)
+#     item_data["order_id"].as_entity(order_entity.name)
+#     item_data["item_id"].as_entity(item_entity.name)
+#     return item_data
+
+
+# @pytest.fixture(name="spark_scd_data_tabular_source", scope="session")
+# def get_spark_scd_data_tabular_source_fixture(
+#     spark_session,
+#     spark_feature_store,
+#     scd_data_table_name,
+# ):
+#     """
+#     Fixture for scd data tabular source
+#     """
+#     database_table = spark_feature_store.get_table(
+#         database_name=spark_session.database_name,
+#         schema_name=spark_session.schema_name,
+#         table_name=scd_data_table_name,
+#     )
+#     return database_table
+
+
+# @pytest.fixture(name="spark_scd_data", scope="session")
+# def spark_scd_data_fixture(
+#     spark_scd_data_tabular_source,
+#     user_entity,
+#     status_entity,
+# ):
+#     """
+#     Fixture for a SlowlyChangingData in integration tests
+#     """
+#     name = "spark_scd_data"
+#     data = SlowlyChangingData.from_tabular_source(
+#         tabular_source=spark_scd_data_tabular_source,
+#         name=name,
+#         natural_key_column="User ID",
+#         effective_timestamp_column="Effective Timestamp",
+#         surrogate_key_column="ID",
+#     )
+#     data.save()
+#     data = SlowlyChangingData.get(name)
+#     data["User ID"].as_entity(user_entity.name)
+#     data["User Status"].as_entity(status_entity.name)
+#     return data
+
+
+# @pytest.fixture(name="spark_dimension_data", scope="session")
+# def spark_dimension_data_fixture(
+#     spark_session,
+#     spark_feature_store,
+#     dimension_data_table_name,
+#     item_entity,
+# ):
+#     """
+#     Fixture for a DimensionData in integration tests
+#     """
+#     database_table = spark_feature_store.get_table(
+#         database_name=spark_session.database_name,
+#         schema_name=spark_session.sf_schema,
+#         table_name=dimension_data_table_name,
+#     )
+#     dimension_data_name = "spark_dimension_data"
+#     dimension_data = DimensionData.from_tabular_source(
+#         tabular_source=database_table,
+#         name=dimension_data_name,
+#         dimension_id_column="item_id",
+#     )
+#     dimension_data.save()
+#     dimension_data = DimensionData.get(dimension_data_name)
+#     dimension_data["item_id"].as_entity(item_entity.name)
+#     return dimension_data
 
 
 def get_data_source_from_request(request, valid_data_sources):
@@ -1288,63 +1543,63 @@ def get_data_source_from_request(request, valid_data_sources):
     return kind
 
 
-@pytest.fixture(name="dimension_data", scope="session", params=["snowflake"])
-def dimension_data_fixture(request):
-    """
-    Parametrizable fixture for DimensionData (possible parameters: "snowflake")
-    """
-    kind = get_data_source_from_request(request, {"snowflake", "spark"})
-    if kind == "spark":
-        return request.getfixturevalue("spark_dimension_data")
-    return request.getfixturevalue("snowflake_dimension_data")
+# @pytest.fixture(name="dimension_data", scope="session", params=["snowflake"])
+# def dimension_data_fixture(request):
+#     """
+#     Parametrizable fixture for DimensionData (possible parameters: "snowflake")
+#     """
+#     kind = get_data_source_from_request(request, {"snowflake", "spark"})
+#     if kind == "spark":
+#         return request.getfixturevalue("spark_dimension_data")
+#     return request.getfixturevalue("snowflake_dimension_data")
 
 
-@pytest.fixture(name="dimension_view", scope="session", params=["snowflake"])
-def dimension_view_fixture(request):
-    """
-    Parametrizable fixture for DimensionView (possible parameters: "snowflake")
-    """
-    kind = get_data_source_from_request(request, {"snowflake", "spark"})
-    if kind == "spark":
-        dimension_data = request.getfixturevalue("spark_dimension_data")
-    else:
-        dimension_data = request.getfixturevalue("snowflake_dimension_data")
-    return DimensionView.from_dimension_data(dimension_data)
+# @pytest.fixture(name="dimension_view", scope="session", params=["snowflake"])
+# def dimension_view_fixture(request):
+#     """
+#     Parametrizable fixture for DimensionView (possible parameters: "snowflake")
+#     """
+#     kind = get_data_source_from_request(request, {"snowflake", "spark"})
+#     if kind == "spark":
+#         dimension_data = request.getfixturevalue("spark_dimension_data")
+#     else:
+#         dimension_data = request.getfixturevalue("snowflake_dimension_data")
+#     return DimensionView.from_dimension_data(dimension_data)
 
 
-@pytest.fixture(name="scd_data", scope="session", params=["snowflake"])
-def scd_data_fixture(request):
-    """
-    Parametrizable fixture for DimensionData (possible parameters: "snowflake")
-    """
-    kind = get_data_source_from_request(request, {"snowflake", "spark"})
-    if kind == "spark":
-        return request.getfixturevalue("spark_scd_data")
-    return request.getfixturevalue("snowflake_scd_data")
+# @pytest.fixture(name="scd_data", scope="session", params=["snowflake"])
+# def scd_data_fixture(request):
+#     """
+#     Parametrizable fixture for DimensionData (possible parameters: "snowflake")
+#     """
+#     kind = get_data_source_from_request(request, {"snowflake", "spark"})
+#     if kind == "spark":
+#         return request.getfixturevalue("spark_scd_data")
+#     return request.getfixturevalue("snowflake_scd_data")
 
 
-@pytest.fixture(name="event_data", scope="session", params=["snowflake", "spark"])
-def event_data_fixture(request):
-    """
-    Parametrizable fixture for EventData (possible parameters: "snowflake", "databricks")
-    """
-    kind = get_data_source_from_request(request, {"snowflake", "databricks", "spark"})
-    if kind == "databricks":
-        return request.getfixturevalue("databricks_event_data")
-    if kind == "spark":
-        return request.getfixturevalue("spark_event_data")
-    return request.getfixturevalue("snowflake_event_data")
+# @pytest.fixture(name="event_data", scope="session", params=["snowflake", "spark"])
+# def event_data_fixture(request):
+#     """
+#     Parametrizable fixture for EventData (possible parameters: "snowflake", "databricks")
+#     """
+#     kind = get_data_source_from_request(request, {"snowflake", "databricks", "spark"})
+#     if kind == "databricks":
+#         return request.getfixturevalue("databricks_event_data")
+#     if kind == "spark":
+#         return request.getfixturevalue("spark_event_data")
+#     return request.getfixturevalue("snowflake_event_data")
 
 
-@pytest.fixture(name="item_data", scope="session", params=["snowflake"])
-def item_data_fixture(request):
-    """
-    Fixture for ItemData
-    """
-    kind = get_data_source_from_request(request, {"snowflake", "spark"})
-    if kind == "spark":
-        return request.getfixturevalue("spark_item_data")
-    return request.getfixturevalue("snowflake_item_data")
+# @pytest.fixture(name="item_data", scope="session", params=["snowflake"])
+# def item_data_fixture(request):
+#     """
+#     Fixture for ItemData
+#     """
+#     kind = get_data_source_from_request(request, {"snowflake", "spark"})
+#     if kind == "spark":
+#         return request.getfixturevalue("spark_item_data")
+#     return request.getfixturevalue("snowflake_item_data")
 
 
 @pytest.fixture(name="get_cred")

@@ -8,7 +8,6 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
-import pytz
 
 from featurebyte import (
     AggFunc,
@@ -24,6 +23,14 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
+
+
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    All tests in this module are to be run against snowflake only
+    """
+    return "snowflake"
 
 
 def iet_entropy(view, group_by_col, window, name):
@@ -123,11 +130,11 @@ def assert_feature_preview_output_equal(actual, expected):
 
 
 @pytest.fixture(name="mock_session_manager")
-def get_mocked_session_manager(snowflake_session):
+def get_mocked_session_manager(session):
     with mock.patch(
         "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
     ) as mocked_session:
-        mocked_session.return_value = snowflake_session
+        mocked_session.return_value = session
         yield
 
 
@@ -139,7 +146,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     mongo_persistent,
     test_dir,
     config,
-    snowflake_feature_store,
+    feature_store,
     mock_session_manager,
     noop_validate_feature_store_id_not_used_in_warehouse,
 ):
@@ -147,7 +154,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
     """
     _ = (
-        snowflake_feature_store,
+        feature_store,
         mock_session_manager,
         noop_validate_feature_store_id_not_used_in_warehouse,
     )
@@ -198,9 +205,9 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
 
 
 @pytest.fixture(name="event_view")
-def event_view_fixture(snowflake_event_data):
+def event_view_fixture(event_data):
     # create event view
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
@@ -904,13 +911,13 @@ def check_day_of_week_counts(event_view, preview_param):
 
 
 @pytest.fixture(name="non_time_based_feature")
-def get_non_time_based_feature_fixture(snowflake_item_data):
+def get_non_time_based_feature_fixture(item_data):
     """
     Get a non-time-based feature.
 
     This is a non-time-based feature as it is built from ItemData.
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(item_data)
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
@@ -1016,3 +1023,30 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
         "üser id": 1,
         "LATEST_EVENT_TIMESTAMP_BY_USER": pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC"),
     }
+
+
+# @pytest.mark.parametrize("source_type", ["spark"], scope="session")
+# def test_new(
+#     session,
+#     feature_store,
+#     feature_store_details,
+#     event_data,
+#     item_data,
+#     dimension_data,
+#     scd_data,
+# ):
+#     raise
+
+
+# @pytest.fixture(scope="session")
+# def source_type():
+#     return "snowflake"
+#
+#
+# @pytest.fixture
+# def snowflake_event_data(request):
+#     return request.getfixturevalue("event_data")
+#
+#
+# def test_new_2(snowflake_event_data):
+#     raise
