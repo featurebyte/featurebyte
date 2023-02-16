@@ -179,7 +179,7 @@ def online_enable_service_data_warehouse_mocks_fixture():
         "featurebyte.service.online_enable.SessionManagerService.get_feature_store_session"
     ) as mock_get_feature_store_session:
         with patch(
-            "featurebyte.service.online_enable.FeatureManagerSnowflake", autospec=True
+            "featurebyte.service.online_enable.FeatureManager", autospec=True
         ) as feature_manager_cls:
             mock_get_feature_store_session.return_value = Mock(source_type=SourceType.SNOWFLAKE)
             mocks["get_feature_store_session"] = mock_get_feature_store_session

@@ -16,7 +16,7 @@ from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import BaseTileManager
-from featurebyte.tile.snowflake_sql_template import (
+from featurebyte.tile.sql_template import (
     tm_generate_tile,
     tm_insert_tile_registry,
     tm_retrieve_tile_job_audit_logs,
