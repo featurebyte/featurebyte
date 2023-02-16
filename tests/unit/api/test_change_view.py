@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from featurebyte.api.change_view import ChangeView
+from featurebyte.api.entity import Entity
 from featurebyte.enum import SourceType
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -182,6 +183,61 @@ def test_from_slowly_changing_data__with_default_job_setting(snowflake_scd_data)
     )
     assert change_view.default_feature_job_setting == job_setting_provided
     change_view_test_helper(snowflake_scd_data, change_view)
+
+
+def test_from_slowly_changing_data__check_entity_id(snowflake_scd_data):
+    """
+    Test from_slowly_changing_data - entity_id from the SCD data is correctly set
+    """
+    entity_key = Entity(name="key_column", serving_names=["key_column"])
+    entity_eff_ts = Entity(name="eff_timestamp", serving_names=["eff_timestamp"])
+    entity_change = Entity(name="change", serving_names=["change"])
+    for entity in [entity_key, entity_eff_ts, entity_change]:
+        entity.save()
+
+    snowflake_scd_data[snowflake_scd_data.natural_key_column].as_entity("key_column")
+    snowflake_scd_data[snowflake_scd_data.effective_timestamp_column].as_entity("eff_timestamp")
+    snowflake_scd_data.col_int.as_entity("change")
+
+    # create change view
+    change_view = ChangeView.from_slowly_changing_data(snowflake_scd_data, "col_int")
+    assert change_view.dict()["columns_info"] == [
+        {
+            "critical_data_info": None,
+            "dtype": "VARCHAR",
+            "entity_id": entity_key.id,
+            "name": "col_text",
+            "semantic_id": None,
+        },
+        {
+            "critical_data_info": None,
+            "dtype": "TIMESTAMP_TZ",
+            "entity_id": entity_eff_ts.id,
+            "name": "new_effective_timestamp",
+            "semantic_id": None,
+        },
+        {
+            "critical_data_info": None,
+            "dtype": "TIMESTAMP_TZ",
+            "entity_id": None,
+            "name": "past_effective_timestamp",
+            "semantic_id": None,
+        },
+        {
+            "critical_data_info": None,
+            "dtype": "INT",
+            "entity_id": entity_change.id,
+            "name": "new_col_int",
+            "semantic_id": None,
+        },
+        {
+            "critical_data_info": None,
+            "dtype": "INT",
+            "entity_id": None,
+            "name": "past_col_int",
+            "semantic_id": None,
+        },
+    ]
 
 
 def test_update_feature_job_setting(snowflake_change_view):
