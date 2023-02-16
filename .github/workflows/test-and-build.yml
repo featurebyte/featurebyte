@@ -55,7 +55,7 @@ env:
 jobs:
   flags:
     runs-on: ubuntu-20.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     outputs:
       changes: ${{ steps.workflow_flags.outputs.PYTHON_CHANGES }}
     steps:
@@ -81,7 +81,7 @@ jobs:
   test:
     needs: [flags]
     runs-on: ubuntu-20.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       matrix:
         python-version: ["3.8.0"]
