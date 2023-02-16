@@ -8,8 +8,8 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SourceType
+from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.online_store import OnlineFeatureSpec
@@ -148,7 +148,7 @@ class OnlineEnableService(BaseService):
         # different engines. To be fixed: https://featurebyte.atlassian.net/browse/DEV-810
         if session.source_type != SourceType.SNOWFLAKE:
             return
-        feature_manager = FeatureManagerSnowflake(session)
+        feature_manager = FeatureManager(session)
 
         if feature.online_enabled:
             await feature_manager.online_enable(online_feature_spec)

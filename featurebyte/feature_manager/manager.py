@@ -1,5 +1,5 @@
 """
-Snowflake Feature Manager class
+Feature Manager class
 """
 from __future__ import annotations
 
@@ -12,8 +12,9 @@ from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_sql_template import (
+from featurebyte.feature_manager.sql_template import (
     tm_call_schedule_online_store,
     tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
@@ -26,16 +27,17 @@ from featurebyte.logger import logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.tile.base import BaseTileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
-class FeatureManagerSnowflake(BaseModel):
+class FeatureManager(BaseModel):
     """
     Snowflake Feature Manager class
     """
 
     _session: BaseSession = PrivateAttr()
+    _tile_manager: BaseTileManager = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
@@ -50,6 +52,7 @@ class FeatureManagerSnowflake(BaseModel):
         """
         super().__init__(**kw)
         self._session = session
+        self._tile_manager = tile_manager_from_session(session)
 
     async def online_enable(
         self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
@@ -65,7 +68,6 @@ class FeatureManagerSnowflake(BaseModel):
             the moment of scheduling the job
         """
         logger.info(f"online_enable: {feature_spec.feature.name}")
-        tile_mgr = TileManagerSnowflake(session=self._session)
 
         # insert records into tile-feature mapping table
         await self._update_tile_feature_mapping_table(feature_spec)
@@ -78,19 +80,19 @@ class FeatureManagerSnowflake(BaseModel):
             )
             if exist_tasks is None or len(exist_tasks) == 0:
                 # enable online tiles scheduled job
-                await tile_mgr.schedule_online_tiles(
+                await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
                 logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
                 # enable offline tiles scheduled job
-                await tile_mgr.schedule_offline_tiles(
+                await self._tile_manager.schedule_offline_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
             # generate historical tiles
-            await self._generate_historical_tiles(tile_mgr=tile_mgr, tile_spec=tile_spec)
+            await self._generate_historical_tiles(tile_spec=tile_spec)
 
             # populate feature store
             await self._populate_feature_store(tile_spec=tile_spec, schedule_time=schedule_time)
@@ -110,9 +112,7 @@ class FeatureManagerSnowflake(BaseModel):
         )
         await self._session.execute_query(populate_sql)
 
-    async def _generate_historical_tiles(
-        self, tile_mgr: TileManagerSnowflake, tile_spec: TileSpec
-    ) -> None:
+    async def _generate_historical_tiles(self, tile_spec: TileSpec) -> None:
         # generate historical tile_values
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -146,7 +146,7 @@ class FeatureManagerSnowflake(BaseModel):
         )
         start_ts_str = start_ts.strftime(date_format)
 
-        await tile_mgr.generate_tiles(
+        await self._tile_manager.generate_tiles(
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,

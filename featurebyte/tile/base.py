@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from datetime import datetime
 
 from pydantic import BaseModel, PrivateAttr
 
@@ -14,7 +15,7 @@ from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 
 
-class BaseTileManager(BaseModel):
+class BaseTileManager(BaseModel, ABC):
     """
     Base Tile class
     """
@@ -93,4 +94,52 @@ class BaseTileManager(BaseModel):
             the input TileSpec
         temp_entity_table: str
             temporary entity table to be merge into <tile_id>_entity_tracker
+        """
+
+    @abstractmethod
+    async def schedule_online_tiles(
+        self,
+        tile_spec: TileSpec,
+        monitor_periods: int = 10,
+        schedule_time: datetime = datetime.utcnow(),
+    ) -> str:
+        """
+        Schedule online tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        monitor_periods: int
+            number of tile periods to monitor and re-generate. Default is 10
+        schedule_time: datetime
+            the moment of scheduling the job
+
+        Returns
+        -------
+            generated sql to be executed
+        """
+
+    @abstractmethod
+    async def schedule_offline_tiles(
+        self,
+        tile_spec: TileSpec,
+        offline_minutes: int = 1440,
+        schedule_time: datetime = datetime.utcnow(),
+    ) -> str:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        offline_minutes: int
+            offline tile lookback minutes to monitor and re-generate. Default is 1440
+        schedule_time: datetime
+            the moment of scheduling the job
+
+        Returns
+        -------
+            generated sql to be executed
         """

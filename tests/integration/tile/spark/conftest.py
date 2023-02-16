@@ -5,6 +5,8 @@ from datetime import datetime
 
 import pytest_asyncio
 
+from featurebyte.tile.spark_tile import TileManagerSpark
+
 
 @pytest_asyncio.fixture(name="tile_task_prep_spark")
 async def tile_task_online_store_prep(spark_session):
@@ -54,3 +56,11 @@ async def tile_task_online_store_prep(spark_session):
 
     await spark_session.execute_query("DELETE FROM ONLINE_STORE_MAPPING")
     await spark_session.execute_query(f"DROP TABLE IF EXISTS {feature_store_table_name}")
+
+
+@pytest_asyncio.fixture(name="spark_tile_manager")
+async def spark_tile_manager_fixture(spark_session, snowflake_tile):
+    yield TileManagerSpark(session=spark_session)
+    await spark_session.execute_query(
+        f"DROP TABLE IF EXISTS {snowflake_tile.aggregation_id}_ENTITY_TRACKER"
+    )

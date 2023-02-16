@@ -30,8 +30,8 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import User, app
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName
+from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
@@ -871,9 +871,7 @@ async def feature_manager(mock_execute_query, session_manager, snowflake_feature
     Feature Manager fixture
     """
     _ = mock_execute_query
-    return FeatureManagerSnowflake(
-        session=await session_manager.get_session(snowflake_feature_store)
-    )
+    return FeatureManager(session=await session_manager.get_session(snowflake_feature_store))
 
 
 @pytest.fixture

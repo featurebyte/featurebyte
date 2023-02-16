@@ -62,7 +62,7 @@ class TileGenerateEntityTracking(BaseModel):
 
         # create table or insert new records or update existing records
         if not tracking_table_exist_flag:
-            create_sql = f"create table {tracking_table_name} as SELECT * FROM {self.entity_table}"
+            create_sql = f"create table {tracking_table_name} using delta as select * from {self.entity_table}"
             await self._spark.execute_query(create_sql)
         else:
             entity_column_names_str = ",".join(self.entity_column_names)

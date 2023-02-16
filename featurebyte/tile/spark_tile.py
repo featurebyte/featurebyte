@@ -1,31 +1,27 @@
 """
-Databricks Tile class
+Spark Tile class
 """
 from typing import Any, Optional
 
-import asyncio
 from datetime import datetime
 
-from databricks_cli.jobs.api import JobsApi
-from databricks_cli.runs.api import RunsApi
-from databricks_cli.sdk import ApiClient
 from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
-from featurebyte.session.databricks import DatabricksSession
+from featurebyte.session.spark import SparkSession
+from featurebyte.sql.spark.tile_generate import TileGenerate
+from featurebyte.sql.spark.tile_generate_entity_tracking import TileGenerateEntityTracking
 from featurebyte.tile.base import BaseTileManager
 
 
-class TileManagerDatabricks(BaseTileManager):
+class TileManagerSpark(BaseTileManager):
     """
     Databricks Tile class
     """
 
-    _session: DatabricksSession = PrivateAttr()
-    _jobs_api: JobsApi = PrivateAttr()
-    _runs_api: RunsApi = PrivateAttr()
+    _session: SparkSession = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
@@ -40,13 +36,6 @@ class TileManagerDatabricks(BaseTileManager):
         """
         super().__init__(session=session, **kw)
 
-        api_client = ApiClient(
-            host=f"https://{self._session.server_hostname}", token=self._session.access_token
-        )
-
-        self._jobs_api = JobsApi(api_client)
-        self._runs_api = RunsApi(api_client)
-
     async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
         """
         Update <tile_id>_entity_tracker table for last_tile_start_date
@@ -56,35 +45,30 @@ class TileManagerDatabricks(BaseTileManager):
         tile_spec: TileSpec
             the input TileSpec
         temp_entity_table: str
-            temporary entity table to be merge into <tile_id>_entity_tracker
+            temporary entity table to be merged into <tile_id>_entity_tracker
 
         Returns
         -------
-            databricks job run detail
+            spark job run detail
         """
-        job_name = "tile_generate_entity_tracking"
+        if tile_spec.category_column_name is None:
+            entity_column_names = tile_spec.entity_column_names
+        else:
+            entity_column_names = [
+                c for c in tile_spec.entity_column_names if c != tile_spec.category_column_name
+            ]
 
-        result = self._jobs_api._list_jobs_by_name(name=job_name)  # pylint: disable=W0212
-        job_id = result[0]["job_id"]
-
-        job_params = [
-            self._session.featurebyte_schema,
-            InternalName.TILE_LAST_START_DATE.value,
-            ",".join(tile_spec.entity_column_names),
-            tile_spec.aggregation_id,
-            temp_entity_table,
-        ]
-
-        job_run = self._jobs_api.run_now(
-            job_id=job_id,
-            notebook_params=None,
-            jar_params=None,
-            python_params=job_params,
-            spark_submit_params=None,
+        tile_entity_tracking_ins = TileGenerateEntityTracking(
+            spark_session=self._session,
+            tile_id=tile_spec.aggregation_id,
+            entity_column_names=entity_column_names,
+            entity_table=temp_entity_table,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
-        await self._wait_for_job_completion(job_run)
 
-        return str(job_run)
+        await tile_entity_tracking_ins.execute()
+
+        return tile_entity_tracking_ins.json()
 
     async def generate_tiles(
         self,
@@ -112,11 +96,8 @@ class TileManagerDatabricks(BaseTileManager):
 
         Returns
         -------
-            databricks job run details
+            job run details
         """
-        job_name = "tile_generate"
-        result = self._jobs_api._list_jobs_by_name(name=job_name)  # pylint: disable=W0212
-        job_id = result[0]["job_id"]
 
         if start_ts_str and end_ts_str:
             tile_sql = tile_spec.tile_sql.replace(
@@ -125,49 +106,27 @@ class TileManagerDatabricks(BaseTileManager):
         else:
             tile_sql = tile_spec.tile_sql
 
-        job_params = [
-            self._session.featurebyte_schema,
-            tile_sql,
-            InternalName.TILE_START_DATE.value,
-            InternalName.TILE_LAST_START_DATE.value,
-            tile_spec.time_modulo_frequency_second,
-            tile_spec.blind_spot_second,
-            tile_spec.frequency_minute,
-            ",".join(tile_spec.entity_column_names),
-            ",".join(tile_spec.value_column_names),
-            tile_spec.tile_id,
-            tile_type.value,
-            last_tile_start_ts_str or "",
-        ]
+        if last_tile_start_ts_str:
+            last_tile_start_ts_str = f"'{last_tile_start_ts_str}'"
 
-        job_run = self._jobs_api.run_now(
-            job_id=job_id,
-            notebook_params=None,
-            jar_params=None,
-            python_params=job_params,
-            spark_submit_params=None,
+        tile_generate_ins = TileGenerate(
+            spark_session=self._session,
+            tile_id=tile_spec.tile_id,
+            tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
+            frequency_minute=5,
+            sql=tile_sql,
+            entity_column_names=tile_spec.entity_column_names,
+            value_column_names=tile_spec.value_column_names,
+            value_column_types=tile_spec.value_column_types,
+            tile_type=tile_type,
+            tile_start_date_column=InternalName.TILE_START_DATE,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
+            last_tile_start_ts_str=last_tile_start_ts_str,
         )
-        await self._wait_for_job_completion(job_run)
+        await tile_generate_ins.execute()
 
-        return str(job_run)
-
-    async def _wait_for_job_completion(self, job_run: Any, max_wait_seconds: int = 15) -> None:
-        """
-        Wait for Stored Proc(Job) to finish
-
-        Parameters
-        ----------
-        job_run: Any
-            job run details
-
-        max_wait_seconds: int
-            max seconds to wait
-        """
-        for _ in range(max_wait_seconds):
-            await asyncio.sleep(1)
-            run_details = self._runs_api.get_run(job_run["run_id"])
-            if run_details["state"]["life_cycle_state"] == "TERMINATED":
-                break
+        return tile_generate_ins.json()
 
     async def schedule_online_tiles(
         self,

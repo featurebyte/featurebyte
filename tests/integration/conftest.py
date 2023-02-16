@@ -38,8 +38,8 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName, SourceType, StorageType
+from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
@@ -858,7 +858,7 @@ def feature_manager(snowflake_session):
     """
     Feature Manager fixture
     """
-    return FeatureManagerSnowflake(session=snowflake_session)
+    return FeatureManager(session=snowflake_session)
 
 
 @pytest_asyncio.fixture
