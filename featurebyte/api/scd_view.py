@@ -72,7 +72,7 @@ class SlowlyChangingView(View, GroupByMixin):
         SlowlyChangingView
             constructed SlowlyChangingView object
         """
-        return cls.from_data(
+        return cls._from_data(
             slowly_changing_data,
             natural_key_column=slowly_changing_data.natural_key_column,
             surrogate_key_column=slowly_changing_data.surrogate_key_column,

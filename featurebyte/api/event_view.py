@@ -96,7 +96,7 @@ class EventView(View, GroupByMixin):
         EventView
             constructed EventView object
         """
-        return cls.from_data(
+        return cls._from_data(
             event_data,
             default_feature_job_setting=event_data.default_feature_job_setting,
             event_id_column=event_data.event_id_column,

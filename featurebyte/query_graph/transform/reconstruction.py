@@ -167,10 +167,10 @@ def add_pruning_sensitive_operation(
     # flatten the pruned graph before further operations
     flat_graph, node_name_map = GraphFlatteningTransformer(graph=pruned_graph).transform()
     mapped_input_node_name = node_name_map[pruned_input_node_name]
-    mapped_input_node = flat_graph.get_node_by_name(mapped_input_node_name)
 
     # make sure mapped input node is not a project node
     # if it is a project node, find the input node of the node until it is not a project node
+    mapped_input_node = flat_graph.get_node_by_name(mapped_input_node_name)
     while mapped_input_node.type == NodeType.PROJECT:
         input_node_names = flat_graph.get_input_node_names(mapped_input_node)
         assert len(input_node_names) == 1

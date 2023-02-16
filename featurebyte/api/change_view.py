@@ -281,7 +281,7 @@ class ChangeView(View, GroupByMixin):
         col_names = ChangeView._get_new_column_names(
             track_changes_column, scd_data.effective_timestamp_column, prefixes
         )
-        change_view = cls.from_data(
+        change_view = cls._from_data(
             scd_data,
             natural_key_column=scd_data.natural_key_column,
             effective_timestamp_column=col_names.new_valid_from_column_name,

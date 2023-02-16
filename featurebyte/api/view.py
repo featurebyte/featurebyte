@@ -228,20 +228,54 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return repr(self)
 
     @classmethod
-    def _prepare_view_columns_info(cls, data: DataApiObject):
-        return [col for col in data.columns_info]
+    def _prepare_view_columns_info(cls, data: DataApiObject) -> List[ColumnInfo]:
+        """
+        Prepare the columns info for the view
+
+        Parameters
+        ----------
+        data: DataApiObject
+            Input data api object
+
+        Returns
+        -------
+        List[ColumnInfo]
+        """
+        return data.columns_info
 
     @classmethod
-    def _construct_view_graph_node(cls, data: DataApiObject):
+    def _construct_view_graph_node(
+        cls, data: DataApiObject, other_input_nodes: Optional[List[Node]] = None
+    ) -> Tuple[GraphNode, List[Node], Node]:
+        """
+        Construct the view's graph node from the input data
+
+        Parameters
+        ----------
+        data: DataApiObject
+            Input data api object
+        other_input_nodes: Optional[List[Node]]
+            Other input nodes to the view graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[Node], Node]
+            - GraphNode: View graph node
+            - List[Node]: List of proxy input nodes used for further manipulation of the view graph node
+            - Node: The data node that the view graph node is based on
+        """
         # load the most update to data frame into the global graph and then construct the data node
         global_graph, node_name_map = GlobalQueryGraph().load(data.frame.graph)
         node_name = node_name_map[data.frame.node.name]
         data_node = global_graph.get_node_by_name(node_name=node_name)
         assert isinstance(data_node, InputNode)
 
-        # record creation date column should not be available in the view
+        # prepare variables required for the view graph node construction
         columns_info = cls._prepare_view_columns_info(data)
         project_columns = [col.name for col in columns_info]
+        view_graph_input_nodes: list[Node] = [data_node]
+        if other_input_nodes:
+            view_graph_input_nodes.extend(other_input_nodes)
 
         # prepare view graph node
         cleaning_graph_node = data.table_data.construct_cleaning_recipe_node(input_node=data_node)
@@ -250,7 +284,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 node_type=NodeType.GRAPH,
                 node_params=cleaning_graph_node.parameters.dict(by_alias=True),
                 node_output_type=NodeOutputType.FRAME,
-                input_nodes=[data_node],
+                input_nodes=view_graph_input_nodes,
                 graph_node_type=cls._view_graph_node_type,
             )
             view_graph_node.add_operation(
@@ -260,18 +294,24 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 input_nodes=[view_graph_node.output_node],
             )
         else:
+            # project node assume single input only and view_graph_input_nodes could have more than 1 item.
+            # therefore, nested_node_input_indices is used to specify the input node index for the project node
+            # without using all the proxy input nodes.
             view_graph_node, proxy_input_nodes = GraphNode.create(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": project_columns},
                 node_output_type=NodeOutputType.FRAME,
-                input_nodes=[data_node],
+                input_nodes=view_graph_input_nodes,
                 graph_node_type=cls._view_graph_node_type,
+                nested_node_input_indices=[0],
             )
+
+        assert len(proxy_input_nodes) == len(view_graph_input_nodes)
         return view_graph_node, proxy_input_nodes, data_node
 
     @classmethod
     @typechecked
-    def from_data(cls: Type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
+    def _from_data(cls: Type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
         """
         Construct a View object
 
@@ -453,6 +493,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         new_node_name: str,
         joined_columns_info: List[ColumnInfo],
         joined_tabular_data_ids: List[PydanticObjectId],
+        **kwargs: Any,
     ) -> None:
         """
         Updates the metadata for the new join
@@ -465,12 +506,15 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             joined columns info
         joined_tabular_data_ids: List[PydanticObjectId]
             joined tabular data IDs
+        kwargs: Any
+            Additional keyword arguments used to override the underlying metadata
         """
         self.node_name = new_node_name
         self.columns_info = joined_columns_info
         self.__dict__.update(
             {
                 "tabular_data_ids": joined_tabular_data_ids,
+                **kwargs,
             }
         )
 

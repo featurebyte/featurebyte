@@ -1,7 +1,7 @@
 """
 This module contains graph node class.
 """
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -25,6 +25,7 @@ class GraphNode(BaseGraphNode):
         node_output_type: NodeOutputType,
         input_nodes: List[Node],
         graph_node_type: GraphNodeType,
+        nested_node_input_indices: Optional[List[int]] = None,
     ) -> Tuple["GraphNode", List[Node]]:
         """
         Construct a graph node
@@ -41,6 +42,8 @@ class GraphNode(BaseGraphNode):
             Input nodes of the node (to be inserted in the graph inside the graph node)
         graph_node_type: GraphNodeType
             Type of graph node
+        nested_node_input_indices: Optional[List[int]]
+            Indices of input nodes to be used as input nodes of the nested node
 
         Returns
         -------
@@ -57,11 +60,16 @@ class GraphNode(BaseGraphNode):
             )
             proxy_input_nodes.append(proxy_input_node)
 
+        # prepare input nodes for the nested node (if not all nodes in the input_nodes are to be used)
+        nested_node_inputs = proxy_input_nodes
+        if nested_node_input_indices:
+            nested_node_inputs = [proxy_input_nodes[idx] for idx in nested_node_input_indices]
+
         nested_node = graph.add_operation(
             node_type=node_type,
             node_params=node_params,
             node_output_type=node_output_type,
-            input_nodes=proxy_input_nodes,
+            input_nodes=nested_node_inputs,
         )
         graph_node = GraphNode(
             name="graph",

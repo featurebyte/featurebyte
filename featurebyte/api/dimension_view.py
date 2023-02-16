@@ -62,7 +62,7 @@ class DimensionView(View):
         DimensionView
             constructed DimensionView object
         """
-        return cls.from_data(
+        return cls._from_data(
             dimension_data,
             dimension_id_column=dimension_data.dimension_id_column,
         )
