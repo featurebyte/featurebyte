@@ -525,31 +525,73 @@ async def datasets_registration_helper_fixture(
     Reusable helper to register all the datasets used in integration tests
     """
 
-    async def register_datasets(session):
+    class DatasetsRegistrationHelper:
+        """
+        Helper to register datasets
+        """
 
-        # EventData table
-        await session.register_table("TEST_TABLE", transaction_data_upper_case, temporary=False)
+        def __init__(self):
+            self.datasets: dict[str, pd.DataFrame] = {}
 
-        # ItemData table
-        await session.register_table("ITEM_DATA_TABLE", items_dataframe, temporary=False)
+        def add_table(self, table_name: str, df: pd.DataFrame):
+            """
+            Register a table in memory (not yet written to database)
 
-        # DimensionData table
-        await session.register_table(
-            dimension_data_table_name, dimension_dataframe, temporary=False
-        )
+            Parameters
+            ----------
+            table_name: str
+                Table name
+            df: DataFrame
+                Pandas DataFrame
+            """
+            self.datasets[table_name] = df.copy()
 
-        # SCD table
-        await session.register_table(scd_data_table_name, scd_dataframe, temporary=False)
+        async def register_datasets(self, session):
+            """
+            Register all the added tables to data warehouse
 
-        # Tile table for tile manager integration tests
-        df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
-        # Tile table timestamps are TZ-naive
-        df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(
-            df_tiles[InternalName.TILE_START_DATE], utc=True
-        ).dt.tz_localize(None)
-        await session.register_table("TEMP_TABLE", df_tiles, temporary=False)
+            Parameters
+            ----------
+            session: BaseSession
+                Session object
+            """
+            for table_name, df in self.datasets.items():
+                await session.register_table(table_name, df, temporary=False)
 
-    yield register_datasets
+        @property
+        def table_names(self) -> list[str]:
+            """
+            List of table names registered
+
+            Returns
+            -------
+            list[str]
+            """
+            return list(self.datasets.keys())
+
+    helper = DatasetsRegistrationHelper()
+
+    # EventData table
+    helper.add_table("TEST_TABLE", transaction_data_upper_case)
+
+    # ItemData table
+    helper.add_table("ITEM_DATA_TABLE", items_dataframe)
+
+    # DimensionData table
+    helper.add_table(dimension_data_table_name, dimension_dataframe)
+
+    # SCD table
+    helper.add_table(scd_data_table_name, scd_dataframe)
+
+    # Tile table for tile manager integration tests
+    df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
+    # Tile table timestamps are TZ-naive
+    df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(
+        df_tiles[InternalName.TILE_START_DATE], utc=True
+    ).dt.tz_localize(None)
+    helper.add_table("TEMP_TABLE", df_tiles)
+
+    yield helper
 
 
 @pytest_asyncio.fixture(name="snowflake_session", scope="session")
@@ -564,7 +606,7 @@ async def snowflake_session_fixture(
     session = await session_manager.get_session(snowflake_feature_store)
     assert isinstance(session, SnowflakeSession)
 
-    await dataset_registration_helper(session)
+    await dataset_registration_helper.register_datasets(session)
 
     yield session
 
@@ -607,7 +649,7 @@ async def spark_session_fixture(config, dataset_registration_helper, spark_featu
     session = await session_manager.get_session(spark_feature_store)
     assert isinstance(session, SparkSession)
 
-    await dataset_registration_helper(session)
+    await dataset_registration_helper.register_datasets(session)
 
     yield session
 

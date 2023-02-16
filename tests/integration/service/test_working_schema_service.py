@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import EventView, FeatureList
@@ -77,10 +78,35 @@ def migration_service_fixture(user, persistent):
     return service
 
 
+@pytest_asyncio.fixture
+async def patch_list_tables_to_exclude_datasets(snowflake_session, dataset_registration_helper):
+    """
+    Fixture to patch list_tables to exclude dataset tables
+
+    The dataset tables are stored in the metadata schema and will be dropped during the schema
+    recreation process, but these datasets themselves are required to complete the process (when
+    re-online-enabling features)
+    """
+
+    async def patched_list_tables(database_name=None, schema_name=None):
+        tables = (
+            await snowflake_session.execute_query(
+                f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
+            )
+        )["name"].tolist()
+        known_tables = set(dataset_registration_helper.table_names)
+        tables = [t for t in tables if t not in known_tables]
+        return tables
+
+    with patch("featurebyte.session.snowflake.SnowflakeSession.list_tables") as p:
+        p.side_effect = patched_list_tables
+        yield p
+
+
+@pytest.mark.usefixtures("patch_list_tables_to_exclude_datasets")
 @pytest.mark.asyncio
 async def test_drop_all_and_recreate(
     config,
-    dataset_registration_helper,
     snowflake_session,
     deployed_feature_list,
     migration_service,
@@ -129,8 +155,8 @@ async def test_drop_all_and_recreate(
     original_tasks = await _get_tasks()
 
     # Check current object counts
-    num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
-    assert num_tables > 0
+    init_num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
+    assert init_num_tables > 0
     assert num_functions > 0
     assert num_procedures > 0
     assert num_tasks > 0
@@ -140,7 +166,7 @@ async def test_drop_all_and_recreate(
 
     # Check objects are indeed dropped
     num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
-    assert num_tables == 0
+    assert num_tables < init_num_tables
     assert num_functions == 0
     assert num_procedures == 0
     assert num_tasks == 0
@@ -150,19 +176,7 @@ async def test_drop_all_and_recreate(
     assert res.status_code == 500
     assert "SQL compilation error" in res.json()["detail"]
 
-    # Patch the drop_all_objects function to restore datasets since they are stored in the metadata
-    # and will be dropped, but they are required to complete the schema recreation process
-    with patch("featurebyte.service.working_schema.drop_all_objects") as mock_drop_all_objects:
-
-        async def _drop_and_recreate_datasets(session):
-            await drop_all_objects(session)
-            await dataset_registration_helper(snowflake_session)
-
-        mock_drop_all_objects.side_effect = _drop_and_recreate_datasets
-
-        # Recreate the schema. DataWarehouseMigrationServiceV8 uses WorkingSchemaService under the
-        # hood
-        await migration_service.reset_working_schema()
+    await migration_service.reset_working_schema()
 
     # Check tasks and metadata are restored
     restored_tasks = await _get_tasks()
