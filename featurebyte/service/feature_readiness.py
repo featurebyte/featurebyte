@@ -34,8 +34,6 @@ class FeatureReadinessService(BaseService):
     """
     FeatureReadinessService class is responsible for maintaining the feature readiness structure
     consistencies between feature & feature list (version & namespace).
-
-    Test
     """
 
     def __init__(self, user: Any, persistent: Persistent):
