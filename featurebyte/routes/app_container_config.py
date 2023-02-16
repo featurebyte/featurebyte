@@ -19,14 +19,6 @@ class ClassDefinition:
     # the same name.
     name: str
     class_: type
-
-
-@dataclass
-class ClassDefinitionWithDependencies(ClassDefinition):
-    """
-    Class definition with dependencies
-    """
-
     dependencies: List[str]
 
 
@@ -39,11 +31,11 @@ class AppContainerConfig:
         # These are objects which don't take in any dependencies, and can be instantiated as is.
         self.no_dependency_objects: List[ClassDefinition] = []
         # These services have dependencies in addition to the normal user, and persistent dependencies.
-        self.service_with_extra_deps: List[ClassDefinitionWithDependencies] = []
+        self.service_with_extra_deps: List[ClassDefinition] = []
         # These services only require the user, and persistent dependencies.
         self.basic_services: List[ClassDefinition] = []
         # Controllers can depend on any object defined above.
-        self.controllers: List[ClassDefinitionWithDependencies] = []
+        self.controllers: List[ClassDefinition] = []
 
     def add_no_dep_objects(self, name: str, class_: type) -> None:
         """
@@ -56,7 +48,9 @@ class AppContainerConfig:
         class_: type
             type we are registering
         """
-        self.no_dependency_objects.append(ClassDefinition(name=name, class_=class_))
+        self.no_dependency_objects.append(
+            ClassDefinition(name=name, class_=class_, dependencies=[])
+        )
 
     def add_service_with_extra_deps(self, name: str, class_: type, dependencies: List[str]) -> None:
         """
@@ -72,7 +66,7 @@ class AppContainerConfig:
             dependencies
         """
         self.service_with_extra_deps.append(
-            ClassDefinitionWithDependencies(
+            ClassDefinition(
                 name=name,
                 class_=class_,
                 dependencies=dependencies,
@@ -94,6 +88,7 @@ class AppContainerConfig:
             ClassDefinition(
                 name=name,
                 class_=class_,
+                dependencies=[],
             )
         )
 
@@ -111,7 +106,7 @@ class AppContainerConfig:
             dependencies
         """
         self.controllers.append(
-            ClassDefinitionWithDependencies(
+            ClassDefinition(
                 name=name,
                 class_=class_,
                 dependencies=dependencies,
