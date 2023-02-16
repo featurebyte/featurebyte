@@ -105,7 +105,7 @@ class FeatureManager(BaseModel):
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
             # generate historical tiles
-            await self._generate_historical_tiles(tile_mgr=self._tile_manager, tile_spec=tile_spec)
+            await self._generate_historical_tiles(tile_spec=tile_spec)
 
             # populate feature store
             await self._populate_feature_store(tile_spec=tile_spec, schedule_time=schedule_time)
@@ -125,9 +125,7 @@ class FeatureManager(BaseModel):
         )
         await self._session.execute_query(populate_sql)
 
-    async def _generate_historical_tiles(
-        self, tile_mgr: BaseTileManager, tile_spec: TileSpec
-    ) -> None:
+    async def _generate_historical_tiles(self, tile_spec: TileSpec) -> None:
         # generate historical tile_values
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -161,7 +159,7 @@ class FeatureManager(BaseModel):
         )
         start_ts_str = start_ts.strftime(date_format)
 
-        await tile_mgr.generate_tiles(
+        await self._tile_manager.generate_tiles(
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,

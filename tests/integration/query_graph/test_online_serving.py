@@ -85,7 +85,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
     # Deploy as at point_in_time (will trigger online and offline tile jobs using previous job time)
     feature_list.save()
     with patch(
-        "featurebyte.feature_manager.snowflake_feature.get_next_job_datetime",
+        "featurebyte.feature_manager.manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
         feature_list.deploy(make_production_ready=True, enable=True)

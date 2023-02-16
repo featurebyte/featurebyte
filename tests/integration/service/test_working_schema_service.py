@@ -48,7 +48,7 @@ def deployed_feature_list_fixture(snowflake_event_data):
 
     next_job_datetime = pd.Timestamp("2001-01-02 12:00:00").to_pydatetime()
     with patch(
-        "featurebyte.feature_manager.snowflake_feature.get_next_job_datetime",
+        "featurebyte.feature_manager.manager.get_next_job_datetime",
         return_value=next_job_datetime,
     ):
         features.deploy(make_production_ready=True, enable=True)

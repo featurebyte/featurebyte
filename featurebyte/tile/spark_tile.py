@@ -1,5 +1,5 @@
 """
-Databricks Tile class
+Spark Tile class
 """
 from typing import Any, Optional
 
