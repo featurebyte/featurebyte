@@ -1,7 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
-from typing import AsyncIterator
+from typing import AsyncIterator, Dict, List
 
 import asyncio
 import json
@@ -531,7 +531,7 @@ async def datasets_registration_helper_fixture(
         """
 
         def __init__(self):
-            self.datasets: dict[str, pd.DataFrame] = {}
+            self.datasets: Dict[str, pd.DataFrame] = {}
 
         def add_table(self, table_name: str, df: pd.DataFrame):
             """
@@ -559,7 +559,7 @@ async def datasets_registration_helper_fixture(
                 await session.register_table(table_name, df, temporary=False)
 
         @property
-        def table_names(self) -> list[str]:
+        def table_names(self) -> List[str]:
             """
             List of table names registered
 
