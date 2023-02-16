@@ -11,7 +11,7 @@ from enum import Enum
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 
-TASK_MAP: Dict[Enum, BaseTask] = {}
+TASK_MAP: Dict[Enum, type[BaseTask]] = {}
 
 
 class BaseTask:
