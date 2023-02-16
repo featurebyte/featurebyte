@@ -1,7 +1,10 @@
 """
 Tests for nested graph related logic
 """
+import os.path
+
 import pytest
+from bson import json_util
 
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -664,4 +667,31 @@ def test_graph_node__redundant_graph_node(input_node_params):
             "output_type": "frame",
             "parameters": {"input_order": 0},
         }
+    ]
+
+
+def test_graph_flattening(test_dir):
+    """Test graph flattening"""
+    fixture_path = os.path.join(test_dir, "fixtures/graph/event_view_nested_graph.json")
+    with open(fixture_path, "r") as file_handle:
+        query_graph_dict = json_util.loads(file_handle.read())
+        query_graph = QueryGraph(**query_graph_dict)
+
+    # the graph only contains 2 nodes (input node and graph node)
+    assert list(query_graph.nodes_map.keys()) == ["input_1", "graph_1"]
+
+    # check the flattened graph & node name map
+    flattened_graph, node_name_map = query_graph.flatten()
+    assert node_name_map == {"input_1": "input_1", "graph_1": "project_3"}
+    output_node = flattened_graph.get_node_by_name("project_3")
+    assert output_node.parameters.columns == [
+        "col_int",
+        "col_float",
+        "col_char",
+        "col_text",
+        "col_binary",
+        "col_boolean",
+        "event_timestamp",
+        "created_at",
+        "cust_id",
     ]
