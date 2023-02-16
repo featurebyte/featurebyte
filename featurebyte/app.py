@@ -23,6 +23,7 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.tabular_data.api as tabular_data_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
+import featurebyte.routes.workspace.api as workspace_api
 from featurebyte.common.utils import get_version
 from featurebyte.middleware import request_handler
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -108,6 +109,7 @@ def get_app() -> FastAPI:
         tabular_data_api,
         task_api,
         temp_data_api,
+        workspace_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

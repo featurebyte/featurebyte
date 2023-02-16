@@ -20,6 +20,7 @@ from featurebyte.routes.item_data.controller import ItemDataController
 from featurebyte.routes.scd_data.controller import SCDDataController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.tabular_data.controller import TabularDataController
+from featurebyte.routes.workspace.controller import WorkspaceController
 from featurebyte.service.context import ContextService
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
@@ -49,6 +50,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.tabular_data import DataService
 from featurebyte.service.version import VersionService
+from featurebyte.service.workspace import WorkspaceService
 from featurebyte.utils.credential import ConfigCredentialProvider
 
 app_container_config = AppContainerConfig()
@@ -145,6 +147,7 @@ app_container_config.add_basic_service("version_service", VersionService)
 app_container_config.add_basic_service("entity_relationship_service", EntityRelationshipService)
 app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
 app_container_config.add_basic_service("info_service", InfoService)
+app_container_config.add_basic_service("workspace_service", WorkspaceService)
 
 app_container_config.add_controller("context_controller", ContextController, ["context_service"])
 app_container_config.add_controller(
@@ -268,4 +271,7 @@ app_container_config.add_controller(
     [
         "tabular_data_service",
     ],
+)
+app_container_config.add_controller(
+    "workspace_controller", WorkspaceController, ["workspace_service", "info_service"]
 )

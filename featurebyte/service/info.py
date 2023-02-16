@@ -30,6 +30,7 @@ from featurebyte.schema.info import (
     FeatureStoreInfo,
     ItemDataInfo,
     SCDDataInfo,
+    WorkspaceInfo,
 )
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
@@ -49,6 +50,7 @@ from featurebyte.service.mixin import Document, DocumentCreateSchema
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
+from featurebyte.service.workspace import WorkspaceService
 
 ObjectT = TypeVar("ObjectT")
 
@@ -79,6 +81,7 @@ class InfoService(BaseService):
         self.feature_job_setting_analysis_service = FeatureJobSettingAnalysisService(
             user=user, persistent=persistent
         )
+        self.workspace_service = WorkspaceService(user=user, persistent=persistent)
 
     @staticmethod
     async def _get_list_object(
@@ -628,4 +631,27 @@ class InfoService(BaseService):
                 time_modulo_frequency=f"{recommended_setting.job_time_modulo_frequency}s",
                 frequency=f"{recommended_setting.frequency}s",
             ),
+        )
+
+    async def get_workspace_info(self, document_id: ObjectId, verbose: bool) -> WorkspaceInfo:
+        """
+        Get workspace info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Verbose or not
+
+        Returns
+        -------
+        WorkspaceInfo
+        """
+        _ = verbose
+        workspace = await self.workspace_service.get_document(document_id=document_id)
+        return WorkspaceInfo(
+            name=workspace.name,
+            created_at=workspace.created_at,
+            updated_at=workspace.updated_at,
         )

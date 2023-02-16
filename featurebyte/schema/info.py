@@ -324,3 +324,40 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
+
+
+class WorkspaceBriefInfo(BaseBriefInfo):
+    """
+    Workspace brief info schema
+    """
+
+
+class WorkspaceInfo(WorkspaceBriefInfo, BaseInfo):
+    """
+    Workspace info schema
+    """
+
+
+class WorkspaceBriefInfoList(FeatureByteBaseModel):
+    """
+    Paginated list of workspace brief info
+    """
+
+    __root__: List[WorkspaceBriefInfo]
+
+    @classmethod
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> WorkspaceBriefInfoList:
+        """
+        Construct workspace brief info list from paginated data
+
+        Parameters
+        ----------
+        paginated_data: dict[str, Any]
+            Paginated data
+
+        Returns
+        -------
+        WorkspaceBriefInfoList
+        """
+        workspace_project = DictProject(rule=("data", ["name"]))
+        return WorkspaceBriefInfoList(__root__=workspace_project.project(paginated_data))

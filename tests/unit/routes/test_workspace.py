@@ -1,48 +1,41 @@
 """
-Tests for Entity route
+Tests for Workspace route
 """
 from http import HTTPStatus
 
 import pytest
 from bson.objectid import ObjectId
 
-from tests.unit.routes.base import BaseRelationshipApiTestSuite
+from tests.unit.routes.base import BaseApiTestSuite
 
 
-class TestEntityApi(BaseRelationshipApiTestSuite):
+class TestWorkspaceApi(BaseApiTestSuite):
     """
-    TestEntityApi class
+    TestWorkspaceApi class
     """
 
-    class_name = "Entity"
-    base_route = "/entity"
+    class_name = "Workspace"
+    base_route = "/workspace"
     unknown_id = ObjectId()
-    payload = BaseRelationshipApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/entity.json"
-    )
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/workspace.json")
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
-            f'Entity (id: "{payload["_id"]}") already exists. '
-            'Get the existing object by `Entity.get(name="customer")`.',
+            f'Workspace (id: "{payload["_id"]}") already exists. '
+            'Get the existing object by `Workspace.get(name="grocery")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            'Entity (name: "customer") already exists. '
-            'Get the existing object by `Entity.get(name="customer")`.',
-        ),
-        (
-            {**payload, "_id": str(ObjectId()), "name": "whatever_name"},
-            'Entity (serving_name: "cust_id") already exists. '
-            'Get the existing object by `Entity.get(name="customer")`.',
+            'Workspace (name: "grocery") already exists. '
+            'Get the existing object by `Workspace.get(name="grocery")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {**payload, "serving_name": ["cust_id"]},
+            {**payload, "name": ["test"]},
             [
                 {
-                    "loc": ["body", "serving_name"],
+                    "loc": ["body", "name"],
                     "msg": "str type expected",
                     "type": "type_error.str",
                 }
@@ -56,7 +49,7 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
                 "data_type": "event_data",
                 "data_id": str(ObjectId()),
             },
-            f'Entity (id: "{unknown_id}") not found. Please save the Entity object first.',
+            f'Workspace (id: "{unknown_id}") not found. Please save the Workspace object first.',
         )
     ]
 
@@ -66,23 +59,27 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
         Create multiple entries to the persistent
         """
         test_api_client, _ = test_api_client_persistent
-        entity_id1, entity_id2, entity_id3 = str(ObjectId()), str(ObjectId()), str(ObjectId())
-        res_region = test_api_client.post(
-            self.base_route, json={"_id": entity_id1, "name": "region", "serving_name": "region"}
+        workspace_id1, workspace_id2, workspace_id3 = (
+            str(ObjectId()),
+            str(ObjectId()),
+            str(ObjectId()),
         )
-        res_cust = test_api_client.post(
-            self.base_route, json={"_id": entity_id2, "name": "customer", "serving_name": "cust_id"}
+        res_grocery = test_api_client.post(
+            self.base_route, json={"_id": workspace_id1, "name": "grocery"}
         )
-        res_prod = test_api_client.post(
-            self.base_route, json={"_id": entity_id3, "name": "product", "serving_name": "prod_id"}
+        res_creditcard = test_api_client.post(
+            self.base_route, json={"_id": workspace_id2, "name": "creditcard"}
         )
-        assert res_region.status_code == HTTPStatus.CREATED
-        assert res_cust.status_code == HTTPStatus.CREATED
-        assert res_prod.status_code == HTTPStatus.CREATED
-        assert res_region.json()["_id"] == entity_id1
-        assert res_cust.json()["_id"] == entity_id2
-        assert res_prod.json()["_id"] == entity_id3
-        return [entity_id1, entity_id2, entity_id3]
+        res_healthcare = test_api_client.post(
+            self.base_route, json={"_id": workspace_id3, "name": "healthcare"}
+        )
+        assert res_grocery.status_code == HTTPStatus.CREATED
+        assert res_creditcard.status_code == HTTPStatus.CREATED
+        assert res_healthcare.status_code == HTTPStatus.CREATED
+        assert res_grocery.json()["_id"] == workspace_id1
+        assert res_creditcard.json()["_id"] == workspace_id2
+        assert res_healthcare.json()["_id"] == workspace_id3
+        return [workspace_id1, workspace_id2, workspace_id3]
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -91,7 +88,6 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
-            payload["serving_name"] = f'{payload["serving_name"]}_{i}'
             yield payload
 
     @staticmethod
@@ -103,80 +99,80 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
 
     def test_update_200(self, create_success_response, test_api_client_persistent):
         """
-        Test entity update (success)
+        Test workspace update (success)
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
-        entity_id = response_dict["_id"]
+        workspace_id = response_dict["_id"]
         response = test_api_client.patch(
-            f"{self.base_route}/{entity_id}", json={"name": "Customer"}
+            f"{self.base_route}/{workspace_id}", json={"name": "french grocery"}
         )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
-        assert result["name"] == "Customer"
+        assert result["name"] == "french grocery"
 
         # it is ok if the updated name is the same as the existing one
         response = test_api_client.patch(
-            f"{self.base_route}/{entity_id}", json={"name": "Customer"}
+            f"{self.base_route}/{workspace_id}", json={"name": "french grocery"}
         )
         assert response.status_code == HTTPStatus.OK
 
         # test get audit records
-        response = test_api_client.get(f"{self.base_route}/audit/{entity_id}")
+        response = test_api_client.get(f"{self.base_route}/audit/{workspace_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 2
         assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
         assert [record["previous_values"].get("name") for record in results["data"]] == [
-            "customer",
+            "grocery",
             None,
         ]
 
         # test get name history
-        response = test_api_client.get(f"{self.base_route}/history/name/{entity_id}")
+        response = test_api_client.get(f"{self.base_route}/history/name/{workspace_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert [doc["name"] for doc in results] == ["Customer", "customer"]
+        assert [doc["name"] for doc in results] == ["french grocery", "grocery"]
 
     def test_update_404(self, test_api_client_persistent):
         """
-        Test entity update (not found)
+        Test workspace update (not found)
         """
         test_api_client, _ = test_api_client_persistent
-        unknown_entity_id = ObjectId()
+        unknown_workspace_id = ObjectId()
         response = test_api_client.patch(
-            f"{self.base_route}/{unknown_entity_id}", json={"name": "random_name"}
+            f"{self.base_route}/{unknown_workspace_id}", json={"name": "random_name"}
         )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
             "detail": (
-                f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
+                f'Workspace (id: "{unknown_workspace_id}") not found. Please save the Workspace object first.'
             )
         }
 
     def test_update_409(self, create_multiple_entries, test_api_client_persistent):
         """ "
-        Test entity update (conflict)
+        Test workspace update (conflict)
         """
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.patch(
-            f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "customer"}
+            f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "creditcard"}
         )
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json() == {
             "detail": (
-                'Entity (name: "customer") already exists. '
-                'Get the existing object by `Entity.get(name="customer")`.'
+                'Workspace (name: "creditcard") already exists. '
+                'Get the existing object by `Workspace.get(name="creditcard")`.'
             )
         }
 
     def test_update_422(self, test_api_client_persistent):
         """
-        Test entity update (unprocessable entity)
+        Test workspace update (unprocessable workspace)
         """
         test_api_client, _ = test_api_client_persistent
-        unknown_entity_id = ObjectId()
-        response = test_api_client.patch(f"{self.base_route}/{unknown_entity_id}")
+        unknown_workspace_id = ObjectId()
+        response = test_api_client.patch(f"{self.base_route}/{unknown_workspace_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
@@ -241,9 +237,8 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         expected_info_response = {
-            "name": "customer",
+            "name": "grocery",
             "updated_at": None,
-            "serving_names": ["cust_id"],
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
