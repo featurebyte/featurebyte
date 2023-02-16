@@ -1,5 +1,5 @@
 """
-Snowflake Feature Manager class
+Feature Manager class
 """
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
-from featurebyte import SourceType
 from featurebyte.common import date_util
 from featurebyte.common.date_util import get_next_job_datetime
+from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import (
     tm_call_schedule_online_store,
@@ -28,8 +28,6 @@ from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import BaseTileManager
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-from featurebyte.tile.spark_tile import TileManagerSpark
 from featurebyte.utils.snowflake.sql import escape_column_names
 
 
@@ -51,21 +49,10 @@ class FeatureManager(BaseModel):
             input session for datasource
         kw: Any
             constructor arguments
-
-        Raises
-        ----------
-        ValueError
-            if the corresponding TileManager has not been implemented
         """
         super().__init__(**kw)
         self._session = session
-
-        if session.source_type == SourceType.SNOWFLAKE:
-            self._tile_manager = TileManagerSnowflake(session)
-        elif session.source_type == SourceType.SPARK:
-            self._tile_manager = TileManagerSpark(session)
-        else:
-            raise ValueError(f"Tile Manager for {session.source_type} has not been implemented")
+        self._tile_manager = tile_manager_from_session(session)
 
     async def online_enable(
         self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
