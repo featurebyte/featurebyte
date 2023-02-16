@@ -307,7 +307,7 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
     )
     assert (tile_id, agg_id) == (
         "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
-        "sum_5728b2980dc4209240ac407d8f9924d7d7b2379d",
+        "sum_842be399901dd5054893abdbaac5107a9d176ffc",
     )
 
     # Note that this is different from above
@@ -318,7 +318,7 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
     )
     assert (tile_id, agg_id) == (
         "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
-        "sum_2852db0036d04d007f39b0a90a1087cf49f21a01",
+        "sum_5192bc325a5a51967a3f63ecc95f96a8b37c1bca",
     )
 
 

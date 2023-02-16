@@ -154,8 +154,9 @@ class BaseViewTestSuite:
             "output_type": "series",
         }
         expected_edges = [
-            {"source": "input_1", "target": "project_1"},
-            {"source": "input_1", "target": "project_2"},
+            {"source": "input_1", "target": "graph_1"},
+            {"source": "graph_1", "target": "project_1"},
+            {"source": "graph_1", "target": "project_2"},
             {"source": "project_1", "target": "filter_1"},
             {"source": "project_2", "target": "filter_1"},
         ]

@@ -255,6 +255,7 @@ class ChangeView(View, GroupByMixin):
     ) -> GraphNode:
         # subset the columns we need
         col_name_to_proj_node: dict[str, Node] = {}
+        assert scd_data.timestamp_column is not None
         proj_names = [
             scd_data.effective_timestamp_column,
             scd_data.natural_key_column,

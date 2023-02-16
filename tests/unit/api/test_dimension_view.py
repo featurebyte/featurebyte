@@ -139,7 +139,8 @@ def test_as_features__with_primary_key_column(snowflake_dimension_view_with_enti
     float_feature_node_dict = get_node(graph_dict, float_feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")
     assert graph_dict["edges"] == [
-        {"source": "input_1", "target": "lookup_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "lookup_1"},
         {"source": "lookup_1", "target": "project_1"},
     ]
     assert float_feature_node_dict == {
@@ -229,7 +230,8 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
     float_feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")
     assert graph_dict["edges"] == [
-        {"source": "input_1", "target": "lookup_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "lookup_1"},
         {"source": "lookup_1", "target": "project_1"},
     ]
     assert float_feature_node_dict == {

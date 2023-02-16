@@ -68,7 +68,8 @@ def test_aggregate_asat__valid(scd_view_with_entity, entity_col_int):
         },
     }
     assert graph_dict["edges"] == [
-        {"source": "input_1", "target": "aggregate_as_at_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "aggregate_as_at_1"},
         {"source": "aggregate_as_at_1", "target": "project_1"},
     ]
 
