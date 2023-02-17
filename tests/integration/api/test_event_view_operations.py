@@ -1022,30 +1022,3 @@ def test_non_float_tile_value_added_to_tile_table(event_view):
         "üser id": 1,
         "LATEST_EVENT_TIMESTAMP_BY_USER": pd.Timestamp("2001-01-02 08:42:19.000673+0000", tz="UTC"),
     }
-
-
-# @pytest.mark.parametrize("source_type", ["spark"], scope="session")
-# def test_new(
-#     session,
-#     feature_store,
-#     feature_store_details,
-#     event_data,
-#     item_data,
-#     dimension_data,
-#     scd_data,
-# ):
-#     raise
-
-
-# @pytest.fixture(scope="session")
-# def source_type():
-#     return "snowflake"
-#
-#
-# @pytest.fixture
-# def snowflake_event_data(request):
-#     return request.getfixturevalue("event_data")
-#
-#
-# def test_new_2(snowflake_event_data):
-#     raise
