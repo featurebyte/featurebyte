@@ -4,7 +4,7 @@ Unit test for DatabaseTable
 import pandas as pd
 
 from featurebyte.enum import DBVarType, TableDataType
-from tests.util.helper import check_sdk_code_generation, compare_generated_data_object_sdk_code
+from tests.util.helper import check_sdk_code_generation, compare_generated_api_object_sdk_code
 
 
 def test_database_table(snowflake_database_table, expected_snowflake_table_preview_query):
@@ -45,8 +45,9 @@ def test_database_table_get_input_node(snowflake_database_table):
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved data"""
     check_sdk_code_generation(snowflake_database_table.frame, to_use_saved_data=False)
-    compare_generated_data_object_sdk_code(
-        data_object=snowflake_database_table,
+    compare_generated_api_object_sdk_code(
+        api_object=snowflake_database_table.frame,
+        data_id=None,
         fixture_path="tests/fixtures/sdk_code/generic_data.py",
         update_fixtures=update_fixtures,
         to_use_saved_data=False,

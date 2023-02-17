@@ -33,6 +33,7 @@ class GraphNode(BaseGraphNode):
         input_nodes: List[Node],
         graph_node_type: GraphNodeType,
         nested_node_input_indices: Optional[List[int]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Tuple["GraphNode", List[Node]]:
         """
         Construct a graph node
@@ -51,6 +52,8 @@ class GraphNode(BaseGraphNode):
             Type of graph node
         nested_node_input_indices: Optional[List[int]]
             Indices of input nodes to be used as input nodes of the nested node
+        metadata: Optional[Dict[str, Any]]
+            Optional metadata that is passed to the graph node parameters
 
         Returns
         -------
@@ -78,14 +81,19 @@ class GraphNode(BaseGraphNode):
             node_output_type=node_output_type,
             input_nodes=nested_node_inputs,
         )
-        graph_node_parameters = parse_obj_as(
-            GraphNodeParameters,
-            {"graph": graph, "output_node_name": nested_node.name, "type": graph_node_type},
-        )
+
+        graph_node_parameters = {
+            "graph": graph,
+            "output_node_name": nested_node.name,
+            "type": graph_node_type,
+        }
+        if metadata:
+            graph_node_parameters["metadata"] = metadata
+
         graph_node = GraphNode(
             name="graph",
             output_type=nested_node.output_type,
-            parameters=graph_node_parameters,
+            parameters=parse_obj_as(GraphNodeParameters, graph_node_parameters),
         )
         return graph_node, proxy_input_nodes
 

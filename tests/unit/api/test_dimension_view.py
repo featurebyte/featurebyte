@@ -11,7 +11,11 @@ from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import get_node
+from tests.util.helper import (
+    check_sdk_code_generation,
+    compare_generated_api_object_sdk_code,
+    get_node,
+)
 
 
 class TestDimensionView(BaseViewTestSuite):
@@ -309,4 +313,18 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
         FROM _FB_AGGREGATED AS AGG
         """
         ).strip()
+    )
+
+
+def test_sdk_code_generation(saved_dimension_data, update_fixtures):
+    """Check SDK code generation"""
+    to_use_saved_data = True
+    dimension_view = DimensionView.from_dimension_data(saved_dimension_data)
+    check_sdk_code_generation(dimension_view, to_use_saved_data=to_use_saved_data)
+    compare_generated_api_object_sdk_code(
+        api_object=dimension_view,
+        data_id=saved_dimension_data.id,
+        fixture_path="tests/fixtures/sdk_code/dimension_view.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=to_use_saved_data,
     )

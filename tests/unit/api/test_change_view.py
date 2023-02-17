@@ -17,6 +17,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from tests.util.helper import check_sdk_code_generation, compare_generated_api_object_sdk_code
 
 
 @pytest.fixture
@@ -361,3 +362,24 @@ def test_from_slowly_changing_data__keep_record_creation_date_column(snowflake_s
     ]
     nested_graph_node = change_view.node.parameters.graph.get_node_by_name("graph_1")
     assert nested_graph_node.parameters.type == "cleaning"
+
+
+def test_sdk_code_generation(saved_scd_data, update_fixtures):
+    """Check SDK code generation"""
+    to_use_saved_data = True
+    change_view = ChangeView.from_slowly_changing_data(
+        saved_scd_data,
+        track_changes_column="col_int",
+        default_feature_job_setting=FeatureJobSetting(
+            blind_spot="0", time_modulo_frequency="1h", frequency="24h"
+        ),
+        prefixes=(None, "_past"),
+    )
+    check_sdk_code_generation(change_view, to_use_saved_data=to_use_saved_data)
+    compare_generated_api_object_sdk_code(
+        api_object=change_view,
+        data_id=saved_scd_data.id,
+        fixture_path="tests/fixtures/sdk_code/change_view.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=to_use_saved_data,
+    )
