@@ -122,4 +122,11 @@ def test_task_has_been_implemented(command_class):
 
     # initiate BaseTask without override payload_class will trigger NotImplementedError
     with pytest.raises(NotImplementedError):
-        BaseTask(payload={})
+        BaseTask(
+            payload={},
+            progress=None,
+            get_persistent=None,
+            get_storage=None,
+            get_temp_storage=None,
+            get_credential=None,
+        )
