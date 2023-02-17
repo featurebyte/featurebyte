@@ -16,6 +16,14 @@ from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp,
 from tests.util.helper import get_lagged_series_pandas
 
 
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
 def calculate_aggregate_over_ground_truth(
     df,
     point_in_time,
@@ -306,7 +314,7 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
-    snowflake_event_data,
+    event_data,
     config,
 ):
     """
@@ -352,8 +360,8 @@ def test_aggregate_over(
         ),
     ]
 
-    event_view = EventView.from_event_data(snowflake_event_data)
-    feature_job_setting = snowflake_event_data.default_feature_job_setting
+    event_view = EventView.from_event_data(event_data)
+    feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
         time_modulo_frequency=feature_job_setting.time_modulo_frequency,

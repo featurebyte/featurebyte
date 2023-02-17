@@ -14,10 +14,18 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.session_validator import SessionValidatorService
 
 
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
 @pytest.mark.skip(reason="skipping while we rollback the default state")
 @pytest.mark.asyncio
 async def test_feature_store_create__no_writes_on_error(
-    mongo_persistent, snowflake_details, get_cred
+    mongo_persistent, feature_store_details, get_cred
 ):
     """
     Test that nothing is written to mongo if we error halfway through
@@ -49,7 +57,7 @@ async def test_feature_store_create__no_writes_on_error(
             _ = FeatureStore.create(
                 name=feature_store_name_to_create,
                 source_type=SourceType.SNOWFLAKE,
-                details=snowflake_details,
+                details=feature_store_details,
             )
 
     # Assert that there's nothing in mongo. This confirms that the transactions never happens since we raise

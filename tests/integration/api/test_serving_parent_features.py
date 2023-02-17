@@ -14,8 +14,16 @@ from featurebyte import (
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
 @pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
-async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_feature_store):
+async def feature_list_with_child_entities_fixture(session, feature_store):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -54,14 +62,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
         }
     )
     table_prefix = "TEST_SERVING_PARENT_FEATURES"
-    await snowflake_session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
-    await snowflake_session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    await snowflake_session.register_table(
-        f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False
-    )
-    await snowflake_session.register_table(
-        f"{table_prefix}_DIMENSION_2", df_dimension_2, temporary=False
-    )
+    await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
+    await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
+    await session.register_table(f"{table_prefix}_DIMENSION_1", df_dimension_1, temporary=False)
+    await session.register_table(f"{table_prefix}_DIMENSION_2", df_dimension_2, temporary=False)
 
     event_entity = Entity(name=f"{table_prefix}_event", serving_names=["serving_event_id"])
     event_entity.save()
@@ -75,10 +79,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     country_entity.save()
 
     event_data = EventData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_EVENT",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_event_data",
         event_id_column="event_id",
@@ -89,10 +93,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     event_data["cust_id"].as_entity(customer_entity.name)
 
     scd_data = SlowlyChangingData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_SCD",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_scd_data",
         natural_key_column="scd_cust_id",
@@ -104,10 +108,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     scd_data["scd_city"].as_entity(city_entity.name)
 
     dimension_data_1 = DimensionData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_dimension_data_1",
         dimension_id_column="city",
@@ -117,10 +121,10 @@ async def feature_list_with_child_entities_fixture(snowflake_session, snowflake_
     dimension_data_1["state"].as_entity(state_entity.name)
 
     dimension_data_2 = DimensionData.from_tabular_source(
-        tabular_source=snowflake_feature_store.get_table(
+        tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
-            database_name=snowflake_session.database,
-            schema_name=snowflake_session.sf_schema,
+            database_name=session.database,
+            schema_name=session.sf_schema,
         ),
         name=f"{table_prefix}_dimension_data_2",
         dimension_id_column="state",

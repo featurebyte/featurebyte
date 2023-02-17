@@ -8,14 +8,22 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
-def online_enabled_feature_list_fixture(snowflake_event_data, config):
+def online_enabled_feature_list_fixture(event_data, config):
     """
     Fixture for an online enabled feature
 
     To avoid side effects, this should not be shared with other tests.
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = EventView.from_event_data(event_data)
     event_view["ÀMOUNT"] = event_view["ÀMOUNT"] + 12345
 
     # Aggregate using a different entity than "ÜSER ID". Otherwise, it will be creating a feature
@@ -43,9 +51,7 @@ def online_enabled_feature_list_fixture(snowflake_event_data, config):
 
 
 @pytest.mark.asyncio
-async def test_online_enabled_features_have_scheduled_jobs(
-    snowflake_session, online_enabled_feature_list
-):
+async def test_online_enabled_features_have_scheduled_jobs(session, online_enabled_feature_list):
     """
     Test online enabled features have scheduled jobs
     """
@@ -57,7 +63,7 @@ async def test_online_enabled_features_have_scheduled_jobs(
     # There should be two scheduled jobs for the tile id - one for online tile and another for
     # offline tile (online store pre-computation job is triggered by the online tile task once tile
     # computation completes)
-    tasks = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
+    tasks = await session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
     assert len(tasks) == 2
 
 

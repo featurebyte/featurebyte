@@ -8,11 +8,14 @@ from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
 
-@pytest.mark.parametrize(
-    "item_data",
-    ["snowflake"],
-    indirect=True,
-)
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
 def test_expected_rows_and_columns(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView rows and columns are correct
@@ -59,9 +62,7 @@ def item_aggregate_with_category_features(item_data):
     return FeatureList([most_frequent_feature, entropy_feature], name="feature_list")
 
 
-def test_item_aggregation_with_category(
-    item_aggregate_with_category_features, snowflake_event_data
-):
+def test_item_aggregation_with_category(item_aggregate_with_category_features, event_data):
     """
     Test ItemView.groupby(..., category=...).aggregate() feature
     """
@@ -91,7 +92,7 @@ def test_item_aggregation_with_category(
     np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 1.09861229, 2.19722458])
 
     # check add_feature (note added feature value is the same as the preview above)
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = EventView.from_event_data(event_data)
     event_view.add_feature(
         "most_frequent_item_type",
         item_aggregate_with_category_features["most_frequent_item_type"],
@@ -179,11 +180,6 @@ def assert_match(item_id: str, item_name: str, item_type: str):
     assert item_type == expected_type
 
 
-@pytest.mark.parametrize(
-    "item_data",
-    ["snowflake"],
-    indirect=True,
-)
 def test_item_view_joined_with_dimension_view(
     transaction_data_upper_case, item_data, dimension_data
 ):

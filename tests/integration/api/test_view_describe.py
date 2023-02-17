@@ -2,6 +2,7 @@
 Test API View objects describe function
 """
 import pandas as pd
+import pytest
 from pandas.testing import assert_series_equal
 
 from featurebyte.api.dimension_view import DimensionView
@@ -120,11 +121,12 @@ def test_event_view_describe_with_date_range(event_data):
     )
 
 
-def test_item_view_describe(snowflake_item_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_item_view_describe(item_data):
     """
     Test describe for ItemView
     """
-    item_view = ItemView.from_item_data(snowflake_item_data)
+    item_view = ItemView.from_item_data(item_data)
 
     describe_df = item_view.describe()
     assert describe_df.columns.tolist() == [
@@ -162,11 +164,12 @@ def test_item_view_describe(snowflake_item_data):
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
 
-def test_dimension_view_describe(snowflake_dimension_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_dimension_view_describe(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    dimension_view = DimensionView.from_dimension_data(dimension_data)
     describe_df = dimension_view.describe()
     assert describe_df.columns.tolist() == [
         "created_at",
@@ -188,11 +191,12 @@ def test_dimension_view_describe(snowflake_dimension_data):
     assert describe_df.shape == (9, 4)
 
 
-def test_scd_view_describe(snowflake_scd_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_scd_view_describe(scd_data):
     """
     Test sample for DimensionView
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
     describe_df = scd_view.describe()
     assert describe_df.columns.tolist() == [
         "Effective Timestamp",

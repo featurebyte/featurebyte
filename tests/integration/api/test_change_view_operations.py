@@ -11,6 +11,14 @@ from featurebyte import AggFunc, FeatureList
 from featurebyte.api.change_view import ChangeView
 
 
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
 @pytest.fixture
 def freeze_time_for_change_view():
     """

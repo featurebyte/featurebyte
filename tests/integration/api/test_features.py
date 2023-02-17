@@ -2,15 +2,24 @@
 Tests for more features
 """
 import pandas as pd
+import pytest
 
 from featurebyte import EventView, FeatureList
 
 
-def test_features_without_entity(snowflake_event_data):
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
+def test_features_without_entity(event_data):
     """
     Test working with purely time based features without any entity
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = EventView.from_event_data(event_data)
     feature_group = event_view.groupby([]).aggregate_over(
         method="count",
         windows=["2h", "24h"],

@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from featurebyte import (
     DisguisedValueImputation,
@@ -12,10 +13,17 @@ from featurebyte import (
 )
 
 
-def test_event_data_update_critical_data_info(snowflake_event_data):
+@pytest.fixture(scope="session")
+def source_type():
+    """
+    Source type(s) to test in this module
+    """
+    return "snowflake"
+
+
+def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
-    event_data = snowflake_event_data
     original_df = event_data.preview()
 
     # check data column preview

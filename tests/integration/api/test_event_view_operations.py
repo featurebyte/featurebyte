@@ -28,7 +28,7 @@ from tests.util.helper import get_lagged_series_pandas
 @pytest.fixture(scope="session")
 def source_type():
     """
-    All tests in this module are to be run against snowflake only
+    Source type(s) to test in this module
     """
     return "snowflake"
 
