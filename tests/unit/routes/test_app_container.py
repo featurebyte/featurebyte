@@ -9,19 +9,18 @@ from featurebyte.app import User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.routes.app_container_config import AppContainerConfig
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
 
 @pytest.fixture(name="app_container_constructor_params")
-def app_container_constructor_params_fixture():
+def app_container_constructor_params_fixture(persistent):
     """
     Get app container constructor params
     """
     user = User()
     return {
         "user": user,
-        "persistent": get_persistent(),
+        "persistent": persistent,
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
         "task_manager": TaskManager(user_id=user.id),
