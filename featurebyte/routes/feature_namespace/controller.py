@@ -67,6 +67,7 @@ class FeatureNamespaceController(
                 default_version_mode=data.default_version_mode,
                 return_document=False,
             )
+
         if data.default_feature_id:
             feature_namespace = await self.service.get_document(document_id=feature_namespace_id)
             if feature_namespace.default_version_mode != DefaultVersionMode.MANUAL:
@@ -82,6 +83,7 @@ class FeatureNamespaceController(
             await self.feature_readiness_service.update_feature_namespace(
                 feature_namespace_id=feature_namespace_id
             )
+
         return await self.get(document_id=feature_namespace_id)
 
     async def get_info(
