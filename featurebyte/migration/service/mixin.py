@@ -83,7 +83,7 @@ class BaseMigrationServiceMixin(Protocol):
         if query_filter is None:
             query_filter = dict(self._construct_list_query_filter())
             # exclude workspace filter
-            query_filter.pop("workspace_id")
+            query_filter.pop("workspace_id", None)
         to_iterate, page = True, 1
 
         logger.info(f'Start migrating all records (collection: "{self.collection_name}")')

@@ -9,11 +9,10 @@ from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
-from featurebyte.models.persistent import Document
 from featurebyte.models.workspace import WorkspaceModel
 from featurebyte.schema.workspace import WorkspaceCreate, WorkspaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.mixin import DocumentCreateSchema, SortDir
+from featurebyte.service.mixin import SortDir
 
 
 class WorkspaceService(

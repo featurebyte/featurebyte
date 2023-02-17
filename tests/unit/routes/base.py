@@ -504,11 +504,18 @@ class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         custom_workspace_document_id = create_success_response_non_default_workspace.json()["_id"]
 
+        # expect to see document in the workspace
         response = test_api_client.get(f"{self.base_route}", params={"workspace_id": workspace_id})
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 1
         assert results["data"][0]["_id"] == custom_workspace_document_id
+
+        # expect not to see document in the default workspace
+        response = test_api_client.get(f"{self.base_route}")
+        assert response.status_code == HTTPStatus.OK
+        results = response.json()
+        assert results["total"] == 0
 
     def test_get_200_non_default_workspace(
         self,
@@ -520,6 +527,7 @@ class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         custom_workspace_document_id = create_success_response_non_default_workspace.json()["_id"]
 
+        # expect to see document in the workspace
         response = test_api_client.get(
             f"{self.base_route}/{custom_workspace_document_id}",
             params={"workspace_id": workspace_id},
@@ -527,6 +535,10 @@ class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["_id"] == custom_workspace_document_id
+
+        # expect not to see document in the default workspace
+        response = test_api_client.get(f"{self.base_route}/{custom_workspace_document_id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 class BaseRelationshipApiTestSuite(BaseWorkspaceApiTestSuite):

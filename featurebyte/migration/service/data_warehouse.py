@@ -232,7 +232,7 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
         working_schema_service = WorkingSchemaService(
-            user=self.user, persistent=self.persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
         )
         await working_schema_service.recreate_working_schema(
             feature_store_id=feature_store.id, session=session
