@@ -110,9 +110,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             user_id=user_id,
         )
 
-    def test_update_200(self, test_api_client_persistent):
-        """Test update (success)"""
-        test_api_client, _ = test_api_client_persistent
+    def _create_feature_namespace_with_manual_version_mode(self, test_api_client):
+        """Create feature with manual version mode"""
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("entity", "entity"),
@@ -133,8 +132,15 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response_dict["default_version_mode"] == "MANUAL"
         assert response_dict["readiness"] == "DRAFT"
+        return response_dict
+
+    def test_update_200__update_readiness_on_manual_mode(self, test_api_client_persistent):
+        """Test update (success): update readiness on manual mode"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = self._create_feature_namespace_with_manual_version_mode(test_api_client)
 
         # upgrade default feature_sum_30m to production ready & check the default feature readiness get updated
+        doc_id = response_dict["_id"]
         feature_id = response_dict["default_feature_id"]
         response = test_api_client.patch(
             f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
@@ -143,6 +149,67 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         response_dict = response.json()
         assert response_dict["readiness"] == "PRODUCTION_READY"
+
+    def test_update_200__set_default_feature_id_on_manual_mode(self, test_api_client_persistent):
+        """Test update (success): set default feature id on manual mode"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = self._create_feature_namespace_with_manual_version_mode(test_api_client)
+        feature_namespace_id = response_dict["_id"]
+        feature_id = response_dict["default_feature_id"]
+
+        # update current default feature to production ready
+        test_api_client.patch(f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"})
+
+        # create a new feature and set it as default feature
+        new_feature = test_api_client.post(
+            "/feature",
+            json={
+                "source_feature_id": feature_id,
+                "feature_job_setting": {
+                    "blind_spot": "23h",
+                    "frequency": "24h",
+                    "time_modulo_frequency": "1h",
+                },
+            },
+        )
+        new_feature_id = new_feature.json()["_id"]
+
+        # check feature namespace response (make sure new feature ID is included)
+        namespace_response = test_api_client.get(f"{self.base_route}/{feature_namespace_id}")
+        namespace_response_dict = namespace_response.json()
+        assert namespace_response_dict["feature_ids"] == [feature_id, new_feature_id]
+        assert namespace_response_dict["default_feature_id"] == feature_id
+        assert namespace_response_dict["readiness"] == "PRODUCTION_READY"
+
+        # test update new default feature id
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{feature_namespace_id}", json={"default_feature_id": new_feature_id}
+        )
+        update_response_dict = update_response.json()
+        assert update_response.status_code == HTTPStatus.OK
+        assert namespace_response_dict["feature_ids"] == [feature_id, new_feature_id]
+        assert update_response_dict["default_feature_id"] == new_feature_id
+        assert update_response_dict["readiness"] == "DRAFT"
+
+        # check update version mode back to AUTO and the default feature id get updated
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{feature_namespace_id}", json={"default_version_mode": "AUTO"}
+        )
+        update_response_dict = update_response.json()
+        assert update_response.status_code == HTTPStatus.OK
+        assert update_response_dict["default_version_mode"] == "AUTO"
+        assert update_response_dict["feature_ids"] == [feature_id, new_feature_id]
+        assert update_response_dict["default_feature_id"] == feature_id
+        assert update_response_dict["readiness"] == "PRODUCTION_READY"
+
+        # check update default feature id on AUTO mode
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{feature_namespace_id}", json={"default_feature_id": new_feature_id}
+        )
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert update_response.json()["detail"] == (
+            "Cannot set default feature ID when default version mode is not MANUAL"
+        )
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
