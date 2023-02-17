@@ -110,6 +110,7 @@ async def test_drop_all_and_recreate(
     session,
     deployed_feature_list,
     migration_service,
+    feature_store,
 ):
     """
     Test dropping all objects first then use WorkingSchemaService to restore it
@@ -177,7 +178,7 @@ async def test_drop_all_and_recreate(
     assert res.status_code == 500
     assert "SQL compilation error" in res.json()["detail"]
 
-    await migration_service.reset_working_schema()
+    await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})
 
     # Check tasks and metadata are restored
     restored_tasks = await _get_tasks()

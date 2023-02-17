@@ -50,6 +50,34 @@ from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileSpec
 
 
+def pytest_collection_modifyitems(config, items):
+    """
+    Re-order the tests such that tests using the same source_type are run together. This prevents
+    premature tear down of fixtures that depend on source_type. This is because if a fixture depends
+    on the source_type fixture, at any one time there can be only one single instance of it with a
+    specific source_type.
+
+    For example, we need to ensure that all tests using Snowflake are run first, then run the Spark
+    tests, etc. Before the Spark tests run, pytest will tear down all the Snowflake fixtures.
+    """
+
+    def get_source_type_param(item):
+
+        # check for the source_type parameter if available
+        if hasattr(item, "callspec"):
+            source_type = item.callspec.params.get("source_type")
+            if source_type is not None:
+                return f"{source_type}-{item.nodeid}"
+
+        # for all other cases, sort by node id as usual
+        return item.nodeid
+
+    # re-order the tests
+    _ = config
+    sorted_items = sorted(items, key=get_source_type_param)
+    items[:] = sorted_items
+
+
 @pytest.fixture(name="config", scope="session")
 def config_fixture():
     """

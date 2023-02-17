@@ -215,11 +215,11 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
     """
 
     @migrate(version=8, description="Reset working schema from scratch")
-    async def reset_working_schema(self) -> None:
+    async def reset_working_schema(self, query_filter: Optional[dict[str, Any]] = None) -> None:
         """
         Reset working schema from scratch
         """
-        await self.migrate_all_records(version=8)
+        await self.migrate_all_records(version=8, query_filter=query_filter)
 
     async def migrate_record_with_session(
         self, feature_store: FeatureStoreModel, session: BaseSession
