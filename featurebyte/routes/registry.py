@@ -115,7 +115,16 @@ app_container_config.add_basic_service("item_data_service", ItemDataService)
 app_container_config.add_basic_service("scd_data_service", SCDDataService)
 app_container_config.add_basic_service("feature_service", FeatureService)
 app_container_config.add_basic_service("feature_list_service", FeatureListService)
-app_container_config.add_basic_service("feature_readiness_service", FeatureReadinessService)
+app_container_config.add_service_with_extra_deps(
+    "feature_readiness_service",
+    FeatureReadinessService,
+    [
+        "feature_service",
+        "feature_namespace_service",
+        "feature_list_service",
+        "feature_list_namespace_service",
+    ],
+)
 app_container_config.add_basic_service(
     "feature_job_setting_analysis_service", FeatureJobSettingAnalysisService
 )
@@ -124,7 +133,11 @@ app_container_config.add_basic_service(
 )
 app_container_config.add_basic_service("feature_namespace_service", FeatureNamespaceService)
 app_container_config.add_basic_service("data_update_service", DataUpdateService)
-app_container_config.add_basic_service("default_version_mode_service", DefaultVersionModeService)
+app_container_config.add_service_with_extra_deps(
+    "default_version_mode_service",
+    DefaultVersionModeService,
+    ["feature_namespace_service", "feature_readiness_service", "feature_list_namespace_service"],
+)
 app_container_config.add_basic_service("feature_store_service", FeatureStoreService)
 app_container_config.add_basic_service("semantic_service", SemanticService)
 app_container_config.add_basic_service("tabular_data_service", DataService)
