@@ -14,15 +14,8 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.session_validator import SessionValidatorService
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
 @pytest.mark.skip(reason="skipping while we rollback the default state")
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_feature_store_create__no_writes_on_error(
     mongo_persistent, feature_store_details, get_cred

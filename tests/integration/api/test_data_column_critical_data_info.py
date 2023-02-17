@@ -13,14 +13,7 @@ from featurebyte import (
 )
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
@@ -130,6 +123,7 @@ def test_event_data_update_critical_data_info(event_data):
     event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_data_update_critical_data_info(item_data):
     """Test ItemData with critical data info preview & feature preview"""
     # add critical data info to item_type column & check data preview

@@ -15,14 +15,6 @@ from featurebyte.query_graph.sql.online_serving import get_online_store_retrieva
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
 @pytest.fixture(name="features", scope="session")
 def features_fixture(event_data):
     """
@@ -75,6 +67,7 @@ def features_fixture(event_data):
     return features
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_serving_sql(features, session, config):
     """

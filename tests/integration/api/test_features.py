@@ -7,14 +7,7 @@ import pytest
 from featurebyte import EventView, FeatureList
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_features_without_entity(event_data):
     """
     Test working with purely time based features without any entity

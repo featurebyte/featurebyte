@@ -8,14 +8,6 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
 @pytest.fixture(name="online_enabled_feature_list", scope="module")
 def online_enabled_feature_list_fixture(event_data, config):
     """
@@ -50,6 +42,7 @@ def online_enabled_feature_list_fixture(event_data, config):
     feature_list.deploy(enable=False, make_production_ready=True)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_enabled_features_have_scheduled_jobs(session, online_enabled_feature_list):
     """
@@ -67,6 +60,7 @@ async def test_online_enabled_features_have_scheduled_jobs(session, online_enabl
     assert len(tasks) == 2
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_enable_non_time_aware_feature(item_data, config):
     """

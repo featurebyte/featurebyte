@@ -14,14 +14,6 @@ from featurebyte import (
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
 @pytest_asyncio.fixture(name="feature_list_with_child_entities", scope="session")
 async def feature_list_with_child_entities_fixture(session, feature_store):
     """
@@ -147,6 +139,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -207,6 +200,7 @@ def observations_set_with_expected_features_fixture():
     return observations_set_with_expected_features
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_historical_features(
     feature_list_with_child_entities,
     observations_set_with_expected_features,
@@ -222,6 +216,7 @@ def test_historical_features(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_historical_features_with_serving_names_mapping(
     feature_list_with_child_entities,
     observations_set_with_expected_features,
@@ -243,6 +238,7 @@ def test_historical_features_with_serving_names_mapping(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_online_features(config, feature_list_with_child_entities):
     """
     Test requesting online features

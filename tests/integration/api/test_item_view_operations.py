@@ -8,14 +8,7 @@ from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_expected_rows_and_columns(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView rows and columns are correct
@@ -62,6 +55,7 @@ def item_aggregate_with_category_features(item_data):
     return FeatureList([most_frequent_feature, entropy_feature], name="feature_list")
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_aggregation_with_category(item_aggregate_with_category_features, event_data):
     """
     Test ItemView.groupby(..., category=...).aggregate() feature
@@ -102,6 +96,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     assert df.iloc[0]["most_frequent_item_type"] == "type_21"
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView operations
@@ -180,6 +175,7 @@ def assert_match(item_id: str, item_name: str, item_type: str):
     assert item_type == expected_type
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_joined_with_dimension_view(
     transaction_data_upper_case, item_data, dimension_data
 ):

@@ -12,14 +12,7 @@ from tests.integration.api.feature_preview_utils import (
 )
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_lookup_features_same_column_name(dimension_view, item_data):
     """
     Test lookup features with same column name
@@ -101,6 +94,7 @@ def check_lookup_feature_is_time_aware(
     pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_lookup_features(event_data, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
@@ -116,6 +110,7 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
     )
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_lookup_features(item_data, expected_joined_event_item_dataframe):
     """
     Test lookup features from ItemView are time based

@@ -16,14 +16,6 @@ from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp,
 from tests.util.helper import get_lagged_series_pandas
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
 def calculate_aggregate_over_ground_truth(
     df,
     point_in_time,
@@ -311,6 +303,7 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
@@ -466,6 +459,7 @@ def test_aggregate_over(
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,

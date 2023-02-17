@@ -40,18 +40,14 @@ from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
-from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, TableDetails
-from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.session.spark import SparkSession
-from featurebyte.tile.databricks_tile import TileManagerDatabricks
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
+from featurebyte.tile.snowflake_tile import TileSpec
 
 
 @pytest.fixture(name="config", scope="session")
@@ -180,11 +176,38 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
 
 @pytest.fixture(name="source_type", scope="session", params=["snowflake", "spark"])
 def source_type_fixture(request):
+    """
+    Fixture for the source_type parameter used to create all the other fixtures
+
+    This is the fixture that controls what sources a test will run against. By default, a test will
+    run on all the sources listed in "params" above. If it is desired that a test only runs on a
+    different set of sources, it can be customised at test time using parametrize().
+
+    Example 1
+    ---------
+
+    def my_test(event_data):
+        # event_data will be instantiated using Snowflake, Spark, ... etc. my_test will be executed
+        # multiple times, each time with an EventData from a different source.
+        ...
+
+    Example 2
+    ----------
+
+    @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+    def my_test(event_data):
+        # event_data will be instantiated using Snowflake as the source and my_test only runs once
+        ...
+
+    """
     return request.param
 
 
 @pytest.fixture(name="feature_store_details", scope="session")
 def feature_store_details_fixture(source_type, sqlite_filename):
+    """
+    Fixture for a BaseDatabaseDetails specific to source_type
+    """
 
     if source_type == "snowflake":
         schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
@@ -249,7 +272,7 @@ def feature_store_fixture(
         details=feature_store_details,
     )
     feature_store.save()
-    return feature_store
+    yield feature_store
 
 
 # @pytest.fixture(name="snowflake_details", scope="session")
@@ -671,7 +694,9 @@ async def datasets_registration_helper_fixture(
 
 @pytest_asyncio.fixture(name="session", scope="session")
 async def session_fixture(source_type, session_manager, dataset_registration_helper, feature_store):
-
+    """
+    Fixture for a BaseSession based on source_type
+    """
     session = await session_manager.get_session(feature_store)
 
     await dataset_registration_helper.register_datasets(session)
@@ -1130,6 +1155,9 @@ def create_transactions_event_data_from_feature_store(
 
 @pytest.fixture(name="event_data_name", scope="session")
 def event_data_name_fixture(source_type):
+    """
+    Fixture for the EventData name
+    """
     return f"{source_type}_event_data"
 
 
@@ -1143,7 +1171,9 @@ def event_data_fixture(
     customer_entity,
     order_entity,
 ):
-    """Fixture for an EventData in integration tests"""
+    """
+    Fixture for an EventData in integration tests
+    """
     _ = user_entity
     _ = product_action_entity
     _ = customer_entity
@@ -1160,6 +1190,9 @@ def event_data_fixture(
 
 @pytest.fixture(name="item_data_name", scope="session")
 def item_data_name_fixture(source_type):
+    """
+    Fixture for the ItemData name
+    """
     return f"{source_type}_item_data"
 
 
@@ -1172,7 +1205,9 @@ def item_data_fixture(
     order_entity,
     item_entity,
 ):
-    """Fixture for an ItemData in integration tests"""
+    """
+    Fixture for an ItemData in integration tests
+    """
     database_table = feature_store.get_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
@@ -1194,6 +1229,9 @@ def item_data_fixture(
 
 @pytest.fixture(name="dimension_data_name", scope="session")
 def dimension_data_name_fixture(source_type):
+    """
+    Fixture for the DimensionData name
+    """
     return f"{source_type}_dimension_data"
 
 
@@ -1243,6 +1281,9 @@ def scd_data_tabular_source_fixture(
 
 @pytest.fixture(name="scd_data_name", scope="session")
 def scd_data_name_fixture(source_type):
+    """
+    Fixture for the SlowlyChangingData name
+    """
     return f"{source_type}_scd_data"
 
 

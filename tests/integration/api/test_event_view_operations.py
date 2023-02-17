@@ -25,14 +25,6 @@ from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
 
 
-@pytest.fixture(scope="session")
-def source_type():
-    """
-    Source type(s) to test in this module
-    """
-    return "snowflake"
-
-
 def iet_entropy(view, group_by_col, window, name):
     """Create feature to capture the entropy of inter-event interval time"""
     view = view.copy()
@@ -138,6 +130,7 @@ def get_mocked_session_manager(session):
         yield
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @mock.patch("featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.list_columns")
 @mock.patch("featurebyte.app.get_persistent")
 def test_feature_list_saving_in_bad_state__feature_id_is_different(
@@ -265,6 +258,7 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_ops(event_view, transaction_data_upper_case):
     """
     Test operations that can be performed on an EventView before creating features
@@ -303,6 +297,7 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_feature_operations(event_view, feature_group, feature_group_per_category):
     """
     Test operations on Feature objects
@@ -518,6 +513,7 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_get_historical_features(feature_group, feature_group_per_category):
     """
     Test getting historical features from FeatureList
@@ -924,6 +920,7 @@ def get_non_time_based_feature_fixture(item_data):
     )
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_add_feature(event_view, non_time_based_feature):
     """
     Test add feature
@@ -970,6 +967,7 @@ def test_add_feature(event_view, non_time_based_feature):
     }
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_latest_per_category_aggregation(event_view):
     """
     Test latest per category aggregation with value column of string type
@@ -985,6 +983,7 @@ def test_latest_per_category_aggregation(event_view):
     assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_non_float_tile_value_added_to_tile_table(event_view):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues
