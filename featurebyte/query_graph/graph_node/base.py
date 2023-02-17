@@ -93,7 +93,7 @@ class GraphNode(BaseGraphNode):
         graph_node = GraphNode(
             name="graph",
             output_type=nested_node.output_type,
-            parameters=parse_obj_as(GraphNodeParameters, graph_node_parameters),
+            parameters=parse_obj_as(GraphNodeParameters, graph_node_parameters),  # type: ignore
         )
         return graph_node, proxy_input_nodes
 

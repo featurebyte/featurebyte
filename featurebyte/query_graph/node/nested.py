@@ -2,10 +2,10 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import Annotated
 
-from abc import abstractmethod
+from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
@@ -68,7 +68,6 @@ class BaseGraphNodeParameters(BaseModel):
     graph: "QueryGraphModel"  # type: ignore[name-defined]
     output_node_name: str
     type: GraphNodeType
-    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @abstractmethod
     def derive_sdk_code(
@@ -105,6 +104,7 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:cleaning) parameters"""
 
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def derive_sdk_code(
         self,
@@ -121,6 +121,7 @@ class EventViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:event_view) parameters"""
 
     type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def derive_sdk_code(
         self,
@@ -175,6 +176,7 @@ class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:dimension_view) parameters"""
 
     type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def derive_sdk_code(
         self,
@@ -198,6 +200,7 @@ class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:scd_view) parameters"""
 
     type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def derive_sdk_code(
         self,
@@ -266,9 +269,12 @@ GRAPH_NODE_PARAMETERS_TYPES = [
     SCDViewGraphNodeParameters,
     ChangeViewGraphNodeParameters,
 ]
-GraphNodeParameters = Annotated[
-    Union[tuple(GRAPH_NODE_PARAMETERS_TYPES)], Field(discriminator="type")
-]
+if TYPE_CHECKING:
+    GraphNodeParameters = BaseGraphNodeParameters
+else:
+    GraphNodeParameters = Annotated[
+        Union[tuple(GRAPH_NODE_PARAMETERS_TYPES)], Field(discriminator="type")
+    ]
 
 
 class BaseGraphNode(BaseNode):
