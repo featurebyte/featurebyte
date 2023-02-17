@@ -228,7 +228,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return repr(self)
 
     @classmethod
-    def _prepare_view_columns_info(cls, data: DataApiObject) -> List[ColumnInfo]:
+    def _prepare_view_columns_info(
+        cls, data: DataApiObject, keep_record_creation_date_column: bool = False
+    ) -> List[ColumnInfo]:
         """
         Prepare the columns info for the view
 
@@ -236,16 +238,23 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ----------
         data: DataApiObject
             Input data api object
+        keep_record_creation_date_column: bool
+            Keep record creation date column in the column info
 
         Returns
         -------
         List[ColumnInfo]
         """
-        return data.columns_info
+        if keep_record_creation_date_column:
+            return data.columns_info
+        return [col for col in data.columns_info if col.name != data.record_creation_date_column]
 
     @classmethod
     def _construct_view_graph_node(
-        cls, data: DataApiObject, other_input_nodes: Optional[List[Node]] = None
+        cls,
+        data: DataApiObject,
+        other_input_nodes: Optional[List[Node]] = None,
+        keep_record_creation_date_column: bool = False,
     ) -> Tuple[GraphNode, List[Node], Node]:
         """
         Construct the view's graph node from the input data. The output of any view should be a single graph node
@@ -260,6 +269,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Input data api object
         other_input_nodes: Optional[List[Node]]
             Other input nodes to the view graph node
+        keep_record_creation_date_column: bool
+            Keep record creation date column in the view
 
         Returns
         -------
@@ -275,7 +286,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         assert isinstance(data_node, InputNode)
 
         # prepare variables required for the view graph node construction
-        columns_info = cls._prepare_view_columns_info(data)
+        columns_info = cls._prepare_view_columns_info(
+            data=data, keep_record_creation_date_column=keep_record_creation_date_column
+        )
         project_columns = [col.name for col in columns_info]
         view_graph_input_nodes: list[Node] = [data_node]
         if other_input_nodes:

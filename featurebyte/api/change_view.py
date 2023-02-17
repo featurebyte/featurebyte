@@ -262,12 +262,13 @@ class ChangeView(View, GroupByMixin):
             scd_data.timestamp_column,
             track_changes_column,
         ]
+        cleaned_data_node = view_graph_node.output_node
         for col_name in proj_names:
             col_name_to_proj_node[col_name] = view_graph_node.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [col_name]},
                 node_output_type=NodeOutputType.SERIES,
-                input_nodes=proxy_input_nodes,
+                input_nodes=[cleaned_data_node],
             )
 
         new_past_col_name_triples = [
@@ -400,7 +401,10 @@ class ChangeView(View, GroupByMixin):
 
         # transform from SCD view to change view inside the graph node
         view_graph_node, proxy_input_nodes, data_node = cls._construct_view_graph_node(
-            data=scd_data
+            data=scd_data,
+            keep_record_creation_date_column=(
+                track_changes_column == scd_data.record_creation_date_column
+            ),
         )
         view_graph_node = cls._add_change_view_operations(
             scd_data=scd_data,

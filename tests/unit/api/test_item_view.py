@@ -192,7 +192,6 @@ def test_from_item_data__auto_join_columns(
             "col_binary" AS "col_binary",
             "col_boolean" AS "col_boolean",
             "event_timestamp" AS "event_timestamp",
-            "created_at" AS "created_at",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
         ) AS L
@@ -210,6 +209,7 @@ def test_from_item_data__auto_join_columns(
         LIMIT 10
         """
     ).strip()
+    assert snowflake_item_data.record_creation_date_column is None
     assert preview_sql == expected_sql
 
 
@@ -345,7 +345,6 @@ def test_join_event_data_attributes__more_columns(
             "col_binary" AS "col_binary",
             "col_boolean" AS "col_boolean",
             "event_timestamp" AS "event_timestamp",
-            "created_at" AS "created_at",
             "cust_id" AS "cust_id"
           FROM "sf_database"."sf_schema"."sf_table"
         ) AS L
@@ -368,7 +367,6 @@ def test_join_event_data_attributes__more_columns(
               "col_binary" AS "col_binary",
               "col_boolean" AS "col_boolean",
               "event_timestamp" AS "event_timestamp",
-              "created_at" AS "created_at",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
           ) AS L

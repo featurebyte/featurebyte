@@ -16,7 +16,7 @@ from tests.util.helper import get_node
         ("col_char", DBVarType.CHAR),
         ("col_text", DBVarType.VARCHAR),
         ("col_boolean", DBVarType.BOOL),
-        ("created_at", DBVarType.TIMESTAMP_TZ),
+        ("event_timestamp", DBVarType.TIMESTAMP_TZ),
         ("col_binary", DBVarType.BINARY),
     ],
 )

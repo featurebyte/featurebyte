@@ -65,7 +65,6 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "col_binary",
             "col_boolean",
             "event_timestamp",
-            "created_at",
             "cust_id",
         ],
         "left_output_columns": [
@@ -76,7 +75,6 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "col_binary",
             "col_boolean",
             "event_timestamp",
-            "created_at",
             "cust_id",
         ],
         "right_input_columns": ["col_float", "col_binary", "col_boolean", "created_at", "cust_id"],
