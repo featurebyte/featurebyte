@@ -36,6 +36,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.app import app
+from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
@@ -775,11 +776,13 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 #     return await session_manager.get_session(sqlite_feature_store)
 
 
-@pytest_asyncio.fixture
-async def snowflake_tile(snowflake_session):
+@asynccontextmanager
+async def create_snowflake_tile_spec(session):
     """
-    Pytest Fixture for TileSnowflake instance
+    Helper to create a snowflake tile_spec
     """
+    assert session.source_type == "snowflake"
+
     col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
     col_names = ",".join(col_names_list)
     table_name = "TEMP_TABLE"
@@ -803,17 +806,31 @@ async def snowflake_tile(snowflake_session):
         aggregation_id=aggregation_id,
     )
 
-    yield tile_spec
+    try:
+        yield tile_spec
+    finally:
+        await session.execute_query("DELETE FROM TILE_REGISTRY")
+        await session.execute_query(
+            f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
+        )
+        await session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+        await session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_ONLINE")
+        await session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_OFFLINE")
 
-    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    await snowflake_session.execute_query(
-        f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
-    )
-    await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_ONLINE")
-    await snowflake_session.execute_query(
-        f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_OFFLINE"
-    )
+
+@pytest_asyncio.fixture(name="tile_spec")
+async def tile_spec_fixture(session):
+    """
+    Pytest Fixture for TileSnowflake instance
+    """
+    creator = None
+    if session.source_type == "snowflake":
+        creator = create_snowflake_tile_spec
+
+    assert creator is not None, f"tile_spec fixture does not support {session.type}"
+
+    async with creator(session) as created_tile_spec:
+        yield created_tile_spec
 
 
 @pytest_asyncio.fixture
@@ -848,11 +865,11 @@ async def databricks_tile_spec(databricks_session):
 
 
 @pytest.fixture
-def tile_manager(snowflake_session):
+def tile_manager(session):
     """
-    Feature Manager fixture
+    Tile Manager fixture
     """
-    return TileManagerSnowflake(session=snowflake_session)
+    return tile_manager_from_session(session=session)
 
 
 @pytest.fixture
@@ -869,36 +886,6 @@ def feature_model_dict_feature(test_dir):
     feature_fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
     with open(feature_fixture_path) as file_handle:
         return json.load(file_handle)
-
-
-@pytest_asyncio.fixture
-async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_store):
-    """
-    Fixture for a ExtendedFeatureModel object
-    """
-    feature_model_dict.update(
-        {
-            "tabular_source": {
-                "feature_store_id": snowflake_feature_store.id,
-                "table_details": TableDetails(table_name="some_random_table"),
-            },
-            "version": "v1",
-            "readiness": FeatureReadiness.DRAFT,
-            "online_enabled": False,
-            "tabular_data_ids": [
-                ObjectId("626bccb9697a12204fb22ea3"),
-                ObjectId("726bccb9697a12204fb22ea3"),
-            ],
-        }
-    )
-    feature = ExtendedFeatureModel(**feature_model_dict)
-    tile_id = feature.tile_specs[0].tile_id
-
-    yield feature
-
-    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")
@@ -959,11 +946,11 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
 
 
 @pytest.fixture
-def feature_manager(snowflake_session):
+def feature_manager(session):
     """
     Feature Manager fixture
     """
-    return FeatureManager(session=snowflake_session)
+    return FeatureManager(session=session)
 
 
 @pytest_asyncio.fixture
