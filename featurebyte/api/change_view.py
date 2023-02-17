@@ -387,7 +387,10 @@ class ChangeView(View, GroupByMixin):
         # Validate input
         ChangeView._validate_inputs(scd_data, track_changes_column, prefixes)
 
-        # Prepare view graph node
+        # construct change view graph node from the scd data, the final graph looks like:
+        #       +---------------------+    +-----------------------------+
+        #       | InputNode(type:scd) | -->| GraphNode(type:change_view) |
+        #       +---------------------+    +-----------------------------+
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting
         )

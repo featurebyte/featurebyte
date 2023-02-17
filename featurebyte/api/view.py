@@ -248,7 +248,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         cls, data: DataApiObject, other_input_nodes: Optional[List[Node]] = None
     ) -> Tuple[GraphNode, List[Node], Node]:
         """
-        Construct the view's graph node from the input data
+        Construct the view's graph node from the input data. The output of any view should be a single graph node
+        that is based on a single data node and optionally other input node(s). By using graph node, we can add
+        some metadata to the node to help with the SDK code reconstruction from the graph. Note that introducing
+        a graph node does not change the tile & aggregation hash ID if the final flatten graph is the same. Metadata
+        added to the graph node also won't affect the tile & aggregation hash ID.
 
         Parameters
         ----------
@@ -313,7 +317,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     @typechecked
     def _from_data(cls: Type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
         """
-        Construct a View object
+        Construct a View object from a DataApiObject. This method constructs a view graph node and then
+        insert it into the global graph.
 
         Parameters
         ----------
@@ -327,6 +332,10 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ViewT
             constructed View object
         """
+        # The input of view graph node is the data node. The final graph looks like this:
+        #    +-----------+     +------------------------+
+        #    | InputNode + --> | GraphNode(type:*_view) +
+        #    +-----------+     +------------------------+
         view_graph_node, _, data_node = cls._construct_view_graph_node(data=data)
         columns_info = cls._prepare_view_columns_info(data=data)
         inserted_graph_node = GlobalQueryGraph().add_node(

@@ -215,7 +215,14 @@ class ItemView(View, GroupByMixin):
         event_data = EventData.get_by_id(item_data.event_data_id)
         event_view = EventView.from_event_data(event_data)
 
-        # construct view graph node
+        # construct view graph node for item data, the final graph looks like:
+        #     +-----------------------+    +----------------------------+
+        #     | InputNode(type:event) | -->| GraphNode(type:event_view) | ---+
+        #     +-----------------------+    +----------------------------+    |
+        #                                                                    v
+        #                            +----------------------+    +---------------------------+
+        #                            | InputNode(type:item) | -->| GraphNode(type:item_view) |
+        #                            +----------------------+    +---------------------------+
         view_graph_node, proxy_input_nodes, data_node = cls._construct_view_graph_node(
             data=item_data, other_input_nodes=[event_view.node]
         )
