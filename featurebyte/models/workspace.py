@@ -58,7 +58,7 @@ class WorkspaceModel(FeatureByteBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
-                fields=("name",),
+                fields=("name", "user_id"),
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),

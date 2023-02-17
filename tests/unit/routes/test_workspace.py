@@ -106,7 +106,7 @@ class TestWorkspaceApi(BaseApiTestSuite):
         # default workspace
         payload = self.payload.copy()
         payload["_id"] = str(DEFAULT_WORKSPACE_ID)
-        payload["name"] = "Default Workspace"
+        payload["name"] = "default"
         yield payload
 
         for i in range(2):

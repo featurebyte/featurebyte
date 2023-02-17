@@ -31,9 +31,7 @@ class WorkspaceService(
         try:
             await super().get_document(document_id=DEFAULT_WORKSPACE_ID)
         except DocumentNotFoundError:
-            await super().create_document(
-                WorkspaceCreate(_id=DEFAULT_WORKSPACE_ID, name="Default Workspace")
-            )
+            await super().create_document(WorkspaceCreate(_id=DEFAULT_WORKSPACE_ID, name="default"))
 
     async def create_document(self, data: WorkspaceCreate) -> WorkspaceModel:
         await self._ensure_default_workspace_available()

@@ -14,6 +14,7 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.scd_view import SlowlyChangingView
+from featurebyte.api.workspace import Workspace
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
@@ -72,4 +73,5 @@ __all__ = [
     "DefaultVersionMode",
     "FeatureListNewVersionMode",
     "FeatureVersionInfo",
+    "Workspace",
 ]

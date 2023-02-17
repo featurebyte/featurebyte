@@ -10,7 +10,7 @@ from datetime import datetime
 
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr, validator
+from pydantic import BaseModel, Field, StrictStr, root_validator, validator
 from pydantic.errors import DictError, PydanticTypeError
 
 from featurebyte.enum import StrEnum
@@ -322,4 +322,12 @@ class FeatureByteWorkspaceBaseDocumentModel(FeatureByteBaseDocumentModel):
     FeatureByte Workspace-specific BaseDocumentModel
     """
 
-    workspace_id: Optional[PydanticObjectId] = Field(default=DEFAULT_WORKSPACE_ID)
+    workspace_id: PydanticObjectId
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_workspace_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        workspace_id = values.get("workspace_id")
+        if workspace_id is None:
+            values["workspace_id"] = DEFAULT_WORKSPACE_ID
+        return values
