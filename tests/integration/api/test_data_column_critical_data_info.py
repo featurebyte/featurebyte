@@ -121,10 +121,6 @@ def test_event_data_update_critical_data_info(snowflake_event_data):
     event_data.TRANSACTION_ID.update_critical_data_info(cleaning_operations=[])
     event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
 
-    # check event_view node after removing all cleaning operations
-    event_view = EventView.from_event_data(event_data)
-    assert event_view.node.type == "input"
-
 
 def test_item_data_update_critical_data_info(item_data):
     """Test ItemData with critical data info preview & feature preview"""
@@ -176,4 +172,3 @@ def test_item_data_update_critical_data_info(item_data):
 
     # remove critical data info
     item_data["item_type"].update_critical_data_info(cleaning_operations=[])
-    assert item_data.frame.node.type == "input"

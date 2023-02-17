@@ -41,9 +41,10 @@ class TestItemView(BaseViewTestSuite):
         return {
             "mask": view_under_test[self.col] > 1000,
             "expected_edges": [
-                {"source": "input_1", "target": "join_1"},
-                {"source": "input_2", "target": "join_1"},
-                {"source": "join_1", "target": "project_1"},
+                {"source": "input_1", "target": "graph_1"},
+                {"source": "input_2", "target": "graph_2"},
+                {"source": "graph_1", "target": "graph_2"},
+                {"source": "graph_2", "target": "project_1"},
                 {"source": "project_1", "target": "gt_1"},
                 {"source": "project_1", "target": "filter_1"},
                 {"source": "gt_1", "target": "filter_1"},
@@ -69,33 +70,81 @@ def test_from_item_data__auto_join_columns(
     # Check node is a join node which will make event timestamp and EventData entities available
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
-        "name": "join_1",
-        "type": "join",
+        "name": "graph_2",
         "output_type": "frame",
         "parameters": {
-            "left_on": "col_int",
-            "right_on": "event_id_col",
-            "left_input_columns": ["event_timestamp", "cust_id"],
-            "left_output_columns": ["event_timestamp_event_table", "cust_id_event_table"],
-            "right_input_columns": [
-                "event_id_col",
-                "item_id_col",
-                "item_type",
-                "item_amount",
-                "created_at",
-                "event_timestamp",
-            ],
-            "right_output_columns": [
-                "event_id_col",
-                "item_id_col",
-                "item_type",
-                "item_amount",
-                "created_at",
-                "event_timestamp",
-            ],
-            "join_type": "inner",
-            "scd_parameters": None,
+            "graph": {
+                "edges": [
+                    {"source": "proxy_input_1", "target": "project_1"},
+                    {"source": "proxy_input_2", "target": "join_1"},
+                    {"source": "proxy_input_1", "target": "join_1"},
+                ],
+                "nodes": [
+                    {
+                        "name": "proxy_input_1",
+                        "output_type": "frame",
+                        "parameters": {"input_order": 0},
+                        "type": "proxy_input",
+                    },
+                    {
+                        "name": "proxy_input_2",
+                        "output_type": "frame",
+                        "parameters": {"input_order": 1},
+                        "type": "proxy_input",
+                    },
+                    {
+                        "name": "project_1",
+                        "output_type": "frame",
+                        "parameters": {
+                            "columns": [
+                                "event_id_col",
+                                "item_id_col",
+                                "item_type",
+                                "item_amount",
+                                "created_at",
+                                "event_timestamp",
+                            ]
+                        },
+                        "type": "project",
+                    },
+                    {
+                        "name": "join_1",
+                        "output_type": "frame",
+                        "parameters": {
+                            "join_type": "inner",
+                            "left_input_columns": ["event_timestamp", "cust_id"],
+                            "left_on": "col_int",
+                            "left_output_columns": [
+                                "event_timestamp_event_table",
+                                "cust_id_event_table",
+                            ],
+                            "right_input_columns": [
+                                "event_id_col",
+                                "item_id_col",
+                                "item_type",
+                                "item_amount",
+                                "created_at",
+                                "event_timestamp",
+                            ],
+                            "right_on": "event_id_col",
+                            "right_output_columns": [
+                                "event_id_col",
+                                "item_id_col",
+                                "item_type",
+                                "item_amount",
+                                "created_at",
+                                "event_timestamp",
+                            ],
+                            "scd_parameters": None,
+                        },
+                        "type": "join",
+                    },
+                ],
+            },
+            "output_node_name": "join_1",
+            "type": "item_view",
         },
+        "type": "graph",
     }
 
     # Check Frame attributes
@@ -214,7 +263,7 @@ def test_join_event_data_attributes__more_columns(
     # Check node
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
-        "name": "join_2",
+        "name": "join_1",
         "type": "join",
         "output_type": "frame",
         "parameters": {
@@ -371,18 +420,54 @@ def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_
     view_dict = item_view.dict()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
-        "name": "join_1",
-        "type": "join",
+        "name": "graph_2",
+        "type": "graph",
         "output_type": "frame",
         "parameters": {
-            "left_on": "col_int",
-            "right_on": "col_int",
-            "left_input_columns": ["event_timestamp", "cust_id"],
-            "left_output_columns": ["event_timestamp", "cust_id"],
-            "right_input_columns": ["col_int", "item_id_col", "created_at"],
-            "right_output_columns": ["col_int", "item_id_col", "created_at"],
-            "join_type": "inner",
-            "scd_parameters": None,
+            "graph": {
+                "edges": [
+                    {"source": "proxy_input_1", "target": "project_1"},
+                    {"source": "proxy_input_2", "target": "join_1"},
+                    {"source": "proxy_input_1", "target": "join_1"},
+                ],
+                "nodes": [
+                    {
+                        "name": "proxy_input_1",
+                        "type": "proxy_input",
+                        "output_type": "frame",
+                        "parameters": {"input_order": 0},
+                    },
+                    {
+                        "name": "proxy_input_2",
+                        "type": "proxy_input",
+                        "output_type": "frame",
+                        "parameters": {"input_order": 1},
+                    },
+                    {
+                        "name": "project_1",
+                        "type": "project",
+                        "output_type": "frame",
+                        "parameters": {"columns": ["col_int", "item_id_col", "created_at"]},
+                    },
+                    {
+                        "name": "join_1",
+                        "type": "join",
+                        "output_type": "frame",
+                        "parameters": {
+                            "left_on": "col_int",
+                            "right_on": "col_int",
+                            "left_input_columns": ["event_timestamp", "cust_id"],
+                            "left_output_columns": ["event_timestamp", "cust_id"],
+                            "right_input_columns": ["col_int", "item_id_col", "created_at"],
+                            "right_output_columns": ["col_int", "item_id_col", "created_at"],
+                            "join_type": "inner",
+                            "scd_parameters": None,
+                        },
+                    },
+                ],
+            },
+            "output_node_name": "join_1",
+            "type": "item_view",
         },
     }
 
@@ -405,9 +490,10 @@ def test_item_view_groupby__item_data_column(snowflake_item_view):
     )["item_amount_sum_24h"]
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
-        {"source": "input_2", "target": "join_1"},
-        {"source": "join_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "input_2", "target": "graph_2"},
+        {"source": "graph_1", "target": "graph_2"},
+        {"source": "graph_2", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
     ]
 
@@ -513,15 +599,17 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
     assert isinstance(feature, Feature)
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
-        {"source": "input_2", "target": "join_1"},
-        {"source": "join_1", "target": "item_groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "input_2", "target": "graph_2"},
+        {"source": "graph_1", "target": "graph_2"},
+        {"source": "graph_2", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
         {"source": "project_1", "target": "is_null_1"},
         {"source": "project_1", "target": "conditional_1"},
         {"source": "is_null_1", "target": "conditional_1"},
         {"source": "conditional_1", "target": "alias_1"},
     ]
+
     assert get_node(feature_dict["graph"], "item_groupby_1")["parameters"] == {
         "keys": ["event_id_col"],
         "parent": None,

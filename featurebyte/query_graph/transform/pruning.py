@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BasePrunableNode
@@ -302,7 +302,7 @@ class GraphStructurePruningExtractor(
         output_node_name = node.parameters.output_node_name
         nested_target_node = nested_graph.get_node_by_name(output_node_name)
         target_columns: Optional[List[str]] = None
-        if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
+        if target_nodes:
             required_columns = set().union(
                 *(node.get_required_input_columns() for node in target_nodes)
             )

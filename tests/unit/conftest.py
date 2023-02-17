@@ -604,7 +604,6 @@ def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     Snowflake event view with entity
     """
     event_view = EventView.from_event_data(event_data=snowflake_event_data_with_entity)
-    assert event_view.node.parameters.id == snowflake_event_data_with_entity.id
     yield event_view
 
 
@@ -618,7 +617,6 @@ def snowflake_event_view_entity_feature_job_fixture(
     event_view = EventView.from_event_data(
         event_data=snowflake_event_data_with_entity_and_feature_job
     )
-    assert event_view.node.parameters.id == snowflake_event_data_with_entity_and_feature_job.id
     yield event_view
 
 

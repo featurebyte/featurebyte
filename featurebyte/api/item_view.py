@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, cast
+from typing import Any, ClassVar, List, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -24,7 +24,12 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import JoinNodeParameters
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 
@@ -61,14 +66,133 @@ class ItemView(View, GroupByMixin):
         proxy_class="featurebyte.ItemView",
     )
 
+    # class variables
     _series_class = ItemViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.ITEM_VIEW
 
+    # pydantic instance variables
     event_id_column: str = Field(allow_mutation=False)
     item_id_column: str = Field(allow_mutation=False)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_view: EventView = Field(allow_mutation=False)
     timestamp_column_name: str = Field(allow_mutation=False)
+
+    @classmethod
+    def _validate_and_prepare_join_parameters(
+        cls,
+        item_view_columns: list[str],
+        item_view_event_id_column: str,
+        event_view: EventView,
+        columns_to_join: list[str],
+        event_suffix: Optional[str] = None,
+    ) -> JoinNodeParameters:
+        """
+        Validate the join_event_data_attributes method & return the joined columns' name
+
+        Parameters
+        ----------
+        item_view_columns: list[str]
+            ItemView object's columns
+        item_view_event_id_column: str
+            ItemView object's event_id_column
+        event_view: EventView
+            EventView object
+        columns_to_join: list[str]
+            List of column names to be join from EventView
+        event_suffix: Optional[str]
+            Suffix to append to the column names from EventView
+
+        Returns
+        -------
+        JoinNodeParameters
+
+        Raises
+        ------
+        ValueError
+            If the any of the provided columns does not exist in the EventData
+        RepeatedColumnNamesError
+            raised when there are overlapping columns, but no event_suffix has been provided
+        """
+        for col in columns_to_join:
+            if col not in event_view.columns:
+                raise ValueError(f"Column does not exist in EventData: {col}")
+
+        # ItemData columns
+        right_on = item_view_event_id_column
+        right_input_columns = item_view_columns
+        right_output_columns = item_view_columns
+
+        # EventData columns
+        left_on = cast(str, event_view.event_id_column)
+        # EventData's event_id_column will be excluded from the result since that would be same as
+        # ItemView's event_id_column. There is no need to specify event_suffix if the
+        # event_id_column is the only common column name between EventData and ItemView.
+        columns_excluding_event_id = filter_columns(columns_to_join, [left_on])
+        renamed_event_view_columns = append_rsuffix_to_columns(
+            columns_excluding_event_id, event_suffix
+        )
+        left_output_columns = renamed_event_view_columns
+
+        repeated_column_names = sorted(set(right_output_columns).intersection(left_output_columns))
+        if repeated_column_names:
+            raise RepeatedColumnNamesError(
+                f"Duplicate column names {repeated_column_names} found between EventData and"
+                f" ItemView. Consider setting the event_suffix parameter to disambiguate the"
+                f" resulting columns."
+            )
+
+        return JoinNodeParameters(
+            left_on=left_on,
+            right_on=right_on,
+            left_input_columns=columns_excluding_event_id,
+            left_output_columns=left_output_columns,
+            right_input_columns=right_input_columns,
+            right_output_columns=right_output_columns,
+            join_type="inner",
+        )
+
+    @classmethod
+    def _join_event_data_attributes(
+        cls,
+        item_view_columns_info: list[ColumnInfo],
+        item_view_event_id_column: str,
+        item_view_tabular_data_ids: list[PydanticObjectId],
+        event_view: EventView,
+        graph: QueryGraph | GraphNode,
+        event_view_node: Node,
+        item_view_node: Node,
+        columns: list[str],
+        event_suffix: Optional[str] = None,
+    ) -> tuple[Node, list[ColumnInfo], list[PydanticObjectId], JoinNodeParameters]:
+        join_parameters = cls._validate_and_prepare_join_parameters(
+            item_view_columns=[col.name for col in item_view_columns_info],
+            item_view_event_id_column=item_view_event_id_column,
+            event_view=event_view,
+            columns_to_join=columns,
+            event_suffix=event_suffix,
+        )
+
+        node = graph.add_operation(
+            node_type=NodeType.JOIN,
+            node_params=join_parameters.dict(),
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[event_view_node, item_view_node],
+        )
+
+        # Construct new columns_info
+        renamed_event_view_columns = join_parameters.left_output_columns
+        joined_columns_info = combine_column_info_of_views(
+            item_view_columns_info,
+            append_rsuffix_to_column_info(event_view.columns_info, rsuffix=event_suffix),
+            filter_set=set(renamed_event_view_columns),
+        )
+
+        # Construct new tabular_data_ids
+        joined_tabular_data_ids = join_tabular_data_ids(
+            item_view_tabular_data_ids, event_view.tabular_data_ids
+        )
+        return node, joined_columns_info, joined_tabular_data_ids, join_parameters
 
     @classmethod
     @typechecked
@@ -90,19 +214,57 @@ class ItemView(View, GroupByMixin):
         """
         event_data = EventData.get_by_id(item_data.event_data_id)
         event_view = EventView.from_event_data(event_data)
-        item_view = cls.from_data(
-            item_data,
+
+        # construct view graph node for item data, the final graph looks like:
+        #     +-----------------------+    +----------------------------+
+        #     | InputNode(type:event) | -->| GraphNode(type:event_view) | ---+
+        #     +-----------------------+    +----------------------------+    |
+        #                                                                    v
+        #                            +----------------------+    +---------------------------+
+        #                            | InputNode(type:item) | -->| GraphNode(type:item_view) |
+        #                            +----------------------+    +---------------------------+
+        view_graph_node, proxy_input_nodes, data_node = cls._construct_view_graph_node(
+            data=item_data, other_input_nodes=[event_view.node]
+        )
+        item_view_node, event_view_node = proxy_input_nodes
+        item_view_columns_info = cls._prepare_view_columns_info(data=item_data)
+        (
+            _,
+            joined_columns_info,
+            joined_tabular_data_ids,
+            join_parameters,
+        ) = cls._join_event_data_attributes(
+            item_view_columns_info=item_view_columns_info,
+            item_view_event_id_column=item_data.event_id_column,
+            item_view_tabular_data_ids=[item_data.id],
+            event_view=event_view,
+            graph=view_graph_node,
+            event_view_node=event_view_node,
+            item_view_node=item_view_node,
+            columns=[event_view.timestamp_column] + event_view.entity_columns,
+            event_suffix=event_suffix,
+        )
+        inserted_graph_node = GlobalQueryGraph().add_node(
+            node=view_graph_node, input_nodes=[data_node, event_view.node]
+        )
+
+        # left output columns is the renamed event timestamp column
+        # (see `columns` parameter in above `_join_event_data_attributes` method)
+        renamed_event_data_columns = join_parameters.left_output_columns
+
+        return cls(
+            feature_store=item_data.feature_store,
+            tabular_source=item_data.tabular_source,
+            columns_info=joined_columns_info,
+            node_name=inserted_graph_node.name,
+            tabular_data_ids=joined_tabular_data_ids,
             event_id_column=item_data.event_id_column,
             item_id_column=item_data.item_id_column,
             event_data_id=item_data.event_data_id,
             default_feature_job_setting=item_data.default_feature_job_setting,
             event_view=event_view,
-            timestamp_column_name=event_view.timestamp_column,
+            timestamp_column_name=renamed_event_data_columns[0],
         )
-        item_view.join_event_data_attributes(
-            [event_view.timestamp_column] + event_view.entity_columns, event_suffix=event_suffix
-        )
-        return item_view
 
     def join_event_data_attributes(
         self,
@@ -118,77 +280,36 @@ class ItemView(View, GroupByMixin):
             List of column names to include from the EventData
         event_suffix : Optional[str]
             A suffix to append on to the columns from the EventData
-
-        Raises
-        ------
-        ValueError
-            If the any of the provided columns does not exist in the EventData
-        RepeatedColumnNamesError
-            raised when there are overlapping columns, but no event_suffix has been provided
         """
-        for col in columns:
-            if col not in self.event_view.columns:
-                raise ValueError(f"Column does not exist in EventData: {col}")
-
-        # ItemData columns
-        right_on = self.event_id_column
-        right_input_columns = self.columns
-        right_output_columns = self.columns
-
-        # EventData columns
-        left_on = cast(str, self.event_view.event_id_column)
-        # EventData's event_id_column will be excluded from the result since that would be same as
-        # ItemView's event_id_column. There is no need to specify event_suffix if the
-        # event_id_column is the only common column name between EventData and ItemView.
-        columns_excluding_event_id = filter_columns(columns, [left_on])
-        renamed_event_view_columns = append_rsuffix_to_columns(
-            columns_excluding_event_id, event_suffix
-        )
-        left_input_columns = []
-        left_output_columns = []
-        for input_col, output_col in zip(columns_excluding_event_id, renamed_event_view_columns):
-            if input_col == self.event_view.timestamp_column:
-                self.__dict__.update({"timestamp_column_name": output_col})
-            left_input_columns.append(input_col)
-            left_output_columns.append(output_col)
-
-        repeated_column_names = sorted(set(right_output_columns).intersection(left_output_columns))
-        if repeated_column_names:
-            raise RepeatedColumnNamesError(
-                f"Duplicate column names {repeated_column_names} found between EventData and"
-                f" ItemView. Consider setting the event_suffix parameter to disambiguate the"
-                f" resulting columns."
-            )
-
-        node = self.graph.add_operation(
-            node_type=NodeType.JOIN,
-            node_params={
-                "left_on": left_on,
-                "right_on": right_on,
-                "left_input_columns": left_input_columns,
-                "left_output_columns": left_output_columns,
-                "right_input_columns": right_input_columns,
-                "right_output_columns": right_output_columns,
-                "join_type": "inner",
-            },
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[self.event_view.node, self.node],
+        (
+            node,
+            joined_columns_info,
+            joined_tabular_data_ids,
+            join_parameters,
+        ) = self._join_event_data_attributes(
+            item_view_columns_info=self.columns_info,
+            item_view_event_id_column=self.event_id_column,
+            item_view_tabular_data_ids=self.tabular_data_ids,
+            event_view=self.event_view,
+            graph=self.graph,
+            event_view_node=self.event_view.node,
+            item_view_node=self.node,
+            columns=columns,
+            event_suffix=event_suffix,
         )
 
-        # Construct new columns_info
-        joined_columns_info = combine_column_info_of_views(
-            self.columns_info,
-            append_rsuffix_to_column_info(self.event_view.columns_info, rsuffix=event_suffix),
-            filter_set=set(renamed_event_view_columns),
-        )
+        # Update timestamp_column_name if event view's timestamp column is joined
+        metadata_kwargs = {}
+        for left_in_col, left_out_col in zip(
+            join_parameters.left_input_columns, join_parameters.left_output_columns
+        ):
+            if left_in_col == self.event_view.timestamp_column:
+                metadata_kwargs["timestamp_column_name"] = left_out_col
 
-        # Construct new tabular_data_ids
-        joined_tabular_data_ids = join_tabular_data_ids(
-            self.tabular_data_ids, self.event_view.tabular_data_ids
+        # Update metadata only after validation is done & join node is inserted
+        self._update_metadata(
+            node.name, joined_columns_info, joined_tabular_data_ids, **metadata_kwargs
         )
-
-        # Update metadata
-        self._update_metadata(node.name, joined_columns_info, joined_tabular_data_ids)
 
     @property
     def timestamp_column(self) -> str:

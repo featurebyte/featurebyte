@@ -3,7 +3,7 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, ClassVar, Optional, cast
 
 import copy
 
@@ -20,7 +20,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node.input import InputNode
 
@@ -42,8 +42,11 @@ class EventView(View, GroupByMixin):
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["View"], proxy_class="featurebyte.EventView")
 
+    # class variables
     _series_class = EventViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.EVENT_VIEW
 
+    # pydantic instance variables
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_id_column: Optional[str] = Field(allow_mutation=False)
 
@@ -93,7 +96,7 @@ class EventView(View, GroupByMixin):
         EventView
             constructed EventView object
         """
-        return cls.from_data(
+        return cls._from_data(
             event_data,
             default_feature_job_setting=event_data.default_feature_job_setting,
             event_id_column=event_data.event_id_column,

@@ -44,9 +44,11 @@ def float_feature_dict_fixture(float_feature):
         "input_1",
         "groupby_1",
         "project_1",
+        "graph_1",
     }
     assert feat_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
     ]
     yield feat_dict
@@ -91,7 +93,8 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
         "output_type": "series",
     }
     assert float_feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "project_1", "target": "gt_1"},
         {"source": "project_1", "target": "conditional_1"},
@@ -116,7 +119,8 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     }
     # No assignment occurred
     assert temp_feature_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
         {"source": "project_1", "target": "gt_1"},
         {"source": "project_1", "target": "add_1"},
@@ -527,7 +531,8 @@ def test_create_new_version(saved_feature):
     assert new_version.version == {"name": saved_feature_version.name, "suffix": 1}
 
     new_version_dict = new_version.dict()
-    groupby_node = new_version_dict["graph"]["nodes"][1]
+    assert new_version_dict["graph"]["nodes"][1]["type"] == "graph"
+    groupby_node = new_version_dict["graph"]["nodes"][2]
     groupby_node_params = groupby_node["parameters"]
     assert groupby_node["type"] == "groupby"
     assert groupby_node_params["blind_spot"] == 45 * 60

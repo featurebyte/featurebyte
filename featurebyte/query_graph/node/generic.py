@@ -484,46 +484,47 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         return [self.parameters.entity_column]
 
 
+class JoinNodeParameters(BaseModel):
+    """JoinNodeParameters"""
+
+    left_on: str
+    right_on: str
+    left_input_columns: List[InColumnStr]
+    left_output_columns: List[OutColumnStr]
+    right_input_columns: List[InColumnStr]
+    right_output_columns: List[OutColumnStr]
+    join_type: Literal["left", "inner"]
+    scd_parameters: Optional[SCDJoinParameters]
+
+    @validator(
+        "left_input_columns",
+        "right_input_columns",
+        "left_output_columns",
+        "right_output_columns",
+    )
+    @classmethod
+    def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
+        if len(values) != len(set(values)):
+            raise ValueError(f"Column names (values: {values}) must be unique!")
+        return values
+
+    @root_validator
+    @classmethod
+    def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
+            values.get("right_output_columns", [])
+        )
+        if duplicated_output_cols:
+            raise ValueError("Left and right output columns should not have common item(s).")
+        return values
+
+
 class JoinNode(BaseNode):
     """Join class"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        left_on: str
-        right_on: str
-        left_input_columns: List[InColumnStr]
-        left_output_columns: List[OutColumnStr]
-        right_input_columns: List[InColumnStr]
-        right_output_columns: List[OutColumnStr]
-        join_type: Literal["left", "inner"]
-        scd_parameters: Optional[SCDJoinParameters]
-
-        @validator(
-            "left_input_columns",
-            "right_input_columns",
-            "left_output_columns",
-            "right_output_columns",
-        )
-        @classmethod
-        def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
-            if len(values) != len(set(values)):
-                raise ValueError(f"Column names (values: {values}) must be unique!")
-            return values
-
-        @root_validator
-        @classmethod
-        def _validate_left_and_right_output_columns(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-            duplicated_output_cols = set(values.get("left_output_columns", [])).intersection(
-                values.get("right_output_columns", [])
-            )
-            if duplicated_output_cols:
-                raise ValueError("Left and right output columns should not have common item(s).")
-            return values
-
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: JoinNodeParameters
 
     @staticmethod
     def _filter_columns(

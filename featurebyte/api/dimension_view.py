@@ -3,7 +3,7 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import Field
 from typeguard import typechecked
@@ -14,6 +14,7 @@ from featurebyte.api.view import View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
+from featurebyte.query_graph.enum import GraphNodeType
 
 
 class DimensionViewColumn(ViewColumn):
@@ -38,8 +39,11 @@ class DimensionView(View):
         proxy_class="featurebyte.DimensionView",
     )
 
+    # class variables
     _series_class = DimensionViewColumn
+    _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.DIMENSION_VIEW
 
+    # pydantic instance variables
     dimension_id_column: str = Field(allow_mutation=False)
 
     @classmethod
@@ -58,7 +62,7 @@ class DimensionView(View):
         DimensionView
             constructed DimensionView object
         """
-        return cls.from_data(
+        return cls._from_data(
             dimension_data,
             dimension_id_column=dimension_data.dimension_id_column,
         )

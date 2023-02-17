@@ -46,7 +46,6 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     _ = mock_api_object_cache
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
-    assert event_view_first.node.parameters == snowflake_event_data.frame.node.parameters
     assert event_view_first.row_index_lineage == snowflake_event_data.frame.row_index_lineage
     assert event_view_first.columns_info == snowflake_event_data.columns_info
 
@@ -204,7 +203,8 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
-        "input_1": ["project_1", "assign_1"],
+        "input_1": ["graph_1"],
+        "graph_1": ["project_1", "assign_1"],
         "project_1": ["add_1"],
         "add_1": ["assign_1", "add_2"],
         "add_2": ["assign_2"],
@@ -547,12 +547,11 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_add_feature(snowflake_event_view, non_time_based_feature):
+def test_add_feature(snowflake_event_data, snowflake_event_view, non_time_based_feature):
     """
     Test add feature
     """
     original_column_info = copy.deepcopy(snowflake_event_view.columns_info)
-    original_node_name = snowflake_event_view.node_name
 
     # Add feature
     snowflake_event_view.add_feature("new_col", non_time_based_feature, "cust_id")
@@ -569,7 +568,7 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
 
     join_feature_node_name = snowflake_event_view.node.name
     assert join_feature_node_name.startswith("join_feature")
-    assert snowflake_event_view.row_index_lineage == (original_node_name,)
+    assert snowflake_event_view.row_index_lineage == (snowflake_event_data.frame.node_name,)
 
     # assert graph node (excluding name since that can changed by graph pruning)
     view_dict = snowflake_event_view.dict()
@@ -583,11 +582,12 @@ def test_add_feature(snowflake_event_view, non_time_based_feature):
         "view_point_in_time_column": None,
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
-        {"source": "input_2", "target": "join_1"},
-        {"source": "join_1", "target": "item_groupby_1"},
+        {"source": "input_1", "target": "graph_1"},
+        {"source": "input_2", "target": "graph_2"},
+        {"source": "graph_1", "target": "graph_2"},
+        {"source": "graph_2", "target": "item_groupby_1"},
         {"source": "item_groupby_1", "target": "project_1"},
-        {"source": "input_1", "target": "join_feature_1"},
+        {"source": "graph_1", "target": "join_feature_1"},
         {"source": "project_1", "target": "join_feature_1"},
     ]
 

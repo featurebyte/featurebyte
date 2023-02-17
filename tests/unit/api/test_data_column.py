@@ -180,7 +180,10 @@ def _check_remove_critical_data_info(event_data):
 
     assert event_data.frame.node.type == NodeType.INPUT
     event_view = EventView.from_event_data(event_data=event_data)
-    assert event_view.node.type == NodeType.INPUT
+    assert event_view.node.type == NodeType.GRAPH
+    assert event_view.node.parameters.graph.edges == [
+        {"source": "proxy_input_1", "target": "project_1"}
+    ]
 
 
 def test_data_column__update_critical_data_info(snowflake_event_data, mock_api_object_cache):
