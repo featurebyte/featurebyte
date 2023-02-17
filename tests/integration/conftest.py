@@ -776,13 +776,10 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 #     return await session_manager.get_session(sqlite_feature_store)
 
 
-@asynccontextmanager
-async def create_snowflake_tile_spec(session):
+def create_generic_tile_spec():
     """
-    Helper to create a snowflake tile_spec
+    Helper to create a generic tile_spec
     """
-    assert session.source_type == "snowflake"
-
     col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
     col_names = ",".join(col_names_list)
     table_name = "TEMP_TABLE"
@@ -793,7 +790,7 @@ async def create_snowflake_tile_spec(session):
     tile_id = "TILE_ID1"
     aggregation_id = "agg_id1"
 
-    tile_spec = TileSpec(
+    return TileSpec(
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
@@ -806,38 +803,47 @@ async def create_snowflake_tile_spec(session):
         aggregation_id=aggregation_id,
     )
 
+
+@asynccontextmanager
+async def create_snowflake_tile_spec(session):
+    """
+    Helper to create a snowflake tile_spec with snowflake specific clean up
+    """
+    assert session.source_type == "snowflake"
+    tile_spec = None
     try:
+        tile_spec = create_generic_tile_spec()
         yield tile_spec
     finally:
-        await session.execute_query("DELETE FROM TILE_REGISTRY")
-        await session.execute_query(
-            f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
-        )
-        await session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-        await session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_ONLINE")
-        await session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{aggregation_id}_OFFLINE")
+        if tile_spec is not None:
+            await session.execute_query("DELETE FROM TILE_REGISTRY")
+            await session.execute_query(
+                f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
+            )
+            await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.tile_id}")
+            await session.execute_query(
+                f"DROP TASK IF EXISTS SHELL_TASK_{tile_spec.aggregation_id}_ONLINE"
+            )
+            await session.execute_query(
+                f"DROP TASK IF EXISTS SHELL_TASK_{tile_spec.aggregation_id}_OFFLINE"
+            )
 
 
-@pytest_asyncio.fixture(name="tile_spec")
-async def tile_spec_fixture(session):
+@asynccontextmanager
+async def create_spark_tile_specs(session):
+    """
+    Helper to create a snowflake tile_spec with snowflake specific clean up
+    """
+    _ = session
+    yield create_generic_tile_spec()
+
+
+@asynccontextmanager
+async def create_databricks_tile_spec(session):
     """
     Pytest Fixture for TileSnowflake instance
     """
-    creator = None
-    if session.source_type == "snowflake":
-        creator = create_snowflake_tile_spec
-
-    assert creator is not None, f"tile_spec fixture does not support {session.type}"
-
-    async with creator(session) as created_tile_spec:
-        yield created_tile_spec
-
-
-@pytest_asyncio.fixture
-async def databricks_tile_spec(databricks_session):
-    """
-    Pytest Fixture for TileSnowflake instance
-    """
+    assert session.source_type == "databricks"
     col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
     col_names = ",".join(col_names_list)
     table_name = "default.TEST_TILE_TABLE_2"
@@ -859,9 +865,29 @@ async def databricks_tile_spec(databricks_session):
         aggregation_id="agg_id1",
     )
 
-    yield tile_spec
+    try:
+        yield tile_spec
+    finally:
+        await session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
 
-    await databricks_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+
+@pytest_asyncio.fixture(name="tile_spec")
+async def tile_spec_fixture(session):
+    """
+    Pytest Fixture for TileSnowflake instance
+    """
+    creator = None
+    if session.source_type == "snowflake":
+        creator = create_snowflake_tile_spec
+    if session.source_type == "spark":
+        creator = create_spark_tile_specs
+    elif session.source_type == "databricks":
+        creator = create_databricks_tile_spec
+
+    assert creator is not None, f"tile_spec fixture does not support {session.source_type}"
+
+    async with creator(session) as created_tile_spec:
+        yield created_tile_spec
 
 
 @pytest.fixture
@@ -872,12 +898,12 @@ def tile_manager(session):
     return tile_manager_from_session(session=session)
 
 
-@pytest.fixture
-def tile_manager_databricks(databricks_session):
-    """
-    Feature Manager fixture
-    """
-    return TileManagerDatabricks(session=databricks_session)
+# @pytest.fixture
+# def tile_manager_databricks(databricks_session):
+#     """
+#     Feature Manager fixture
+#     """
+#     return TileManagerDatabricks(session=databricks_session)
 
 
 @pytest.fixture(name="feature_model_dict")
