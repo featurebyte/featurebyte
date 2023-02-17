@@ -45,9 +45,14 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     """
     _ = mock_api_object_cache
     event_view_first = EventView.from_event_data(snowflake_event_data)
+    expected_view_columns_info = [
+        col
+        for col in snowflake_event_data.columns_info
+        if col.name != snowflake_event_data.record_creation_date_column
+    ]
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.row_index_lineage == snowflake_event_data.frame.row_index_lineage
-    assert event_view_first.columns_info == snowflake_event_data.columns_info
+    assert event_view_first.columns_info == expected_view_columns_info
 
     entity = Entity(name="customer", serving_names=["cust_id"])
     entity.save()
@@ -58,7 +63,12 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
         )
     )
     event_view_second = EventView.from_event_data(snowflake_event_data)
-    assert event_view_second.columns_info == snowflake_event_data.columns_info
+    expected_view_columns_info = [
+        col
+        for col in snowflake_event_data.columns_info
+        if col.name != snowflake_event_data.record_creation_date_column
+    ]
+    assert event_view_second.columns_info == expected_view_columns_info
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )

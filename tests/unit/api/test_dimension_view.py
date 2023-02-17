@@ -274,18 +274,18 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             """
         WITH _FB_AGGREGATED AS (
           SELECT
-            "T0"."col_float_b231997b610bd9b3" AS "col_float_b231997b610bd9b3",
-            "T0"."col_char_b231997b610bd9b3" AS "col_char_b231997b610bd9b3",
-            "T0"."col_binary_b231997b610bd9b3" AS "col_binary_b231997b610bd9b3",
-            "T0"."col_boolean_b231997b610bd9b3" AS "col_boolean_b231997b610bd9b3"
+            "T0"."col_float_fd16d12fa4e1f238" AS "col_float_fd16d12fa4e1f238",
+            "T0"."col_char_fd16d12fa4e1f238" AS "col_char_fd16d12fa4e1f238",
+            "T0"."col_binary_fd16d12fa4e1f238" AS "col_binary_fd16d12fa4e1f238",
+            "T0"."col_boolean_fd16d12fa4e1f238" AS "col_boolean_fd16d12fa4e1f238"
           FROM REQUEST_TABLE AS REQ
           LEFT JOIN (
             SELECT
               "col_int" AS "cust_id",
-              "col_float" AS "col_float_b231997b610bd9b3",
-              "col_char" AS "col_char_b231997b610bd9b3",
-              "col_binary" AS "col_binary_b231997b610bd9b3",
-              "col_boolean" AS "col_boolean_b231997b610bd9b3"
+              "col_float" AS "col_float_fd16d12fa4e1f238",
+              "col_char" AS "col_char_fd16d12fa4e1f238",
+              "col_binary" AS "col_binary_fd16d12fa4e1f238",
+              "col_boolean" AS "col_boolean_fd16d12fa4e1f238"
             FROM (
               SELECT
                 "col_int" AS "col_int",
@@ -295,7 +295,6 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
                 "col_binary" AS "col_binary",
                 "col_boolean" AS "col_boolean",
                 "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
             )
@@ -303,10 +302,10 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
             ON REQ."cust_id" = T0."cust_id"
         )
         SELECT
-          "col_float_b231997b610bd9b3" AS "FloatFeature",
-          "col_char_b231997b610bd9b3" AS "CharFeature",
-          "col_binary_b231997b610bd9b3" AS "BinaryFeature",
-          "col_boolean_b231997b610bd9b3" AS "BoolFeature"
+          "col_float_fd16d12fa4e1f238" AS "FloatFeature",
+          "col_char_fd16d12fa4e1f238" AS "CharFeature",
+          "col_binary_fd16d12fa4e1f238" AS "BinaryFeature",
+          "col_boolean_fd16d12fa4e1f238" AS "BoolFeature"
         FROM _FB_AGGREGATED AS AGG
         """
         ).strip()

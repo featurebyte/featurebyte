@@ -40,7 +40,6 @@ def test_extended_feature_model__float_feature(float_feature):
                 "col_binary" AS "col_binary",
                 "col_boolean" AS "col_boolean",
                 "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
             )
@@ -106,7 +105,6 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
                 "col_binary" AS "col_binary",
                 "col_boolean" AS "col_boolean",
                 "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
             )

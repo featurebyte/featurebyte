@@ -400,7 +400,10 @@ class ChangeView(View, GroupByMixin):
 
         # transform from SCD view to change view inside the graph node
         view_graph_node, proxy_input_nodes, data_node = cls._construct_view_graph_node(
-            data=scd_data
+            data=scd_data,
+            keep_record_creation_date_column=(
+                track_changes_column == scd_data.record_creation_date_column
+            ),
         )
         view_graph_node = cls._add_change_view_operations(
             scd_data=scd_data,
