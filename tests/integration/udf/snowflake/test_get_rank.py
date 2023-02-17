@@ -10,6 +10,7 @@ same_values = {"a": 1, "b": 1, "c": 1}
 ascending_values = {"a": 1, "b": 2, "c": 3}
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "dictionary, key, is_descending, expected",
     [
@@ -31,11 +32,11 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
     ],
 )
 @pytest.mark.asyncio
-async def test_get_rank_udf(snowflake_session, dictionary, key, is_descending, expected):
+async def test_get_rank_udf(session, dictionary, key, is_descending, expected):
     """
     Test get rank UDF
     """
     dictionary_expr = to_object(dictionary)
     query = f"SELECT F_GET_RANK({dictionary_expr}, {key}, {is_descending}) AS OUT"
-    df = await snowflake_session.execute_query(query)
+    df = await session.execute_query(query)
     np.testing.assert_allclose(df.iloc[0]["OUT"], expected, 1e-5)

@@ -7,6 +7,7 @@ import pytest
 from tests.integration.udf.snowflake.util import to_object
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "counts1, counts2, expected",
     [
@@ -23,7 +24,7 @@ from tests.integration.udf.snowflake.util import to_object
     ],
 )
 @pytest.mark.asyncio
-async def test_cosine_similarity_udf(snowflake_session, counts1, counts2, expected):
+async def test_cosine_similarity_udf(session, counts1, counts2, expected):
     """
     Test cosine similarity UDF
     """
@@ -32,7 +33,7 @@ async def test_cosine_similarity_udf(snowflake_session, counts1, counts2, expect
         a_expr = to_object(a)
         b_expr = to_object(b)
         query = f"SELECT F_COUNT_DICT_COSINE_SIMILARITY({a_expr}, {b_expr}) AS OUT"
-        df = await snowflake_session.execute_query(query)
+        df = await session.execute_query(query)
         np.testing.assert_allclose(df.iloc[0]["OUT"], expected, 1e-5)
 
     await _check(counts1, counts2)
