@@ -59,10 +59,10 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
-        if node.type == NodeType.GRAPH and node.parameters.type == GraphNodeType.ITEM_VIEW:
+        if node.type == NodeType.GRAPH and node.parameters.type == GraphNodeType.ITEM_VIEW:  # type: ignore
             # item view consume 2 inputs (item data & event view), when constructing SDK code, we only need to use the
             # first input (item data).
-            return input_node_names[:1], True
+            return input_node_names[:1], False
         return input_node_names, False
 
     def _in_compute(

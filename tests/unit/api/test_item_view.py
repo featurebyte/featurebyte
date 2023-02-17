@@ -146,7 +146,7 @@ def test_from_item_data__auto_join_columns(
                 ],
             },
             "output_node_name": "join_1",
-            "metadata": {},
+            "metadata": {"event_suffix": "_event_table"},
             "type": "item_view",
         },
         "type": "graph",
@@ -470,7 +470,7 @@ def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_
                 ],
             },
             "output_node_name": "join_1",
-            "metadata": {},
+            "metadata": {"event_suffix": None},
             "type": "item_view",
         },
     }

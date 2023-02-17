@@ -147,7 +147,7 @@ class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
     class Metadata(BaseModel):
         """Metadata for item view graph node"""
 
-        event_suffix: str
+        event_suffix: Optional[str]
 
     type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
     metadata: Metadata
