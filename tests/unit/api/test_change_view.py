@@ -14,6 +14,8 @@ from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.enum import SourceType
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
@@ -301,3 +303,61 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
         """
     ).strip()
     assert tile_infos[0].sql == expected
+
+
+def test_from_slowly_changing_data__keep_record_creation_date_column(snowflake_scd_data):
+    """
+    Test create ChangeView using record creation date column as track changes column
+    """
+    snowflake_scd_data.update_record_creation_date_column("created_at")
+    change_view = ChangeView.from_slowly_changing_data(
+        snowflake_scd_data, track_changes_column=snowflake_scd_data.record_creation_date_column
+    )
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          "col_text" AS "col_text",
+          CAST("effective_timestamp" AS STRING) AS "new_effective_timestamp",
+          CAST(LAG("effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_effective_timestamp",
+          CAST("created_at" AS STRING) AS "new_created_at",
+          CAST(LAG("created_at", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_created_at"
+        FROM "sf_database"."sf_schema"."scd_table"
+        LIMIT 10
+        """
+    ).strip()
+    assert change_view.preview_sql() == expected_sql
+    assert change_view.node.type == NodeType.GRAPH
+    assert change_view.node.parameters.graph.edges[:1] == [
+        {"source": "proxy_input_1", "target": "project_1"},  # no cleaning operation
+    ]
+
+    # check the case when the data has cleaning operations
+    # cleaned data should be used to generate the change view
+    snowflake_scd_data["created_at"].update_critical_data_info(
+        cleaning_operations=[MissingValueImputation(imputed_value="2020-01-01")]
+    )
+    change_view = ChangeView.from_slowly_changing_data(
+        snowflake_scd_data, track_changes_column=snowflake_scd_data.record_creation_date_column
+    )
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          "col_text" AS "col_text",
+          CAST("effective_timestamp" AS STRING) AS "new_effective_timestamp",
+          CAST(LAG("effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_effective_timestamp",
+          CAST(CASE WHEN "created_at" IS NULL THEN '2020-01-01' ELSE "created_at" END AS STRING) AS "new_created_at",
+          CAST(LAG(CASE WHEN "created_at" IS NULL THEN '2020-01-01' ELSE "created_at" END, 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_created_at"
+        FROM "sf_database"."sf_schema"."scd_table"
+        LIMIT 10
+        """
+    ).strip()
+    assert change_view.preview_sql() == expected_sql
+
+    # check the change view graph node
+    assert change_view.node.type == NodeType.GRAPH
+    assert change_view.node.parameters.graph.edges[:2] == [
+        {"source": "proxy_input_1", "target": "graph_1"},
+        {"source": "graph_1", "target": "project_1"},
+    ]
+    nested_graph_node = change_view.node.parameters.graph.get_node_by_name("graph_1")
+    assert nested_graph_node.parameters.type == "cleaning"
