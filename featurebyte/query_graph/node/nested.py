@@ -2,7 +2,8 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence, cast
+from typing import List, Literal, Sequence, Union, cast
+from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -51,12 +52,61 @@ class ProxyInputNode(BaseNode):
         )
 
 
-class GraphNodeParameters(BaseModel):
+class BaseGraphNodeParameters(BaseModel):
     """Graph node parameters"""
 
     graph: "QueryGraphModel"  # type: ignore[name-defined]
     output_node_name: str
     type: GraphNodeType
+
+
+class CleaningGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:cleaning) parameters"""
+
+    type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
+
+
+class EventViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:event_view) parameters"""
+
+    type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
+
+
+class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:item_view) parameters"""
+
+    type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
+
+
+class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:dimension_view) parameters"""
+
+    type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
+
+
+class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:scd_view) parameters"""
+
+    type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
+
+
+class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:change_view) parameters"""
+
+    type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
+
+
+GRAPH_NODE_PARAMETERS_TYPES = [
+    CleaningGraphNodeParameters,
+    EventViewGraphNodeParameters,
+    ItemViewGraphNodeParameters,
+    DimensionViewGraphNodeParameters,
+    SCDViewGraphNodeParameters,
+    ChangeViewGraphNodeParameters,
+]
+GraphNodeParameters = Annotated[
+    Union[tuple(GRAPH_NODE_PARAMETERS_TYPES)], Field(discriminator="type")
+]
 
 
 class BaseGraphNode(BaseNode):
