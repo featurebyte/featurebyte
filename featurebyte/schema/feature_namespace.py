@@ -44,6 +44,7 @@ class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseMod
     """
 
     default_version_mode: Optional[DefaultVersionMode]
+    default_feature_id: Optional[PydanticObjectId]
 
 
 class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
