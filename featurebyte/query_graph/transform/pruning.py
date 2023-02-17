@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BasePrunableNode
