@@ -181,7 +181,7 @@ class BaseViewTestSuite:
         """
         return {}
 
-    def test_view_column_getitem_series(self, view_under_test):
+    def test_view_column_getitem_series(self, view_under_test, data_under_test):
         """
         Test view column filter by boolean mask
         """
@@ -214,6 +214,18 @@ class BaseViewTestSuite:
         if "expected_edges" in overrides:
             expected_edges = overrides["expected_edges"]
         assert output_dict["graph"]["edges"] == expected_edges
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            output,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test.id: {
+                    "name": data_under_test.name,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                }
+            },
+        )
 
     def test_unary_op_params(self, view_under_test):
         """

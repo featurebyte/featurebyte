@@ -23,6 +23,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ExpressionStr,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionStr,
@@ -312,13 +313,14 @@ class BaseNode(BaseModel):
         -------
         VarNameStr
         """
-        statements = []
+        statements: List[StatementT] = []
         if isinstance(var_name_expression, ExpressionStr):
             var_name = var_name_generator.generate_variable_name(
                 node_output_type=node_output_type,
                 node_output_category=node_output_category,
             )
             statements.append((var_name, var_name_expression))
+            return statements, var_name
         return statements, var_name_expression
 
     @abstractmethod
@@ -489,6 +491,30 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
+    def _handle_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+        _ = self
+        return left_operand, right_operand
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        # TODO: make this method abstract and remove the following dummy implementation
+        _ = left_operand, right_operand
+        return ""
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        left_operand: str = input_var_name_expressions[0]
+        right_operand: str = ValueStr.create(self.parameters.value)  # type: ignore
+        if len(input_var_name_expressions) == 2:
+            right_operand = input_var_name_expressions[1]
+        left_operand, right_operand = self._handle_operands(left_operand, right_operand)
+        return [], ExpressionStr(self._generate_expression(left_operand, right_operand))
+
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
     """BinaryLogicalOpNode class"""
@@ -514,6 +540,11 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
         if DBVarType.FLOAT in input_var_types:
             return DBVarType.FLOAT
         return inputs[0].series_output_dtype
+
+    def _handle_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+        if self.parameters.right_op:
+            return right_operand, left_operand
+        return left_operand, right_operand
 
 
 class BasePrunableNode(BaseNode):
