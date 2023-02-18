@@ -320,7 +320,7 @@ class InputNode(BaseNode):
             row_index_lineage=(self.name,),
         )
 
-    def _derive_sdk_codes(
+    def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],

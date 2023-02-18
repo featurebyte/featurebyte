@@ -82,7 +82,7 @@ class ProjectNode(BaseNode):
             row_index_lineage=input_operation_info.row_index_lineage,
         )
 
-    def derive_sdk_code(
+    def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],
@@ -149,7 +149,7 @@ class FilterNode(BaseNode):
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
         )
 
-    def derive_sdk_code(
+    def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],

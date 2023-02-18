@@ -253,7 +253,7 @@ class CodeGenerationConfig(BaseModel):
 
     # other configurations
     to_use_saved_data: bool = Field(default=False)
-    max_expression_length: int = Field(default=60)
+    max_expression_length: int = Field(default=40)
 
 
 class VariableNameGenerator(BaseModel):

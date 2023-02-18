@@ -227,7 +227,7 @@ class BaseNode(BaseModel):
         -------
         Tuple[List[StatementT], VarNameExpressionStr]
         """
-        statements, var_name_expression = self._derive_sdk_codes(
+        statements, var_name_expression = self._derive_sdk_code(
             input_var_name_expressions=input_var_name_expressions,
             input_node_types=input_node_types,
             var_name_generator=var_name_generator,
@@ -347,7 +347,7 @@ class BaseNode(BaseModel):
         OperationStructure
         """
 
-    def _derive_sdk_codes(
+    def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],
@@ -500,7 +500,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         _ = left_operand, right_operand
         return ""
 
-    def derive_sdk_code(
+    def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],
@@ -508,10 +508,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         operation_structure: OperationStructure,
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
-        left_operand: str = input_var_name_expressions[0]
-        right_operand: str = ValueStr.create(self.parameters.value)  # type: ignore
+        left_operand: str = input_var_name_expressions[0].as_input()
+        right_operand: str = ValueStr.create(self.parameters.value).as_input()  # type: ignore
         if len(input_var_name_expressions) == 2:
-            right_operand = input_var_name_expressions[1]
+            right_operand = input_var_name_expressions[1].as_input()
         left_operand, right_operand = self._handle_operands(left_operand, right_operand)
         return [], ExpressionStr(self._generate_expression(left_operand, right_operand))
 
