@@ -60,6 +60,11 @@ class FeatureNamespaceController(
         -------
         FeatureNamespaceModel
             FeatureNamespace object with updated attribute(s)
+
+        Raises
+        ------
+        DocumentUpdateError
+            When the new feature version creation fails
         """
         if data.default_version_mode:
             await self.default_version_mode_service.update_feature_namespace(

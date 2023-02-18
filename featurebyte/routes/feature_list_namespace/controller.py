@@ -63,6 +63,11 @@ class FeatureListNamespaceController(
         -------
         FeatureListNamespaceModel
             FeatureListNamespace object with updated attribute(s)
+
+        Raises
+        ------
+        DocumentUpdateError
+            When the new feature list version creation fails
         """
         if data.default_version_mode:
             await self.default_version_mode_service.update_feature_list_namespace(
@@ -80,7 +85,7 @@ class FeatureListNamespaceController(
                     "Cannot set default feature list ID when default version mode is not MANUAL"
                 )
 
-            # update feature list namespace default feature list ID and update feature readiness distribution
+            # update feature list namespace default feature list ID and update feature readiness
             await self.service.update_document(
                 document_id=feature_list_namespace_id,
                 data=FeatureListNamespaceServiceUpdate(
