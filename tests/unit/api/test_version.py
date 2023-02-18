@@ -1,15 +1,14 @@
 """
 Test feature & feature list version related logic
 """
-import time
-
 import pytest
 
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature_list import FeatureList, FeatureVersionInfo
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_list import FeatureListNewVersionMode
+from featurebyte.schema.feature_list import FeatureVersionInfo
 
 
 @pytest.fixture(name="feature_group")

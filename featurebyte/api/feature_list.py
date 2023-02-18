@@ -992,6 +992,39 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ------
         RecordCreationException
             When failed to save a new version
+
+        Examples
+        --------
+
+        Create new version of feature list with auto mode
+
+        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
+
+        Create new version of feature list with manual mode (only the versions of the features that are specified are
+        changed). The versions of other features are the same as the origin FeatureList version.
+
+        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list.create_new_version(
+        ...   mode="manual",
+        ...   features=[
+        ...     # list of features to update, other features are the same as the original version
+        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
+        ...   ]
+        ... )  # doctest: +SKIP
+
+        Create new version of feature list with semi-auto mode (uses the current default versions of features except
+        for the features versions that are specified).
+
+        >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
+        >>> feature_list.create_new_version(
+        ...   mode="semi-auto",
+        ...   features=[
+        ...     # list of features to update, other features use the current default versions
+        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...  # list of features to update
+        ...   ]
+        ... )  # doctest: +SKIP
+
         """
         client = Configurations().get_client()
         response = client.post(
