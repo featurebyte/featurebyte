@@ -52,6 +52,9 @@ from featurebyte.session.spark import SparkSession
 from featurebyte.tile.databricks_tile import TileManagerDatabricks
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
+# This references .github/mongoreplicaset/entrypoint.sh mongodb that is spawned during testing
+TEST_MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
+
 
 @pytest.fixture(name="config", scope="session")
 def config_fixture():
@@ -146,7 +149,7 @@ def mongo_persistent_fixture():
     """
     Mongo persistent fixture
     """
-    mongo_connection = os.getenv("MONGO_CONNECTION")
+    mongo_connection = TEST_MONGO_CONNECTION
     database_name = f"test_{ObjectId()}"
     client = pymongo.MongoClient(mongo_connection)
     persistent = MongoDB(uri=mongo_connection, database=database_name)

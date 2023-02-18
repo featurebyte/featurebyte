@@ -49,7 +49,6 @@ env:
   # Slack
   SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
   # Testing
-  MONGO_CONNECTION: "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
   FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:

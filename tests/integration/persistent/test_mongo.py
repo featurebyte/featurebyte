@@ -6,9 +6,6 @@ import os
 import pytest
 
 
-@pytest.mark.skipif(
-    os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
-)
 @pytest.mark.asyncio
 async def test_start_transaction__success(mongo_persistent):
     """
@@ -28,9 +25,6 @@ async def test_start_transaction__success(mongo_persistent):
     assert output == [{"key1": "value1"}, {"key2": "value2"}]
 
 
-@pytest.mark.skipif(
-    os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
-)
 @pytest.mark.asyncio
 async def test_start_transaction__exception_within_transaction(mongo_persistent):
     """
@@ -53,9 +47,6 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
     assert not output
 
 
-@pytest.mark.skipif(
-    os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
-)
 @pytest.mark.asyncio
 async def test_crud(mongo_persistent):
     """
