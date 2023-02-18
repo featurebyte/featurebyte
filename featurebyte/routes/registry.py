@@ -232,6 +232,7 @@ app_container_config.add_controller(
     [
         "feature_list_namespace_service",
         "default_version_mode_service",
+        "feature_readiness_service",
         "info_service",
     ],
 )
@@ -241,6 +242,7 @@ app_container_config.add_controller(
     [
         "feature_namespace_service",
         "default_version_mode_service",
+        "feature_readiness_service",
         "info_service",
     ],
 )

@@ -614,7 +614,7 @@ class Feature(
     @typechecked
     def create_new_version(self, feature_job_setting: FeatureJobSetting) -> Feature:
         """
-        Create new feature version
+        Create new feature version from the current one.
 
         Parameters
         ----------
@@ -628,7 +628,22 @@ class Feature(
         Raises
         ------
         RecordCreationException
-            When failed to save a new version
+            When failed to save a new version, e.g. when the feature is exactly the same as the current one
+
+        Examples
+        --------
+
+        Create a new version of a feature with different feature job setting
+
+        >>> feature = Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.created_new_version(
+        ...   feature_job_setting=FeatureJobSetting(
+        ...     blind_spot="10m",
+        ...     frequency="30m",
+        ...     time_modulo_frequency="5m",
+        ...   )
+        ... )  # doctest: +SKIP
+
         """
         client = Configurations().get_client()
         response = client.post(
