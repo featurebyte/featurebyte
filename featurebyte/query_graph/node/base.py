@@ -24,6 +24,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     StatementT,
     VariableNameGenerator,
+    VariableNameStr,
     VarNameExpressionStr,
 )
 
@@ -285,6 +286,40 @@ class BaseNode(BaseModel):
         """
         _ = target_nodes, input_operation_structures
         return self
+
+    @staticmethod
+    def _convert_expression_to_variable(
+        var_name_expression: VarNameExpressionStr,
+        var_name_generator: VariableNameGenerator,
+        node_output_type: NodeOutputType,
+        node_output_category: NodeOutputCategory,
+    ) -> Tuple[List[StatementT], VariableNameStr]:
+        """
+        Convert expression to variable
+
+        Parameters
+        ----------
+        var_name_expression: VarNameExpressionStr
+            Variable name expression
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        node_output_type: NodeOutputType
+            Node output type
+        node_output_category: NodeOutputCategory
+            Node output category
+
+        Returns
+        -------
+        VarNameStr
+        """
+        statements = []
+        if isinstance(var_name_expression, ExpressionStr):
+            var_name = var_name_generator.generate_variable_name(
+                node_output_type=node_output_type,
+                node_output_category=node_output_category,
+            )
+            statements.append((var_name, var_name_expression))
+        return statements, var_name_expression
 
     @abstractmethod
     def _derive_node_operation_info(

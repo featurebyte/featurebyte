@@ -148,7 +148,7 @@ class BaseViewTestSuite:
         """
         pass
 
-    def test_getitem__series_key(self, view_under_test):
+    def test_getitem__series_key(self, view_under_test, data_under_test):
         """
         Test filtering on view object
         """
@@ -162,6 +162,18 @@ class BaseViewTestSuite:
             view_under_test.row_index_lineage + (row_subset.node.name,)
         )
         self.getitem_frame_params_assertions(row_subset, view_under_test)
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            row_subset,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test.id: {
+                    "name": data_under_test.name,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                }
+            },
+        )
 
     def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
         """
