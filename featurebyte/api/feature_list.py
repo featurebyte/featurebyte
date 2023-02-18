@@ -996,13 +996,14 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Examples
         --------
 
-        Create new version of feature list with auto mode
+        Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
 
         >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
-        >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
+        >>> feature_list.create_new_version(mode="auto")
+
 
         Create new version of feature list with manual mode (only the versions of the features that are specified are
-        changed). The versions of other features are the same as the origin FeatureList version.
+        changed). The versions of other features are the same as the origin feature list version.
 
         >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
         >>> feature_list.create_new_version(
@@ -1011,7 +1012,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ...     # list of features to update, other features are the same as the original version
         ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
         ...   ]
-        ... )  # doctest: +SKIP
+        ... )
+
 
         Create new version of feature list with semi-auto mode (uses the current default versions of features except
         for the features versions that are specified).
@@ -1021,9 +1023,9 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ...   mode="semi-auto",
         ...   features=[
         ...     # list of features to update, other features use the current default versions
-        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...  # list of features to update
+        ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
         ...   ]
-        ... )  # doctest: +SKIP
+        ... )
 
         """
         client = Configurations().get_client()

@@ -642,7 +642,7 @@ class Feature(
         ...     frequency="30m",
         ...     time_modulo_frequency="5m",
         ...   )
-        ... )# doctest: +SKIP
+        ... )
 
         """
         client = Configurations().get_client()
