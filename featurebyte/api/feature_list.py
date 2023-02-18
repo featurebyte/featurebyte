@@ -999,7 +999,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         Create new version of feature list with auto mode. Parameter `features` has no effect if `mode` is `auto`.
 
         >>> feature_list = FeatureList.get(name="my_feature_list")  # doctest: +SKIP
-        >>> feature_list.create_new_version(mode="auto")
+        >>> feature_list.create_new_version(mode="auto")  # doctest: +SKIP
 
 
         Create new version of feature list with manual mode (only the versions of the features that are specified are
@@ -1012,7 +1012,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ...     # list of features to update, other features are the same as the original version
         ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
         ...   ]
-        ... )
+        ... )  # doctest: +SKIP
 
 
         Create new version of feature list with semi-auto mode (uses the current default versions of features except
@@ -1025,7 +1025,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ...     # list of features to update, other features use the current default versions
         ...     FeatureVersionInfo(name="feature_1", version="V230218"), ...
         ...   ]
-        ... )
+        ... )  # doctest: +SKIP
 
         """
         client = Configurations().get_client()
