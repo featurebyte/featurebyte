@@ -61,20 +61,24 @@ def pytest_collection_modifyitems(config, items):
     tests, etc. Before the Spark tests run, pytest will tear down all the Snowflake fixtures.
     """
 
-    def get_source_type_param(item):
+    def get_sorting_key(entry):
+
+        index, item = entry
+        extra_ordering_key = ""
 
         # check for the source_type parameter if available
         if hasattr(item, "callspec"):
             source_type = item.callspec.params.get("source_type")
             if source_type is not None:
-                return f"{source_type}-{item.nodeid}"
+                extra_ordering_key = source_type
 
-        # for all other cases, sort by node id as usual
-        return item.nodeid
+        # include index as the sorting key to preserve the original ordering
+        return extra_ordering_key, index
 
     # re-order the tests
     _ = config
-    sorted_items = sorted(items, key=get_source_type_param)
+    sorted_entries = sorted(enumerate(items), key=get_sorting_key)
+    sorted_items = [entry[1] for entry in sorted_entries]
     items[:] = sorted_items
 
 
