@@ -547,6 +547,36 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
         return left_operand, right_operand
 
 
+class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
+    """BaseSingleOperandNode class"""
+
+    @abstractmethod
+    def _generate_expression(self, operand: str) -> str:
+        """
+        Generate expression for the unary operation
+
+        Parameters
+        ----------
+        operand: str
+            Operand
+
+        Returns
+        -------
+        str
+        """
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expression = input_var_name_expressions[0]
+        return [], ExpressionStr(self._generate_expression(var_name_expression.as_input()))
+
+
 class BasePrunableNode(BaseNode):
     """Base class for node that can be pruned during query graph pruning"""
 

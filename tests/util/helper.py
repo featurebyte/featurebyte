@@ -183,4 +183,4 @@ def compare_generated_api_object_sdk_code(
         expected = file_handle.read().format(
             feature_store_id=feature_store_id, data_id=data_id, **kwargs
         )
-        assert expected == sdk_code
+        assert expected == sdk_code, sdk_code

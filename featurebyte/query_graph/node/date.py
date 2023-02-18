@@ -9,11 +9,14 @@ from pydantic import BaseModel, Field
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.base import BaseSeriesOutputNode
+from featurebyte.query_graph.node.base import (
+    BaseSeriesOutputWithSingleOperandNode,
+    BinaryArithmeticOpNode,
+)
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 
 
-class DatetimeExtractNode(BaseSeriesOutputNode):
+class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
     """DatetimeExtractNode class"""
 
     class Parameters(BaseModel):
@@ -27,8 +30,14 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
 
+    def _generate_expression(self, operand: str) -> str:
+        date_property = self.parameters.property
+        if date_property == "dayofweek":
+            date_property = "day_of_week"
+        return f"{operand}.dt.{date_property}"
 
-class TimeDeltaExtractNode(BaseSeriesOutputNode):
+
+class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
     """TimeDeltaExtractNode class"""
 
     class Parameters(BaseModel):
@@ -42,8 +51,11 @@ class TimeDeltaExtractNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
+    def _generate_expression(self, operand: str) -> str:
+        return f"{operand}.dt.{self.parameters.property}"
 
-class DateDifference(BaseSeriesOutputNode):
+
+class DateDifference(BinaryArithmeticOpNode):
     """DateDifference class"""
 
     type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
@@ -51,8 +63,11 @@ class DateDifference(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
 
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} - {right_operand}"
 
-class TimeDelta(BaseSeriesOutputNode):
+
+class TimeDelta(BaseSeriesOutputWithSingleOperandNode):
     """TimeDelta class"""
 
     class Parameters(BaseModel):
@@ -66,8 +81,11 @@ class TimeDelta(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
 
+    def _generate_expression(self, operand: str) -> str:
+        return f"to_timedelta(series={operand}, unit={self.parameters.unit})"
 
-class DateAdd(BaseSeriesOutputNode):
+
+class DateAdd(BinaryArithmeticOpNode):
     """DateAdd class"""
 
     class Parameters(BaseModel):
@@ -80,3 +98,6 @@ class DateAdd(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].columns[0].dtype
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} + {right_operand}"
