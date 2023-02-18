@@ -78,7 +78,7 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     )
 
 
-def test_getitem__list_of_str(snowflake_event_view):
+def test_getitem__list_of_str_contains_protected_column(snowflake_event_data, snowflake_event_view):
     """
     Test retrieving subset of the event data features
     """

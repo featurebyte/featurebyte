@@ -123,9 +123,14 @@ class BaseInputNodeParameters(BaseModel):
         """
 
     @abstractmethod
-    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract other constructor parameters used in SDK code generation
+
+        Parameters
+        ----------
+        data_info: Dict[str, Any]
+            Data info that does not store in the query graph input node
 
         Returns
         -------
@@ -143,7 +148,7 @@ class GenericInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "data"
 
-    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 
 
@@ -173,8 +178,9 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "event_data"
 
-    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
+            "record_creation_date_column": data_info.get("record_creation_date_column"),
             "event_id_column": self.id_column,
             "event_timestamp_column": self.timestamp_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
@@ -194,8 +200,9 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "item_data"
 
-    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
+            "record_creation_date_column": data_info.get("record_creation_date_column"),
             "item_id_column": self.id_column,
             "event_id_column": self.event_id_column,
             "event_data_id": ClassEnum.OBJECT_ID(self.event_data_id),
@@ -214,8 +221,12 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "dimension_data"
 
-    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
-        return {"dimension_id_column": self.id_column, "_id": ClassEnum.OBJECT_ID(self.id)}
+    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "record_creation_date_column": data_info.get("record_creation_date_column"),
+            "dimension_id_column": self.id_column,
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
 
 
 class SCDDataInputNodeParameters(BaseInputNodeParameters):
@@ -237,8 +248,9 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "scd_data"
 
-    def extract_other_constructor_parameters(self) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
+            "record_creation_date_column": data_info.get("record_creation_date_column"),
             "natural_key_column": self.natural_key_column,
             "effective_timestamp_column": self.effective_timestamp_column,
             "end_timestamp_column": self.end_timestamp_column,
@@ -324,6 +336,7 @@ class InputNode(BaseNode):
         data_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix=self.parameters.variable_name_prefix
         )
+        data_id = self.parameters.id
         if config.to_use_saved_data and self.parameters.id:
             # to generate `*Data.get_by_id(ObjectId("<data_id>"))` statement
             object_id = ClassEnum.OBJECT_ID(self.parameters.id)
@@ -336,8 +349,10 @@ class InputNode(BaseNode):
             #     columns_info=[ColumnInfo(...), ...],
             #     ...
             # )` statement
+            data_info = config.data_id_to_info.get(data_id, {}) if data_id else {}
+            data_name = data_info.get("name", str(data_var_name))
             right_op = data_class_enum(
-                name=str(data_var_name),
+                name=data_name,
                 feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name
                 ),
@@ -345,7 +360,7 @@ class InputNode(BaseNode):
                     feature_store_id=config.feature_store_id
                 ),
                 columns_info=self.parameters.extract_columns_info_objects(),
-                **self.parameters.extract_other_constructor_parameters(),
+                **self.parameters.extract_other_constructor_parameters(data_info),
             )
 
         statements.append((data_var_name, right_op))

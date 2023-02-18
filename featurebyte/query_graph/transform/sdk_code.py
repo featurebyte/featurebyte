@@ -115,6 +115,7 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         to_use_saved_data: bool = False,
         feature_store_name: Optional[str] = None,
         feature_store_id: Optional[ObjectId] = None,
+        data_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
@@ -124,6 +125,8 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
             code_generation_config["feature_store_name"] = feature_store_name
         if feature_store_id:
             code_generation_config["feature_store_id"] = feature_store_id
+        if data_id_to_info:
+            code_generation_config["data_id_to_info"] = data_id_to_info
 
         global_state = SDKCodeGlobalState(
             node_name_to_operation_structure=op_struct_info.operation_structure_map,

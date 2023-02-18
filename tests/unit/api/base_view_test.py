@@ -8,6 +8,7 @@ import pytest
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import check_sdk_code_generation
 
 
 class ViewType(StrEnum):
@@ -67,7 +68,6 @@ class BaseViewTestSuite:
         """
         Test assigning Series object to event_view
         """
-        source_node_name = view_under_test.node.name
         double_value = view_under_test[self.col] * 2
         assert isinstance(double_value, Series)
         view_under_test["double_value"] = double_value
@@ -101,6 +101,45 @@ class BaseViewTestSuite:
         }
         assert cust_id.row_index_lineage == view_under_test.row_index_lineage
         assert cust_id.parent.node == view_under_test.node
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            cust_id,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test.id: {
+                    "name": data_under_test.name,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                }
+            },
+        )
+
+    def test_getitem__list_of_str(self, view_under_test, data_under_test):
+        """
+        Test getitem with list of columns
+        """
+        subset_cols = view_under_test[[self.col]]
+        assert isinstance(subset_cols, self.view_class)
+
+        # note that protected columns are auto-included
+        assert subset_cols.node.dict(exclude={"name": True}) == {
+            "type": NodeType.PROJECT,
+            "parameters": {"columns": subset_cols.node.parameters.columns},
+            "output_type": NodeOutputType.FRAME,
+        }
+        assert subset_cols.row_index_lineage == view_under_test.row_index_lineage
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            subset_cols,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test.id: {
+                    "name": data_under_test.name,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                }
+            },
+        )
 
     @abstractmethod
     def getitem_frame_params_assertions(self, row_subset, view_under_test):

@@ -36,6 +36,7 @@ dimension_data = DimensionData(
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="cust_id", dtype="INT"),
     ],
+    record_creation_date_column=None,
     dimension_id_column="col_int",
     _id=ObjectId("{data_id}"),
 )

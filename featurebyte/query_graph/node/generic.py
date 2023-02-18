@@ -27,6 +27,13 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
     ViewDataColumn,
 )
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
+    StatementT,
+    VariableNameGenerator,
+    VariableNameStr,
+    VarNameExpressionStr,
+)
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.util import append_to_lineage
 
@@ -73,6 +80,20 @@ class ProjectNode(BaseNode):
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
         )
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        _ = var_name_generator
+        var_name_expr = input_var_name_expressions[0]
+        if operation_structure.output_type == NodeOutputType.FRAME:
+            return [], VariableNameStr(f"{var_name_expr}[{self.parameters.columns}]")
+        return [], VariableNameStr(f"{var_name_expr}['{self.parameters.columns[0]}']")
 
 
 class FilterNode(BaseNode):

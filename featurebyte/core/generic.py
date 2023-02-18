@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, TypeVar, cast
 
 import json
 from abc import abstractmethod
@@ -113,7 +113,12 @@ class QueryObject(FeatureByteBaseModel):
         mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
         return pruned_graph, mapped_node
 
-    def _generate_code(self, to_format: bool = False, to_use_saved_data: bool = False) -> str:
+    def _generate_code(
+        self,
+        to_format: bool = False,
+        to_use_saved_data: bool = False,
+        data_id_to_info: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> str:
         """
         Generate SDK codes this graph & node
 
@@ -123,6 +128,8 @@ class QueryObject(FeatureByteBaseModel):
             Whether to format generated code (require `black` python package)
         to_use_saved_data: bool
             Whether to use saved data in the SDK codes
+        data_id_to_info: Optional[Dict[str, Dict[str, Any]]]
+            Data ID to dictionary info that is not stored in the query graph
 
         Returns
         -------
@@ -133,6 +140,7 @@ class QueryObject(FeatureByteBaseModel):
             "to_use_saved_data": to_use_saved_data,
             "feature_store_name": self.feature_store.name,
             "feature_store_id": self.feature_store.id,
+            "data_id_to_info": data_id_to_info or {},
         }
         state = SDKCodeExtractor(graph=pruned_graph).extract(node=node, **extract_kwargs)
         return state.code_generator.generate(to_format=to_format)
