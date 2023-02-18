@@ -405,6 +405,11 @@ class ChangeView(View, GroupByMixin):
             keep_record_creation_date_column=(
                 track_changes_column == scd_data.record_creation_date_column
             ),
+            metadata={
+                "track_changes_column": track_changes_column,
+                "default_feature_job_setting": default_feature_job_setting,
+                "prefixes": prefixes,
+            },
         )
         view_graph_node = cls._add_change_view_operations(
             scd_data=scd_data,

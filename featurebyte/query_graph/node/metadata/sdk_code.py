@@ -187,9 +187,6 @@ class ClassEnum(Enum):
     TABLE_DETAILS = ("featurebyte.query_graph.node.schema", "TableDetails")
     TABULAR_SOURCE = ("featurebyte.query_graph.model.common_table", "TabularSource")
 
-    # column
-    COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
-
     # data
     DATABASE_TABLE = ("featurebyte.api.database_table", "DatabaseTable")
     EVENT_DATA = ("featurebyte", "EventData")
@@ -202,6 +199,11 @@ class ClassEnum(Enum):
     ITEM_VIEW = ("featurebyte", "ItemView")
     DIMENSION_VIEW = ("featurebyte", "DimensionView")
     SCD_VIEW = ("featurebyte", "SlowlyChangingView")
+    CHANGE_VIEW = ("featurebyte", "ChangeView")
+
+    # others
+    COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
+    FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any

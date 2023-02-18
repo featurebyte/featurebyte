@@ -1,9 +1,9 @@
 WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
-    avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c.INDEX,
-    avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c."cust_id",
-    sum_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c,
-    count_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c
+    avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f.INDEX,
+    avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f."cust_id",
+    sum_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f,
+    count_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f
   FROM (
     SELECT
       *,
@@ -14,8 +14,8 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
           DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMPNTZ)) + tile_index * 3600
         ) AS __FB_TILE_START_DATE_COLUMN,
         "cust_id",
-        SUM("a") AS sum_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c,
-        COUNT("a") AS count_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c
+        SUM("a") AS sum_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f,
+        COUNT("a") AS count_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f
       FROM (
         SELECT
           *,
@@ -44,7 +44,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
         tile_index,
         "cust_id"
     )
-  ) AS avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c
+  ) AS avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f
 ), REQUEST_TABLE AS (
   SELECT
     CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
@@ -85,14 +85,14 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."agg_w7200_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c" AS "agg_w7200_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c",
-    "T1"."agg_w172800_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c" AS "agg_w172800_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c"
+    "T0"."agg_w7200_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f" AS "agg_w7200_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f",
+    "T1"."agg_w172800_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f" AS "agg_w172800_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."CUSTOMER_ID",
-      SUM(sum_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c) / SUM(count_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c) AS "agg_w7200_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c"
+      SUM(sum_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f) / SUM(count_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f) AS "agg_w7200_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f"
     FROM "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
     INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
       ON (
@@ -111,7 +111,7 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
     SELECT
       REQ."POINT_IN_TIME",
       REQ."CUSTOMER_ID",
-      SUM(sum_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c) / SUM(count_value_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c) AS "agg_w172800_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c"
+      SUM(sum_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f) / SUM(count_value_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f) AS "agg_w172800_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f"
     FROM "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
     INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
       ON (
@@ -130,6 +130,6 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "agg_w7200_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c" AS "a_2h_average",
-  "agg_w172800_avg_3ae85dc1a626a1fc7a70dec80d7d86adcb32245c" AS "a_48h_average"
+  "agg_w7200_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f" AS "a_2h_average",
+  "agg_w172800_avg_b6443dd315eabf8c991cc96209e5ad96ebd4538f" AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG

@@ -7,6 +7,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
+    Dict,
     List,
     Literal,
     Optional,
@@ -255,6 +256,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         data: DataApiObject,
         other_input_nodes: Optional[List[Node]] = None,
         keep_record_creation_date_column: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Tuple[GraphNode, List[Node], Node]:
         """
         Construct the view's graph node from the input data. The output of any view should be a single graph node
@@ -271,6 +273,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             Other input nodes to the view graph node
         keep_record_creation_date_column: bool
             Keep record creation date column in the view
+        metadata: Optional[dict[str, Any]]
+            Metadata to be added to the view graph node
 
         Returns
         -------
@@ -303,6 +307,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=view_graph_input_nodes,
                 graph_node_type=cls._view_graph_node_type,
+                metadata=metadata,
             )
             view_graph_node.add_operation(
                 node_type=NodeType.PROJECT,
@@ -321,6 +326,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
                 input_nodes=view_graph_input_nodes,
                 graph_node_type=cls._view_graph_node_type,
                 nested_node_input_indices=[0],
+                metadata=metadata,
             )
 
         assert len(proxy_input_nodes) == len(view_graph_input_nodes)
@@ -328,7 +334,12 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     @classmethod
     @typechecked
-    def _from_data(cls: Type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
+    def _from_data(
+        cls: Type[ViewT],
+        data: DataApiObject,
+        metadata: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> ViewT:
         """
         Construct a View object from a DataApiObject. This method constructs a view graph node and then
         insert it into the global graph.
@@ -337,6 +348,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ----------
         data: DataApiObject
             EventData object used to construct a View object
+        metadata: Optional[dict[str, Any]]
+            Metadata to be added to the view graph node
         kwargs: dict
             Additional parameters to be passed to the View constructor
 
@@ -349,7 +362,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         #    +-----------+     +------------------------+
         #    | InputNode + --> | GraphNode(type:*_view) +
         #    +-----------+     +------------------------+
-        view_graph_node, _, data_node = cls._construct_view_graph_node(data=data)
+        view_graph_node, _, data_node = cls._construct_view_graph_node(data=data, metadata=metadata)
         columns_info = cls._prepare_view_columns_info(data=data)
         inserted_graph_node = GlobalQueryGraph().add_node(
             node=view_graph_node, input_nodes=[data_node]

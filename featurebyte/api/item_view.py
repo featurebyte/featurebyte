@@ -224,7 +224,9 @@ class ItemView(View, GroupByMixin):
         #                            | InputNode(type:item) | -->| GraphNode(type:item_view) |
         #                            +----------------------+    +---------------------------+
         view_graph_node, proxy_input_nodes, data_node = cls._construct_view_graph_node(
-            data=item_data, other_input_nodes=[event_view.node]
+            data=item_data,
+            other_input_nodes=[event_view.node],
+            metadata={"event_suffix": event_suffix},
         )
         item_view_node, event_view_node = proxy_input_nodes
         item_view_columns_info = cls._prepare_view_columns_info(data=item_data)
