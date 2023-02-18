@@ -889,17 +889,17 @@ def test_get_sql(feature_list):
         """
         SELECT
           (
-            "agg_w1800_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" + 123
+            "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" + 123
           ) AS "production_ready_feature",
           (
             (
-              "agg_w1800_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" + 123
+              "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" + 123
             ) + 123
           ) AS "draft_feature",
           (
             (
               (
-                "agg_w1800_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" + 123
+                "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" + 123
               ) + 123
             ) + 123
           ) AS "quarantine_feature",
@@ -907,7 +907,7 @@ def test_get_sql(feature_list):
             (
               (
                 (
-                  "agg_w1800_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" + 123
+                  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" + 123
                 ) + 123
               ) + 123
             ) + 123
@@ -1022,7 +1022,7 @@ def test_get_feature_jobs_status(
     # check feature_job_summary content
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "072a1700"},
+            "aggregation_hash": {0: "60e19c3e"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 23},
             "max_duration(s)": {0: 1582.072},

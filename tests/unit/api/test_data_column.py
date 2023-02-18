@@ -119,13 +119,6 @@ def _check_event_data_with_critical_data_info(event_data):
     }
     assert event_data.frame.node.type == NodeType.INPUT
 
-    if event_data.saved:
-        # check that node name still input node type as there is no critical data info
-        config = Configurations()
-        client = config.get_client()
-        response = client.get(f"/event_data/{event_data.id}")
-        response_dict = response.json()
-
     # update critical data info with some cleaning operations
     event_data.col_int.update_critical_data_info(
         cleaning_operations=[
@@ -138,7 +131,7 @@ def _check_event_data_with_critical_data_info(event_data):
     )
 
     assert event_data.frame.node.type == NodeType.INPUT
-    expected_query = textwrap.dedent(
+    expected_clean_data_query = textwrap.dedent(
         """
         SELECT
           CAST(CASE
@@ -160,10 +153,31 @@ def _check_event_data_with_critical_data_info(event_data):
         LIMIT 10
     """
     ).strip()
-    assert event_data.preview_clean_data_sql() == expected_query
+    assert event_data.preview_clean_data_sql() == expected_clean_data_query
 
+    expected_view_query = textwrap.dedent(
+        """
+        SELECT
+          CAST(CASE
+            WHEN (
+              CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT) < 0
+            )
+            THEN 0
+            ELSE CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT)
+          END AS BIGINT) AS "col_int",
+          CAST(CASE WHEN IS_VARCHAR(TO_VARIANT("col_float")) THEN 0 ELSE "col_float" END AS FLOAT) AS "col_float",
+          "col_char" AS "col_char",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          CAST("event_timestamp" AS STRING) AS "event_timestamp",
+          "cust_id" AS "cust_id"
+        FROM "sf_database"."sf_schema"."sf_table"
+        LIMIT 10
+    """
+    ).strip()
     event_view = EventView.from_event_data(event_data)
-    assert event_view.preview_sql() == expected_query
+    assert event_view.preview_sql() == expected_view_query
 
 
 def _check_remove_critical_data_info(event_data):

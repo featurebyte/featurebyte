@@ -142,14 +142,13 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False):
     )
 
 
-def compare_generated_data_object_sdk_code(
-    data_object, fixture_path, update_fixtures, to_use_saved_data, **kwargs
+def compare_generated_api_object_sdk_code(
+    api_object, data_id, fixture_path, update_fixtures, to_use_saved_data, **kwargs
 ):
     """Compare generated SDK code for data object"""
-    feature_store_id = data_object.frame.feature_store.id
-    data_id = getattr(data_object, "id", None)
+    feature_store_id = api_object.feature_store.id
     if update_fixtures:
-        formatted_sdk_code = data_object.frame._generate_code(
+        formatted_sdk_code = api_object._generate_code(
             to_format=True, to_use_saved_data=to_use_saved_data
         )
         formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
@@ -160,10 +159,11 @@ def compare_generated_data_object_sdk_code(
         # to {event_data_id} placeholder through kwargs
         for key, value in kwargs.items():
             formatted_sdk_code = formatted_sdk_code.replace(f"{value}", "{key}".replace("key", key))
+
         with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
             file_handle.write(formatted_sdk_code)
 
-    sdk_code = data_object.frame._generate_code(to_format=True, to_use_saved_data=to_use_saved_data)
+    sdk_code = api_object._generate_code(to_format=True, to_use_saved_data=to_use_saved_data)
     with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
         expected = file_handle.read().format(
             feature_store_id=feature_store_id, data_id=data_id, **kwargs

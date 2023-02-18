@@ -21,6 +21,8 @@ from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc, SourceType
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.feature import DefaultVersionMode
+from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.critical_data_info import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -29,6 +31,7 @@ from featurebyte.query_graph.model.critical_data_info import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
+from featurebyte.schema.feature_list import FeatureVersionInfo
 
 version: str = get_version()
 
@@ -65,4 +68,8 @@ __all__ = [
     "UnexpectedValueImputation",
     "ValueBeyondEndpointImputation",
     "StringValueImputation",
+    # feature & feature list version specific classes
+    "DefaultVersionMode",
+    "FeatureListNewVersionMode",
+    "FeatureVersionInfo",
 ]

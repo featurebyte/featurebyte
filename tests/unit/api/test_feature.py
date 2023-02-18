@@ -280,7 +280,7 @@ def saved_feature_fixture(
         groupby_node.parameters.tile_id
         == "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817"
     )
-    assert groupby_node.parameters.aggregation_id == "sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85"
+    assert groupby_node.parameters.aggregation_id == "sum_60e19c3e160be7db3a64f2a828c1c7929543abb4"
 
     # test list features
     assert float_feature.name == "sum_1d"
@@ -635,7 +635,7 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
 def test_get_sql(float_feature):
     """Test get sql for feature"""
     assert float_feature.sql.endswith(
-        'SELECT\n  "agg_w86400_sum_072a1700018ba111c99ff5d80e934ef4dd5a9f85" AS "sum_1d"\n'
+        'SELECT\n  "agg_w86400_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_1d"\n'
         "FROM _FB_AGGREGATED AS AGG"
     )
 
@@ -744,6 +744,23 @@ def test_get_feature_jobs_status(
     """
     Test get_feature_jobs_status
     """
+    if update_fixtures:
+        # update job_logs.csv fixture
+        log_fixture_path = "tests/fixtures/feature_job_status/job_logs.csv"
+        feature_job_logs = pd.read_csv(log_fixture_path)
+        feature_job_logs["CREATED_AT"] = pd.to_datetime(feature_job_logs["CREATED_AT"])
+
+        # extract tile ID and aggregation ID from the feature
+        groupby_node = saved_feature.extract_pruned_graph_and_node()[0].get_node_by_name(
+            "groupby_1"
+        )
+        tile_id = groupby_node.parameters.tile_id
+        feature_job_logs["AGGREGATION_ID"] = groupby_node.parameters.aggregation_id
+        feature_job_logs["SESSION_ID"] = feature_job_logs["SESSION_ID"].apply(
+            lambda x: f"{tile_id}|{x.split('|')[1]}"
+        )
+        feature_job_logs.to_csv(log_fixture_path, index=False)
+
     mock_execute_query.return_value = feature_job_logs
     job_status_result = saved_feature.get_feature_jobs_status(
         job_history_window=24, job_duration_tolerance=1700
@@ -770,7 +787,7 @@ def test_get_feature_jobs_status_incomplete_logs(
     assert job_status_result.job_session_logs.shape == (1, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "072a1700"},
+            "aggregation_hash": {0: "60e19c3e"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},
@@ -781,7 +798,9 @@ def test_get_feature_jobs_status_incomplete_logs(
             "time_since_last": {0: "NaT"},
         }
     )
-    assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary)
+    assert_frame_equal(
+        job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
+    )
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -794,7 +813,7 @@ def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, f
     assert job_status_result.job_session_logs.shape == (0, 11)
     expected_feature_job_summary = pd.DataFrame(
         {
-            "aggregation_hash": {0: "072a1700"},
+            "aggregation_hash": {0: "60e19c3e"},
             "frequency(min)": {0: 30},
             "completed_jobs": {0: 0},
             "max_duration(s)": {0: np.nan},

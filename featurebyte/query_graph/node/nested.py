@@ -2,7 +2,10 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Sequence, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing_extensions import Annotated
+
+from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
@@ -12,6 +15,14 @@ from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
     OperationStructureInfo,
+)
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
+    CodeGenerationConfig,
+    ObjectClass,
+    StatementT,
+    VariableNameGenerator,
+    VarNameExpressionStr,
 )
 
 
@@ -51,12 +62,219 @@ class ProxyInputNode(BaseNode):
         )
 
 
-class GraphNodeParameters(BaseModel):
+class BaseGraphNodeParameters(BaseModel):
     """Graph node parameters"""
 
     graph: "QueryGraphModel"  # type: ignore[name-defined]
     output_node_name: str
     type: GraphNodeType
+
+    @abstractmethod
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        """
+        Derive SDK code for the current graph node
+
+        Parameters
+        ----------
+        input_var_name_expressions: List[VarNameExpressionStr]
+            Input variables name
+        input_node_types: List[NodeType]
+            Input node types
+        var_name_generator: VariableNameGenerator
+            Variable name generator
+        operation_structure: OperationStructure
+            Operation structure of current node
+        config: CodeGenerationConfig
+            Code generation configuration
+
+        Returns
+        -------
+        Tuple[List[StatementT], VarNameExpressionStr]
+        """
+
+
+class CleaningGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:cleaning) parameters"""
+
+    type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        raise RuntimeError("Not implemented")
+
+
+class EventViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:event_view) parameters"""
+
+    type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # construct event view sdk statement
+        view_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="event_view"
+        )
+        expression = ClassEnum.EVENT_VIEW(
+            _method_name="from_event_data", event_data=input_var_name_expressions[0]
+        )
+        return [(view_var_name, expression)], view_var_name
+
+
+class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:item_view) parameters"""
+
+    class Metadata(BaseModel):
+        """Metadata for item view graph node"""
+
+        event_suffix: Optional[str]
+
+    type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
+    metadata: Metadata
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # construct item view sdk statement
+        view_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="item_view"
+        )
+        expression = ClassEnum.ITEM_VIEW(
+            _method_name="from_item_data",
+            item_data=input_var_name_expressions[0],
+            event_suffix=self.metadata.event_suffix,
+        )
+        return [(view_var_name, expression)], view_var_name
+
+
+class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:dimension_view) parameters"""
+
+    type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # construct dimension view sdk statement
+        view_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="dimension_view"
+        )
+        expression = ClassEnum.DIMENSION_VIEW(
+            _method_name="from_dimension_data", dimension_data=input_var_name_expressions[0]
+        )
+        return [(view_var_name, expression)], view_var_name
+
+
+class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:scd_view) parameters"""
+
+    type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # construct scd view sdk statement
+        view_var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="scd_view")
+        expression = ClassEnum.SCD_VIEW(
+            _method_name="from_slowly_changing_data",
+            slowly_changing_data=input_var_name_expressions[0],
+        )
+        return [(view_var_name, expression)], view_var_name
+
+
+class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
+    """GraphNode (type:change_view) parameters"""
+
+    class Metadata(BaseModel):
+        """Metadata for change view graph node"""
+
+        track_changes_column: str
+        default_feature_job_setting: Optional[Dict[str, Any]]
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+
+    type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
+    metadata: Metadata
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # construct change view sdk statement
+        view_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="change_view"
+        )
+
+        feature_job_setting: Optional[ObjectClass] = None
+        if self.metadata.default_feature_job_setting:
+            feature_job_setting = ClassEnum.FEATURE_JOB_SETTING(
+                **self.metadata.default_feature_job_setting
+            )
+
+        expression = ClassEnum.CHANGE_VIEW(
+            _method_name="from_slowly_changing_data",
+            scd_data=input_var_name_expressions[0],
+            track_changes_column=self.metadata.track_changes_column,
+            default_feature_job_setting=feature_job_setting,
+            prefixes=self.metadata.prefixes,
+        )
+        return [(view_var_name, expression)], view_var_name
+
+
+GRAPH_NODE_PARAMETERS_TYPES = [
+    CleaningGraphNodeParameters,
+    EventViewGraphNodeParameters,
+    ItemViewGraphNodeParameters,
+    DimensionViewGraphNodeParameters,
+    SCDViewGraphNodeParameters,
+    ChangeViewGraphNodeParameters,
+]
+if TYPE_CHECKING:
+    GraphNodeParameters = BaseGraphNodeParameters
+else:
+    GraphNodeParameters = Annotated[
+        Union[tuple(GRAPH_NODE_PARAMETERS_TYPES)], Field(discriminator="type")
+    ]
 
 
 class BaseGraphNode(BaseNode):
@@ -96,3 +314,19 @@ class BaseGraphNode(BaseNode):
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")
+
+    def derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        return self.parameters.derive_sdk_code(
+            input_var_name_expressions=input_var_name_expressions,
+            input_node_types=input_node_types,
+            var_name_generator=var_name_generator,
+            operation_structure=operation_structure,
+            config=config,
+        )

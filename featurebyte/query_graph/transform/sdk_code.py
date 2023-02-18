@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
@@ -59,6 +59,10 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, BaseModel, SDKCode
         node: Node,
         input_node_names: List[str],
     ) -> Tuple[List[str], bool]:
+        if node.type == NodeType.GRAPH and node.parameters.type == GraphNodeType.ITEM_VIEW:  # type: ignore
+            # item view consume 2 inputs (item data & event view), when constructing SDK code, we only need to use the
+            # first input (item data).
+            return input_node_names[:1], False
         return input_node_names, False
 
     def _in_compute(

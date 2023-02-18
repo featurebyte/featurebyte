@@ -6,7 +6,11 @@ import pytest
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.exception import JoinViewMismatchError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import get_node
+from tests.util.helper import (
+    check_sdk_code_generation,
+    compare_generated_api_object_sdk_code,
+    get_node,
+)
 
 
 class TestSlowlyChangingView(BaseViewTestSuite):
@@ -65,7 +69,6 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "col_binary",
             "col_boolean",
             "event_timestamp",
-            "created_at",
             "cust_id",
         ],
         "left_output_columns": [
@@ -76,7 +79,6 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "col_binary",
             "col_boolean",
             "event_timestamp",
-            "created_at",
             "cust_id",
         ],
         "right_input_columns": ["col_float", "col_binary", "col_boolean", "created_at", "cust_id"],
@@ -173,3 +175,17 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
         },
         "event_parameters": None,
     }
+
+
+def test_sdk_code_generation(saved_scd_data, update_fixtures):
+    """Check SDK code generation"""
+    to_use_saved_data = True
+    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    check_sdk_code_generation(scd_view, to_use_saved_data=to_use_saved_data)
+    compare_generated_api_object_sdk_code(
+        api_object=scd_view,
+        data_id=saved_scd_data.id,
+        fixture_path="tests/fixtures/sdk_code/scd_view.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=to_use_saved_data,
+    )

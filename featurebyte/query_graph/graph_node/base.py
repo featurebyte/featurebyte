@@ -3,13 +3,20 @@ This module contains graph node class.
 """
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+from pydantic import parse_obj_as
+
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.nested import BaseGraphNode, GraphNodeParameters
+from featurebyte.query_graph.node.nested import (
+    GRAPH_NODE_PARAMETERS_TYPES,
+    BaseGraphNode,
+    GraphNodeParameters,
+)
 
 # update forward references after QueryGraph is defined
-GraphNodeParameters.update_forward_refs(QueryGraphModel=QueryGraphModel)
+for graph_node_parameters_type in GRAPH_NODE_PARAMETERS_TYPES:
+    graph_node_parameters_type.update_forward_refs(QueryGraphModel=QueryGraphModel)
 
 
 class GraphNode(BaseGraphNode):
@@ -26,6 +33,7 @@ class GraphNode(BaseGraphNode):
         input_nodes: List[Node],
         graph_node_type: GraphNodeType,
         nested_node_input_indices: Optional[List[int]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Tuple["GraphNode", List[Node]]:
         """
         Construct a graph node
@@ -44,6 +52,8 @@ class GraphNode(BaseGraphNode):
             Type of graph node
         nested_node_input_indices: Optional[List[int]]
             Indices of input nodes to be used as input nodes of the nested node
+        metadata: Optional[Dict[str, Any]]
+            Optional metadata that is passed to the graph node parameters
 
         Returns
         -------
@@ -71,14 +81,19 @@ class GraphNode(BaseGraphNode):
             node_output_type=node_output_type,
             input_nodes=nested_node_inputs,
         )
+
+        graph_node_parameters = {
+            "graph": graph,
+            "output_node_name": nested_node.name,
+            "type": graph_node_type,
+        }
+        if metadata:
+            graph_node_parameters["metadata"] = metadata
+
         graph_node = GraphNode(
             name="graph",
             output_type=nested_node.output_type,
-            parameters=GraphNodeParameters(
-                graph=graph,
-                output_node_name=nested_node.name,
-                type=graph_node_type,
-            ),
+            parameters=parse_obj_as(GraphNodeParameters, graph_node_parameters),  # type: ignore
         )
         return graph_node, proxy_input_nodes
 

@@ -11,7 +11,7 @@ def test_extended_feature_model__float_feature(float_feature):
         **float_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "072a1700018ba111c99ff5d80e934ef4dd5a9f85"
+    aggregation_id = "60e19c3e160be7db3a64f2a828c1c7929543abb4"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -40,7 +40,6 @@ def test_extended_feature_model__float_feature(float_feature):
                 "col_binary" AS "col_binary",
                 "col_boolean" AS "col_boolean",
                 "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
             )
@@ -76,7 +75,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
         **agg_per_category_feature.dict(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "4de8103894117c4d8ee4a327a63ff91a77981539"
+    aggregation_id = "16e702a8a8a05816db2e6d5f19c271d78c2f59eb"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -85,7 +84,7 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
           ) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "col_int",
-          SUM("col_float") AS value_sum_4de8103894117c4d8ee4a327a63ff91a77981539
+          SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
           SELECT
             *,
@@ -106,7 +105,6 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
                 "col_binary" AS "col_binary",
                 "col_boolean" AS "col_boolean",
                 "event_timestamp" AS "event_timestamp",
-                "created_at" AS "created_at",
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
             )
