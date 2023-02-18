@@ -36,7 +36,7 @@ init: install
 
 #* Installation
 build-hive-udf-jar:
-	cd hive-udf && gradle clean && gradle test && ./gradlew shadowJar
+	cd hive-udf && ./gradlew clean && ./gradlew test && ./gradlew shadowJar
 	rm -f featurebyte/sql/spark/*.jar
 	cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
 
