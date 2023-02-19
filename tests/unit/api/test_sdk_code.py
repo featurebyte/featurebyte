@@ -61,15 +61,14 @@ def test_sdk_code_generation__complex_math_expression(saved_event_data, update_f
     )
     check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
     # NOTE: The following check is flaky as it is sensitive the global graph's nodes order.
-    if update_fixtures:
-        compare_generated_api_object_sdk_code(
-            api_object=output,
-            data_id=saved_event_data.id,
-            fixture_path="tests/fixtures/sdk_code/complex_math_expression.py",
-            update_fixtures=update_fixtures,
-            to_use_saved_data=to_use_saved_data,
-            to_format=to_format,
-        )
+    compare_generated_api_object_sdk_code(
+        api_object=output,
+        data_id=saved_event_data.id,
+        fixture_path="tests/fixtures/sdk_code/complex_math_expression.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=to_use_saved_data,
+        to_format=to_format,
+    )
 
 
 def test_sdk_code_generation__complex_date_related_operations(saved_event_data, update_fixtures):
