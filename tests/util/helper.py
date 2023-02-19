@@ -116,7 +116,9 @@ def _check_pruned_graph_and_nodes(
     assert node == expected_node, sdk_code
 
 
-def check_sdk_code_generation(api_object, to_use_saved_data=False, data_id_to_info=None):
+def check_sdk_code_generation(
+    api_object, to_use_saved_data=False, data_id_to_info=None, to_format=True
+):
     """Check SDK code generation"""
     if isinstance(api_object, AbstractTableData):
         query_object = api_object.frame
@@ -128,7 +130,7 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False, data_id_to_in
     # execute SDK code & generate output object
     local_vars = {}
     sdk_code = query_object._generate_code(
-        to_format=True, to_use_saved_data=to_use_saved_data, data_id_to_info=data_id_to_info
+        to_format=to_format, to_use_saved_data=to_use_saved_data, data_id_to_info=data_id_to_info
     )
     exec(sdk_code, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
@@ -154,13 +156,16 @@ def compare_generated_api_object_sdk_code(
     update_fixtures,
     to_use_saved_data,
     data_id_to_info=None,
+    to_format=True,
     **kwargs,
 ):
     """Compare generated SDK code for data object"""
     feature_store_id = api_object.feature_store.id
     if update_fixtures:
         formatted_sdk_code = api_object._generate_code(
-            to_format=True, to_use_saved_data=to_use_saved_data, data_id_to_info=data_id_to_info
+            to_format=to_format,
+            to_use_saved_data=to_use_saved_data,
+            data_id_to_info=data_id_to_info,
         )
         formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
         if data_id:
@@ -175,7 +180,7 @@ def compare_generated_api_object_sdk_code(
             file_handle.write(formatted_sdk_code)
 
     sdk_code = api_object._generate_code(
-        to_format=True,
+        to_format=to_format,
         to_use_saved_data=to_use_saved_data,
         data_id_to_info=data_id_to_info,
     )
@@ -183,4 +188,4 @@ def compare_generated_api_object_sdk_code(
         expected = file_handle.read().format(
             feature_store_id=feature_store_id, data_id=data_id, **kwargs
         )
-        assert expected == sdk_code, sdk_code
+        assert expected.strip() == sdk_code.strip(), sdk_code

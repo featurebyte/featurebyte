@@ -5,10 +5,9 @@ from featurebyte import EventView
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
 event_view = EventView.from_event_data(event_data=event_data)
-col = (~(event_view["col_int"] > 10)).astype(int)
-col_1 = ((event_view["col_int"] > 10).astype(int)) - col
-col_2 = ((event_view["col_float"].abs()).sqrt()).ceil()
-col_3 = (event_view["col_int"].floor()) * (event_view["col_float"].log())
-col_4 = (col_1 - col_2) + (col_3 / (event_view["col_int"].exp()))
-col_5 = (event_view["col_int"].isnull()).astype(float)
-output = col_4 + col_5
+col = (event_view["col_int"] > 10).astype(int) - (~(event_view["col_int"] > 10)).astype(int)
+col_1 = col - event_view["col_float"].abs().sqrt().ceil()
+col_2 = event_view["col_int"].floor() * event_view["col_float"].log()
+col_3 = col_1 + (col_2 / event_view["col_int"].exp())
+col_4 = col_3 + event_view["col_int"].isnull().astype(float)
+output = col_4

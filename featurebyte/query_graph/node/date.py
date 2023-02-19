@@ -20,7 +20,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     StatementT,
     VariableNameGenerator,
-    VariableNameStr,
     VarNameExpressionStr,
 )
 
@@ -35,11 +34,6 @@ class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.DT_EXTRACT] = Field(NodeType.DT_EXTRACT, const=True)
     parameters: Parameters
-
-    # class variable
-    _derive_sdk_code_return_var_name_expression_type: ClassVar[
-        Union[Type[VariableNameStr], Type[ExpressionStr]]
-    ] = VariableNameStr
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
@@ -61,11 +55,6 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.TIMEDELTA_EXTRACT] = Field(NodeType.TIMEDELTA_EXTRACT, const=True)
     parameters: Parameters
-
-    # class variable
-    _derive_sdk_code_return_var_name_expression_type: ClassVar[
-        Union[Type[VariableNameStr], Type[ExpressionStr]]
-    ] = VariableNameStr
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT

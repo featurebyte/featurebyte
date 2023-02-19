@@ -2,7 +2,7 @@
 This module contains unary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal
+from typing import ClassVar, List, Literal, Type, Union
 
 from pydantic import BaseModel, Field
 
@@ -10,12 +10,18 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import BaseSeriesOutputWithSingleOperandNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import ExpressionStr, VariableNameStr
 
 
 class NotNodeSeriesOutputWith(BaseSeriesOutputWithSingleOperandNode):
     """NotNode class"""
 
     type: Literal[NodeType.NOT] = Field(NodeType.NOT, const=True)
+
+    # class variable
+    _derive_sdk_code_return_var_name_expression_type: ClassVar[
+        Union[Type[VariableNameStr], Type[ExpressionStr]]
+    ] = ExpressionStr
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL

@@ -553,7 +553,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     # class variable
     _derive_sdk_code_return_var_name_expression_type: ClassVar[
         Union[Type[VariableNameStr], Type[ExpressionStr]]
-    ] = ExpressionStr
+    ] = VariableNameStr
 
     @abstractmethod
     def _generate_expression(self, operand: str) -> str:
