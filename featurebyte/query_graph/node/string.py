@@ -49,7 +49,9 @@ class TrimNode(BaseSeriesOutputWithSingleOperandNode):
         return DBVarType.VARCHAR
 
     def _generate_expression(self, operand: str) -> str:
-        value = ValueStr.create(self.parameters.character)
+        value = None
+        if self.parameters.character:
+            value = ValueStr.create(self.parameters.character)
         return f"{operand}.str.strip(to_strip={value})"
 
 
@@ -153,7 +155,7 @@ class SubStringNode(BaseSeriesOutputWithSingleOperandNode):
     def _generate_expression(self, operand: str) -> str:
         stop = None
         if self.parameters.length is not None:
-            stop = self.parameters.length + self.parameters.start
+            stop = self.parameters.length + (self.parameters.start or 0)
         return f"{operand}.str.slice(start={self.parameters.start}, stop={stop})"
 
 

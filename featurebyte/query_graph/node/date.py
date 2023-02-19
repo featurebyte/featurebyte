@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import ClassVar, List, Literal, Optional, Tuple, Type, Union
+from typing import List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -39,7 +39,7 @@ class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
         return DBVarType.INT
 
     def _generate_expression(self, operand: str) -> str:
-        date_property = self.parameters.property
+        date_property: str = self.parameters.property
         if date_property == "dayofweek":
             date_property = "day_of_week"
         return f"{operand}.dt.{date_property}"
@@ -107,7 +107,7 @@ class TimeDelta(BaseSeriesOutputNode):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expression = input_var_name_expressions[0]
-        statements = []
+        statements: List[StatementT] = []
         var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
