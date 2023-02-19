@@ -550,6 +550,11 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
 class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     """BaseSingleOperandNode class"""
 
+    # class variable
+    _derive_sdk_code_return_var_name_expression_type: ClassVar[
+        Union[Type[VariableNameStr], Type[ExpressionStr]]
+    ] = ExpressionStr
+
     @abstractmethod
     def _generate_expression(self, operand: str) -> str:
         """
@@ -574,7 +579,9 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expression = input_var_name_expressions[0]
-        return [], ExpressionStr(self._generate_expression(var_name_expression.as_input()))
+        return [], self._derive_sdk_code_return_var_name_expression_type(
+            self._generate_expression(var_name_expression.as_input())
+        )
 
 
 class BasePrunableNode(BaseNode):

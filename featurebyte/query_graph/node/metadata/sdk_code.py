@@ -204,6 +204,7 @@ class ClassEnum(Enum):
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
+    TO_TIMEDELTA = ("featurebyte", "to_timedelta")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
