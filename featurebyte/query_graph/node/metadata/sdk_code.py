@@ -389,5 +389,5 @@ class CodeGenerator(BaseModel):
         if to_format:
             from black import FileMode, format_str  # pylint: disable=import-outside-toplevel
 
-            return format_str(code, mode=FileMode())
+            return format_str(code, mode=FileMode(line_length=100))
         return code

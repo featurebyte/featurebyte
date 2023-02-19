@@ -9,17 +9,18 @@ from pydantic import BaseModel, Field
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
-    BaseSeriesOutputNode,
-    BaseSeriesOutputWithAScalarParamNode,
+    BaseSeriesOutputWithSingleOperandNode,
+    BinaryArithmeticOpNode,
     ValueWithRightOpNodeParameters,
 )
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import ValueStr
 
 Side = Literal["left", "right", "both"]
 Case = Literal["upper", "lower"]
 
 
-class LengthNode(BaseSeriesOutputNode):
+class LengthNode(BaseSeriesOutputWithSingleOperandNode):
     """LengthNode class"""
 
     type: Literal[NodeType.LENGTH] = Field(NodeType.LENGTH, const=True)
@@ -28,8 +29,11 @@ class LengthNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
 
+    def _generate_expression(self, operand: str) -> str:
+        return f"{operand}.str.len()"
 
-class TrimNode(BaseSeriesOutputNode):
+
+class TrimNode(BaseSeriesOutputWithSingleOperandNode):
     """TrimNode class"""
 
     class Parameters(BaseModel):
@@ -44,8 +48,12 @@ class TrimNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
+    def _generate_expression(self, operand: str) -> str:
+        value = ValueStr.create(self.parameters.character)
+        return f"{operand}.str.strip(to_strip={value})"
 
-class ReplaceNode(BaseSeriesOutputNode):
+
+class ReplaceNode(BaseSeriesOutputWithSingleOperandNode):
     """ReplaceNode class"""
 
     class Parameters(BaseModel):
@@ -60,8 +68,13 @@ class ReplaceNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
+    def _generate_expression(self, operand: str) -> str:
+        pattern = ValueStr.create(self.parameters.pattern)
+        replacement = ValueStr.create(self.parameters.replacement)
+        return f"{operand}.str.replace(pat={pattern}, repl={replacement})"
 
-class PadNode(BaseSeriesOutputNode):
+
+class PadNode(BaseSeriesOutputWithSingleOperandNode):
     """PadNode class"""
 
     class Parameters(BaseModel):
@@ -77,8 +90,14 @@ class PadNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
+    def _generate_expression(self, operand: str) -> str:
+        width = self.parameters.length
+        side = ValueStr.create(self.parameters.side)
+        fill_char = ValueStr.create(self.parameters.pad)
+        return f"{operand}.str.pad(width={width}, side={side}, fillchar={fill_char})"
 
-class StringCaseNode(BaseSeriesOutputNode):
+
+class StringCaseNode(BaseSeriesOutputWithSingleOperandNode):
     """StringCaseNode class"""
 
     class Parameters(BaseModel):
@@ -92,8 +111,11 @@ class StringCaseNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
+    def _generate_expression(self, operand: str) -> str:
+        return f"{operand}.str.{self.parameters.case}()"
 
-class StringContainsNode(BaseSeriesOutputNode):
+
+class StringContainsNode(BaseSeriesOutputWithSingleOperandNode):
     """StringContainsNode class"""
 
     class Parameters(BaseModel):
@@ -108,8 +130,12 @@ class StringContainsNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
+    def _generate_expression(self, operand: str) -> str:
+        pattern = ValueStr.create(self.parameters.pattern)
+        return f"{operand}.str.contains(pat={pattern}, case={self.parameters.case})"
 
-class SubStringNode(BaseSeriesOutputNode):
+
+class SubStringNode(BaseSeriesOutputWithSingleOperandNode):
     """SubStringNode class"""
 
     class Parameters(BaseModel):
@@ -124,8 +150,14 @@ class SubStringNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
+    def _generate_expression(self, operand: str) -> str:
+        stop = None
+        if self.parameters.length is not None:
+            stop = self.parameters.length + self.parameters.start
+        return f"{operand}.str.slice(start={self.parameters.start}, stop={stop})"
 
-class ConcatNode(BaseSeriesOutputWithAScalarParamNode):
+
+class ConcatNode(BinaryArithmeticOpNode):
     """ConcatNode class"""
 
     type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)
@@ -133,3 +165,6 @@ class ConcatNode(BaseSeriesOutputWithAScalarParamNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
+
+    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+        return f"{left_operand} + {right_operand}"

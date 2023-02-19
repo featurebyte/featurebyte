@@ -106,3 +106,29 @@ def test_sdk_code_generation__complex_date_related_operations(saved_event_data, 
             to_use_saved_data=to_use_saved_data,
             to_format=to_format,
         )
+
+
+def test_sdk_code_generation__complex_string_related_operations(saved_event_data, update_fixtures):
+    """SDK code generation for complex string related operations"""
+    to_use_saved_data, to_format = True, True
+    event_view = EventView.from_event_data(event_data=saved_event_data)
+    col_a = event_view["col_text"]
+    output = (
+        col_a.str.len().astype(str)
+        + col_a.str.strip(to_strip=" ")
+        + col_a.str.replace(pat=" ", repl="_")
+        + col_a.str.pad(width=10, side="left", fillchar="_")
+        + col_a.str.upper()
+        + col_a.str.lower()
+        + col_a.str.contains(pat=" ", case=True).astype(str)
+        + col_a.str.slice(start=0, stop=10)
+    )
+    check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
+    compare_generated_api_object_sdk_code(
+        api_object=output,
+        data_id=saved_event_data.id,
+        fixture_path="tests/fixtures/sdk_code/complex_string_related_operations.py",
+        update_fixtures=update_fixtures,
+        to_use_saved_data=to_use_saved_data,
+        to_format=to_format,
+    )
