@@ -8,10 +8,9 @@ import pytest
 from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineStore
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_update_feature_store__update_feature_value(
-    spark_session, tile_task_prep_spark
-):
+async def test_schedule_update_feature_store__update_feature_value(session, tile_task_prep_spark):
     """
     Test the stored procedure for updating feature store
     """
@@ -20,14 +19,14 @@ async def test_schedule_update_feature_store__update_feature_value(
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     tile_online_store_ins = TileScheduleOnlineStore(
-        spark_session=spark_session,
+        spark_session=session,
         agg_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     assert result[feature_name].iloc[0] == 3
     assert result["PRODUCT_ACTION"].iloc[0] == "view"
@@ -39,19 +38,19 @@ async def test_schedule_update_feature_store__update_feature_value(
         UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = 'select {entity_col_names}, 100.0 as {feature_name} from TEMP_TABLE limit {number_records}'
         WHERE TILE_ID = '{tile_id}'
 """
-    await spark_session.execute_query(update_mapping_sql)
+    await session.execute_query(update_mapping_sql)
 
     # sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{agg_id}', '{date_ts_str}')"
     # spark_session.sql(sql)
     tile_online_store_ins = TileScheduleOnlineStore(
-        spark_session=spark_session,
+        spark_session=session,
         agg_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
 
     sql = f"SELECT * FROM {feature_store_table_name}"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     assert result[feature_name].iloc[0] == 100
     assert result["PRODUCT_ACTION"].iloc[0] == "view"
@@ -59,9 +58,10 @@ async def test_schedule_update_feature_store__update_feature_value(
     assert result["PRODUCT_ACTION"].iloc[1] == "view"
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_with_new_feature_column(
-    spark_session, tile_task_prep_spark
+    session, tile_task_prep_spark
 ):
     """
     Test the stored procedure for updating feature store
@@ -71,7 +71,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     tile_online_store_ins = TileScheduleOnlineStore(
-        spark_session=spark_session,
+        spark_session=session,
         agg_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
@@ -79,7 +79,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     assert result[feature_name].iloc[0] == 3
     assert result["PRODUCT_ACTION"].iloc[0] == "view"
@@ -111,17 +111,17 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
                 current_timestamp()
             )
     """
-    await spark_session.execute_query(insert_new_mapping_sql)
+    await session.execute_query(insert_new_mapping_sql)
 
     tile_online_store_ins = TileScheduleOnlineStore(
-        spark_session=spark_session,
+        spark_session=session,
         agg_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
     await tile_online_store_ins.execute()
 
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
     assert result[feature_name].iloc[0] == 3
     assert result[new_feature_name].iloc[0] == 3
@@ -129,9 +129,10 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     assert result[new_feature_name].iloc[1] == 6
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_update_feature_store__insert_varchar_feature_column(
-    spark_session, tile_task_prep_spark
+    session, tile_task_prep_spark
 ):
     """
     Test the stored procedure for updating feature store
@@ -147,10 +148,10 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
             UPDATE ONLINE_STORE_MAPPING SET SQL_QUERY = '{sql}', RESULT_TYPE = 'VARCHAR'
             WHERE TILE_ID = '{tile_id}'
     """
-    await spark_session.execute_query(update_mapping_sql)
+    await session.execute_query(update_mapping_sql)
 
     tile_online_store_ins = TileScheduleOnlineStore(
-        spark_session=spark_session,
+        spark_session=session,
         agg_id=agg_id,
         job_schedule_ts_str=date_ts_str,
     )
@@ -158,6 +159,6 @@ async def test_schedule_update_feature_store__insert_varchar_feature_column(
 
     # verify existing feature store table
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 1
     assert result[feature_name].iloc[0] == "cat1"

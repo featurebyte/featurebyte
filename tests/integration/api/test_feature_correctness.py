@@ -303,10 +303,11 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
-    snowflake_event_data,
+    event_data,
     config,
 ):
     """
@@ -352,8 +353,8 @@ def test_aggregate_over(
         ),
     ]
 
-    event_view = EventView.from_event_data(snowflake_event_data)
-    feature_job_setting = snowflake_event_data.default_feature_job_setting
+    event_view = EventView.from_event_data(event_data)
+    feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
         time_modulo_frequency=feature_job_setting.time_modulo_frequency,
@@ -458,6 +459,7 @@ def test_aggregate_over(
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,

@@ -12,13 +12,14 @@ from featurebyte.session.manager import SessionManager
 from featurebyte.session.spark import SparkSchemaInitializer, SparkSession
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_schema_initializer(config, spark_feature_store):
+async def test_schema_initializer(config, feature_store):
     """
     Test the session initialization in spark works properly.
     """
     session_manager = SessionManager(credentials=config.credentials)
-    session = await session_manager.get_session(spark_feature_store)
+    session = await session_manager.get_session(feature_store)
     assert isinstance(session, SparkSession)
     initializer = SparkSchemaInitializer(session)
 
@@ -54,7 +55,7 @@ async def test_schema_initializer(config, spark_feature_store):
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
-    session = await session_manager.get_session(spark_feature_store)
+    session = await session_manager.get_session(feature_store)
     results = await session.execute_query(get_version_query)
     assert results is not None
     assert len(results[working_schema_version_column]) == 1
@@ -63,17 +64,19 @@ async def test_schema_initializer(config, spark_feature_store):
     )
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_session_timezone(spark_session):
+async def test_session_timezone(session):
     """
     Test session configurations
     """
-    result = await spark_session.execute_query("SELECT current_timezone() AS timezone")
+    result = await session.execute_query("SELECT current_timezone() AS timezone")
     assert result["timezone"].iloc[0] == "UTC"
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_register_table(spark_session):
+async def test_register_table(session):
     """
     Test the session register_table in spark works properly.
     """
@@ -85,16 +88,18 @@ async def test_register_table(spark_session):
             "üser id": [1, 2, 3, 4, 5],
         }
     )
-    await spark_session.register_table(table_name="test_table", dataframe=df_training_events)
-    df_retrieve = await spark_session.execute_query("SELECT * FROM test_table")
+    await session.register_table(table_name="test_table", dataframe=df_training_events)
+    df_retrieve = await session.execute_query("SELECT * FROM test_table")
     assert_frame_equal(df_retrieve, df_training_events, check_dtype=False)
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_register_udfs(spark_session):
+async def test_register_udfs(session):
     """
     Test the session registered udfs properly.
     """
+    spark_session = session
     test_table = pd.DataFrame(
         {
             "group": ["A"] * 2 + ["B"] * 2,

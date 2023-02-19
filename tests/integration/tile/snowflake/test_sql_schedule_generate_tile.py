@@ -10,8 +10,9 @@ from snowflake.connector import ProgrammingError
 from featurebyte.enum import InternalName
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, tile_manager):
+async def test_schedule_generate_tile_online(session, tile_task_prep, tile_manager):
     """
     Test the stored procedure of generating tiles
     """
@@ -51,21 +52,21 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
           '{tile_end_ts}'
         )
         """
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
 
     # verify that feature store has been updated
     sql = f"SELECT COUNT(*) as COUNT FROM {feature_store_table_name}"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["COUNT"].iloc[0] == 2
 
     # verify tile job monitor using sql
     sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 4
     assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
     assert result["TILE_TYPE"].tolist() == ["ONLINE", "ONLINE", "ONLINE", "ONLINE"]
@@ -96,8 +97,9 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep, 
     assert len(result2) == 2
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep):
+async def test_tile_job_monitor__fail_halfway(session, tile_task_prep):
     """
     Test the stored procedure of generating tiles
     """
@@ -117,9 +119,7 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
     )
 
     # simulate error for the stored procedure to stop half way
-    await snowflake_session.execute_query(
-        "ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID to TILE_ID_TEMP"
-    )
+    await session.execute_query("ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID to TILE_ID_TEMP")
     sql = f"""
         call SP_TILE_GENERATE_SCHEDULE(
           '{tile_id}',
@@ -142,15 +142,15 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
         )
         """
     try:
-        await snowflake_session.execute_query(sql)
+        await session.execute_query(sql)
     except:
-        await snowflake_session.execute_query(
+        await session.execute_query(
             "ALTER TABLE TILE_REGISTRY RENAME COLUMN TILE_ID_TEMP to TILE_ID"
         )
 
     # verify tile job monitor
     sql = f"SELECT * FROM TILE_JOB_MONITOR WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 3
     assert result["STATUS"].tolist() == ["STARTED", "MONITORED", "GENERATED_FAILED"]
     error_msg = result["MESSAGE"].iloc[2]
@@ -162,8 +162,9 @@ async def test_tile_job_monitor__fail_halfway(snowflake_session, tile_task_prep)
     assert result["CREATED_AT"].iloc[2] > result["CREATED_AT"].iloc[1]
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_monitor_tile_online(snowflake_session):
+async def test_schedule_monitor_tile_online(session):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -203,11 +204,11 @@ async def test_schedule_monitor_tile_online(snowflake_session):
           '{tile_end_ts}'
         )
         """
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1 WHERE {InternalName.TILE_START_DATE} in ('2022-06-05T23:48:00Z', '2022-06-05T23:33:00Z') "
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     tile_end_ts_2 = "2022-06-05T23:58:00Z"
     sql = f"""
@@ -231,19 +232,20 @@ async def test_schedule_monitor_tile_online(snowflake_session):
           '{tile_end_ts_2}'
         )
         """
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
+async def test_schedule_monitor_tile_existing_new_column(session):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -283,11 +285,11 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
           '{tile_end_ts}'
         )
         """
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1 WHERE {InternalName.TILE_START_DATE} in ('2022-06-05T23:48:00Z', '2022-06-05T23:33:00Z') "
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     value_col_names_2 = "VALUE,VALUE_2"
     value_col_types_2 = "FLOAT,FLOAT"
@@ -318,15 +320,16 @@ async def test_schedule_monitor_tile_existing_new_column(snowflake_session):
           '{tile_end_ts_2}'
         )
         """
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schedule_monitor_tile_all_new_column(snowflake_session):
+async def test_schedule_monitor_tile_all_new_column(session):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -366,11 +369,11 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
           '{tile_end_ts}'
         )
         """
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1 WHERE {InternalName.TILE_START_DATE} in ('2022-06-05T23:48:00Z', '2022-06-05T23:33:00Z') "
-    await snowflake_session.execute_query(sql)
+    await session.execute_query(sql)
 
     value_col_names_2 = "VALUE_3"
     value_col_types_2 = "FLOAT"
@@ -401,16 +404,16 @@ async def test_schedule_monitor_tile_all_new_column(snowflake_session):
           '{tile_end_ts_2}'
         )
         """
-    await snowflake_session.execute_query(monitor_sql)
+    await session.execute_query(monitor_sql)
 
     with pytest.raises(ProgrammingError) as excinfo:
         sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-        await snowflake_session.execute_query(sql)
+        await session.execute_query(sql)
     assert f"Object '{tile_id}_MONITOR' does not exist or not authorized" in str(excinfo.value)
 
     update_sql = f"UPDATE {table_name} SET VALUE_3 = VALUE_3 + 1 WHERE {InternalName.TILE_START_DATE} in ('2022-06-05T23:48:00Z', '2022-06-05T23:33:00Z') "
-    await snowflake_session.execute_query(update_sql)
-    await snowflake_session.execute_query(monitor_sql)
+    await session.execute_query(update_sql)
+    await session.execute_query(monitor_sql)
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2

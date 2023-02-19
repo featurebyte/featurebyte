@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from featurebyte import (
     DisguisedValueImputation,
@@ -12,10 +13,10 @@ from featurebyte import (
 )
 
 
-def test_event_data_update_critical_data_info(snowflake_event_data):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_data_update_critical_data_info(event_data):
     """Test EventData with critical data info preview & feature preview"""
     # add critical data info to amount column & check data preview
-    event_data = snowflake_event_data
     original_df = event_data.preview()
 
     # check data column preview
@@ -122,6 +123,7 @@ def test_event_data_update_critical_data_info(snowflake_event_data):
     event_data.CUST_ID.update_critical_data_info(cleaning_operations=[])
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_data_update_critical_data_info(item_data):
     """Test ItemData with critical data info preview & feature preview"""
     # add critical data info to item_type column & check data preview

@@ -10,6 +10,7 @@ same_values = {"a": 1, "b": 1, "c": 1}
 ascending_values = {"a": 1, "b": 2, "c": 3}
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "dictionary, key, expected",
     [
@@ -23,11 +24,11 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
     ],
 )
 @pytest.mark.asyncio
-async def test_get_relative_frequency_udf(snowflake_session, dictionary, key, expected):
+async def test_get_relative_frequency_udf(session, dictionary, key, expected):
     """
     Test get relative frequency UDF
     """
     dictionary_expr = to_object(dictionary)
     query = f"SELECT F_GET_RELATIVE_FREQUENCY({dictionary_expr}, {key}) AS OUT"
-    df = await snowflake_session.execute_query(query)
+    df = await session.execute_query(query)
     np.testing.assert_allclose(df.iloc[0]["OUT"], expected, 1e-5)

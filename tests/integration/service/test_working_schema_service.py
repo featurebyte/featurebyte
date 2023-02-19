@@ -25,11 +25,11 @@ def user():
 
 
 @pytest.fixture(name="deployed_feature_list", scope="module")
-def deployed_feature_list_fixture(snowflake_event_data):
+def deployed_feature_list_fixture(event_data):
     """
     Fixture for a deployed feature list
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = EventView.from_event_data(event_data)
     event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
@@ -79,7 +79,7 @@ def migration_service_fixture(user, persistent):
 
 
 @pytest_asyncio.fixture
-async def patch_list_tables_to_exclude_datasets(snowflake_session, dataset_registration_helper):
+async def patch_list_tables_to_exclude_datasets(session, dataset_registration_helper):
     """
     Fixture to patch list_tables to exclude dataset tables
 
@@ -87,12 +87,11 @@ async def patch_list_tables_to_exclude_datasets(snowflake_session, dataset_regis
     recreation process, but these datasets themselves are required to complete the process (when
     re-online-enabling features)
     """
+    assert session.source_type == "snowflake"
 
     async def patched_list_tables(database_name=None, schema_name=None):
         tables = (
-            await snowflake_session.execute_query(
-                f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"'
-            )
+            await session.execute_query(f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"')
         )["name"].tolist()
         known_tables = set(dataset_registration_helper.table_names)
         tables = [t for t in tables if t not in known_tables]
@@ -103,17 +102,20 @@ async def patch_list_tables_to_exclude_datasets(snowflake_session, dataset_regis
         yield p
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.usefixtures("patch_list_tables_to_exclude_datasets")
 @pytest.mark.asyncio
 async def test_drop_all_and_recreate(
     config,
-    snowflake_session,
+    session,
     deployed_feature_list,
     migration_service,
+    feature_store,
 ):
     """
     Test dropping all objects first then use WorkingSchemaService to restore it
     """
+    snowflake_session = session
 
     async def _list_objects(obj):
         query = f"SHOW {obj} IN {snowflake_session.database_name}.{snowflake_session.schema_name}"
@@ -176,7 +178,7 @@ async def test_drop_all_and_recreate(
     assert res.status_code == 500
     assert "SQL compilation error" in res.json()["detail"]
 
-    await migration_service.reset_working_schema()
+    await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})
 
     # Check tasks and metadata are restored
     restored_tasks = await _get_tasks()

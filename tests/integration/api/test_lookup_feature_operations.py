@@ -3,6 +3,7 @@ Lookup feature operations
 """
 import numpy as np
 import pandas as pd
+import pytest
 import pytz
 
 from featurebyte import EventView, ItemView
@@ -11,6 +12,7 @@ from tests.integration.api.feature_preview_utils import (
 )
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_lookup_features_same_column_name(dimension_view, item_data):
     """
     Test lookup features with same column name
@@ -92,12 +94,13 @@ def check_lookup_feature_is_time_aware(
     pd.testing.assert_series_equal(df.iloc[0], expected, check_names=False)
 
 
-def test_event_view_lookup_features(snowflake_event_data, transaction_data_upper_case):
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_view_lookup_features(event_data, transaction_data_upper_case):
     """
     Test lookup features from EventView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=EventView.from_event_data(snowflake_event_data),
+        view=EventView.from_event_data(event_data),
         df=transaction_data_upper_case,
         primary_key_column="TRANSACTION_ID",
         primary_key_value="T42",
@@ -107,6 +110,7 @@ def test_event_view_lookup_features(snowflake_event_data, transaction_data_upper
     )
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_item_view_lookup_features(item_data, expected_joined_event_item_dataframe):
     """
     Test lookup features from ItemView are time based

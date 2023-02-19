@@ -4,6 +4,7 @@ This module contains integration tests between timestamp and tile index conversi
 import pytest
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.parametrize(
     "time_modulo_frequency_seconds,blind_spot_seconds,frequency_minute,test_input,expected",
     [
@@ -15,7 +16,7 @@ import pytest
 )
 @pytest.mark.asyncio
 async def test_index_to_timestamp(
-    snowflake_session,
+    session,
     time_modulo_frequency_seconds,
     blind_spot_seconds,
     frequency_minute,
@@ -26,5 +27,5 @@ async def test_index_to_timestamp(
     Test tile index conversion to timestamp conversion with different job settings
     """
     sql = f"SELECT F_INDEX_TO_TIMESTAMP({test_input}, {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as TS"
-    result = await snowflake_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TS"].iloc[0] == expected

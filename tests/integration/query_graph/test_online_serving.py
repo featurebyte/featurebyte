@@ -16,11 +16,11 @@ from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="features", scope="session")
-def features_fixture(snowflake_event_data):
+def features_fixture(event_data):
     """
     Fixture for feature
     """
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = EventView.from_event_data(event_data)
     event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
@@ -67,8 +67,9 @@ def features_fixture(snowflake_event_data):
     return features
 
 
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_serving_sql(features, snowflake_session, config):
+async def test_online_serving_sql(features, session, config):
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
@@ -111,7 +112,7 @@ async def test_online_serving_sql(features, snowflake_session, config):
             request_table_columns=["üser id"],
             request_table_expr=request_table_expr,
         )
-        online_features = await snowflake_session.execute_query(online_retrieval_sql)
+        online_features = await session.execute_query(online_retrieval_sql)
 
         # Check result is expected
         columns = [

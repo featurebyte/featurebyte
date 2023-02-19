@@ -9,8 +9,9 @@ from featurebyte.enum import InternalName
 from featurebyte.sql.spark.tile_generate import TileGenerate
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile(spark_session):
+async def test_generate_tile(session):
     """
     Test normal generation of tiles
     """
@@ -30,7 +31,7 @@ async def test_generate_tile(spark_session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=spark_session,
+        spark_session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -47,18 +48,17 @@ async def test_generate_tile(spark_session):
     await tile_generate_ins.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
-    result = await spark_session.execute_query(
-        f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    )
+    result = await session.execute_query(f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'")
     assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
     assert result["VALUE_COLUMN_TYPES"].iloc[0] == "FLOAT"
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_no_data(spark_session):
+async def test_generate_tile_no_data(session):
     """
     Test generation of tile with no tile data
     """
@@ -77,7 +77,7 @@ async def test_generate_tile_no_data(spark_session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=spark_session,
+        spark_session=session,
         featurebyte_database="TEST_DB_1",
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
@@ -94,12 +94,13 @@ async def test_generate_tile_no_data(spark_session):
     await tile_generate_ins.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 0
 
 
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_new_value_column(spark_session):
+async def test_generate_tile_new_value_column(session):
     """
     Test normal generation of tiles
     """
@@ -118,7 +119,7 @@ async def test_generate_tile_new_value_column(spark_session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=spark_session,
+        spark_session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -134,11 +135,11 @@ async def test_generate_tile_new_value_column(spark_session):
     await tile_generate_ins.execute()
 
     sql = f"SELECT {value_col_names_str} FROM {tile_id}"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
 
     sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 1
     assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
 
@@ -152,7 +153,7 @@ async def test_generate_tile_new_value_column(spark_session):
     )
 
     tile_generate_ins = TileGenerate(
-        spark_session=spark_session,
+        spark_session=session,
         tile_id=tile_id,
         tile_modulo_frequency_second=183,
         blind_spot_second=3,
@@ -168,10 +169,10 @@ async def test_generate_tile_new_value_column(spark_session):
     await tile_generate_ins.execute()
 
     sql = f"SELECT {value_col_names_2_str} FROM {tile_id}"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 2
 
     sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    result = await spark_session.execute_query(sql)
+    result = await session.execute_query(sql)
     assert len(result) == 1
     assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE,VALUE_2"
