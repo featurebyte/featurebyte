@@ -293,3 +293,23 @@ class VersionIdentifier(BaseModel):
         if self.suffix:
             return f"{self.name}_{self.suffix}"
         return self.name
+
+    @classmethod
+    def from_str(cls, version: str) -> VersionIdentifier:
+        """
+        Convert the version string into VersionIdentifier object
+
+        Parameters
+        ----------
+        version: str
+            Version string
+
+        Returns
+        -------
+        VersionIdentifier object
+        """
+        version_identifier = cls(name=version)
+        if "_" in version:
+            name, suffix = version.split("_", 1)
+            version_identifier = cls(name=name, suffix=suffix)
+        return version_identifier

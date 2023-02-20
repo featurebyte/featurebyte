@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
     VerboseQuery,
+    VersionQuery,
 )
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -88,6 +89,7 @@ async def list_feature_list(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    version: Optional[str] = VersionQuery,
     feature_list_namespace_id: Optional[PydanticObjectId] = None,
 ) -> FeatureListPaginatedList:
     """
@@ -101,6 +103,7 @@ async def list_feature_list(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        version=version,
         feature_list_namespace_id=feature_list_namespace_id,
     )
     return feature_list_paginated_list

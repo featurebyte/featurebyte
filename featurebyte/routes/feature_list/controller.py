@@ -21,6 +21,7 @@ from featurebyte.exception import (
     UnexpectedServingNamesMappingError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -152,7 +153,10 @@ class FeatureListController(
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-        **kwargs: Any,
+        search: str | None = None,
+        name: str | None = None,
+        version: str | None = None,
+        feature_list_namespace_id: ObjectId | None = None,
     ) -> FeatureListPaginatedList:
         """
         List documents stored at persistent (GitDB or MongoDB)
@@ -167,16 +171,24 @@ class FeatureListController(
             Key used to sort the returning documents
         sort_dir: "asc" or "desc"
             Sorting the returning documents in ascending order or descending order
-        kwargs: Any
-            Additional keyword arguments
+        search: str | None
+            Search token to be used in filtering
+        name: str | None
+            Feature name to be used in filtering
+        version: str | None
+            Feature version to be used in filtering
+        feature_list_namespace_id: ObjectId | None
+            Feature list namespace ID to be used in filtering
 
         Returns
         -------
         FeatureListPaginatedList
             List of documents fulfilled the filtering condition
         """
-        params = kwargs.copy()
-        feature_list_namespace_id = params.pop("feature_list_namespace_id")
+        params = {"search": search, "name": name}
+        if version:
+            params["version"] = VersionIdentifier.from_str(version).dict()
+
         if feature_list_namespace_id:
             query_filter = params.get("query_filter", {}).copy()
             query_filter["feature_list_namespace_id"] = feature_list_namespace_id
