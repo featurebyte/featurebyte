@@ -3,8 +3,6 @@ Spark Tile class
 """
 from typing import Any, Optional
 
-from datetime import datetime
-
 from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
@@ -127,44 +125,6 @@ class TileManagerSpark(BaseTileManager):
         await tile_generate_ins.execute()
 
         return tile_generate_ins.json()
-
-    async def schedule_online_tiles(
-        self,
-        tile_spec: TileSpec,
-        monitor_periods: int = 10,
-        schedule_time: datetime = datetime.utcnow(),
-    ) -> str:
-        """
-        Schedule online tiles
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-        monitor_periods: int
-            number of tile periods to monitor and re-generate. Default is 10
-        schedule_time: datetime
-            the moment of scheduling the job
-        """
-
-    async def schedule_offline_tiles(
-        self,
-        tile_spec: TileSpec,
-        offline_minutes: int = 1440,
-        schedule_time: datetime = datetime.utcnow(),
-    ) -> str:
-        """
-        Schedule offline tiles
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-        offline_minutes: int
-            offline tile lookback minutes to monitor and re-generate. Default is 1440
-        schedule_time: datetime
-            the moment of scheduling the job
-        """
 
     async def remove_tile_jobs(
         self,
