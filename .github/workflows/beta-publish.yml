@@ -1,9 +1,13 @@
+# beta-publish creates a docker image for featurebyte http and jupyter notebook server
 name: beta-publish
+
 
 on:
   workflow_dispatch: {}
 
-permissions: write-all
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 env:
   # Python
