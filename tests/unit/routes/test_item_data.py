@@ -150,6 +150,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
             "semantics": ["item_id"],
             "column_count": 5,
             "event_data_name": "sf_event_data",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

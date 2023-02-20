@@ -44,7 +44,9 @@ class TileColumnTypeExtractor:
         feature_service: FeatureService,
     ) -> dict[str, str]:
         tile_column_name_to_type = {}
-        feature_documents = feature_service.list_documents_iterator({})
+        feature_documents = feature_service.list_documents_iterator(
+            query_filter={}, use_raw_query_filter=True
+        )
         async for doc in feature_documents:
             feature_model = ExtendedFeatureModel(**doc)
             try:

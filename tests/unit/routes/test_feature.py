@@ -391,13 +391,18 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         version = get_version()
         expected_info_response = {
             "name": "sum_30m",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,
             "readiness": {"this": "DRAFT", "default": "DRAFT"},
             "version": {"this": version, "default": version},
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

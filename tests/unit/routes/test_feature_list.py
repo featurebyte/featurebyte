@@ -438,8 +438,12 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         version = get_version()
         expected_info_response = {
             "name": "sf_feature_list",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "version_count": 1,
             "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
@@ -450,6 +454,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             "versions_info": None,
             "deployed": True,
             "serving_endpoint": "/feature_list/63a443938bcb22a73462595f/online_features",
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
@@ -472,8 +477,12 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         version = get_version()
         expected_info_response = {
             "name": "sf_feature_list",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,
@@ -482,6 +491,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             "production_ready_fraction": {"this": 0, "default": 0},
             "deployed": False,
             "serving_endpoint": None,
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

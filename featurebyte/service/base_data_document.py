@@ -62,15 +62,24 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
         """
         return "".join(elem.title() for elem in self.tabular_data_type.split("_"))
 
-    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
-        query_filter = super()._construct_get_query_filter(document_id=document_id, **kwargs)
+    def _construct_get_query_filter(
+        self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
+    ) -> QueryFilter:
+        query_filter = super()._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
         query_filter["type"] = self.tabular_data_type
         return query_filter
 
     def _construct_list_query_filter(
-        self, query_filter: Optional[dict[str, Any]] = None, **kwargs: Any
+        self,
+        query_filter: Optional[dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
     ) -> QueryFilter:
-        output = super()._construct_list_query_filter(query_filter=query_filter, **kwargs)
+        output = super()._construct_list_query_filter(
+            query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
         output["type"] = self.tabular_data_type
         return output
 

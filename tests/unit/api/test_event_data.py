@@ -316,13 +316,16 @@ def test_info(saved_event_data, cust_id_entity):
         "record_creation_date_column": "created_at",
         "default_feature_job_setting": None,
         "status": "DRAFT",
-        "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+        "entities": [
+            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+        ],
         "column_count": 9,
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table",
         },
+        "workspace_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert info_dict["updated_at"] is not None, info_dict["updated_at"]

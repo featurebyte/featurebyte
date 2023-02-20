@@ -176,11 +176,16 @@ class InfoService(BaseService):
         """
         _ = verbose
         entity = await self.entity_service.get_document(document_id=document_id)
+
+        # get workspace info
+        workspace = await self.workspace_service.get_document(entity.workspace_id)
+
         return EntityInfo(
             name=entity.name,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
             serving_names=entity.serving_names,
+            workspace_name=workspace.name,
         )
 
     async def _get_data_info(self, data_document: DataModel, verbose: bool) -> Dict[str, Any]:
@@ -221,6 +226,12 @@ class InfoService(BaseService):
                     }
                 )
 
+        # get workspace info
+        workspace = await self.workspace_service.get_document(data_document.workspace_id)
+        for entity in entities["data"]:
+            assert entity["workspace_id"] == workspace.id
+            entity["workspace_name"] = workspace.name
+
         return {
             "name": data_document.name,
             "created_at": data_document.created_at,
@@ -232,6 +243,7 @@ class InfoService(BaseService):
             "semantics": [semantic["name"] for semantic in semantics["data"]],
             "column_count": len(data_document.columns_info),
             "columns_info": columns_info,
+            "workspace_name": workspace.name,
         }
 
     async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
@@ -509,6 +521,16 @@ class InfoService(BaseService):
         tabular_data = await self.data_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
+
+        # get workspace info
+        workspace = await self.workspace_service.get_document(namespace.workspace_id)
+        for entity in entities["data"]:
+            assert entity["workspace_id"] == workspace.id
+            entity["workspace_name"] = workspace.name
+        for data in tabular_data["data"]:
+            assert data["workspace_id"] == workspace.id
+            data["workspace_name"] = workspace.name
+
         return FeatureNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
@@ -519,6 +541,7 @@ class InfoService(BaseService):
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,
             version_count=len(namespace.feature_ids),
+            workspace_name=workspace.name,
         )
 
     async def get_feature_list_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
@@ -602,6 +625,16 @@ class InfoService(BaseService):
         tabular_data = await self.data_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
+
+        # get workspace info
+        workspace = await self.workspace_service.get_document(namespace.workspace_id)
+        for entity in entities["data"]:
+            assert entity["workspace_id"] == workspace.id
+            entity["workspace_name"] = workspace.name
+        for data in tabular_data["data"]:
+            assert data["workspace_id"] == workspace.id
+            data["workspace_name"] = workspace.name
+
         return FeatureListNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
@@ -614,6 +647,7 @@ class InfoService(BaseService):
             version_count=len(namespace.feature_list_ids),
             feature_count=len(namespace.feature_namespace_ids),
             status=namespace.status,
+            workspace_name=workspace.name,
         )
 
     async def get_feature_job_setting_analysis_info(
@@ -643,6 +677,12 @@ class InfoService(BaseService):
         event_data = await self.event_data_service.get_document(
             document_id=feature_job_setting_analysis.event_data_id
         )
+
+        # get workspace info
+        workspace = await self.workspace_service.get_document(
+            feature_job_setting_analysis.workspace_id
+        )
+
         return FeatureJobSettingAnalysisInfo(
             created_at=feature_job_setting_analysis.created_at,
             event_data_name=event_data.name,
@@ -653,6 +693,7 @@ class InfoService(BaseService):
                 time_modulo_frequency=f"{recommended_setting.job_time_modulo_frequency}s",
                 frequency=f"{recommended_setting.frequency}s",
             ),
+            workspace_name=workspace.name,
         )
 
     async def get_workspace_info(self, document_id: ObjectId, verbose: bool) -> WorkspaceInfo:

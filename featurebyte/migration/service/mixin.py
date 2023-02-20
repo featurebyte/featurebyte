@@ -44,7 +44,10 @@ class BaseMigrationServiceMixin(Protocol):
 
     @abstractmethod
     def _construct_list_query_filter(
-        self, query_filter: Optional[dict[str, Any]] = None, **kwargs: Any
+        self,
+        query_filter: Optional[dict[str, Any]] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
     ) -> QueryFilter:
         ...
 
@@ -81,7 +84,7 @@ class BaseMigrationServiceMixin(Protocol):
         """
         # migrate all records and audit records
         if query_filter is None:
-            query_filter = dict(self._construct_list_query_filter())
+            query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
             # exclude workspace filter
             query_filter.pop("workspace_id", None)
         to_iterate, page = True, 1

@@ -242,12 +242,17 @@ class TestFeatureNamespaceApi(BaseWorkspaceApiTestSuite):
             "name": "sum_30m",
             "created_at": response_dict["created_at"],
             "updated_at": None,
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "default_feature_id": response_dict["default_feature_id"],
             "dtype": "FLOAT",
             "version_count": 1,
+            "workspace_name": "default",
         }
 
         verbose_response = test_api_client.get(

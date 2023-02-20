@@ -155,6 +155,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             "entities": [],
             "semantics": ["dimension_id"],
             "column_count": 9,
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

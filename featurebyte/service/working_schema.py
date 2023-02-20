@@ -85,7 +85,11 @@ class WorkingSchemaService(BaseService):
     ) -> None:
 
         online_enabled_feature_docs = self.feature_service.list_documents_iterator(
-            {"tabular_source.feature_store_id": feature_store_id, "online_enabled": True}
+            query_filter={
+                "tabular_source.feature_store_id": feature_store_id,
+                "online_enabled": True,
+            },
+            use_raw_query_filter=True,
         )
 
         async for feature_doc in online_enabled_feature_docs:

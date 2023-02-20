@@ -261,14 +261,19 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
             "name": "sf_feature_list_multiple",
             "created_at": response_dict["created_at"],
             "updated_at": None,
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
             "version_count": 1,
             "feature_count": 2,
             "status": "DRAFT",
+            "workspace_name": "default",
         }
 
         verbose_response = test_api_client.get(

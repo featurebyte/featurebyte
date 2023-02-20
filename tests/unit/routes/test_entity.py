@@ -244,6 +244,7 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
             "name": "customer",
             "updated_at": None,
             "serving_names": ["cust_id"],
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

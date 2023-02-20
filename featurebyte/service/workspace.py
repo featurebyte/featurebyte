@@ -41,11 +41,15 @@ class WorkspaceService(
         self,
         document_id: ObjectId,
         exception_detail: str | None = None,
+        use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> WorkspaceModel:
         await self._ensure_default_workspace_available()
         return await super().get_document(
-            document_id=document_id, exception_detail=exception_detail, **kwargs
+            document_id=document_id,
+            exception_detail=exception_detail,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
         )
 
     async def list_documents(
@@ -54,9 +58,15 @@ class WorkspaceService(
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: SortDir = "desc",
+        use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> dict[str, Any]:
         await self._ensure_default_workspace_available()
         return await super().list_documents(
-            page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, **kwargs
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
         )

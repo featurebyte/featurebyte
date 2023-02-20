@@ -44,6 +44,7 @@ class EntityBriefInfo(BaseBriefInfo):
     """
 
     serving_names: List[str]
+    workspace_name: str
 
 
 class EntityInfo(EntityBriefInfo, BaseInfo):
@@ -73,7 +74,7 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         -------
         EntityBriefInfoList
         """
-        entity_project = DictProject(rule=("data", ["name", "serving_names"]))
+        entity_project = DictProject(rule=("data", ["name", "serving_names", "workspace_name"]))
         return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
 
 
@@ -83,6 +84,7 @@ class DataBriefInfo(BaseBriefInfo):
     """
 
     status: DataStatus
+    workspace_name: str
 
 
 class DataBriefInfoList(FeatureByteBaseModel):
@@ -106,7 +108,7 @@ class DataBriefInfoList(FeatureByteBaseModel):
         -------
         DataBriefInfoList
         """
-        data_project = DictProject(rule=("data", ["name", "status"]))
+        data_project = DictProject(rule=("data", ["name", "status", "workspace_name"]))
         return DataBriefInfoList(__root__=data_project.project(paginated_data))
 
 
@@ -218,6 +220,7 @@ class NamespaceInfo(BaseInfo):
     tabular_data: DataBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
+    workspace_name: str
 
 
 class FeatureNamespaceInfo(NamespaceInfo):
@@ -283,7 +286,7 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         FeatureBriefInfoList
         """
         feature_list_project = DictProject(
-            rule=("data", ["version", "readiness_distribution", "created_at"])
+            rule=("data", ["version", "readiness_distribution", "created_at", "workspace_id"])
         )
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
@@ -324,6 +327,7 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
+    workspace_name: str
 
 
 class WorkspaceBriefInfo(BaseBriefInfo):
