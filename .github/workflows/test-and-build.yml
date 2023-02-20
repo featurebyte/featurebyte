@@ -101,7 +101,12 @@ jobs:
         make install
 
     - name: Run tests
-      run: make test
+      run: |
+        make test-setup
+        make test-unit
+        make test-functional
+        make test-teardown
+        make test-merge
 
     - name: Test Coverage Report
       id: coverageComment
