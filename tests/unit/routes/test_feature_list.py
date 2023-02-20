@@ -301,7 +301,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         response = test_api_client.post(
-            f"{self.base_route}",
+            self.base_route,
             json={"source_feature_list_id": create_response_dict["_id"], "mode": "manual"},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -313,6 +313,52 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == "No change detected on the new feature list version."
+
+    def test_list_200__filter_by_name_and_version(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test list (success) when filtering by name and version"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_multiple_success_responses[0].json()
+
+        # create a new feature version
+        feature_id = create_response_dict["feature_ids"][0]
+        feature_response = test_api_client.post(
+            "/feature",
+            json={
+                "source_feature_id": feature_id,
+                "feature_job_setting": {
+                    "blind_spot": "1d",
+                    "frequency": "1d",
+                    "time_modulo_frequency": "1h",
+                },
+            },
+        )
+        assert feature_response.status_code == HTTPStatus.CREATED
+
+        # then create a new feature list version
+        new_version_response = test_api_client.post(
+            self.base_route,
+            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+        )
+
+        # check retrieving old feature list version
+        version = create_response_dict["version"]["name"]
+        response = test_api_client.get(
+            self.base_route, params={"name": create_response_dict["name"], "version": version}
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [create_response_dict]
+
+        # check retrieving new feature list version
+        response = test_api_client.get(
+            self.base_route,
+            params={"name": create_response_dict["name"], "version": f"{version}_1"},
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [new_version_response.json()]
 
     def test_list_200__filter_by_namespace_id(
         self, test_api_client_persistent, create_multiple_success_responses

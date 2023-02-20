@@ -586,6 +586,28 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     def _get_init_params(cls) -> dict[str, Any]:
         return {"items": []}
 
+    @classmethod
+    def get(cls, name: str, version: Optional[str] = None) -> FeatureList:
+        """
+        Get a feature list by name
+
+        Parameters
+        ----------
+        name: str
+            Name of the feature list
+        version: Optional[str]
+            Version of the feature list, if None, the default version will be returned
+
+        Returns
+        -------
+        FeatureList
+            Feature list object
+        """
+        if version is None:
+            feature_list_namespace = FeatureListNamespace.get(name=name)
+            return cls.get_by_id(id=feature_list_namespace.default_feature_list_id)
+        return cls._get(name=name, other_params={"version": version})
+
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
         data = FeatureListCreate(
@@ -1073,6 +1095,15 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
             allow_update_local=False,
         )
+
+    def as_default_version(self) -> None:
+        """
+        Set the feature list as the default version
+        """
+        self.feature_list_namespace.update(
+            update_payload={"default_feature_list_id": self.id}, allow_update_local=False
+        )
+        assert self.feature_list_namespace.default_feature_list_id == self.id
 
     @typechecked
     def deploy(self, enable: bool, make_production_ready: bool = False) -> None:

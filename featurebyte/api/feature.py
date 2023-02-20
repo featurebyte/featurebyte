@@ -239,6 +239,28 @@ class Feature(
         return values
 
     @classmethod
+    def get(cls, name: str, version: Optional[str] = None) -> Feature:
+        """
+        Get a feature by name and version
+
+        Parameters
+        ----------
+        name: str
+            Feature name
+        version: Optional[str]
+            Feature version, if None, the default version will be returned
+
+        Returns
+        -------
+        Feature
+            Feature object
+        """
+        if version is None:
+            feature_namespace = FeatureNamespace.get(name=name)
+            return cls.get_by_id(id=feature_namespace.default_feature_id)
+        return cls._get(name=name, other_params={"version": version})
+
+    @classmethod
     def list(
         cls,
         include_id: Optional[bool] = False,
@@ -690,6 +712,16 @@ class Feature(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
             allow_update_local=False,
         )
+
+    def as_default_version(self) -> None:
+        """
+        Set the feature as default version
+        """
+        self.feature_namespace.update(
+            update_payload={"default_feature_id": self.id},
+            allow_update_local=False,
+        )
+        assert self.feature_namespace.default_feature_id == self.id
 
     @property
     def sql(self) -> str:
