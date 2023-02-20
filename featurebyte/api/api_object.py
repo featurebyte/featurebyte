@@ -174,9 +174,12 @@ class ApiObject(FeatureByteBaseDocumentModel):
         return {}
 
     @classmethod
-    def _get_object_dict_by_name(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
+    def _get_object_dict_by_name(
+        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
         client = Configurations().get_client()
-        response = client.get(url=cls._route, params={"name": name})
+        other_params = other_params or {}
+        response = client.get(url=cls._route, params={"name": name, **other_params})
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if response_dict["data"]:
@@ -199,9 +202,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
-    def _get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
+    def _get(
+        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+    ) -> ApiObjectT:
         return cls(
-            **cls._get_object_dict_by_name(name=name),
+            **cls._get_object_dict_by_name(name=name, other_params=other_params),
             **cls._get_init_params(),
             saved=True,
             _validate_schema=True,

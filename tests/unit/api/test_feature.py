@@ -472,7 +472,7 @@ def test_get_feature(saved_feature):
     with pytest.raises(RecordRetrievalException) as exc:
         lazy_feature = Feature.get(name="random_name")
         _ = lazy_feature.name
-    expected_msg = 'Feature (name: "random_name") not found. Please save the Feature object first.'
+    expected_msg = 'FeatureNamespace (name: "random_name") not found. Please save the FeatureNamespace object first.'
     assert expected_msg in str(exc.value)
 
 
@@ -553,6 +553,40 @@ def test_create_new_version__error(float_feature):
         f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
     )
     assert expected_msg in str(exc.value)
+
+
+def test_feature__as_default_version(saved_feature):
+    """Test feature as_default_version method"""
+    new_version = saved_feature.create_new_version(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="15m", frequency="30m", time_modulo_frequency="15m"
+        )
+    )
+    assert new_version.is_default is True
+    assert new_version.default_version_mode == "AUTO"
+
+    # check setting default version fails when default version mode is not MANUAL
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_feature.as_default_version()
+    expected = "Cannot set default feature ID when default version mode is not MANUAL"
+    assert expected in str(exc.value)
+
+    # check get by name use the default version
+    assert Feature.get(name=saved_feature.name) == new_version
+
+    # check setting default version manually
+    assert new_version.is_default is True
+    assert saved_feature.is_default is False
+    saved_feature.update_default_version_mode(DefaultVersionMode.MANUAL)
+    saved_feature.as_default_version()
+    assert new_version.is_default is False
+    assert saved_feature.is_default is True
+
+    # check get by name use the default version
+    assert Feature.get(name=saved_feature.name) == saved_feature
+
+    # check get by name and version
+    assert Feature.get(name=saved_feature.name, version=new_version.version.to_str()) == new_version
 
 
 def test_composite_features(snowflake_event_data_with_entity):
