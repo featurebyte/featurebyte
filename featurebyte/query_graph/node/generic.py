@@ -30,7 +30,9 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ExpressionStr,
+    RightHandSide,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionStr,
@@ -287,6 +289,28 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             node_name=self.name,
             new_column_var_type=dtype,
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        column_name = self.parameters.name
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=operation_structure.output_category,
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(input_var_name_expressions) == 2:
+            value = input_var_name_expressions[1]
+        statements.append((VariableNameStr(f"{var_name}['{column_name}']"), value))
+        return statements, var_name
 
 
 class LagNode(BaseSeriesOutputNode):
