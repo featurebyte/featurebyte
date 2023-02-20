@@ -6,10 +6,10 @@ from http import HTTPStatus
 import pytest
 from bson.objectid import ObjectId
 
-from tests.unit.routes.base import BaseRelationshipApiTestSuite
+from tests.unit.routes.base import BaseWorkspaceRelationshipApiTestSuite
 
 
-class TestEntityApi(BaseRelationshipApiTestSuite):
+class TestEntityApi(BaseWorkspaceRelationshipApiTestSuite):
     """
     TestEntityApi class
     """
@@ -17,7 +17,7 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
     class_name = "Entity"
     base_route = "/entity"
     unknown_id = ObjectId()
-    payload = BaseRelationshipApiTestSuite.load_payload(
+    payload = BaseWorkspaceRelationshipApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/entity.json"
     )
     create_conflict_payload_expected_detail_pairs = [

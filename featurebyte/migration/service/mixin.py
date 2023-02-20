@@ -85,8 +85,6 @@ class BaseMigrationServiceMixin(Protocol):
         # migrate all records and audit records
         if query_filter is None:
             query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
-            # exclude workspace filter
-            query_filter.pop("workspace_id", None)
         to_iterate, page = True, 1
 
         logger.info(f'Start migrating all records (collection: "{self.collection_name}")')

@@ -541,7 +541,7 @@ class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-class BaseRelationshipApiTestSuite(BaseWorkspaceApiTestSuite):
+class BaseRelationshipApiTestSuite(BaseApiTestSuite):
     """
     BaseRelationshipApiTestSuite contains tests related to adding & removing parent object
     """
@@ -683,6 +683,15 @@ class BaseRelationshipApiTestSuite(BaseWorkspaceApiTestSuite):
         assert response.json() == {
             "detail": f'Object "{name}" is not the parent of object "{name}".'
         }
+
+
+class BaseWorkspaceRelationshipApiTestSuite(
+    BaseRelationshipApiTestSuite, BaseWorkspaceApiTestSuite
+):
+    """
+    BaseWorkspaceRelationshipApiTestSuite contains tests related to adding & removing parent object
+    for workspace-specific objects
+    """
 
 
 class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):

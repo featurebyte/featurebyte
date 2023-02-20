@@ -11,7 +11,11 @@ import pytest_asyncio
 from bson import ObjectId, json_util
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
-from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
+from featurebyte.migration.model import (
+    MigrationMetadata,
+    SchemaMetadataCreate,
+    SchemaMetadataUpdate,
+)
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
     _extract_migrate_methods,
@@ -165,8 +169,11 @@ async def test_run_migration(migration_check_persistent, user):
     schema_metadata_service = SchemaMetadataService(
         user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
     )
-    schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
+    schema_metadata = await schema_metadata_service.create_document(
+        SchemaMetadataCreate(
+            name=MigrationMetadata.SCHEMA_METADATA.value,
+            version=1,  # skip version 1 since tabular_data collection exists
+        )
     )
 
     # perform migration on testing samples to check the migration logic
@@ -193,14 +200,14 @@ async def test_run_migration(migration_check_persistent, user):
             description = marker.description
 
         docs = await service.list_documents()
-        assert docs["total"] > 0
+        assert docs["total"] > 0, service
 
         # check that must be at least 3 records in the audit docs
         max_audit_record_nums = 0
         for doc in docs["data"]:
             audit_docs = await service.list_document_audits(document_id=doc["_id"])
             max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
-        assert max_audit_record_nums > 1
+        assert max_audit_record_nums > 1, service
 
     # check version in schema_metadata after migration
     schema_metadata_service = SchemaMetadataService(
