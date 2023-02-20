@@ -345,7 +345,7 @@ class TileManagerSnowflake(BaseTileManager):
 
         self._scheduler.start_job_with_interval(
             job_id=job_id,
-            interval_minutes=tile_spec.frequency_minute,
+            interval_seconds=tile_spec.frequency_minute * 60,
             start_from=next_job_time,
             func=self._session.execute_query,
             args=[sql],
