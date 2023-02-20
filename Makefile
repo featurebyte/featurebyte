@@ -83,7 +83,7 @@ test: test-setup build-hive-udf-jar spark-start
 test-setup:
 	cd .github/mongoreplicaset && docker compose up -d
 
-test-teardown:
+test-teardown: spark-stop
 	cd .github/mongoreplicaset && docker compose down
 
 test-routes:
