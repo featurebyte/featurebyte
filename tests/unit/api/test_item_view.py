@@ -13,11 +13,7 @@ from featurebyte.exception import RecordCreationException, RepeatedColumnNamesEr
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import (
-    check_sdk_code_generation,
-    compare_generated_api_object_sdk_code,
-    get_node,
-)
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 class TestItemView(BaseViewTestSuite):
@@ -754,12 +750,12 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
     """Check SDK code generation"""
     to_use_saved_data = True
     item_view = ItemView.from_item_data(saved_item_data, event_suffix="_event_data")
-    check_sdk_code_generation(item_view, to_use_saved_data=to_use_saved_data)
-    compare_generated_api_object_sdk_code(
-        api_object=item_view,
-        data_id=saved_item_data.id,
+    check_sdk_code_generation(
+        item_view,
+        to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/item_view.py",
         update_fixtures=update_fixtures,
-        to_use_saved_data=to_use_saved_data,
+        to_compare_generated_code=True,
+        data_id=saved_item_data.id,
         event_data_id=saved_event_data.id,
     )

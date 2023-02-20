@@ -108,13 +108,25 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     assert left_pruned_graph == right_pruned_graph
 
 
-def _check_pruned_graph_and_nodes(pruned_graph, node, expected_pruned_graph, expected_node):
+def _check_pruned_graph_and_nodes(
+    pruned_graph, node, expected_pruned_graph, expected_node, sdk_code
+):
     # helper method to check pruned graph & node
-    assert pruned_graph == expected_pruned_graph
-    assert node == expected_node
+    assert pruned_graph == expected_pruned_graph, sdk_code
+    assert node == expected_node, sdk_code
 
 
-def check_sdk_code_generation(api_object, to_use_saved_data=False):
+def check_sdk_code_generation(  # pylint: disable=too-many-locals
+    api_object,
+    to_use_saved_data=False,
+    data_id_to_info=None,
+    to_format=True,
+    fixture_path=None,
+    update_fixtures=False,
+    to_compare_generated_code=True,
+    data_id=None,
+    **kwargs,
+):
     """Check SDK code generation"""
     if isinstance(api_object, AbstractTableData):
         query_object = api_object.frame
@@ -125,8 +137,10 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False):
 
     # execute SDK code & generate output object
     local_vars = {}
-    sdk_codes = query_object._generate_code(to_use_saved_data=to_use_saved_data)
-    exec(sdk_codes, {}, local_vars)  # pylint: disable=exec-used
+    sdk_code = query_object._generate_code(
+        to_format=to_format, to_use_saved_data=to_use_saved_data, data_id_to_info=data_id_to_info
+    )
+    exec(sdk_code, {}, local_vars)  # pylint: disable=exec-used
     output = local_vars["output"]
     if isinstance(output, AbstractTableData):
         output = output.frame
@@ -139,33 +153,28 @@ def check_sdk_code_generation(api_object, to_use_saved_data=False):
         node=node,
         expected_pruned_graph=expected_pruned_graph,
         expected_node=expected_node,
+        sdk_code=sdk_code,
     )
 
+    if fixture_path:
+        feature_store_id = api_object.feature_store.id
+        if update_fixtures:
+            formatted_sdk_code = sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
+            if data_id:
+                formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
 
-def compare_generated_api_object_sdk_code(
-    api_object, data_id, fixture_path, update_fixtures, to_use_saved_data, **kwargs
-):
-    """Compare generated SDK code for data object"""
-    feature_store_id = api_object.feature_store.id
-    if update_fixtures:
-        formatted_sdk_code = api_object._generate_code(
-            to_format=True, to_use_saved_data=to_use_saved_data
-        )
-        formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
-        if data_id:
-            formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
+            # for item data, there is an additional `event_data_id`. Replace the actual `event_data_id` value
+            # to {event_data_id} placeholder through kwargs
+            for key, value in kwargs.items():
+                formatted_sdk_code = formatted_sdk_code.replace(
+                    f"{value}", "{key}".replace("key", key)
+                )
 
-        # for item data, there is an additional `event_data_id`. Replace the actual `event_data_id` value
-        # to {event_data_id} placeholder through kwargs
-        for key, value in kwargs.items():
-            formatted_sdk_code = formatted_sdk_code.replace(f"{value}", "{key}".replace("key", key))
-
-        with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
-            file_handle.write(formatted_sdk_code)
-
-    sdk_code = api_object._generate_code(to_format=True, to_use_saved_data=to_use_saved_data)
-    with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
-        expected = file_handle.read().format(
-            feature_store_id=feature_store_id, data_id=data_id, **kwargs
-        )
-        assert expected == sdk_code
+            with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
+                file_handle.write(formatted_sdk_code)
+        elif to_compare_generated_code:
+            with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
+                expected = file_handle.read().format(
+                    feature_store_id=feature_store_id, data_id=data_id, **kwargs
+                )
+                assert expected.strip() == sdk_code.strip(), sdk_code

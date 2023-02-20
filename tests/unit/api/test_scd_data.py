@@ -11,7 +11,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.scd_data import SCDDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation, compare_generated_api_object_sdk_code
+from tests.util.helper import check_sdk_code_generation
 
 
 class TestSlowChangingDataTestSuite(BaseDataTestSuite):
@@ -347,23 +347,23 @@ def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures)
         current_flag_column="is_active",
         record_creation_date_column="created_at",
     )
-    check_sdk_code_generation(scd_data.frame, to_use_saved_data=False)
-    compare_generated_api_object_sdk_code(
-        api_object=scd_data.frame,
-        data_id=scd_data.id,
+    check_sdk_code_generation(
+        scd_data.frame,
+        to_use_saved_data=False,
         fixture_path="tests/fixtures/sdk_code/scd_data.py",
         update_fixtures=update_fixtures,
-        to_use_saved_data=False,
+        to_compare_generated_code=True,
+        data_id=scd_data.id,
     )
 
 
 def test_sdk_code_generation_on_saved_data(saved_scd_data, update_fixtures):
     """Check SDK code generation for saved data"""
-    check_sdk_code_generation(saved_scd_data.frame, to_use_saved_data=True)
-    compare_generated_api_object_sdk_code(
-        api_object=saved_scd_data.frame,
-        data_id=saved_scd_data.id,
+    check_sdk_code_generation(
+        saved_scd_data.frame,
+        to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/saved_scd_data.py",
         update_fixtures=update_fixtures,
-        to_use_saved_data=True,
+        to_compare_generated_code=True,
+        data_id=saved_scd_data.id,
     )

@@ -36,6 +36,7 @@ event_data = EventData(
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="cust_id", dtype="INT"),
     ],
+    record_creation_date_column=None,
     event_id_column="col_int",
     event_timestamp_column="event_timestamp",
     _id=ObjectId("{data_id}"),

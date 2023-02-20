@@ -27,6 +27,14 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
     ViewDataColumn,
 )
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    CodeGenerationConfig,
+    ExpressionStr,
+    StatementT,
+    VariableNameGenerator,
+    VariableNameStr,
+    VarNameExpressionStr,
+)
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.util import append_to_lineage
 
@@ -73,6 +81,25 @@ class ProjectNode(BaseNode):
             output_category=output_category,
             row_index_lineage=input_operation_info.row_index_lineage,
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=operation_structure.output_category,
+        )
+        if operation_structure.output_type == NodeOutputType.FRAME:
+            return statements, VariableNameStr(f"{var_name}[{self.parameters.columns}]")
+        return statements, VariableNameStr(f"{var_name}['{self.parameters.columns[0]}']")
 
 
 class FilterNode(BaseNode):
@@ -121,6 +148,25 @@ class FilterNode(BaseNode):
             output_category=output_category,
             row_index_lineage=append_to_lineage(input_operation_info.row_index_lineage, self.name),
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        mask_name = input_var_name_expressions[1].as_input()
+        expression = ExpressionStr(f"{var_name}[{mask_name}]")
+        return statements, expression
 
 
 class AssignColumnMixin:

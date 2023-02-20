@@ -265,7 +265,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     assert pruned_join_node.parameters == join_node_parameters
 
-    # check aggressive mode (node could be removed and is parameters could be pruned)
+    # check aggressive mode (node could be removed and its parameters could be pruned)
     pruned_graph, node_name_map = global_graph.prune(target_node=groupby_node, aggressive=True)
     pruned_graph = QueryGraph(**pruned_graph.json_dict())
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])

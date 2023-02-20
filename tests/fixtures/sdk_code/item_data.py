@@ -22,9 +22,7 @@ item_data = ItemData(
     tabular_source=TabularSource(
         feature_store_id=ObjectId("{feature_store_id}"),
         table_details=TableDetails(
-            database_name="sf_database",
-            schema_name="sf_schema",
-            table_name="items_table",
+            database_name="sf_database", schema_name="sf_schema", table_name="items_table"
         ),
     ),
     columns_info=[
@@ -35,6 +33,7 @@ item_data = ItemData(
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
     ],
+    record_creation_date_column=None,
     item_id_column="item_id_col",
     event_id_column="event_id_col",
     event_data_id=ObjectId("{event_data_id}"),

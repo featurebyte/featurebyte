@@ -204,6 +204,7 @@ class ClassEnum(Enum):
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
+    TO_TIMEDELTA = ("featurebyte", "to_timedelta")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
@@ -241,13 +242,19 @@ class CodeGenerationConfig(BaseModel):
     """
 
     # values not controlled by the query graph (can be configured outside graph)
+    # feature store ID & name
     feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
     feature_store_name: str = Field(default="feature_store")
+
+    # data ID to data info (name, record_creation_date_column, etc)
+    data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)
+
+    # output variable name used to store the final output
     final_output_name: str = Field(default="output")
 
     # other configurations
     to_use_saved_data: bool = Field(default=False)
-    max_expression_length: int = Field(default=60)
+    max_expression_length: int = Field(default=40)
 
 
 class VariableNameGenerator(BaseModel):
@@ -382,5 +389,5 @@ class CodeGenerator(BaseModel):
         if to_format:
             from black import FileMode, format_str  # pylint: disable=import-outside-toplevel
 
-            return format_str(code, mode=FileMode())
+            return format_str(code, mode=FileMode(line_length=100))
         return code

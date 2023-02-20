@@ -315,7 +315,7 @@ class BaseGraphNode(BaseNode):
     ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")
 
-    def derive_sdk_code(
+    def _derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
         input_node_types: List[NodeType],
