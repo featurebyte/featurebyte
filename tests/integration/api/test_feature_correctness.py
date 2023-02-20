@@ -5,7 +5,6 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.api.types import is_numeric_dtype
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
@@ -13,7 +12,7 @@ from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
-from tests.util.helper import get_lagged_series_pandas
+from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
 
 
 def calculate_aggregate_over_ground_truth(
@@ -196,63 +195,6 @@ def sum_func(values):
     if values.isnull().all():
         return np.nan
     return values.sum()
-
-
-def assert_dict_equal(s1, s2):
-    """
-    Check two dict like columns are equal
-
-    Parameters
-    ----------
-    s1 : Series
-        First series
-    s2 : Series
-        Second series
-    """
-
-    def _json_normalize(x):
-        # json conversion during preview changed None to nan
-        if x is None or np.nan:
-            return None
-        return json.loads(x)
-
-    s1 = s1.apply(_json_normalize)
-    s2 = s2.apply(_json_normalize)
-    pd.testing.assert_series_equal(s1, s2)
-
-
-def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
-    """
-    Check that two DataFrames are equal
-
-    Parameters
-    ----------
-    df : DataFrame
-        DataFrame to check
-    df_expected : DataFrame
-        Reference DataFrame
-    dict_like_columns : list | None
-        List of dict like columns which will be compared accordingly, not just exact match
-    """
-
-    assert df.columns.tolist() == df_expected.columns.tolist()
-
-    regular_columns = df.columns.tolist()
-    if dict_like_columns is not None:
-        assert isinstance(dict_like_columns, list)
-        regular_columns = [col for col in regular_columns if col not in dict_like_columns]
-
-    if regular_columns:
-        for col in regular_columns:
-            if is_numeric_dtype(df_expected[col]):
-                df[col] = df[col].astype(float)
-        pd.testing.assert_frame_equal(
-            df[regular_columns], df_expected[regular_columns], check_dtype=False
-        )
-
-    if dict_like_columns:
-        for col in dict_like_columns:
-            assert_dict_equal(df[col], df_expected[col])
 
 
 def add_inter_events_derived_columns(df, event_view):

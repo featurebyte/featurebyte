@@ -22,7 +22,7 @@ from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.node.schema import ColumnSpec
-from tests.util.helper import get_lagged_series_pandas
+from tests.util.helper import assert_preview_result_equal, get_lagged_series_pandas
 
 
 def iet_entropy(view, group_by_col, window, name):
@@ -251,9 +251,9 @@ def feature_group_per_category_fixture(event_view):
     ] = feature_counts_24h.cd.unique_count(include_missing=False)
 
     feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    # feature_group_per_category[
-    #     "ACTION_SIMILARITY_2h_to_24h"
-    # ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+    feature_group_per_category[
+        "ACTION_SIMILARITY_2h_to_24h"
+    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
 
     return feature_group_per_category
 
@@ -325,8 +325,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     if count_dict_supported:
         # preview count per category features
         df_feature_preview = feature_group_per_category.preview(preview_param)
-        assert df_feature_preview.shape[0] == 1
-        assert df_feature_preview.iloc[0].to_dict() == {
+        expected = {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
             "üser id": 1,
             "COUNT_BY_ACTION_2h": '{\n  "purchase": 1,\n  "àdd": 2\n}',
@@ -337,6 +336,11 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
             "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
         }
+        assert_preview_result_equal(
+            df_feature_preview,
+            expected,
+            dict_like_columns=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
+        )
 
     # preview one feature only
     df_feature_preview = feature_group["COUNT_2h"].preview(preview_param)
@@ -433,7 +437,9 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     }
     if not count_dict_supported:
         expected.pop("COUNT_BY_ACTION_24h")
-    assert_feature_preview_output_equal(df_feature_preview, expected)
+    assert_preview_result_equal(
+        df_feature_preview, expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
+    )
 
     if source_type == SourceType.DATABRICKS:
         return
@@ -897,13 +903,15 @@ def check_day_of_week_counts(event_view, preview_param):
     df_feature_preview = day_of_week_counts.preview(
         preview_param,
     )
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
+    expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
         "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}',
         "DAY_OF_WEEK_ENTROPY_24h": 0.830471712436292,
     }
+    assert_preview_result_equal(
+        df_feature_preview, expected, dict_like_columns=["DAY_OF_WEEK_COUNTS_24h"]
+    )
 
 
 @pytest.fixture(name="non_time_based_feature")

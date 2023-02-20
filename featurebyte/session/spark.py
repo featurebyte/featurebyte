@@ -456,6 +456,10 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
             ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
             ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDelete"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),
+            (
+                "F_COUNT_DICT_COSINE_SIMILARITY",
+                "com.featurebyte.hive.udf.CountDictCosineSimilarity",
+            ),
             ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropy"),
             ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequent"),
             (
