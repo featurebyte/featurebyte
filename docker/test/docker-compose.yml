@@ -8,7 +8,6 @@ services:
     entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
     volumes:
       - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
-      - ~/.featurebyte/data/:/data/
     ports:
       - 27021:27021
       - 27022:27022
@@ -19,8 +18,6 @@ services:
     ports:
       - "10000:10000"
       - "4040:4040"
-    volumes:
-      - ~/.spark/data:/data
     environment:
       - SPARK_MASTER=local
       - SPARK_LOCAL_IP=spark-thrift
