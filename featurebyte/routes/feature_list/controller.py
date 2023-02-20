@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Union
+from typing import Any, Dict, Literal, Union
 
 from http import HTTPStatus
 
@@ -185,7 +185,7 @@ class FeatureListController(
         FeatureListPaginatedList
             List of documents fulfilled the filtering condition
         """
-        params = {"search": search, "name": name}
+        params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).dict()
 

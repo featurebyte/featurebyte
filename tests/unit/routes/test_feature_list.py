@@ -315,7 +315,7 @@ class TestFeatureListApi(BaseApiTestSuite):  # pylint: disable=too-many-public-m
         assert response.json()["detail"] == "No change detected on the new feature list version."
 
     def test_list_200__filter_by_name_and_version(
-        self, test_api_client_persistent, create_multiple_success_responses, user_id
+        self, test_api_client_persistent, create_multiple_success_responses
     ):
         """Test list (success) when filtering by name and version"""
         test_api_client, _ = test_api_client_persistent

@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Union
+from typing import Any, Dict, Literal, Union
 
 from http import HTTPStatus
 
@@ -26,7 +26,6 @@ from featurebyte.schema.feature import (
 from featurebyte.schema.info import FeatureInfo
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
-from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.info import InfoService
@@ -156,7 +155,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         FeaturePaginatedList
             List of documents fulfilled the filtering condition
         """
-        params = {"search": search, "name": name}
+        params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).dict()
 
