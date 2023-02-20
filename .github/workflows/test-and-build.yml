@@ -57,33 +57,7 @@ env:
   FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:
-  flags:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-    outputs:
-      changes: ${{ steps.workflow_flags.outputs.PYTHON_CHANGES }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: '0'  # Used for checking diff
-
-      - name: Workflow Flags
-        id: workflow_flags
-        run: |
-          # Override if pushing to main
-          if [[ '${{ github.event_name }}' == 'push' && '${{ github.ref }}' == 'refs/heads/main' ]]; then
-            echo "PYTHON_CHANGES=1" >> $GITHUB_OUTPUT
-          else
-            echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_OUTPUT
-          fi
-
-      - name: Summarize
-        run: |
-          echo "### Changelog" >> $GITHUB_STEP_SUMMARY
-          git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
-
   test:
-    needs: [flags]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
     strategy:
@@ -109,33 +83,27 @@ jobs:
 
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2
-      if: ${{ needs.flags.outputs.changes != 0 }}
       with:
         poetry-version: 1.3.1
 
     - name: Configure Poetry
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
     - name: Adding C headers
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         sudo apt-get install python-dev libsasl2-dev gcc
 
     - name: Install dependencies
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         sudo apt-get install wkhtmltopdf
         make install
 
     - name: Run tests
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: make test
 
     - name: Test Coverage Report
-      if: ${{ needs.flags.outputs.changes != 0 }}
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
@@ -143,7 +111,6 @@ jobs:
         junitxml-path: ./pytest.xml
 
     - name: Check test output
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
           cat pytest-coverage.txt
@@ -217,7 +184,6 @@ jobs:
           --data-binary @- https://slack.com/api/chat.postMessage
 
     - name: Slack Message Pull Request
-      if: ${{ github.event_name == 'pull_request' }}
       run: |
         # Get Coverage data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
@@ -289,7 +255,6 @@ jobs:
 
 
   lint:
-    needs: [flags]
     runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
@@ -297,16 +262,13 @@ jobs:
         python-version: ["3.8.0"]
     steps:
     - uses: actions/checkout@v3
-      if: ${{ needs.flags.outputs.changes != 0 }}
 
     - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ needs.flags.outputs.changes != 0 }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Setup cache
-      if: ${{ needs.flags.outputs.changes != 0 }}
       uses: actions/cache@v3
       with:
         path: .venv
@@ -315,28 +277,23 @@ jobs:
 
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2
-      if: ${{ needs.flags.outputs.changes != 0 }}
       with:
         poetry-version: 1.3.1
 
     - name: Configure Poetry
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
     - name: Adding C headers
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         sudo apt-get install python-dev libsasl2-dev gcc
 
     - name: Install dependencies
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         make install
 
     - name: Lint Checks
-      if: ${{ needs.flags.outputs.changes != 0 }}
       run: make lint
 
     # IF unable to find author email
