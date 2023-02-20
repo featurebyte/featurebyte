@@ -133,6 +133,7 @@ server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-fr
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
+junitparser = "^2.8.0"
 mongomock = "^4.0.0"
 mongomock-motor = "^0.0.12"
 pip-licenses = "^3.5.4"

@@ -73,8 +73,21 @@ lint-safety:
 
 #* Testing
 test: test-setup build-hive-udf-jar
-	poetry run pytest --timeout=240 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	${MAKE} test-unit
+	${MAKE} test-integration
+	${MAKE} test-merge
 	${MAKE} test-teardown
+
+test-unit:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
+
+test-integration:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration
+
+test-merge:
+	echo "coverage: platform" > pytest-coverage.txt
+	poetry run coverage report >> pytest-coverage.txt
+	poetry run junitparser merge pytest.xml.* pytest.xml
 
 test-setup:
 	cd docker/test && docker compose up -d
