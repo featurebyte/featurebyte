@@ -201,6 +201,8 @@ class BaseDocumentService(
             output = copy.deepcopy(query_filter)
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
+        if kwargs.get("version"):
+            output["version"] = kwargs["version"]
         if kwargs.get("search"):
             output["$text"] = {"$search": kwargs["search"]}
         return output

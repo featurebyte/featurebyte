@@ -253,6 +253,42 @@ class TestFeatureApi(BaseApiTestSuite):
         response_dict = response.json()
         assert response_dict["detail"] == "No change detected on the new feature version."
 
+    def test_list_200__filter_by_name_and_version(
+        self, test_api_client_persistent, create_multiple_success_responses, user_id
+    ):
+        """Test list (success) when filtering by name and version"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_multiple_success_responses[0].json()
+        new_version_response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": create_response_dict["_id"],
+                "feature_job_setting": {
+                    "blind_spot": "1d",
+                    "frequency": "1d",
+                    "time_modulo_frequency": "1h",
+                },
+            },
+        )
+
+        # check retrieving old feature version
+        version = create_response_dict["version"]["name"]
+        response = test_api_client.get(
+            self.base_route, params={"name": create_response_dict["name"], "version": version}
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [create_response_dict]
+
+        # check retrieving new feature version
+        response = test_api_client.get(
+            self.base_route,
+            params={"name": create_response_dict["name"], "version": f"{version}_1"},
+        )
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert response_dict["data"] == [new_version_response.json()]
+
     def test_list_404__feature_list_not_found(
         self,
         test_api_client_persistent,
