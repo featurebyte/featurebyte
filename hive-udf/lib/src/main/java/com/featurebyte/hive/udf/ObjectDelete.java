@@ -1,31 +1,40 @@
 package com.featurebyte.hive.udf;
 
-import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
+import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.MapWritable;
+import org.apache.hadoop.io.ObjectWritable;
+import org.apache.hadoop.io.Text;
 
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
 
-@Description(name = "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+@Description(name = "object_delete",
   value = "_FUNC_(counts) "
-    + "- compute most frequent value from count dictionary"
+    + "- remove a key from the count dictionary"
 )
-public class CountDictMostFrequentValue extends GenericUDF {
+public class ObjectDelete extends GenericUDF {
+//  final private MapWritable output = new MapWritable();
+
   private transient MapObjectInspector inputMapOI;
-  final private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
+  private transient PrimitiveObjectInspector inputStringOI;
+  final private transient PrimitiveObjectInspector.PrimitiveCategory[] inputTypes = new PrimitiveObjectInspector.PrimitiveCategory[2];
   final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-    checkArgsSize(arguments, 1, 1);
+    checkArgsSize(arguments, 2, 2);
     if (!(arguments[0] instanceof MapObjectInspector)) {
       throw new UDFArgumentTypeException(0, "Parameter 1 must be a Map");
     }
@@ -50,7 +59,8 @@ public class CountDictMostFrequentValue extends GenericUDF {
       throw new UDFArgumentTypeException(0, "Map value must be numeric");
     }
 
-    return inputMapOI.getMapValueObjectInspector();
+//    return PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+    return inputMapOI;
   }
 
   @Override
@@ -58,21 +68,24 @@ public class CountDictMostFrequentValue extends GenericUDF {
     if (arguments[0] == null) {
       return null;
     }
+    String key_to_delete = PrimitiveObjectInspectorFactory.javaStringObjectInspector.getPrimitiveWritableObject(arguments[1].get()).toString();
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    double most_frequent_count = 0.0;
-    Object most_frequent_count_value = null;
+    /*
     for (Map.Entry<String, Object> entry : counts.entrySet()) {
-      double doubleValue = ((DoubleWritable) converters[1].convert(entry.getValue())).get();
-      if (doubleValue > most_frequent_count) {
-        most_frequent_count = doubleValue;
-        most_frequent_count_value = entry.getValue();
+      if (!Objects.equals(entry.getKey(), key_to_delete)) {
+        Text key_writable = new Text(entry.getKey());
+        ObjectWritable value_writable = new ObjectWritable(entry.getValue());
+        output.put(key_writable, value_writable);
       }
     }
-    return most_frequent_count_value;
+    return output;
+    */
+    counts.remove(key_to_delete);
+    return counts;
   }
 
   @Override
   public String getDisplayString(String[] children) {
-    return "F_COUNT_DICT_MOST_FREQUENT_VALUE";
+    return "OBJECT_DELETE";
   }
 }

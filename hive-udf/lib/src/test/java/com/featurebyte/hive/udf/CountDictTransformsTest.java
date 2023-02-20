@@ -7,7 +7,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.ObjectWritable;
 import org.apache.hadoop.io.Text;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +21,7 @@ public class CountDictTransformsTest {
     PrimitiveObjectInspectorFactory.writableStringObjectInspector,
     PrimitiveObjectInspectorFactory.writableIntObjectInspector
   );
+  final private ObjectInspector stringValueOI = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
 
   public CountDictTransformsTest() {
     countDict = new HashMap<String, IntWritable>();
@@ -61,5 +61,30 @@ public class CountDictTransformsTest {
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     IntWritable output = (IntWritable) udf.evaluate(args);
     assertEquals(output.get(), 260);
+  }
+
+  @Test
+  public void testCountDictNumUnique() throws HiveException {
+    CountDictNumUnique udf = new CountDictNumUnique();
+    ObjectInspector[] arguments = {mapValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
+    IntWritable output = (IntWritable) udf.evaluate(args);
+    assertEquals(output.get(), 7);
+  }
+
+  @Test
+  public void testCountDictDeleteKey() throws HiveException {
+    ObjectDelete udf = new ObjectDelete();
+    ObjectInspector[] arguments = {mapValueOI, stringValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(countDict),
+      new GenericUDF.DeferredJavaObject("apple"),
+    };
+    HashMap<String, IntWritable> expected = new HashMap<String, IntWritable>(countDict);
+    expected.remove("apple");
+    HashMap<String, IntWritable> output = (HashMap<String, IntWritable>) udf.evaluate(args);
+    assertEquals(expected, output);
   }
 }

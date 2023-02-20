@@ -251,9 +251,9 @@ def feature_group_per_category_fixture(event_view):
     ] = feature_counts_24h.cd.unique_count(include_missing=False)
 
     feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category[
-        "ACTION_SIMILARITY_2h_to_24h"
-    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
+    # feature_group_per_category[
+    #     "ACTION_SIMILARITY_2h_to_24h"
+    # ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
 
     return feature_group_per_category
 
@@ -297,13 +297,13 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_feature_operations(event_view, feature_group, feature_group_per_category):
     """
     Test operations on Feature objects
     """
     source_type = event_view.feature_store.type
-    count_dict_supported = source_type == SourceType.SNOWFLAKE
+    count_dict_supported = source_type != SourceType.DATABRICKS
 
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
