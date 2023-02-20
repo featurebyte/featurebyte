@@ -112,6 +112,7 @@ class BaseAggregator(ABC):
         method: str,
         value_column: Optional[str],
         fill_value: OptionalScalar,
+        skip_fill_na: bool,
     ) -> Feature:
 
         # value_column is None for count-like aggregation method
@@ -131,7 +132,8 @@ class BaseAggregator(ABC):
             feature_dtype=var_type,
             entity_ids=self.entity_ids,
         )
-        self._fill_feature(feature, method, feature_name, fill_value)
+        if not skip_fill_na:
+            self._fill_feature(feature, method, feature_name, fill_value)
         return feature
 
     def _fill_feature(
@@ -201,6 +203,7 @@ class WindowAggregator(BaseAggregator):
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -223,6 +226,8 @@ class WindowAggregator(BaseAggregator):
             feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -269,6 +274,7 @@ class WindowAggregator(BaseAggregator):
                 method=method,
                 value_column=value_column,
                 fill_value=fill_value,
+                skip_fill_na=skip_fill_na,
             )
             items.append(feature)
         feature_group = FeatureGroup(items)
@@ -405,6 +411,7 @@ class AsAtAggregator(BaseAggregator):
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
@@ -436,6 +443,8 @@ class AsAtAggregator(BaseAggregator):
             Whether the offset should be applied backward or forward
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling na values
 
         Returns
         -------
@@ -479,6 +488,7 @@ class AsAtAggregator(BaseAggregator):
             method=method,
             value_column=value_column,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
     def _validate_parameters(
@@ -531,6 +541,7 @@ class SimpleAggregator(BaseAggregator):
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -545,6 +556,8 @@ class SimpleAggregator(BaseAggregator):
             Output feature name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -582,6 +595,7 @@ class SimpleAggregator(BaseAggregator):
             method=method,
             value_column=value_column,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
         return feature
 
@@ -649,6 +663,7 @@ class GroupBy:
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -686,6 +701,8 @@ class GroupBy:
             feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -718,6 +735,7 @@ class GroupBy:
             timestamp_column=timestamp_column,
             feature_job_setting=feature_job_setting,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
     @typechecked
@@ -729,6 +747,7 @@ class GroupBy:
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
@@ -760,6 +779,8 @@ class GroupBy:
             Whether the offset should be applied backward or forward
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -784,6 +805,7 @@ class GroupBy:
             offset=offset,
             backward=backward,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
     @typechecked
@@ -793,6 +815,7 @@ class GroupBy:
         method: Optional[str] = None,
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
@@ -809,6 +832,8 @@ class GroupBy:
             Output feature name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
+        skip_fill_na: bool
+            Whether to skip filling NaN values
 
         Returns
         -------
@@ -821,4 +846,5 @@ class GroupBy:
             method=method,
             feature_name=feature_name,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )

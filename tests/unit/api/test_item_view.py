@@ -487,7 +487,9 @@ def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_
     }
 
 
-def test_item_view_groupby__item_data_column(snowflake_item_view):
+def test_item_view_groupby__item_data_column(
+    snowflake_item_view, snowflake_item_data, snowflake_event_data
+):
     """
     Test aggregating a column from ItemData using an EventData entity is allowed
     """
@@ -511,6 +513,22 @@ def test_item_view_groupby__item_data_column(snowflake_item_view):
         {"source": "graph_2", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
     ]
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+            },
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+            },
+        },
+    )
 
 
 @pytest.fixture(name="groupby_feature_job_setting")
@@ -584,7 +602,7 @@ def test_item_view_groupby__event_data_column_derived_mixed(
     )["feature_name"]
 
 
-def test_item_view_groupby__no_value_column(snowflake_item_view):
+def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_data):
     """
     Test count aggregation without value_column using EventData entity is allowed
     """
@@ -593,15 +611,29 @@ def test_item_view_groupby__no_value_column(snowflake_item_view):
         "frequency": "1h",
         "time_modulo_frequency": "30m",
     }
-    _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
+    feature = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         method="count",
         windows=["24h"],
         feature_names=["feature_name"],
         feature_job_setting=feature_job_setting,
     )["feature_name"]
 
+    # check SDK code generation
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+            }
+        },
+    )
 
-def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_entity):
+
+def test_item_view_groupby__event_id_column(
+    snowflake_item_data, snowflake_event_data, transaction_entity
+):
     """
     Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
     """
@@ -634,6 +666,28 @@ def test_item_view_groupby__event_id_column(snowflake_item_data, transaction_ent
         "serving_names": ["transaction_id"],
         "entity_ids": [transaction_entity.id],
     }
+
+    # check SDK code generation
+    # since the data is not saved, we need to pass in the columns info
+    # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    item_data_columns_info = snowflake_item_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        api_object=feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                "columns_info": event_data_columns_info,
+            },
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                "columns_info": item_data_columns_info,
+            },
+        },
+    )
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_item_view):
@@ -759,6 +813,18 @@ def test_as_feature__from_view_column(saved_item_data, item_entity):
             "event_parameters": {"event_timestamp_column": "event_timestamp_event_data"},
         },
     }
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            saved_item_data.id: {
+                "name": saved_item_data.name,
+                "record_creation_date_column": saved_item_data.record_creation_date_column,
+            }
+        },
+    )
 
 
 def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures):

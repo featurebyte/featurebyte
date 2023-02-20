@@ -115,7 +115,9 @@ def test_as_features__primary_key_not_entity(snowflake_dimension_view, mock_api_
     assert str(exc.value) == 'Column "col_int" is not an entity!'
 
 
-def test_as_features__with_primary_key_column(snowflake_dimension_view_with_entity, cust_id_entity):
+def test_as_features__with_primary_key_column(
+    snowflake_dimension_view_with_entity, snowflake_dimension_data, cust_id_entity
+):
     """
     Test calling as_features() when including primary column works correctly
     """
@@ -164,16 +166,47 @@ def test_as_features__with_primary_key_column(snowflake_dimension_view_with_enti
         },
     }
 
+    # check SDK code generation
+    dimension_data_columns_info = snowflake_dimension_data.dict(by_alias=True)["columns_info"]
+    for feature_name in feature_names:
+        check_sdk_code_generation(
+            feature_group[feature_name],
+            to_use_saved_data=False,
+            data_id_to_info={
+                snowflake_dimension_data.id: {
+                    "name": snowflake_dimension_data.name,
+                    "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                    "columns_info": dimension_data_columns_info,
+                }
+            },
+        )
+
 
 def test_as_features__offset_provided_but_ignored(
-    snowflake_dimension_view_with_entity, cust_id_entity
+    snowflake_dimension_view_with_entity, snowflake_dimension_data, cust_id_entity
 ):
     """
     Test as_features() when offset is provided but ignored
     """
     # offset ignored but should not have error
     view = snowflake_dimension_view_with_entity
-    _ = view.as_features(["col_float", "col_char"], ["col_float", "col_char"], offset="7d")
+    feature_group = view.as_features(
+        ["col_float", "col_char"], ["col_float", "col_char"], offset="7d"
+    )
+
+    # check SDK code generation
+    dimension_data_columns_info = snowflake_dimension_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature_group["col_float"],
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_dimension_data.id: {
+                "name": snowflake_dimension_data.name,
+                "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                "columns_info": dimension_data_columns_info,
+            }
+        },
+    )
 
 
 def test_as_feature__not_supported(snowflake_dimension_view_with_entity):

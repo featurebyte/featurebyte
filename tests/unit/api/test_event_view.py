@@ -229,6 +229,7 @@ def test_event_view_groupby__prune(
     }
 
     # check SDK code generation
+    event_data_columns_info = snowflake_event_data_with_entity.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
@@ -238,9 +239,7 @@ def test_event_view_groupby__prune(
                 "record_creation_date_column": snowflake_event_data_with_entity.record_creation_date_column,
                 # since the data is not saved, we need to pass in the columns info
                 # otherwise, entity id will be missing and code generation will fail during GroupBy construction
-                "columns_info": snowflake_event_data_with_entity.dict(by_alias=True)[
-                    "columns_info"
-                ],
+                "columns_info": event_data_columns_info,
             }
         },
     )
