@@ -351,6 +351,9 @@ class InputNode(BaseNode):
             # )` statement
             data_info = config.data_id_to_info.get(data_id, {}) if data_id else {}
             data_name = data_info.get("name", str(data_var_name))
+            columns_info = data_info.get(
+                "columns_info", self.parameters.extract_columns_info_objects()
+            )
             right_op = data_class_enum(
                 name=data_name,
                 feature_store=self.parameters.extract_feature_store_object(
@@ -359,7 +362,7 @@ class InputNode(BaseNode):
                 tabular_source=self.parameters.extract_tabular_source_object(
                     feature_store_id=config.feature_store_id
                 ),
-                columns_info=self.parameters.extract_columns_info_objects(),
+                columns_info=columns_info,
                 **self.parameters.extract_other_constructor_parameters(data_info),
             )
 

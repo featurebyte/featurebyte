@@ -405,6 +405,38 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
             return self.clone(parameters=pruned_params_dict)
         return self
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = self.parameters.keys
+        category = self.parameters.value_by
+        value_column = f"'{self.parameters.parent}'" if self.parameters.parent else None
+        feature_job_setting = {
+            "blind_spot": f"{self.parameters.blind_spot}s",
+            "frequency": f"{self.parameters.frequency}s",
+            "time_modulo_frequency": f"{self.parameters.time_modulo_frequency}s",
+        }
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate_over(value_column={value_column}, "
+            f'method="{self.parameters.agg_func}", '
+            f"windows={self.parameters.windows}, "
+            f"feature_names={self.parameters.names}, "
+            f"feature_job_setting={feature_job_setting})"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
+
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
     """ItemGroupbyNode parameters"""

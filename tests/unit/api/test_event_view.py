@@ -182,7 +182,9 @@ def test_event_view_copy(snowflake_event_view):
     assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_event_view_groupby__prune(snowflake_event_view_with_entity):
+def test_event_view_groupby__prune(
+    snowflake_event_view_with_entity, snowflake_event_data_with_entity
+):
     """Test event view groupby pruning algorithm"""
     event_view = snowflake_event_view_with_entity
     feature_job_setting = {
@@ -225,6 +227,23 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
         "project_2": ["mul_1"],
         "project_3": ["mul_1"],
     }
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data_with_entity.id: {
+                "name": snowflake_event_data_with_entity.name,
+                "record_creation_date_column": snowflake_event_data_with_entity.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+                "columns_info": snowflake_event_data_with_entity.dict(by_alias=True)[
+                    "columns_info"
+                ],
+            }
+        },
+    )
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
