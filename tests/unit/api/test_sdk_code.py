@@ -1,7 +1,7 @@
 """Unit tests for SDK code generation"""
 from featurebyte import EventView
 from featurebyte.core.timedelta import to_timedelta
-from tests.util.helper import check_sdk_code_generation, compare_generated_api_object_sdk_code
+from tests.util.helper import check_sdk_code_generation
 
 
 def test_sdk_code_generation__complex_arithmetic_expression(saved_event_data, update_fixtures):
@@ -16,15 +16,14 @@ def test_sdk_code_generation__complex_arithmetic_expression(saved_event_data, up
         - col_b.pow(2)
         + col_a
     )
-    check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
-    # NOTE: The following check is flaky as it is sensitive the global graph's nodes order.
-    compare_generated_api_object_sdk_code(
-        api_object=output,
-        data_id=saved_event_data.id,
-        fixture_path="tests/fixtures/sdk_code/complex_arithmetic_expression.py",
-        update_fixtures=update_fixtures,
+    check_sdk_code_generation(
+        output,
         to_use_saved_data=to_use_saved_data,
         to_format=to_format,
+        fixture_path="tests/fixtures/sdk_code/complex_arithmetic_expression.py",
+        update_fixtures=update_fixtures,
+        to_compare_generated_code=True,
+        data_id=saved_event_data.id,
     )
 
 
@@ -36,14 +35,14 @@ def test_sdk_code_generation__complex_relational_expression(saved_event_data, up
     output = (
         (col_a > 1) & (col_a < 10) | (col_a == 1) | (col_a != 10) | (col_a >= 1) | (col_a <= 10)
     )
-    check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
-    compare_generated_api_object_sdk_code(
-        api_object=output,
-        data_id=saved_event_data.id,
-        fixture_path="tests/fixtures/sdk_code/complex_relational_expression.py",
-        update_fixtures=update_fixtures,
+    check_sdk_code_generation(
+        output,
         to_use_saved_data=to_use_saved_data,
         to_format=to_format,
+        fixture_path="tests/fixtures/sdk_code/complex_relational_expression.py",
+        update_fixtures=update_fixtures,
+        to_compare_generated_code=True,
+        data_id=saved_event_data.id,
     )
 
 
@@ -59,15 +58,14 @@ def test_sdk_code_generation__complex_math_expression(saved_event_data, update_f
         + col_a.floor() * col_b.log() / col_a.exp()
         + col_a.isnull().astype(float)
     )
-    check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
-    # NOTE: The following check is flaky as it is sensitive the global graph's nodes order.
-    compare_generated_api_object_sdk_code(
-        api_object=output,
-        data_id=saved_event_data.id,
-        fixture_path="tests/fixtures/sdk_code/complex_math_expression.py",
-        update_fixtures=update_fixtures,
+    check_sdk_code_generation(
+        output,
         to_use_saved_data=to_use_saved_data,
         to_format=to_format,
+        fixture_path="tests/fixtures/sdk_code/complex_math_expression.py",
+        update_fixtures=update_fixtures,
+        to_compare_generated_code=True,
+        data_id=saved_event_data.id,
     )
 
 
@@ -94,17 +92,15 @@ def test_sdk_code_generation__complex_date_related_operations(saved_event_data, 
     # create complex date related operations
     output_date = (col_a + col_b).dt.second + (col_a - col_a).dt.minute
     output = output_date_prop + output_timedelta + output_date
-    check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
-    # NOTE: The following check is flaky as it is sensitive the global graph's nodes order.
-    if update_fixtures:
-        compare_generated_api_object_sdk_code(
-            api_object=output,
-            data_id=saved_event_data.id,
-            fixture_path="tests/fixtures/sdk_code/complex_date_related_operations.py",
-            update_fixtures=update_fixtures,
-            to_use_saved_data=to_use_saved_data,
-            to_format=to_format,
-        )
+    check_sdk_code_generation(
+        output,
+        to_use_saved_data=to_use_saved_data,
+        to_format=to_format,
+        fixture_path="tests/fixtures/sdk_code/complex_date_related_operations.py",
+        update_fixtures=update_fixtures,
+        to_compare_generated_code=False,  # skip comparison as local unit test result is different from CI
+        data_id=saved_event_data.id,
+    )
 
 
 def test_sdk_code_generation__complex_string_related_operations(saved_event_data, update_fixtures):
@@ -122,12 +118,12 @@ def test_sdk_code_generation__complex_string_related_operations(saved_event_data
         + col_a.str.contains(pat=" ", case=True).astype(str)
         + col_a.str.slice(start=0, stop=10)
     )
-    check_sdk_code_generation(output, to_use_saved_data=to_use_saved_data, to_format=to_format)
-    compare_generated_api_object_sdk_code(
-        api_object=output,
-        data_id=saved_event_data.id,
-        fixture_path="tests/fixtures/sdk_code/complex_string_related_operations.py",
-        update_fixtures=update_fixtures,
+    check_sdk_code_generation(
+        output,
         to_use_saved_data=to_use_saved_data,
         to_format=to_format,
+        fixture_path="tests/fixtures/sdk_code/complex_string_related_operations.py",
+        update_fixtures=update_fixtures,
+        to_compare_generated_code=True,
+        data_id=saved_event_data.id,
     )

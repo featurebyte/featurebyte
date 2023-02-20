@@ -29,7 +29,7 @@ class LengthNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         return f"{operand}.str.len()"
 
 
@@ -48,7 +48,7 @@ class TrimNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         value = None
         if self.parameters.character:
             value = ValueStr.create(self.parameters.character)
@@ -70,7 +70,7 @@ class ReplaceNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
         replacement = ValueStr.create(self.parameters.replacement)
         return f"{operand}.str.replace(pat={pattern}, repl={replacement})"
@@ -92,7 +92,7 @@ class PadNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         width = self.parameters.length
         side = ValueStr.create(self.parameters.side)
         fill_char = ValueStr.create(self.parameters.pad)
@@ -113,7 +113,7 @@ class StringCaseNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         return f"{operand}.str.{self.parameters.case}()"
 
 
@@ -132,7 +132,7 @@ class StringContainsNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
         return f"{operand}.str.contains(pat={pattern}, case={self.parameters.case})"
 
@@ -152,7 +152,7 @@ class SubStringNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         stop = None
         if self.parameters.length is not None:
             stop = self.parameters.length + (self.parameters.start or 0)
@@ -168,5 +168,5 @@ class ConcatNode(BinaryArithmeticOpNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} + {right_operand}"

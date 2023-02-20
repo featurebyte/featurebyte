@@ -116,8 +116,16 @@ def _check_pruned_graph_and_nodes(
     assert node == expected_node, sdk_code
 
 
-def check_sdk_code_generation(
-    api_object, to_use_saved_data=False, data_id_to_info=None, to_format=True
+def check_sdk_code_generation(  # pylint: disable=too-many-locals
+    api_object,
+    to_use_saved_data=False,
+    data_id_to_info=None,
+    to_format=True,
+    fixture_path=None,
+    update_fixtures=False,
+    to_compare_generated_code=True,
+    data_id=None,
+    **kwargs,
 ):
     """Check SDK code generation"""
     if isinstance(api_object, AbstractTableData):
@@ -148,44 +156,25 @@ def check_sdk_code_generation(
         sdk_code=sdk_code,
     )
 
+    if fixture_path:
+        feature_store_id = api_object.feature_store.id
+        if update_fixtures:
+            formatted_sdk_code = sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
+            if data_id:
+                formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
 
-def compare_generated_api_object_sdk_code(
-    api_object,
-    data_id,
-    fixture_path,
-    update_fixtures,
-    to_use_saved_data,
-    data_id_to_info=None,
-    to_format=True,
-    **kwargs,
-):
-    """Compare generated SDK code for data object"""
-    feature_store_id = api_object.feature_store.id
-    if update_fixtures:
-        formatted_sdk_code = api_object._generate_code(
-            to_format=to_format,
-            to_use_saved_data=to_use_saved_data,
-            data_id_to_info=data_id_to_info,
-        )
-        formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
-        if data_id:
-            formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
+            # for item data, there is an additional `event_data_id`. Replace the actual `event_data_id` value
+            # to {event_data_id} placeholder through kwargs
+            for key, value in kwargs.items():
+                formatted_sdk_code = formatted_sdk_code.replace(
+                    f"{value}", "{key}".replace("key", key)
+                )
 
-        # for item data, there is an additional `event_data_id`. Replace the actual `event_data_id` value
-        # to {event_data_id} placeholder through kwargs
-        for key, value in kwargs.items():
-            formatted_sdk_code = formatted_sdk_code.replace(f"{value}", "{key}".replace("key", key))
-
-        with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
-            file_handle.write(formatted_sdk_code)
-
-    sdk_code = api_object._generate_code(
-        to_format=to_format,
-        to_use_saved_data=to_use_saved_data,
-        data_id_to_info=data_id_to_info,
-    )
-    with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
-        expected = file_handle.read().format(
-            feature_store_id=feature_store_id, data_id=data_id, **kwargs
-        )
-        assert expected.strip() == sdk_code.strip(), sdk_code
+            with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
+                file_handle.write(formatted_sdk_code)
+        elif to_compare_generated_code:
+            with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
+                expected = file_handle.read().format(
+                    feature_store_id=feature_store_id, data_id=data_id, **kwargs
+                )
+                assert expected.strip() == sdk_code.strip(), sdk_code

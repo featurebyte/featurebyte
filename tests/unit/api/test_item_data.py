@@ -22,7 +22,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.item_data import ItemDataModel
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation, compare_generated_api_object_sdk_code
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="item_data_dict")
@@ -455,24 +455,24 @@ def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_dat
         item_id_column="item_id_col",
         event_data_name="sf_event_data",
     )
-    check_sdk_code_generation(item_data.frame, to_use_saved_data=False)
-    compare_generated_api_object_sdk_code(
-        api_object=item_data.frame,
-        data_id=item_data.id,
+    check_sdk_code_generation(
+        item_data.frame,
+        to_use_saved_data=False,
         fixture_path="tests/fixtures/sdk_code/item_data.py",
         update_fixtures=update_fixtures,
-        to_use_saved_data=False,
+        to_compare_generated_code=True,
+        data_id=item_data.id,
         event_data_id=saved_event_data.id,
     )
 
 
 def test_sdk_code_generation_on_saved_data(saved_item_data, update_fixtures):
     """Check SDK code generation for saved data"""
-    check_sdk_code_generation(saved_item_data.frame, to_use_saved_data=True)
-    compare_generated_api_object_sdk_code(
-        api_object=saved_item_data.frame,
-        data_id=saved_item_data.id,
+    check_sdk_code_generation(
+        saved_item_data.frame,
+        to_use_saved_data=True,
         fixture_path="tests/fixtures/sdk_code/saved_item_data.py",
         update_fixtures=update_fixtures,
-        to_use_saved_data=True,
+        to_compare_generated_code=True,
+        data_id=saved_item_data.id,
     )

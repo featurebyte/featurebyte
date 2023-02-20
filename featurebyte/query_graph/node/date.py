@@ -38,7 +38,7 @@ class DatetimeExtractNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         date_property: str = self.parameters.property
         if date_property == "dayofweek":
             date_property = "day_of_week"
@@ -59,7 +59,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         return f"{operand}.dt.{self.parameters.property}"
 
 

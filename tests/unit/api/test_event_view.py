@@ -20,11 +20,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
-from tests.util.helper import (
-    check_sdk_code_generation,
-    compare_generated_api_object_sdk_code,
-    get_node,
-)
+from tests.util.helper import check_sdk_code_generation, get_node
 
 
 class TestEventView(BaseViewTestSuite):
@@ -626,11 +622,11 @@ def test_sdk_code_generation(saved_event_data, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
     event_view = EventView.from_event_data(event_data=saved_event_data)
-    check_sdk_code_generation(event_view, to_use_saved_data=to_use_saved_data)
-    compare_generated_api_object_sdk_code(
-        api_object=event_view,
-        data_id=saved_event_data.id,
+    check_sdk_code_generation(
+        event_view,
+        to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/event_view.py",
         update_fixtures=update_fixtures,
-        to_use_saved_data=to_use_saved_data,
+        to_compare_generated_code=True,
+        data_id=saved_event_data.id,
     )

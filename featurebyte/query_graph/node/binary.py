@@ -23,7 +23,7 @@ class AndNode(BinaryLogicalOpNode):
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} & {right_operand}"
 
 
@@ -32,7 +32,7 @@ class OrNode(BinaryLogicalOpNode):
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} | {right_operand}"
 
 
@@ -41,7 +41,7 @@ class EqualNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} == {right_operand}"
 
 
@@ -50,7 +50,7 @@ class NotEqualNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} != {right_operand}"
 
 
@@ -59,7 +59,7 @@ class GreaterThanNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} > {right_operand}"
 
 
@@ -68,7 +68,7 @@ class GreaterEqualNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} >= {right_operand}"
 
 
@@ -77,7 +77,7 @@ class LessThanNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} < {right_operand}"
 
 
@@ -86,7 +86,7 @@ class LessEqualNode(BinaryRelationalOpNode):
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} <= {right_operand}"
 
 
@@ -95,7 +95,7 @@ class AddNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} + {right_operand}"
 
 
@@ -104,7 +104,7 @@ class SubtractNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} - {right_operand}"
 
 
@@ -113,7 +113,7 @@ class MultiplyNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} * {right_operand}"
 
 
@@ -122,7 +122,7 @@ class DivideNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"
 
 
@@ -131,7 +131,7 @@ class ModuloNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} % {right_operand}"
 
 
@@ -143,7 +143,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.pow({right_operand})"
 
 

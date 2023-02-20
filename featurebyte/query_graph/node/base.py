@@ -491,11 +491,25 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
-    def _handle_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+    def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         _ = self
         return left_operand, right_operand
 
-    def _generate_expression(self, left_operand: str, right_operand: str) -> str:
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        """
+        Generate expression for the node
+
+        Parameters
+        ----------
+        left_operand: str
+            Left operand
+        right_operand: str
+            Right operand
+
+        Returns
+        -------
+        str
+        """
         # TODO: make this method abstract and remove the following dummy implementation
         _ = left_operand, right_operand
         return ""
@@ -512,8 +526,8 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         right_operand: str = ValueStr.create(self.parameters.value).as_input()  # type: ignore
         if len(input_var_name_expressions) == 2:
             right_operand = input_var_name_expressions[1].as_input()
-        left_operand, right_operand = self._handle_operands(left_operand, right_operand)
-        return [], ExpressionStr(self._generate_expression(left_operand, right_operand))
+        left_operand, right_operand = self._reorder_operands(left_operand, right_operand)
+        return [], ExpressionStr(self.generate_expression(left_operand, right_operand))
 
 
 class BinaryLogicalOpNode(BaseSeriesOutputWithAScalarParamNode):
@@ -541,7 +555,7 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
             return DBVarType.FLOAT
         return inputs[0].series_output_dtype
 
-    def _handle_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+    def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         if self.parameters.right_op:
             return right_operand, left_operand
         return left_operand, right_operand
@@ -556,7 +570,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ] = VariableNameStr
 
     @abstractmethod
-    def _generate_expression(self, operand: str) -> str:
+    def generate_expression(self, operand: str) -> str:
         """
         Generate expression for the unary operation
 
@@ -580,7 +594,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expression = input_var_name_expressions[0]
         return [], self._derive_sdk_code_return_var_name_expression_type(
-            self._generate_expression(var_name_expression.as_input())
+            self.generate_expression(var_name_expression.as_input())
         )
 
 
