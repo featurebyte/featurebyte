@@ -18,14 +18,14 @@ from featurebyte.tile.base import BaseTileManager
 
 class TileManagerSpark(BaseTileManager):
     """
-    Databricks Tile class
+    Spark Tile class
     """
 
     _session: SparkSession = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
-        Custom constructor for TileManagerDatabricks to instantiate a datasource session
+        Custom constructor for TileManagerSpark to instantiate a datasource session
 
         Parameters
         ----------
@@ -164,4 +164,17 @@ class TileManagerSpark(BaseTileManager):
             offline tile lookback minutes to monitor and re-generate. Default is 1440
         schedule_time: datetime
             the moment of scheduling the job
+        """
+
+    async def remove_tile_jobs(
+        self,
+        tile_spec: TileSpec,
+    ) -> None:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
         """

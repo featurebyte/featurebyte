@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
+from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.base import BaseTileManager
 from featurebyte.tile.sql_template import (
     tm_generate_tile,
@@ -22,6 +23,7 @@ from featurebyte.tile.sql_template import (
     tm_retrieve_tile_job_audit_logs,
     tm_schedule_tile,
     tm_select_tile_registry,
+    tm_shell_schedule_tile,
     tm_tile_entity_tracking,
     tm_update_tile_registry,
 )
@@ -33,9 +35,12 @@ class TileManagerSnowflake(BaseTileManager):
     Snowflake Tile class
     """
 
-    _session: BaseSession = PrivateAttr()
+    _session: SnowflakeSession = PrivateAttr()
+    _use_snowflake_scheduling: bool = PrivateAttr()
 
-    def __init__(self, session: BaseSession, **kw: Any) -> None:
+    def __init__(
+        self, session: BaseSession, use_snowflake_scheduling: bool = True, **kw: Any
+    ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
 
@@ -43,10 +48,13 @@ class TileManagerSnowflake(BaseTileManager):
         ----------
         session: BaseSession
             input session for datasource
+        use_snowflake_scheduling: bool
+            whether to use snowflake scheduling mechanism
         kw: Any
             constructor arguments
         """
         super().__init__(session=session, **kw)
+        self._use_snowflake_scheduling = use_snowflake_scheduling
 
     async def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
@@ -220,12 +228,22 @@ class TileManagerSnowflake(BaseTileManager):
         )
         cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
-        return await self._schedule_tiles(
-            tile_spec=tile_spec,
-            tile_type=TileType.ONLINE,
-            cron_expr=cron,
-            monitor_periods=monitor_periods,
-        )
+        if self._use_snowflake_scheduling:
+            sql = await self._schedule_tiles(
+                tile_spec=tile_spec,
+                tile_type=TileType.ONLINE,
+                cron_expr=cron,
+                monitor_periods=monitor_periods,
+            )
+        else:
+            sql = await self._schedule_tiles_custom(
+                tile_spec=tile_spec,
+                tile_type=TileType.ONLINE,
+                next_job_time=next_job_time,
+                monitor_periods=monitor_periods,
+            )
+
+        return sql
 
     async def schedule_offline_tiles(
         self,
@@ -257,12 +275,83 @@ class TileManagerSnowflake(BaseTileManager):
         )
         cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
-        return await self._schedule_tiles(
-            tile_spec=tile_spec,
-            tile_type=TileType.OFFLINE,
-            cron_expr=cron,
+        if self._use_snowflake_scheduling:
+            sql = await self._schedule_tiles(
+                tile_spec=tile_spec,
+                tile_type=TileType.OFFLINE,
+                cron_expr=cron,
+                offline_minutes=offline_minutes,
+            )
+        else:
+            sql = await self._schedule_tiles_custom(
+                tile_spec=tile_spec,
+                tile_type=TileType.ONLINE,
+                next_job_time=next_job_time,
+                offline_minutes=offline_minutes,
+            )
+
+        return sql
+
+    async def _schedule_tiles_custom(
+        self,
+        tile_spec: TileSpec,
+        tile_type: TileType,
+        next_job_time: datetime,
+        offline_minutes: int = 1440,
+        monitor_periods: int = 10,
+    ) -> str:
+        """
+        Common tile schedule method
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        tile_type: TileType
+            ONLINE or OFFLINE
+        next_job_time: datetime
+            next tile job start time
+        offline_minutes: int
+            offline tile lookback minutes
+        monitor_periods: int
+            online tile lookback period
+
+        Returns
+        -------
+            generated sql to be executed
+        """
+
+        logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
+        job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+
+        sql = tm_schedule_tile.render(
+            tile_sql=tile_spec.tile_sql.replace("'", "''"),
+            tile_start_date_column=InternalName.TILE_START_DATE.value,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
+            tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
+            tile_end_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value,
+            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
+            frequency_minute=tile_spec.frequency_minute,
+            entity_column_names=",".join(escape_column_names(tile_spec.entity_column_names)),
+            value_column_names=",".join(tile_spec.value_column_names),
+            value_column_types=",".join(tile_spec.value_column_types),
+            tile_id=tile_spec.tile_id,
+            aggregation_id=tile_spec.aggregation_id,
+            tile_type=TileType.ONLINE,
             offline_minutes=offline_minutes,
+            monitor_periods=monitor_periods,
         )
+
+        self._scheduler.start_job_with_interval(
+            job_id=job_id,
+            interval_minutes=tile_spec.frequency_minute,
+            start_from=next_job_time,
+            func=self._session.execute_query,
+            args=[sql],
+        )
+
+        return sql
 
     async def _schedule_tiles(
         self,
@@ -295,7 +384,7 @@ class TileManagerSnowflake(BaseTileManager):
 
         temp_task_name = f"SHELL_TASK_{tile_spec.aggregation_id}_{tile_type}"
 
-        sql = tm_schedule_tile.render(
+        sql = tm_shell_schedule_tile.render(
             temp_task_name=temp_task_name,
             warehouse=self._session.dict()["warehouse"],
             cron=cron_expr,
@@ -355,3 +444,33 @@ class TileManagerSnowflake(BaseTileManager):
         )
         result = await self._session.execute_query(sql)
         return result
+
+    async def remove_tile_jobs(
+        self,
+        tile_spec: TileSpec,
+    ) -> None:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        """
+        exist_mapping = await self._session.execute_query(
+            f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
+        )
+        # only disable tile jobs when there is no tile-feature mapping records for the particular tile
+        if exist_mapping is None or len(exist_mapping) == 0:
+            if self._use_snowflake_scheduling:
+                exist_tasks = await self._session.execute_query(
+                    f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
+                )
+                if exist_tasks is not None and len(exist_tasks) > 0:
+                    logger.warning(f"Start disabling jobs for {tile_spec.aggregation_id}")
+                    for _, row in exist_tasks.iterrows():
+                        await self._session.execute_query(f"DROP TASK IF EXISTS {row['name']}")
+            else:
+                logger.info("Stopping job with custom scheduler")
+                for t_type in [TileType.ONLINE, TileType.OFFLINE]:
+                    self._scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")

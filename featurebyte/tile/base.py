@@ -13,6 +13,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.scheduler import TileScheduler
 
 
 class BaseTileManager(BaseModel, ABC):
@@ -21,6 +22,7 @@ class BaseTileManager(BaseModel, ABC):
     """
 
     _session: BaseSession = PrivateAttr()
+    _scheduler: TileScheduler = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
@@ -35,6 +37,7 @@ class BaseTileManager(BaseModel, ABC):
         """
         super().__init__(**kw)
         self._session = session
+        self._scheduler = TileScheduler()
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
@@ -142,4 +145,18 @@ class BaseTileManager(BaseModel, ABC):
         Returns
         -------
             generated sql to be executed
+        """
+
+    @abstractmethod
+    async def remove_tile_jobs(
+        self,
+        tile_spec: TileSpec,
+    ) -> None:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
         """

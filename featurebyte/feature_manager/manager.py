@@ -214,18 +214,7 @@ class FeatureManager(BaseModel):
 
         # disable tile scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
-            exist_mapping = await self._session.execute_query(
-                f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
-            )
-            # only disable tile jobs when there is no tile-feature mapping records for the particular tile
-            if exist_mapping is None or len(exist_mapping) == 0:
-                exist_tasks = await self._session.execute_query(
-                    f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
-                )
-                if exist_tasks is not None and len(exist_tasks) > 0:
-                    logger.warning(f"Start disabling jobs for {tile_spec.aggregation_id}")
-                    for _, row in exist_tasks.iterrows():
-                        await self._session.execute_query(f"DROP TASK IF EXISTS {row['name']}")
+            await self._tile_manager.remove_tile_jobs(tile_spec)
 
     async def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """

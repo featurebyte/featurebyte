@@ -206,3 +206,16 @@ class TileManagerDatabricks(BaseTileManager):
         schedule_time: datetime
             the moment of scheduling the job
         """
+
+    async def remove_tile_jobs(
+        self,
+        tile_spec: TileSpec,
+    ) -> None:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        """

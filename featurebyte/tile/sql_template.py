@@ -69,7 +69,7 @@ tm_tile_entity_tracking = Template(
 """
 )
 
-tm_schedule_tile = Template(
+tm_shell_schedule_tile = Template(
     """
     CREATE OR REPLACE TASK {{temp_task_name}}
       WAREHOUSE = {{warehouse}}
@@ -95,6 +95,30 @@ tm_schedule_tile = Template(
             '{{tile_type.value}}',
             {{monitor_periods}}
         )
+"""
+)
+
+tm_schedule_tile = Template(
+    """
+    call SP_TILE_GENERATE_SCHEDULE(
+        '{{tile_id}}',
+        '{{aggregation_id}}',
+        {{time_modulo_frequency_second}},
+        {{blind_spot_second}},
+        {{frequency_minute}},
+        {{offline_minutes}},
+        '{{tile_sql}}',
+        '{{tile_start_date_column}}',
+        '{{tile_last_start_date_column}}',
+        '{{tile_start_placeholder}}',
+        '{{tile_end_placeholder}}',
+        '{{entity_column_names}}',
+        '{{value_column_names}}',
+        '{{value_column_types}}',
+        '{{tile_type.value}}',
+        {{monitor_periods}},
+        to_varchar(SYSDATE(), 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"')
+    )
 """
 )
 
