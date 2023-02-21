@@ -36,7 +36,7 @@ class MongoDB(Persistent):
         """
         super().__init__()
         self._database = database
-        self._client = client or AsyncIOMotorClient(uri, uuidRepresentation="standard")
+        self._client = client or AsyncIOMotorClient(uri)
         self._db = self._client[self._database]
         self._session: Any = None
 
