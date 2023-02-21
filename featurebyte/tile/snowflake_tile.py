@@ -322,6 +322,7 @@ class TileManagerSnowflake(BaseTileManager):
 
         temp_task_name = f"SHELL_TASK_{tile_spec.aggregation_id}_{tile_type}"
 
+        # pylint: disable=duplicate-code
         sql = tm_shell_schedule_tile.render(
             temp_task_name=temp_task_name,
             warehouse=self._session.dict()["warehouse"],
@@ -401,6 +402,7 @@ class TileManagerSnowflake(BaseTileManager):
         # only disable tile jobs when there is no tile-feature mapping records for the particular tile
         if exist_mapping is None or len(exist_mapping) == 0:
             if self._use_snowflake_scheduling:
+                logger.info("Stopping job with Snowflake scheduler")
                 exist_tasks = await self._session.execute_query(
                     f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
                 )
