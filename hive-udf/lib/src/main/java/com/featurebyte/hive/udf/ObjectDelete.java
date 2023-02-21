@@ -9,28 +9,21 @@ import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.MapWritable;
-import org.apache.hadoop.io.ObjectWritable;
-import org.apache.hadoop.io.Text;
 
 import java.util.Map;
-import java.util.Objects;
 
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
 
 @Description(name = "object_delete",
   value = "_FUNC_(counts) "
-    + "- remove a key from the count dictionary"
+    + "- remove a key from count dictionary"
 )
 public class ObjectDelete extends GenericUDF {
-//  final private MapWritable output = new MapWritable();
 
   private transient MapObjectInspector inputMapOI;
-  private transient PrimitiveObjectInspector inputStringOI;
-  final private transient PrimitiveObjectInspector.PrimitiveCategory[] inputTypes = new PrimitiveObjectInspector.PrimitiveCategory[2];
-  final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
+  final private transient PrimitiveObjectInspector.PrimitiveCategory[] inputTypes = new PrimitiveObjectInspector.PrimitiveCategory[3];
+  final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[3];
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -41,7 +34,8 @@ public class ObjectDelete extends GenericUDF {
     inputMapOI = (MapObjectInspector) arguments[0];
     ObjectInspector[] map_args = {
       inputMapOI.getMapKeyObjectInspector(),
-      inputMapOI.getMapValueObjectInspector()
+      inputMapOI.getMapValueObjectInspector(),
+      arguments[1],
     };
 
     try {
@@ -59,7 +53,9 @@ public class ObjectDelete extends GenericUDF {
       throw new UDFArgumentTypeException(0, "Map value must be numeric");
     }
 
-//    return PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+    checkArgPrimitive(map_args, 2);
+    obtainStringConverter(map_args, 2, inputTypes, converters);
+
     return inputMapOI;
   }
 
@@ -68,18 +64,8 @@ public class ObjectDelete extends GenericUDF {
     if (arguments[0] == null) {
       return null;
     }
-    String key_to_delete = PrimitiveObjectInspectorFactory.javaStringObjectInspector.getPrimitiveWritableObject(arguments[1].get()).toString();
+    String key_to_delete = converters[2].convert(arguments[1].get()).toString();
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    /*
-    for (Map.Entry<String, Object> entry : counts.entrySet()) {
-      if (!Objects.equals(entry.getKey(), key_to_delete)) {
-        Text key_writable = new Text(entry.getKey());
-        ObjectWritable value_writable = new ObjectWritable(entry.getValue());
-        output.put(key_writable, value_writable);
-      }
-    }
-    return output;
-    */
     counts.remove(key_to_delete);
     return counts;
   }

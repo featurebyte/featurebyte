@@ -258,7 +258,7 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_event_view_ops(event_view, transaction_data_upper_case):
     """
     Test operations that can be performed on an EventView before creating features
@@ -445,7 +445,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
         return
 
     # Check using a derived numeric column as category
-    check_day_of_week_counts(event_view, preview_param)
+    check_day_of_week_counts(event_view, preview_param, source_type)
 
 
 def create_feature_with_filtered_event_view(event_view):
@@ -889,7 +889,7 @@ def check_numeric_operations(event_view, limit=100):
     pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], check_names=False)
 
 
-def check_day_of_week_counts(event_view, preview_param):
+def check_day_of_week_counts(event_view, preview_param, source_type):
     """Check using derived numeric column as category"""
     event_view["event_day_of_week"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
     day_of_week_counts = event_view.groupby("ÜSER ID", category="event_day_of_week").aggregate_over(
@@ -903,11 +903,17 @@ def check_day_of_week_counts(event_view, preview_param):
     df_feature_preview = day_of_week_counts.preview(
         preview_param,
     )
+    if source_type == "snowflake":
+        expected_counts = '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}'
+        expected_entropy = 0.830471712436292
+    else:
+        expected_counts = '{"0": 9, "1": 5}'
+        expected_entropy = 0.651756561172653
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
-        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}',
-        "DAY_OF_WEEK_ENTROPY_24h": 0.830471712436292,
+        "DAY_OF_WEEK_COUNTS_24h": expected_counts,
+        "DAY_OF_WEEK_ENTROPY_24h": expected_entropy,
     }
     assert_preview_result_equal(
         df_feature_preview, expected, dict_like_columns=["DAY_OF_WEEK_COUNTS_24h"]

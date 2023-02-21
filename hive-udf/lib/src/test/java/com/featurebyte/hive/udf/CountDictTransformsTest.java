@@ -22,7 +22,7 @@ public class CountDictTransformsTest {
     PrimitiveObjectInspectorFactory.writableStringObjectInspector,
     PrimitiveObjectInspectorFactory.writableIntObjectInspector
   );
-  final private ObjectInspector stringValueOI = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+  final private ObjectInspector stringValueOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
 
   public CountDictTransformsTest() {
     countDict = new HashMap<String, IntWritable>();
