@@ -1,7 +1,6 @@
 """
 Test flattening
 """
-import pytest
 
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.node.nested import BaseGraphNode
@@ -36,7 +35,8 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     transformer = GraphFlatteningTransformer(feature_with_cleaning_operations.graph)
     flattened_graph, _ = transformer.transform()
 
-    # Verify that the flattened graph looks correct
+    # Verify that the flattened graph looks correct.
+    # We don't expect any more graph nodes in here.
     new_graph_node_names = list(flattened_graph.nodes_map.keys())
     assert new_graph_node_names == [
         "input_1",
