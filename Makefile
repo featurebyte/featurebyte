@@ -92,6 +92,7 @@ test-merge:
 	poetry run junitparser merge pytest.xml.* pytest.xml
 
 test-setup:
+	mkdir -p ~/.spark/data
 	cd docker/test && LOCAL_UID="$(shell id -u)" LOCAL_GID="$(shell id -g)" docker compose up -d
 
 test-teardown:
