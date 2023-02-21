@@ -358,6 +358,20 @@ class LagNode(BaseSeriesOutputNode):
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        col_name = input_var_name_expressions[0].as_input()
+        entity_columns = ValueStr.create(self.parameters.entity_columns)
+        offset = ValueStr.create(self.parameters.offset)
+        expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
+        return [], ExpressionStr(expression)
+
 
 class GroupbyNode(AggregationOpStructMixin, BaseNode):
     """GroupbyNode class"""

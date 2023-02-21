@@ -123,7 +123,9 @@ def test_getitem__list_of_str_contains_protected_column(snowflake_event_data, sn
         ("col_text", 2, DBVarType.VARCHAR),
     ],
 )
-def test_event_view_column_lag(snowflake_event_view, column, offset, expected_var_type):
+def test_event_view_column_lag(
+    snowflake_event_view, snowflake_event_data, column, offset, expected_var_type
+):
     """
     Test EventViewColumn lag operation
     """
@@ -144,6 +146,18 @@ def test_event_view_column_lag(snowflake_event_view, column, offset, expected_va
         "offset": expected_offset_param,
     }
     assert lagged_column.tabular_data_ids == snowflake_event_view[column].tabular_data_ids
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        lagged_column,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+            }
+        },
+    )
 
 
 def test_event_view_column_lag__invalid(snowflake_event_view):
