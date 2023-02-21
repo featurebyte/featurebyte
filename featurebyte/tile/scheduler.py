@@ -1,18 +1,24 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
 from apscheduler.jobstores.base import JobLookupError
+from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.schedulers import SchedulerAlreadyRunningError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.logger import logger
+
+JOB_STORES: Dict[str, Any] = {
+    "default": MemoryJobStore(),
+    "local": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite"),
+    # "mongo": MongoDBJobStore(),
+}
 
 
 class TileScheduler(BaseModel):
@@ -20,14 +26,9 @@ class TileScheduler(BaseModel):
     FeatureByte Scheduler using apscheduler
     """
 
-    _job_stores: ClassVar[Dict[str, Any]] = {
-        "local": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite"),
-        # "mongo": MongoDBJobStore(),
-    }
-
-    # singleton scheduler
-    _scheduler: ClassVar[AsyncIOScheduler] = AsyncIOScheduler(jobstores=_job_stores)
+    _scheduler: AsyncIOScheduler = PrivateAttr()
     _job_store: str = PrivateAttr()
+    _tile_scheduler_map: Dict[str, Any] = PrivateAttr()
 
     def __init__(self, job_store: str = "local", **kw: Any) -> None:
         """
@@ -42,11 +43,8 @@ class TileScheduler(BaseModel):
         """
         super().__init__(**kw)
         self._job_store = job_store
-
-        try:
-            self._scheduler.start()
-        except SchedulerAlreadyRunningError:
-            logger.warning("Scheduler is already running")
+        self._scheduler = AsyncIOScheduler(jobstores=JOB_STORES)
+        self._scheduler.start()
 
     def start_job_with_interval(
         self,
@@ -110,3 +108,31 @@ class TileScheduler(BaseModel):
         """
         jobs = self._scheduler.get_jobs(jobstore=self._job_store)
         return [job.id for job in jobs]
+
+
+class TileSchedulerFactory:
+    """
+    Factory for TileScheduler
+    """
+
+    tile_scheduler_map: Dict[str, TileScheduler] = {}
+
+    @classmethod
+    def get_instance(cls, job_store: str) -> TileScheduler:
+        """
+        Retrieve corresponding TileScheduler instance
+
+        Parameters
+        ----------
+        job_store: str
+            input job store name
+
+        Returns
+        -------
+            TileScheduler instance based on input job_store
+        """
+        if not cls.tile_scheduler_map:
+            for j_store in JOB_STORES:
+                cls.tile_scheduler_map[j_store] = TileScheduler(job_store=job_store)
+
+        return cls.tile_scheduler_map[job_store]

@@ -16,7 +16,7 @@ from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
-from featurebyte.tile.scheduler import TileScheduler
+from featurebyte.tile.scheduler import TileScheduler, TileSchedulerFactory
 
 
 class BaseTileManager(BaseModel, ABC):
@@ -40,7 +40,7 @@ class BaseTileManager(BaseModel, ABC):
         """
         super().__init__(**kw)
         self._session = session
-        self._scheduler = TileScheduler()
+        self._scheduler = TileSchedulerFactory.get_instance(job_store="local")
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
