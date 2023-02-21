@@ -3,6 +3,7 @@ Test flattening
 """
 
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.graph import GlobalGraphState
 from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
@@ -11,6 +12,7 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     """
     Test flatten graph without skip cleaning parameters
     """
+    GlobalGraphState.reset()
     # Verify the original state of the graph
     original_node_names = list(feature_with_cleaning_operations.graph.nodes_map.keys())
     assert original_node_names == ["input_1", "graph_1", "groupby_1", "project_1"]
@@ -55,6 +57,8 @@ def test_flatten_graph__dont_flatten_cleaning_node(feature_with_cleaning_operati
     """
     Test flatten graph with skip flattening cleaning node parameters
     """
+    GlobalGraphState.reset()
+
     # Verify the original state of the graph
     original_node_names = list(feature_with_cleaning_operations.graph.nodes_map.keys())
     assert original_node_names == ["input_1", "graph_1", "groupby_1", "project_1"]
