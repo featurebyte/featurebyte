@@ -41,9 +41,7 @@ def upload_dataset(dataset_name: str) -> None:
     with tempfile.TemporaryDirectory(dir=local_staging_basepath) as local_staging_path:
 
         # parse sql
-        hive_staging_path = (
-            f"file:///data/staging/datasets/{os.path.basename(local_staging_path)}/{dataset_name}"
-        )
+        hive_staging_path = f"file:///opt/spark/data/derby/staging/datasets/{os.path.basename(local_staging_path)}/{dataset_name}"
         with open(path) as file_obj:
             sql = file_obj.read()
             sql = sql.format(staging_path=hive_staging_path)
