@@ -94,6 +94,11 @@ class GraphFlatteningTransformer(
         """
         Transform the graph by flattening all the nested graph.
 
+        Parameters
+        ----------
+        skip_flattening_cleaning_node: bool
+            whether to skip the flattening of the cleaning graph node
+
         Returns
         -------
         GraphNodeNameMap
