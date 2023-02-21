@@ -31,6 +31,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ExpressionStr,
     RightHandSide,
+    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -883,6 +884,30 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             node_name=self.name,
             new_column_var_type=feature_operation_info.series_output_dtype,
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        new_column_name = ValueStr.create(self.parameters.name)
+        feature = input_var_name_expressions[1]
+        entity_column = ValueStr.create(self.parameters.view_entity_column)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statement = StatementStr(
+            f"{var_name}.add_feature(new_column_name={new_column_name}, "
+            f"feature={feature}, entity_column={entity_column})"
+        )
+        statements.append(statement)
+        return statements, var_name
 
 
 class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):

@@ -575,7 +575,9 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_add_feature(snowflake_event_data, snowflake_event_view, non_time_based_feature):
+def test_add_feature(
+    snowflake_event_data, snowflake_event_view, snowflake_item_data, non_time_based_feature
+):
     """
     Test add feature
     """
@@ -618,6 +620,30 @@ def test_add_feature(snowflake_event_data, snowflake_event_view, non_time_based_
         {"source": "graph_1", "target": "join_feature_1"},
         {"source": "project_1", "target": "join_feature_1"},
     ]
+
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    item_data_columns_info = snowflake_item_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        snowflake_event_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in GroupBy construction
+                "columns_info": event_data_columns_info,
+            },
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in GroupBy construction
+                "columns_info": item_data_columns_info,
+            },
+        },
+    )
 
 
 def test__validate_column_is_not_used(empty_event_view_builder):
