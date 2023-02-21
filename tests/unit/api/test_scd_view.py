@@ -216,6 +216,8 @@ def test_scd_view_as_feature__special_column(snowflake_scd_data, cust_id_entity)
             snowflake_scd_data.id: {
                 "name": snowflake_scd_data.name,
                 "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
                 "columns_info": scd_data_columns_info,
             }
         },

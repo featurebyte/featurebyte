@@ -188,6 +188,8 @@ def test_as_features__with_primary_key_column(
                 snowflake_dimension_data.id: {
                     "name": snowflake_dimension_data.name,
                     "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                    # since the data is not saved, we need to pass in the columns info
+                    # otherwise, entity id will be missing and code generation will fail in as_features method
                     "columns_info": dimension_data_columns_info,
                 }
             },
@@ -215,6 +217,8 @@ def test_as_features__offset_provided_but_ignored(
             snowflake_dimension_data.id: {
                 "name": snowflake_dimension_data.name,
                 "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in as_features method
                 "columns_info": dimension_data_columns_info,
             }
         },
