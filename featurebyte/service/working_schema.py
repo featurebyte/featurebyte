@@ -84,6 +84,8 @@ class WorkingSchemaService(BaseService):
         self, feature_store_id: ObjectId, session: BaseSession
     ) -> None:
 
+        # activate use of raw query filter to retrieve all documents regardless of workspace membership
+        self.feature_service.allow_use_raw_query_filter()
         online_enabled_feature_docs = self.feature_service.list_documents_iterator(
             query_filter={
                 "tabular_source.feature_store_id": feature_store_id,

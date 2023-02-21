@@ -87,13 +87,13 @@ def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False)
                     continue
                 for version, migrate_method_name in _extract_migrate_methods(attr):
                     migrate_method_data = {
-                        "module": mod.__name__,
+                        "module": attr.__module__,
                         "class": attr_name,
                         "method": migrate_method_name,
                     }
                     if version not in migrate_methods:
                         migrate_methods[version] = migrate_method_data
-                    else:
+                    elif migrate_methods[version] != migrate_method_data:
                         raise ValueError(
                             f"Duplicated migrate version detected between "
                             f"{migrate_methods[version]} and {migrate_method_data}"

@@ -64,6 +64,10 @@ class BaseMigrationServiceMixin(Protocol):
             Migration number
         """
 
+    @abstractmethod
+    def allow_use_raw_query_filter(self) -> None:
+        """Activate use of raw query filter"""
+
     async def migrate_all_records(
         self,
         query_filter: Optional[dict[str, Any]] = None,
@@ -84,6 +88,7 @@ class BaseMigrationServiceMixin(Protocol):
         """
         # migrate all records and audit records
         if query_filter is None:
+            self.allow_use_raw_query_filter()
             query_filter = dict(self._construct_list_query_filter(use_raw_query_filter=True))
         to_iterate, page = True, 1
 

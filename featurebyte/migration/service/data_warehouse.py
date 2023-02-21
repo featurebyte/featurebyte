@@ -44,6 +44,8 @@ class TileColumnTypeExtractor:
         feature_service: FeatureService,
     ) -> dict[str, str]:
         tile_column_name_to_type = {}
+        # activate use of raw query filter to retrieve all documents regardless of workspace membership
+        feature_service.allow_use_raw_query_filter()
         feature_documents = feature_service.list_documents_iterator(
             query_filter={}, use_raw_query_filter=True
         )

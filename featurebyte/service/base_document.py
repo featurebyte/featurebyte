@@ -17,6 +17,7 @@ from featurebyte.exception import (
     DocumentNotFoundError,
     QueryNotSupportedError,
 )
+from featurebyte.logger import logger
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteWorkspaceBaseDocumentModel,
@@ -30,6 +31,10 @@ from featurebyte.service.mixin import Document, DocumentCreateSchema, OpsService
 
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
+RAW_QUERY_FILTER_WARNING = (
+    "Using raw query filter breaks application logic. "
+    "It should only be used when absolutely necessary."
+)
 
 
 class BaseDocumentService(
@@ -41,12 +46,18 @@ class BaseDocumentService(
     reading from the persistent.
     """
 
+    _allow_to_use_raw_query_filter: bool = False
     document_class: Type[Document]
 
     def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
         self.user = user
         self.persistent = persistent
         self.workspace_id = workspace_id
+
+    def allow_use_raw_query_filter(self) -> None:
+        """Activate use of raw query filter"""
+        logger.warning(RAW_QUERY_FILTER_WARNING)
+        self._allow_to_use_raw_query_filter = True
 
     @property
     def collection_name(self) -> str:
@@ -154,12 +165,18 @@ class BaseDocumentService(
         Returns
         -------
         QueryFilter
+
+        Raises
+        ------
+        NotImplementedError
+            Using raw query filter without activating override
         """
         _ = self, kwargs
         kwargs = {"_id": ObjectId(document_id)}
         if use_raw_query_filter:
+            if not self._allow_to_use_raw_query_filter:
+                raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
             return kwargs
-
         # inject workspace_id into filter if document is workspace specific
         if self.is_workspace_specific:
             kwargs = {**kwargs, "workspace_id": self.workspace_id}
@@ -231,6 +248,11 @@ class BaseDocumentService(
         Returns
         -------
         QueryFilter
+
+        Raises
+        ------
+        NotImplementedError
+            Using raw query filter without activating override
         """
         _ = self
         if not query_filter:
@@ -239,6 +261,8 @@ class BaseDocumentService(
             output = copy.deepcopy(query_filter)
 
         if use_raw_query_filter:
+            if not self._allow_to_use_raw_query_filter:
+                raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
             return output
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
