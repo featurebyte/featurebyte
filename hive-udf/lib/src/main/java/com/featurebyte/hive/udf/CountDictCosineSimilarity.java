@@ -9,6 +9,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableVoidObjectInspector;
 
 import java.util.Map;
 
@@ -28,6 +29,10 @@ public class CountDictCosineSimilarity extends GenericUDF {
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 2, 2);
+    if (arguments[0] instanceof WritableVoidObjectInspector || arguments[1] instanceof WritableVoidObjectInspector) {
+      return PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
+    }
+
     if (!(arguments[0] instanceof MapObjectInspector)) {
       throw new UDFArgumentTypeException(0, "Parameter 1 must be a Map");
     }
@@ -60,13 +65,14 @@ public class CountDictCosineSimilarity extends GenericUDF {
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    if (arguments[0] == null || arguments[1] == null) {
+    if (arguments[0].get() == null || arguments[1].get() == null) {
       return null;
     }
     Map<String, Object> counts1 = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
     Map<String, Object> counts2 = (Map<String, Object>) inputMapOI.getMap(arguments[1].get());
     if (counts1.size() == 0 ||  counts2.size() == 0) {
-      return 0;
+      output.set(0.0);
+      return output;
     }
     Map<String, Object> counts;
     Map<String, Object> counts_other;
