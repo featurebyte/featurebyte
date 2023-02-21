@@ -1,7 +1,7 @@
 """
 This module contains graph flattening related classes.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -9,7 +9,7 @@ from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
-from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
+from featurebyte.query_graph.transform.base import BaseGraphTransformer
 
 
 class GraphFlatteningGlobalState(BaseModel):
@@ -18,6 +18,9 @@ class GraphFlatteningGlobalState(BaseModel):
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: Dict[str, str] = Field(default_factory=dict)
 
+    # skip_flattening_cleaning_node is used to skip the flattening of cleaning graph nodes.
+    # If this parameter is set to true, the flattened graph returned from the transformer will contain GraphNode's that
+    # represent cleaning operations if the original graph had them.
     skip_flattening_cleaning_node: bool = Field(default=False)
 
 
