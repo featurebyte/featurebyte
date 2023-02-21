@@ -124,12 +124,19 @@ jobs:
     - name: Run tests
       run: |
         make test-unit
+        mv .coverage .coverage.0
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.0
         path: pytest.xml.0
+
+    - name: Upload unit coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.0
+        path: .coverage.0
 
   test-integration:
     needs: ["build-jar"]
@@ -184,12 +191,19 @@ jobs:
         make test-setup
         make test-integration
         make test-teardown
+        mv .coverage .coverage.1
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
         path: pytest.xml.1
+
+    - name: Upload integration coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.1
+        path: .coverage.1
 
   validate:
     needs: [ "test-unit", "test-integration"]
@@ -238,6 +252,16 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: python-${{ matrix.python-version }}-pytest.xml.1
+
+    - name: Download unit coverage results
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.0
+
+    - name: Download integration coverage results
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-.coverage.1
 
     - name: Merge test results
       run: |

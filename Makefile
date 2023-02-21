@@ -88,6 +88,7 @@ test-integration:
 
 test-merge:
 	echo "coverage: platform" > pytest-coverage.txt
+	poetry run coverage combine
 	poetry run coverage report >> pytest-coverage.txt
 	poetry run junitparser merge pytest.xml.* pytest.xml
 
