@@ -5,6 +5,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.nested import BaseGraphNode, ProxyInputNode
@@ -63,7 +64,7 @@ class GraphFlatteningTransformer(
             global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
             for input_node_name in self.graph.get_input_node_names(node=node)
         ]
-        if isinstance(node, BaseGraphNode):
+        if isinstance(node, BaseGraphNode) and node.parameters.type != GraphNodeType.CLEANING:
             self._flatten_nested_graph(
                 global_state=global_state, node=node, graph_input_nodes=input_nodes
             )
