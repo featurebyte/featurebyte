@@ -5,7 +5,7 @@ This module contains datetime operation related node classes
 from typing import List, Literal, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
