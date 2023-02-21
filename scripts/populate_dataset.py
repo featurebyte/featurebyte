@@ -1,7 +1,6 @@
 import argparse
 import os
 import re
-import shutil
 import tarfile
 import tempfile
 from pathlib import Path

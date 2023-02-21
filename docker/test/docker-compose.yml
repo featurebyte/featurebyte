@@ -21,6 +21,8 @@ services:
     environment:
       - SPARK_MASTER=local
       - SPARK_LOCAL_IP=spark-thrift
+    volumes:
+      - ~/.spark/data:/data
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
