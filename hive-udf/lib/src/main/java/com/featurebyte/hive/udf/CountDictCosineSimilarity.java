@@ -2,7 +2,7 @@ package com.featurebyte.hive.udf;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -97,7 +97,6 @@ public class CountDictCosineSimilarity extends GenericUDF {
       norm_other = norm_other + value * value;
     }
 
-    DoubleWritable output = new DoubleWritable();
     output.set(dot_product / (Math.sqrt(norm) * Math.sqrt(norm_other)));
     return output;
   }
