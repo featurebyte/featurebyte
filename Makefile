@@ -72,7 +72,9 @@ lint-safety:
 	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
-test: test-setup build-hive-udf-jar
+test:
+	${MAKE} build-hive-udf-jar
+	${MAKE} test-setup
 	${MAKE} test-unit
 	${MAKE} test-integration
 	${MAKE} test-merge

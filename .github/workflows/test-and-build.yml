@@ -73,7 +73,7 @@ jobs:
         path: hive-udf/lib/build/libs/*
 
 
-  test:
+  test-unit:
     needs: ["build-jar"]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
@@ -83,8 +83,64 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
       with:
-        fetch-depth: '0'  # Used for checking diff
+        python-version: ${{ matrix.python-version }}
+
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
+
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.1
+
+    - name: Configure Poetry
+      run: |
+        poetry config virtualenvs.in-project true
+        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+
+    - name: Adding C headers
+      run: |
+        sudo apt-get install python-dev libsasl2-dev gcc
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install wkhtmltopdf
+        poetry install -n --sync --extras=server
+
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/spark/
+
+    - name: Run tests
+      run: |
+        make test-unit
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.0
+        path: pytest.xml.0
+
+  test-integration:
+    needs: ["build-jar"]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version: ["3.8.0"]
+
+    steps:
+    - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -126,17 +182,69 @@ jobs:
     - name: Run tests
       run: |
         make test-setup
-        make test-unit
         make test-integration
         make test-teardown
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.1
+        path: pytest.xml.1
+
+  validate:
+    needs: [ "test-unit", "test-integration"]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version: [ "3.8.0" ]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'  # Used for checking diff
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
+
+    - name: Configure Poetry
+      run: |
+        poetry config virtualenvs.in-project true
+        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install wkhtmltopdf
+        poetry install -n --sync
+
+    - name: Download unit test results
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.0
+
+    - name: Download integration test results
+      uses: actions/download-artifact@v3
+      with:
+        name: python-${{ matrix.python-version }}-pytest.xml.1
+
+    - name: Merge test results
+      run: |
         make test-merge
 
     - name: Test Coverage Report
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
-        pytest-coverage-path: ./pytest-coverage.txt
-        junitxml-path: ./pytest.xml
+        pytest-coverage-path: pytest-coverage.txt
+        junitxml-path: pytest.xml
 
     - name: Check test output
       run: |
