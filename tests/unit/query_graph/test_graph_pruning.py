@@ -201,6 +201,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_output_columns": ["item_type", "item_name"],
         "join_type": "inner",
         "scd_parameters": None,
+        "metadata": {"type": "join", "on": None, "rsuffix": ""},
     }
     join_node = global_graph.add_operation(
         node_type=NodeType.JOIN,
@@ -285,6 +286,7 @@ def test_join_with_assign_node__join_node_parameters_pruning(
         "right_on": "order_id",
         "right_output_columns": ["item_type", "item_name"],
         "scd_parameters": None,
+        "metadata": join_node_parameters["metadata"],
     }
     assert pruned_join_node.parameters == expected_pruned_join_node_params
 
