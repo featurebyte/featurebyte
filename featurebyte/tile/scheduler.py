@@ -1,14 +1,14 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any, Callable, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from datetime import datetime
 
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers import SchedulerAlreadyRunningError
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import BaseModel, PrivateAttr
 
@@ -26,7 +26,7 @@ class TileScheduler(BaseModel):
     }
 
     # singleton scheduler
-    _scheduler: ClassVar[BackgroundScheduler] = BackgroundScheduler(jobstores=_job_stores)
+    _scheduler: ClassVar[AsyncIOScheduler] = AsyncIOScheduler(jobstores=_job_stores)
     _job_store: str = PrivateAttr()
 
     def __init__(self, job_store: str = "local", **kw: Any) -> None:
@@ -53,7 +53,7 @@ class TileScheduler(BaseModel):
         job_id: str,
         interval_seconds: int,
         start_from: datetime,
-        func: Callable[[Any], Any],
+        func: Any,
         args: Optional[List[Any]] = None,
         kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -68,7 +68,7 @@ class TileScheduler(BaseModel):
             interval between runs
         start_from: datetime
             starting point for the interval calculation
-        func: Callable[[Any], Any]
+        func: Any
             function to be triggered periodically
         args: Optional[List[Any]]
             args to func

@@ -235,7 +235,7 @@ class TileManagerSnowflake(BaseTileManager):
                 monitor_periods=monitor_periods,
             )
         else:
-            sql = await self._schedule_tiles_custom(
+            sql = await super()._schedule_tiles_custom(
                 tile_spec=tile_spec,
                 tile_type=TileType.ONLINE,
                 next_job_time=next_job_time,

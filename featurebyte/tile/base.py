@@ -15,9 +15,8 @@ from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
+from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
 from featurebyte.tile.scheduler import TileScheduler
-from featurebyte.tile.sql_template import tm_schedule_tile
-from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 class BaseTileManager(BaseModel, ABC):
@@ -210,34 +209,34 @@ class BaseTileManager(BaseModel, ABC):
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-        sql = tm_schedule_tile.render(
-            tile_sql=tile_spec.tile_sql.replace("'", "''"),
-            tile_start_date_column=InternalName.TILE_START_DATE.value,
-            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
-            tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
-            tile_end_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value,
-            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+        tile_schedule_ins = TileGenerateSchedule(
+            spark_session=self._session,
+            tile_id=tile_spec.tile_id,
+            tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
-            entity_column_names=",".join(escape_column_names(tile_spec.entity_column_names)),
-            value_column_names=",".join(tile_spec.value_column_names),
-            value_column_types=",".join(tile_spec.value_column_types),
-            tile_id=tile_spec.tile_id,
-            aggregation_id=tile_spec.aggregation_id,
-            tile_type=TileType.ONLINE,
-            offline_minutes=offline_minutes,
+            sql=tile_spec.tile_sql,
+            entity_column_names=tile_spec.entity_column_names,
+            value_column_names=tile_spec.value_column_names,
+            value_column_types=tile_spec.value_column_types,
+            tile_type=tile_type,
+            offline_period_minute=offline_minutes,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE,
+            tile_start_date_column=InternalName.TILE_START_DATE,
+            tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
+            tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
             monitor_periods=monitor_periods,
+            agg_id=tile_spec.aggregation_id,
         )
 
         self._scheduler.start_job_with_interval(
             job_id=job_id,
             interval_seconds=tile_spec.frequency_minute * 60,
             start_from=next_job_time,
-            func=self._session.execute_query,
-            args=[sql],
+            func=tile_schedule_ins.execute,
         )
 
-        return sql
+        return tile_schedule_ins.json()
 
     async def remove_tile_jobs(
         self,
