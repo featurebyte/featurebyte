@@ -466,7 +466,12 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
             f"feature_job_setting={feature_job_setting}, "
             f"skip_fill_na=True)"
         )
-        return statements, ExpressionStr(f"{grouped}.{agg}")
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append((out_var_name, ExpressionStr(f"{grouped}.{agg}")))
+        return statements, out_var_name
 
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
@@ -675,7 +680,12 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
             f"feature_names={feature_names}, "
             f"offset={ValueStr.create(offset)})"
         )
-        return statements, ExpressionStr(grouped)
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append((out_var_name, ExpressionStr(grouped)))
+        return statements, out_var_name
 
 
 class JoinMetadata(BaseModel):
