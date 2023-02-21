@@ -125,16 +125,3 @@ class TileManagerSpark(BaseTileManager):
         await tile_generate_ins.execute()
 
         return tile_generate_ins.json()
-
-    async def remove_tile_jobs(
-        self,
-        tile_spec: TileSpec,
-    ) -> None:
-        """
-        Schedule offline tiles
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-        """

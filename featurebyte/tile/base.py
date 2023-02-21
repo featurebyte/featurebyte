@@ -239,16 +239,23 @@ class BaseTileManager(BaseModel, ABC):
 
         return sql
 
-    @abstractmethod
     async def remove_tile_jobs(
         self,
         tile_spec: TileSpec,
     ) -> None:
         """
-        Schedule offline tiles
+        Remove tiles
 
         Parameters
         ----------
         tile_spec: TileSpec
             the input TileSpec
         """
+        exist_mapping = await self._session.execute_query(
+            f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
+        )
+        # only disable tile jobs when there is no tile-feature mapping records for the particular tile
+        if exist_mapping is None or len(exist_mapping) == 0:
+            logger.info("Stopping job with custom scheduler")
+            for t_type in [TileType.ONLINE, TileType.OFFLINE]:
+                self._scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")

@@ -167,16 +167,3 @@ class TileManagerDatabricks(BaseTileManager):
             run_details = self._runs_api.get_run(job_run["run_id"])
             if run_details["state"]["life_cycle_state"] == "TERMINATED":
                 break
-
-    async def remove_tile_jobs(
-        self,
-        tile_spec: TileSpec,
-    ) -> None:
-        """
-        Schedule offline tiles
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-        """

@@ -58,7 +58,7 @@ class TileScheduler(BaseModel):
         kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        Start job with cron expression
+        Start job with Interval seconds
 
         Parameters
         ----------

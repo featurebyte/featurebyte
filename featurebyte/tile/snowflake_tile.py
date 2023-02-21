@@ -282,7 +282,7 @@ class TileManagerSnowflake(BaseTileManager):
                 offline_minutes=offline_minutes,
             )
         else:
-            sql = await self._schedule_tiles_custom(
+            sql = await super()._schedule_tiles_custom(
                 tile_spec=tile_spec,
                 tile_type=TileType.ONLINE,
                 next_job_time=next_job_time,
@@ -389,7 +389,7 @@ class TileManagerSnowflake(BaseTileManager):
         tile_spec: TileSpec,
     ) -> None:
         """
-        Schedule offline tiles
+        Remove tiles
 
         Parameters
         ----------
@@ -411,6 +411,4 @@ class TileManagerSnowflake(BaseTileManager):
                     for _, row in exist_tasks.iterrows():
                         await self._session.execute_query(f"DROP TASK IF EXISTS {row['name']}")
             else:
-                logger.info("Stopping job with custom scheduler")
-                for t_type in [TileType.ONLINE, TileType.OFFLINE]:
-                    self._scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")
+                await super().remove_tile_jobs(tile_spec=tile_spec)
