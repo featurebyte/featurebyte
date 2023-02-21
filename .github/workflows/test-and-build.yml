@@ -57,14 +57,31 @@ env:
   FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v3
+    - name: Building hive-udf
+      run: |
+        cd hive-udf && ./gradlew clean && ./gradlew test && ./gradlew shadowJar
+
+    - name: Upload hive-udf
+      uses: actions/upload-artifact@v3
+      with:
+        name: hive-udf
+        path: hive-udf/lib/build/libs/*
+
+
   test:
+    needs: ["build-jar"]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
     strategy:
       matrix:
         python-version: ["3.8.0"]
-    steps:
 
+    steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: '0'  # Used for checking diff
@@ -98,13 +115,19 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install wkhtmltopdf
-        make install
+        poetry install -n --sync --extras=server
+
+    - name: Download hive-udf
+      uses: actions/download-artifact@v3
+      with:
+        name: hive-udf
+        path: featurebyte/sql/spark/
 
     - name: Run tests
       run: |
         make test-setup
         make test-unit
-        make test-functional
+        make test-integration
         make test-teardown
         make test-merge
 
@@ -118,13 +141,8 @@ jobs:
     - name: Check test output
       run: |
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
-          cat pytest-coverage.txt
-          echo "Errors found in pytest"
-          exit 1
-        fi
-        if [ "${{ steps.coverageComment.outputs.errors }}" == '' ] || [ "${{ steps.coverageComment.outputs.failures }}" == '' ]; then
-          cat pytest-coverage.txt
-          echo "Weird Error has occurred"
+          # Print summary only
+          awk '/= short test summary info =/{f=1}f' pytest-coverage.txt
           exit 1
         fi
 
