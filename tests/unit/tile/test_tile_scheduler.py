@@ -1,17 +1,18 @@
 """
 Test TileScheduler
 """
+import asyncio
 import os
-import time
 from datetime import datetime
 
 import pytest
+import pytest_asyncio
 
 from featurebyte.tile.scheduler import TileScheduler
 
 
-@pytest.fixture(name="tile_scheduler")
-def tile_scheduler_fixture():
+@pytest_asyncio.fixture(name="tile_scheduler")
+async def tile_scheduler_fixture():
     yield TileScheduler()
 
     job_file = "jobs.sqlite"
@@ -19,13 +20,14 @@ def tile_scheduler_fixture():
         os.remove(job_file)
 
 
-def create_temp_file():
+async def create_temp_file():
     tmp_file_name = "tmp_file"
     with open(tmp_file_name, "w"):
         pass
 
 
-def test_tile_scheduler(tile_scheduler):
+@pytest.mark.asyncio
+async def test_tile_scheduler(tile_scheduler):
     """Test TileScheduler"""
 
     job_name = "test_job_1"
@@ -36,7 +38,7 @@ def test_tile_scheduler(tile_scheduler):
         func=create_temp_file,
     )
 
-    time.sleep(4)
+    await asyncio.sleep(4)
     tmp_file_name = "tmp_file"
     assert os.path.exists(tmp_file_name)
     os.remove(tmp_file_name)
