@@ -136,6 +136,11 @@ def test_from_item_data__auto_join_columns(
                                 "event_timestamp",
                             ],
                             "scd_parameters": None,
+                            "metadata": {
+                                "type": "join_event_data_attributes",
+                                "columns": ["event_timestamp", "cust_id"],
+                                "event_suffix": "_event_table",
+                            },
                         },
                         "type": "join",
                     },
@@ -294,6 +299,11 @@ def test_join_event_data_attributes__more_columns(
             ],
             "join_type": "inner",
             "scd_parameters": None,
+            "metadata": {
+                "type": "join_event_data_attributes",
+                "columns": ["col_float"],
+                "event_suffix": None,
+            },
         },
     }
 
@@ -461,6 +471,11 @@ def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_
                             "right_output_columns": ["col_int", "item_id_col", "created_at"],
                             "join_type": "inner",
                             "scd_parameters": None,
+                            "metadata": {
+                                "type": "join_event_data_attributes",
+                                "event_suffix": None,
+                                "columns": ["event_timestamp", "cust_id"],
+                            },
                         },
                     },
                 ],
