@@ -93,7 +93,7 @@ class ProjectNode(BaseNode):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
-        if input_node_types[0] in {NodeType.ITEM_GROUPBY}:
+        if input_node_types[0] in {NodeType.ITEM_GROUPBY, NodeType.AGGREGATE_AS_AT}:
             # special handling for item_view.aggregate output
             # since the output is already single series, no projection is needed
             statements, var_name = self._convert_expression_to_variable(
@@ -430,9 +430,12 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
         )
-        keys = self.parameters.keys
-        category = self.parameters.value_by
-        value_column = f"'{self.parameters.parent}'" if self.parameters.parent else None
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        windows = ValueStr.create(self.parameters.windows)
+        feature_names = ValueStr.create(self.parameters.names)
         feature_job_setting = {
             "blind_spot": f"{self.parameters.blind_spot}s",
             "frequency": f"{self.parameters.frequency}s",
@@ -441,9 +444,9 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"aggregate_over(value_column={value_column}, "
-            f'method="{self.parameters.agg_func}", '
-            f"windows={self.parameters.windows}, "
-            f"feature_names={self.parameters.names}, "
+            f"method={method}, "
+            f"windows={windows}, "
+            f"feature_names={feature_names}, "
             f"feature_job_setting={feature_job_setting}, "
             f"skip_fill_na=True)"
         )
@@ -514,14 +517,16 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
             node_output_type=NodeOutputType.FRAME,
             node_output_category=NodeOutputCategory.VIEW,
         )
-        keys = self.parameters.keys
-        category = self.parameters.value_by
-        value_column = f"'{self.parameters.parent}'" if self.parameters.parent else None
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        feature_name = ValueStr.create(self.parameters.name)
         grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
         agg = (
             f"aggregate(value_column={value_column}, "
-            f'method="{self.parameters.agg_func}", '
-            f"feature_name='{self.parameters.name}', "
+            f"method={method}, "
+            f"feature_name={feature_name}, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
@@ -924,6 +929,42 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 dtype=output_var_type,
             )
         ]
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
+        # Output of AggregateAsAtNode is just an expression, the actual variable assignment
+        # will be done at the ProjectNode.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        feature_name = ValueStr.create(self.parameters.name)
+        offset = ValueStr.create(self.parameters.offset)
+        backward = ValueStr.create(self.parameters.backward)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate_asat(value_column={value_column}, "
+            f"method={method}, "
+            f"feature_name={feature_name}, "
+            f"offset={offset}, "
+            f"backward={backward}, "
+            f"skip_fill_na=True)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
 class AliasNode(BaseNode):
