@@ -92,7 +92,7 @@ test-merge:
 	poetry run junitparser merge pytest.xml.* pytest.xml
 
 test-setup:
-	cd docker/test && docker compose up -d
+	cd docker/test && LOCAL_UID="$(shell id -u)" LOCAL_GID="$(shell id -g)" docker compose up -d
 
 test-teardown:
 	cd docker/test && docker compose down
@@ -102,7 +102,7 @@ test-routes:
 
 #* Docker
 beta-start: beta-build
-	cd docker/dev && docker compose -f docker-compose.yml up
+	cd docker/dev && LOCAL_UID="$(shell id -u)" LOCAL_GID="$(shell id -g)" docker compose -f docker-compose.yml up
 	$(MAKE) beta-stop
 
 beta-stop:
