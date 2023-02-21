@@ -208,6 +208,7 @@ class BaseAdapter:
         return agg_expr
 
     @classmethod
+    @abstractmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
         """
         Construct a OBJECT_AGG expression that combines a key column and a value column in to a
