@@ -22,7 +22,7 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
         return "null"
 
     if not obj_dict:
-        # MAP() is invalid syntax in Spark, so this is one hack
+        # MAP() is invalid syntax in Spark, so this is one hack to create an empty map
         return "map_filter(MAP('a', 1), (k, v) -> k != 'a')"
 
     args = []
