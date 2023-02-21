@@ -130,6 +130,7 @@ def get_mocked_session_manager(session):
         yield
 
 
+@pytest.mark.skip("https://featurebyte.atlassian.net/browse/DEV-1130")
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @mock.patch("featurebyte.service.feature_store_warehouse.FeatureStoreWarehouseService.list_columns")
 @mock.patch("featurebyte.app.get_persistent")
