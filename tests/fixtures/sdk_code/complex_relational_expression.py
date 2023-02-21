@@ -5,7 +5,6 @@ from featurebyte import EventView
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
 event_view = EventView.from_event_data(event_data=event_data)
-col = (event_view["col_int"] > 1) & (event_view["col_int"] < 10)
-col_1 = (col | (event_view["col_int"] == 1)) | (event_view["col_int"] != 10)
-col_2 = (col_1 | (event_view["col_int"] >= 1)) | (event_view["col_int"] <= 10)
-output = col_2
+col = event_view["col_int"]
+col_1 = (((col > 1) & (col < 10)) | (col == 1)) | (col != 10)
+output = (col_1 | (col >= 1)) | (col <= 10)

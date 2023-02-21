@@ -49,7 +49,9 @@ def test_get_join_column(snowflake_scd_view):
     assert column == "col_text"
 
 
-def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
+def test_event_view_join_scd_view(
+    snowflake_event_view, snowflake_event_data, snowflake_scd_view, snowflake_scd_data
+):
     """
     Test additional join parameters are added for SCDView
     """
@@ -95,6 +97,22 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
         },
         "metadata": {"type": "join", "on": None, "rsuffix": "_scd"},
     }
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        snowflake_event_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data.id: {
+                "name": snowflake_scd_data.name,
+                "record_creation_date_column": snowflake_scd_data.record_creation_date_column,
+            },
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+            },
+        },
+    )
 
 
 def test_scd_view_as_feature(snowflake_scd_data, cust_id_entity):

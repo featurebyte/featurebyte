@@ -584,7 +584,7 @@ def test_item_view_groupby__event_data_column_derived(
 
 
 def test_item_view_groupby__event_data_column_derived_mixed(
-    snowflake_item_view, groupby_feature_job_setting
+    snowflake_item_view, snowflake_item_data, groupby_feature_job_setting
 ):
     """
     Test aggregating a column derived from both EventData and ItemData is allowed
@@ -593,13 +593,25 @@ def test_item_view_groupby__event_data_column_derived_mixed(
     snowflake_item_view["new_col"] = (
         snowflake_item_view["col_float"] + snowflake_item_view["item_amount"]
     )
-    _ = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
+    feat = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
         "new_col",
         method="sum",
         windows=["24h"],
         feature_names=["feature_name"],
         feature_job_setting=groupby_feature_job_setting,
     )["feature_name"]
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+            }
+        },
+    )
 
 
 def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_data):

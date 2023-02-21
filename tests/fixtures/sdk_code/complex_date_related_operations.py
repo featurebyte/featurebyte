@@ -6,15 +6,13 @@ from featurebyte import to_timedelta
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
 event_view = EventView.from_event_data(event_data=event_data)
-col = to_timedelta(series=event_view["col_int"], unit="hour")
-col_1 = (col.dt.minute / col.dt.second) * col.dt.millisecond
-col_2 = ((col.dt.day * col.dt.hour) - col_1) + col.dt.microsecond
-col_3 = event_view["event_timestamp"].dt.year + event_view["event_timestamp"].dt.quarter
-col_4 = event_view["event_timestamp"].dt.month * event_view["event_timestamp"].dt.week
-col_5 = col_4 / event_view["event_timestamp"].dt.day
-col_6 = col_5 % event_view["event_timestamp"].dt.day_of_week
-col_7 = (col_3 - col_6) + event_view["event_timestamp"].dt.hour
-col_8 = event_view["event_timestamp"].dt.minute * event_view["event_timestamp"].dt.second
-col_9 = event_view["event_timestamp"] - event_view["event_timestamp"]
-col_10 = (event_view["event_timestamp"] + col).dt.second + col_9.dt.minute
-output = ((col_7 - col_8) + col_2) + col_10
+col = event_view["col_int"]
+col_1 = to_timedelta(series=col, unit="hour")
+col_2 = (col_1.dt.minute / col_1.dt.second) * col_1.dt.millisecond
+col_3 = ((col_1.dt.day * col_1.dt.hour) - col_2) + col_1.dt.microsecond
+col_4 = event_view["event_timestamp"]
+col_5 = (col_4.dt.month * col_4.dt.week) / col_4.dt.day
+col_6 = (col_4.dt.year + col_4.dt.quarter) - (col_5 % col_4.dt.day_of_week)
+col_7 = (col_6 + col_4.dt.hour) - (col_4.dt.minute * col_4.dt.second)
+col_8 = (col_4 + col_1).dt.second + (col_4 - col_4).dt.minute
+output = (col_7 + col_3) + col_8

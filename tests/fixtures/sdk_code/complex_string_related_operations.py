@@ -5,11 +5,10 @@ from featurebyte import EventView
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
 event_view = EventView.from_event_data(event_data=event_data)
-col = event_view["col_text"].str.len().astype(str) + event_view["col_text"].str.strip(to_strip=" ")
-col_1 = col + event_view["col_text"].str.replace(pat=" ", repl="_")
-col_2 = col_1 + event_view["col_text"].str.pad(width=10, side="left", fillchar="_")
-col_3 = col_2 + event_view["col_text"].str.upper()
-col_4 = col_3 + event_view["col_text"].str.lower()
-col_5 = col_4 + event_view["col_text"].str.contains(pat=" ", case=True).astype(str)
-col_6 = col_5 + event_view["col_text"].str.slice(start=0, stop=10)
-output = col_6
+col = event_view["col_text"]
+col_1 = col.str.len().astype(str) + col.str.strip(to_strip=" ")
+col_2 = col_1 + col.str.replace(pat=" ", repl="_")
+col_3 = col_2 + col.str.pad(width=10, side="left", fillchar="_")
+col_4 = (col_3 + col.str.upper()) + col.str.lower()
+col_5 = col_4 + col.str.contains(pat=" ", case=True).astype(str)
+output = col_5 + col.str.slice(start=0, stop=10)

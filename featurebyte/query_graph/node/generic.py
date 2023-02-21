@@ -111,9 +111,24 @@ class ProjectNode(BaseNode):
             node_output_type=NodeOutputType.FRAME,
             node_output_category=operation_structure.output_category,
         )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+
+        # must assign the projection result to a new variable
+        # otherwise, it could cause issue when the original variable is modified
+        # for example, the second `view["col_int", "col_float"]]` is different from the first one:
+        #     view.join(view["col_int", "col_float"]], rsuffix="_y")
+        #     view.join(view["col_int", "col_float"]], rsuffix="_z")
+        # after the first join, the `view` node get updated and the second join will refer to the updated `view`
         if operation_structure.output_type == NodeOutputType.FRAME:
-            return statements, VariableNameStr(f"{var_name}[{self.parameters.columns}]")
-        return statements, VariableNameStr(f"{var_name}['{self.parameters.columns[0]}']")
+            expression = ExpressionStr(f"{var_name}[{self.parameters.columns}]")
+        else:
+            expression = ExpressionStr(f"{var_name}['{self.parameters.columns[0]}']")
+
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
 
 
 class FilterNode(BaseNode):
@@ -816,6 +831,49 @@ class JoinNode(BaseNode):
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=row_index_lineage,
         )
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        left_statements, left_var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        right_statements, right_var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[1],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statements = left_statements + right_statements
+        if isinstance(self.parameters.metadata, JoinMetadata):
+            var_name = left_var_name
+            other_var_name = right_var_name
+            statement = StatementStr(
+                f"{var_name}.join({other_var_name}, "
+                f"on={ValueStr.create(self.parameters.metadata.on)}, "
+                f"how={ValueStr.create(self.parameters.join_type)}, "
+                f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
+            )
+        elif isinstance(self.parameters.metadata, JoinEventDataAttributesMetadata):
+            var_name = right_var_name
+            statement = StatementStr(
+                f"{var_name}.join_event_data_attributes("
+                f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
+                f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
+            )
+        else:
+            raise NotImplementedError(f"Join metadata {self.parameters.metadata} not supported!")
+
+        statements.append(statement)
+        return statements, var_name
 
 
 class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):

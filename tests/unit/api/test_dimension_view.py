@@ -44,7 +44,7 @@ def test_get_join_column(snowflake_dimension_view):
     assert column == "col_int"
 
 
-def test_join_same_rsuffix_multiple_times(snowflake_dimension_view):
+def test_join_same_rsuffix_multiple_times(snowflake_dimension_view, snowflake_dimension_data):
     """
     Test scenario where rsuffix didn't help to resolve repeated columns issue
     """
@@ -60,6 +60,18 @@ def test_join_same_rsuffix_multiple_times(snowflake_dimension_view):
 
     snowflake_dimension_view.join(other_view, rsuffix="_z")
     assert snowflake_dimension_view.columns == original_columns + ["col_text_y", "col_text_z"]
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        snowflake_dimension_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_dimension_data.id: {
+                "name": snowflake_dimension_data.name,
+                "record_creation_date_column": snowflake_dimension_data.record_creation_date_column,
+            }
+        },
+    )
 
 
 @pytest.fixture

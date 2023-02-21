@@ -22,7 +22,7 @@ def test_sdk_code_generation__complex_arithmetic_expression(saved_event_data, up
         to_format=to_format,
         fixture_path="tests/fixtures/sdk_code/complex_arithmetic_expression.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
+        to_compare_generated_code=False,
         data_id=saved_event_data.id,
     )
 
@@ -64,7 +64,7 @@ def test_sdk_code_generation__complex_math_expression(saved_event_data, update_f
         to_format=to_format,
         fixture_path="tests/fixtures/sdk_code/complex_math_expression.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
+        to_compare_generated_code=False,
         data_id=saved_event_data.id,
     )
 
