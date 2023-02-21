@@ -67,10 +67,7 @@ class GraphFlatteningTransformer(
     ) -> bool:
         if not global_state.skip_flattening_cleaning_node:
             return True
-        is_cleaning = node.parameters.type == GraphNodeType.CLEANING
-        if not is_cleaning:
-            return True
-        return False
+        return node.parameters.type != GraphNodeType.CLEANING
 
     def _compute(self, global_state: GraphFlatteningGlobalState, node: Node) -> None:
         input_nodes = [
