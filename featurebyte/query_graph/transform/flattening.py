@@ -18,10 +18,6 @@ class GraphFlatteningGlobalState(BaseModel):
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: Dict[str, str] = Field(default_factory=dict)
 
-
-class GraphFlatteningParameters(BaseModel):
-    """GraphFlatteningParameters class"""
-
     skip_flattening_cleaning_node: bool = Field(default=False)
 
 
@@ -29,10 +25,6 @@ class GraphFlatteningTransformer(
     BaseGraphTransformer[GraphNodeNameMap, GraphFlatteningGlobalState]
 ):
     """GraphFlatteningTransformer class"""
-
-    def __init__(self, graph: QueryGraphT, parameters: Optional[GraphFlatteningParameters] = None):
-        super().__init__(graph)
-        self.parameters = parameters
 
     @staticmethod
     def _flatten_nested_graph(
@@ -42,7 +34,7 @@ class GraphFlatteningTransformer(
         # nested_flat_node_name_map: nested graph's node name => flattened nested graph's node-name
         nested_flat_graph, nested_flat_node_name_map = GraphFlatteningTransformer(
             graph=node.parameters.graph
-        ).transform()
+        ).transform(skip_flattening_cleaning_node=global_state.skip_flattening_cleaning_node)
 
         # nested_node_name_map: flattened nested graph's node name => global_state.graph's node-name
         nested_node_name_map: Dict[str, str] = {}  # nested-node-name => graph-node-name
@@ -69,21 +61,23 @@ class GraphFlatteningTransformer(
             if nested_node.name == nested_flat_node_name_map[node.parameters.output_node_name]:
                 global_state.node_name_map[node.name] = nested_node_name_map[nested_node.name]
 
-    def _should_flatten_cleaning(self, node: BaseGraphNode) -> bool:
-        # We flatten cleaning by default.
-        if self.parameters is None:
+    @staticmethod
+    def _should_flatten_cleaning(
+        global_state: GraphFlatteningGlobalState, node: BaseGraphNode
+    ) -> bool:
+        if not global_state.skip_flattening_cleaning_node:
             return True
         is_cleaning = node.parameters.type == GraphNodeType.CLEANING
         if not is_cleaning:
             return True
-        return self.parameters.skip_flattening_cleaning_node
+        return False
 
     def _compute(self, global_state: GraphFlatteningGlobalState, node: Node) -> None:
         input_nodes = [
             global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
             for input_node_name in self.graph.get_input_node_names(node=node)
         ]
-        if isinstance(node, BaseGraphNode) and self._should_flatten_cleaning(node):
+        if isinstance(node, BaseGraphNode) and self._should_flatten_cleaning(global_state, node):
             self._flatten_nested_graph(
                 global_state=global_state, node=node, graph_input_nodes=input_nodes
             )
@@ -96,7 +90,7 @@ class GraphFlatteningTransformer(
             )
             global_state.node_name_map[node.name] = inserted_node.name
 
-    def transform(self) -> GraphNodeNameMap:
+    def transform(self, skip_flattening_cleaning_node: bool = False) -> GraphNodeNameMap:
         """
         Transform the graph by flattening all the nested graph.
 
@@ -104,6 +98,8 @@ class GraphFlatteningTransformer(
         -------
         GraphNodeNameMap
         """
-        global_state = GraphFlatteningGlobalState()
+        global_state = GraphFlatteningGlobalState(
+            skip_flattening_cleaning_node=skip_flattening_cleaning_node
+        )
         self._transform(global_state=global_state)
         return global_state.graph, global_state.node_name_map

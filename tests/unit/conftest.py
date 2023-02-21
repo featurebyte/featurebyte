@@ -15,7 +15,7 @@ from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, ItemView, SnowflakeDetails
+from featurebyte import FeatureJobSetting, ItemView, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
@@ -631,8 +631,25 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
     yield grouped
 
 
+@pytest.fixture(name="feature_group_feature_job_setting")
+def feature_group_feature_job_setting():
+    """
+    Get feature group featuer job setting
+    """
+    return {
+        "blind_spot": "10m",
+        "frequency": "30m",
+        "time_modulo_frequency": "5m",
+    }
+
+
 @pytest.fixture(name="feature_group")
-def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_data_with_entity):
+def feature_group_fixture(
+    grouped_event_view,
+    cust_id_entity,
+    snowflake_event_data_with_entity,
+    feature_group_feature_job_setting,
+):
     """
     FeatureList fixture
     """
@@ -642,11 +659,7 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
+        feature_job_setting=feature_group_feature_job_setting,
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     assert isinstance(feature_group, FeatureGroup)
@@ -668,6 +681,32 @@ def production_ready_feature_fixture(feature_group):
     feature.__dict__["version"] = "V220401"
     feature_group["production_ready_feature"] = feature
     return feature
+
+
+@pytest.fixture(name="feature_with_cleaning_operations")
+def feature_with_cleaning_operations_fixture(
+    snowflake_event_data, cust_id_entity, feature_group_feature_job_setting, snowflake_feature_store
+):
+    """
+    Fixture to get a feature with cleaning operations
+    """
+    snowflake_feature_store.save()
+    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_data.save()
+    snowflake_event_data["col_int"].update_critical_data_info(
+        cleaning_operations=[
+            MissingValueImputation(imputed_value=0.0),
+        ]
+    )
+    event_view = EventView.from_event_data(snowflake_event_data)
+    feature_group = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m"],
+    )
+    return feature_group["sum_30m"]
 
 
 @pytest.fixture(name="non_time_based_feature")
