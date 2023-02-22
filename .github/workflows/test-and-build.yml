@@ -62,6 +62,13 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v3
+
+    - name: Setup gradle cache
+      uses: actions/cache@v3
+      with:
+        path: hive-udf/.gradle
+        key: gradle-cache-${{ runner.os }}
+
     - name: Building hive-udf
       run: |
         cd hive-udf && ./gradlew clean && ./gradlew test && ./gradlew shadowJar
