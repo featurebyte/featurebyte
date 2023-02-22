@@ -47,7 +47,7 @@ EOF
     echo "Waiting for replicaset to establish";
     sleep 1;
   done
-  echo "mongo-rs is running"
+  echo "mongo-testrs is running"
 else
   # Sleep and wait for server to start
   while ! mongosh --quiet --port=27021 --eval "exit" 2>/dev/null; do echo "Waiting for mongo1 to start"; sleep 1; done; echo "mongo1 started"
@@ -80,7 +80,7 @@ EOF
     echo "Waiting for replicaset to establish";
     sleep 1;
   done
-  echo "mongo-rs is running"
+  echo "mongo-testrs is running"
 fi
 
 # Sleep

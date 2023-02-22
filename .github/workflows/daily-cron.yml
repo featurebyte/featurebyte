@@ -1,22 +1,32 @@
-name: "Daily Cache Maintenance"
-
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
 ## WORKFLOW_GH_TOKEN__CHESTER    | Github Classic Token            | [Github Cache                   ] delete
 ## GCR_PYPI_CREDENTIALS_R_B64    | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
+
+name: "Daily Maintenance"
 
 on:
   workflow_dispatch: {}
   schedule:
     - cron: '0 0 * * *'  # On 00:00 Everyday
 
+# Permission to push (DELETE) tags
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 env:
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}  # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+
+  # TODO (Chester|GA-Release): This will be removed
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
 
 jobs:
   # Github caches do not update themselves on a successful run
@@ -59,6 +69,7 @@ jobs:
         with:
           poetry-version: 1.3.1
 
+      # TODO (Chester|GA-Release): This will be removed
       - name: Configure Poetry
         run: |
           poetry config virtualenvs.in-project true
@@ -70,3 +81,29 @@ jobs:
 
       - name: Install dependencies
         run: make install
+
+  # Github caches do not update themselves on a successful run
+  # This workflow will delete them and rebuild them to the most updated dependencies / requirements
+  tags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+
+      - name: "Setup Git"
+        run: |
+          git config --global user.name "featurebyte[bot]"
+          git config --global user.email "featurebyte[bot]@users.noreply.github.com"
+
+      - name: "Removing Tags"
+        run: |
+          export CUTOFF_DATE=$(date --date="-30days" +%Y-%m-%d)
+          export EXPIRED_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags | awk -v "CUTOFF_DATE=$CUTOFF_DATE" '{ if ($1 < CUTOFF_DATE) print $2; }')
+
+          echo "### Expired tags" >> $GITHUB_STEP_SUMMARY
+          printenv EXPIRED_TAGS >> $GITHUB_STEP_SUMMARY
+
+          # => Convert ref/tags/ABC = :ref/tags/ABC
+          # => git push origin :ref/tags/ABC
+          printenv EXPIRED_TAGS | sed -nE 's/^/:/p' | xargs git push origin
