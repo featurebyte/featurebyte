@@ -19,42 +19,25 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
   value = "_FUNC_(counts) "
     + "- remove a key from count dictionary"
 )
-public class ObjectDelete extends GenericUDF {
+public class ObjectDelete extends CountDictUDF {
 
   private transient MapObjectInspector inputMapOI;
   final private transient PrimitiveObjectInspector.PrimitiveCategory[] inputTypes = new PrimitiveObjectInspector.PrimitiveCategory[3];
   final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[3];
 
+  final private transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes = new PrimitiveObjectInspector.PrimitiveCategory[3];
+  final private transient ObjectInspectorConverters.Converter[] stringConverters = new ObjectInspectorConverters.Converter[1];
+
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 2, 2);
-    if (!(arguments[0] instanceof MapObjectInspector)) {
-      throw new UDFArgumentTypeException(0, "Parameter 1 must be a Map");
-    }
-    inputMapOI = (MapObjectInspector) arguments[0];
-    ObjectInspector[] map_args = {
-      inputMapOI.getMapKeyObjectInspector(),
-      inputMapOI.getMapValueObjectInspector(),
-      arguments[1],
-    };
 
-    try {
-      checkArgPrimitive(map_args,0);
-      checkArgGroups(map_args, 0, inputTypes, STRING_GROUP);
-    } catch (UDFArgumentException e) {
-      throw new UDFArgumentTypeException(0, "Map key must be a string");
-    }
+    checkIsMap(arguments, 0);
+    inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
 
-    try {
-      checkArgPrimitive(map_args,1);
-      checkArgGroups(map_args, 1, inputTypes, NUMERIC_GROUP);
-      obtainDoubleConverter(map_args,1, inputTypes, converters);
-    } catch (UDFArgumentException e) {
-      throw new UDFArgumentTypeException(0, "Map value must be numeric");
-    }
-
-    checkArgPrimitive(map_args, 2);
-    obtainStringConverter(map_args, 2, inputTypes, converters);
+    ObjectInspector[] args = {arguments[1]};
+    checkArgPrimitive(args, 0);
+    obtainStringConverter(args, 0, stringInputTypes, stringConverters);
 
     return inputMapOI;
   }
@@ -64,7 +47,7 @@ public class ObjectDelete extends GenericUDF {
     if (arguments[0] == null) {
       return null;
     }
-    String key_to_delete = converters[2].convert(arguments[1].get()).toString();
+    String key_to_delete = stringConverters[0].convert(arguments[1].get()).toString();
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
     counts.remove(key_to_delete);
     return counts;
