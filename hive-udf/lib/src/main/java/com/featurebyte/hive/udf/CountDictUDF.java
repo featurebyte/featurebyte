@@ -50,7 +50,7 @@ public abstract class CountDictUDF extends GenericUDF {
       checkArgGroups(map_args, 1, inputTypes, NUMERIC_GROUP);
       obtainDoubleConverter(map_args, 1, inputTypes, converters);
     } catch (UDFArgumentException e) {
-      throw new UDFArgumentTypeException(0, "Map value must be numeric");
+      throw new UDFArgumentTypeException(1, "Map value must be numeric");
     }
 
     return inputMapOI;
