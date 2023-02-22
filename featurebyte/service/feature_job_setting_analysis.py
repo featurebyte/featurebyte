@@ -7,7 +7,6 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
@@ -67,10 +66,7 @@ class FeatureJobSettingAnalysisService(
             persistent=self.persistent,
             workspace_id=self.workspace_id,
         )
-        event_data = await event_data_service.get_document(
-            document_id=data.event_data_id,
-            collection_name=EventDataModel.collection_name(),
-        )
+        event_data = await event_data_service.get_document(document_id=data.event_data_id)
         if not event_data.record_creation_date_column:
             raise DocumentError("Creation date column is not available for the event data.")
 

@@ -138,7 +138,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
         analysis_doc = await feature_job_settings_analysis_service.get_document(
             document_id=payload.feature_job_setting_analysis_id
         )
-        document = analysis_doc.dict()
+        document = analysis_doc.dict(by_alias=True)
 
         # retrieve analysis data from storage
         storage = self.get_storage()
