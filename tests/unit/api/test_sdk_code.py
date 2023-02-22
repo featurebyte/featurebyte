@@ -170,7 +170,7 @@ def test_skd_code_generation__complex_feature(
         output,
         to_use_saved_data=True,
         to_format=True,
-        fixture_path="tests/fixtures/sdk_code/complex_event_item_feature.py",
+        fixture_path="tests/fixtures/sdk_code/complex_event_item_feature.py.jinja2",
         update_fixtures=update_fixtures,
         to_compare_generated_code=True,
         data_id=saved_event_data.id,
