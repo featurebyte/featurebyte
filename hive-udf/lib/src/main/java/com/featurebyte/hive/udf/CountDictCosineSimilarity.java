@@ -26,6 +26,10 @@ public class CountDictCosineSimilarity extends CountDictUDF {
   final private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
   final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
 
+  private transient MapObjectInspector otherInputMapOI;
+  final private transient PrimitiveCategory[] otherInputTypes = new PrimitiveCategory[2];
+  final private transient ObjectInspectorConverters.Converter[] otherConverters = new ObjectInspectorConverters.Converter[2];
+
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 2, 2);
@@ -37,6 +41,8 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     checkIsMap(arguments, 1);
     inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
 
+    otherInputMapOI = checkTypesAndConstructMapOI(arguments[1], otherInputTypes, otherConverters);
+
     return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
   }
 
@@ -46,7 +52,7 @@ public class CountDictCosineSimilarity extends CountDictUDF {
       return null;
     }
     Map<String, Object> counts1 = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    Map<String, Object> counts2 = (Map<String, Object>) inputMapOI.getMap(arguments[1].get());
+    Map<String, Object> counts2 = (Map<String, Object>) otherInputMapOI.getMap(arguments[1].get());
     if (counts1.size() == 0 ||  counts2.size() == 0) {
       output.set(0.0);
       return output;
@@ -69,14 +75,14 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     for (String k : counts.keySet()) {
       double value = ((DoubleWritable) converters[1].convert(counts.get(k))).get();
       if (counts_other.containsKey(k)) {
-        double value_other = ((DoubleWritable) converters[1].convert(counts_other.get(k))).get();
+        double value_other = ((DoubleWritable) otherConverters[1].convert(counts_other.get(k))).get();
         dot_product = dot_product + value * value_other;
       }
       norm = norm + value * value;
     }
 
     for (String k : counts_other.keySet()) {
-      double value = ((DoubleWritable) converters[1].convert(counts_other.get(k))).get();
+      double value = ((DoubleWritable) otherConverters[1].convert(counts_other.get(k))).get();
       norm_other = norm_other + value * value;
     }
 
