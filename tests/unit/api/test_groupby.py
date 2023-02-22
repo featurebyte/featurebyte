@@ -587,3 +587,26 @@ def test__fill_value_not_allowed_with_category(snowflake_event_view_with_entity)
             ),
         )
     assert str(exc.value) == "fill_value is not supported for aggregation per category"
+
+
+def test__fill_value_not_allowed_with_skip_fill_na(snowflake_event_view_with_entity):
+    """
+    Test fill_value not allowed when skip_fill_na is True (vice versa)
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            fill_value=0,
+            skip_fill_na=True,
+            windows=["30m"],
+            feature_names=["feat_30m"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    expected_error = (
+        "Specifying both fill_value and skip_fill_na is not allowed;"
+        " try setting fill_value to None or skip_fill_na to False"
+    )
+    assert str(exc.value) == expected_error

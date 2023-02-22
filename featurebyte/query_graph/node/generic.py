@@ -878,6 +878,7 @@ class JoinNode(BaseNode):
             node_output_category=NodeOutputCategory.VIEW,
         )
         statements = left_statements + right_statements
+        assert self.parameters.metadata is not None, "Join node metadata is not set."
         if isinstance(self.parameters.metadata, JoinMetadata):
             var_name = left_var_name
             other_var_name = right_var_name
@@ -887,15 +888,13 @@ class JoinNode(BaseNode):
                 f"how={ValueStr.create(self.parameters.join_type)}, "
                 f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
             )
-        elif isinstance(self.parameters.metadata, JoinEventDataAttributesMetadata):
+        else:
             var_name = right_var_name
             statement = StatementStr(
                 f"{var_name}.join_event_data_attributes("
                 f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
                 f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
             )
-        else:
-            raise NotImplementedError(f"Join metadata {self.parameters.metadata} not supported!")
 
         statements.append(statement)
         return statements, var_name

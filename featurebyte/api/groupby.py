@@ -104,6 +104,16 @@ class BaseAggregator(ABC):
             if value_column not in self.view.columns:
                 raise KeyError(f'Column "{value_column}" not found in {self.view}!')
 
+    @staticmethod
+    def _validate_fill_value_and_skip_fill_na(
+        fill_value: OptionalScalar, skip_fill_na: bool
+    ) -> None:
+        if fill_value is not None and skip_fill_na:
+            raise ValueError(
+                "Specifying both fill_value and skip_fill_na is not allowed;"
+                " try setting fill_value to None or skip_fill_na to False"
+            )
+
     def _project_feature_from_groupby_node(
         self,
         agg_method: AggFuncType,
@@ -240,6 +250,8 @@ class WindowAggregator(BaseAggregator):
             windows=windows,
             feature_names=feature_names,
             feature_job_setting=feature_job_setting,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
         self.view.validate_aggregate_over_parameters(
             keys=self.keys,
@@ -287,9 +299,12 @@ class WindowAggregator(BaseAggregator):
         windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
         feature_job_setting: Optional[Dict[str, str]],
+        fill_value: OptionalScalar,
+        skip_fill_na: bool,
     ) -> None:
 
         self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 
         if not isinstance(windows, list) or len(windows) == 0:
             raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
@@ -455,6 +470,8 @@ class AsAtAggregator(BaseAggregator):
             value_column=value_column,
             feature_name=feature_name,
             offset=offset,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
         view = cast(SlowlyChangingView, self.view)
@@ -497,9 +514,12 @@ class AsAtAggregator(BaseAggregator):
         feature_name: Optional[str],
         value_column: Optional[str],
         offset: Optional[str],
+        fill_value: OptionalScalar,
+        skip_fill_na: bool,
     ) -> None:
 
         self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 
         if method == AggFunc.LATEST:
             raise ValueError("latest aggregation method is not supported for aggregated_asat")
@@ -564,6 +584,7 @@ class SimpleAggregator(BaseAggregator):
         Feature
         """
         self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         self.view.validate_simple_aggregate_parameters(
             keys=self.keys,
             value_column=value_column,
