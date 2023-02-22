@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Optional, Tuple, cast
 
-from dataclasses import dataclass
 from datetime import datetime
 
 from pydantic import Field
