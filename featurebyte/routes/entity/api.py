@@ -174,7 +174,7 @@ async def get_entity_info(
     verbose: bool = VerboseQuery,
 ) -> EntityInfo:
     """
-    Retrieve EventData info
+    Retrieve Entity info
     """
     controller = request.state.app_container.entity_controller
     info = await controller.get_info(

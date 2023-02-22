@@ -4,6 +4,7 @@ FastAPI Application
 from typing import Callable, Optional
 
 import uvicorn
+from bson import ObjectId
 from fastapi import Depends, FastAPI, Request
 from pydantic import Field
 
@@ -23,9 +24,10 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.tabular_data.api as tabular_data_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
+import featurebyte.routes.workspace.api as workspace_api
 from featurebyte.common.utils import get_version
 from featurebyte.middleware import request_handler
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, FeatureByteBaseModel, PydanticObjectId
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.service.task_manager import TaskManager
@@ -74,6 +76,7 @@ def _get_api_deps() -> Callable[[Request], None]:
             temp_storage=get_temp_storage(),
             task_manager=TaskManager(user_id=request.state.user.id),
             storage=get_storage(),
+            workspace_id=ObjectId(request.query_params.get("workspace_id", DEFAULT_WORKSPACE_ID)),
         )
 
     return _dep_injection_func
@@ -108,6 +111,7 @@ def get_app() -> FastAPI:
         tabular_data_api,
         task_api,
         temp_data_api,
+        workspace_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

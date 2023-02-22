@@ -68,6 +68,7 @@ class FeatureJobSettingAnalysisService(
         event_data_service = EventDataService(
             user=self.user,
             persistent=self.persistent,
+            workspace_id=self.workspace_id,
         )
         event_data = await event_data_service.get_document(
             document_id=data.event_data_id,

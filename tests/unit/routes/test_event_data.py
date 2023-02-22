@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.graph import QueryGraph
@@ -75,7 +76,9 @@ class TestEventDataApi(BaseDataApiTestSuite):
         """Event timestamp & event ID semantic IDs fixture"""
         user = mock.Mock()
         user.id = user_id
-        semantic_service = SemanticService(user=user, persistent=persistent)
+        semantic_service = SemanticService(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
         event_timestamp = await semantic_service.get_or_create_document("event_timestamp")
         event_id = await semantic_service.get_or_create_document("event_id")
         return event_timestamp.id, event_id.id
@@ -307,8 +310,11 @@ class TestEventDataApi(BaseDataApiTestSuite):
             },
             "default_feature_job_setting": None,
             "status": "DRAFT",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
             "column_count": 9,
+            "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

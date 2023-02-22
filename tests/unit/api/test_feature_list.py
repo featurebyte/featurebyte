@@ -26,6 +26,7 @@ from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordRetrievalException,
 )
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -87,6 +88,7 @@ def test_feature_list_creation__success(
         "updated_at": None,
         "user_id": None,
         "feature_clusters": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -194,6 +196,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "feature_clusters": None,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -486,8 +489,10 @@ def test_info(saved_feature_list):
     expected_info = {
         "name": "my_feature_list",
         "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
-        "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+        "entities": [
+            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+        ],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
         "default_version_mode": "AUTO",
         "status": "DRAFT",
         "feature_count": 1,
@@ -495,6 +500,7 @@ def test_info(saved_feature_list):
         "production_ready_fraction": {"this": 0.0, "default": 0.0},
         "deployed": False,
         "serving_endpoint": None,
+        "workspace_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -558,6 +564,7 @@ def test_get_feature_list(saved_feature_list):
             ("user_id", None),
             ("version.name", saved_feature_list.version.name),
             ("version.suffix", None),
+            ("workspace_id", str(DEFAULT_WORKSPACE_ID)),
         ],
         columns=["field_name", "new_value"],
     )
@@ -1099,6 +1106,7 @@ def test_get_online_serving_code(mock_preview, feature_list):
                 """
                 response = requests.post(
                     url="http://localhost:8080/feature_list/{feature_list.id}/online_features",
+                    params={{"workspace_id": "63eda344d0313fb925f7883a"}},
                     headers={{"Content-Type": "application/json", "Authorization": "Bearer token"}},
                     json={{"entity_serving_names": entity_serving_names}},
                 )
@@ -1110,6 +1118,10 @@ def test_get_online_serving_code(mock_preview, feature_list):
             '''
         ).strip()
     )
+    url = (
+        f"http://localhost:8080/feature_list/{feature_list.id}/online_features"
+        f"?workspace_id={feature_list.workspace_id}"
+    )
     assert (
         feature_list.get_online_serving_code(language="sh").strip()
         == textwrap.dedent(
@@ -1118,7 +1130,7 @@ def test_get_online_serving_code(mock_preview, feature_list):
 
             curl -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer token' -d \\
                 '{{"entity_serving_names": [{{"cust_id": "sample_cust_id"}}]}}' \\
-                http://localhost:8080/feature_list/{feature_list.id}/online_features
+                {url}
             """
         ).strip()
     )

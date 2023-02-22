@@ -11,8 +11,8 @@ from pydantic import Field, StrictStr, root_validator, validator
 from featurebyte.common.validator import construct_sort_validator, version_validator
 from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -41,7 +41,7 @@ class DefaultVersionMode(StrEnum):
     MANUAL = "MANUAL"
 
 
-class FrozenFeatureNamespaceModel(FeatureByteBaseDocumentModel):
+class FrozenFeatureNamespaceModel(FeatureByteWorkspaceBaseDocumentModel):
     """
     FrozenFeatureNamespaceModel store all the attributes that are fixed after object construction.
     """
@@ -127,7 +127,7 @@ class FeatureNamespaceModel(FrozenFeatureNamespaceModel):
     )
 
 
-class FrozenFeatureModel(FeatureByteBaseDocumentModel):
+class FrozenFeatureModel(FeatureByteWorkspaceBaseDocumentModel):
     """
     FrozenFeatureModel store all the attributes that are fixed after object construction.
     """

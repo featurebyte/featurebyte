@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
 from featurebyte.api.entity import Entity
@@ -312,11 +313,14 @@ def test_info(saved_feature):
     expected_info = {
         "name": "sum_1d",
         "dtype": "FLOAT",
-        "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+        "entities": [
+            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+        ],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
         "default_version_mode": "AUTO",
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
+        "workspace_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -467,6 +471,7 @@ def test_get_feature(saved_feature):
         "graph.edges",
         "graph.nodes",
         "dtype",
+        "workspace_id",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:
@@ -772,6 +777,7 @@ def test_list_versions(saved_feature):
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status(
     mock_execute_query, saved_feature, feature_job_logs, update_fixtures
 ):
@@ -810,6 +816,7 @@ def test_get_feature_jobs_status(
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status_incomplete_logs(
     mock_execute_query, saved_feature, feature_job_logs
 ):
@@ -838,6 +845,7 @@ def test_get_feature_jobs_status_incomplete_logs(
 
 
 @patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@freeze_time("2023-01-20 03:20:00")
 def test_get_feature_jobs_status_empty_logs(mock_execute_query, saved_feature, feature_job_logs):
     """
     Test get_feature_jobs_status incomplete logs found

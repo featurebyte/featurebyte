@@ -14,6 +14,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.feature import FeatureService
@@ -27,7 +28,7 @@ class TileColumnTypeExtractor:
     """
 
     def __init__(self, user: Any, persistent: Persistent):
-        self.feature_service = FeatureService(user, persistent)
+        self.feature_service = FeatureService(user, persistent, workspace_id=DEFAULT_WORKSPACE_ID)
         self.tile_column_name_to_type: Optional[dict[str, str]] = None
 
     async def setup(self) -> None:
@@ -43,7 +44,11 @@ class TileColumnTypeExtractor:
         feature_service: FeatureService,
     ) -> dict[str, str]:
         tile_column_name_to_type = {}
-        feature_documents = feature_service.list_documents_iterator({})
+        # activate use of raw query filter to retrieve all documents regardless of workspace membership
+        feature_service.allow_use_raw_query_filter()
+        feature_documents = feature_service.list_documents_iterator(
+            query_filter={}, use_raw_query_filter=True
+        )
         async for doc in feature_documents:
             feature_model = ExtendedFeatureModel(**doc)
             try:
@@ -230,7 +235,9 @@ class DataWarehouseMigrationServiceV8(DataWarehouseMigrationMixin):
     async def migrate_record_with_session(
         self, feature_store: FeatureStoreModel, session: BaseSession
     ) -> None:
-        working_schema_service = WorkingSchemaService(user=self.user, persistent=self.persistent)
+        working_schema_service = WorkingSchemaService(
+            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+        )
         await working_schema_service.recreate_working_schema(
             feature_store_id=feature_store.id, session=session
         )

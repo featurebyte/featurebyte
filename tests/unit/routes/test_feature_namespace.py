@@ -10,20 +10,21 @@ import pytest_asyncio
 from bson import ObjectId
 from requests import Response
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from tests.unit.routes.base import BaseApiTestSuite
+from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
-class TestFeatureNamespaceApi(BaseApiTestSuite):
+class TestFeatureNamespaceApi(BaseWorkspaceApiTestSuite):
     """
     TestFeatureNamespaceApi
     """
 
     class_name = "FeatureNamespace"
     base_route = "/feature_namespace"
-    payload = BaseApiTestSuite.load_payload(
+    payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_namespace.json"
     )
     create_conflict_payload_expected_detail_pairs = []
@@ -50,7 +51,9 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         _, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
-        feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        feature_namespace_service = FeatureNamespaceService(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
         document = await feature_namespace_service.create_document(
             data=FeatureNamespaceCreate(**self.payload)
         )
@@ -71,6 +74,14 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
 
+    @pytest.mark.skip("POST method not exposed")
+    def test_create_201_non_default_workspace(
+        self,
+        workspace_id,
+        create_success_response_non_default_workspace,
+    ):
+        """Test creation (success) in non default workspace"""
+
     @pytest_asyncio.fixture
     async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id
@@ -79,7 +90,9 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         test_api_client, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
-        feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        feature_namespace_service = FeatureNamespaceService(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
         output = []
         for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
@@ -229,15 +242,39 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             "name": "sum_30m",
             "created_at": response_dict["created_at"],
             "updated_at": None,
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+            ],
+            "tabular_data": [
+                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+            ],
             "default_version_mode": "AUTO",
             "default_feature_id": response_dict["default_feature_id"],
             "dtype": "FLOAT",
             "version_count": 1,
+            "workspace_name": "default",
         }
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
         )
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text
+
+    @pytest_asyncio.fixture
+    async def create_success_response_non_default_workspace(
+        self, test_api_client_persistent, user_id, workspace_id
+    ):  # pylint: disable=arguments-differ
+        """Create object with non default workspace"""
+        _, persistent = test_api_client_persistent
+        user = Mock()
+        user.id = user_id
+        feature_namespace_service = FeatureNamespaceService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        document = await feature_namespace_service.create_document(
+            data=FeatureNamespaceCreate(**self.payload)
+        )
+        response = Response()
+        response._content = bytes(document.json(by_alias=True), "utf-8")
+        response.status_code = HTTPStatus.CREATED
+        return response

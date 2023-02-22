@@ -1199,6 +1199,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         return CodeObject(
             template.render(
+                workspace_id=self.workspace_id,
                 headers=json.dumps(headers),
                 header_params=header_params,
                 serving_url=serving_url,

@@ -5,6 +5,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import SnowflakeDetails
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
@@ -30,7 +31,7 @@ from featurebyte.service.info import InfoService
 @pytest.fixture(name="info_service")
 def info_service_fixture(user, persistent):
     """InfoService fixture"""
-    return InfoService(user=user, persistent=persistent)
+    return InfoService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.mark.asyncio
@@ -48,6 +49,7 @@ async def test_get_feature_store_info(info_service, feature_store):
         ),
         created_at=info.created_at,
         updated_at=None,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -60,7 +62,11 @@ async def test_get_entity_info(info_service, entity):
     """Test get_entity_info"""
     info = await info_service.get_entity_info(document_id=entity.id, verbose=False)
     expected_info = EntityInfo(
-        name="customer", created_at=info.created_at, updated_at=None, serving_names=["cust_id"]
+        name="customer",
+        created_at=info.created_at,
+        updated_at=None,
+        serving_names=["cust_id"],
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -84,12 +90,15 @@ async def test_get_event_data_info(info_service, event_data, entity):
             table_name="sf_event_table",
         ),
         default_job_setting=None,
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
+        ],
         semantics=["event_timestamp"],
         column_count=9,
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -137,6 +146,7 @@ async def test_get_item_data_info(info_service, item_data, event_data):
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -175,6 +185,7 @@ async def test_get_dimension_data_info(info_service, dimension_data):
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -221,6 +232,7 @@ async def test_get_scd_data_info(info_service, scd_data):
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -274,8 +286,12 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     }
     expected_info = FeatureInfo(
         name="sum_30m",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
+        ],
+        tabular_data=[
+            DataBriefInfo(name="sf_event_data", status="DRAFT", workspace_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -288,6 +304,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         metadata=expected_metadata,
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -371,8 +388,12 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
     }
     expected_info = FeatureInfo(
         name="iet_entropy_24h",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
+        ],
+        tabular_data=[
+            DataBriefInfo(name="sf_event_data", status="DRAFT", workspace_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -385,6 +406,7 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
         metadata=expected_metadata,
         created_at=info.created_at,
         updated_at=info.updated_at,
+        workspace_name="default",
     )
     assert info.dict() == expected_info.dict()
 
@@ -397,14 +419,19 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
     )
     expected_info = FeatureNamespaceInfo(
         name="sum_30m",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
+        ],
+        tabular_data=[
+            DataBriefInfo(name="sf_event_data", status="DRAFT", workspace_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
         default_feature_id=feature_namespace.default_feature_id,
         created_at=feature_namespace.created_at,
         updated_at=None,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -420,8 +447,12 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
     info = await info_service.get_feature_list_info(document_id=feature_list.id, verbose=False)
     expected_info = FeatureListInfo(
         name="sf_feature_list",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
+        ],
+        tabular_data=[
+            DataBriefInfo(name="sf_event_data", status="DRAFT", workspace_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -435,6 +466,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
         updated_at=None,
         deployed=False,
         serving_endpoint=None,
+        workspace_name="default",
     )
     assert info == expected_info
 
@@ -462,8 +494,12 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
     )
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        tabular_data=[DataBriefInfo(name="sf_event_data", status="DRAFT")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
+        ],
+        tabular_data=[
+            DataBriefInfo(name="sf_event_data", status="DRAFT", workspace_name="default")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -472,6 +508,7 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
         feature_count=1,
         created_at=feature_list_namespace.created_at,
         updated_at=None,
+        workspace_name="default",
     )
     assert info == expected_info
 

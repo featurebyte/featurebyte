@@ -32,7 +32,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.tile import TileSpec
@@ -1075,4 +1075,5 @@ def app_container_fixture(persistent):
         temp_storage=LocalTempStorage(),
         task_manager=task_manager,
         storage=LocalTempStorage(),
+        workspace_id=DEFAULT_WORKSPACE_ID,
     )

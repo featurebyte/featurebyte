@@ -9,6 +9,7 @@ from featurebyte.common.validator import construct_sort_validator
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
 )
 
@@ -23,14 +24,20 @@ class Parent(FeatureByteBaseModel):
 
 class Relationship(FeatureByteBaseDocumentModel):
     """
-    Relationship model used to track parent (or ancestor) and child relationship
+    Workspace-agnostic relationship model
     """
 
-    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
+    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
 
     # pydantic validators
     _sort_ids_validator = validator("ancestor_ids", allow_reuse=True)(construct_sort_validator())
     _sort_parent_validator = validator("parents", allow_reuse=True)(
         construct_sort_validator(field="id")
     )
+
+
+class WorkspaceRelationship(Relationship, FeatureByteWorkspaceBaseDocumentModel):
+    """
+    Workspace-specific relationship model
+    """

@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator, Dict, Tuple
 
 import pandas as pd
+from bson import ObjectId
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import SpecialColumnName
@@ -48,12 +49,15 @@ class PreviewService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
+        workspace_id: ObjectId,
         session_manager_service: SessionManagerService,
         feature_list_service: FeatureListService,
         entity_validation_service: EntityValidationService,
     ):
-        super().__init__(user, persistent)
-        self.feature_store_service = FeatureStoreService(user=user, persistent=persistent)
+        super().__init__(user, persistent, workspace_id)
+        self.feature_store_service = FeatureStoreService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
         self.session_manager_service = session_manager_service
         self.feature_list_service = feature_list_service
         self.entity_validation_service = entity_validation_service

@@ -84,6 +84,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self._get_feature_version(data.name),
                 "user_id": self.user.id,
+                "workspace_id": self.workspace_id,
             }
         )
 
@@ -96,7 +97,9 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             await self._check_document_unique_constraints(document=document)
 
             # check whether data has been saved at persistent storage
-            data_service = DataService(user=self.user, persistent=self.persistent)
+            data_service = DataService(
+                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+            )
             for tabular_data_id in data.tabular_data_ids:
                 _ = await data_service.get_document(document_id=tabular_data_id)
 
@@ -113,7 +116,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             assert insert_id == document.id
 
             feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent
+                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
             )
             try:
                 feature_namespace = await feature_namespace_service.get_document(
