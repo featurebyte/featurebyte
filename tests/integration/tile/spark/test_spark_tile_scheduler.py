@@ -17,14 +17,15 @@ async def test_generate_tiles_with_scheduler(tile_spec, session, tile_manager):
     """
     Test generate_tiles method in TileSnowflake
     """
+    schedule_time = datetime.utcnow()
     next_job_time = date_util.get_next_job_datetime(
-        input_dt=datetime.utcnow(),
+        input_dt=schedule_time,
         frequency_minutes=tile_spec.frequency_minute,
         time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
     )
     tile_spec.tile_sql = "SELECT * FROM TEMP_TABLE"
 
-    await tile_manager.schedule_online_tiles(tile_spec=tile_spec)
+    await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
     tile_scheduler = TileSchedulerFactory.get_instance()
