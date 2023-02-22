@@ -1,7 +1,7 @@
 """
 This module contains graph flattening related classes.
 """
-from typing import Dict, List
+from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field
 
@@ -18,10 +18,10 @@ class GraphFlatteningGlobalState(BaseModel):
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: Dict[str, str] = Field(default_factory=dict)
 
-    # skip_flattening_cleaning_node is used to skip the flattening of cleaning graph nodes.
-    # If this parameter is set to true, the flattened graph returned from the transformer will contain GraphNode's that
-    # represent cleaning operations if the original graph had them.
-    skip_flattening_cleaning_node: bool = Field(default=False)
+    # skip_flattening_graph_node_types is used to specify the graph node types we want to skip flattening.
+    # If this set is populated, the flattened graph returned from the transformer will contain GraphNode's that
+    # represent the various GraphNodeType's that were passed in.
+    skip_flattening_graph_node_types: Set[GraphNodeType] = Field(default_factory=set())
 
 
 class GraphFlatteningTransformer(
@@ -37,7 +37,7 @@ class GraphFlatteningTransformer(
         # nested_flat_node_name_map: nested graph's node name => flattened nested graph's node-name
         nested_flat_graph, nested_flat_node_name_map = GraphFlatteningTransformer(
             graph=node.parameters.graph
-        ).transform(skip_flattening_cleaning_node=global_state.skip_flattening_cleaning_node)
+        ).transform(skip_flattening_graph_node_types=global_state.skip_flattening_graph_node_types)
 
         # nested_node_name_map: flattened nested graph's node name => global_state.graph's node-name
         nested_node_name_map: Dict[str, str] = {}  # nested-node-name => graph-node-name
@@ -65,19 +65,15 @@ class GraphFlatteningTransformer(
                 global_state.node_name_map[node.name] = nested_node_name_map[nested_node.name]
 
     @staticmethod
-    def _should_flatten_cleaning(
-        global_state: GraphFlatteningGlobalState, node: BaseGraphNode
-    ) -> bool:
-        if not global_state.skip_flattening_cleaning_node:
-            return True
-        return node.parameters.type != GraphNodeType.CLEANING
+    def _should_flatten(global_state: GraphFlatteningGlobalState, node: BaseGraphNode) -> bool:
+        return node.parameters.type not in global_state.skip_flattening_graph_node_types
 
     def _compute(self, global_state: GraphFlatteningGlobalState, node: Node) -> None:
         input_nodes = [
             global_state.graph.get_node_by_name(global_state.node_name_map[input_node_name])
             for input_node_name in self.graph.get_input_node_names(node=node)
         ]
-        if isinstance(node, BaseGraphNode) and self._should_flatten_cleaning(global_state, node):
+        if isinstance(node, BaseGraphNode) and self._should_flatten(global_state, node):
             self._flatten_nested_graph(
                 global_state=global_state, node=node, graph_input_nodes=input_nodes
             )
@@ -90,21 +86,24 @@ class GraphFlatteningTransformer(
             )
             global_state.node_name_map[node.name] = inserted_node.name
 
-    def transform(self, skip_flattening_cleaning_node: bool = False) -> GraphNodeNameMap:
+    def transform(
+        self, skip_flattening_graph_node_types: Optional[Set[GraphNodeType]] = None
+    ) -> GraphNodeNameMap:
         """
         Transform the graph by flattening all the nested graph.
 
         Parameters
         ----------
-        skip_flattening_cleaning_node: bool
-            whether to skip the flattening of the cleaning graph node
+        skip_flattening_graph_node_types: Set[GraphNodeTye]
+            graph node types we want to skip flattening for
 
         Returns
         -------
         GraphNodeNameMap
         """
-        global_state = GraphFlatteningGlobalState(
-            skip_flattening_cleaning_node=skip_flattening_cleaning_node
+        types_to_skip = (
+            skip_flattening_graph_node_types if skip_flattening_graph_node_types else set()
         )
+        global_state = GraphFlatteningGlobalState(skip_flattening_graph_node_types=types_to_skip)
         self._transform(global_state=global_state)
         return global_state.graph, global_state.node_name_map

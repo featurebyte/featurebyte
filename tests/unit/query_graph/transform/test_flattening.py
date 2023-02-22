@@ -71,7 +71,9 @@ def test_flatten_graph__dont_flatten_cleaning_node(feature_with_cleaning_operati
 
     # Try to flatten the graph
     transformer = GraphFlatteningTransformer(pruned_graph)
-    flattened_graph, _ = transformer.transform(skip_flattening_cleaning_node=True)
+    flattened_graph, _ = transformer.transform(
+        skip_flattening_graph_node_types={GraphNodeType.CLEANING}
+    )
 
     # Verify that the flattened graph looks correct
     new_graph_node_names = list(flattened_graph.nodes_map.keys())
