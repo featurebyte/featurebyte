@@ -31,6 +31,9 @@ public class ObjectDelete extends CountDictUDF {
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 2, 2);
+    if (isNullOI(arguments[0])) {
+      return nullOI;
+    }
 
     checkIsMap(arguments, 0);
     inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
@@ -44,7 +47,7 @@ public class ObjectDelete extends CountDictUDF {
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    if (arguments[0] == null) {
+    if (arguments[0].get() == null) {
       return null;
     }
     String key_to_delete = stringConverters[0].convert(arguments[1].get()).toString();

@@ -29,8 +29,8 @@ public class CountDictCosineSimilarity extends CountDictUDF {
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 2, 2);
-    if (arguments[0] instanceof WritableVoidObjectInspector || arguments[1] instanceof WritableVoidObjectInspector) {
-      return PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
+    if (isNullOI(arguments[0]) || isNullOI(arguments[1])) {
+      return nullOI;
     }
 
     checkIsMap(arguments, 0);

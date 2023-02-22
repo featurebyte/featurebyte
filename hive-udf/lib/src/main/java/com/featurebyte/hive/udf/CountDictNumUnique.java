@@ -29,6 +29,9 @@ public class CountDictNumUnique extends CountDictUDF {
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkArgsSize(arguments, 1, 1);
+    if (isNullOI(arguments[0])) {
+      return nullOI;
+    }
     checkIsMap(arguments, 0);
     inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
     return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
@@ -36,7 +39,7 @@ public class CountDictNumUnique extends CountDictUDF {
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    if (arguments[0] == null) {
+    if (arguments[0].get() == null) {
       return null;
     }
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());

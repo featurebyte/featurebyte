@@ -5,16 +5,24 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableVoidObjectInspector;
 
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
 
 public abstract class CountDictUDF extends GenericUDF {
 
+  public static final WritableVoidObjectInspector nullOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
+
   public static void checkIsMap(ObjectInspector[] arguments, int i) throws UDFArgumentTypeException {
     if (!(arguments[i] instanceof MapObjectInspector)) {
       throw new UDFArgumentTypeException(i, "Parameter must be a Map");
     }
+  }
+
+  public static boolean isNullOI(ObjectInspector objectInspector) {
+    return objectInspector instanceof WritableVoidObjectInspector;
   }
 
   public MapObjectInspector checkTypesAndConstructMapOI(
