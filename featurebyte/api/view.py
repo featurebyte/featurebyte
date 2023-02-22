@@ -56,7 +56,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import ProjectNode
+from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 
 if TYPE_CHECKING:
@@ -775,6 +775,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             "right_input_columns": right_input_columns,
             "right_output_columns": right_output_columns,
             "join_type": how,
+            "metadata": JoinMetadata(on=on, rsuffix=rsuffix),
         }
         node_params.update(
             other_view._get_join_parameters(self)  # pylint: disable=protected-access

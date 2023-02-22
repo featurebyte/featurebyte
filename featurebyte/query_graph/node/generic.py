@@ -2,7 +2,7 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 from pydantic import BaseModel, Field, root_validator, validator
 
@@ -530,6 +530,22 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
         return [self.parameters.entity_column]
 
 
+class JoinMetadata(BaseModel):
+    """Metadata to track general `view.join(...)` operation"""
+
+    type: str = Field("join", const=True)
+    on: Optional[str]
+    rsuffix: str
+
+
+class JoinEventDataAttributesMetadata(BaseModel):
+    """Metadata to track `item_view.join_event_data_attributes(...)` operation"""
+
+    type: str = Field("join_event_data_attributes", const=True)
+    columns: List[str]
+    event_suffix: Optional[str]
+
+
 class JoinNodeParameters(BaseModel):
     """JoinNodeParameters"""
 
@@ -541,6 +557,9 @@ class JoinNodeParameters(BaseModel):
     right_output_columns: List[OutColumnStr]
     join_type: Literal["left", "inner"]
     scd_parameters: Optional[SCDJoinParameters]
+    metadata: Optional[Union[JoinMetadata, JoinEventDataAttributesMetadata]] = Field(
+        default=None
+    )  # DEV-556: should be compulsory
 
     @validator(
         "left_input_columns",
@@ -611,6 +630,11 @@ class JoinNode(BaseNode):
             self.parameters.right_output_columns,  # type: ignore[attr-defined]
             right_avail_columns,
         )
+        metadata = node_params.get("metadata") or {}
+        if metadata.get("type") == "join_event_data_attributes":
+            node_params["metadata"]["columns"] = [
+                col for col in node_params["metadata"]["columns"] if col in left_avail_columns
+            ]
         return self.clone(parameters=node_params)
 
     def _derive_node_operation_info(

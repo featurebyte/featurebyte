@@ -372,6 +372,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
             "right_on": "colC",
             "right_output_columns": ["colDsuffix", "colEsuffix"],
             "scd_parameters": None,
+            "metadata": {"type": "join", "on": "colA", "rsuffix": "suffix"},
         },
         "type": "join",
     }

@@ -271,7 +271,7 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             use_http_transport=False,
             storage_type=StorageType.FILE,
             storage_url=f"~/.spark/data/staging/{temp_schema_name}",
-            storage_spark_url=f"file:///data/staging/{temp_schema_name}",
+            storage_spark_url=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
             featurebyte_catalog="spark_catalog",
             featurebyte_schema=temp_schema_name,
         )

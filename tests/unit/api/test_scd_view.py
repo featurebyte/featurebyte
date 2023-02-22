@@ -93,6 +93,7 @@ def test_event_view_join_scd_view(snowflake_event_view, snowflake_scd_view):
             "end_timestamp_column": "end_timestamp",
             "left_timestamp_column": "event_timestamp",
         },
+        "metadata": {"type": "join", "on": None, "rsuffix": "_scd"},
     }
 
 

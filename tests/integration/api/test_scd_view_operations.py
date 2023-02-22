@@ -27,6 +27,8 @@ def get_expected_scd_join_result(
     """
     Perform an SCD join using in memory DataFrames
     """
+    df_left = df_left.copy()
+    df_right = df_right.copy()
     df_left[left_timestamp] = pd.to_datetime(df_left[left_timestamp], utc=True).dt.tz_localize(None)
     df_right[right_timestamp] = pd.to_datetime(df_right[right_timestamp], utc=True).dt.tz_localize(
         None
@@ -262,7 +264,7 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
 
     # Compare with expected result
     mask = (
-        scd_dataframe["Effective Timestamp"]
+        pd.to_datetime(scd_dataframe["Effective Timestamp"], utc=True).dt.tz_localize(None)
         <= (pd.to_datetime(point_in_time) - pd.Timedelta(offset))
     ) & (scd_dataframe["User ID"] == user_id)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]

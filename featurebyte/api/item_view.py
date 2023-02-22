@@ -29,7 +29,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import JoinNodeParameters
+from featurebyte.query_graph.node.generic import JoinEventDataAttributesMetadata, JoinNodeParameters
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
 
@@ -150,6 +150,10 @@ class ItemView(View, GroupByMixin):
             right_input_columns=right_input_columns,
             right_output_columns=right_output_columns,
             join_type="inner",
+            metadata=JoinEventDataAttributesMetadata(
+                columns=columns_to_join,
+                event_suffix=event_suffix,
+            ),
         )
 
     @classmethod
