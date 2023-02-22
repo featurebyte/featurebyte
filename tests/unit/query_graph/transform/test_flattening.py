@@ -58,7 +58,6 @@ def test_flatten_graph__dont_flatten_cleaning_node(feature_with_cleaning_operati
     Test flatten graph with skip flattening cleaning node parameters
     """
     GlobalGraphState.reset()
-
     # Verify the original state of the graph
     original_node_names = list(feature_with_cleaning_operations.graph.nodes_map.keys())
     assert original_node_names == ["input_1", "graph_1", "groupby_1", "project_1"]
