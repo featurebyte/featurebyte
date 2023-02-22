@@ -1,7 +1,6 @@
 """
 Test MongoDB persistent backend
 """
-import os
 
 import pytest
 
