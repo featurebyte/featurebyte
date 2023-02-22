@@ -445,6 +445,12 @@ def test_accessing_saved_item_data_attributes(saved_item_data):
     assert saved_item_data["item_type"].info.entity_id == entity.id
     assert cloned["item_type"].info.entity_id == entity.id
 
+    # check table_data property
+    assert saved_item_data.item_id_col.info.entity_id is not None
+    saved_item_data.item_id_col.as_entity(None)
+    assert cloned.item_id_col.info.entity_id is None
+    assert cloned.table_data.columns_info == saved_item_data.columns_info
+
 
 def test_sdk_code_generation(snowflake_database_table_item_data, saved_event_data, update_fixtures):
     """Check SDK code generation for unsaved data"""
