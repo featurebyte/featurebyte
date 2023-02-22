@@ -13,7 +13,7 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     Test flatten graph without skip cleaning parameters
     """
     GlobalGraphState.reset()
-    # Verify the original state of the graph
+    # Verify the original state of the graph by checking that there is a cleaning graph node
     original_node_names = list(feature_with_cleaning_operations.graph.nodes_map.keys())
     assert original_node_names == ["input_1", "graph_1", "groupby_1", "project_1"]
     graph_node = feature_with_cleaning_operations.graph.get_node_by_name("graph_1")

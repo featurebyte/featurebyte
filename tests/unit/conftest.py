@@ -706,7 +706,7 @@ def feature_with_cleaning_operations_fixture(
         feature_job_setting=feature_group_feature_job_setting,
         feature_names=["sum_30m"],
     )
-    return feature_group["sum_30m"]
+    yield feature_group["sum_30m"]
 
 
 @pytest.fixture(name="non_time_based_feature")
