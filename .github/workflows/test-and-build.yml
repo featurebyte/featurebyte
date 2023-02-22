@@ -69,9 +69,15 @@ jobs:
         path: hive-udf/.gradle
         key: gradle-cache-${{ runner.os }}
 
+    - name: Setup gradle build cache
+      uses: actions/cache@v3
+      with:
+        path: hive-udf/lib/build
+        key: gradle-build-cache-${{ runner.os }}
+
     - name: Building hive-udf
       run: |
-        cd hive-udf && ./gradlew clean && ./gradlew test && ./gradlew shadowJar
+        cd hive-udf && ./gradlew test && ./gradlew shadowJar
 
     - name: Upload hive-udf
       uses: actions/upload-artifact@v3
