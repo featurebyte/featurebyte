@@ -990,11 +990,27 @@ def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feat
     expected_updated_column_names = [*original_column_names, "transaction_count", "User Status New"]
     assert new_columns == expected_updated_column_names
 
+    # check column materialised correctly
     pd.testing.assert_series_equal(
         event_view_preview["User Status New"],
         event_view_preview["User Status"] + "_suffix",
         check_names=False,
     )
+
+    # check pruning behaviour
+    item_data_table_name = "ITEM_DATA_TABLE"
+
+    # 1. transaction_count requires referencing item data table
+    view_subset = event_view[["transaction_count"]]
+    sql = view_subset.preview_sql()
+    assert item_data_table_name in sql
+    assert view_subset.preview().columns.tolist() == view_subset.columns
+
+    # 2. "User Status New" only requires scd data table but not item data
+    view_subset = event_view[["User Status New"]]
+    sql = view_subset.preview_sql()
+    assert item_data_table_name not in sql
+    assert view_subset.preview().columns.tolist() == view_subset.columns
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
