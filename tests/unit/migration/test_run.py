@@ -4,7 +4,7 @@ Test functions in migration/run.py
 import glob
 import json
 import os
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio

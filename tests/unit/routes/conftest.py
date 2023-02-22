@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from featurebyte.app import app
 from featurebyte.enum import WorkerCommand
+from featurebyte.models.base import User
 from featurebyte.schema.task import TaskStatus
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
@@ -58,6 +59,7 @@ def mock_process_store(request, persistent, storage, temp_storage):
             task = TASK_MAP[command](
                 payload=payload_dict,
                 progress=Mock(),
+                user=User(id=payload_dict.get("user_id")),
                 get_credential=get_credential,
                 get_persistent=lambda: persistent,
                 get_storage=lambda: storage,

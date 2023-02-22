@@ -9,10 +9,10 @@ from abc import ABC, abstractmethod
 
 from bson import ObjectId
 
-from featurebyte.app import User
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
+from featurebyte.models.base import User
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import Document, QueryFilter
 from featurebyte.persistent.base import Persistent

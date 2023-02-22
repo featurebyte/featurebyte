@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.process_store import ProcessStore
 from tests.util.task import Command, LongRunningPayload, TaskExecutor
@@ -32,7 +33,9 @@ class TestTaskStatusApi:
     @pytest_asyncio.fixture
     async def task_status_id(self, user_id, task_manager):
         """Task status id"""
-        return await task_manager.submit(payload=LongRunningPayload(user_id=user_id))
+        return await task_manager.submit(
+            payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+        )
 
     @pytest.mark.no_mock_process_store
     def test_get_200(self, test_api_client_persistent, task_status_id, user_id):

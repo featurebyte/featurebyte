@@ -8,7 +8,6 @@ from typing import Any, AsyncGenerator, Callable, cast
 import importlib
 import inspect
 
-from featurebyte.app import User
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logger import logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
@@ -19,6 +18,7 @@ from featurebyte.models.base import (
     DEFAULT_WORKSPACE_ID,
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    User,
 )
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB

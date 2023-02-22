@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.task.base import TASK_MAP, BaseTask
 from tests.util.task import TaskExecutor
@@ -60,10 +61,13 @@ def test_extend_base_task_payload(random_task_payload_class):
 
     user_id = ObjectId()
     document_id = ObjectId()
-    payload_obj = random_task_payload_class(user_id=user_id, output_document_id=document_id)
+    payload_obj = random_task_payload_class(
+        user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID, output_document_id=document_id
+    )
     assert payload_obj.dict() == {
         "command": "random_command",
         "user_id": user_id,
+        "workspace_id": DEFAULT_WORKSPACE_ID,
         "output_document_id": document_id,
     }
     assert payload_obj.task_output_path == f"/random_collection/{document_id}"
@@ -89,6 +93,7 @@ def test_task_executor(mock_configure_logger, random_task_class_store):
         payload={
             "command": "random_command",
             "user_id": user_id,
+            "workspace_id": DEFAULT_WORKSPACE_ID,
             "output_document_id": document_id,
         },
         queue=Mock(),
@@ -125,6 +130,7 @@ def test_task_has_been_implemented(command_class):
         BaseTask(
             payload={},
             progress=None,
+            user=None,
             get_persistent=None,
             get_storage=None,
             get_temp_storage=None,

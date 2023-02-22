@@ -331,3 +331,11 @@ class FeatureByteWorkspaceBaseDocumentModel(FeatureByteBaseDocumentModel):
         if workspace_id is None:
             values["workspace_id"] = DEFAULT_WORKSPACE_ID
         return values
+
+
+class User(FeatureByteBaseModel):
+    """
+    Skeleton user class to provide static user
+    """
+
+    id: Optional[PydanticObjectId] = Field(default=None)

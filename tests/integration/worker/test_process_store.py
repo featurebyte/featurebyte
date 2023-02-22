@@ -7,6 +7,7 @@ from multiprocessing import Process
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.worker.process_store import ProcessStore
 from tests.util.task import Command, TaskExecutor
 
@@ -35,6 +36,7 @@ async def test_process_store():
                     "output_document_id": str(ObjectId()),
                     "output_collection_name": "some_collection",
                     "user_id": str(user_id) if user_id else None,
+                    "workspace_id": str(DEFAULT_WORKSPACE_ID),
                 }
             ),
             output_path="some_output_path",
