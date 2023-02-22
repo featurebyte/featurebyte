@@ -38,11 +38,6 @@ class FeatureJobSettingAnalysisTask(BaseTask):
     async def execute(self) -> Any:
         """
         Execute the task
-
-        Raises
-        ------
-        ValueError
-            Event data or feature store records not found
         """
         self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
@@ -131,11 +126,6 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
     async def execute(self) -> None:
         """
         Execute the task
-
-        Raises
-        ------
-        ValueError
-            Event data or feature store records not found
         """
         self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
