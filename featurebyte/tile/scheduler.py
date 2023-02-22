@@ -30,7 +30,7 @@ class TileScheduler(BaseModel):
     _job_store: str = PrivateAttr()
     _tile_scheduler_map: Dict[str, Any] = PrivateAttr()
 
-    def __init__(self, job_store: str = "local", **kw: Any) -> None:
+    def __init__(self, job_store: str = "default", **kw: Any) -> None:
         """
         Instantiate TileScheduler instance
 
@@ -118,13 +118,13 @@ class TileSchedulerFactory:
     tile_scheduler_map: Dict[str, TileScheduler] = {}
 
     @classmethod
-    def get_instance(cls, job_store: str) -> TileScheduler:
+    def get_instance(cls, job_store: Optional[str] = None) -> TileScheduler:
         """
         Retrieve corresponding TileScheduler instance
 
         Parameters
         ----------
-        job_store: str
+        job_store: Optional[str]
             input job store name
 
         Returns
@@ -133,6 +133,9 @@ class TileSchedulerFactory:
         """
         if not cls.tile_scheduler_map:
             for j_store in JOB_STORES:
-                cls.tile_scheduler_map[j_store] = TileScheduler(job_store=job_store)
+                cls.tile_scheduler_map[j_store] = TileScheduler(job_store=j_store)
+
+        if not job_store:
+            job_store = "default"
 
         return cls.tile_scheduler_map[job_store]

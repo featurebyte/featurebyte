@@ -40,7 +40,7 @@ class BaseTileManager(BaseModel, ABC):
         """
         super().__init__(**kw)
         self._session = session
-        self._scheduler = TileSchedulerFactory.get_instance(job_store="local")
+        self._scheduler = TileSchedulerFactory.get_instance(job_store="default")
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """

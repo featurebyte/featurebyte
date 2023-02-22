@@ -20,7 +20,7 @@ async def create_temp_file():
 async def test_tile_scheduler():
     """Test TileScheduler"""
 
-    tile_scheduler = TileScheduler(job_store="default")
+    tile_scheduler = TileScheduler()
 
     job_name = "test_job_1"
     tile_scheduler.start_job_with_interval(
