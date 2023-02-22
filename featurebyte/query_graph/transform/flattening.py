@@ -21,7 +21,7 @@ class GraphFlatteningGlobalState(BaseModel):
     # skip_flattening_graph_node_types is used to specify the graph node types we want to skip flattening.
     # If this set is populated, the flattened graph returned from the transformer will contain GraphNode's that
     # represent the various GraphNodeType's that were passed in.
-    skip_flattening_graph_node_types: Set[GraphNodeType] = Field(default_factory=set())
+    skip_flattening_graph_node_types: Set[GraphNodeType] = Field(default_factory=set)
 
 
 class GraphFlatteningTransformer(
