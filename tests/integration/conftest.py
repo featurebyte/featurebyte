@@ -28,7 +28,7 @@ from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
-from featurebyte import DatabricksDetails, DimensionView, SnowflakeDetails
+from featurebyte import DatabricksDetails, DimensionView, FeatureJobSetting, SnowflakeDetails
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -41,7 +41,6 @@ from featurebyte.config import Configurations
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB

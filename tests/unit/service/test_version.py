@@ -10,10 +10,10 @@ from bson import ObjectId
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,

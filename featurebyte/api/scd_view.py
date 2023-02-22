@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -14,7 +14,10 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.query_graph.node.generic import SCDBaseParameters
+from featurebyte.query_graph.node.input import InputNode
 
 
 class SlowlyChangingViewColumn(ViewColumn):
@@ -72,8 +75,29 @@ class SlowlyChangingView(View, GroupByMixin):
         SlowlyChangingView
             constructed SlowlyChangingView object
         """
-        return cls._from_data(
-            slowly_changing_data,
+        # The input of view graph node is the data node. The final graph looks like this:
+        #    +-----------+     +--------------------------+
+        #    | InputNode + --> | GraphNode(type:scd_view) +
+        #    +-----------+     +--------------------------+
+        drop_columns_names = []
+        if slowly_changing_data.record_creation_date_column:
+            drop_columns_names.append(slowly_changing_data.record_creation_date_column)
+
+        data_node = slowly_changing_data.frame.node
+        assert isinstance(data_node, InputNode)
+        scd_table_data = cast(SCDTableData, slowly_changing_data.table_data)
+        view_graph_node, columns_info = scd_table_data.construct_scd_view_graph_node(
+            scd_data_node=data_node,
+            drop_column_names=drop_columns_names,
+            metadata=None,
+        )
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
+        return SlowlyChangingView(
+            feature_store=slowly_changing_data.feature_store,
+            tabular_source=slowly_changing_data.tabular_source,
+            columns_info=columns_info,
+            node_name=inserted_graph_node.name,
+            tabular_data_ids=[scd_table_data.id],
             natural_key_column=slowly_changing_data.natural_key_column,
             surrogate_key_column=slowly_changing_data.surrogate_key_column,
             effective_timestamp_column=slowly_changing_data.effective_timestamp_column,

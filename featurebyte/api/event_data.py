@@ -19,7 +19,8 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.event_data import EventDataModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate

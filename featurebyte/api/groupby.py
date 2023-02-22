@@ -24,8 +24,8 @@ from featurebyte.common.typing import OptionalScalar, get_or_default
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import AggFuncType, construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (

@@ -3,7 +3,7 @@ Test join utils class
 """
 from bson import ObjectId
 
-from featurebyte.api.join_utils import (
+from featurebyte.common.join_utils import (
     append_rsuffix_to_column_info,
     append_rsuffix_to_columns,
     combine_column_info_of_views,

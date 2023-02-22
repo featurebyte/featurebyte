@@ -8,7 +8,6 @@ import pytest
 from featurebyte.api.base_data import DataColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
-from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import (

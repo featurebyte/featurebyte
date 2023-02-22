@@ -10,10 +10,8 @@ from datetime import datetime
 from featurebyte_freeware.feature_job_analysis.schema import AnalysisOptions, AnalysisParameters
 from pydantic import Field, StrictStr, root_validator
 
-from featurebyte import SourceType
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListStatus,
@@ -22,6 +20,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject

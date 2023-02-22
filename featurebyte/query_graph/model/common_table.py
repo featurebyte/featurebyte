@@ -1,7 +1,7 @@
 """
 This module contains common table related models.
 """
-from typing import Any, Dict, Iterable, List, Literal, Optional, cast
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, cast
 
 from abc import abstractmethod
 
@@ -166,6 +166,101 @@ class BaseTableData(FeatureByteBaseModel):
             )
 
         return graph_node
+
+    def prepare_view_columns_info(self, drop_column_names: List[str]) -> List[ColumnInfo]:
+        """
+        Prepare view columns info
+
+        Parameters
+        ----------
+        drop_column_names: List[str]
+            List of column names to drop
+
+        Returns
+        -------
+        List[ColumnInfo]
+        """
+        columns_info: List[ColumnInfo] = []
+        unwanted_column_names = set(drop_column_names)
+        for col_info in self.columns_info:
+            if col_info.name not in unwanted_column_names:
+                columns_info.append(col_info)
+        return columns_info
+
+    def construct_view_graph_node(
+        self,
+        graph_node_type: GraphNodeType,
+        data_node: InputNode,
+        other_input_nodes: List[Node],
+        drop_column_names: List[str],
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[GraphNode, List[Node]]:
+        """
+        Construct view graph node from table data. The output of any view should be a single graph node
+        that is based on a single data node and optionally other input node(s). By using graph node, we can add
+        some metadata to the node to help with the SDK code reconstruction from the graph. Note that introducing
+        a graph node does not change the tile & aggregation hash ID if the final flatten graph is the same. Metadata
+        added to the graph node also won't affect the tile & aggregation hash ID.
+
+        Parameters
+        ----------
+        graph_node_type: GraphNodeType
+            Graph node type
+        data_node: InputNode
+            Input node for the view
+        other_input_nodes: List[Node]
+            Other input nodes for the view (used to construct additional proxy input nodes in the nested graph)
+        drop_column_names: List[str]
+            List of column names to drop
+        metadata: Optional[Dict[str, Any]]
+            Metadata for the view graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[Node]]
+        """
+        # prepare graph node's inputs
+        view_graph_input_nodes: List[Node] = [data_node]
+        if other_input_nodes:
+            view_graph_input_nodes.extend(other_input_nodes)
+
+        # prepare project columns
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
+        project_columns = [col.name for col in columns_info]
+
+        # prepare view graph node
+        cleaning_graph_node = self.construct_cleaning_recipe_node(input_node=data_node)
+        if cleaning_graph_node:
+            view_graph_node, proxy_input_nodes = GraphNode.create(
+                node_type=NodeType.GRAPH,
+                node_params=cleaning_graph_node.parameters.dict(by_alias=True),
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=view_graph_input_nodes,
+                graph_node_type=graph_node_type,
+                metadata=metadata,
+            )
+            view_graph_node.add_operation(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": project_columns},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[view_graph_node.output_node],
+            )
+        else:
+            # project node assume single input only and view_graph_input_nodes could have more than 1 item.
+            # therefore, nested_node_input_indices is used to specify the input node index for the project node
+            # without using all the proxy input nodes.
+            view_graph_node, proxy_input_nodes = GraphNode.create(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": project_columns},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=view_graph_input_nodes,
+                graph_node_type=graph_node_type,
+                nested_node_input_indices=[0],
+                metadata=metadata,
+            )
+
+        assert len(proxy_input_nodes) == len(view_graph_input_nodes)
+        return view_graph_node, proxy_input_nodes
 
     @property
     @abstractmethod
