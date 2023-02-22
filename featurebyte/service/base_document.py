@@ -46,16 +46,20 @@ class BaseDocumentService(
     reading from the persistent.
     """
 
-    _allow_to_use_raw_query_filter: bool = False
     document_class: Type[Document]
 
     def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
         self.user = user
         self.persistent = persistent
         self.workspace_id = workspace_id
+        self._allow_to_use_raw_query_filter = False
 
     def allow_use_raw_query_filter(self) -> None:
-        """Activate use of raw query filter"""
+        """
+        Activate use of raw query filter.
+        This should be used ONLY when there is need to access all documents regardless of workspace membership.
+        Valid use cases are data migration or data restoration.
+        """
         logger.warning(RAW_QUERY_FILTER_WARNING)
         self._allow_to_use_raw_query_filter = True
 
