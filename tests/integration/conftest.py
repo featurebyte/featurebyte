@@ -49,6 +49,9 @@ from featurebyte.query_graph.node.schema import SparkDetails, SQLiteDetails, Tab
 from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileSpec
 
+# Static testing mongodb connection from docker/test/docker-compose.yml
+MONGO_CONNECTION = "mongodb://localhost:27021,localhost:27022/?replicaSet=rs0"
+
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -175,10 +178,9 @@ def mongo_persistent_fixture():
     """
     Mongo persistent fixture
     """
-    mongo_connection = os.getenv("MONGO_CONNECTION")
     database_name = f"test_{ObjectId()}"
-    client = pymongo.MongoClient(mongo_connection)
-    persistent = MongoDB(uri=mongo_connection, database=database_name)
+    client = pymongo.MongoClient(MONGO_CONNECTION)
+    persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name)
     yield persistent, client[database_name]
     client.drop_database(database_name)
 
