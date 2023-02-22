@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
+from apscheduler.job import Job
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -73,7 +74,9 @@ class TileScheduler(BaseModel):
         kwargs: Optional[Dict[str, Any]]
             kwargs to func
         """
-        interval_trigger = IntervalTrigger(start_date=start_from, seconds=interval_seconds)
+        interval_trigger = IntervalTrigger(
+            start_date=start_from, seconds=interval_seconds, timezone="utc"
+        )
         self._scheduler.add_job(
             id=job_id,
             jobstore=self._job_store,
@@ -97,6 +100,21 @@ class TileScheduler(BaseModel):
             logger.info(f"{job_id} removed successfully")
         except JobLookupError:
             logger.warning(f"{job_id} does not exist")
+
+    def get_job_details(self, job_id: str) -> Job:
+        """
+        Get Jobs from input job store
+
+        Parameters
+        ----------
+        job_id: str
+            job id
+
+        Returns
+        ----------
+            Job Instance
+        """
+        return self._scheduler.get_job(job_id=job_id)
 
     def get_jobs(self) -> List[str]:
         """
