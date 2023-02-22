@@ -1,8 +1,9 @@
 """
 This module contains SQL operation related node classes
 """
+# pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 from pydantic import BaseModel, Field, root_validator, validator
 
@@ -30,7 +31,10 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ExpressionStr,
+    RightHandSide,
+    StatementStr,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VariableNameStr,
     VarNameExpressionStr,
@@ -91,15 +95,41 @@ class ProjectNode(BaseNode):
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         var_name_expr = input_var_name_expressions[0]
+        if input_node_types[0] in {NodeType.ITEM_GROUPBY, NodeType.AGGREGATE_AS_AT}:
+            # special handling for item_view.aggregate output
+            # since the output is already single series, no projection is needed
+            statements, var_name = self._convert_expression_to_variable(
+                var_name_expression=var_name_expr,
+                var_name_generator=var_name_generator,
+                node_output_type=operation_structure.output_type,
+                node_output_category=operation_structure.output_category,
+            )
+            return statements, var_name
+
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expr,
             var_name_generator=var_name_generator,
             node_output_type=NodeOutputType.FRAME,
             node_output_category=operation_structure.output_category,
         )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+
+        # must assign the projection result to a new variable
+        # otherwise, it could cause issue when the original variable is modified
+        # for example, the second `view["col_int", "col_float"]]` is different from the first one:
+        #     view.join(view["col_int", "col_float"]], rsuffix="_y")
+        #     view.join(view["col_int", "col_float"]], rsuffix="_z")
+        # after the first join, the `view` node get updated and the second join will refer to the updated `view`
         if operation_structure.output_type == NodeOutputType.FRAME:
-            return statements, VariableNameStr(f"{var_name}[{self.parameters.columns}]")
-        return statements, VariableNameStr(f"{var_name}['{self.parameters.columns[0]}']")
+            expression = ExpressionStr(f"{var_name}[{self.parameters.columns}]")
+        else:
+            expression = ExpressionStr(f"{var_name}['{self.parameters.columns[0]}']")
+
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
 
 
 class FilterNode(BaseNode):
@@ -288,6 +318,28 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             new_column_var_type=dtype,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        column_name = self.parameters.name
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=operation_structure.output_category,
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(input_var_name_expressions) == 2:
+            value = input_var_name_expressions[1]
+        statements.append((VariableNameStr(f"{var_name}['{column_name}']"), value))
+        return statements, var_name
+
 
 class LagNode(BaseSeriesOutputNode):
     """LagNode class"""
@@ -305,6 +357,20 @@ class LagNode(BaseSeriesOutputNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        col_name = input_var_name_expressions[0].as_input()
+        entity_columns = ValueStr.create(self.parameters.entity_columns)
+        offset = ValueStr.create(self.parameters.offset)
+        expression = f"{col_name}.lag(entity_columns={entity_columns}, offset={offset})"
+        return [], ExpressionStr(expression)
 
 
 class GroupbyNode(AggregationOpStructMixin, BaseNode):
@@ -381,6 +447,47 @@ class GroupbyNode(AggregationOpStructMixin, BaseNode):
             return self.clone(parameters=pruned_params_dict)
         return self
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        windows = ValueStr.create(self.parameters.windows)
+        feature_names = ValueStr.create(self.parameters.names)
+        feature_job_setting = {
+            "blind_spot": f"{self.parameters.blind_spot}s",
+            "frequency": f"{self.parameters.frequency}s",
+            "time_modulo_frequency": f"{self.parameters.time_modulo_frequency}s",
+        }
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate_over(value_column={value_column}, "
+            f"method={method}, "
+            f"windows={windows}, "
+            f"feature_names={feature_names}, "
+            f"feature_job_setting={feature_job_setting}, "
+            f"skip_fill_na=True)"
+        )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append((out_var_name, ExpressionStr(f"{grouped}.{agg}")))
+        return statements, out_var_name
+
 
 class ItemGroupbyParameters(BaseGroupbyParameters):
     """ItemGroupbyNode parameters"""
@@ -394,6 +501,9 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: ItemGroupbyParameters
+
+    # class variable
+    _auto_convert_expression_to_variable: ClassVar[bool] = False
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
@@ -424,6 +534,38 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
                 dtype=output_var_type,
             )
         ]
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `item_view.groupby(...).aggregate()` will generate ItemGroupbyNode + ProjectNode.
+        # Output of ItemGroupbyNode is just an expression, the actual variable assignment
+        # will be done at the ProjectNode.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        feature_name = ValueStr.create(self.parameters.name)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate(value_column={value_column}, "
+            f"method={method}, "
+            f"feature_name={feature_name}, "
+            f"skip_fill_na=True)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
 class SCDBaseParameters(BaseModel):
@@ -528,6 +670,37 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
 
     def _exclude_source_columns(self) -> List[str]:
         return [self.parameters.entity_column]
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        input_column_names = self.parameters.input_column_names
+        feature_names = self.parameters.feature_names
+        offset = None
+        if self.parameters.scd_parameters:
+            offset = self.parameters.scd_parameters.offset
+        grouped = (
+            f"{var_name}.as_features(column_names={input_column_names}, "
+            f"feature_names={feature_names}, "
+            f"offset={ValueStr.create(offset)})"
+        )
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append((out_var_name, ExpressionStr(grouped)))
+        return statements, out_var_name
 
 
 class JoinMetadata(BaseModel):
@@ -684,6 +857,48 @@ class JoinNode(BaseNode):
             row_index_lineage=row_index_lineage,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        left_statements, left_var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        right_statements, right_var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[1],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statements = left_statements + right_statements
+        assert self.parameters.metadata is not None, "Join node metadata is not set."
+        if isinstance(self.parameters.metadata, JoinMetadata):
+            var_name = left_var_name
+            other_var_name = right_var_name
+            statement = StatementStr(
+                f"{var_name}.join({other_var_name}, "
+                f"on={ValueStr.create(self.parameters.metadata.on)}, "
+                f"how={ValueStr.create(self.parameters.join_type)}, "
+                f"rsuffix={ValueStr.create(self.parameters.metadata.rsuffix)})"
+            )
+        else:
+            var_name = right_var_name
+            statement = StatementStr(
+                f"{var_name}.join_event_data_attributes("
+                f"columns={ValueStr.create(self.parameters.metadata.columns)}, "
+                f"event_suffix={ValueStr.create(self.parameters.metadata.event_suffix)})"
+            )
+
+        statements.append(statement)
+        return statements, var_name
+
 
 class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     """JoinFeatureNode class
@@ -752,6 +967,30 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             new_column_var_type=feature_operation_info.series_output_dtype,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        new_column_name = ValueStr.create(self.parameters.name)
+        feature = input_var_name_expressions[1]
+        entity_column = ValueStr.create(self.parameters.view_entity_column)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        statement = StatementStr(
+            f"{var_name}.add_feature(new_column_name={new_column_name}, "
+            f"feature={feature}, entity_column={entity_column})"
+        )
+        statements.append(statement)
+        return statements, var_name
+
 
 class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     """Parameters for AggregateAsAtNode"""
@@ -797,6 +1036,42 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 dtype=output_var_type,
             )
         ]
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        # Note: this node is a special case as the output of this node is not a complete SDK code.
+        # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
+        # Output of AggregateAsAtNode is just an expression, the actual variable assignment
+        # will be done at the ProjectNode.
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=input_var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        value_column = ValueStr.create(self.parameters.parent)
+        method = ValueStr.create(self.parameters.agg_func)
+        feature_name = ValueStr.create(self.parameters.name)
+        offset = ValueStr.create(self.parameters.offset)
+        backward = ValueStr.create(self.parameters.backward)
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        agg = (
+            f"aggregate_asat(value_column={value_column}, "
+            f"method={method}, "
+            f"feature_name={feature_name}, "
+            f"offset={offset}, "
+            f"backward={backward}, "
+            f"skip_fill_na=True)"
+        )
+        return statements, ExpressionStr(f"{grouped}.{agg}")
 
 
 class AliasNode(BaseNode):
@@ -847,6 +1122,26 @@ class AliasNode(BaseNode):
             row_index_lineage=input_operation_info.row_index_lineage,
         )
 
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        statements.append(
+            (VariableNameStr(f"{var_name}.name"), ValueStr.create(self.parameters.name))
+        )
+        return statements, var_name
+
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
@@ -855,3 +1150,25 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
+
+    def _derive_sdk_code(
+        self,
+        input_var_name_expressions: List[VarNameExpressionStr],
+        input_node_types: List[NodeType],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: CodeGenerationConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionStr]:
+        var_name_expr = input_var_name_expressions[0]
+        mask_var_name_expr = input_var_name_expressions[1]
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expr,
+            var_name_generator=var_name_generator,
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+        )
+        value: RightHandSide = ValueStr.create(self.parameters.value)
+        if len(input_var_name_expressions) == 3:
+            value = input_var_name_expressions[2]
+        statements.append((VariableNameStr(f"{var_name}[{mask_var_name_expr}]"), value))
+        return statements, var_name

@@ -159,7 +159,13 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     if fixture_path:
         feature_store_id = api_object.feature_store.id
         if update_fixtures:
-            formatted_sdk_code = sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
+            # escape certain characters so that jinja can handle it properly
+            formatted_sdk_code = sdk_code.replace("{", "{{").replace("}", "}}")
+
+            # convert the object id to a placeholder
+            formatted_sdk_code = formatted_sdk_code.replace(
+                f"{feature_store_id}", "{feature_store_id}"
+            )
             if data_id:
                 formatted_sdk_code = formatted_sdk_code.replace(f"{data_id}", "{data_id}")
 

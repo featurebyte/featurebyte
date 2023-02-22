@@ -64,9 +64,9 @@ class BaseViewTestSuite:
         data_name = data_type_map[self.view_type]
         return request.getfixturevalue(data_name)
 
-    def test_setitem__str_key_series_value(self, view_under_test):
+    def test_setitem__str_key_series_value(self, view_under_test, data_under_test):
         """
-        Test assigning Series object to event_view
+        Test assigning Series object to a view
         """
         double_value = view_under_test[self.col] * 2
         assert isinstance(double_value, Series)
@@ -76,6 +76,41 @@ class BaseViewTestSuite:
             "parameters": {"name": "double_value", "value": None},
             "output_type": NodeOutputType.FRAME,
         }
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            view_under_test,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test.id: {
+                    "name": data_under_test.name,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                }
+            },
+        )
+
+    def test_setitem__scalar_value(self, view_under_test, data_under_test):
+        """
+        Test assigning scalar value to a view
+        """
+        view_under_test["magic_number"] = 1000
+        assert view_under_test.node.dict(exclude={"name": True}) == {
+            "type": NodeType.ASSIGN,
+            "parameters": {"name": "magic_number", "value": 1000},
+            "output_type": NodeOutputType.FRAME,
+        }
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            view_under_test,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test.id: {
+                    "name": data_under_test.name,
+                    "record_creation_date_column": data_under_test.record_creation_date_column,
+                }
+            },
+        )
 
     def test_setitem__override_protected_column(self, view_under_test):
         """

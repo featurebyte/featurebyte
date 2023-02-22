@@ -523,7 +523,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         config: CodeGenerationConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionStr]:
         left_operand: str = input_var_name_expressions[0].as_input()
-        right_operand: str = ValueStr.create(self.parameters.value).as_input()  # type: ignore
+        right_operand: str = ValueStr.create(self.parameters.value).as_input()
         if len(input_var_name_expressions) == 2:
             right_operand = input_var_name_expressions[1].as_input()
         left_operand, right_operand = self._reorder_operands(left_operand, right_operand)

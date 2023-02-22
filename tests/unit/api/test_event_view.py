@@ -123,7 +123,9 @@ def test_getitem__list_of_str_contains_protected_column(snowflake_event_data, sn
         ("col_text", 2, DBVarType.VARCHAR),
     ],
 )
-def test_event_view_column_lag(snowflake_event_view, column, offset, expected_var_type):
+def test_event_view_column_lag(
+    snowflake_event_view, snowflake_event_data, column, offset, expected_var_type
+):
     """
     Test EventViewColumn lag operation
     """
@@ -144,6 +146,18 @@ def test_event_view_column_lag(snowflake_event_view, column, offset, expected_va
         "offset": expected_offset_param,
     }
     assert lagged_column.tabular_data_ids == snowflake_event_view[column].tabular_data_ids
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        lagged_column,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+            }
+        },
+    )
 
 
 def test_event_view_column_lag__invalid(snowflake_event_view):
@@ -182,7 +196,9 @@ def test_event_view_copy(snowflake_event_view):
     assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
 
 
-def test_event_view_groupby__prune(snowflake_event_view_with_entity):
+def test_event_view_groupby__prune(
+    snowflake_event_view_with_entity, snowflake_event_data_with_entity
+):
     """Test event view groupby pruning algorithm"""
     event_view = snowflake_event_view_with_entity
     feature_job_setting = {
@@ -225,6 +241,22 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
         "project_2": ["mul_1"],
         "project_3": ["mul_1"],
     }
+
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data_with_entity.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        feature,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data_with_entity.id: {
+                "name": snowflake_event_data_with_entity.name,
+                "record_creation_date_column": snowflake_event_data_with_entity.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+                "columns_info": event_data_columns_info,
+            }
+        },
+    )
 
 
 def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_event_view):
@@ -557,7 +589,9 @@ def get_generic_input_node_params_fixture():
     }
 
 
-def test_add_feature(snowflake_event_data, snowflake_event_view, non_time_based_feature):
+def test_add_feature(
+    snowflake_event_data, snowflake_event_view, snowflake_item_data, non_time_based_feature
+):
     """
     Test add feature
     """
@@ -600,6 +634,30 @@ def test_add_feature(snowflake_event_data, snowflake_event_view, non_time_based_
         {"source": "graph_1", "target": "join_feature_1"},
         {"source": "project_1", "target": "join_feature_1"},
     ]
+
+    # check SDK code generation
+    event_data_columns_info = snowflake_event_data.dict(by_alias=True)["columns_info"]
+    item_data_columns_info = snowflake_item_data.dict(by_alias=True)["columns_info"]
+    check_sdk_code_generation(
+        snowflake_event_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_event_data.id: {
+                "name": snowflake_event_data.name,
+                "record_creation_date_column": snowflake_event_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in GroupBy construction
+                "columns_info": event_data_columns_info,
+            },
+            snowflake_item_data.id: {
+                "name": snowflake_item_data.name,
+                "record_creation_date_column": snowflake_item_data.record_creation_date_column,
+                # since the data is not saved, we need to pass in the columns info
+                # otherwise, entity id will be missing and code generation will fail in GroupBy construction
+                "columns_info": item_data_columns_info,
+            },
+        },
+    )
 
 
 def test__validate_column_is_not_used(empty_event_view_builder):

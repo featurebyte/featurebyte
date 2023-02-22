@@ -3,7 +3,7 @@ This module contains models used for sdk code extractor.
 """
 from __future__ import annotations
 
-from typing import Any, DefaultDict, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 import json
 import os
@@ -14,7 +14,6 @@ from bson import ObjectId
 from jinja2 import Template
 from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import get_version
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
@@ -27,13 +26,13 @@ class ValueStr(str):
     """
 
     @classmethod
-    def create(cls, value: Union[ObjectId, Scalar, Sequence[Scalar]]) -> ValueStr:
+    def create(cls, value: Any) -> ValueStr:
         """
         Create expression from a given value
 
         Parameters
         ----------
-        value: Union[ObjectId, Scalar, Sequence[Scalar]]
+        value: Any
             Input value
 
         Returns
