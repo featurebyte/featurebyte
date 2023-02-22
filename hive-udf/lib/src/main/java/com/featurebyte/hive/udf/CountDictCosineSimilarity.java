@@ -46,7 +46,7 @@ public class CountDictCosineSimilarity extends GenericUDF {
     };
 
     try {
-      checkArgPrimitive(map_args,0);
+      checkArgPrimitive(map_args, 0);
       checkArgGroups(map_args, 0, inputTypes, STRING_GROUP);
     } catch (UDFArgumentException e) {
       throw new UDFArgumentTypeException(0, "Map key must be a string");
