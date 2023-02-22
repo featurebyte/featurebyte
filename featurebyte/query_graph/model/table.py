@@ -451,7 +451,7 @@ class SCDTableData(BaseTableData):
         return view_graph_node, columns_info
 
     @staticmethod
-    def _get_new_column_names(
+    def get_new_column_names(
         tracked_column: str,
         timestamp_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]],
@@ -647,7 +647,7 @@ class SCDTableData(BaseTableData):
             drop_column_names=drop_column_names,
             metadata=metadata,
         )
-        column_names = self._get_new_column_names(
+        column_names = self.get_new_column_names(
             tracked_column=track_changes_column,
             timestamp_column=self.effective_timestamp_column,
             prefixes=prefixes,

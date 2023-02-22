@@ -32,18 +32,6 @@ class ChangeViewColumn(LaggableViewColumn):
     __fbautodoc__ = FBAutoDoc(section=["Column"])
 
 
-@dataclass
-class ChangeViewColumnNames:
-    """
-    Representation of column names to use in the change view
-    """
-
-    previous_tracked_column_name: str
-    new_tracked_column_name: str
-    previous_valid_from_column_name: str
-    new_valid_from_column_name: str
-
-
 class ChangeView(View, GroupByMixin):
     """
     ChangeView is used to capture changes in slowly changing data in an easy manner. This is useful as changes in
@@ -185,52 +173,6 @@ class ChangeView(View, GroupByMixin):
         # Validate prefixes
         ChangeView._validate_prefixes(prefixes)
 
-    @staticmethod
-    def _get_new_column_names(
-        tracked_column: str,
-        timestamp_column: str,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]],
-    ) -> ChangeViewColumnNames:
-        """
-        Helper method to return the tracked column names.
-
-        Parameters
-        ----------
-        tracked_column: str
-            column we want to track
-        timestamp_column: str
-            column denoting the timestamp
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
-            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
-            the column that we want to track. The first prefix will be used for the old, and the second for the new.
-            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
-            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
-            they must be different.
-
-        Returns
-        -------
-        ChangeViewColumnNames
-            column names to use in the change view
-        """
-        old_prefix = "past_"
-        new_prefix = "new_"
-        if prefixes is not None:
-            if prefixes[0] is not None:
-                old_prefix = prefixes[0]
-            if prefixes[1] is not None:
-                new_prefix = prefixes[1]
-
-        past_col_name = f"{old_prefix}{tracked_column}"
-        new_col_name = f"{new_prefix}{tracked_column}"
-        past_timestamp_col_name = f"{old_prefix}{timestamp_column}"
-        new_timestamp_col_name = f"{new_prefix}{timestamp_column}"
-        return ChangeViewColumnNames(
-            previous_tracked_column_name=past_col_name,
-            new_tracked_column_name=new_col_name,
-            previous_valid_from_column_name=past_timestamp_col_name,
-            new_valid_from_column_name=new_timestamp_col_name,
-        )
-
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
         params = super()._getitem_frame_params
@@ -284,7 +226,7 @@ class ChangeView(View, GroupByMixin):
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting
         )
-        col_names = ChangeView._get_new_column_names(
+        col_names = SCDTableData.get_new_column_names(
             track_changes_column, scd_data.effective_timestamp_column, prefixes
         )
         drop_columns_names = []

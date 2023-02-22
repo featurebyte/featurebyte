@@ -16,6 +16,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.util.helper import check_sdk_code_generation
 
@@ -107,17 +108,17 @@ def test_validate_prefixes():
 
 def test_get_new_column_names():
     """
-    Test _get_new_column_names
+    Test get_new_column_names
     """
     col_name = "col_name"
     timestamp_col_name = "timestamp_col"
-    column_names = ChangeView._get_new_column_names(col_name, timestamp_col_name, None)
+    column_names = SCDTableData.get_new_column_names(col_name, timestamp_col_name, None)
     assert column_names.previous_tracked_column_name == f"past_{col_name}"
     assert column_names.new_tracked_column_name == f"new_{col_name}"
     assert column_names.previous_valid_from_column_name == f"past_{timestamp_col_name}"
     assert column_names.new_valid_from_column_name == f"new_{timestamp_col_name}"
 
-    column_names = ChangeView._get_new_column_names(
+    column_names = SCDTableData.get_new_column_names(
         col_name, timestamp_col_name, (None, "updated_")
     )
     assert column_names.previous_tracked_column_name == f"past_{col_name}"
@@ -125,13 +126,13 @@ def test_get_new_column_names():
     assert column_names.previous_valid_from_column_name == f"past_{timestamp_col_name}"
     assert column_names.new_valid_from_column_name == f"updated_{timestamp_col_name}"
 
-    column_names = ChangeView._get_new_column_names(col_name, timestamp_col_name, ("prior_", None))
+    column_names = SCDTableData.get_new_column_names(col_name, timestamp_col_name, ("prior_", None))
     assert column_names.previous_tracked_column_name == f"prior_{col_name}"
     assert column_names.new_tracked_column_name == f"new_{col_name}"
     assert column_names.previous_valid_from_column_name == f"prior_{timestamp_col_name}"
     assert column_names.new_valid_from_column_name == f"new_{timestamp_col_name}"
 
-    column_names = ChangeView._get_new_column_names(
+    column_names = SCDTableData.get_new_column_names(
         col_name, timestamp_col_name, ("prior_", "updated_")
     )
     assert column_names.previous_tracked_column_name == f"prior_{col_name}"
