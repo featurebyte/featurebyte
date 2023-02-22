@@ -1,7 +1,7 @@
 """
 This model contains query graph internal model structures
 """
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple
 
 import json
 from collections import defaultdict
@@ -11,7 +11,7 @@ from pydantic import Field, root_validator, validator
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.util import hash_node
@@ -267,6 +267,33 @@ class QueryGraphModel(FeatureByteBaseModel):
         for node in dfs_traversal(self, target_node):
             if node.type == node_type:
                 yield node
+
+    def iterate_graph_nodes(
+        self, target_node: Node, graph_node_types: Set[GraphNodeType]
+    ) -> Iterator[Node]:
+        """
+        Iterate all graph nodes in this query graph
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+        graph_node_types: Set[GraphNodeType]
+            Specific graph node type to iterate
+
+        Returns
+        -------
+        Iterator[Node]
+        """
+        for node in dfs_traversal(self, target_node):
+            if node.type == NodeType.GRAPH:
+                if node.parameters.type in graph_node_types:
+                    yield node
+                else:
+                    for graph_node in node.parameters.graph.iterate_graph_nodes(
+                        target_node=node.output_node, graph_node_types=graph_node_types
+                    ):
+                        yield graph_node
 
     def iterate_sorted_nodes(self) -> Iterator[Node]:
         """

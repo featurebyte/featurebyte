@@ -7,8 +7,9 @@ import pytest
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import TableDetails
 
 

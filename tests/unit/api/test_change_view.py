@@ -13,9 +13,9 @@ import pytest
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
 from featurebyte.enum import SourceType
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.util.helper import check_sdk_code_generation
 

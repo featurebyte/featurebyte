@@ -16,8 +16,8 @@ from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisRecord,

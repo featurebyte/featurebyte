@@ -11,7 +11,6 @@ from featurebyte.api.groupby import BaseAggregator, GroupBy
 from featurebyte.api.view import View
 from featurebyte.enum import DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
-from featurebyte.models.event_data import FeatureJobSetting
 
 
 @pytest.mark.parametrize(

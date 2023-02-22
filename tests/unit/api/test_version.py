@@ -8,8 +8,8 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_list import FeatureListNewVersionMode
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 

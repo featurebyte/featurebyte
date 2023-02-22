@@ -3,7 +3,7 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -15,6 +15,9 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.table import DimensionTableData
+from featurebyte.query_graph.node.input import InputNode
 
 
 class DimensionViewColumn(ViewColumn):
@@ -62,8 +65,29 @@ class DimensionView(View):
         DimensionView
             constructed DimensionView object
         """
-        return cls._from_data(
-            dimension_data,
+        # The input of view graph node is the data node. The final graph looks like this:
+        #    +-----------+     +--------------------------------+
+        #    | InputNode + --> | GraphNode(type:dimension_view) +
+        #    +-----------+     +--------------------------------+
+        drop_columns_names = []
+        if dimension_data.record_creation_date_column:
+            drop_columns_names.append(dimension_data.record_creation_date_column)
+
+        data_node = dimension_data.frame.node
+        assert isinstance(data_node, InputNode)
+        dimension_table_data = cast(DimensionTableData, dimension_data.table_data)
+        view_graph_node, columns_info = dimension_table_data.construct_dimension_view_graph_node(
+            dimension_data_node=data_node,
+            drop_column_names=drop_columns_names,
+            metadata=None,
+        )
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
+        return DimensionView(
+            feature_store=dimension_data.feature_store,
+            tabular_source=dimension_data.tabular_source,
+            columns_info=columns_info,
+            node_name=inserted_graph_node.name,
+            tabular_data_ids=[dimension_data.id],
             dimension_id_column=dimension_data.dimension_id_column,
         )
 

@@ -31,7 +31,6 @@ from featurebyte.exception import RecordCreationException, RecordRetrievalExcept
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
@@ -44,6 +43,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.generic import (
     AliasNode,
     GroupbyNode,

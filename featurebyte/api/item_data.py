@@ -17,8 +17,8 @@ from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, ItemTableData
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 

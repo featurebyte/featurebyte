@@ -22,9 +22,9 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from tests.util.helper import check_aggressively_pruned_graph, get_node

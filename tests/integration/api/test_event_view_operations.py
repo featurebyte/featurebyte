@@ -13,6 +13,7 @@ from featurebyte import (
     AggFunc,
     EventData,
     EventView,
+    FeatureJobSetting,
     FeatureList,
     ItemView,
     SourceType,
@@ -20,7 +21,6 @@ from featurebyte import (
 )
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.node.schema import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
 

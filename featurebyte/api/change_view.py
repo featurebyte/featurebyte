@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Tuple
+from typing import Any, ClassVar, Optional, Tuple, cast
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,12 +16,14 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import ChangeViewNoJoinColumnError
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.input import InputNode
 
 
 class ChangeViewColumn(LaggableViewColumn):
@@ -245,116 +247,6 @@ class ChangeView(View, GroupByMixin):
         return params
 
     @classmethod
-    def _add_change_view_operations(
-        cls,
-        scd_data: SlowlyChangingData,
-        track_changes_column: str,
-        view_graph_node: GraphNode,
-        proxy_input_nodes: list[Node],
-        column_names: ChangeViewColumnNames,
-    ) -> GraphNode:
-        # subset the columns we need
-        col_name_to_proj_node: dict[str, Node] = {}
-        assert scd_data.timestamp_column is not None
-        proj_names = [
-            scd_data.effective_timestamp_column,
-            scd_data.natural_key_column,
-            scd_data.timestamp_column,
-            track_changes_column,
-        ]
-        cleaned_data_node = view_graph_node.output_node
-        for col_name in proj_names:
-            col_name_to_proj_node[col_name] = view_graph_node.add_operation(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": [col_name]},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[cleaned_data_node],
-            )
-
-        new_past_col_name_triples = [
-            (
-                column_names.new_valid_from_column_name,
-                column_names.previous_valid_from_column_name,
-                scd_data.effective_timestamp_column,
-            ),
-            (
-                column_names.new_tracked_column_name,
-                column_names.previous_tracked_column_name,
-                track_changes_column,
-            ),
-        ]
-        frame_node = proxy_input_nodes[0]
-        for new_col_name, past_col_name, col_name in new_past_col_name_triples:
-            proj_node = col_name_to_proj_node[col_name]
-            # change_view[new_ts_col] = change_view[effective_timestamp_column]
-            # change_view[new_col_name] = change_view[track_changes_column]
-            frame_node = view_graph_node.add_operation(
-                node_type=NodeType.ASSIGN,
-                node_params={"name": new_col_name},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[frame_node, proj_node],
-            )
-
-            # change_view[past_ts_col] = change_view[effective_timestamp_column].lag(natural_key_column)
-            # change_view[past_col_name] = change_view[track_changes_column].lag(natural_key_column)
-            lag_node = view_graph_node.add_operation(
-                node_type=NodeType.LAG,
-                node_params={
-                    "entity_columns": [scd_data.natural_key_column],
-                    "timestamp_column": scd_data.timestamp_column,
-                    "offset": 1,
-                },
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[
-                    proj_node,
-                    col_name_to_proj_node[scd_data.natural_key_column],
-                    col_name_to_proj_node[scd_data.timestamp_column],
-                ],
-            )
-            frame_node = view_graph_node.add_operation(
-                node_type=NodeType.ASSIGN,
-                node_params={"name": past_col_name},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[frame_node, lag_node],
-            )
-
-        # select the 5 cols we want to present
-        view_graph_node.add_operation(
-            node_type=NodeType.PROJECT,
-            node_params={
-                "columns": [
-                    scd_data.natural_key_column,
-                    column_names.new_valid_from_column_name,
-                    column_names.new_tracked_column_name,
-                    column_names.previous_valid_from_column_name,
-                    column_names.previous_tracked_column_name,
-                ]
-            },
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[frame_node],
-        )
-        return view_graph_node
-
-    @classmethod
-    def _prepare_columns_info(
-        cls,
-        scd_data: SlowlyChangingData,
-        column_names: ChangeViewColumnNames,
-        track_changes_column: str,
-    ) -> list[ColumnInfo]:
-        time_col_info = scd_data[scd_data.effective_timestamp_column].info
-        track_col_info = scd_data[track_changes_column].info
-        return [
-            scd_data[scd_data.natural_key_column].info,
-            ColumnInfo(**{**time_col_info.dict(), "name": column_names.new_valid_from_column_name}),
-            ColumnInfo(
-                name=column_names.previous_valid_from_column_name, dtype=time_col_info.dtype
-            ),
-            ColumnInfo(**{**track_col_info.dict(), "name": column_names.new_tracked_column_name}),
-            ColumnInfo(name=column_names.previous_tracked_column_name, dtype=track_col_info.dtype),
-        ]
-
-    @classmethod
     @typechecked
     def from_slowly_changing_data(
         cls,
@@ -398,36 +290,29 @@ class ChangeView(View, GroupByMixin):
         col_names = ChangeView._get_new_column_names(
             track_changes_column, scd_data.effective_timestamp_column, prefixes
         )
+        drop_columns_names = []
+        if (
+            scd_data.record_creation_date_column
+            and scd_data.record_creation_date_column != track_changes_column
+        ):
+            drop_columns_names.append(scd_data.record_creation_date_column)
 
-        # transform from SCD view to change view inside the graph node
-        view_graph_node, proxy_input_nodes, data_node = cls._construct_view_graph_node(
-            data=scd_data,
-            keep_record_creation_date_column=(
-                track_changes_column == scd_data.record_creation_date_column
-            ),
+        data_node = scd_data.frame.node
+        assert isinstance(data_node, InputNode)
+        scd_table_data = cast(SCDTableData, scd_data.table_data)
+        view_graph_node, columns_info = scd_table_data.construct_change_view_graph_node(
+            scd_data_node=data_node,
+            track_changes_column=track_changes_column,
+            prefixes=prefixes,
+            drop_column_names=drop_columns_names,
             metadata={
                 "track_changes_column": track_changes_column,
                 "default_feature_job_setting": default_feature_job_setting,
                 "prefixes": prefixes,
             },
         )
-        view_graph_node = cls._add_change_view_operations(
-            scd_data=scd_data,
-            track_changes_column=track_changes_column,
-            view_graph_node=view_graph_node,
-            proxy_input_nodes=proxy_input_nodes,
-            column_names=col_names,
-        )
-        inserted_graph_node = GlobalQueryGraph().add_node(
-            node=view_graph_node, input_nodes=[data_node]
-        )
-        columns_info = cls._prepare_columns_info(
-            scd_data=scd_data,
-            column_names=col_names,
-            track_changes_column=track_changes_column,
-        )
-
-        return cls(
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
+        return ChangeView(
             feature_store=scd_data.feature_store,
             tabular_source=scd_data.tabular_source,
             columns_info=columns_info,

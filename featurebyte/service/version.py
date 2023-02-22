@@ -9,12 +9,12 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentError
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode

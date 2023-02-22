@@ -21,8 +21,9 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 

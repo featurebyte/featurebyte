@@ -10,8 +10,8 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -827,6 +827,9 @@ def test_as_feature__from_view_column(saved_item_data, item_entity):
     }
 
     # check SDK code generation
+    # since the data is not saved, we need to pass in the columns info
+    # otherwise, entity id will be missing and code generation will fail during GroupBy construction
+    item_data_columns_info = saved_item_data.dict(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
@@ -834,6 +837,7 @@ def test_as_feature__from_view_column(saved_item_data, item_entity):
             saved_item_data.id: {
                 "name": saved_item_data.name,
                 "record_creation_date_column": saved_item_data.record_creation_date_column,
+                "columns_info": item_data_columns_info,
             }
         },
     )
