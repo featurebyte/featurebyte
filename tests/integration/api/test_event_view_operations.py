@@ -15,6 +15,7 @@ from featurebyte import (
     EventView,
     FeatureList,
     ItemView,
+    SlowlyChangingView,
     SourceType,
     to_timedelta,
 )
@@ -921,7 +922,7 @@ def get_non_time_based_feature_fixture(item_data):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_add_feature(event_view, non_time_based_feature):
+def test_add_feature(event_view, non_time_based_feature, scd_data):
     """
     Test add feature
     """
@@ -965,6 +966,35 @@ def test_add_feature(event_view, non_time_based_feature):
         "PRODUCT_ACTION": "purchase",
         "transaction_count_sum_24h": 108,
     }
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feature):
+    """
+    Test add feature when the input EventView involves a join
+    """
+    # update the view with a join first
+    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    event_view.join(scd_view)
+    original_column_names = [col.name for col in event_view.columns_info]
+
+    # add feature
+    event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+
+    # ensure the updated view continues to work as expected
+    event_view["User Status New"] = event_view["User Status"] + "_suffix"
+
+    # test columns are updated as expected
+    event_view_preview = event_view.sample()
+    new_columns = event_view_preview.columns.tolist()
+    expected_updated_column_names = [*original_column_names, "transaction_count", "User Status New"]
+    assert new_columns == expected_updated_column_names
+
+    pd.testing.assert_series_equal(
+        event_view_preview["User Status New"],
+        event_view_preview["User Status"] + "_suffix",
+        check_names=False,
+    )
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
