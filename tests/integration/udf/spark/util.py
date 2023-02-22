@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
     """
-    Returns an expression converts the dict to a map object in Spark
+    Converts the dictionary to a string expression of a map object in spark
 
     Parameters
     ----------
