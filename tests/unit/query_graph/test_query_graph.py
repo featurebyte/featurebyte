@@ -146,6 +146,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
         "div_2",
         "project_4",
         "project_5",
+        "project_6",
     }
 
     # construct the query of the last node

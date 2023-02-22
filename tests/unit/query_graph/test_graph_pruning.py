@@ -85,13 +85,13 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     target_node = dataframe["target"].node
     pruned_graph, node_name_map = dataframe.graph.prune(target_node=target_node, aggressive=True)
     assert pruned_graph.edges_map == {
-        "input_1": ["project_1", "assign_1", "project_2"],
+        "input_1": ["project_1", "assign_1"],
         "project_1": ["div_1"],
         "div_1": ["assign_1"],
+        "assign_1": ["project_2", "assign_2"],
         "project_2": ["add_1"],
         "add_1": ["assign_2"],
-        "assign_1": ["assign_2", "project_4"],
-        "assign_2": ["project_3", "assign_3"],
+        "assign_2": ["project_3", "project_4", "assign_3"],
         "project_3": ["mul_1"],
         "project_4": ["mul_1"],
         "mul_1": ["assign_3"],
@@ -101,8 +101,8 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     assert pruned_graph.nodes_map["assign_2"].parameters.name == "requiredB"
     assert pruned_graph.nodes_map["project_1"].parameters.columns == ["CUST_ID"]
     assert pruned_graph.nodes_map["project_2"].parameters.columns == ["VALUE"]
-    assert pruned_graph.nodes_map["project_3"].parameters.columns == ["requiredB"]
-    assert pruned_graph.nodes_map["project_4"].parameters.columns == ["requiredA"]
+    assert pruned_graph.nodes_map["project_3"].parameters.columns == ["requiredA"]
+    assert pruned_graph.nodes_map["project_4"].parameters.columns == ["requiredB"]
     assert pruned_graph.nodes_map["project_5"].parameters.columns == ["target"]
     mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
     assert mapped_node.name == "project_5"

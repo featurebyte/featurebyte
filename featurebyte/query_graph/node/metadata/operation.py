@@ -494,21 +494,6 @@ class OperationStructure(FeatureByteBaseModel):
         """
         return [col for col in self.columns if isinstance(col, SourceDataColumn)]
 
-    def get_column_node_name(self, column_name: str) -> str:
-        """
-        Retrieve node_name based on given column
-
-        Parameters
-        ----------
-        column_name: str
-            Column name
-
-        Returns
-        -------
-        str
-        """
-        return next(col.node_name for col in self.columns if col.name == column_name)
-
     @validator("columns", "aggregations")
     @classmethod
     def _validator(cls, value: List[Any]) -> List[Any]:
