@@ -16,13 +16,10 @@ from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import ChangeViewNoJoinColumnError
-from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
-from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 
 

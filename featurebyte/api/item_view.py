@@ -13,24 +13,13 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.view import GroupByMixin, View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.join_utils import (
-    append_rsuffix_to_column_info,
-    append_rsuffix_to_columns,
-    combine_column_info_of_views,
-    filter_columns,
-    join_tabular_data_ids,
-)
+from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.enum import TableDataType
-from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.graph_node.base import GraphNode
-from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import ItemTableData
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import JoinEventDataAttributesMetadata, JoinNodeParameters
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
@@ -100,6 +89,7 @@ class ItemView(View, GroupByMixin):
         """
         event_data = EventData.get_by_id(item_data.event_data_id)
         event_view = EventView.from_event_data(event_data)
+        assert event_view.event_id_column, "event_id_column is not set"
 
         # construct view graph node for item data, the final graph looks like:
         #     +-----------------------+    +----------------------------+
@@ -163,6 +153,7 @@ class ItemView(View, GroupByMixin):
         event_suffix : Optional[str]
             A suffix to append on to the columns from the EventData
         """
+        assert self.event_view.event_id_column, "event_id_column is not set"
         (node, joined_columns_info, join_parameters,) = ItemTableData.join_event_view_columns(
             graph=self.graph,
             item_view_node=self.node,

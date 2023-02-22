@@ -7,12 +7,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
     List,
     Literal,
     Optional,
     Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -23,7 +21,6 @@ from abc import ABC, abstractmethod
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
 
-from featurebyte.api.base_data import DataApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
@@ -52,12 +49,9 @@ from featurebyte.exception import (
 from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
-from featurebyte.query_graph.node.input import InputNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy

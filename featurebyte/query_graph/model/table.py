@@ -85,6 +85,22 @@ class EventTableData(BaseTableData):
         drop_column_names: List[str],
         metadata: Optional[Dict[str, Any]],
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct a graph node & columns info for EventView of this event data.
+
+        Parameters
+        ----------
+        event_data_node: InputNode
+            Event data node
+        drop_column_names: List[str]
+            List of column names to drop from the event data
+        metadata: Optional[Dict[str, Any]]
+            Metadata to be added to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
         view_graph_node, _ = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.EVENT_VIEW,
             data_node=event_data_node,
@@ -123,7 +139,7 @@ class ItemTableData(BaseTableData):
         )
 
     @classmethod
-    def prepare_join_with_event_view_columns_parameters(
+    def _prepare_join_with_event_view_columns_parameters(
         cls,
         item_view_columns: List[str],
         item_view_event_id_column: str,
@@ -187,7 +203,35 @@ class ItemTableData(BaseTableData):
         event_suffix: Optional[str],
         columns_to_join: List[str],
     ) -> Tuple[Node, List[ColumnInfo], JoinNodeParameters]:
-        join_parameters = cls.prepare_join_with_event_view_columns_parameters(
+        """
+        Join EventView columns to ItemView
+
+        Parameters
+        ----------
+        graph: Union[QueryGraph, GraphNode]
+            QueryGraph or GraphNode to add the join operation to
+        item_view_node: Node
+            ItemView node
+        item_view_columns_info: List[ColumnInfo]
+            ItemView columns info
+        item_view_event_id_column: str
+            ItemView event_id_column name
+        event_view_node: Node
+            EventView node
+        event_view_columns_info: List[ColumnInfo]
+            EventView columns info
+        event_view_event_id_column: str
+            EventView event_id_column name
+        event_suffix: Optional[str]
+            Suffix to append to joined EventView columns
+        columns_to_join: List[str]
+            List of columns to join from EventView
+
+        Returns
+        -------
+        Tuple[Node, List[ColumnInfo], JoinNodeParameters]
+        """
+        join_parameters = cls._prepare_join_with_event_view_columns_parameters(
             item_view_columns=[col.name for col in item_view_columns_info],
             item_view_event_id_column=item_view_event_id_column,
             event_view_columns=[col.name for col in event_view_columns_info],
@@ -217,10 +261,36 @@ class ItemTableData(BaseTableData):
         event_view_node: Node,
         event_view_columns_info: List[ColumnInfo],
         event_view_event_id_column: str,
-        event_suffix: Optional[str] = None,
-        drop_column_names: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        event_suffix: Optional[str],
+        drop_column_names: List[str],
+        metadata: Optional[Dict[str, Any]],
     ) -> Tuple[GraphNode, List[ColumnInfo], str]:
+        """
+        Construct ItemView graph node
+
+        Parameters
+        ----------
+        item_data_node: InputNode
+            Item data node
+        columns_to_join: List[str]
+            List of columns to join from EventView
+        event_view_node: Node
+            EventView node
+        event_view_columns_info: List[ColumnInfo]
+            EventView columns info
+        event_view_event_id_column: str
+            EventView event_id_column name
+        event_suffix: Optional[str]
+            Suffix to append to joined EventView columns
+        drop_column_names: List[str]
+            List of columns to drop from the item data
+        metadata: Optional[Dict[str, Any]]
+            Metadata to add to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo], str]
+        """
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.ITEM_VIEW,
             data_node=item_data_node,
@@ -228,14 +298,17 @@ class ItemTableData(BaseTableData):
             drop_column_names=drop_column_names,
             metadata=metadata,
         )
-        item_data_node, event_view_node = proxy_input_nodes
+        (  # pylint: disable=unbalanced-tuple-unpacking
+            proxy_item_data_node,
+            proxy_event_view_node,
+        ) = proxy_input_nodes
         item_view_columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
         _, columns_info, join_parameters = self.join_event_view_columns(
             graph=view_graph_node,
-            item_view_node=item_data_node,
+            item_view_node=proxy_item_data_node,
             item_view_columns_info=item_view_columns_info,
             item_view_event_id_column=self.event_id_column,
-            event_view_node=event_view_node,
+            event_view_node=proxy_event_view_node,
             event_view_columns_info=event_view_columns_info,
             event_view_event_id_column=event_view_event_id_column,
             columns_to_join=columns_to_join,
@@ -273,10 +346,26 @@ class DimensionTableData(BaseTableData):
     def construct_dimension_view_graph_node(
         self,
         dimension_data_node: InputNode,
-        drop_column_names: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        drop_column_names: List[str],
+        metadata: Optional[Dict[str, Any]],
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
-        view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
+        """
+        Construct DimensionView graph node
+
+        Parameters
+        ----------
+        dimension_data_node: InputNode
+            Dimension data node
+        drop_column_names: List[str]
+            List of columns to drop from the dimension data
+        metadata: Optional[Dict[str, Any]]
+            Metadata to add to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, _ = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.DIMENSION_VIEW,
             data_node=dimension_data_node,
             other_input_nodes=[],
@@ -332,9 +421,25 @@ class SCDTableData(BaseTableData):
     def construct_scd_view_graph_node(
         self,
         scd_data_node: InputNode,
-        drop_column_names: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        drop_column_names: List[str],
+        metadata: Optional[Dict[str, Any]],
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct SCDView graph node
+
+        Parameters
+        ----------
+        scd_data_node: InputNode
+            Slowly changing dimension data node
+        drop_column_names: List[str]
+            List of columns to drop from the SCD data
+        metadata: Optional[Dict[str, Any]]
+            Metadata to add to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
         view_graph_node, _ = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.SCD_VIEW,
             data_node=scd_data_node,
@@ -511,10 +616,30 @@ class SCDTableData(BaseTableData):
         self,
         scd_data_node: InputNode,
         track_changes_column: str,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
-        drop_column_names: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        prefixes: Optional[Tuple[Optional[str], Optional[str]]],
+        drop_column_names: List[str],
+        metadata: Optional[Dict[str, Any]],
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct a graph node for a change view.
+
+        Parameters
+        ----------
+        scd_data_node: InputNode
+            Slowly changing dimension data node
+        track_changes_column: str
+            Column name of the column that tracks changes
+        prefixes: Tuple[Optional[str], Optional[str]]
+            Prefixes for the new and previous columns
+        drop_column_names: List[str]
+            Column names to drop from the slow changing dimension data
+        metadata: Optional[Dict[str, Any]]
+            Metadata for the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.CHANGE_VIEW,
             data_node=scd_data_node,

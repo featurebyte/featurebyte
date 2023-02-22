@@ -193,7 +193,7 @@ class BaseTableData(FeatureByteBaseModel):
         data_node: InputNode,
         other_input_nodes: List[Node],
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]],
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Tuple[GraphNode, List[Node]]:
         """
         Construct view graph node from table data. The output of any view should be a single graph node
@@ -210,7 +210,7 @@ class BaseTableData(FeatureByteBaseModel):
             Input node for the view
         other_input_nodes: List[Node]
             Other input nodes for the view (used to construct additional proxy input nodes in the nested graph)
-        drop_column_names: Optional[List[str]]
+        drop_column_names: List[str]
             List of column names to drop
         metadata: Optional[Dict[str, Any]]
             Metadata for the view graph node
