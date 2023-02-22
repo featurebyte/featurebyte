@@ -20,7 +20,6 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
 )
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.event_data import EventDataService
-from featurebyte.service.task_manager import AbstractTaskManager, TaskId
 
 
 class FeatureJobSettingAnalysisService(
@@ -37,21 +36,19 @@ class FeatureJobSettingAnalysisService(
     document_class = FeatureJobSettingAnalysisModel
 
     async def create_document_creation_task(
-        self, data: FeatureJobSettingAnalysisCreate, task_manager: AbstractTaskManager
-    ) -> TaskId:
+        self, data: FeatureJobSettingAnalysisCreate
+    ) -> FeatureJobSettingAnalysisTaskPayload:
         """
-        Create document creation task
+        Create document creation task payload
 
         Parameters
         ----------
         data: FeatureJobSettingAnalysisCreate
             FeatureJobSettingAnalysis creation payload
-        task_manager: AbstractTaskManager
-            TaskManager
 
         Returns
         -------
-        TaskId
+        FeatureJobSettingAnalysisTaskPayload
 
         Raises
         ------
@@ -77,29 +74,27 @@ class FeatureJobSettingAnalysisService(
         if not event_data.record_creation_date_column:
             raise DocumentError("Creation date column is not available for the event data.")
 
-        payload = FeatureJobSettingAnalysisTaskPayload(
-            **data.dict(), user_id=self.user.id, output_document_id=output_document_id
+        return FeatureJobSettingAnalysisTaskPayload(
+            **data.dict(),
+            user_id=self.user.id,
+            workspace_id=self.workspace_id,
+            output_document_id=output_document_id,
         )
 
-        # submit a task to run analysis
-        return await task_manager.submit(payload=payload)
-
     async def create_backtest_task(
-        self, data: FeatureJobSettingAnalysisBacktest, task_manager: AbstractTaskManager
-    ) -> TaskId:
+        self, data: FeatureJobSettingAnalysisBacktest
+    ) -> FeatureJobSettingAnalysisBackTestTaskPayload:
         """
-        Create document creation task
+        Create document creation task payload
 
         Parameters
         ----------
         data: FeatureJobSettingAnalysisBacktest
             FeatureJobSettingAnalysis backtest payload
-        task_manager: AbstractTaskManager
-            TaskManager
 
         Returns
         -------
-        TaskId
+        FeatureJobSettingAnalysisBackTestTaskPayload
         """
         # check any conflict with existing documents
         output_document_id = data.id or ObjectId()
@@ -109,9 +104,9 @@ class FeatureJobSettingAnalysisService(
             document_id=data.feature_job_setting_analysis_id,
         )
 
-        payload = FeatureJobSettingAnalysisBackTestTaskPayload(
-            **data.dict(), user_id=self.user.id, output_document_id=output_document_id
+        return FeatureJobSettingAnalysisBackTestTaskPayload(
+            **data.dict(),
+            user_id=self.user.id,
+            workspace_id=self.workspace_id,
+            output_document_id=output_document_id,
         )
-
-        # submit a task to run analysis
-        return await task_manager.submit(payload=payload)

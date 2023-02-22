@@ -25,6 +25,7 @@ class BaseTask:
         self,
         payload: dict[str, Any],
         progress: Any,
+        user: Any,
         get_persistent: Any,
         get_storage: Any,
         get_temp_storage: Any,
@@ -33,6 +34,7 @@ class BaseTask:
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.payload = self.payload_class(**payload)
+        self.user = user
         self.get_persistent = get_persistent
         self.get_storage = get_storage
         self.get_temp_storage = get_temp_storage

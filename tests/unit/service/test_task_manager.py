@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.process_store import ProcessStore
@@ -36,7 +37,9 @@ async def test_task_manager__long_running_tasks(task_manager, user_id):
     expected_tasks = []
     tasks = []
     for _ in range(3):
-        task_id = await task_manager.submit(payload=LongRunningPayload(user_id=user_id))
+        task_id = await task_manager.submit(
+            payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+        )
         task = await task_manager.get_task(task_id=task_id)
         assert task.id == task_id
         assert task.status == "STARTED"
@@ -74,7 +77,9 @@ async def test_task_manager__not_found_task(task_manager, user_id):
         output_collection_name = "random_collection"
         command = Command.UNKNOWN_TASK_COMMAND
 
-    task_id = await task_manager.submit(payload=NewTaskPayload(user_id=user_id))
+    task_id = await task_manager.submit(
+        payload=NewTaskPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+    )
 
     # wait until task finishes
     process_data = await ProcessStore().get(user_id, task_id)
@@ -99,7 +104,11 @@ async def test_task_manager__list_tasks(mock_process_store):
     task_num = 10
     task_ids = []
     for _ in range(task_num):
-        task_ids.append(await task_manager.submit(payload=LongRunningPayload(user_id=user_id)))
+        task_ids.append(
+            await task_manager.submit(
+                payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+            )
+        )
 
     page_sizes = [1, 2, 5, 10, 20]
     for page_size in page_sizes:

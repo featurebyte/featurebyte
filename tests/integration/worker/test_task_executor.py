@@ -125,6 +125,7 @@ def test_task_has_been_implemented(command_class):
         BaseTask(
             payload={},
             progress=None,
+            user=None,
             get_persistent=None,
             get_storage=None,
             get_temp_storage=None,

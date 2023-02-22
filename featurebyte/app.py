@@ -1,12 +1,11 @@
 """
 FastAPI Application
 """
-from typing import Callable, Optional
+from typing import Callable
 
 import uvicorn
 from bson import ObjectId
 from fastapi import Depends, FastAPI, Request
-from pydantic import Field
 
 import featurebyte.routes.context.api as context_api
 import featurebyte.routes.dimension_data.api as dimension_data_api
@@ -27,21 +26,13 @@ import featurebyte.routes.temp_data.api as temp_data_api
 import featurebyte.routes.workspace.api as workspace_api
 from featurebyte.common.utils import get_version
 from featurebyte.middleware import request_handler
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import ConfigCredentialProvider
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
-
-
-class User(FeatureByteBaseModel):
-    """
-    Skeleton user class to provide static user for API routes
-    """
-
-    id: Optional[PydanticObjectId] = Field(default=None)
 
 
 def _get_api_deps() -> Callable[[Request], None]:
