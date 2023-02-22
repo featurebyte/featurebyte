@@ -92,7 +92,7 @@ test-routes:
 #* Docker
 spark-start:
 	mkdir -p ~/.spark/data
-	cd .github/spark && docker compose up --wait -d
+	cd .github/spark && (docker compose up --wait -d || (docker compose logs && exit 1))
 
 spark-stop:
 	cd .github/spark && docker compose down
