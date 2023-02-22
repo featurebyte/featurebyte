@@ -21,9 +21,6 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 )
 public class CountDictEntropy extends CountDictUDF {
   final private DoubleWritable output = new DoubleWritable();
-  private transient MapObjectInspector inputMapOI;
-  final private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
-  final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -31,8 +28,7 @@ public class CountDictEntropy extends CountDictUDF {
     if (isNullOI(arguments[0])) {
       return nullOI;
     }
-    checkIsMap(arguments, 0);
-    inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
+    checkTypesAndInitialize(arguments);
     return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
   }
 

@@ -21,10 +21,6 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 )
 public class ObjectDelete extends CountDictUDF {
 
-  private transient MapObjectInspector inputMapOI;
-  final private transient PrimitiveObjectInspector.PrimitiveCategory[] inputTypes = new PrimitiveObjectInspector.PrimitiveCategory[3];
-  final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[3];
-
   final private transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes = new PrimitiveObjectInspector.PrimitiveCategory[3];
   final private transient ObjectInspectorConverters.Converter[] stringConverters = new ObjectInspectorConverters.Converter[1];
 
@@ -35,9 +31,10 @@ public class ObjectDelete extends CountDictUDF {
       return nullOI;
     }
 
-    checkIsMap(arguments, 0);
-    inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
+    // Map
+    checkTypesAndInitialize(arguments);
 
+    // Key to delete
     ObjectInspector[] args = {arguments[1]};
     checkArgPrimitive(args, 0);
     obtainStringConverter(args, 0, stringInputTypes, stringConverters);

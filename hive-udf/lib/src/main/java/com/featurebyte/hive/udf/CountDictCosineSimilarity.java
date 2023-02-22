@@ -22,9 +22,6 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 )
 public class CountDictCosineSimilarity extends CountDictUDF {
   final private DoubleWritable output = new DoubleWritable();
-  private transient MapObjectInspector inputMapOI;
-  final private transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
-  final private transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
 
   private transient MapObjectInspector otherInputMapOI;
   final private transient PrimitiveCategory[] otherInputTypes = new PrimitiveCategory[2];
@@ -37,10 +34,9 @@ public class CountDictCosineSimilarity extends CountDictUDF {
       return nullOI;
     }
 
-    checkIsMap(arguments, 0);
-    checkIsMap(arguments, 1);
-    inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
+    checkTypesAndInitialize(arguments);
 
+    checkIsMap(arguments, 1);
     otherInputMapOI = checkTypesAndConstructMapOI(arguments[1], otherInputTypes, otherConverters);
 
     return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;

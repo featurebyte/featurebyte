@@ -13,6 +13,10 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 
 public abstract class CountDictUDF extends GenericUDF {
 
+  protected transient MapObjectInspector inputMapOI;
+  final protected transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
+  final protected transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
+
   public static final WritableVoidObjectInspector nullOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
 
   public static void checkIsMap(ObjectInspector[] arguments, int i) throws UDFArgumentTypeException {
@@ -23,6 +27,11 @@ public abstract class CountDictUDF extends GenericUDF {
 
   public static boolean isNullOI(ObjectInspector objectInspector) {
     return objectInspector instanceof WritableVoidObjectInspector;
+  }
+
+  public void checkTypesAndInitialize(ObjectInspector[] arguments) throws UDFArgumentException {
+    checkIsMap(arguments, 0);
+    inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
   }
 
   public MapObjectInspector checkTypesAndConstructMapOI(
