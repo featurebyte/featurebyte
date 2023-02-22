@@ -3,7 +3,6 @@ Test flattening
 """
 
 from featurebyte.query_graph.enum import GraphNodeType
-from featurebyte.query_graph.graph import GlobalGraphState
 from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 
@@ -12,11 +11,12 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     """
     Test flatten graph without skip cleaning parameters
     """
-    GlobalGraphState.reset()
+    pruned_graph, _ = feature_with_cleaning_operations.extract_pruned_graph_and_node()
     # Verify the original state of the graph by checking that there is a cleaning graph node
-    original_node_names = list(feature_with_cleaning_operations.graph.nodes_map.keys())
+    original_node_names = list(pruned_graph.nodes_map.keys())
+
     assert original_node_names == ["input_1", "graph_1", "groupby_1", "project_1"]
-    graph_node = feature_with_cleaning_operations.graph.get_node_by_name("graph_1")
+    graph_node = pruned_graph.get_node_by_name("graph_1")
     inner_graph = graph_node.parameters.graph
     graph_node_node_names = list(inner_graph.nodes_map.keys())
     # Verify that the `graph_1` node here is the cleaning node
@@ -34,7 +34,7 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     ]
 
     # Try to flatten the graph
-    transformer = GraphFlatteningTransformer(feature_with_cleaning_operations.graph)
+    transformer = GraphFlatteningTransformer(pruned_graph)
     flattened_graph, _ = transformer.transform()
 
     # Verify that the flattened graph looks correct.
@@ -57,11 +57,11 @@ def test_flatten_graph__dont_flatten_cleaning_node(feature_with_cleaning_operati
     """
     Test flatten graph with skip flattening cleaning node parameters
     """
-    GlobalGraphState.reset()
+    pruned_graph, _ = feature_with_cleaning_operations.extract_pruned_graph_and_node()
     # Verify the original state of the graph
-    original_node_names = list(feature_with_cleaning_operations.graph.nodes_map.keys())
+    original_node_names = list(pruned_graph.nodes_map.keys())
     assert original_node_names == ["input_1", "graph_1", "groupby_1", "project_1"]
-    graph_node = feature_with_cleaning_operations.graph.get_node_by_name("graph_1")
+    graph_node = pruned_graph.get_node_by_name("graph_1")
     inner_graph = graph_node.parameters.graph
     graph_node_node_names = list(inner_graph.nodes_map.keys())
     # Verify that the `graph_1` node here is the cleaning node
@@ -70,7 +70,7 @@ def test_flatten_graph__dont_flatten_cleaning_node(feature_with_cleaning_operati
     assert cleaning_graph_node.parameters.type == GraphNodeType.CLEANING
 
     # Try to flatten the graph
-    transformer = GraphFlatteningTransformer(feature_with_cleaning_operations.graph)
+    transformer = GraphFlatteningTransformer(pruned_graph)
     flattened_graph, _ = transformer.transform(skip_flattening_cleaning_node=True)
 
     # Verify that the flattened graph looks correct
