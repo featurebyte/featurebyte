@@ -17,24 +17,24 @@ public abstract class CountDictUDF extends GenericUDF {
   final protected transient PrimitiveCategory[] inputTypes = new PrimitiveCategory[2];
   final protected transient ObjectInspectorConverters.Converter[] converters = new ObjectInspectorConverters.Converter[2];
 
-  public static final WritableVoidObjectInspector nullOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
+  protected static final WritableVoidObjectInspector nullOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
 
-  public static void checkIsMap(ObjectInspector[] arguments, int i) throws UDFArgumentTypeException {
+  protected static void checkIsMap(ObjectInspector[] arguments, int i) throws UDFArgumentTypeException {
     if (!(arguments[i] instanceof MapObjectInspector)) {
       throw new UDFArgumentTypeException(i, "Parameter must be a Map");
     }
   }
 
-  public static boolean isNullOI(ObjectInspector objectInspector) {
+  protected static boolean isNullOI(ObjectInspector objectInspector) {
     return objectInspector instanceof WritableVoidObjectInspector;
   }
 
-  public void checkTypesAndInitialize(ObjectInspector[] arguments) throws UDFArgumentException {
+  protected void checkTypesAndInitialize(ObjectInspector[] arguments) throws UDFArgumentException {
     checkIsMap(arguments, 0);
     inputMapOI = checkTypesAndConstructMapOI(arguments[0], inputTypes, converters);
   }
 
-  public MapObjectInspector checkTypesAndConstructMapOI(
+  protected MapObjectInspector checkTypesAndConstructMapOI(
     ObjectInspector mapOI,
     PrimitiveCategory[] inputTypes,
     ObjectInspectorConverters.Converter[] converters
