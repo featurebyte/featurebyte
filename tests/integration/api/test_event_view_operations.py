@@ -23,7 +23,12 @@ from featurebyte import (
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
-from tests.util.helper import assert_preview_result_equal, get_lagged_series_pandas, iet_entropy
+from tests.util.helper import (
+    assert_preview_result_equal,
+    fb_assert_frame_equal,
+    get_lagged_series_pandas,
+    iet_entropy,
+)
 
 
 def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
@@ -535,7 +540,7 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_historical_features(feature_group, feature_group_per_category):
     """
     Test getting historical features from FeatureList
@@ -631,7 +636,9 @@ def test_get_historical_features(feature_group, feature_group_per_category):
     )
     df_historical_features = feature_list.get_historical_features(df_training_events)
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
-    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
+    fb_assert_frame_equal(
+        df_historical_features, df_historical_expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
+    )
 
     # check that making multiple request calls produces the same result
     max_batch_size = int((len(df_training_events) / 2.0) + 1)
@@ -639,9 +646,10 @@ def test_get_historical_features(feature_group, feature_group_per_category):
         df_training_events, max_batch_size=max_batch_size
     )
     sort_cols = list(df_training_events.columns)
-    pd.testing.assert_frame_equal(
+    fb_assert_frame_equal(
         df_historical_features.sort_values(sort_cols).reset_index(drop=True),
         df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
     )
 
     # Test again using the same feature list and data but with serving names mapping
@@ -667,7 +675,11 @@ def _test_get_historical_features_with_serving_names(
         df_training_events,
         serving_names_mapping=mapping,
     )
-    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
+    fb_assert_frame_equal(
+        df_historical_features,
+        df_historical_expected,
+        dict_like_columns=["COUNT_BY_ACTION_24h"],
+    )
 
 
 def check_string_operations(event_view, column_name, limit=100):

@@ -138,7 +138,7 @@ class TileBasedRequestTablePlan:
     def construct_request_tile_indices_ctes(
         self,
         request_table_name: str,
-    ) -> list[tuple[str, expressions.Select]]:
+    ) -> list[tuple[expressions.Expression, expressions.Select]]:
         """
         Construct SQL statements that build the expanded request tables
 
@@ -168,7 +168,7 @@ class TileBasedRequestTablePlan:
                 serving_names=list(serving_names),
                 request_table_name=request_table_name,
             )
-            expanded_request_ctes.append((quoted_identifier(table_name).sql(), expanded_table_sql))
+            expanded_request_ctes.append((quoted_identifier(table_name), expanded_table_sql))
         return expanded_request_ctes
 
     def construct_expanded_request_table_sql(

@@ -351,6 +351,14 @@ class SparkSession(BaseSession):
             # clean up staging file
             self._storage.delete_object(path=temp_filename)
 
+    async def register_table_with_query(
+        self, table_name: str, query: str, temporary: bool = True
+    ) -> None:
+        _ = temporary
+        create_command = "CREATE TEMPORARY VIEW"
+        await self.execute_query(f"{create_command} `{table_name}` AS {query}")
+        # await self.execute_query(f"CACHE TABLE `{table_name}`")
+
 
 class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):
     """Spark metadata initializer class"""

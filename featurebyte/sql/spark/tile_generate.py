@@ -67,8 +67,8 @@ class TileGenerate(TileCommon):
         entity_filter_cols = []
         for element in self.entity_column_names:
             element = element.strip()
-            entity_insert_cols.append("b." + element)
-            entity_filter_cols.append("a." + element + " = b." + element)
+            entity_insert_cols.append(f"b.`{element}`")
+            entity_filter_cols.append(f"a.`{element}` <=> b.`{element}`")
 
         entity_insert_cols_str = ",".join(entity_insert_cols)
         entity_filter_cols_str = " AND ".join(entity_filter_cols)
@@ -91,8 +91,9 @@ class TileGenerate(TileCommon):
         # insert new records and update existing records
         if not tile_table_exist_flag:
             logger.info("creating tile table: ", self.tile_id)
+            table_prop = "TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')"
             await self._spark.execute_query(
-                f"create table {self.tile_id} using delta as {tile_sql}"
+                f"create table {self.tile_id} using delta {table_prop} as {tile_sql}"
             )
 
         else:

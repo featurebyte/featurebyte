@@ -29,7 +29,8 @@ public class CountDictNumUnique extends CountDictUDF {
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
     if (arguments[0].get() == null) {
-      return null;
+      output.set(0);
+      return output;
     }
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
     output.set(counts.size());
