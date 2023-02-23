@@ -365,7 +365,7 @@ def test_groupby__prune(snowflake_event_view_with_entity):
         {"source": "project_1", "target": "mul_1"},
         {"source": "graph_1", "target": "assign_1"},
         {"source": "mul_1", "target": "assign_1"},
-        {"source": "graph_1", "target": "project_2"},
+        {"source": "assign_1", "target": "project_2"},
         {"source": "project_2", "target": "mul_2"},
         {"source": "assign_1", "target": "assign_2"},
         {"source": "mul_2", "target": "assign_2"},

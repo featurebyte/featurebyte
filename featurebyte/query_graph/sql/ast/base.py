@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Optional, Type, TypeVar, cast
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
+from copy import copy
 from dataclasses import dataclass, field
 
 from sqlglot import expressions
@@ -334,7 +334,10 @@ class TableNode(SQLNode, ABC):
         -------
         TableNode
         """
-        return deepcopy(self)
+        new_table = copy(self)
+        new_table.columns_map = copy(self.columns_map)
+        new_table.columns_node = copy(self.columns_node)
+        return new_table
 
 
 @dataclass  # type: ignore
