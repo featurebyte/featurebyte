@@ -23,7 +23,13 @@ from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    CteStatement,
+    CteStatements,
+    SQLType,
+    construct_cte_sql,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.specs import (
     AggregateAsAtSpec,
@@ -168,7 +174,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-    ) -> tuple[str, expressions.Select, list[str]]:
+    ) -> tuple[CteStatement, list[str]]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -211,7 +217,7 @@ class FeatureExecutionPlan:
             current_columns += agg_result.column_names
             agg_result_names += agg_result.column_names
 
-        return self.AGGREGATION_TABLE_NAME, table_expr, agg_result_names
+        return (self.AGGREGATION_TABLE_NAME, table_expr), agg_result_names
 
     def construct_post_aggregation_sql(
         self,
@@ -280,7 +286,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: list[str],
-        prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
+        prior_cte_statements: Optional[CteStatements] = None,
         exclude_post_aggregation: bool = False,
         exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
@@ -323,12 +329,12 @@ class FeatureExecutionPlan:
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
-        agg_cte_name, agg_expr, agg_result_names = self.construct_combined_aggregation_cte(
+        agg_cte, agg_result_names = self.construct_combined_aggregation_cte(
             request_table_name,
             point_in_time_column,
             request_table_columns,
         )
-        cte_statements.append((agg_cte_name, agg_expr))
+        cte_statements.append(agg_cte)
         cte_context = construct_cte_sql(cte_statements)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
