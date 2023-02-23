@@ -116,3 +116,6 @@ class FeatureJobSetting(FeatureByteBaseModel):
             "time_modulo_frequency": self.time_modulo_frequency_seconds,
             "blind_spot": self.blind_spot_seconds,
         }
+
+    def __eq__(self, other: "FeatureJobSetting") -> bool:
+        return self.to_seconds() == other.to_seconds()
