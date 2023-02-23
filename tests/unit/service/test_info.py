@@ -107,16 +107,16 @@ async def test_get_event_data_info(info_service, event_data, entity):
         **{
             **expected_info.dict(),
             "columns_info": [
-                DataColumnInfo(name="col_int", dtype="INT"),
+                DataColumnInfo(name="col_int", dtype="INT", entity=entity.name),
                 DataColumnInfo(name="col_float", dtype="FLOAT"),
                 DataColumnInfo(name="col_char", dtype="CHAR"),
                 DataColumnInfo(name="col_text", dtype="VARCHAR"),
                 DataColumnInfo(name="col_binary", dtype="BINARY"),
                 DataColumnInfo(name="col_boolean", dtype="BOOL"),
                 DataColumnInfo(
-                    name="event_timestamp", dtype="TIMESTAMP", semantic="event_timestamp"
+                    name="event_timestamp", dtype="TIMESTAMP_TZ", semantic="event_timestamp"
                 ),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
                 DataColumnInfo(name="cust_id", dtype="INT", entity=entity.name),
             ],
         }
@@ -142,7 +142,7 @@ async def test_get_item_data_info(info_service, item_data, event_data):
         ),
         entities=[],
         semantics=[],
-        column_count=5,
+        column_count=6,
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
@@ -159,7 +159,8 @@ async def test_get_item_data_info(info_service, item_data, event_data):
                 DataColumnInfo(name="item_id_col", dtype="VARCHAR"),
                 DataColumnInfo(name="item_type", dtype="VARCHAR"),
                 DataColumnInfo(name="item_amount", dtype="FLOAT"),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
             ],
         }
     )
@@ -200,8 +201,8 @@ async def test_get_dimension_data_info(info_service, dimension_data):
                 DataColumnInfo(name="col_text", dtype="VARCHAR"),
                 DataColumnInfo(name="col_binary", dtype="BINARY"),
                 DataColumnInfo(name="col_boolean", dtype="BOOL"),
-                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP"),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
                 DataColumnInfo(name="cust_id", dtype="INT"),
             ],
         }
@@ -216,11 +217,11 @@ async def test_get_scd_data_info(info_service, scd_data):
         name="sf_scd_data",
         status="DRAFT",
         record_creation_date_column=None,
-        current_flag_column="col_char",
+        current_flag_column="is_active",
         natural_key_column="col_text",
         surrogate_key_column="col_int",
-        effective_timestamp_column="event_timestamp",
-        end_timestamp_column="event_timestamp",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
         table_details=TableDetails(
             database_name="sf_database",
             schema_name="sf_schema",
@@ -228,7 +229,7 @@ async def test_get_scd_data_info(info_service, scd_data):
         ),
         entities=[],
         semantics=[],
-        column_count=9,
+        column_count=10,
         columns_info=None,
         created_at=info.created_at,
         updated_at=info.updated_at,
@@ -243,12 +244,13 @@ async def test_get_scd_data_info(info_service, scd_data):
             "columns_info": [
                 DataColumnInfo(name="col_int", dtype="INT"),
                 DataColumnInfo(name="col_float", dtype="FLOAT"),
-                DataColumnInfo(name="col_char", dtype="CHAR"),
+                DataColumnInfo(name="is_active", dtype="BOOL"),
                 DataColumnInfo(name="col_text", dtype="VARCHAR"),
                 DataColumnInfo(name="col_binary", dtype="BINARY"),
                 DataColumnInfo(name="col_boolean", dtype="BOOL"),
-                DataColumnInfo(name="event_timestamp", dtype="TIMESTAMP"),
-                DataColumnInfo(name="created_at", dtype="TIMESTAMP"),
+                DataColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
+                DataColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
+                DataColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
                 DataColumnInfo(name="cust_id", dtype="INT"),
             ],
         }

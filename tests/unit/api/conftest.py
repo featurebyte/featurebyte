@@ -290,7 +290,7 @@ def snowflake_event_view_fixture(
 
 
 @pytest.fixture(name="feature_job_logs", scope="session")
-def feature_job_logs_fixture(update_fixtures):
+def feature_job_logs_fixture():
     """
     Feature job log records
     """

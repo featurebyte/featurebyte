@@ -148,7 +148,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
             "status": "DRAFT",
             "entities": [],
             "semantics": ["item_id"],
-            "column_count": 5,
+            "column_count": 6,
             "event_data_name": "sf_event_data",
             "workspace_name": "default",
         }

@@ -1,7 +1,7 @@
 {
-    "_id": "63a443938bcb22a734625964",
+    "_id": "63f6a146e549df8ccf2bf411",
     "created_at": null,
-    "default_feature_list_id": "63a443938bcb22a734625961",
+    "default_feature_list_id": "63f6a146e549df8ccf2bf40e",
     "default_version_mode": "AUTO",
     "deployed_feature_list_ids": [],
     "dtype_distribution": [
@@ -11,14 +11,14 @@
         }
     ],
     "entity_ids": [
-        "63a443938bcb22a734625955"
+        "63f6a145e549df8ccf2bf3f1"
     ],
     "feature_list_ids": [
-        "63a443938bcb22a734625961"
+        "63f6a146e549df8ccf2bf40e"
     ],
     "feature_namespace_ids": [
-        "63a443938bcb22a73462595a",
-        "63a443938bcb22a73462595c"
+        "63f6a145e549df8ccf2bf3f9",
+        "63f6a145e549df8ccf2bf3fb"
     ],
     "name": "sf_feature_list_multiple",
     "readiness_distribution": [
@@ -32,5 +32,6 @@
         "6337f9651050ee7d5980660d"
     ],
     "updated_at": null,
-    "user_id": null
+    "user_id": null,
+    "workspace_id": "63eda344d0313fb925f7883a"
 }

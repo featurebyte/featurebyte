@@ -139,6 +139,7 @@ class BaseApiTestSuite:
         id_before = self.payload["_id"]
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED
         assert response_dict["_id"] == id_before
         return response
 

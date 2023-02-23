@@ -22,6 +22,7 @@ from featurebyte.common.utils import (
 )
 from featurebyte.enum import SourceType
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
@@ -53,7 +54,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         ),
         (
             payload_multi,
-            'Feature (id: "63a443938bcb22a73462595b") not found. Please save the Feature object first.',
+            'Feature (id: "63f6a145e549df8ccf2bf3fa") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},
@@ -417,7 +418,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         assert response.json()["deployed"] is False
 
     def test_update_200__deploy_with_make_production_ready(
-        self, test_api_client_persistent, create_success_response
+        self, test_api_client_persistent, create_success_response, api_object_to_id
     ):
         """Test update (success) with make production ready"""
         test_api_client, _ = test_api_client_persistent
@@ -436,6 +437,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
         version = get_version()
+        feature_list_id = api_object_to_id["feature_list_single"]
         expected_info_response = {
             "name": "sf_feature_list",
             "entities": [
@@ -453,7 +455,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             "production_ready_fraction": {"this": 1.0, "default": 1.0},
             "versions_info": None,
             "deployed": True,
-            "serving_endpoint": "/feature_list/63a443938bcb22a73462595f/online_features",
+            "serving_endpoint": f"/feature_list/{feature_list_id}/online_features",
             "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
@@ -615,7 +617,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -627,7 +629,8 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         assert isinstance(feature_clusters, list)
         assert len(feature_clusters) == 1
         expected_feature_cluster = featurelist_feature_clusters[0]
-        groupby_node = expected_feature_cluster["graph"]["nodes"][1]["parameters"]
+        graph = QueryGraphModel(**expected_feature_cluster["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1").parameters.dict()
         groupby_node["names"] = ["sum_30m"]
         groupby_node["windows"] = ["30m"]
         assert feature_clusters[0] == expected_feature_cluster
@@ -763,11 +766,14 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         test_api_client, _ = test_api_client_persistent
         featurelist = create_success_response.json()
         feature_list_id = featurelist["_id"]
+        graph = QueryGraphModel(**featurelist["feature_clusters"][0]["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        aggregation_id = groupby_node.parameters.aggregation_id
 
         job_logs = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 6,
+                "AGGREGATION_ID": [aggregation_id] * 6,
                 "CREATED_AT": pd.to_datetime(
                     [
                         "2020-01-02 18:00:00",
@@ -796,7 +802,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         expected_df = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1", "SID2"],
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 2,
+                "AGGREGATION_ID": [aggregation_id] * 2,
                 "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
                 "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
                 "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
@@ -810,7 +816,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         assert (
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
-                """
+                f"""
             SELECT
               "SESSION_ID",
               "CREATED_AT",
@@ -821,7 +827,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             WHERE
               "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
               AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
-              AND "AGGREGATION_ID" IN ('sum_fba233e0f502088c233315a322f4c51e939072c0')
+              AND "AGGREGATION_ID" IN ('{aggregation_id}')
               AND "TILE_TYPE" = 'ONLINE'
             """
             ).strip()

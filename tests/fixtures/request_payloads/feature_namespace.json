@@ -1,13 +1,13 @@
 {
-    "_id": "63a443938bcb22a734625963",
-    "default_feature_id": "63a443938bcb22a734625959",
+    "_id": "63f6a146e549df8ccf2bf410",
+    "default_feature_id": "63f6a145e549df8ccf2bf3f8",
     "default_version_mode": "AUTO",
     "dtype": "FLOAT",
     "entity_ids": [
-        "63a443938bcb22a734625955"
+        "63f6a145e549df8ccf2bf3f1"
     ],
     "feature_ids": [
-        "63a443938bcb22a734625959"
+        "63f6a145e549df8ccf2bf3f8"
     ],
     "name": "sum_30m",
     "readiness": "DRAFT",
