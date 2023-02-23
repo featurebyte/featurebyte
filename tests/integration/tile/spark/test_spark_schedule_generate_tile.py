@@ -18,14 +18,14 @@ async def test_schedule_generate_tile_online(session, tile_task_prep_spark):
 
     tile_id, agg_id, feature_store_table_name, _, _ = tile_task_prep_spark
 
-    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
 
-    entity_col_names_str = ",".join(entity_col_names)
+    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
@@ -87,7 +87,7 @@ async def test_schedule_monitor_tile_online(session):
     """
     Test the stored procedure of monitoring tiles
     """
-    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
@@ -100,7 +100,7 @@ async def test_schedule_monitor_tile_online(session):
         f"create table {table_name} using delta as select * from TEMP_TABLE"
     )
 
-    entity_col_names_str = ",".join(entity_col_names)
+    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f" SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
