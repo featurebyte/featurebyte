@@ -8,12 +8,16 @@ from typing import Literal, Optional
 from abc import abstractmethod
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, select
+from sqlglot.expressions import Expression, alias_, select
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import MISSING_VALUE_REPLACEMENT, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    MISSING_VALUE_REPLACEMENT,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 
 
 class BaseAdapter:
@@ -96,7 +100,6 @@ class BaseAdapter:
         """
 
     @classmethod
-    @abstractmethod
     def construct_key_value_aggregation_sql(
         cls,
         point_in_time_column: Optional[str],
@@ -153,6 +156,74 @@ class BaseAdapter:
         Returns
         -------
         str
+        """
+        inner_alias = "INNER_"
+
+        if point_in_time_column:
+            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
+        else:
+            outer_group_by_keys = []
+        for serving_name in serving_names:
+            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
+
+        category_col = get_qualified_column_identifier(value_by, inner_alias)
+
+        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
+        # '{"0.00000": 7}')
+        category_col_casted = expressions.Cast(
+            this=category_col, to=expressions.DataType.build("TEXT")
+        )
+
+        # Replace missing category values since OBJECT_AGG ignores keys that are null
+        category_filled_null = expressions.Case(
+            ifs=[
+                expressions.If(
+                    this=expressions.Is(this=category_col, expression=expressions.Null()),
+                    true=make_literal_value(MISSING_VALUE_REPLACEMENT),
+                )
+            ],
+            default=category_col_casted,
+        )
+
+        object_agg_exprs = [
+            alias_(
+                cls.object_agg(
+                    key_column=category_filled_null,
+                    value_column=get_qualified_column_identifier(
+                        inner_agg_result_name, inner_alias
+                    ),
+                ),
+                alias=agg_result_name,
+                quoted=True,
+            )
+            for inner_agg_result_name, agg_result_name in zip(
+                inner_agg_result_names, agg_result_names
+            )
+        ]
+        agg_expr = (
+            select(*outer_group_by_keys, *object_agg_exprs)
+            .from_(inner_agg_expr.subquery(alias=inner_alias))
+            .group_by(*outer_group_by_keys)
+        )
+        return agg_expr
+
+    @classmethod
+    @abstractmethod
+    def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
+        """
+        Construct a OBJECT_AGG expression that combines a key column and a value column in to a
+        dictionary column
+
+        Parameters
+        ----------
+        key_column: str | Expression
+            Name or expression for the key column
+        value_column: str | Expression
+            Name or expression for the value column
+
+        Returns
+        -------
+        Expression
         """
 
     @classmethod
@@ -321,47 +392,9 @@ class SnowflakeAdapter(BaseAdapter):
         return output_expr
 
     @classmethod
-    def construct_key_value_aggregation_sql(
-        cls,
-        point_in_time_column: Optional[str],
-        serving_names: list[str],
-        value_by: str,
-        agg_result_names: list[str],
-        inner_agg_result_names: list[str],
-        inner_agg_expr: expressions.Select,
-    ) -> expressions.Select:
-
-        inner_alias = "INNER_"
-
-        if point_in_time_column:
-            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
-        else:
-            outer_group_by_keys = []
-        for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
-
-        category_col = f"{inner_alias}.{quoted_identifier(value_by).sql()}"
-        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
-        # '{"0.00000": 7}')
-        category_col_casted = f"CAST({category_col} AS VARCHAR)"
-        # Replace missing category values since OBJECT_AGG ignores keys that are null
-        category_filled_null = (
-            f"CASE WHEN {category_col} IS NULL THEN '{MISSING_VALUE_REPLACEMENT}' ELSE "
-            f"{category_col_casted} END"
-        )
-        object_agg_exprs = [
-            f'OBJECT_AGG({category_filled_null}, TO_VARIANT({inner_alias}."{inner_agg_result_name}"))'
-            f' AS "{agg_result_name}"'
-            for inner_agg_result_name, agg_result_name in zip(
-                inner_agg_result_names, agg_result_names
-            )
-        ]
-        agg_expr = (
-            select(*outer_group_by_keys, *object_agg_exprs)
-            .from_(inner_agg_expr.subquery(alias=inner_alias))
-            .group_by(*outer_group_by_keys)
-        )
-        return agg_expr
+    def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
+        value_column = expressions.Anonymous(this="TO_VARIANT", expressions=[value_column])
+        return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
@@ -421,16 +454,8 @@ class DatabricksAdapter(BaseAdapter):
     """
 
     @classmethod
-    def construct_key_value_aggregation_sql(
-        cls,
-        point_in_time_column: Optional[str],
-        serving_names: list[str],
-        value_by: str,
-        agg_result_names: list[str],
-        inner_agg_result_names: list[str],
-        inner_agg_expr: expressions.Select,
-    ) -> expressions.Select:
-        raise NotImplementedError()
+    def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
+        return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:

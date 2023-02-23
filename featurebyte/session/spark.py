@@ -454,13 +454,19 @@ class SparkSchemaInitializer(BaseSchemaInitializer):
         # and re-register the function with the new class
         udf_functions = [
             ("OBJECT_AGG", "com.featurebyte.hive.udf.ObjectAggregate"),
+            ("OBJECT_DELETE", "com.featurebyte.hive.udf.ObjectDelete"),
             ("F_TIMESTAMP_TO_INDEX", "com.featurebyte.hive.udf.TimestampToIndex"),
+            (
+                "F_COUNT_DICT_COSINE_SIMILARITY",
+                "com.featurebyte.hive.udf.CountDictCosineSimilarity",
+            ),
             ("F_COUNT_DICT_ENTROPY", "com.featurebyte.hive.udf.CountDictEntropy"),
             ("F_COUNT_DICT_MOST_FREQUENT", "com.featurebyte.hive.udf.CountDictMostFrequent"),
             (
                 "F_COUNT_DICT_MOST_FREQUENT_VALUE",
                 "com.featurebyte.hive.udf.CountDictMostFrequentValue",
             ),
+            ("F_COUNT_DICT_NUM_UNIQUE", "com.featurebyte.hive.udf.CountDictNumUnique"),
         ]
         for (function_name, class_name) in udf_functions:
             logger.debug(

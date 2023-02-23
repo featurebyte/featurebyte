@@ -4,10 +4,11 @@ Tests for snowflake cosine similarity UDF
 import numpy as np
 import pytest
 
-from tests.integration.udf.snowflake.util import to_object
+import tests.integration.udf.snowflake.util as snowflake_util
+import tests.integration.udf.spark.util as spark_util
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize(
     "counts1, counts2, expected",
     [
@@ -24,17 +25,26 @@ from tests.integration.udf.snowflake.util import to_object
     ],
 )
 @pytest.mark.asyncio
-async def test_cosine_similarity_udf(session, counts1, counts2, expected):
+async def test_cosine_similarity_udf(session, source_type, counts1, counts2, expected):
     """
     Test cosine similarity UDF
     """
+    if source_type == "snowflake":
+        to_object = snowflake_util.to_object
+    elif source_type == "spark":
+        to_object = spark_util.to_object
+    else:
+        raise NotImplementedError()
 
     async def _check(a, b):
         a_expr = to_object(a)
         b_expr = to_object(b)
         query = f"SELECT F_COUNT_DICT_COSINE_SIMILARITY({a_expr}, {b_expr}) AS OUT"
         df = await session.execute_query(query)
-        np.testing.assert_allclose(df.iloc[0]["OUT"], expected, 1e-5)
+        actual = df.iloc[0]["OUT"]
+        if actual is None:
+            actual = np.nan
+        np.testing.assert_allclose(actual, expected, 1e-5)
 
     await _check(counts1, counts2)
     await _check(counts2, counts1)

@@ -22,7 +22,7 @@ from featurebyte import (
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
-from tests.util.helper import get_lagged_series_pandas
+from tests.util.helper import assert_preview_result_equal, get_lagged_series_pandas
 
 
 def iet_entropy(view, group_by_col, window, name):
@@ -297,13 +297,13 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_feature_operations(event_view, feature_group, feature_group_per_category):
     """
     Test operations on Feature objects
     """
     source_type = event_view.feature_store.type
-    count_dict_supported = source_type == SourceType.SNOWFLAKE
+    count_dict_supported = source_type != SourceType.DATABRICKS
 
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
@@ -325,8 +325,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     if count_dict_supported:
         # preview count per category features
         df_feature_preview = feature_group_per_category.preview(preview_param)
-        assert df_feature_preview.shape[0] == 1
-        assert df_feature_preview.iloc[0].to_dict() == {
+        expected = {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
             "üser id": 1,
             "COUNT_BY_ACTION_2h": '{\n  "purchase": 1,\n  "àdd": 2\n}',
@@ -337,6 +336,11 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
             "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
         }
+        assert_preview_result_equal(
+            df_feature_preview,
+            expected,
+            dict_like_columns=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
+        )
 
     # preview one feature only
     df_feature_preview = feature_group["COUNT_2h"].preview(preview_param)
@@ -433,13 +437,15 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     }
     if not count_dict_supported:
         expected.pop("COUNT_BY_ACTION_24h")
-    assert_feature_preview_output_equal(df_feature_preview, expected)
+    assert_preview_result_equal(
+        df_feature_preview, expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
+    )
 
     if source_type == SourceType.DATABRICKS:
         return
 
     # Check using a derived numeric column as category
-    check_day_of_week_counts(event_view, preview_param)
+    check_day_of_week_counts(event_view, preview_param, source_type)
 
 
 def create_feature_with_filtered_event_view(event_view):
@@ -883,7 +889,7 @@ def check_numeric_operations(event_view, limit=100):
     pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], check_names=False)
 
 
-def check_day_of_week_counts(event_view, preview_param):
+def check_day_of_week_counts(event_view, preview_param, source_type):
     """Check using derived numeric column as category"""
     event_view["event_day_of_week"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
     day_of_week_counts = event_view.groupby("ÜSER ID", category="event_day_of_week").aggregate_over(
@@ -897,13 +903,21 @@ def check_day_of_week_counts(event_view, preview_param):
     df_feature_preview = day_of_week_counts.preview(
         preview_param,
     )
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
+    if source_type == "snowflake":
+        expected_counts = '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}'
+        expected_entropy = 0.830471712436292
+    else:
+        expected_counts = '{"0": 9, "1": 5}'
+        expected_entropy = 0.651756561172653
+    expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
-        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}',
-        "DAY_OF_WEEK_ENTROPY_24h": 0.830471712436292,
+        "DAY_OF_WEEK_COUNTS_24h": expected_counts,
+        "DAY_OF_WEEK_ENTROPY_24h": expected_entropy,
     }
+    assert_preview_result_equal(
+        df_feature_preview, expected, dict_like_columns=["DAY_OF_WEEK_COUNTS_24h"]
+    )
 
 
 @pytest.fixture(name="non_time_based_feature")
