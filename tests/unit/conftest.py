@@ -40,6 +40,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.service.task_manager import TaskManager
@@ -52,6 +53,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
+from tests.util.helper import iet_entropy
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -997,6 +999,37 @@ def get_noop_session_validator_fixture():
         yield
 
 
+@pytest.fixture(name="api_object_to_id")
+def api_object_to_id_fixture():
+    """
+    Dictionary contains API object to payload object ID mapping
+    """
+    base_path = "tests/fixtures/request_payloads"
+    object_names = [
+        "entity",
+        "feature_store",
+        "event_data",
+        "item_data",
+        "dimension_data",
+        "scd_data",
+        "feature_sum_30m",
+        "feature_sum_2h",
+        "feature_iet",
+        "feature_list_single",
+        "feature_list_multi",
+        "feature_namespace",
+        "feature_list_namespace",
+        "feature_job_setting_analysis",
+        "context",
+    ]
+    output = {}
+    for obj_name in object_names:
+        filename = f"{base_path}/{obj_name}.json"
+        with open(filename, "r") as fhandle:
+            output[obj_name] = json.load(fhandle)["_id"]
+    return output
+
+
 def test_save_payload_fixtures(
     update_fixtures,
     snowflake_feature_store,
@@ -1004,6 +1037,7 @@ def test_save_payload_fixtures(
     snowflake_item_data,
     snowflake_dimension_data,
     snowflake_scd_data,
+    snowflake_event_view_with_entity,
     feature_group,
     cust_id_entity,
 ):
@@ -1013,6 +1047,13 @@ def test_save_payload_fixtures(
     # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_2h = feature_group["sum_2h"]
+    feature_iet = iet_entropy(
+        view=snowflake_event_view_with_entity,
+        group_by_col="cust_id",
+        window="24h",
+        name="iet_entropy_24h",
+        feature_job_setting={"frequency": "6h", "time_modulo_frequency": "3h", "blind_spot": "3h"},
+    )
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
     feature_list_multiple = FeatureList(
         [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
@@ -1055,6 +1096,7 @@ def test_save_payload_fixtures(
         job_time_buffer_setting="auto",
         late_data_allowance=5e-05,
     )
+    context = ContextCreate(name="transaction_context", entity_ids=[cust_id_entity.id])
 
     if update_fixtures:
         api_object_name_pairs = [
@@ -1066,6 +1108,7 @@ def test_save_payload_fixtures(
             (snowflake_scd_data, "scd_data"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
+            (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),
         ]
@@ -1079,22 +1122,17 @@ def test_save_payload_fixtures(
                 )
             output_filenames.append(filename)
 
-        json_filename = f"{base_path}/feature_namespace.json"
-        with open(json_filename, "w") as fhandle:
-            fhandle.write(json.dumps(feature_namespace.json_dict(), indent=4, sort_keys=True))
-            output_filenames.append(json_filename)
-
-        json_filename = f"{base_path}/feature_list_namespace.json"
-        with open(json_filename, "w") as fhandle:
-            fhandle.write(json.dumps(feature_list_namespace.json_dict(), indent=4, sort_keys=True))
-            output_filenames.append(json_filename)
-
-        json_filename = f"{base_path}/feature_job_setting_analysis.json"
-        with open(json_filename, "w") as fhandle:
-            fhandle.write(
-                json.dumps(feature_job_setting_analysis.json_dict(), indent=4, sort_keys=True)
-            )
-            output_filenames.append(json_filename)
+        schema_payload_name_pairs = [
+            (feature_namespace, "feature_namespace"),
+            (feature_list_namespace, "feature_list_namespace"),
+            (feature_job_setting_analysis, "feature_job_setting_analysis"),
+            (context, "context"),
+        ]
+        for schema, name in schema_payload_name_pairs:
+            filename = f"{base_path}/{name}.json"
+            with open(filename, "w") as fhandle:
+                fhandle.write(json.dumps(schema.json_dict(), indent=4, sort_keys=True))
+            output_filenames.append(filename)
 
         raise AssertionError(
             f"Fixtures {output_filenames} updated, please set update_fixture to False"

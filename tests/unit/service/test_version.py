@@ -23,7 +23,9 @@ from featurebyte.schema.feature_list import (
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version(version_service, feature, feature_namespace_service):
+async def test_create_new_feature_version(
+    version_service, feature, feature_namespace_service, api_object_to_id
+):
     """Test create new feature version"""
     version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
@@ -44,7 +46,7 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "timestamp": "event_timestamp",
         "names": ["sum_30m"],
         "serving_names": ["cust_id"],
-        "entity_ids": [ObjectId("63a443938bcb22a734625955")],
+        "entity_ids": [ObjectId(api_object_to_id["entity"])],
     }
     parameters = feature.graph.get_node_by_name("groupby_1").parameters
     assert parameters.dict() == {
@@ -52,8 +54,8 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "blind_spot": 600,
         "time_modulo_frequency": 300,
         "frequency": 1800,
-        "tile_id": "TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178",
-        "aggregation_id": "sum_fba233e0f502088c233315a322f4c51e939072c0",
+        "tile_id": "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
+        "aggregation_id": "sum_60e19c3e160be7db3a64f2a828c1c7929543abb4",
     }
 
     new_parameters = version.graph.get_node_by_name("groupby_1").parameters
@@ -62,8 +64,8 @@ async def test_create_new_feature_version(version_service, feature, feature_name
         "blind_spot": 86400,
         "time_modulo_frequency": 3600,
         "frequency": 86400,
-        "tile_id": "TILE_F86400_M3600_B86400_FC7FE0B44E9EEE6E50E902CFFA1599DB4B562F97",
-        "aggregation_id": "sum_fd235f841880013fe3e4ec44e76d48c33a9429f5",
+        "tile_id": "TILE_F86400_M3600_B86400_AEA0B3C1AB23571D22B2280D44878244BE758181",
+        "aggregation_id": "sum_c7b86857737ce503c31f94a87b112f2193c9a02a",
     }
 
     # compare edges & other nodes

@@ -42,7 +42,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
             f"SCDData (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'scd_table'}}\") "
             f'already exists. Get the existing object by `SCDData.get(name="{document_name}")`.',
         ),
     ]
@@ -150,19 +150,20 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         expected_info_response = {
             "name": "sf_scd_data",
             "record_creation_date_column": None,
-            "current_flag_column": "col_char",
-            "effective_timestamp_column": "event_timestamp",
-            "end_timestamp_column": "event_timestamp",
+            "current_flag_column": "is_active",
+            "effective_timestamp_column": "effective_timestamp",
+            "end_timestamp_column": "end_timestamp",
             "surrogate_key_column": "col_int",
             "natural_key_column": "col_text",
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
-                "table_name": "sf_table",
+                "table_name": "scd_table",
             },
             "status": "DRAFT",
             "entities": [],
-            "column_count": 9,
+            "semantics": ["scd_surrogate_key_id", "scd_natural_key_id"],
+            "column_count": 10,
             "workspace_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text

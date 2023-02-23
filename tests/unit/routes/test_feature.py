@@ -17,6 +17,7 @@ from pandas.testing import assert_frame_equal
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
@@ -117,7 +118,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
             },
             (
                 'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                "the same \"entity_ids\" value (namespace: ['63a443938bcb22a734625955'], "
+                "the same \"entity_ids\" value (namespace: ['63f6a145e549df8ccf2bf3f1'], "
                 "feature: ['631161373527e8d21e4197ac'])."
             ),
         ),
@@ -235,10 +236,9 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict["version"] == {"name": get_version(), "suffix": 1}
 
-        groupby_node = response_dict["graph"]["nodes"][1]
-        assert groupby_node["name"] == "groupby_1"
-
-        parameters = groupby_node["parameters"]
+        graph = QueryGraphModel(**response_dict["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        parameters = groupby_node.parameters.dict()
         assert parameters["time_modulo_frequency"] == 3600
         assert parameters["frequency"] == 86400
         assert parameters["blind_spot"] == 86400
@@ -503,7 +503,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/sql", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert response.json().endswith(
-            'SELECT\n  "agg_w1800_sum_fba233e0f502088c233315a322f4c51e939072c0" AS "sum_30m"\n'
+            'SELECT\n  "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4" AS "sum_30m"\n'
             "FROM _FB_AGGREGATED AS AGG"
         )
 
@@ -516,13 +516,16 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
     ):
         """Test get feature job logs"""
         test_api_client, _ = test_api_client_persistent
-        featurelist = create_success_response.json()
-        feature_id = featurelist["_id"]
+        feature_doc = create_success_response.json()
+        feature_id = feature_doc["_id"]
+        graph = QueryGraphModel(**feature_doc["graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        aggregation_id = groupby_node.parameters.aggregation_id
 
         job_logs = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1"] * 4 + ["SID2"] * 2,
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 6,
+                "AGGREGATION_ID": [aggregation_id] * 6,
                 "CREATED_AT": pd.to_datetime(
                     [
                         "2020-01-02 18:00:00",
@@ -551,7 +554,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         expected_df = pd.DataFrame(
             {
                 "SESSION_ID": ["SID1", "SID2"],
-                "AGGREGATION_ID": ["sum_fba233e0f502088c233315a322f4c51e939072c0"] * 2,
+                "AGGREGATION_ID": [aggregation_id] * 2,
                 "SCHEDULED": pd.to_datetime(["2020-01-02 17:35:00"] * 2),
                 "STARTED": pd.to_datetime(["2020-01-02 18:00:00"] * 2),
                 "COMPLETED": pd.to_datetime(["2020-01-02 18:03:00", pd.NaT]),
@@ -565,7 +568,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         assert (
             mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
-                """
+                f"""
             SELECT
               "SESSION_ID",
               "CREATED_AT",
@@ -576,7 +579,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
             WHERE
               "CREATED_AT" >= CAST('2022-01-01 10:00:00' AS TIMESTAMPNTZ)
               AND "CREATED_AT" < CAST('2022-01-02 10:00:00' AS TIMESTAMPNTZ)
-              AND "AGGREGATION_ID" IN ('sum_fba233e0f502088c233315a322f4c51e939072c0')
+              AND "AGGREGATION_ID" IN ('{aggregation_id}')
               AND "TILE_TYPE" = 'ONLINE'
             """
             ).strip()

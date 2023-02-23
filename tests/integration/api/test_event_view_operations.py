@@ -23,36 +23,7 @@ from featurebyte import (
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
-from tests.util.helper import assert_preview_result_equal, get_lagged_series_pandas
-
-
-def iet_entropy(view, group_by_col, window, name):
-    """Create feature to capture the entropy of inter-event interval time"""
-    view = view.copy()
-    ts_col = view[view.timestamp_column]
-    a = view["a"] = (ts_col - ts_col.lag(group_by_col)).dt.day
-    view["a * log(a)"] = a * (a + 0.1).log()  # add 0.1 to avoid log(0.0)
-    b = view.groupby(group_by_col).aggregate_over(
-        "a",
-        method=AggFunc.SUM,
-        windows=[window],
-        feature_names=[f"sum(a) ({window})"],
-    )[f"sum(a) ({window})"]
-
-    feature = (
-        view.groupby(group_by_col).aggregate_over(
-            "a * log(a)",
-            method=AggFunc.SUM,
-            windows=[window],
-            feature_names=["sum(a * log(a))"],
-        )["sum(a * log(a))"]
-        * -1
-        / b
-        + (b + 0.1).log()  # add 0.1 to avoid log(0.0)
-    )
-
-    feature.name = name
-    return feature
+from tests.util.helper import assert_preview_result_equal, get_lagged_series_pandas, iet_entropy
 
 
 def pyramid_sum(event_view, group_by_col, window, numeric_column, name):

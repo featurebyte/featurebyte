@@ -10,6 +10,7 @@ from bson import ObjectId
 
 from featurebyte import FeatureStore
 from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import SQLiteDetails
 from featurebyte.schema.feature import FeatureCreate
 
@@ -83,22 +84,22 @@ async def test_get_document_by_name_and_version(feature_service, feature):
 
 
 @pytest.mark.asyncio
-async def test_feature_document_contains_raw_graph(feature_service, feature):
+async def test_feature_document_contains_raw_graph(feature_service, feature, api_object_to_id):
     """Test raw graph is stored"""
     expected_groupby_node = {
         "name": "groupby_1",
         "output_type": "frame",
         "parameters": {
             "agg_func": "sum",
-            "aggregation_id": "sum_fba233e0f502088c233315a322f4c51e939072c0",
+            "aggregation_id": "sum_60e19c3e160be7db3a64f2a828c1c7929543abb4",
             "blind_spot": 600,
-            "entity_ids": [ObjectId("63a443938bcb22a734625955")],
+            "entity_ids": [ObjectId(api_object_to_id["entity"])],
             "frequency": 1800,
             "keys": ["cust_id"],
             "names": ["sum_30m"],
             "parent": "col_float",
             "serving_names": ["cust_id"],
-            "tile_id": "TILE_F1800_M300_B600_C4876073C3B42D1C2D9D6942652545B3B4D3F178",
+            "tile_id": "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817",
             "time_modulo_frequency": 300,
             "timestamp": "event_timestamp",
             "value_by": None,
@@ -112,8 +113,12 @@ async def test_feature_document_contains_raw_graph(feature_service, feature):
     expected_raw_groupby_params["windows"] = ["30m", "2h", "1d"]
     expected_raw_groupby_params[
         "tile_id"
-    ] = "TILE_F1800_M300_B600_7BEF0E8B579190F960845A042B02B9BC538BD58E"
+    ] = "TILE_F1800_M300_B600_99CB16A0CBF5645D5C2D1DEA5CA74D4BD1660817"
     expected_raw_groupby_node = {**expected_groupby_node, "parameters": expected_raw_groupby_params}
     async for doc in feature_service.list_documents_iterator(query_filter={"_id": feature.id}):
-        assert doc["graph"]["nodes"][1] == expected_groupby_node
-        assert doc["raw_graph"]["nodes"][1] == expected_raw_groupby_node
+        graph = QueryGraphModel(**doc["graph"])
+        raw_graph = QueryGraphModel(**doc["raw_graph"])
+        groupby_node = graph.get_node_by_name("groupby_1")
+        raw_groupby_node = raw_graph.get_node_by_name("groupby_1")
+        assert groupby_node.dict() == expected_groupby_node
+        assert raw_groupby_node.dict() == expected_raw_groupby_node

@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 
+from featurebyte.enum import AggFunc
 from featurebyte.api.database_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -258,3 +259,37 @@ def assert_preview_result_equal(df_preview, expected_dict, dict_like_columns=Non
 
     df_expected = df_expected[df_preview.columns]
     fb_assert_frame_equal(df_preview, df_expected, dict_like_columns=dict_like_columns)
+
+
+def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
+    """
+    Create feature to capture the entropy of inter-event interval time,
+    this function is used to construct a test feature.
+    """
+    view = view.copy()
+    ts_col = view[view.timestamp_column]
+    a = view["a"] = (ts_col - ts_col.lag(group_by_col)).dt.day
+    view["a * log(a)"] = a * (a + 0.1).log()  # add 0.1 to avoid log(0.0)
+    b = view.groupby(group_by_col).aggregate_over(
+        "a",
+        method=AggFunc.SUM,
+        windows=[window],
+        feature_names=[f"sum(a) ({window})"],
+        feature_job_setting=feature_job_setting,
+    )[f"sum(a) ({window})"]
+
+    feature = (
+        view.groupby(group_by_col).aggregate_over(
+            "a * log(a)",
+            method=AggFunc.SUM,
+            windows=[window],
+            feature_names=["sum(a * log(a))"],
+            feature_job_setting=feature_job_setting,
+        )["sum(a * log(a))"]
+        * -1
+        / b
+        + (b + 0.1).log()  # add 0.1 to avoid log(0.0)
+    )
+
+    feature.name = name
+    return feature

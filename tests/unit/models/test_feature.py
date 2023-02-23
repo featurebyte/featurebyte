@@ -44,7 +44,7 @@ def feature_model_dict_feature(test_dir):
         return json.load(file_handle)
 
 
-def test_feature_model(feature_model_dict, test_dir):
+def test_feature_model(feature_model_dict, test_dir, api_object_to_id):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
     feature = FeatureModel(**feature_model_dict)
@@ -57,24 +57,21 @@ def test_feature_model(feature_model_dict, test_dir):
         "created_at": None,
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
-        "entity_ids": [ObjectId("63a443938bcb22a734625955")],
-        "tabular_data_ids": [ObjectId("6337f9651050ee7d5980660d")],
+        "entity_ids": [ObjectId(api_object_to_id["entity"])],
+        "tabular_data_ids": [ObjectId(api_object_to_id["event_data"])],
         "feature_list_ids": [],
-        "feature_namespace_id": ObjectId("63a443938bcb22a73462595a"),
+        "feature_namespace_id": feature_dict["feature_namespace_id"],
         "graph": {
-            "edges": [
-                {"source": "input_1", "target": "groupby_1"},
-                {"source": "groupby_1", "target": "project_1"},
-            ],
+            "edges": feature_dict["graph"]["edges"],
             "nodes": feature_dict["graph"]["nodes"],
         },
-        "id": ObjectId("63a443938bcb22a734625959"),
+        "id": ObjectId(feature_model_dict["_id"]),
         "name": "sum_30m",
         "node_name": "project_1",
         "online_enabled": False,
         "readiness": "DRAFT",
         "tabular_source": {
-            "feature_store_id": ObjectId("63a443938bcb22a734625949"),
+            "feature_store_id": ObjectId(api_object_to_id["feature_store"]),
             "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
@@ -132,8 +129,8 @@ def test_extract_operation_structure(feature_model_dict):
     common_source_col_params = {
         "tabular_data_id": ObjectId(feature_model_dict["tabular_data_ids"][0]),
         "tabular_data_type": "event_data",
-        "node_names": {"input_1"},
-        "node_name": "input_1",
+        "node_names": {"input_1", "graph_1"},
+        "node_name": "graph_1",
     }
     expected_columns = [
         SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)
@@ -151,7 +148,7 @@ def test_extract_operation_structure(feature_model_dict):
             column=SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params),
             filter=False,
             aggregation_type="groupby",
-            node_names={"input_1", "groupby_1", "project_1"},
+            node_names={"input_1", "graph_1", "groupby_1", "project_1"},
             node_name="groupby_1",
             dtype="FLOAT",
         )
