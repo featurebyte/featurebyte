@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.base import BaseSession
 
 
 class TileCommon(BaseModel, ABC):
@@ -26,15 +26,15 @@ class TileCommon(BaseModel, ABC):
     value_column_names: List[str]
     value_column_types: List[str]
 
-    _spark: SparkSession = PrivateAttr()
+    _spark: BaseSession = PrivateAttr()
 
-    def __init__(self, spark_session: SparkSession, **kwargs: Any):
+    def __init__(self, spark_session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Operation Instance
 
         Parameters
         ----------
-        spark_session: SparkSession
+        spark_session: BaseSession
             input SparkSession
         kwargs: Any
             constructor arguments

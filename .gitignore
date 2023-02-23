@@ -562,3 +562,4 @@ featurebyte_beta.zip
 spark-warehouse/
 metastore_db/
 pytest.xml*
+*.sqlite

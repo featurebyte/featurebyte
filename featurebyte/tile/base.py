@@ -10,9 +10,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.common import date_util
+from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
+from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
+from featurebyte.tile.scheduler import TileScheduler, TileSchedulerFactory
 
 
 class BaseTileManager(BaseModel, ABC):
@@ -21,6 +25,7 @@ class BaseTileManager(BaseModel, ABC):
     """
 
     _session: BaseSession = PrivateAttr()
+    _scheduler: TileScheduler = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
@@ -35,6 +40,7 @@ class BaseTileManager(BaseModel, ABC):
         """
         super().__init__(**kw)
         self._session = session
+        self._scheduler = TileSchedulerFactory.get_instance(job_store="default")
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
@@ -96,7 +102,6 @@ class BaseTileManager(BaseModel, ABC):
             temporary entity table to be merge into <tile_id>_entity_tracker
         """
 
-    @abstractmethod
     async def schedule_online_tiles(
         self,
         tile_spec: TileSpec,
@@ -119,8 +124,21 @@ class BaseTileManager(BaseModel, ABC):
         -------
             generated sql to be executed
         """
+        next_job_time = date_util.get_next_job_datetime(
+            input_dt=schedule_time,
+            frequency_minutes=tile_spec.frequency_minute,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+        )
 
-    @abstractmethod
+        sql = await self._schedule_tiles_custom(
+            tile_spec=tile_spec,
+            tile_type=TileType.ONLINE,
+            next_job_time=next_job_time,
+            monitor_periods=monitor_periods,
+        )
+
+        return sql
+
     async def schedule_offline_tiles(
         self,
         tile_spec: TileSpec,
@@ -143,3 +161,101 @@ class BaseTileManager(BaseModel, ABC):
         -------
             generated sql to be executed
         """
+
+        next_job_time = date_util.get_next_job_datetime(
+            input_dt=schedule_time,
+            frequency_minutes=offline_minutes,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+        )
+
+        sql = await self._schedule_tiles_custom(
+            tile_spec=tile_spec,
+            tile_type=TileType.ONLINE,
+            next_job_time=next_job_time,
+            offline_minutes=offline_minutes,
+        )
+
+        return sql
+
+    async def _schedule_tiles_custom(
+        self,
+        tile_spec: TileSpec,
+        tile_type: TileType,
+        next_job_time: datetime,
+        offline_minutes: int = 1440,
+        monitor_periods: int = 10,
+    ) -> str:
+        """
+        Common tile schedule method
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        tile_type: TileType
+            ONLINE or OFFLINE
+        next_job_time: datetime
+            next tile job start time
+        offline_minutes: int
+            offline tile lookback minutes
+        monitor_periods: int
+            online tile lookback period
+
+        Returns
+        -------
+            generated sql to be executed
+        """
+
+        logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
+        job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+
+        tile_schedule_ins = TileGenerateSchedule(
+            spark_session=self._session,
+            tile_id=tile_spec.tile_id,
+            tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
+            frequency_minute=tile_spec.frequency_minute,
+            sql=tile_spec.tile_sql,
+            entity_column_names=tile_spec.entity_column_names,
+            value_column_names=tile_spec.value_column_names,
+            value_column_types=tile_spec.value_column_types,
+            tile_type=tile_type,
+            offline_period_minute=offline_minutes,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE,
+            tile_start_date_column=InternalName.TILE_START_DATE,
+            tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
+            tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
+            monitor_periods=monitor_periods,
+            agg_id=tile_spec.aggregation_id,
+            job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        )
+
+        self._scheduler.start_job_with_interval(
+            job_id=job_id,
+            interval_seconds=tile_spec.frequency_minute * 60,
+            start_from=next_job_time,
+            func=tile_schedule_ins.execute,
+        )
+
+        return tile_schedule_ins.json()
+
+    async def remove_tile_jobs(
+        self,
+        tile_spec: TileSpec,
+    ) -> None:
+        """
+        Remove tiles
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        """
+        exist_mapping = await self._session.execute_query(
+            f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
+        )
+        # only disable tile jobs when there is no tile-feature mapping records for the particular tile
+        if exist_mapping is None or len(exist_mapping) == 0:
+            logger.info("Stopping job with custom scheduler")
+            for t_type in [TileType.ONLINE, TileType.OFFLINE]:
+                self._scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")

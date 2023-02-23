@@ -7,7 +7,7 @@ from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.base import BaseSession
 
 
 class TileScheduleOnlineStore(BaseModel):
@@ -18,15 +18,15 @@ class TileScheduleOnlineStore(BaseModel):
     agg_id: str
     job_schedule_ts_str: str
 
-    _spark: SparkSession = PrivateAttr()
+    _spark: BaseSession = PrivateAttr()
 
-    def __init__(self, spark_session: SparkSession, **kwargs: Any):
+    def __init__(self, spark_session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Schedule Online Store Instance
 
         Parameters
         ----------
-        spark_session: SparkSession
+        spark_session: BaseSession
             input SparkSession
         kwargs: Any
             constructor arguments

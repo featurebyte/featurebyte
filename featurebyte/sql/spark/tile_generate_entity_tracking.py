@@ -7,7 +7,7 @@ from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
-from featurebyte.session.spark import SparkSession
+from featurebyte.session.base import BaseSession
 
 
 class TileGenerateEntityTracking(BaseModel):
@@ -20,15 +20,15 @@ class TileGenerateEntityTracking(BaseModel):
     tile_id: str
     entity_table: str
 
-    _spark: SparkSession = PrivateAttr()
+    _spark: BaseSession = PrivateAttr()
 
-    def __init__(self, spark_session: SparkSession, **kwargs: Any):
+    def __init__(self, spark_session: BaseSession, **kwargs: Any):
         """
         Initialize Tile Generate Entity Tracking
 
         Parameters
         ----------
-        spark_session: SparkSession
+        spark_session: BaseSession
             input SparkSession
         kwargs: Any
             constructor arguments

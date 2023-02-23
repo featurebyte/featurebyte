@@ -1,6 +1,7 @@
 """
 Tile Tests for Spark Session
 """
+import os
 from datetime import datetime
 
 import pytest_asyncio
@@ -65,4 +66,5 @@ async def tile_manager_fixture(session, tile_spec):
     assert session.source_type == "spark"
 
     yield TileManagerSpark(session=session)
+
     await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER")

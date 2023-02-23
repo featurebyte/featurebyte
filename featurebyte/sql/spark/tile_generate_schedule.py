@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from datetime import datetime, timedelta
 
 import dateutil.parser
+from pydantic import Field
 
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
@@ -28,7 +29,7 @@ class TileGenerateSchedule(TileCommon):
     tile_type: str
     monitor_periods: int
     agg_id: str
-    job_schedule_ts: str
+    job_schedule_ts: str = Field(default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
 
     # pylint: disable=too-many-locals
     async def execute(self) -> None:
