@@ -10,6 +10,7 @@ from featurebyte import MissingValueImputation
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from tests.util.helper import check_sdk_code_generation
 
@@ -352,6 +353,7 @@ class BaseViewTestSuite:
         assert output.dtype == column.dtype
         output_dict = output.dict()
         assert output_dict["node_name"] == "filter_1"
+        output_graph = QueryGraph(**output_dict["graph"])
         filter_node = next(
             node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1"
         )
@@ -361,16 +363,25 @@ class BaseViewTestSuite:
             "parameters": {},
             "output_type": "series",
         }
-        expected_edges = [
-            {"source": "input_1", "target": "graph_1"},
-            {"source": "graph_1", "target": "project_1"},
-            {"source": "graph_1", "target": "project_2"},
-            {"source": "project_1", "target": "filter_1"},
-            {"source": "project_2", "target": "filter_1"},
-        ]
-        if "expected_edges" in overrides:
-            expected_edges = overrides["expected_edges"]
-        assert output_dict["graph"]["edges"] == expected_edges
+        if "expected_backward_edges_map" in overrides:
+            expected_backward_edges_map = overrides["expected_backward_edges_map"]
+        else:
+            project_1 = output_graph.get_node_by_name("project_1")
+            project_2 = output_graph.get_node_by_name("project_2")
+            if project_1.parameters.columns == [self.col]:
+                col_node = project_1
+                mask_node = project_2
+            else:
+                col_node = project_2
+                mask_node = project_1
+
+            expected_backward_edges_map = {
+                "filter_1": [col_node.name, mask_node.name],
+                "graph_1": ["input_1"],
+                "project_1": ["graph_1"],
+                "project_2": ["graph_1"],
+            }
+        assert output_graph.backward_edges_map == expected_backward_edges_map
 
         # check SDK code generation
         check_sdk_code_generation(

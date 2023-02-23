@@ -368,3 +368,99 @@ def test_query_graph__representation():
     ).strip()
     assert repr(graph) == expected
     assert str(graph) == expected
+
+
+def insert_input_node(graph, input_node_params):
+    """Insert input node to the graph"""
+    return graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+
+
+def insert_project_node(graph, input_node, column_name):
+    """Insert project node to the graph"""
+    return graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": [column_name]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+
+
+def insert_add_node(graph, first_node, second_node):
+    """Insert add node to the graph"""
+    return graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[first_node, second_node],
+    )
+
+
+@pytest.fixture(name="query_graph_abc_and_node")
+def query_graph_abc_and_node_fixture(input_node):
+    """Query graph with three project nodes"""
+    graph = QueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_a = insert_project_node(graph, node_input, "a")
+    node_b = insert_project_node(graph, node_input, "b")
+    node_c = insert_project_node(graph, node_input, "ts")
+    node_add_ab = insert_add_node(graph, node_a, node_b)
+    node_add_abc = insert_add_node(graph, node_add_ab, node_c)
+    return graph, node_add_abc
+
+
+@pytest.fixture(name="query_graph_cab_and_node")
+def query_graph_cab_and_node_fixture(input_node):
+    """Query graph with three project nodes"""
+    graph = QueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_c = insert_project_node(graph, node_input, "ts")
+    node_a = insert_project_node(graph, node_input, "a")
+    node_b = insert_project_node(graph, node_input, "b")
+    node_add_ab = insert_add_node(graph, node_a, node_b)
+    node_add_abc = insert_add_node(graph, node_add_ab, node_c)
+    return graph, node_add_abc
+
+
+@pytest.fixture(name="query_graph_bca_and_node")
+def query_graph_bca_and_node_fixture(input_node):
+    """Query graph with three project nodes"""
+    graph = QueryGraph()
+    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_b = insert_project_node(graph, node_input, "b")
+    node_c = insert_project_node(graph, node_input, "ts")
+    node_a = insert_project_node(graph, node_input, "a")
+    node_add_ab = insert_add_node(graph, node_a, node_b)
+    node_add_abc = insert_add_node(graph, node_add_ab, node_c)
+    return graph, node_add_abc
+
+
+def test_query_graph_insensitive_to_node_name(
+    query_graph_abc_and_node, query_graph_cab_and_node, query_graph_bca_and_node
+):
+    """Check that graph ordering is insensitive to node names"""
+    query_graph_abc, node_abc = query_graph_abc_and_node
+    query_graph_cab, node_cab = query_graph_cab_and_node
+    query_graph_bca, node_bca = query_graph_bca_and_node
+    assert query_graph_abc != query_graph_cab
+    assert query_graph_cab != query_graph_bca
+
+    pruned_graph_abc, node_name_map_abc = query_graph_abc.prune(
+        target_node=node_abc, aggressive=False
+    )
+    pruned_graph_cab, node_name_map_cab = query_graph_cab.prune(
+        target_node=node_cab, aggressive=False
+    )
+    pruned_graph_bca, node_name_map_bca = query_graph_bca.prune(
+        target_node=node_bca, aggressive=False
+    )
+    assert pruned_graph_abc == pruned_graph_cab == pruned_graph_bca
+    assert (
+        node_name_map_abc[node_abc.name]
+        == node_name_map_cab[node_cab.name]
+        == node_name_map_bca[node_bca.name]
+    )

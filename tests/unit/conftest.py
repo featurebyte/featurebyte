@@ -371,6 +371,18 @@ def snowflake_item_data_id_2_fixture():
     return ObjectId("6337f9651050ee7d5980662e")
 
 
+@pytest.fixture(name="cust_id_entity_id")
+def cust_id_entity_id_fixture():
+    """Customer ID entity ID"""
+    return ObjectId("63f94ed6ea1f050131379214")
+
+
+@pytest.fixture(name="transaction_entity_id")
+def transaction_entity_id_fixture():
+    """Transaction entity ID"""
+    return ObjectId("63f94ed6ea1f050131379204")
+
+
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
     """EventData object fixture"""
@@ -479,22 +491,23 @@ def snowflake_item_data_same_event_id_fixture(
 
 
 @pytest.fixture(name="cust_id_entity")
-def cust_id_entity_fixture():
+def cust_id_entity_fixture(cust_id_entity_id):
     """
     Customer ID entity fixture
     """
-    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity = Entity(name="customer", serving_names=["cust_id"], _id=cust_id_entity_id)
     entity.save()
     yield entity
 
 
 @pytest.fixture(name="transaction_entity")
-def transaction_entity_fixture():
+def transaction_entity_fixture(transaction_entity_id):
     """
     Event entity fixture
     """
-    entity = Entity(name="transaction", serving_names=["transaction_id"])
+    entity = Entity(name="transaction", serving_names=["transaction_id"], _id=transaction_entity_id)
     entity.save()
+    assert entity.id == transaction_entity_id
     yield entity
 
 

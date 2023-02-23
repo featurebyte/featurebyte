@@ -51,15 +51,50 @@ class QueryGraphModel(FeatureByteBaseModel):
         return repr(self)
 
     @property
+    def sorted_node_names_by_ref(self) -> List[str]:
+        """
+        Sorted node names by reference
+
+        Returns
+        -------
+        List[str]
+        """
+        return sorted(self.nodes_map, key=lambda x: self.node_name_to_ref[x])
+
+    @property
+    def sorted_edges_map_by_ref(self) -> Dict[str, List[str]]:
+        """
+        Sorted edges map by reference
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
+        # To make the order insensitive to the node names, we first sort the backward edges map by node hash.
+        # Backward edges map is used due to the fact that input nodes are order are important to the node operation.
+        # If edges map is used, the input order will be lost. Then we reconstruct the edges map from the sorted
+        # backward edges map (required for topological sort).
+        edges_map = defaultdict(list)
+        sorted_backward_edges_keys = sorted(
+            self.backward_edges_map, key=lambda x: self.node_name_to_ref[x]
+        )
+        for target_node_name in sorted_backward_edges_keys:
+            for source_node_name in self.backward_edges_map[target_node_name]:
+                edges_map[source_node_name].append(target_node_name)
+        return edges_map
+
+    @property
     def node_topological_order_map(self) -> Dict[str, int]:
         """
-        Node name to topological sort order index mapping
+        Node name to topological sort order index mapping. This mapping is used to sort the nodes in the graph.
 
         Returns
         -------
         Dict[int, str]
         """
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        sorted_node_names = topological_sort(
+            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
+        )
         return {value: idx for idx, value in enumerate(sorted_node_names)}
 
     @staticmethod
@@ -238,10 +273,12 @@ class QueryGraphModel(FeatureByteBaseModel):
     def get_input_node_names(self, node: Node) -> List[str]:
         """
         Get the input node names of the given node
+
         Parameters
         ----------
         node: Node
             Node
+
         Returns
         -------
         List[str]
@@ -277,7 +314,9 @@ class QueryGraphModel(FeatureByteBaseModel):
         Node
             Topologically sorted query graph nodes
         """
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        sorted_node_names = topological_sort(
+            self.sorted_node_names_by_ref, self.sorted_edges_map_by_ref
+        )
         for node_name in sorted_node_names:
             yield self.nodes_map[node_name]
 

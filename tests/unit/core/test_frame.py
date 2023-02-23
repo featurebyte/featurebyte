@@ -199,8 +199,8 @@ def test__setitem__tuple_assignment_with_mask(dataframe):
     assert dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_2", "target": "conditional_1"},
         {"source": "project_1", "target": "conditional_1"},
+        {"source": "project_2", "target": "conditional_1"},
         {"source": "input_1", "target": "assign_1"},
         {"source": "conditional_1", "target": "assign_1"},
     ]

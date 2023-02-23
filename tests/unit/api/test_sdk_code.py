@@ -26,7 +26,7 @@ def test_sdk_code_generation__complex_arithmetic_expression(saved_event_data, up
         to_format=True,
         fixture_path="tests/fixtures/sdk_code/complex_arithmetic_expression.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=False,
+        to_compare_generated_code=True,
         data_id=saved_event_data.id,
     )
 
@@ -66,7 +66,7 @@ def test_sdk_code_generation__complex_math_expression(saved_event_data, update_f
         to_format=True,
         fixture_path="tests/fixtures/sdk_code/complex_math_expression.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=False,
+        to_compare_generated_code=True,
         data_id=saved_event_data.id,
     )
 
@@ -99,7 +99,7 @@ def test_sdk_code_generation__complex_date_related_operations(saved_event_data, 
         to_format=True,
         fixture_path="tests/fixtures/sdk_code/complex_date_related_operations.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=False,  # skip comparison as local unit test result is different from CI
+        to_compare_generated_code=True,
         data_id=saved_event_data.id,
     )
 
