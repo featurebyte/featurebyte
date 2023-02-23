@@ -244,16 +244,6 @@ def test_get_input_event_data_id__item_data(non_time_based_feature):
     assert input_event_data_id is not None
 
 
-def test_get_input_data_node(production_ready_feature):
-    """
-    Test retrieving the input data node.
-    """
-    input_data_node = ProductionReadyValidator._get_input_data_node(
-        production_ready_feature.node, production_ready_feature.graph
-    )
-    assert input_data_node is not None
-
-
 def test_get_cleaning_node_from_feature_graph(feature_with_cleaning_operations):
     """
     Test _get_cleaning_node_from_feature_graph

@@ -168,36 +168,18 @@ class ProductionReadyValidator:
         Optional[PydanticObjectId]
             event data id if the feature comes from an event and item data, None if not.
         """
+        event_id_from_item_data: Optional[PydanticObjectId] = None
+        event_id_from_event_data: Optional[PydanticObjectId] = None
         for current_node in graph.iterate_nodes(target_node=node, node_type=NodeType.INPUT):
             input_node = cast(InputNode, current_node)
             if input_node.parameters.type == TableDataType.ITEM_DATA:
                 parameters = cast(ItemDataInputNodeParameters, input_node.parameters)
-                return parameters.event_data_id
+                event_id_from_item_data = parameters.event_data_id
             if input_node.parameters.type == TableDataType.EVENT_DATA:
-                return input_node.parameters.id
-        return None
-
-    @staticmethod
-    def _get_input_data_node(node: Node, graph: QueryGraph) -> Optional[InputNode]:
-        """
-        Get input event data ID.
-
-        Parameters
-        ----------
-        node: Node
-            node
-        graph: QueryGraph
-            graph
-
-        Returns
-        -------
-        Optional[InputNode]
-            event data id if the feature comes from an event and item data, None if not.
-        """
-        for current_node in graph.iterate_nodes(target_node=node, node_type=NodeType.INPUT):
-            input_node = cast(InputNode, current_node)
-            return input_node
-        return None
+                event_id_from_event_data = input_node.parameters.id
+        if event_id_from_item_data is not None:
+            return event_id_from_item_data
+        return event_id_from_event_data
 
     async def _get_feature_job_setting_for_data_source(
         self, event_data_id: PydanticObjectId
@@ -309,7 +291,7 @@ class ProductionReadyValidator:
         ValueError
             raised if no data input node is found for the graph
         """
-        data_input_node = ProductionReadyValidator._get_input_data_node(node, graph)
+        data_input_node = graph.get_input_node(node.name)
         if data_input_node is None:
             raise ValueError("no input data node found")
         # We retrieve the value from the data store to see what has been persisted.
