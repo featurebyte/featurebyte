@@ -355,9 +355,8 @@ class SparkSession(BaseSession):
         self, table_name: str, query: str, temporary: bool = True
     ) -> None:
         _ = temporary
-        create_command = "CREATE TEMPORARY VIEW"
+        create_command = "CREATE OR REPLACE TEMPORARY VIEW"
         await self.execute_query(f"{create_command} `{table_name}` AS {query}")
-        # await self.execute_query(f"CACHE TABLE `{table_name}`")
 
 
 class SparkMetadataSchemaInitializer(MetadataSchemaInitializer):

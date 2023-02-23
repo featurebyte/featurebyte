@@ -279,13 +279,15 @@ class TileCache:
         list[str]
             List of tile table IDs with existing entity tracker tables
         """
-        all_trackers = {
-            table
-            for table in await self.session.list_tables(
-                database_name=self.session.database_name, schema_name=self.session.schema_name
-            )
-            if table.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value)
-        }
+        all_trackers = set()
+        for table in await self.session.list_tables(
+            database_name=self.session.database_name, schema_name=self.session.schema_name
+        ):
+            # always convert to upper case in case some backends changes the casing
+            table = table.upper()
+            if table.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value):
+                all_trackers.add(table)
+
         out = []
         for tile_id in tile_ids:
             tile_id_tracker_name = self._get_tracker_name_from_tile_id(tile_id)

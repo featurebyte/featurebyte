@@ -7,7 +7,7 @@ import pytest
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, SnowflakeTileCache
+from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, TileCache
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
@@ -47,19 +47,25 @@ async def check_entity_table_sql_and_tile_compute_sql(
 
 async def check_temp_tables_cleaned_up(session):
     """Check that temp tables are properly cleaned up"""
-    df_tables = await session.execute_query("SHOW TABLES")
-    temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
+    if session.source_type == "snowflake":
+        df_tables = await session.execute_query("SHOW TABLES")
+        temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
+    elif session.source_type == "spark":
+        df_tables = await session.execute_query("SHOW VIEWS")
+        temp_table_names = df_tables[df_tables["isTemporary"] == "true"]["viewName"].tolist()
+    else:
+        raise NotImplementedError()
     temp_table_names = [name.upper() for name in temp_table_names]
     assert InternalName.TILE_CACHE_WORKING_TABLE.value not in temp_table_names
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
-async def test_snowflake_tile_cache(session, feature_for_tile_cache_tests, groupby_category):
-    """Test SnowflakeTileCache performs caching properly"""
+async def test_tile_cache(session, feature_for_tile_cache_tests, groupby_category):
+    """Test TileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
-    tile_cache = SnowflakeTileCache(session)
+    tile_cache = TileCache(session)
     _ = groupby_category
 
     df_training_events = pd.DataFrame(
