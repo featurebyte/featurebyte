@@ -188,8 +188,7 @@ class FeatureExecutionPlan:
 
         Returns
         -------
-        tuple[str, expressions.Select]
-            Tuple of table name and SQL expression
+        tuple[CteStatement, list[str]]
         """
         # Select original columns first
         if request_table_columns:
