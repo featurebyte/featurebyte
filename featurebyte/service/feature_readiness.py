@@ -48,7 +48,6 @@ class FeatureReadinessService(BaseService):
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
-        event_data_service: EventDataService,
         data_service: DataService,
     ):
         super().__init__(user, persistent, workspace_id)
@@ -57,7 +56,7 @@ class FeatureReadinessService(BaseService):
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.production_ready_validator = ProductionReadyValidator(
-            event_data_service, self.feature_namespace_service, data_service
+            self.feature_namespace_service, data_service
         )
 
     async def update_feature_list_namespace(

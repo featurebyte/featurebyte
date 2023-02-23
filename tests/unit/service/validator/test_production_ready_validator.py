@@ -18,7 +18,6 @@ def production_ready_validator_fixture(
     Get production ready validator
     """
     return ProductionReadyValidator(
-        event_data_service=event_data_service,
         feature_namespace_service=feature_namespace_service,
         data_service=app_container.tabular_data_service,
     )

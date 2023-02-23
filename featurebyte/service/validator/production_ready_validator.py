@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, cast
 
 from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
+from featurebyte.models import EventDataModel
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
@@ -15,7 +16,6 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.node.input import InputNode, ItemDataInputNodeParameters
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
-from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.tabular_data import DataService
 
@@ -27,11 +27,9 @@ class ProductionReadyValidator:
 
     def __init__(
         self,
-        event_data_service: EventDataService,
         feature_namespace_service: FeatureNamespaceService,
         data_service: DataService,
     ):
-        self.event_data_service = event_data_service
         self.feature_namespace_service = feature_namespace_service
         self.data_service = data_service
 
@@ -217,7 +215,8 @@ class ProductionReadyValidator:
         Optional[FeatureJobSetting]
             feature job setting if present
         """
-        event_data = await self.event_data_service.get_document(document_id=event_data_id)
+        event_data = await self.data_service.get_document(document_id=event_data_id)
+        assert isinstance(event_data, EventDataModel)
         return event_data.default_feature_job_setting
 
     async def _get_feature_job_setting_diffs(self, node: Node, graph: QueryGraph) -> Dict[str, Any]:
