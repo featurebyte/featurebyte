@@ -953,22 +953,13 @@ def mock_snowflake_feature_list_model(
     return mock_feature_list
 
 
-@pytest.fixture(name="mocked_tile_cache")
-def mocked_tile_cache_fixture():
+@pytest.fixture(name="mocked_compute_tiles_on_demand")
+def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.query_graph.sql.feature_historical.get_tile_cache"
-    ) as mocked_get_tile_cache:
-
-        async def _mock_compute_tiles_on_demand(*args, **kwargs):
-            _ = args
-            _ = kwargs
-            return None
-
-        mocked_tile_cache = mock.Mock()
-        mocked_tile_cache.compute_tiles_on_demand.side_effect = _mock_compute_tiles_on_demand
-        mocked_get_tile_cache.return_value = mocked_tile_cache
-        yield mocked_tile_cache
+        "featurebyte.query_graph.sql.feature_historical.TileCache.compute_tiles_on_demand"
+    ) as mocked_compute_tiles_on_demand:
+        yield mocked_compute_tiles_on_demand
 
 
 @pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse", autouse=True)

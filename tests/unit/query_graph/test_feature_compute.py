@@ -116,7 +116,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert len(ctes) == 1
 
     cte = ctes[0]
-    assert cte[0] == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    assert cte[0].sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -157,7 +157,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     # check expanded table for 2h
     name, sql = ctes[0]
-    assert name == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
+    assert name.sql() == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -179,7 +179,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     # check expanded table for 1d
     name, sql = ctes[1]
-    assert name == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    assert name.sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
       "POINT_IN_TIME",

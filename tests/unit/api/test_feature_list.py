@@ -74,7 +74,7 @@ def single_feat_flist_fixture(production_ready_feature):
 
 @freeze_time("2022-05-01")
 def test_feature_list_creation__success(
-    production_ready_feature, single_feat_flist, mocked_tile_cache
+    production_ready_feature, single_feat_flist, mocked_compute_tiles_on_demand
 ):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
@@ -102,7 +102,7 @@ def test_feature_list_creation__success(
     assert error_message in str(exc.value)
 
 
-def test_feature_list__get_historical_features(single_feat_flist, mocked_tile_cache):
+def test_feature_list__get_historical_features(single_feat_flist, mocked_compute_tiles_on_demand):
     """Test FeatureList can be created with valid inputs"""
     flist = single_feat_flist
     dataframe = pd.DataFrame(
@@ -139,7 +139,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_tile_ca
 
 @pytest.mark.parametrize("max_batch_size", [1, 5, 6, 11])
 def test_feature_list__get_historical_features__iteration_logic(
-    single_feat_flist, mocked_tile_cache, max_batch_size
+    single_feat_flist, mocked_compute_tiles_on_demand, max_batch_size
 ):
     """Check get_historical_features iteration logic"""
     flist = single_feat_flist

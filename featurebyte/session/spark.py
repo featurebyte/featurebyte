@@ -354,8 +354,10 @@ class SparkSession(BaseSession):
     async def register_table_with_query(
         self, table_name: str, query: str, temporary: bool = True
     ) -> None:
-        _ = temporary
-        create_command = "CREATE OR REPLACE TEMPORARY VIEW"
+        if temporary:
+            create_command = "CREATE OR REPLACE TEMPORARY VIEW"
+        else:
+            create_command = "CREATE TEMPORARY VIEW"
         await self.execute_query(f"{create_command} `{table_name}` AS {query}")
 
 

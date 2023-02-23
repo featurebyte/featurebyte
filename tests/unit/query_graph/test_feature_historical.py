@@ -29,6 +29,7 @@ def mocked_session_fixture():
         mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
         mocked_session.register_table = AsyncMock()
         mocked_session.generate_session_unique_id = Mock(return_value="1")
+        mocked_session.source_type = SourceType.SNOWFLAKE
         session_manager_cls.return_value = session_manager
         yield mocked_session
 
@@ -103,7 +104,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     float_feature,
     config,
     mocked_session,
-    mocked_tile_cache,
+    mocked_compute_tiles_on_demand,
 ):
     """
     Test that if point in time column is provided as string, it is converted to datetime before
@@ -133,7 +134,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     df_training_events_registered = args[1]
     assert df_training_events_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
 
-    mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
+    mocked_compute_tiles_on_demand.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -141,7 +142,7 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
     float_feature,
     config,
     mocked_session,
-    mocked_tile_cache,
+    mocked_compute_tiles_on_demand,
 ):
     """
     Test that for with is_feature_list_deployed=True on demand tile computation is skipped
@@ -161,7 +162,7 @@ async def test_get_historical_features__skip_tile_cache_if_deployed(
         source_type=SourceType.SNOWFLAKE,
         is_feature_list_deployed=True,
     )
-    mocked_tile_cache.compute_tiles_on_demand.assert_not_called()
+    mocked_compute_tiles_on_demand.assert_not_called()
 
 
 def test_get_historical_feature_sql(float_feature, update_fixtures):
