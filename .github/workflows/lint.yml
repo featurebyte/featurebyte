@@ -1,5 +1,11 @@
 name: lint
 
+# SECRETS NAME                   | Description                     | PERMISSIONS
+# ------------------------------ | ------------------------------- | ----------------------------------------------------
+## GCR_PYPI_CREDENTIALS_R_B64    | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Docker     ] read
+## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
+
+
 env:
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}  # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
@@ -46,13 +52,9 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
 
-    - name: Adding C headers
-      run: |
-        sudo apt-get install python-dev libsasl2-dev gcc
-
     - name: Install dependencies
       run: |
-        make install
+        poetry install -n --sync --extras=server
 
     - name: Lint Checks
       run: make lint
@@ -60,10 +62,8 @@ jobs:
     - name: Slack Message failure
       if: ${{ failure() }}
       run: |
-        # Get the last committed email address
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        export AUTHOR_EMAIL=$(git show -s --format='%ae')
         export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         if [ -z ${AUTHOR_EMAIL+x} ]; then
           # Lookup email address and export to AUTHOR_ID

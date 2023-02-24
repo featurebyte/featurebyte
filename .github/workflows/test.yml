@@ -1,4 +1,4 @@
-name: build
+name: test
 
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
@@ -55,6 +55,12 @@ env:
   FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:
+  printenv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: printenv
+        run: printenv
+
   build-jar:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -304,55 +310,6 @@ jobs:
         message: ${{ steps.coverageComment.outputs.coverage }}
         color: ${{ steps.coverageComment.outputs.color }}
 
-    - name: Authenticate to Google Cloud
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      id: 'auth'
-      uses: 'google-github-actions/auth@v1'
-      with:
-        credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
-
-
-    - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: |
-        export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
-        export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
-        export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
-            sort --version-sort -r | \
-            grep -P "${VERSION}.dev" | \
-            head -n 1 | \
-            grep -oP "\d+$"
-        )
-        export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-        export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
-        sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
-
-        poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
-        poetry publish --build -r featurebyte_np --username='_json_key_base64' --password='${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}'
-
-        # Tagging dev version
-        git config --global user.name "featurebyte[bot]"
-        git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-        git tag "${PUBLISH_VERSION}"
-        git push origin "${PUBLISH_VERSION}"
-
-        # Slack outputs
-        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
-        export GITHUB_HEAD_REF=main
-
-        # Sending Slack Message
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        # Lookup email address and export to AUTHOR_ID
-        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-
-        cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
     - name: Slack Message Pull Request
       run: |
         # Get Coverage data
@@ -363,8 +320,7 @@ jobs:
           export COVERAGE=""
         fi
 
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        export AUTHOR_EMAIL=$(git show -s --format='%ae')
         export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
@@ -372,22 +328,14 @@ jobs:
           # Route message to Chester
           export AUTHOR_ID=U03P1DE5R8V
         else
-          # Lookup email address and export to AUTHOR_ID
           export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
         fi
-        echo "AUTHOR_ID=${AUTHOR_ID}"
 
         cat .github/slack-template-PR.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
           -H 'Content-type: application/json; charset=utf-8' \
           --data-binary @- https://slack.com/api/chat.postMessage
 
-    # IF its a MERGE to main branch
-    #   Send message to developer channel
-    # IF unable to find author email
-    #   Send message to chester
-    # ELSE
-    #   Send message to commit author
     - name: Slack Message failure
       if: ${{ failure() }}
       run: |
@@ -412,74 +360,6 @@ jobs:
         if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
           export AUTHOR_ID=C03D81HC6Q5  # Send to `developer` Channel
         elif [ -z ${AUTHOR_EMAIL+x} ]; then
-          export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
-        else
-          # Lookup email address and export to AUTHOR_ID
-          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-        fi
-
-        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
-
-  lint:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        python-version: ["3.8.0"]
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
-
-    - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
-      with:
-        poetry-version: 1.3.1
-
-    - name: Configure Poetry
-      run: |
-        poetry config virtualenvs.in-project true
-        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-
-    - name: Adding C headers
-      run: |
-        sudo apt-get install python-dev libsasl2-dev gcc
-
-    - name: Install dependencies
-      run: |
-        make install
-
-    - name: Lint Checks
-      run: make lint
-
-    # IF unable to find author email
-    #   Send message to chester
-    # ELSE
-    #   Send message to commit author
-    - name: Slack Message failure
-      if: ${{ failure() }}
-      run: |
-        # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        if [ -z ${AUTHOR_EMAIL+x} ]; then
           export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
         else
           # Lookup email address and export to AUTHOR_ID
