@@ -16,13 +16,13 @@ async def test_generate_tile(session):
     Test normal generation of tiles
     """
 
-    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
 
-    entity_col_names_str = ",".join(entity_col_names)
+    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "
@@ -62,13 +62,13 @@ async def test_generate_tile_no_data(session):
     """
     Test generation of tile with no tile data
     """
-    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
 
-    entity_col_names_str = ",".join(entity_col_names)
+    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} "
@@ -104,13 +104,13 @@ async def test_generate_tile_new_value_column(session):
     """
     Test normal generation of tiles
     """
-    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "`客户`"]
+    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
     value_col_names = ["VALUE"]
     value_col_types = ["FLOAT"]
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
 
-    entity_col_names_str = ",".join(entity_col_names)
+    entity_col_names_str = ",".join([f"`{col}`" for col in entity_col_names])
     value_col_names_str = ",".join(value_col_names)
     tile_sql = (
         f"SELECT {InternalName.TILE_START_DATE},{entity_col_names_str},{value_col_names_str} FROM {table_name} "

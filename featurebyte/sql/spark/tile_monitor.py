@@ -73,7 +73,7 @@ class TileMonitor(TileCommon):
             """
 
             entity_filter_cols_str = " AND ".join(
-                [f"a.{c} = b.{c}" for c in self.entity_column_names]
+                [f"a.`{c}` = b.`{c}`" for c in self.entity_column_names]
             )
             value_select_cols_str = " , ".join(
                 [f"b.{c} as OLD_{c}" for c in existing_value_columns.split(",")]

@@ -33,6 +33,7 @@ public class CountDictTransformsTest {
     countDict.put("guava", new IntWritable(240));
     countDict.put("banana", new IntWritable(250));
     countDict.put("strawberry", new IntWritable(260));
+    countDict.put("dürian", new IntWritable(260));
 
     countDictOther = new HashMap<String, IntWritable>();
     countDictOther.put("apple", new IntWritable(100));
@@ -44,7 +45,7 @@ public class CountDictTransformsTest {
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
-    assertEquals(output.get(), 1.9421210411202432);
+    assertEquals(output.get(), 2.0753058086690364);
   }
 
   @Test
@@ -54,7 +55,7 @@ public class CountDictTransformsTest {
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     Text output = (Text) udf.evaluate(args);
-    assertEquals(output, new Text("strawberry"));
+    assertEquals(output, new Text("dürian"));
   }
 
   @Test
@@ -74,7 +75,7 @@ public class CountDictTransformsTest {
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     IntWritable output = (IntWritable) udf.evaluate(args);
-    assertEquals(output.get(), 7);
+    assertEquals(output.get(), 8);
   }
 
   @Test
@@ -102,6 +103,6 @@ public class CountDictTransformsTest {
       new GenericUDF.DeferredJavaObject(countDictOther),
     };
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
-    assertEquals(0.3274291729632903, output.get());
+    assertEquals(0.30127179180036756, output.get());
   }
 }

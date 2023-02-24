@@ -112,7 +112,7 @@ class TileManagerSpark(BaseTileManager):
             tile_id=tile_spec.tile_id,
             tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
-            frequency_minute=5,
+            frequency_minute=tile_spec.frequency_minute,
             sql=tile_sql,
             entity_column_names=tile_spec.entity_column_names,
             value_column_names=tile_spec.value_column_names,

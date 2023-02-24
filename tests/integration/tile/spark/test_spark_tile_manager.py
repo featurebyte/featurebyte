@@ -35,6 +35,7 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
     """
 
     temp_entity_table = "TEMP_ENTITY_TRACKER_2"
+    entity_table_query = "SELECT * FROM TEMP_ENTITY_TRACKER_2"
     last_tile_start_date_1 = "2022-07-06 10:52:14"
     last_tile_start_date_2 = "2022-07-07 10:52:14"
 
@@ -49,7 +50,7 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
     )
 
     await tile_manager.update_tile_entity_tracker(
-        tile_spec=tile_spec, temp_entity_table=temp_entity_table
+        tile_spec=tile_spec, temp_entity_table=entity_table_query
     )
 
     sql = f"SELECT * FROM {tile_spec.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
@@ -73,7 +74,7 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager):
     )
 
     await tile_manager.update_tile_entity_tracker(
-        tile_spec=tile_spec, temp_entity_table=temp_entity_table
+        tile_spec=tile_spec, temp_entity_table=entity_table_query
     )
 
     sql = f"SELECT * FROM {tile_spec.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
@@ -95,6 +96,7 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager):
     Test generate_tiles_on_demand
     """
     temp_entity_table = "TEMP_ENTITY_TRACKER_1"
+    entity_table_query = f"SELECT * FROM {temp_entity_table}"
     last_tile_start_date_1 = "2022-07-06 10:52:14"
 
     await session.execute_query(
@@ -108,7 +110,7 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager):
         InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:33:00'"
     ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:58:00'")
 
-    await tile_manager.generate_tiles_on_demand([(tile_spec, temp_entity_table)])
+    await tile_manager.generate_tiles_on_demand([(tile_spec, entity_table_query)])
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)

@@ -9,7 +9,7 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.enum import SpecialColumnName
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 AggSpecEntityIDs = Tuple[str, ...]
@@ -80,7 +80,7 @@ class RequestTablePlan:
     def construct_request_table_ctes(
         self,
         request_table_name: str,
-    ) -> list[tuple[str, expressions.Select]]:
+    ) -> CteStatements:
         """
         Construct SQL statements that build the processed request tables
 

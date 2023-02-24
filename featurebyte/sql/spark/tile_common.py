@@ -52,7 +52,7 @@ class TileCommon(BaseModel, ABC):
             string representation of entity_column_names
         """
 
-        return ",".join(self.entity_column_names)
+        return ",".join([f"`{col}`" for col in self.entity_column_names])
 
     @property
     def value_column_names_str(self) -> str:
