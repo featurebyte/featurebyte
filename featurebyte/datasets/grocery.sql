@@ -1,6 +1,7 @@
 -- url: https://storage.googleapis.com/featurebyte-public-datasets/grocery.tar.gz
+-- description: French Grocery Dataset
 
-DROP DATABASE GROCERY CASCADE;
+DROP DATABASE IF EXISTS GROCERY CASCADE;
 CREATE DATABASE GROCERY;
 
 -- populate GroceryCustomer

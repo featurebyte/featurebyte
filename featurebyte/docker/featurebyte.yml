@@ -9,9 +9,6 @@ services:
     volumes:
       - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
       - ~/.featurebyte/data/:/data/
-    ports:
-      - 27021:27021
-      - 27022:27022
 
   featurebyte-server:
     hostname: featurebyte-server
@@ -33,4 +30,3 @@ services:
       LOG_LEVEL: warning
     ports:
       - "127.0.0.1:8088:8088"  # featurebyte-server
-      - "127.0.0.1:8090:8090"  # jupyter-notebook

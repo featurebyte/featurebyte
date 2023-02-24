@@ -27,7 +27,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
-.PHONY: beta-start beta-bundle beta-stop beta-build beta-bundle-publish
+.PHONY: beta-build
 .PHONY: clean
 
 #* Initialize
@@ -60,7 +60,7 @@ lint-style:
 	poetry run pylint --disable=${PYLINT_DISABLE} --rcfile pyproject.toml featurebyte
 	poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
 
-	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
+	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" | xargs poetry run darglint --verbosity 2
 	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 lint-type:
@@ -103,14 +103,6 @@ test-routes:
 	uvicorn featurebyte.app:app --reload
 
 #* Docker
-beta-start: beta-build
-	cd docker/dev && LOCAL_UID="$(shell id -u)" LOCAL_GID="$(shell id -g)" docker compose -f docker-compose.yml up
-	$(MAKE) beta-stop
-
-beta-stop:
-	cd docker/dev && docker compose -f docker-compose.yml down
-	-docker container rm mongo-rs featurebyte-server featurebyte-docs
-
 beta-build: build-hive-udf-jar
 	poetry build
 	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
