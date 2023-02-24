@@ -1,12 +1,12 @@
 {
   "channel": "${AUTHOR_ID}",
-  "text": "🔴 Failed Action ${GITHUB_JOB} for ${REPOSITORY}:${GITHUB_HEAD_REF}",
+  "text": "🔴 Failed Action ${GITHUB_WORKFLOW} for ${REPOSITORY}:${GITHUB_HEAD_REF}",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "🔴 *Failed Action* `${GITHUB_JOB}` for `${REPOSITORY}`:`${GITHUB_HEAD_REF}`${COVERAGE}"
+        "text": "🔴 *Failed Action* `${GITHUB_WORKFLOW}` for `${REPOSITORY}`:`${GITHUB_HEAD_REF}`${COVERAGE}"
       },
       "accessory": {
         "type": "button",
