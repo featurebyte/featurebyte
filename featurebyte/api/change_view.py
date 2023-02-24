@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, cast
+from typing import Any, ClassVar, List, Literal, Optional, Tuple, cast
 
 from datetime import datetime
 
@@ -194,7 +194,7 @@ class ChangeView(View, GroupByMixin):
         track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
-        view_mode: ViewMode = ViewMode.AUTO,
+        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> ChangeView:
@@ -257,7 +257,7 @@ class ChangeView(View, GroupByMixin):
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, scd_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if column_cleaning_operations:
+        if view_mode == ViewMode.MANUAL:
             scd_table_data = scd_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )

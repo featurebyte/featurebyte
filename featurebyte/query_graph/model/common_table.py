@@ -242,7 +242,6 @@ class BaseTableData(FeatureByteBaseModel):
         data_node: InputNode,
         other_input_nodes: List[Node],
         drop_column_names: List[str],
-        view_mode: ViewMode,
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[Node]]:
         """
@@ -262,8 +261,6 @@ class BaseTableData(FeatureByteBaseModel):
             Other input nodes for the view (used to construct additional proxy input nodes in the nested graph)
         drop_column_names: List[str]
             List of column names to drop
-        view_mode: ViewMode
-            View mode to use
         metadata: ViewMetadata
             Metadata for the view graph node
 
@@ -281,10 +278,7 @@ class BaseTableData(FeatureByteBaseModel):
         project_columns = [col.name for col in columns_info]
 
         # prepare view graph node
-        cleaning_graph_node = None
-        if view_mode == ViewMode.AUTO:
-            cleaning_graph_node = self.construct_cleaning_recipe_node(input_node=data_node)
-
+        cleaning_graph_node = self.construct_cleaning_recipe_node(input_node=data_node)
         if cleaning_graph_node:
             view_graph_node, proxy_input_nodes = GraphNode.create(
                 node_type=NodeType.GRAPH,

@@ -3,7 +3,7 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, cast
+from typing import Any, ClassVar, List, Literal, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -56,7 +56,7 @@ class DimensionView(View):
     def from_dimension_data(
         cls,
         dimension_data: DimensionData,
-        view_mode: ViewMode = ViewMode.AUTO,
+        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> DimensionView:
@@ -98,7 +98,7 @@ class DimensionView(View):
         assert isinstance(data_node, InputNode)
         dimension_table_data = cast(DimensionTableData, dimension_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if column_cleaning_operations:
+        if view_mode == ViewMode.MANUAL:
             dimension_table_data = dimension_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )

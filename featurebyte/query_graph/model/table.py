@@ -110,7 +110,6 @@ class EventTableData(BaseTableData):
             data_node=event_data_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=metadata,
         )
         columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
@@ -304,7 +303,6 @@ class ItemTableData(BaseTableData):
             data_node=item_data_node,
             other_input_nodes=[event_view_node],
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=metadata,
         )
         (  # pylint: disable=unbalanced-tuple-unpacking
@@ -382,7 +380,6 @@ class DimensionTableData(BaseTableData):
             data_node=dimension_data_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=metadata,
         )
         columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
@@ -461,7 +458,6 @@ class SCDTableData(BaseTableData):
             data_node=scd_data_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=metadata,
         )
         columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
@@ -665,7 +661,6 @@ class SCDTableData(BaseTableData):
             data_node=scd_data_node,
             other_input_nodes=[],
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=metadata,
         )
         column_names = self.get_new_column_names(

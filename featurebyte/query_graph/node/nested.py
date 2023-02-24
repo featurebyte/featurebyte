@@ -105,7 +105,6 @@ class BaseGraphNodeParameters(BaseModel):
 class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
-    @abstractmethod
     def add_cleaning_operation(
         self, graph_node: "BaseGraphNode", input_node: NodeT, dtype: DBVarType
     ) -> NodeT:
@@ -125,6 +124,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         -------
         Node
         """
+        raise NotImplementedError("This should not be called")
 
 
 class ColumnCleaningOperation(FeatureByteBaseModel):

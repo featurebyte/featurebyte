@@ -3,7 +3,7 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, cast
+from typing import Any, ClassVar, List, Literal, Optional, cast
 
 import copy
 
@@ -88,7 +88,7 @@ class EventView(View, GroupByMixin):
     def from_event_data(
         cls,
         event_data: EventData,
-        view_mode: ViewMode = ViewMode.AUTO,
+        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> EventView:
@@ -130,7 +130,7 @@ class EventView(View, GroupByMixin):
         assert isinstance(data_node, InputNode)
         event_table_data = cast(EventTableData, event_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if column_cleaning_operations:
+        if view_mode == ViewMode.MANUAL:
             event_table_data = event_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )

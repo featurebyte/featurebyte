@@ -5,9 +5,11 @@ from abc import abstractmethod
 
 import pytest
 
+from featurebyte import MissingValueImputation
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from tests.util.helper import check_sdk_code_generation
 
 
@@ -63,6 +65,123 @@ class BaseViewTestSuite:
             )
         data_name = data_type_map[self.view_type]
         return request.getfixturevalue(data_name)
+
+    @pytest.fixture(name="data_under_test_with_imputation")
+    def get_data_under_test_with_imputation_fixture(self, data_under_test):
+        factory_kwargs = {}
+        if self.view_type == ViewType.ITEM_VIEW:
+            factory_kwargs["event_suffix"] = "_event"
+
+        # add some cleaning operations
+        data_under_test[self.col].update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+        )
+        return data_under_test
+
+    def test_auto_view_mode(self, data_under_test_with_imputation):
+        """
+        Test auto view mode
+        """
+        factory_kwargs = {}
+        if self.view_type == ViewType.ITEM_VIEW:
+            factory_kwargs["event_suffix"] = "_event"
+
+        # create view
+        view = self.factory_method(data_under_test_with_imputation, **factory_kwargs)
+
+        # check view graph metadata
+        metadata = view.node.parameters.metadata
+        expected_drop_column_names = []
+        if data_under_test_with_imputation.record_creation_date_column:
+            expected_drop_column_names.append(
+                data_under_test_with_imputation.record_creation_date_column
+            )
+        assert metadata.view_mode == "auto"
+        assert metadata.drop_column_names == expected_drop_column_names
+        assert metadata.column_cleaning_operations == []
+        assert metadata.data_id == data_under_test_with_imputation.id
+
+        # check that cleaning graph is created
+        nested_graph = view.node.parameters.graph
+        cleaning_graph_node = nested_graph.get_node_by_name("graph_1")
+        assert cleaning_graph_node.parameters.type == "cleaning"
+
+        expected_node_names = ["proxy_input_1", "graph_1", "project_1"]
+        if self.view_type == ViewType.ITEM_VIEW:
+            expected_node_names = [
+                "proxy_input_1",
+                "proxy_input_2",
+                "graph_1",
+                "project_1",
+                "join_1",
+            ]
+        assert list(nested_graph.nodes_map.keys()) == expected_node_names
+
+    def test_manual_view_mode(self, data_under_test_with_imputation):
+        """
+        Test manual view mode
+        """
+        factory_kwargs = {}
+        if self.view_type == ViewType.ITEM_VIEW:
+            factory_kwargs["event_suffix"] = "_event"
+
+        # create view
+        view = self.factory_method(
+            data_under_test_with_imputation, **factory_kwargs, view_mode="manual"
+        )
+
+        # check view graph metadata
+        metadata = view.node.parameters.metadata
+        assert metadata.view_mode == "manual"
+        assert metadata.drop_column_names == []
+        assert metadata.column_cleaning_operations == []
+        assert metadata.data_id == data_under_test_with_imputation.id
+
+        # check that there is no cleaning graph
+        nested_graph = view.node.parameters.graph
+        expected_node_names = ["proxy_input_1", "project_1"]
+        if self.view_type == ViewType.ITEM_VIEW:
+            expected_node_names = ["proxy_input_1", "proxy_input_2", "project_1", "join_1"]
+        assert list(nested_graph.nodes_map.keys()) == expected_node_names
+
+    def test_view_mode__auto_manual_equality_check(self, data_under_test_with_imputation):
+        """
+        Test view mode (create a view in auto mode, then create another equivalent view in manual mode).
+        The equality is checked by comparing the view graphs. By using this relationship, we can
+        reconstruct the view graph in manual mode from the view graph in auto mode.
+        """
+        factory_kwargs = {}
+        manual_kwargs = {}
+        if self.view_type == ViewType.ITEM_VIEW:
+            factory_kwargs["event_suffix"] = "_event"
+            manual_kwargs["event_join_column_names"] = ["event_timestamp", "cust_id"]
+
+        # create view using auto mode
+        view_auto = self.factory_method(data_under_test_with_imputation, **factory_kwargs)
+
+        # create another equivalent view using manual mode
+        data_under_test_with_imputation[self.col].update_critical_data_info(cleaning_operations=[])
+        drop_column_names = view_auto.node.parameters.metadata.drop_column_names
+        view_manual = self.factory_method(
+            data_under_test_with_imputation,
+            **factory_kwargs,
+            view_mode="manual",
+            column_cleaning_operations=[
+                ColumnCleaningOperation(
+                    column_name=self.col,
+                    cleaning_operations=[MissingValueImputation(imputed_value=-1)],
+                )
+            ],
+            drop_column_names=drop_column_names,
+            **manual_kwargs,
+        )
+
+        # check both view graph node inner graph are equal
+        assert view_manual.node.parameters.graph == view_auto.node.parameters.graph
+        assert (
+            view_manual.node.parameters.output_node_name
+            == view_auto.node.parameters.output_node_name
+        )
 
     def test_setitem__str_key_series_value(self, view_under_test, data_under_test):
         """

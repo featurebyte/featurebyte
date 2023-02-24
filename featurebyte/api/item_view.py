@@ -3,7 +3,7 @@ ItemView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, cast
+from typing import Any, ClassVar, List, Literal, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -76,7 +76,7 @@ class ItemView(View, GroupByMixin):
         cls,
         item_data: ItemData,
         event_suffix: Optional[str] = None,
-        view_mode: ViewMode = ViewMode.AUTO,
+        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
         event_drop_column_names: Optional[List[str]] = None,
@@ -140,7 +140,7 @@ class ItemView(View, GroupByMixin):
         #                            +----------------------+    +---------------------------+
         drop_column_names = drop_column_names or []
         event_drop_column_names = event_drop_column_names or []
-        event_join_column_names = event_join_column_names or []
+        event_join_column_names = event_join_column_names or [event_view.timestamp_column]
         if view_mode == ViewMode.AUTO and item_data.record_creation_date_column:
             drop_column_names.append(item_data.record_creation_date_column)
         if view_mode == ViewMode.AUTO:
@@ -150,7 +150,7 @@ class ItemView(View, GroupByMixin):
         assert isinstance(data_node, InputNode)
         item_table_data = cast(ItemTableData, item_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if column_cleaning_operations:
+        if view_mode == ViewMode.MANUAL:
             item_table_data = item_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )

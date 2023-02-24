@@ -3,7 +3,7 @@ SlowlyChangingView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, cast
+from typing import Any, ClassVar, List, Literal, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -64,7 +64,7 @@ class SlowlyChangingView(View, GroupByMixin):
     def from_slowly_changing_data(
         cls,
         slowly_changing_data: SlowlyChangingData,
-        view_mode: ViewMode = ViewMode.AUTO,
+        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> SlowlyChangingView:
@@ -106,7 +106,7 @@ class SlowlyChangingView(View, GroupByMixin):
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, slowly_changing_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if column_cleaning_operations:
+        if view_mode == ViewMode.MANUAL:
             scd_table_data = scd_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )
