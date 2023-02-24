@@ -33,7 +33,7 @@ public class CountDictTransformsTest {
     countDict.put("guava", new IntWritable(240));
     countDict.put("banana", new IntWritable(250));
     countDict.put("strawberry", new IntWritable(260));
-    countDict.put("durian", new IntWritable(260));
+    countDict.put("dürian", new IntWritable(260));
 
     countDictOther = new HashMap<String, IntWritable>();
     countDictOther.put("apple", new IntWritable(100));
@@ -55,7 +55,7 @@ public class CountDictTransformsTest {
     udf.initialize(arguments);
     GenericUDF.DeferredObject[] args = {new GenericUDF.DeferredJavaObject(countDict)};
     Text output = (Text) udf.evaluate(args);
-    assertEquals(output, new Text("durian"));
+    assertEquals(output, new Text("dürian"));
   }
 
   @Test
