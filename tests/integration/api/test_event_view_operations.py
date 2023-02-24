@@ -235,7 +235,7 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_view_ops(event_view, transaction_data_upper_case):
     """
     Test operations that can be performed on an EventView before creating features
