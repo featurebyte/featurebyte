@@ -27,7 +27,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
-.PHONY: beta-bundle beta-build beta-bundle-publish
+.PHONY: beta-build
 .PHONY: clean
 
 #* Initialize

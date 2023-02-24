@@ -11,8 +11,11 @@ from enum import Enum
 
 import typer
 from python_on_whales.docker_client import DockerClient
+from rich.align import Align
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from featurebyte import version
 from featurebyte.common.path_util import get_package_root
@@ -35,10 +38,46 @@ app = typer.Typer(
 )
 app.add_typer(datasets_app, name="datasets")
 
+# Map application name to service names
 services_map = {
     ApplicationName.FEATUREBYTE: ["featurebyte-server", "mongo-rs"],
     ApplicationName.SPARK: ["spark-thrift"],
 }
+
+# Application messages
+messages = {
+    ApplicationName.FEATUREBYTE: {
+        "start": (
+            """
+            [bold green]Featurebyte application started successful![/]
+
+            API server now running at: [cyan underline]http://localhost:8088[/].
+            You can now use the featurebyte SDK with the API server.
+            """
+        ),
+        "stop": (
+            """
+            [bold green]Featurebyte application stopped.[/]
+            """
+        ),
+    },
+    ApplicationName.SPARK: {
+        "start": (
+            """
+            [bold green]Spark application started successfully![/]
+
+            Spark thrift server now running at: [cyan underline]http://localhost:10000[/].
+            You can now use the Spark thrift server for a FeatureStore in the featurebyte SDK.
+            """
+        ),
+        "stop": (
+            """
+            [bold green]Spark application stopped.[/]
+            """
+        ),
+    },
+}
+
 console = Console()
 
 
@@ -88,10 +127,8 @@ def print_logs(app_name: ApplicationName, tail: int) -> None:
             line = content.decode("utf-8").strip()
             if not line.startswith(docker_service):
                 continue
-            if source == "stdout":
-                console.print(f"[green]{line}[/]")
-            else:
-                console.print(f"[red]{line}[/]")
+            style = "green" if source == "stdout" else "red"
+            console.print(Text(line, style=style))
 
 
 @app.command(name="start")
@@ -103,6 +140,15 @@ def start(
     """Start application"""
     with get_docker_client(app_name) as docker:
         docker.compose.up(detach=True)
+    console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
+
+
+@app.callback(invoke_without_command=True)
+def default(ctx: typer.Context) -> None:
+    """Invoke default command"""
+    if ctx.invoked_subcommand is not None:
+        return
+    start(ApplicationName.FEATUREBYTE)
 
 
 @app.command(name="stop")
@@ -114,6 +160,7 @@ def stop(
     """Stop application"""
     with get_docker_client(app_name) as docker:
         docker.compose.down()
+    console.print(Panel(Align.left(messages[app_name]["stop"]), title=app_name.value, width=120))
 
 
 @app.command(name="logs")
@@ -132,7 +179,7 @@ def logs(
 @app.command(name="status")
 def status() -> None:
     """Get service status"""
-    table = Table(title="Service Status")
+    table = Table(title="Service Status", width=120)
     table.add_column("App", justify="left", style="cyan")
     table.add_column("Name", justify="left", style="cyan")
     table.add_column("Status", justify="center")
@@ -142,15 +189,17 @@ def status() -> None:
             containers = docker.compose.ps()
             for container in containers:
                 health = container.state.health.status if container.state.health else "N/A"
-                app_health = (
-                    f"[green]{health}[/]"
+                app_health = Text(
+                    health,
+                    style="green"
                     if health == "healthy"
-                    else (f"[red]{health}[/]" if health != "N/A" else health)
+                    else "red"
+                    if health == "unhealthy"
+                    else "yellow",
                 )
-                app_status = (
-                    f"[green]{container.state.status}[/]"
-                    if container.state.status == "running"
-                    else f"[red]{container.state.status}[/]"
+                app_status = Text(
+                    container.state.status,
+                    style="green" if container.state.status == "running" else "red",
                 )
                 table.add_row(app_name, container.name, app_status, app_health)
     console.print(table)
@@ -159,7 +208,7 @@ def status() -> None:
 @app.command(name="version")
 def print_version() -> None:
     """Print featurebyte version"""
-    console.print(f"[green]featurebyte[/] version: [bold yellow]{version}[/]")
+    console.print(Text("featurebyte ", style="cyan") + Text(version, style="bold green"))
 
 
 if __name__ == "__main__":
