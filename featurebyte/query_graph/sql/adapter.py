@@ -333,6 +333,17 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    def is_qualify_clause_supported(cls) -> bool:
+        """
+        Check whether the database supports the qualify clause
+
+        Returns
+        -------
+        bool
+        """
+        return True
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -546,6 +557,18 @@ class DatabricksAdapter(BaseAdapter):
         return timestamp_expr
 
 
+class SparkAdapter(DatabricksAdapter):
+    """
+    Helper class to generate Spark specific SQL expressions
+
+    Spark is a fork of Databricks, so it shares most of the same SQL syntax.
+    """
+
+    @classmethod
+    def is_qualify_clause_supported(cls) -> bool:
+        return False
+
+
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     """
     Factory that returns an engine specific adapter given source type
@@ -560,6 +583,8 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     BaseAdapter
         Instance of BaseAdapter
     """
-    if source_type in [SourceType.DATABRICKS, SourceType.SPARK]:
+    if source_type == SourceType.DATABRICKS:
         return DatabricksAdapter()
+    if source_type == SourceType.SPARK:
+        return SparkAdapter()
     return SnowflakeAdapter()

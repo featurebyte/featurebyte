@@ -157,6 +157,22 @@ class TableNode(SQLNode, ABC):
                 expressions.alias_(column_expr, quoted_identifier(column_name))
             )
 
+        # Use nested filter if QUALIFY clause is not supported
+        if (
+            self.qualify_condition is not None
+            and not self.context.adapter.is_qualify_clause_supported()
+        ):
+            select_expr = select_expr.select(
+                expressions.alias_(
+                    self.qualify_condition, alias="_fb_qualify_condition", quoted=True
+                )
+            )
+            select_expr = (
+                select(*[quoted_identifier(column_name) for column_name in self.columns_map.keys()])
+                .from_(select_expr.subquery())
+                .where(quoted_identifier("_fb_qualify_condition"))
+            )
+
         return select_expr
 
     def get_select_statement_without_columns(self) -> Select:
@@ -168,8 +184,11 @@ class TableNode(SQLNode, ABC):
         Select
         """
 
-        # QUALIFY clause
-        if self.qualify_condition is not None:
+        # QUALIFY clause if supported
+        if (
+            self.qualify_condition is not None
+            and self.context.adapter.is_qualify_clause_supported()
+        ):
             qualify_expr = expressions.Qualify(this=self.qualify_condition)
             select_expr = expressions.Select(qualify=qualify_expr)
         else:
