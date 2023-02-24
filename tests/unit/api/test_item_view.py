@@ -147,7 +147,17 @@ def test_from_item_data__auto_join_columns(
                 ],
             },
             "output_node_name": "join_1",
-            "metadata": {"event_suffix": "_event_table"},
+            "metadata": {
+                "event_suffix": "_event_table",
+                "view_mode": "auto",
+                "drop_column_names": [],
+                "data_id": snowflake_item_data_id,
+                "column_cleaning_operations": [],
+                "event_drop_column_names": [],
+                "event_column_cleaning_operations": [],
+                "event_data_id": snowflake_event_data_id,
+                "event_join_column_names": ["event_timestamp", "cust_id"],
+            },
             "type": "item_view",
         },
         "type": "graph",
@@ -418,7 +428,9 @@ def test_join_event_data_attributes__invalid_columns(snowflake_item_view):
     assert str(exc.value) == "Column does not exist in EventData: non_existing_column"
 
 
-def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_data_same_event_id):
+def test_item_view__item_data_same_event_id_column_as_event_data(
+    snowflake_item_data_same_event_id, snowflake_event_data
+):
     """
     Test creating ItemView when ItemData has the same event_id_column as EventData
     """
@@ -481,7 +493,17 @@ def test_item_view__item_data_same_event_id_column_as_event_data(snowflake_item_
                 ],
             },
             "output_node_name": "join_1",
-            "metadata": {"event_suffix": None},
+            "metadata": {
+                "event_suffix": None,
+                "view_mode": "auto",
+                "drop_column_names": [],
+                "column_cleaning_operations": [],
+                "data_id": snowflake_item_data_same_event_id.id,
+                "event_drop_column_names": [],
+                "event_column_cleaning_operations": [],
+                "event_data_id": snowflake_event_data.id,
+                "event_join_column_names": ["event_timestamp", "cust_id"],
+            },
             "type": "item_view",
         },
     }

@@ -9,6 +9,8 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
+from featurebyte.enum import DBVarType, ViewMode
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, NodeT
 from featurebyte.query_graph.node.metadata.operation import (
@@ -100,6 +102,49 @@ class BaseGraphNodeParameters(BaseModel):
         """
 
 
+class BaseCleaningOperation(FeatureByteBaseModel):
+    """BaseCleaningOperation class"""
+
+    @abstractmethod
+    def add_cleaning_operation(
+        self, graph_node: "BaseGraphNode", input_node: NodeT, dtype: DBVarType
+    ) -> NodeT:
+        """
+        Add cleaning operation to the graph node
+
+        Parameters
+        ----------
+        graph_node: BaseGraphNode
+            Nested graph node
+        input_node: NodeT
+            Input node to the query graph
+        dtype: DBVarType
+            Data type that output column will be casted to
+
+        Returns
+        -------
+        Node
+        """
+
+
+class ColumnCleaningOperation(FeatureByteBaseModel):
+    """
+    ColumnCleaningOperation schema
+    """
+
+    column_name: str
+    cleaning_operations: Sequence[BaseCleaningOperation]
+
+
+class DataCleaningOperation(FeatureByteBaseModel):
+    """
+    DataCleaningOperation schema
+    """
+
+    data_name: str
+    column_cleaning_operations: List[ColumnCleaningOperation]
+
+
 class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:cleaning) parameters"""
 
@@ -117,11 +162,20 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
         raise RuntimeError("Not implemented")
 
 
+class ViewMetadata(BaseModel):
+    """View metadata (used by event, scd & dimension view)"""
+
+    view_mode: ViewMode
+    drop_column_names: List[str]
+    column_cleaning_operations: List[ColumnCleaningOperation]
+    data_id: PydanticObjectId
+
+
 class EventViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:event_view) parameters"""
 
     type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: ViewMetadata
 
     def derive_sdk_code(
         self,
@@ -141,16 +195,21 @@ class EventViewGraphNodeParameters(BaseGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
+class ItemViewMetadata(ViewMetadata):
+    """Item view metadata"""
+
+    event_suffix: Optional[str]
+    event_drop_column_names: List[str]
+    event_column_cleaning_operations: List[ColumnCleaningOperation]
+    event_join_column_names: List[str]
+    event_data_id: PydanticObjectId
+
+
 class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:item_view) parameters"""
 
-    class Metadata(BaseModel):
-        """Metadata for item view graph node"""
-
-        event_suffix: Optional[str]
-
     type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
-    metadata: Metadata
+    metadata: ItemViewMetadata
 
     def derive_sdk_code(
         self,
@@ -176,7 +235,7 @@ class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:dimension_view) parameters"""
 
     type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: ViewMetadata
 
     def derive_sdk_code(
         self,
@@ -200,7 +259,7 @@ class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:scd_view) parameters"""
 
     type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: ViewMetadata
 
     def derive_sdk_code(
         self,
@@ -219,18 +278,19 @@ class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
+class ChangeViewMetadata(ViewMetadata):
+    """Change view metadata"""
+
+    track_changes_column: str
+    default_feature_job_setting: Optional[Dict[str, Any]]
+    prefixes: Optional[Tuple[Optional[str], Optional[str]]]
+
+
 class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:change_view) parameters"""
 
-    class Metadata(BaseModel):
-        """Metadata for change view graph node"""
-
-        track_changes_column: str
-        default_feature_job_setting: Optional[Dict[str, Any]]
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
-
     type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
-    metadata: Metadata
+    metadata: ChangeViewMetadata
 
     def derive_sdk_code(
         self,

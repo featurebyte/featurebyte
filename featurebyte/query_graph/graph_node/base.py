@@ -3,7 +3,7 @@ This module contains graph node class.
 """
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from pydantic import parse_obj_as
+from pydantic import BaseModel, parse_obj_as
 
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -33,7 +33,7 @@ class GraphNode(BaseGraphNode):
         input_nodes: List[Node],
         graph_node_type: GraphNodeType,
         nested_node_input_indices: Optional[List[int]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[BaseModel] = None,
     ) -> Tuple["GraphNode", List[Node]]:
         """
         Construct a graph node
@@ -52,7 +52,7 @@ class GraphNode(BaseGraphNode):
             Type of graph node
         nested_node_input_indices: Optional[List[int]]
             Indices of input nodes to be used as input nodes of the nested node
-        metadata: Optional[Dict[str, Any]]
+        metadata: Optional[BaseModel]
             Optional metadata that is passed to the graph node parameters
 
         Returns

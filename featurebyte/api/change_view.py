@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional, Tuple, cast
+from typing import Any, ClassVar, List, Optional, Tuple, cast
 
 from datetime import datetime
 
@@ -14,12 +14,14 @@ from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import ViewMode
 from featurebyte.exception import ChangeViewNoJoinColumnError
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
 from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ChangeViewMetadata, ColumnCleaningOperation
 
 
 class ChangeViewColumn(LaggableViewColumn):
@@ -192,6 +194,9 @@ class ChangeView(View, GroupByMixin):
         track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
+        view_mode: ViewMode = ViewMode.AUTO,
+        drop_column_names: Optional[List[str]] = None,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> ChangeView:
         """
         Create a change view from SCD data.
@@ -210,13 +215,25 @@ class ChangeView(View, GroupByMixin):
             Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
             values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
             they must be different.
+        view_mode: ViewMode
+            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
+            from the data and the record creation date column will be dropped
+        drop_column_names: Optional[List[str]]
+            List of column names to drop (manual mode only)
+        column_cleaning_operations: Optional[List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]]
+            Column cleaning operations to apply (manual mode only)
 
         Returns
         -------
         ChangeView
         """
         # Validate input
-        ChangeView._validate_inputs(scd_data, track_changes_column, prefixes)
+        cls._validate_inputs(scd_data, track_changes_column, prefixes)
+        cls._validate_view_mode_params(
+            view_mode=view_mode,
+            drop_column_names=drop_column_names,
+            column_cleaning_operations=column_cleaning_operations,
+        )
 
         # construct change view graph node from the scd data, the final graph looks like:
         #       +---------------------+    +-----------------------------+
@@ -228,26 +245,38 @@ class ChangeView(View, GroupByMixin):
         col_names = SCDTableData.get_new_column_names(
             track_changes_column, scd_data.effective_timestamp_column, prefixes
         )
-        drop_columns_names = []
+        drop_column_names = drop_column_names or []
         if (
-            scd_data.record_creation_date_column
+            view_mode == ViewMode.AUTO
+            and scd_data.record_creation_date_column
             and scd_data.record_creation_date_column != track_changes_column
         ):
-            drop_columns_names.append(scd_data.record_creation_date_column)
+            drop_column_names.append(scd_data.record_creation_date_column)
 
         data_node = scd_data.frame.node
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, scd_data.table_data)
+        column_cleaning_operations = column_cleaning_operations or []
+        if column_cleaning_operations:
+            scd_table_data = scd_table_data.clone(
+                column_cleaning_operations=column_cleaning_operations
+            )
+
         view_graph_node, columns_info = scd_table_data.construct_change_view_graph_node(
             scd_data_node=data_node,
             track_changes_column=track_changes_column,
             prefixes=prefixes,
-            drop_column_names=drop_columns_names,
-            metadata={
-                "track_changes_column": track_changes_column,
-                "default_feature_job_setting": default_feature_job_setting,
-                "prefixes": prefixes,
-            },
+            drop_column_names=drop_column_names,
+            view_mode=view_mode,
+            metadata=ChangeViewMetadata(
+                track_changes_column=track_changes_column,
+                default_feature_job_setting=default_feature_job_setting,
+                prefixes=prefixes,
+                view_mode=view_mode,
+                drop_column_names=drop_column_names,
+                column_cleaning_operations=column_cleaning_operations,
+                data_id=scd_data.id,
+            ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
         return ChangeView(

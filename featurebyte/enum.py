@@ -288,6 +288,15 @@ class TableDataType(StrEnum):
     SCD_DATA = "scd_data"
 
 
+class ViewMode(StrEnum):
+    """
+    ViewMode enum
+    """
+
+    AUTO = "auto"
+    MANUAL = "manual"
+
+
 class SemanticType(StrEnum):
     """
     Builtin semantic enum
