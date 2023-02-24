@@ -2,8 +2,8 @@
 Test for graph pruning related logics
 """
 import os
+import pickle
 
-import pytest
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -299,3 +299,22 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     assert pruned_join_node.parameters == expected_pruned_join_node_params
+
+
+def test_node_parameters_pruning__grocery_invoice_view():
+    """Test node parameters pruning bug on grocery input view"""
+    with open("tests/fixtures/graph/grocery_invoice_view.pkl", "rb") as fhandle:
+        view_dict = pickle.load(fhandle)
+
+    query_graph = QueryGraph(**view_dict["graph"])
+    node = query_graph.get_node_by_name(view_dict["node_name"])
+
+    # check the graph is pruned properly without any error
+    pruned_graph, node_name_map, _ = prune_query_graph(
+        graph=query_graph,
+        node=node,
+        aggressive=True,
+        target_columns=["InvoiceItemCount", "GroceryCustomerGuid"],
+    )
+    assert len(query_graph.nodes) == 26
+    assert len(pruned_graph.nodes) == 14
