@@ -357,7 +357,7 @@ class SparkSession(BaseSession):
         if temporary:
             create_command = "CREATE OR REPLACE TEMPORARY VIEW"
         else:
-            create_command = "CREATE TEMPORARY VIEW"
+            create_command = "CREATE OR REPLACE VIEW"
         await self.execute_query(f"{create_command} `{table_name}` AS {query}")
 
 
