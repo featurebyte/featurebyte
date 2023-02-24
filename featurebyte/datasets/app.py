@@ -66,7 +66,10 @@ def import_dataset(dataset_name: str) -> None:
             sql = file_obj.read()
             sql = sql.format(staging_path=hive_staging_path)
 
+        # extract url from first line in sql file. e.g.
+        # -- url: https://storage.googleapis.com/featurebyte-public-datasets/grocery.tar.gz
         first_line = sql.split("\n")[0]
+        # get contiguous string after "url: " that is unbroken by whitespace
         matches = re.findall(r"url:[\s]+([^\s]+)", first_line)
         if matches:
             # validate url is from featurebyte

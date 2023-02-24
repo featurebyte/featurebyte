@@ -184,22 +184,22 @@ def status() -> None:
     table.add_column("Name", justify="left", style="cyan")
     table.add_column("Status", justify="center")
     table.add_column("Health", justify="center")
+    health_colors = {
+        "healthy": "green",
+        "unhealthy": "red",
+    }
+    status_colors = {
+        "running": "green",
+        "exited": "red",
+    }
     for app_name in ApplicationName:
         with get_docker_client(ApplicationName(app_name)) as docker:
             containers = docker.compose.ps()
             for container in containers:
                 health = container.state.health.status if container.state.health else "N/A"
-                app_health = Text(
-                    health,
-                    style="green"
-                    if health == "healthy"
-                    else "red"
-                    if health == "unhealthy"
-                    else "yellow",
-                )
+                app_health = Text(health, health_colors.get(health, "yellow"))
                 app_status = Text(
-                    container.state.status,
-                    style="green" if container.state.status == "running" else "red",
+                    container.state.status, status_colors.get(container.state.status, "yellow")
                 )
                 table.add_row(app_name, container.name, app_status, app_health)
     console.print(table)
