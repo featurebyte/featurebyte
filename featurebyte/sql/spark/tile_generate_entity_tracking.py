@@ -8,6 +8,7 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
+from featurebyte.sql.spark.common import construct_create_delta_table_query
 
 
 class TileGenerateEntityTracking(BaseModel):
@@ -65,8 +66,7 @@ class TileGenerateEntityTracking(BaseModel):
 
         # create table or insert new records or update existing records
         if not tracking_table_exist_flag:
-            table_prop = "TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')"
-            create_sql = f"create table {tracking_table_name} using delta {table_prop} as ({self.entity_table})"
+            create_sql = construct_create_delta_table_query(tracking_table_name, self.entity_table)
             await self._spark.execute_query(create_sql)
         else:
             merge_sql = f"""

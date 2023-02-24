@@ -189,6 +189,7 @@ class FeatureExecutionPlan:
         Returns
         -------
         tuple[CteStatement, list[str]]
+            Tuple of CteExpression and list of column names
         """
         # Select original columns first
         if request_table_columns:

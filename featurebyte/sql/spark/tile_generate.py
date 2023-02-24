@@ -4,6 +4,7 @@ Databricks Tile Generate Job Script
 from typing import Optional
 
 from featurebyte.logger import logger
+from featurebyte.sql.spark.common import construct_create_delta_table_query
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
@@ -91,10 +92,8 @@ class TileGenerate(TileCommon):
         # insert new records and update existing records
         if not tile_table_exist_flag:
             logger.info("creating tile table: ", self.tile_id)
-            table_prop = "TBLPROPERTIES('delta.columnMapping.mode' = 'name', 'delta.minReaderVersion' = '2', 'delta.minWriterVersion' = '5')"
-            await self._spark.execute_query(
-                f"create table {self.tile_id} using delta {table_prop} as {tile_sql}"
-            )
+            create_sql = construct_create_delta_table_query(self.tile_id, tile_sql)
+            await self._spark.execute_query(create_sql)
 
         else:
             if self.entity_column_names:
