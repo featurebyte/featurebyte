@@ -1,12 +1,12 @@
 {
   "channel": "${AUTHOR_ID}",
-  "text": "☝️ Bumped featurebyte:${PUBLISH_VERSION}",
+  "text": "☝️ Bumped ${ARTIFACT}",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "️☝️ Bumped `featurebyte:${PUBLISH_VERSION}`"
+        "text": "️☝️ Bumped `${ARTIFACT}`"
       },
       "accessory": {
         "type": "button",
