@@ -194,7 +194,7 @@ class ChangeView(View, GroupByMixin):
         track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
-        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> ChangeView:
@@ -215,7 +215,7 @@ class ChangeView(View, GroupByMixin):
             Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
             values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
             they must be different.
-        view_mode: ViewMode
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
             from the data and the record creation date column will be dropped
         drop_column_names: Optional[List[str]]
@@ -267,7 +267,6 @@ class ChangeView(View, GroupByMixin):
             track_changes_column=track_changes_column,
             prefixes=prefixes,
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=ChangeViewMetadata(
                 track_changes_column=track_changes_column,
                 default_feature_job_setting=default_feature_job_setting,

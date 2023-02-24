@@ -76,7 +76,7 @@ class ItemView(View, GroupByMixin):
         cls,
         item_data: ItemData,
         event_suffix: Optional[str] = None,
-        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
         event_drop_column_names: Optional[List[str]] = None,
@@ -92,7 +92,7 @@ class ItemView(View, GroupByMixin):
             ItemData object used to construct ItemView object
         event_suffix : Optional[str]
             A suffix to append on to the columns from the EventData
-        view_mode: ViewMode
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
             from the data, the record creation date column will be dropped and the columns to join from the
             EventView will be automatically selected
@@ -167,7 +167,6 @@ class ItemView(View, GroupByMixin):
             event_view_event_id_column=event_view.event_id_column,
             event_suffix=event_suffix,
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=ItemViewMetadata(
                 event_suffix=event_suffix,
                 view_mode=view_mode,

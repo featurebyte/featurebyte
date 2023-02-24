@@ -27,6 +27,10 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionStr,
 )
 
+if TYPE_CHECKING:
+    from featurebyte.query_graph.graph_node.base import GraphNode
+    from featurebyte.query_graph.node import Node
+
 
 class ProxyInputNode(BaseNode):
     """Proxy input node used by nested graph"""
@@ -106,8 +110,8 @@ class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
     def add_cleaning_operation(
-        self, graph_node: "BaseGraphNode", input_node: NodeT, dtype: DBVarType
-    ) -> NodeT:
+        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
+    ) -> "Node":
         """
         Add cleaning operation to the graph node
 
@@ -120,9 +124,10 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         dtype: DBVarType
             Data type that output column will be casted to
 
-        Returns
-        -------
-        Node
+        Raises
+        ------
+        NotImplementedError
+            If this method is called
         """
         raise NotImplementedError("This should not be called")
 

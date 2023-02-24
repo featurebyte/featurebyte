@@ -88,7 +88,7 @@ class EventView(View, GroupByMixin):
     def from_event_data(
         cls,
         event_data: EventData,
-        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> EventView:
@@ -99,7 +99,7 @@ class EventView(View, GroupByMixin):
         ----------
         event_data: EventData
             EventData object used to construct EventView object
-        view_mode: ViewMode
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
             from the data and the record creation date column will be dropped
         drop_column_names: Optional[List[str]]
@@ -138,7 +138,6 @@ class EventView(View, GroupByMixin):
         view_graph_node, columns_info = event_table_data.construct_event_view_graph_node(
             event_data_node=data_node,
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=ViewMetadata(
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,

@@ -56,7 +56,7 @@ class DimensionView(View):
     def from_dimension_data(
         cls,
         dimension_data: DimensionData,
-        view_mode: Literal[tuple(ViewMode)] = ViewMode.AUTO,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
         drop_column_names: Optional[List[str]] = None,
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
     ) -> DimensionView:
@@ -67,7 +67,7 @@ class DimensionView(View):
         ----------
         dimension_data : DimensionData
             object used to construct DimensionView object
-        view_mode: ViewMode
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
             from the data and the record creation date column will be dropped
         drop_column_names: Optional[List[str]]
@@ -106,7 +106,6 @@ class DimensionView(View):
         view_graph_node, columns_info = dimension_table_data.construct_dimension_view_graph_node(
             dimension_data_node=data_node,
             drop_column_names=drop_column_names,
-            view_mode=view_mode,
             metadata=ViewMetadata(
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,

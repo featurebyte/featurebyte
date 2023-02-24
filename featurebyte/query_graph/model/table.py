@@ -15,7 +15,7 @@ from featurebyte.common.join_utils import (
     combine_column_info_of_views,
     filter_columns,
 )
-from featurebyte.enum import TableDataType, ViewMode
+from featurebyte.enum import TableDataType
 from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -84,7 +84,6 @@ class EventTableData(BaseTableData):
         self,
         event_data_node: InputNode,
         drop_column_names: List[str],
-        view_mode: ViewMode,
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
@@ -96,8 +95,6 @@ class EventTableData(BaseTableData):
             Event data node
         drop_column_names: List[str]
             List of column names to drop from the event data
-        view_mode: ViewMode
-            View mode to use
         metadata: ViewMetadata
             Metadata to be added to the graph node
 
@@ -267,7 +264,6 @@ class ItemTableData(BaseTableData):
         event_view_event_id_column: str,
         event_suffix: Optional[str],
         drop_column_names: List[str],
-        view_mode: ViewMode,
         metadata: ItemViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo], str]:
         """
@@ -289,8 +285,6 @@ class ItemTableData(BaseTableData):
             Suffix to append to joined EventView columns
         drop_column_names: List[str]
             List of columns to drop from the item data
-        view_mode: ViewMode
-            View mode to use
         metadata: ItemViewMetadata
             Metadata to add to the graph node
 
@@ -354,7 +348,6 @@ class DimensionTableData(BaseTableData):
         self,
         dimension_data_node: InputNode,
         drop_column_names: List[str],
-        view_mode: ViewMode,
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
@@ -366,8 +359,6 @@ class DimensionTableData(BaseTableData):
             Dimension data node
         drop_column_names: List[str]
             List of columns to drop from the dimension data
-        view_mode: ViewMode
-            View mode to use
         metadata: ViewMetadata
             Metadata to add to the graph node
 
@@ -432,7 +423,6 @@ class SCDTableData(BaseTableData):
         self,
         scd_data_node: InputNode,
         drop_column_names: List[str],
-        view_mode: ViewMode,
         metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
@@ -444,8 +434,6 @@ class SCDTableData(BaseTableData):
             Slowly changing dimension data node
         drop_column_names: List[str]
             List of columns to drop from the SCD data
-        view_mode: ViewMode
-            View mode to use
         metadata: ViewMetadata
             Metadata to add to the graph node
 
@@ -631,7 +619,6 @@ class SCDTableData(BaseTableData):
         track_changes_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]],
         drop_column_names: List[str],
-        view_mode: ViewMode,
         metadata: ChangeViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
@@ -647,8 +634,6 @@ class SCDTableData(BaseTableData):
             Prefixes for the new and previous columns
         drop_column_names: List[str]
             Column names to drop from the slow changing dimension data
-        view_mode: ViewMode
-            View mode to use
         metadata: ChangeViewMetadata
             Metadata for the graph node
 

@@ -281,6 +281,17 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             List of column names to drop
         column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
             List of column cleaning operations
+        event_drop_column_names: Optional[List[str]]
+            List of event column names to drop
+        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            List of event column cleaning operations
+        event_join_column_names: Optional[List[str]]
+            List of event join column names
+
+        Raises
+        ------
+        ValueError
+            If any of the parameters are passed in auto mode
         """
         view_mode_only_params = {
             "drop_column_names": drop_column_names,
@@ -292,8 +303,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         non_empty_params = [name for name, value in view_mode_only_params.items() if value]
         if view_mode == ViewMode.AUTO and any(non_empty_params):
             params = ", ".join(non_empty_params)
-            be = "is" if len(non_empty_params) == 1 else "are"
-            raise ValueError(f"{params} {be} only supported in manual mode")
+            is_or_are = "is" if len(non_empty_params) == 1 else "are"
+            raise ValueError(f"{params} {is_or_are} only supported in manual mode")
 
     def _get_additional_inherited_columns(self) -> set[str]:
         """
