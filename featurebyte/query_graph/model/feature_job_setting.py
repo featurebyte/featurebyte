@@ -117,5 +117,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
             "blind_spot": self.blind_spot_seconds,
         }
 
-    def __eq__(self, other: "FeatureJobSetting") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FeatureJobSetting):
+            return False
         return self.to_seconds() == other.to_seconds()
