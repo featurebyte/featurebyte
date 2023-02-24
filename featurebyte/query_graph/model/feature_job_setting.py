@@ -119,5 +119,5 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FeatureJobSetting):
-            return False
+            return NotImplemented
         return self.to_seconds() == other.to_seconds()
