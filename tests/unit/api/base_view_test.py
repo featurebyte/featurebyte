@@ -1,6 +1,7 @@
 """
 Base View test suite
 """
+import time
 from abc import abstractmethod
 
 import pytest
@@ -76,6 +77,8 @@ class BaseViewTestSuite:
         data_under_test[self.col].update_critical_data_info(
             cleaning_operations=[MissingValueImputation(imputed_value=-1)]
         )
+        time.sleep(1)  # wait for 1 second to ensure that the data is updated
+        assert len(data_under_test[self.col].info.critical_data_info.cleaning_operations) == 1
         return data_under_test
 
     def test_auto_view_mode(self, data_under_test_with_imputation):
