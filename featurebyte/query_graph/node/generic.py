@@ -757,7 +757,7 @@ class JoinNodeParameters(BaseModel):
         return values
 
 
-class JoinNode(BaseNode):
+class JoinNode(BasePrunableNode):
     """Join class"""
 
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
@@ -810,6 +810,10 @@ class JoinNode(BaseNode):
             ]
         return self.clone(parameters=node_params)
 
+    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+        # if this join node is pruned, use the first input node to resolve pruned node not found issue
+        return input_node_names[0]
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -825,7 +829,10 @@ class JoinNode(BaseNode):
         left_columns = {
             col.name: col.clone(
                 name=left_col_map[col.name],  # type: ignore
-                node_names=col.node_names.union([self.name]),
+                # if the join type is left, current node is not a compulsory node for the column
+                node_names=col.node_names.union([self.name])
+                if params.join_type != "left"
+                else col.node_names,
                 node_name=self.name,
             )
             for col in inputs[0].columns
