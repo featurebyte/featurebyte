@@ -1,6 +1,8 @@
 """
 This module contains critical data info related models.
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, List, Literal, Sequence, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
@@ -16,6 +18,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.nested import BaseCleaningOperation
 
 
 class ConditionOperationField(StrEnum):
@@ -33,31 +36,6 @@ class ConditionOperationField(StrEnum):
 
 NumericT = Union[int, float]
 IMPUTE_OPERATIONS = []
-
-
-class BaseCleaningOperation(FeatureByteBaseModel):
-    """BaseCleaningOperation class"""
-
-    @abstractmethod
-    def add_cleaning_operation(
-        self, graph_node: GraphNode, input_node: Node, dtype: DBVarType
-    ) -> Node:
-        """
-        Add cleaning operation to the graph node
-
-        Parameters
-        ----------
-        graph_node: GraphNode
-            Nested graph node
-        input_node: Node
-            Input node to the query graph
-        dtype: DBVarType
-            Data type that output column will be casted to
-
-        Returns
-        -------
-        Node
-        """
 
 
 class BaseImputeOperation(BaseCleaningOperation):

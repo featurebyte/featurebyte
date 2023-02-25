@@ -321,7 +321,15 @@
                     ]
                 },
                 "output_node_name": "project_1",
-                "type": "event_view"
+                "type": "event_view",
+                "metadata": {
+                    "view_mode": "auto",
+                    "drop_column_names": ["created_at"],
+                    "column_cleaning_operations": [],
+                    "data_id": {
+                        "$oid": "6337f9651050ee7d5980660d"
+                    }
+                }
             }
         }
     ]

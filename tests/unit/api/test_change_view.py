@@ -17,6 +17,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.util.helper import check_sdk_code_generation
 
@@ -33,6 +34,93 @@ def feature_from_change_view(snowflake_scd_data_with_entity):
         method="count", windows=["30d"], feature_names=["feat_30d"]
     )
     return feature_group["feat_30d"]
+
+
+@pytest.fixture(name="snowflake_scd_data_with_imputation")
+def snowflake_scd_data_with_imputation_fixture(snowflake_scd_data_with_entity):
+    """
+    Fixture for a SCDTableData with imputation
+    """
+    snowflake_scd_data_with_entity["col_int"].update_critical_data_info(
+        cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+    )
+    return snowflake_scd_data_with_entity
+
+
+def test_auto_view_mode(snowflake_scd_data_with_imputation):
+    """
+    Test auto view mode
+    """
+    # create view
+    snowflake_change_view = ChangeView.from_slowly_changing_data(
+        snowflake_scd_data_with_imputation, "col_int"
+    )
+
+    # check view graph metadata
+    metadata = snowflake_change_view.node.parameters.metadata
+    assert snowflake_scd_data_with_imputation.record_creation_date_column is None
+    assert metadata.view_mode == "auto"
+    assert metadata.drop_column_names == []
+    assert metadata.column_cleaning_operations == []
+    assert metadata.data_id == snowflake_scd_data_with_imputation.id
+
+    # check that cleaning graph is created
+    nested_graph = snowflake_change_view.node.parameters.graph
+    cleaning_graph_node = nested_graph.get_node_by_name("graph_1")
+    assert cleaning_graph_node.parameters.type == "cleaning"
+
+
+def test_manual_view_mode(snowflake_scd_data_with_imputation):
+    """
+    Test manual view mode
+    """
+    # create view
+    snowflake_change_view = ChangeView.from_slowly_changing_data(
+        snowflake_scd_data_with_imputation, "col_int", view_mode="manual"
+    )
+
+    # check view graph metadata
+    metadata = snowflake_change_view.node.parameters.metadata
+    assert metadata.view_mode == "manual"
+    assert metadata.drop_column_names == []
+    assert metadata.column_cleaning_operations == []
+    assert metadata.data_id == snowflake_scd_data_with_imputation.id
+
+    # check that there is no cleaning graph
+    nested_graph = snowflake_change_view.node.parameters.graph
+    assert all(not node_name.startswith("graph") for node_name in nested_graph.nodes_map.keys())
+
+
+def test_view_mode__auto_manual_equality_check(snowflake_scd_data_with_imputation):
+    """
+    Test view mode (create a view in auto mode, then create another equivalent view in manual mode).
+    The equality is checked by comparing the view graphs. By using this relationship, we can
+    reconstruct the view graph in manual mode from the view graph in auto mode.
+    """
+    # create view using auto mode
+    view_auto = ChangeView.from_slowly_changing_data(snowflake_scd_data_with_imputation, "col_int")
+
+    # create another equivalent view using manual mode
+    snowflake_scd_data_with_imputation["col_int"].update_critical_data_info(cleaning_operations=[])
+    drop_column_names = view_auto.node.parameters.metadata.drop_column_names
+    view_manual = ChangeView.from_slowly_changing_data(
+        snowflake_scd_data_with_imputation,
+        "col_int",
+        view_mode="manual",
+        column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name="col_int",
+                cleaning_operations=[MissingValueImputation(imputed_value=-1)],
+            )
+        ],
+        drop_column_names=drop_column_names,
+    )
+
+    # check both view graph node inner graph are equal
+    assert view_manual.node.parameters.graph == view_auto.node.parameters.graph
+    assert (
+        view_manual.node.parameters.output_node_name == view_auto.node.parameters.output_node_name
+    )
 
 
 def test_get_default_feature_job_setting():

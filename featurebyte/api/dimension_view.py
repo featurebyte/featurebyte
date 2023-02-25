@@ -3,7 +3,7 @@ DimensionView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar, List, Literal, Optional, cast
 
 from pydantic import Field
 from typeguard import typechecked
@@ -12,12 +12,14 @@ from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.api.view import View, ViewColumn
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import ViewMode
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logger import logger
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.table import DimensionTableData
 from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation, ViewMetadata
 
 
 class DimensionViewColumn(ViewColumn):
@@ -51,7 +53,13 @@ class DimensionView(View):
 
     @classmethod
     @typechecked
-    def from_dimension_data(cls, dimension_data: DimensionData) -> DimensionView:
+    def from_dimension_data(
+        cls,
+        dimension_data: DimensionData,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
+        drop_column_names: Optional[List[str]] = None,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+    ) -> DimensionView:
         """
         Construct an DimensionView object
 
@@ -59,27 +67,51 @@ class DimensionView(View):
         ----------
         dimension_data : DimensionData
             object used to construct DimensionView object
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
+            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
+            from the data and the record creation date column will be dropped
+        drop_column_names: Optional[List[str]]
+            List of column names to drop (manual mode only)
+        column_cleaning_operations: Optional[List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]]
+            Column cleaning operations to apply (manual mode only)
 
         Returns
         -------
         DimensionView
             constructed DimensionView object
         """
+        cls._validate_view_mode_params(
+            view_mode=view_mode,
+            drop_column_names=drop_column_names,
+            column_cleaning_operations=column_cleaning_operations,
+        )
+
         # The input of view graph node is the data node. The final graph looks like this:
         #    +-----------+     +--------------------------------+
         #    | InputNode + --> | GraphNode(type:dimension_view) +
         #    +-----------+     +--------------------------------+
-        drop_columns_names = []
-        if dimension_data.record_creation_date_column:
-            drop_columns_names.append(dimension_data.record_creation_date_column)
+        drop_column_names = drop_column_names or []
+        if view_mode == ViewMode.AUTO and dimension_data.record_creation_date_column:
+            drop_column_names.append(dimension_data.record_creation_date_column)
 
         data_node = dimension_data.frame.node
         assert isinstance(data_node, InputNode)
         dimension_table_data = cast(DimensionTableData, dimension_data.table_data)
+        column_cleaning_operations = column_cleaning_operations or []
+        if view_mode == ViewMode.MANUAL:
+            dimension_table_data = dimension_table_data.clone(
+                column_cleaning_operations=column_cleaning_operations
+            )
+
         view_graph_node, columns_info = dimension_table_data.construct_dimension_view_graph_node(
             dimension_data_node=data_node,
-            drop_column_names=drop_columns_names,
-            metadata=None,
+            drop_column_names=drop_column_names,
+            metadata=ViewMetadata(
+                view_mode=view_mode,
+                drop_column_names=drop_column_names,
+                column_cleaning_operations=column_cleaning_operations,
+                data_id=data_node.parameters.id,
+            ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
         return DimensionView(

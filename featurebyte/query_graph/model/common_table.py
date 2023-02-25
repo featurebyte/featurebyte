@@ -1,7 +1,7 @@
 """
 This module contains common table related models.
 """
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, cast
 
 from abc import abstractmethod
 
@@ -13,11 +13,12 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.critical_data_info import CleaningOperation
+from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.generic import ProjectNode
 from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation, ViewMetadata
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 
 
@@ -30,6 +31,7 @@ class TabularSource(FeatureByteBaseModel):
 
 SPECIFIC_DATA_TABLES = []
 DATA_TABLES = []
+TableDataT = TypeVar("TableDataT", bound="BaseTableData")
 
 
 class BaseTableData(FeatureByteBaseModel):
@@ -55,6 +57,53 @@ class BaseTableData(FeatureByteBaseModel):
             DATA_TABLES.append(cls)
         if table_type.default != TableDataType.GENERIC:
             SPECIFIC_DATA_TABLES.append(cls)
+
+    @property
+    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+        """
+        Get column cleaning operations from column info's critical data info
+
+        Returns
+        -------
+        List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]
+        """
+        return [
+            ColumnCleaningOperation(
+                column_name=col.name, cleaning_operations=col.critical_data_info.cleaning_operations
+            )
+            for col in self.columns_info
+            if col.critical_data_info is not None and col.critical_data_info.cleaning_operations
+        ]
+
+    def clone(
+        self: TableDataT, column_cleaning_operations: List[ColumnCleaningOperation]
+    ) -> TableDataT:
+        """
+        Create a new table data with the specified column cleaning operations
+
+        Parameters
+        ----------
+        column_cleaning_operations: List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]
+            Column cleaning operations
+
+        Returns
+        -------
+        TableDataT
+        """
+        columns_info = []
+        col_to_cleaning_ops = {
+            col_clean_op.column_name: col_clean_op.cleaning_operations
+            for col_clean_op in column_cleaning_operations
+        }
+        for col in self.columns_info:
+            if col.name in col_to_cleaning_ops:
+                col.critical_data_info = CriticalDataInfo(
+                    cleaning_operations=col_to_cleaning_ops[col.name]
+                )
+            else:
+                col.critical_data_info = None
+            columns_info.append(col)
+        return type(self)(**{**self.dict(by_alias=True), "columns_info": columns_info})
 
     def _get_common_input_node_parameters(self) -> Dict[str, Any]:
         return {
@@ -193,7 +242,7 @@ class BaseTableData(FeatureByteBaseModel):
         data_node: InputNode,
         other_input_nodes: List[Node],
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[Node]]:
         """
         Construct view graph node from table data. The output of any view should be a single graph node
@@ -212,7 +261,7 @@ class BaseTableData(FeatureByteBaseModel):
             Other input nodes for the view (used to construct additional proxy input nodes in the nested graph)
         drop_column_names: List[str]
             List of column names to drop
-        metadata: Optional[Dict[str, Any]]
+        metadata: ViewMetadata
             Metadata for the view graph node
 
         Returns

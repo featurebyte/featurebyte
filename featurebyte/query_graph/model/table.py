@@ -30,6 +30,7 @@ from featurebyte.query_graph.model.common_table import (
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import JoinEventDataAttributesMetadata, JoinNodeParameters
 from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ChangeViewMetadata, ItemViewMetadata, ViewMetadata
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
@@ -83,7 +84,7 @@ class EventTableData(BaseTableData):
         self,
         event_data_node: InputNode,
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]],
+        metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
         Construct a graph node & columns info for EventView of this event data.
@@ -94,7 +95,7 @@ class EventTableData(BaseTableData):
             Event data node
         drop_column_names: List[str]
             List of column names to drop from the event data
-        metadata: Optional[Dict[str, Any]]
+        metadata: ViewMetadata
             Metadata to be added to the graph node
 
         Returns
@@ -263,7 +264,7 @@ class ItemTableData(BaseTableData):
         event_view_event_id_column: str,
         event_suffix: Optional[str],
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]],
+        metadata: ItemViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo], str]:
         """
         Construct ItemView graph node
@@ -284,7 +285,7 @@ class ItemTableData(BaseTableData):
             Suffix to append to joined EventView columns
         drop_column_names: List[str]
             List of columns to drop from the item data
-        metadata: Optional[Dict[str, Any]]
+        metadata: ItemViewMetadata
             Metadata to add to the graph node
 
         Returns
@@ -347,7 +348,7 @@ class DimensionTableData(BaseTableData):
         self,
         dimension_data_node: InputNode,
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]],
+        metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
         Construct DimensionView graph node
@@ -358,7 +359,7 @@ class DimensionTableData(BaseTableData):
             Dimension data node
         drop_column_names: List[str]
             List of columns to drop from the dimension data
-        metadata: Optional[Dict[str, Any]]
+        metadata: ViewMetadata
             Metadata to add to the graph node
 
         Returns
@@ -422,7 +423,7 @@ class SCDTableData(BaseTableData):
         self,
         scd_data_node: InputNode,
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]],
+        metadata: ViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
         Construct SCDView graph node
@@ -433,7 +434,7 @@ class SCDTableData(BaseTableData):
             Slowly changing dimension data node
         drop_column_names: List[str]
             List of columns to drop from the SCD data
-        metadata: Optional[Dict[str, Any]]
+        metadata: ViewMetadata
             Metadata to add to the graph node
 
         Returns
@@ -618,7 +619,7 @@ class SCDTableData(BaseTableData):
         track_changes_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]],
         drop_column_names: List[str],
-        metadata: Optional[Dict[str, Any]],
+        metadata: ChangeViewMetadata,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
         Construct a graph node for a change view.
@@ -633,7 +634,7 @@ class SCDTableData(BaseTableData):
             Prefixes for the new and previous columns
         drop_column_names: List[str]
             Column names to drop from the slow changing dimension data
-        metadata: Optional[Dict[str, Any]]
+        metadata: ChangeViewMetadata
             Metadata for the graph node
 
         Returns
