@@ -293,14 +293,14 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         ValueError
             If any of the parameters are passed in auto mode
         """
-        view_mode_only_params = {
+        manual_mode_only_params = {
             "drop_column_names": drop_column_names,
             "column_cleaning_operations": column_cleaning_operations,
             "event_drop_column_names": event_drop_column_names,
             "event_column_cleaning_operations": event_column_cleaning_operations,
             "event_join_column_names": event_join_column_names,
         }
-        non_empty_params = [name for name, value in view_mode_only_params.items() if value]
+        non_empty_params = [name for name, value in manual_mode_only_params.items() if value]
         if view_mode == ViewMode.AUTO and any(non_empty_params):
             params = ", ".join(non_empty_params)
             is_or_are = "is" if len(non_empty_params) == 1 else "are"

@@ -31,6 +31,7 @@ from featurebyte.query_graph.model.critical_data_info import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
@@ -64,6 +65,7 @@ __all__ = [
     "SnowflakeDetails",
     "SparkDetails",
     "UsernamePasswordCredential",
+    # imputation related classes
     "MissingValueImputation",
     "DisguisedValueImputation",
     "UnexpectedValueImputation",
@@ -73,5 +75,7 @@ __all__ = [
     "DefaultVersionMode",
     "FeatureListNewVersionMode",
     "FeatureVersionInfo",
+    # others
     "Workspace",
+    "ColumnCleaningOperation",
 ]
