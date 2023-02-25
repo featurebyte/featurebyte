@@ -696,7 +696,7 @@ class GraphInterpreter:
                     quoted=True,
                 ),
             )
-            .from_("data")
+            .from_("casted_data")
             .group_by(col_expr)
             .order_by("COUNTS DESC")
             .limit(500)
@@ -706,7 +706,7 @@ class GraphInterpreter:
                 expression=expressions.Anonymous(
                     this="object_agg",
                     expressions=[
-                        expressions.Cast(this=col_expr, to=parse_one("STRING")),
+                        col_expr,
                         quoted_identifier("COUNTS"),
                     ],
                 ),
@@ -789,6 +789,7 @@ class GraphInterpreter:
         }
         cte_statements = [("data", sql_tree)]
 
+        casted_columns = []
         stats_selections = []
         count_tables = []
         final_selections = []
@@ -799,9 +800,18 @@ class GraphInterpreter:
             output_columns.append(column)
             col_expr = quoted_identifier(col_name)
 
+            # add casted columns
+            casted_columns.append(
+                expressions.alias_(
+                    expressions.Cast(this=col_expr, to=parse_one("STRING")), col_name, quoted=True
+                )
+            )
+
             # add dtype
             final_selections.append(
-                expressions.alias_(make_literal_value(column.dtype), f"dtype__{column_idx}")
+                expressions.alias_(
+                    make_literal_value(column.dtype), f"dtype__{column_idx}", quoted=True
+                )
             )
 
             if self._is_dtype_supported(
@@ -874,6 +884,10 @@ class GraphInterpreter:
                             this=quoted_identifier(f"{stats_name}__{column_idx}"), table="stats"
                         )
                     )
+
+        # get columns casted to string
+        sql_tree = expressions.select(*casted_columns).from_("data")
+        cte_statements.insert(1, ("casted_data", sql_tree))
 
         # get statistics
         sql_tree = expressions.select(*stats_selections).from_("data")

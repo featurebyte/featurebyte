@@ -31,10 +31,9 @@ services:
         --hiveconf hive.server2.thrift.port=10000 \
         --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
         --hiveconf derby.system.home=/opt/spark/data/derby \
-        --master=local[2] \
+        --master=local[*] \
         --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
-        --conf spark.executor.memory=6G \
-        --conf spark.driver.memory=1G \
+        --conf spark.driver.memory=6G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
         --conf spark.sql.catalogImplementation=hive  \

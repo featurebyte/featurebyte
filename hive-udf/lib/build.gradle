@@ -47,13 +47,9 @@ java {
     targetCompatibility = "1.8"
 }
 
-jar {
-   archivesBaseName = 'featurebyte-hive-udf'
-   zip64 = true
-}
-
 shadowJar{
-   zip64 = true
+  archivesBaseName = 'featurebyte-hive-udf'
+  zip64 = true
 }
 
 group = 'com.featurebyte.hive.udf'
