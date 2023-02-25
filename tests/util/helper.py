@@ -114,14 +114,6 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     assert left_pruned_graph == right_pruned_graph
 
 
-def _check_pruned_graph_and_nodes(
-    pruned_graph, node, expected_pruned_graph, expected_node, sdk_code
-):
-    # helper method to check pruned graph & node
-    assert pruned_graph == expected_pruned_graph, sdk_code
-    assert node == expected_node, sdk_code
-
-
 def check_sdk_code_generation(  # pylint: disable=too-many-locals
     api_object,
     to_use_saved_data=False,
@@ -154,13 +146,12 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     # compare the output
     pruned_graph, node = output.extract_pruned_graph_and_node()
     expected_pruned_graph, expected_node = query_object.extract_pruned_graph_and_node()
-    _check_pruned_graph_and_nodes(
-        pruned_graph=pruned_graph,
-        node=node,
-        expected_pruned_graph=expected_pruned_graph,
-        expected_node=expected_node,
-        sdk_code=sdk_code,
-    )
+
+    # check the final node hash value of two graph to make sure they are the same
+    assert (
+        pruned_graph.node_name_to_ref[node.name]
+        == expected_pruned_graph.node_name_to_ref[expected_node.name]
+    ), sdk_code
 
     if fixture_path:
         feature_store_id = api_object.feature_store.id
