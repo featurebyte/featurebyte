@@ -565,7 +565,7 @@ class OperationStructure(FeatureByteBaseModel):
 class OperationStructureBranchState(BaseModel):
     """OperationStructureBranchState class"""
 
-    visited_node_types: Set[NodeType] = Field(default_factory=set)
+    visited_node_types: Any = Field(default_factory=set)
 
 
 class OperationStructureInfo(BaseModel):
