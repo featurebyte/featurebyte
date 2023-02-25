@@ -71,9 +71,9 @@ class QueryGraphModel(FeatureByteBaseModel):
         Dict[str, List[str]]
         """
         # To make the order insensitive to the node names, we first sort the backward edges map by node hash.
-        # Backward edges map is used due to the fact that input nodes are order are important to the node operation.
-        # If edges map is used, the input order will be lost. Then we reconstruct the edges map from the sorted
-        # backward edges map (required for topological sort).
+        # Backward edges map is used due to the fact that input node order are important to the node operation.
+        # If edges map is used, the input order will be lost. After that, we reconstruct the edges map from
+        # the sorted backward edges map (required for topological sort).
         edges_map = defaultdict(list)
         sorted_backward_edges_keys = sorted(
             self.backward_edges_map, key=lambda x: self.node_name_to_ref[x]
