@@ -271,8 +271,13 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
 
     op_struct = pruned_graph.extract_operation_structure(node=pruned_node)
-    # TODO: Fix this
-    # assert op_struct.columns == expected_op_struct_columns
+    expected_op_struct_columns = sorted(
+        col.dict(exclude={"node_names": True}) for col in op_struct.columns
+    )
+    assert (
+        sorted(col.dict(exclude={"node_names"}) for col in op_struct.columns)
+        == expected_op_struct_columns
+    )
     assert op_struct.aggregations == expected_op_struct_aggregations
 
     # check pruned join node

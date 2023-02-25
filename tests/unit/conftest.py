@@ -374,12 +374,18 @@ def snowflake_item_data_id_2_fixture():
 @pytest.fixture(name="cust_id_entity_id")
 def cust_id_entity_id_fixture():
     """Customer ID entity ID"""
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
     return ObjectId("63f94ed6ea1f050131379214")
 
 
 @pytest.fixture(name="transaction_entity_id")
 def transaction_entity_id_fixture():
     """Transaction entity ID"""
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
     return ObjectId("63f94ed6ea1f050131379204")
 
 

@@ -196,6 +196,9 @@ def item_entity_id():
     """
     Item entity id fixture
     """
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
     return ObjectId("63f9506dd478b941271ed957")
 
 
