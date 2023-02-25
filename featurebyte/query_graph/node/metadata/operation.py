@@ -562,10 +562,13 @@ class OperationStructure(FeatureByteBaseModel):
         )
 
 
-class OperationStructureBranchState(BaseModel):
+class OperationStructureBranchState:
     """OperationStructureBranchState class"""
 
-    visited_node_types: Any = Field(default_factory=set)
+    def __init__(self, visited_node_types=None):
+        if visited_node_types is None:
+            visited_node_types = set()
+        self.visited_node_types = visited_node_types
 
 
 class OperationStructureInfo(BaseModel):
