@@ -571,14 +571,20 @@ class OperationStructureBranchState:
         self.visited_node_types = visited_node_types
 
 
-class OperationStructureInfo(BaseModel):
+class OperationStructureInfo:
     """OperationStructureInfo class"""
 
-    operation_structure_map: Dict[str, OperationStructure] = Field(default_factory=dict)
-    edges_map: DefaultDict[str, Set[str]] = Field(default_factory=lambda: defaultdict(set))
-    proxy_input_operation_structures: List[OperationStructure] = Field(default_factory=list)
-
-    @validator("edges_map")
-    @classmethod
-    def _construct_defaultdict(cls, value: Dict[str, Any]) -> DefaultDict[str, Set[str]]:
-        return defaultdict(set, value)
+    def __init__(
+        self,
+        operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
+        edges_map: Optional[DefaultDict[str, Set[str]]] = None,
+        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        **kwargs: Any,
+    ):
+        if edges_map is None:
+            edges_map = defaultdict(set)
+        else:
+            edges_map = defaultdict(set, edges_map)
+        self.operation_structure_map = operation_structure_map or {}
+        self.edges_map = edges_map
+        self.proxy_input_operation_structures = proxy_input_operation_structures or []
