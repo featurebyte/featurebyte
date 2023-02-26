@@ -1,5 +1,4 @@
 name: test
-
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
 ## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
@@ -8,26 +7,21 @@ name: test
 ## SNOWFLAKE_PASSWORD            | Snowflake password              | [Snowflake                      ] password
 ## GIST_SECRET                   | Github Gist Token               | [Github | Gist                  ] Write
 ## DATABRICKS_TOKEN              | Databricks access token         | [Databricks                     ] password
-
 on:
   workflow_dispatch:
   pull_request:
-    types:
-      [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - main
-
 permissions:
   contents: write
   repository-projects: read
   issues: write
   pull-requests: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
-
 env:
   # Snowflake
   SNOWFLAKE_USER: github
@@ -47,49 +41,34 @@ env:
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}  # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  # Slack
-  SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   # Testing
   FEATUREBYTE_HOME: "/tmp/featurebyte"
-
 jobs:
-  printenv:
-    runs-on: ubuntu-latest
-    steps:
-      - name: printenv
-        run: printenv
-
   build-jar:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup gradle cache
-      uses: actions/cache@v3
-      with:
-        path: hive-udf/.gradle
-        key: gradle-cache-${{ runner.os }}
-
-    - name: Setup gradle build cache
-      uses: actions/cache@v3
-      with:
-        path: hive-udf/lib/build
-        key: gradle-build-cache-${{ runner.os }}
-
-    - name: Building hive-udf
-      run: |
-        cd hive-udf && ./gradlew test && ./gradlew shadowJar
-
-    - name: Upload hive-udf
-      uses: actions/upload-artifact@v3
-      with:
-        name: hive-udf
-        path: hive-udf/lib/build/libs/*
-
-
+      - uses: actions/checkout@v3
+      - name: Setup gradle cache
+        uses: actions/cache@v3
+        with:
+          path: hive-udf/.gradle
+          key: gradle-cache-${{ runner.os }}
+      - name: Setup gradle build cache
+        uses: actions/cache@v3
+        with:
+          path: hive-udf/lib/build
+          key: gradle-build-cache-${{ runner.os }}
+      - name: Building hive-udf
+        run: |
+          cd hive-udf && ./gradlew test && ./gradlew shadowJar
+      - name: Upload hive-udf
+        uses: actions/upload-artifact@v3
+        with:
+          name: hive-udf
+          path: hive-udf/lib/build/libs/*
   test-unit:
     needs: ["build-jar"]
     runs-on: ubuntu-20.04
@@ -97,64 +76,52 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8.0"]
-
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
-
-    - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
-      with:
-        poetry-version: 1.3.1
-
-    - name: Configure Poetry
-      run: |
-        poetry config virtualenvs.in-project true
-        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-
-    - name: Adding C headers
-      run: |
-        sudo apt-get install python-dev libsasl2-dev gcc
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get install wkhtmltopdf
-        poetry install -n --sync --extras=server
-
-    - name: Download hive-udf
-      uses: actions/download-artifact@v3
-      with:
-        name: hive-udf
-        path: featurebyte/sql/spark/
-
-    - name: Run tests
-      run: |
-        make test-unit
-        mv .coverage .coverage.0
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.0
-        path: pytest.xml.0
-
-    - name: Upload unit coverage results
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.0
-        path: .coverage.0
-
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+      - name: Install dependencies
+        run: |
+          sudo apt-get install wkhtmltopdf
+          poetry install -n --sync --extras=server
+      - name: Download hive-udf
+        uses: actions/download-artifact@v3
+        with:
+          name: hive-udf
+          path: featurebyte/sql/spark/
+      - name: Run tests
+        run: |
+          make test-unit
+          mv .coverage .coverage.0
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.0
+          path: pytest.xml.0
+      - name: Upload unit coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.0
+          path: .coverage.0
   test-integration:
     needs: ["build-jar"]
     runs-on: ubuntu-20.04
@@ -162,211 +129,200 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8.0"]
-
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
-
-    - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
-      with:
-        poetry-version: 1.3.1
-
-    - name: Configure Poetry
-      run: |
-        poetry config virtualenvs.in-project true
-        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-
-    - name: Adding C headers
-      run: |
-        sudo apt-get install python-dev libsasl2-dev gcc
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get install wkhtmltopdf
-        poetry install -n --sync --extras=server
-
-    - name: Download hive-udf
-      uses: actions/download-artifact@v3
-      with:
-        name: hive-udf
-        path: featurebyte/sql/spark/
-
-    - name: Run tests
-      run: |
-        make test-setup
-        make test-integration
-        make test-teardown
-        mv .coverage .coverage.1
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.1
-        path: pytest.xml.1
-
-    - name: Upload integration coverage results
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.1
-        path: .coverage.1
-
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Adding C headers
+        run: |
+          sudo apt-get install python-dev libsasl2-dev gcc
+      - name: Install dependencies
+        run: |
+          sudo apt-get install wkhtmltopdf
+          poetry install -n --sync --extras=server
+      - name: Download hive-udf
+        uses: actions/download-artifact@v3
+        with:
+          name: hive-udf
+          path: featurebyte/sql/spark/
+      - name: Run tests
+        run: |
+          make test-setup
+          make test-integration
+          make test-teardown
+          mv .coverage .coverage.1
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.1
+          path: pytest.xml.1
+      - name: Upload integration coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.1
+          path: .coverage.1
   validate:
-    needs: [ "test-unit", "test-integration"]
+    needs: ["test-unit", "test-integration"]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
     strategy:
       matrix:
-        python-version: [ "3.8.0" ]
+        python-version: ["3.8.0"]
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: '0'  # Used for checking diff
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-        restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
-
-    - name: Install Poetry
-      uses: abatilo/actions-poetry@v2
-      with:
-        poetry-version: 1.3.1
-
-    - name: Configure Poetry
-      run: |
-        poetry config virtualenvs.in-project true
-        poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
-
-    - name: Install dependencies
-      run: |
-        poetry install -n --sync
-
-    - name: Download unit test results
-      uses: actions/download-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.0
-
-    - name: Download integration test results
-      uses: actions/download-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-pytest.xml.1
-
-    - name: Download unit coverage results
-      uses: actions/download-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.0
-
-    - name: Download integration coverage results
-      uses: actions/download-artifact@v3
-      with:
-        name: python-${{ matrix.python-version }}-.coverage.1
-
-    - name: Merge test results
-      run: |
-        make test-merge
-
-    - name: Test Coverage Report
-      id: coverageComment
-      uses: MishaKav/pytest-coverage-comment@main
-      with:
-        pytest-coverage-path: pytest-coverage.txt
-        junitxml-path: pytest.xml
-
-    - name: Check test output
-      run: |
-        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
-          # Print summary only
-          awk '/= short test summary info =/{f=1}f' pytest-coverage.txt
-          exit 1
-        fi
-
-    - name: Update Coverage Badge
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      uses: schneegans/dynamic-badges-action@v1.6.0
-      with:
-        auth: ${{ secrets.GIST_SECRET }}
-        gistID: 773e2960183c0a6fe24c644d95d71fdb
-        filename: coverage.json
-        label: coverage
-        message: ${{ steps.coverageComment.outputs.coverage }}
-        color: ${{ steps.coverageComment.outputs.color }}
-
-    - name: Slack Message Pull Request
-      run: |
-        # Get Coverage data
-        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE="\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
-        else
-          export COVERAGE=""
-        fi
-
-        export AUTHOR_EMAIL=$(git show -s --format='%ae')
-        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        if [ -z ${AUTHOR_EMAIL+x} ]; then
-          # Route message to Chester
-          export AUTHOR_ID=U03P1DE5R8V
-        else
-          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-        fi
-
-        cat .github/slack-template-PR.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
-    - name: Slack Message failure
-      if: ${{ failure() }}
-      run: |
-        # Get Coverage data
-        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE="\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
-        else
-          export COVERAGE=""
-        fi
-
-        if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
-          export GITHUB_HEAD_REF=main
-        fi
-
-        # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-          export AUTHOR_ID=C03D81HC6Q5  # Send to `developer` Channel
-        elif [ -z ${AUTHOR_EMAIL+x} ]; then
-          export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
-        else
-          # Lookup email address and export to AUTHOR_ID
-          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-        fi
-
-        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0' # Used for checking diff
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }} # Restore from `cache` job
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.3.1
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry config http-basic.featurebyte_np ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME} ${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}
+      - name: Install dependencies
+        run: |
+          poetry install -n --sync
+      - name: Download unit test results
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.0
+      - name: Download integration test results
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.1
+      - name: Download unit coverage results
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.0
+      - name: Download integration coverage results
+        uses: actions/download-artifact@v3
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.1
+      - name: Merge test results
+        run: |
+          make test-merge
+      - name: Test Coverage Report
+        id: coverageComment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: pytest-coverage.txt
+          junitxml-path: pytest.xml
+      - name: Check test output
+        run: |
+          if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
+            exit 1
+          fi
+      - name: Update Coverage Badge
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 773e2960183c0a6fe24c644d95d71fdb
+          filename: coverage.json
+          label: coverage
+          message: ${{ steps.coverageComment.outputs.coverage }}
+          color: ${{ steps.coverageComment.outputs.color }}
+  slack:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: ["build-jar", "test-unit", "test-integration", "validate"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Get Author Email (PR)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")" >> $GITHUB_ENV
+      - name: Get Author Email (PUSH)
+        if: ${{ github.event_name != 'pull_request' }}
+        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_REF_NAME}")" >> $GITHUB_ENV
+      - name: Get Channel ID
+        run: |
+          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${{ secrets.SLACK_OAUTH }}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+          echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
+      - name: Get Results
+        run: |
+          echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
+          echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
+          echo "TEST_INTEG_RESULT=${{ needs.test-integration.result }}" >> $GITHUB_ENV
+          echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
+          echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
+      - name: Send Slack notification with workflow result.
+        if: ${{ env.CHANNEL_ID != '' }}
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+        with:
+          channel-id: ${{ env.CHANNEL_ID }}
+          payload: |
+            {
+              "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.BUILD_JAR_RESULT }}, ${{ env.TEST_UNIT_RESULT }}, ${{ env.TEST_INTEG_RESULT }}, ${{ env.VALIDATE_RESULT }}]",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }, {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "```build_jar: [${{ env.BUILD_JAR_RESULT }}]\n--> test_unit [${{ env.TEST_UNIT_RESULT }}]\n--> test_integration [${{ env.TEST_INTEG_RESULT }}]\n----> validate [${{ env.VALIDATE_RESULT }}]```"
+                  }
+                }
+              ]
+            }
+      - name: Send Slack notification to Developer channel if Pushed to main and failed
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure') }}
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+        with:
+          channel-id: C03D81HC6Q5
+          payload: |
+            {
+              "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.BUILD_JAR_RESULT }}, ${{ env.TEST_UNIT_RESULT }}, ${{ env.TEST_INTEG_RESULT }}, ${{ env.VALIDATE_RESULT }}]",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }, {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "```build_jar: [${{ env.BUILD_JAR_RESULT }}]\n--> test_unit [${{ env.TEST_UNIT_RESULT }}]\n--> test_integration [${{ env.TEST_INTEG_RESULT }}]\n----> validate [${{ env.VALIDATE_RESULT }}]```"
+                  }
+                }
+              ]
+            }
