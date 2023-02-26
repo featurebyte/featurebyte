@@ -97,6 +97,7 @@ jobs:
       - name: Get Results
         run: |
           echo "PUBLISH_RESULT=${{ needs.publish.result }}" >> $GITHUB_ENV
+          echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
         if: ${{ env.CHANNEL_ID != '' }}
         uses: slackapi/slack-github-action@v1.23.0
