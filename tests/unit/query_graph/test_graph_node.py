@@ -12,7 +12,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 
 
 @pytest.fixture(name="input_node_params")
-def input_node_params_fixture(snowflake_feature_store_and_table_details):
+def input_node_params_fixture(snowflake_feature_store_details_dict, snowflake_table_details_dict):
     """Input node parameters fixture"""
     return {
         "type": "generic",
@@ -21,7 +21,8 @@ def input_node_params_fixture(snowflake_feature_store_and_table_details):
             {"name": "col_float", "dtype": "FLOAT"},
             {"name": "col_varchar", "dtype": "VARCHAR"},
         ],
-        **snowflake_feature_store_and_table_details,
+        "feature_store_details": snowflake_feature_store_details_dict,
+        "table_details": snowflake_table_details_dict,
     }
 
 

@@ -5,7 +5,7 @@ This module contains nested graph related node classes
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import Annotated
 
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
@@ -242,10 +242,9 @@ class ViewMetadata(BaseModel):
     data_id: PydanticObjectId
 
 
-class EventViewGraphNodeParameters(BaseGraphNodeParameters):
-    """GraphNode (type:event_view) parameters"""
+class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
+    """BaseViewGraphNodeParameters class"""
 
-    type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
     metadata: ViewMetadata
 
     def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
@@ -257,6 +256,12 @@ class EventViewGraphNodeParameters(BaseGraphNodeParameters):
                 if col.column_name in target_columns
             ]
         return metadata
+
+
+class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
+    """GraphNode (type:event_view) parameters"""
+
+    type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
 
     def derive_sdk_code(
         self,
@@ -286,21 +291,11 @@ class ItemViewMetadata(ViewMetadata):
     event_data_id: PydanticObjectId
 
 
-class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
+class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:item_view) parameters"""
 
     type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
     metadata: ItemViewMetadata
-
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
-        metadata = self.metadata.dict(by_alias=True)
-        if target_columns:
-            metadata["column_cleaning_operations"] = [
-                col
-                for col in self.metadata.column_cleaning_operations
-                if col.column_name in target_columns
-            ]
-        return metadata
 
     def derive_sdk_code(
         self,
@@ -322,21 +317,10 @@ class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
-class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
+class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:dimension_view) parameters"""
 
     type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
-    metadata: ViewMetadata
-
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
-        metadata = self.metadata.dict(by_alias=True)
-        if target_columns:
-            metadata["column_cleaning_operations"] = [
-                col
-                for col in self.metadata.column_cleaning_operations
-                if col.column_name in target_columns
-            ]
-        return metadata
 
     def derive_sdk_code(
         self,
@@ -356,21 +340,10 @@ class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
-class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
+class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:scd_view) parameters"""
 
     type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
-    metadata: ViewMetadata
-
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
-        metadata = self.metadata.dict(by_alias=True)
-        if target_columns:
-            metadata["column_cleaning_operations"] = [
-                col
-                for col in self.metadata.column_cleaning_operations
-                if col.column_name in target_columns
-            ]
-        return metadata
 
     def derive_sdk_code(
         self,
@@ -397,22 +370,11 @@ class ChangeViewMetadata(ViewMetadata):
     prefixes: Optional[Tuple[Optional[str], Optional[str]]]
 
 
-class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
+class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:change_view) parameters"""
 
     type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
     metadata: ChangeViewMetadata
-
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
-        metadata = self.metadata.dict(by_alias=True)
-        if target_columns:
-            if target_columns:
-                metadata["column_cleaning_operations"] = [
-                    col
-                    for col in self.metadata.column_cleaning_operations
-                    if col.column_name in target_columns
-                ]
-        return metadata
 
     def derive_sdk_code(
         self,

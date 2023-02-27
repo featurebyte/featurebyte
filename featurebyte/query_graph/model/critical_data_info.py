@@ -141,12 +141,12 @@ class MissingValueImputation(BaseImputeOperation, MissingValueImputationOp):
 
 class DisguisedValueImputation(BaseImputeOperation, DisguisedValueImputationOp):
     """
-    DisguisedValueImputation class is used to impute the disguised missing value of a data column.
+    DisguisedValueImputation class is used to impute the disguised value of a data column.
 
     disguised_values: List[OptionalScalar]
-        List of disguised missing values
+        List of disguised values
     imputed_value: OptionalScalar
-        Value to replace disguised missing value
+        Value to replace disguised value
 
     Examples
     --------

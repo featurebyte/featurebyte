@@ -690,9 +690,9 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
-        windows=["30m", "2h", "1d"],
+        windows=["30m"],
         feature_job_setting=feature_group_feature_job_setting,
-        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+        feature_names=["sum_30m"],
     )
     feat = feature_group["sum_30m"]
 

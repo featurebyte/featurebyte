@@ -29,31 +29,8 @@ def global_query_graph():
     yield GlobalQueryGraph()
 
 
-@pytest.fixture(name="snowflake_feature_store_and_table_details")
-def snowflake_feature_store_and_table_details_fixture():
-    """
-    Fixture for snowflake feature store and table details
-    """
-    return {
-        "feature_store_details": {
-            "type": "snowflake",
-            "details": {
-                "database": "db",
-                "sf_schema": "public",
-                "account": "account",
-                "warehouse": "warehouse",
-            },
-        },
-        "table_details": {
-            "database_name": "db",
-            "schema_name": "public",
-            "table_name": "event_table",
-        },
-    }
-
-
 @pytest.fixture(name="input_details")
-def input_details_fixture(request, snowflake_feature_store_and_table_details):
+def input_details_fixture(request):
     """
     Fixture for table_details and feature_store details for use in tests that rely only on graph
     (not API objects).
@@ -67,7 +44,22 @@ def input_details_fixture(request, snowflake_feature_store_and_table_details):
         kind = request.param
     assert kind in {"snowflake", "databricks"}
     if kind == "snowflake":
-        input_details = snowflake_feature_store_and_table_details
+        input_details = {
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "event_table",
+            },
+            "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                    "database": "db",
+                    "sf_schema": "public",
+                    "account": "account",
+                    "warehouse": "warehouse",
+                },
+            },
+        }
     else:
         input_details = {
             "table_details": {
