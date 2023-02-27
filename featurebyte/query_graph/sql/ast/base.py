@@ -238,9 +238,9 @@ class TableNode(SQLNode, ABC):
         Parameters
         ----------
         exprs: list[Expression]
-            Expression
+            Expressions
         aliases: Optional[list[str]]
-            Alias of the expression
+            Aliases of the expressions
 
         Returns
         -------
