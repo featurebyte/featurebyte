@@ -114,7 +114,7 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     assert left_pruned_graph == right_pruned_graph
 
 
-def check_sdk_code_generation(
+def check_sdk_code_generation(  # pylint: disable=too-many-locals
     api_object,
     to_use_saved_data=False,
     data_id_to_info=None,
