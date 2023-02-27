@@ -688,6 +688,8 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     pruned_graph, node = feat.extract_pruned_graph_and_node()
     nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
     assert nested_view_graph_node.parameters.type == "event_view"
+
+    # check nested graph's cleaning graph node: only cleaning operations of col_float should be kept
     nested_cleaning_graph_node = nested_view_graph_node.parameters.graph.get_node_by_name("graph_1")
     assert nested_cleaning_graph_node.parameters.type == "cleaning"
     assert nested_cleaning_graph_node.parameters.graph.edges == [
