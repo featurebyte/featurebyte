@@ -45,7 +45,7 @@ class RelationshipInfoController(
 
         Parameters
         ----------
-        data: RelationshipInfo
+        data: RelationshipInfoCreate
             RelationshipInfo creation payload
 
         Returns

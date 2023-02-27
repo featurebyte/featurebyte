@@ -10,8 +10,10 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.models.relationship import RelationshipInfo
 from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
     NameQuery,
     PageQuery,
     PageSizeQuery,
@@ -37,7 +39,7 @@ async def create_relationship_info(
     Create relationship info
     """
     controller = request.state.app_container.relationship_info_controller
-    relationship_info: RelationshipInfo = await controller.create_document(data=data)
+    relationship_info: RelationshipInfo = await controller.create_relationship_info(data=data)
     return relationship_info
 
 
@@ -109,3 +111,28 @@ async def get_relationship_info_info(
         document_id=item_data_id,
     )
     return info
+
+
+@router.get("/audit/{relationship_info_id}", response_model=AuditDocumentList)
+async def list_scd_data_audit_logs(
+    request: Request,
+    relationship_info_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = AuditLogSortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+) -> AuditDocumentList:
+    """
+    List relationship_info audit logs
+    """
+    controller = request.state.app_container.relationship_info_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
+        document_id=relationship_info_id,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        search=search,
+    )
+    return audit_doc_list

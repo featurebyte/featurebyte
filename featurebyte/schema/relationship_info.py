@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from bson import ObjectId
-from pydantic import Field
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfo
@@ -19,6 +19,7 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
     relationship_type: str
     child_id: PydanticObjectId
     parent_id: PydanticObjectId

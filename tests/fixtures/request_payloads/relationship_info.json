@@ -1,0 +1,10 @@
+{
+  "_id": "63f6a145e549df8ccf123456",
+  "name": "parent_child_relationship",
+  "relationship_type": "parent_child",
+  "child_id": "63f6a145e549df8ccf123411",
+  "parent_id": "63f6a145e549df8ccf123422",
+  "child_data_source_id": "63f6a145e549df8ccf123433",
+  "is_enabled": true,
+  "updated_by": "63f6a145e549df8ccf123444"
+}
