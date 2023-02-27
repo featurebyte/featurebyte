@@ -446,8 +446,8 @@ def test_from_slowly_changing_data__keep_record_creation_date_column(snowflake_s
     # check the change view graph node
     assert change_view.node.type == NodeType.GRAPH
     assert change_view.node.parameters.graph.edges[:2] == [
-        {"source": "proxy_input_1", "target": "graph_1"},
-        {"source": "graph_1", "target": "project_1"},
+        {"source": "proxy_input_1", "target": "project_1"},
+        {"source": "project_1", "target": "graph_1"},
     ]
     nested_graph_node = change_view.node.parameters.graph.get_node_by_name("graph_1")
     assert nested_graph_node.parameters.type == "cleaning"

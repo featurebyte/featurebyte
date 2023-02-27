@@ -110,13 +110,13 @@ class BaseViewTestSuite:
         cleaning_graph_node = nested_graph.get_node_by_name("graph_1")
         assert cleaning_graph_node.parameters.type == "cleaning"
 
-        expected_node_names = ["proxy_input_1", "graph_1", "project_1"]
+        expected_node_names = ["proxy_input_1", "project_1", "graph_1"]
         if self.view_type == ViewType.ITEM_VIEW:
             expected_node_names = [
                 "proxy_input_1",
                 "proxy_input_2",
-                "graph_1",
                 "project_1",
+                "graph_1",
                 "join_1",
             ]
         assert list(nested_graph.nodes_map.keys()) == expected_node_names
