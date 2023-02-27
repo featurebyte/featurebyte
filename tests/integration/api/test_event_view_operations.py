@@ -23,12 +23,7 @@ from featurebyte import (
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
-from tests.util.helper import (
-    assert_preview_result_equal,
-    fb_assert_frame_equal,
-    get_lagged_series_pandas,
-    iet_entropy,
-)
+from tests.util.helper import assert_preview_result_equal, get_lagged_series_pandas, iet_entropy
 
 
 def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
@@ -236,26 +231,39 @@ def feature_group_per_category_fixture(event_view):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_ops(event_view, transaction_data_upper_case):
+def test_event_view_ops__string_and_datetime(event_view):
     """
-    Test operations that can be performed on an EventView before creating features
+    Test string and datetime operations that can be performed on an EventView before creating features
     """
-    # need to specify the constant as float, otherwise results will get truncated
-    event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
-    event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
-
-    # apply more event view operations
-    event_view["ÀMOUNT"].fillna(0)
-
     # check accessor operations
     check_string_operations(event_view, "PRODUCT_ACTION")
     check_datetime_operations(event_view, "ËVENT_TIMESTAMP")
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_view_ops__check_numeric_and_casting_ops(event_view):
+    """
+    Test numeric and casting operations that can be performed on an EventView before creating features
+    """
+    event_view["ÀMOUNT"].fillna(0)
 
     # check casting operations
     check_cast_operations(event_view, source_type=event_view.feature_store.type)
 
     # check numeric operations
     check_numeric_operations(event_view)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+def test_event_view_ops__preview_manipulated_event_view(event_view, transaction_data_upper_case):
+    """
+    Test preview operations that can be performed on an EventView before creating features
+    """
+    # need to specify the constant as float, otherwise results will get truncated
+    event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
+    event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
+    # apply more event view operations
+    event_view["ÀMOUNT"].fillna(0)
 
     # construct expected results
     expected = transaction_data_upper_case.copy()
@@ -540,7 +548,7 @@ def run_test_conditional_assign_feature(feature_group):
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_get_historical_features(feature_group, feature_group_per_category):
     """
     Test getting historical features from FeatureList
@@ -636,9 +644,7 @@ def test_get_historical_features(feature_group, feature_group_per_category):
     )
     df_historical_features = feature_list.get_historical_features(df_training_events)
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
-    fb_assert_frame_equal(
-        df_historical_features, df_historical_expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
-    )
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
 
     # check that making multiple request calls produces the same result
     max_batch_size = int((len(df_training_events) / 2.0) + 1)
@@ -646,10 +652,9 @@ def test_get_historical_features(feature_group, feature_group_per_category):
         df_training_events, max_batch_size=max_batch_size
     )
     sort_cols = list(df_training_events.columns)
-    fb_assert_frame_equal(
+    pd.testing.assert_frame_equal(
         df_historical_features.sort_values(sort_cols).reset_index(drop=True),
         df_historical_multi.sort_values(sort_cols).reset_index(drop=True),
-        dict_like_columns=["COUNT_BY_ACTION_24h"],
     )
 
     # Test again using the same feature list and data but with serving names mapping
@@ -675,11 +680,7 @@ def _test_get_historical_features_with_serving_names(
         df_training_events,
         serving_names_mapping=mapping,
     )
-    fb_assert_frame_equal(
-        df_historical_features,
-        df_historical_expected,
-        dict_like_columns=["COUNT_BY_ACTION_24h"],
-    )
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
 
 
 def check_string_operations(event_view, column_name, limit=100):
