@@ -354,7 +354,7 @@ class GraphStructurePruningExtractor(
                 "graph": pruned_graph,
                 "output_node_name": output_node_name,
                 "type": node.parameters.type,
-                "metadata": node.parameters.metadata,  # type: ignore
+                "metadata": node.parameters.prune_metadata(target_columns=target_columns),  # type: ignore
             }
         )
 

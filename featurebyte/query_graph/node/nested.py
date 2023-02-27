@@ -73,6 +73,21 @@ class BaseGraphNodeParameters(BaseModel):
     type: GraphNodeType
 
     @abstractmethod
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        """
+        Prune metadata for the current graph node
+
+        Parameters
+        ----------
+        target_columns: List[str]
+            Target columns
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+
+    @abstractmethod
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -204,6 +219,9 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        return self.metadata
+
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -229,6 +247,15 @@ class EventViewGraphNodeParameters(BaseGraphNodeParameters):
 
     type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
     metadata: ViewMetadata
+
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        metadata = self.metadata.dict(by_alias=True)
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
+        return metadata
 
     def derive_sdk_code(
         self,
@@ -264,6 +291,15 @@ class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
     metadata: ItemViewMetadata
 
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        metadata = self.metadata.dict(by_alias=True)
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
+        return metadata
+
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -290,6 +326,15 @@ class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
     metadata: ViewMetadata
 
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        metadata = self.metadata.dict(by_alias=True)
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
+        return metadata
+
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -313,6 +358,15 @@ class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
 
     type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
     metadata: ViewMetadata
+
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        metadata = self.metadata.dict(by_alias=True)
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
+        return metadata
 
     def derive_sdk_code(
         self,
@@ -344,6 +398,15 @@ class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
 
     type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
     metadata: ChangeViewMetadata
+
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        metadata = self.metadata.dict(by_alias=True)
+        metadata["column_cleaning_operations"] = [
+            col
+            for col in self.metadata.column_cleaning_operations
+            if col.column_name in target_columns
+        ]
+        return metadata
 
     def derive_sdk_code(
         self,
