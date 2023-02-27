@@ -249,15 +249,27 @@ class GraphPruningGlobalState(OperationStructureInfo):
     def __init__(
         self,
         node_names: Set[str],
+        target_node_name: str,
         graph: Optional[QueryGraphModel] = None,
         node_name_map: Optional[NodeNameMap] = None,
+        target_columns: Optional[List[str]] = None,
         aggressive: bool = False,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
+
+        # variables to store some internal pruning info
         self.node_names = node_names
+
+        # variables for extractor output
         self.graph = graph or QueryGraphModel()
         self.node_name_map = node_name_map or {}
+
+        # variables to track output node & target columns
+        self.target_columns = target_columns
+        self.target_node_name = target_node_name
+
+        # variables to control pruning behavior
         self.aggressive = aggressive
 
 
@@ -300,24 +312,36 @@ class GraphStructurePruningExtractor(
     ) -> GraphPruningBranchState:
         return GraphPruningBranchState()
 
-    @classmethod
-    def _prune_nested_graph(
-        cls,
-        node: BaseGraphNode,
-        target_nodes: List[Node],
-        proxy_input_operation_structures: List[OperationStructure],
-        aggressive: bool,
-    ) -> Node:
-        nested_graph = node.parameters.graph
-        output_node_name = node.parameters.output_node_name
-        nested_target_node = nested_graph.get_node_by_name(output_node_name)
+    def _prepare_target_columns(
+        self, node: Node, global_state: GraphPruningGlobalState
+    ) -> Optional[List[str]]:
+        if node.name == global_state.target_node_name:
+            # since the target node doesn't have the output node,
+            # we use the target columns in the global state
+            return global_state.target_columns
+
+        # otherwise, we use the target nodes of current node in the graph to construct the target columns
+        target_node_names = global_state.edges_map[node.name]
+        target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         target_columns: Optional[List[str]] = None
         if target_nodes:
             required_columns = set().union(
                 *(node.get_required_input_columns() for node in target_nodes)
             )
             target_columns = list(required_columns)
+        return target_columns
 
+    @classmethod
+    def _prune_nested_graph(
+        cls,
+        node: BaseGraphNode,
+        target_columns: Optional[List[str]],
+        proxy_input_operation_structures: List[OperationStructure],
+        aggressive: bool,
+    ) -> Node:
+        nested_graph = node.parameters.graph
+        output_node_name = node.parameters.output_node_name
+        nested_target_node = nested_graph.get_node_by_name(output_node_name)
         pruned_graph, _, output_node_name = prune_query_graph(
             graph=nested_graph,
             node=nested_target_node,
@@ -367,16 +391,15 @@ class GraphStructurePruningExtractor(
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
         # add the node back to the pruned graph
-        target_node_names = global_state.edges_map[node.name]
-        target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         if global_state.aggressive and isinstance(node, BaseGraphNode):
             proxy_input_operation_structures = [
                 global_state.operation_structure_map[node_name]
                 for node_name in self.graph.get_input_node_names(node=node)
             ]
+            target_columns = self._prepare_target_columns(node=node, global_state=global_state)
             node = self._prune_nested_graph(
                 node=node,
-                target_nodes=target_nodes,
+                target_columns=target_columns,
                 proxy_input_operation_structures=proxy_input_operation_structures,
                 aggressive=global_state.aggressive,
             )
@@ -421,6 +444,8 @@ class GraphStructurePruningExtractor(
         global_state = GraphPruningGlobalState(
             node_names=operation_structure.all_node_names.difference([temp_node_name]),
             edges_map=op_struct_info.edges_map,
+            target_node_name=node.name,
+            target_columns=target_columns,
             operation_structure_map=op_struct_info.operation_structure_map,
             aggressive=aggressive,
         )

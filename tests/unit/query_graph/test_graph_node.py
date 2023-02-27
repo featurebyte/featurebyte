@@ -12,7 +12,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 
 
 @pytest.fixture(name="input_node_params")
-def input_node_params_fixture():
+def input_node_params_fixture(snowflake_feature_store_and_table_details):
     """Input node parameters fixture"""
     return {
         "type": "generic",
@@ -21,20 +21,7 @@ def input_node_params_fixture():
             {"name": "col_float", "dtype": "FLOAT"},
             {"name": "col_varchar", "dtype": "VARCHAR"},
         ],
-        "table_details": {
-            "database_name": "db",
-            "schema_name": "public",
-            "table_name": "transaction",
-        },
-        "feature_store_details": {
-            "type": "snowflake",
-            "details": {
-                "database": "db",
-                "sf_schema": "public",
-                "account": "account",
-                "warehouse": "warehouse",
-            },
-        },
+        **snowflake_feature_store_and_table_details,
     }
 
 
@@ -439,152 +426,6 @@ def test_flatten_nested_graph(
     assert nested_input_graph.flatten()[0] == expected_flattened_graph
     assert nested_output_graph.flatten()[0] == expected_flattened_graph
     assert deep_nested_graph.flatten()[0] == expected_flattened_graph
-
-
-def test_nested_graph_pruning(input_details, groupby_node_params):
-    """
-    Test graph pruning on nested graph
-    """
-
-    def add_graph_node(query_graph, input_nodes):
-        # construct a graph node that add a "a_plus_b" column (redundant column) to the input table
-        # and generate a feature group
-        graph_node, proxy_inputs = GraphNode.create(
-            node_type=NodeType.PROJECT,
-            node_params={"columns": ["a"]},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=input_nodes,
-            graph_node_type=GraphNodeType.CLEANING,
-        )
-        node_proj_a = graph_node.output_node
-        node_proj_b = graph_node.add_operation(
-            node_type=NodeType.PROJECT,
-            node_params={"columns": ["b"]},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=proxy_inputs,
-        )
-        node_add = graph_node.add_operation(
-            node_type=NodeType.ADD,
-            node_params={},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[node_proj_a, node_proj_b],  # graph_node.output_node: nested project node
-        )
-        node_assign = graph_node.add_operation(
-            node_type=NodeType.ASSIGN,
-            node_params={"name": "a_plus_b"},
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[proxy_inputs[0], node_add],
-        )
-        graph_node.add_operation(
-            node_type=NodeType.GROUPBY,
-            node_params=groupby_node_params,
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[node_assign],
-        )
-        return query_graph.add_node(graph_node, input_nodes)
-
-    # construct a graph with a nested graph
-    # [input] -> [graph] -> [project]
-    graph = QueryGraph()
-    input_node = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "event_data",
-            "columns": [
-                {"name": "ts", "dtype": "TIMESTAMP"},
-                {"name": "cust_id", "dtype": "INT"},
-                {"name": "a", "dtype": "FLOAT"},
-                {"name": "b", "dtype": "FLOAT"},
-            ],
-            "timestamp": "ts",
-            **input_details,
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    node_graph = add_graph_node(query_graph=graph, input_nodes=[input_node])
-    node_proj_2h_avg = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a_2h_average"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_graph],
-    )
-
-    # check operation structure
-    operation_structure = graph.extract_operation_structure(node=node_proj_2h_avg)
-    assert operation_structure.dict() == {
-        "aggregations": [
-            {
-                "category": None,
-                "column": {
-                    "filter": False,
-                    "name": "a",
-                    "node_names": {"input_1"},
-                    "node_name": "input_1",
-                    "tabular_data_id": None,
-                    "tabular_data_type": "event_data",
-                    "type": "source",
-                    "dtype": "FLOAT",
-                },
-                "filter": False,
-                "keys": ["cust_id"],
-                "aggregation_type": "groupby",
-                "method": "avg",
-                "name": "a_2h_average",
-                "node_names": {"input_1", "graph_1", "project_1"},
-                "node_name": "graph_1",
-                "type": "aggregation",
-                "window": "2h",
-                "dtype": "FLOAT",
-            }
-        ],
-        "columns": [
-            {
-                "filter": False,
-                "name": "a",
-                "node_names": {"input_1"},
-                "node_name": "input_1",
-                "tabular_data_id": None,
-                "tabular_data_type": "event_data",
-                "type": "source",
-                "dtype": "FLOAT",
-            }
-        ],
-        "output_category": "feature",
-        "output_type": "series",
-        "row_index_lineage": ("groupby_1",),
-        "is_time_based": True,
-    }
-
-    # check pruned graph
-    pruned_graph, node_name_map = graph.prune(target_node=node_proj_2h_avg, aggressive=True)
-    assert node_name_map == {"input_1": "input_1", "graph_1": "graph_1", "project_1": "project_1"}
-    assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
-
-    # check nested graph edges (note that assign node is pruned)
-    nested_graph = pruned_graph.nodes_map["graph_1"].parameters.graph
-    assert nested_graph.edges_map == {"proxy_input_1": ["groupby_1"]}
-    assert nested_graph.get_node_by_name("groupby_1").dict() == {
-        "name": "groupby_1",
-        "output_type": "frame",
-        "parameters": {
-            "agg_func": "avg",
-            "aggregation_id": None,
-            "blind_spot": 900,
-            "entity_ids": groupby_node_params["entity_ids"],
-            "frequency": 3600,
-            "keys": ["cust_id"],
-            "names": ["a_2h_average"],  # before pruned: ["a_2h_average", "a_48h_average"]
-            "parent": "a",
-            "serving_names": ["CUSTOMER_ID"],
-            "tile_id": None,
-            "time_modulo_frequency": 1800,
-            "timestamp": "ts",
-            "value_by": None,
-            "windows": ["2h"],
-        },
-        "type": "groupby",
-    }
 
 
 def test_graph_node__redundant_graph_node(input_node_params):

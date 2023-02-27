@@ -9,6 +9,7 @@ from unittest.mock import PropertyMock
 import pytest
 from bson import ObjectId
 
+from featurebyte import MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -658,6 +659,48 @@ def test_add_feature(
             },
         },
     )
+
+
+def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
+    snowflake_event_data_with_entity, feature_group_feature_job_setting
+):
+    """Test pruned feature only keeps minimum required cleaning operations"""
+    subset_cols = ["col_int", "col_float"]
+    for col in subset_cols:
+        snowflake_event_data_with_entity[col].update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+        )
+
+    # create event view
+    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+
+    # create feature
+    feature_group = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["30m", "2h", "1d"],
+        feature_job_setting=feature_group_feature_job_setting,
+        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+    )
+    feat = feature_group["sum_30m"]
+
+    # check pruned graph's nested graph nodes
+    pruned_graph, node = feat.extract_pruned_graph_and_node()
+    nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
+    assert nested_view_graph_node.parameters.type == "event_view"
+    nested_cleaning_graph_node = nested_view_graph_node.parameters.graph.get_node_by_name("graph_1")
+    assert nested_cleaning_graph_node.parameters.type == "cleaning"
+    assert nested_cleaning_graph_node.parameters.graph.edges == [
+        {"source": "proxy_input_1", "target": "project_1"},
+        {"source": "project_1", "target": "is_null_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "is_null_1", "target": "conditional_1"},
+        {"source": "conditional_1", "target": "cast_1"},
+        {"source": "proxy_input_1", "target": "assign_1"},
+        {"source": "cast_1", "target": "assign_1"},
+    ]
+    nested_project_node = nested_cleaning_graph_node.parameters.graph.get_node_by_name("project_1")
+    assert nested_project_node.parameters.columns == ["col_float"]
 
 
 def test__validate_column_is_not_used(empty_event_view_builder):
