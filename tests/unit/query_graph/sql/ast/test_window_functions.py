@@ -74,7 +74,7 @@ def test_window_function__as_filter_qualify_not_supported(global_graph, input_no
             LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a",
             (
               LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
-            ) AS "_fb_qualify_condition"
+            ) AS "__fb_qualify_condition_column"
           FROM "db"."public"."event_table"
           WHERE
             (
@@ -82,7 +82,7 @@ def test_window_function__as_filter_qualify_not_supported(global_graph, input_no
             )
         )
         WHERE
-          "_fb_qualify_condition"
+          "__fb_qualify_condition_column"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected

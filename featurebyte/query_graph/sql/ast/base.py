@@ -22,6 +22,8 @@ from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
+FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
+
 
 @dataclass
 class SQLNodeContext:
@@ -164,13 +166,13 @@ class TableNode(SQLNode, ABC):
         ):
             select_expr = select_expr.select(
                 expressions.alias_(
-                    self.qualify_condition, alias="_fb_qualify_condition", quoted=True
+                    self.qualify_condition, alias=FB_QUALIFY_CONDITION_COLUMN, quoted=True
                 )
             )
             select_expr = (
                 select(*[quoted_identifier(column_name) for column_name in self.columns_map.keys()])
                 .from_(select_expr.subquery())
-                .where(quoted_identifier("_fb_qualify_condition"))
+                .where(quoted_identifier(FB_QUALIFY_CONDITION_COLUMN))
             )
 
         return select_expr
