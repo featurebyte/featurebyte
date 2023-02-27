@@ -3,7 +3,7 @@ RelationshipInfo API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -110,7 +110,7 @@ async def get_relationship_info_info(
     info = await controller.get_info(
         document_id=item_data_id,
     )
-    return info
+    return cast(RelationshipInfoInfo, info)
 
 
 @router.get("/audit/{relationship_info_id}", response_model=AuditDocumentList)

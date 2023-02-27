@@ -10,7 +10,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfo
-from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class RelationshipInfoCreate(FeatureByteBaseModel):
@@ -36,7 +36,7 @@ class RelationshipInfoList(PaginationMixin):
     data: List[RelationshipInfo]
 
 
-class RelationshipInfoUpdate(FeatureByteBaseModel):
+class RelationshipInfoUpdate(BaseDocumentServiceUpdateSchema):
     """
     RelationshipInfo update payload schema
     """

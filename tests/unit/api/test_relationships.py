@@ -34,6 +34,7 @@ async def test_relationships_list(relationship_info_service):
     relationship_type = "parent_child"
     created_relationship = await relationship_info_service.create_document(
         RelationshipInfoCreate(
+            name="test_relationship",
             relationship_type=relationship_type,
             child_id=child_id,
             parent_id=parent_id,
@@ -73,6 +74,7 @@ async def test_enable(relationship_info_service):
     relationship_type = "parent_child"
     created_relationship = await relationship_info_service.create_document(
         RelationshipInfoCreate(
+            name="test_relationship",
             relationship_type=relationship_type,
             child_id=child_id,
             parent_id=parent_id,
