@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: write
 env:
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
