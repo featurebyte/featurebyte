@@ -27,8 +27,8 @@ def test__getitem__series_key(int_series, bool_series):
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_1", "target": "filter_1"},
         {"source": "project_2", "target": "filter_1"},
+        {"source": "project_1", "target": "filter_1"},
     ]
 
 
@@ -160,13 +160,13 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
-        {"source": "project_2", "target": "conditional_1"},
         {"source": "project_1", "target": "conditional_1"},
+        {"source": "project_2", "target": "conditional_1"},
         {"source": "input_1", "target": "assign_1"},
         {"source": "conditional_1", "target": "assign_1"},
         {"source": "assign_1", "target": "project_3"},
         {"source": "project_3", "target": "conditional_2"},
-        {"source": "project_1", "target": "conditional_2"},
+        {"source": "project_2", "target": "conditional_2"},
         {"source": "assign_1", "target": "assign_2"},
         {"source": "conditional_2", "target": "assign_2"},
         {"source": "assign_2", "target": "project_4"},
@@ -183,8 +183,8 @@ def test__setitem__conditional_assign_series(int_series):
     int_series_dict = int_series.dict()
     assert int_series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
-        {"source": "project_1", "target": "mul_1"},
         {"source": "project_1", "target": "gt_1"},
+        {"source": "project_1", "target": "mul_1"},
         {"source": "mul_1", "target": "filter_1"},
         {"source": "gt_1", "target": "filter_1"},
         {"source": "project_1", "target": "conditional_1"},

@@ -40,15 +40,13 @@ class TestItemView(BaseViewTestSuite):
     def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
         return {
             "mask": view_under_test[self.col] > 1000,
-            "expected_edges": [
-                {"source": "input_1", "target": "graph_1"},
-                {"source": "input_2", "target": "graph_2"},
-                {"source": "graph_1", "target": "graph_2"},
-                {"source": "graph_2", "target": "project_1"},
-                {"source": "project_1", "target": "gt_1"},
-                {"source": "project_1", "target": "filter_1"},
-                {"source": "gt_1", "target": "filter_1"},
-            ],
+            "expected_backward_edges_map": {
+                "filter_1": ["project_1", "gt_1"],
+                "graph_1": ["input_1"],
+                "graph_2": ["input_2", "graph_1"],
+                "gt_1": ["project_1"],
+                "project_1": ["graph_2"],
+            },
         }
 
     def test_setitem__str_key_series_value(self, view_under_test):
@@ -870,7 +868,6 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/item_view.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
         data_id=saved_item_data.id,
         event_data_id=saved_event_data.id,
     )

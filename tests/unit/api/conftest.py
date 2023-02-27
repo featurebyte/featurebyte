@@ -191,12 +191,23 @@ def snowflake_item_data_fixture(
     yield item_data
 
 
+@pytest.fixture()
+def item_entity_id():
+    """
+    Item entity id fixture
+    """
+    # Note that these IDs are part of the groupby node parameters, it will affect the node hash calculation.
+    # Altering these IDs may cause the SDK code generation to fail (due to the generated code could slightly
+    # be different).
+    return ObjectId("63f9506dd478b941271ed957")
+
+
 @pytest.fixture
-def item_entity():
+def item_entity(item_entity_id):
     """
     Item entity fixture
     """
-    entity = Entity(name="item", serving_names=["item_id"])
+    entity = Entity(name="item", serving_names=["item_id"], _id=item_entity_id)
     entity.save()
     return entity
 

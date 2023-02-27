@@ -377,8 +377,8 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         "type": "join",
     }
     assert view_dict["graph"]["edges"] == [
-        {"source": "input_1", "target": "join_1"},
         {"source": "input_2", "target": "join_1"},
+        {"source": "input_1", "target": "join_1"},
     ]
 
 
