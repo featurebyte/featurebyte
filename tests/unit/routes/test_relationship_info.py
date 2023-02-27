@@ -5,6 +5,9 @@ from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
 class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
+    """
+    Test relationship info routes
+    """
 
     class_name = "RelationshipInfo"
     base_route = "/relationship_info"
