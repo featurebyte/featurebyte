@@ -1061,7 +1061,7 @@ def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feat
     assert view_subset.preview().columns.tolist() == view_subset.columns
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_latest_per_category_aggregation(event_view):
     """
     Test latest per category aggregation with value column of string type
@@ -1073,8 +1073,10 @@ def test_latest_per_category_aggregation(event_view):
         feature_names=["LATEST_ACTION_DICT_30d"],
     )
     df = feature_group.preview({"POINT_IN_TIME": "2001-01-26", "cust_id": 545})
-    expected = '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
-    assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
+    expected = json.loads(
+        '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
+    )
+    assert json.loads(df.iloc[0]["LATEST_ACTION_DICT_30d"]) == expected
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
