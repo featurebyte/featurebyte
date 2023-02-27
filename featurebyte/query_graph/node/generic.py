@@ -69,7 +69,7 @@ class ProjectNode(BaseNode):
             avail_columns = set(col.name for col in input_op_struct.aggregations)
 
         node_params = self.parameters.dict()
-        node_params["columns"] = [col for col in self.parameters.columns if col in avail_columns]
+        node_params["columns"] = [col for col in self.parameters.columns if col in avail_columns]  # type: ignore
         return self.clone(parameters=node_params)
 
     def _derive_node_operation_info(
