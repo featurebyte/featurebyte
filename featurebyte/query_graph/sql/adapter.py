@@ -561,12 +561,34 @@ class SparkAdapter(DatabricksAdapter):
     """
     Helper class to generate Spark specific SQL expressions
 
-    Spark is a fork of Databricks, so it shares most of the same SQL syntax.
+    Spark is the OSS version of Databricks, so it shares most of the same SQL syntax.
     """
 
     @classmethod
     def is_qualify_clause_supported(cls) -> bool:
         return False
+
+    @classmethod
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
+        raise NotImplementedError()
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
