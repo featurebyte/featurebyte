@@ -3,7 +3,7 @@ This module contains critical data info related models.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Sequence, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Union
 from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from abc import abstractmethod
@@ -51,9 +51,9 @@ class BaseImputeOperation(BaseCleaningOperation):
 
         Parameters
         ----------
-        graph_node: BaseGraphNode
+        graph_node: GraphNode
             Nested graph node
-        input_node: NodeT
+        input_node: Node
             Input node to the query graph
         dtype: DBVarType
             Data type that output column will be casted to
@@ -310,7 +310,7 @@ class CriticalDataInfo(FeatureByteBaseModel):
         imputations = [op for op in values if isinstance(op, BaseImputeOperation)]
         for i, imputation in enumerate(imputations[:-1]):
             for other_imputation in imputations[(i + 1) :]:
-                if other_imputation.check_condition(imputation.imputed_value):  # type: ignore
+                if other_imputation.check_condition(imputation.imputed_value):
                     raise InvalidImputationsError(
                         error_message.format(
                             first_imputation=imputation, second_imputation=other_imputation

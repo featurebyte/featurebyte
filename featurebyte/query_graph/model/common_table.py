@@ -159,7 +159,7 @@ class BaseTableData(FeatureByteBaseModel):
         """
         input_node: Node = project_node
         for cleaning_operation in cleaning_operations:
-            input_node = cleaning_operation.add_cleaning_operation(
+            input_node = cleaning_operation.add_cleaning_operation(  # type: ignore
                 graph_node=graph_node, input_node=input_node, dtype=dtype
             )
 

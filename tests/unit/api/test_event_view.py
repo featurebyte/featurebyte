@@ -674,6 +674,17 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
 
     # create event view & the metadata
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    graph_metadata = event_view.node.parameters.metadata
+    assert graph_metadata.column_cleaning_operations == [
+        {
+            "column_name": "col_int",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
+        {
+            "column_name": "col_float",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
+    ]
 
     # create feature
     feature_group = event_view.groupby("cust_id").aggregate_over(
