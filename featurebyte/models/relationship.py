@@ -51,6 +51,10 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     The Relationship class above stores all relationships for a given child in a single document.
     """
 
+    class Settings:
+
+        collection_name = "relationship_info"
+
     relationship_type: str
     child_id: PydanticObjectId
     parent_id: PydanticObjectId

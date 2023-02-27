@@ -16,6 +16,8 @@ class RelationshipInfoService(
     RelationshipInfoService class is responsible for keeping track of the relationship info of various types.
     """
 
+    document_class = RelationshipInfo
+
     async def update_relationship_info(self, relationship_id: ObjectId, enable: bool) -> None:
         """
         Update relationship enable

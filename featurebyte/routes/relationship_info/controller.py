@@ -59,7 +59,7 @@ class RelationshipInfoController(
         self,
         relationship_info_id: ObjectId,
         data: RelationshipInfoUpdate,
-    ) -> RelationshipInfo:
+    ) -> None:
         """
         Update RelationshipInfo at persistent
 
@@ -69,13 +69,8 @@ class RelationshipInfoController(
             RelationshipInfo id
         data: RelationshipInfoUpdate
             RelationshipInfo update payload
-
-        Returns
-        -------
-        RelationshipInfo
-            Updated RelationshipInfo object
         """
-        return await self.relationship_info_service.update_relationship_info(
+        await self.relationship_info_service.update_relationship_info(
             relationship_info_id, data.is_enabled
         )
 
