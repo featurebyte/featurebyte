@@ -783,6 +783,9 @@ def check_datetime_operations(event_view, column_name, limit=100):
     df_filtered = event_view_filtered.preview(limit=limit)
     assert (df_filtered["event_interval_second"] > 500000).all()
 
+    df_filtered_col = event_view_filtered["event_interval_second"].preview()
+    assert (df_filtered_col["event_interval_second"] > 500000).all()
+
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
     pandas_series = dt_df[column_name]
