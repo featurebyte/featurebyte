@@ -41,3 +41,19 @@ class WorkspaceRelationship(Relationship, FeatureByteWorkspaceBaseDocumentModel)
     """
     Workspace-specific relationship model
     """
+
+
+class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
+    """
+    Relationship info data model.
+
+    This differs from the Relationship class above, in that each relationship is stored as a separate document.
+    The Relationship class above stores all relationships for a given child in a single document.
+    """
+
+    relationship_type: str
+    child_id: PydanticObjectId
+    parent_id: PydanticObjectId
+    child_data_source_id: PydanticObjectId
+    is_enabled: bool
+    updated_by: PydanticObjectId

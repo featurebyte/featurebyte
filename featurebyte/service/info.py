@@ -32,6 +32,7 @@ from featurebyte.schema.info import (
     SCDDataInfo,
     WorkspaceInfo,
 )
+from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
@@ -47,6 +48,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
@@ -102,6 +104,9 @@ class InfoService(BaseService):
             user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.workspace_service = WorkspaceService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.relationship_info_service = RelationshipInfoService(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
 
@@ -245,6 +250,45 @@ class InfoService(BaseService):
             "columns_info": columns_info,
             "workspace_name": workspace.name,
         }
+
+    async def get_relationship_info_info(self, document_id: ObjectId) -> RelationshipInfoInfo:
+        """
+        Get relationship info info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Returns
+        -------
+        RelationshipInfoInfo
+        """
+        relationship_info = await self.relationship_info_service.get_document(
+            document_id=document_id
+        )
+        data_info = await self.data_service.get_document(
+            document_id=relationship_info.child_data_source_id
+        )
+        child_entity = None
+        parent_entity = None
+        if relationship_info.relationship_type == "parent_child":
+            child_entity = await self.entity_service.get_document(
+                document_id=relationship_info.child_id
+            )
+            parent_entity = await self.entity_service.get_document(
+                document_id=relationship_info.parent_id
+            )
+        return RelationshipInfoInfo(
+            name=relationship_info.name,
+            created_at=relationship_info.created_at,
+            updated_at=relationship_info.updated_at,
+            relationship_type=relationship_info.relationship_type,
+            data_source_name=data_info.name,
+            child_name=child_entity.name if child_entity else "unknown",
+            parent_name=parent_entity.name if parent_entity else "unknown",
+            updated_by=relationship_info.updated_by,  # TODO: convert from user ID to name
+        )
 
     async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
         """

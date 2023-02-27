@@ -17,6 +17,7 @@ from featurebyte.routes.feature_list_namespace.controller import FeatureListName
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_data.controller import ItemDataController
+from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_data.controller import SCDDataController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.tabular_data.controller import TabularDataController
@@ -44,6 +45,7 @@ from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
+from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
@@ -148,7 +150,13 @@ app_container_config.add_basic_service("entity_relationship_service", EntityRela
 app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
 app_container_config.add_basic_service("info_service", InfoService)
 app_container_config.add_basic_service("workspace_service", WorkspaceService)
+app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
 
+app_container_config.add_controller(
+    "relationship_info_controller",
+    RelationshipInfoController,
+    ["relationship_info_service", "info_service"],
+)
 app_container_config.add_controller("context_controller", ContextController, ["context_service"])
 app_container_config.add_controller(
     "entity_controller",
