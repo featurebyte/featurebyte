@@ -25,11 +25,22 @@ class Relationships(RelationshipInfo, ApiObject):
     _route = "/relationship_info"
     _update_schema_class = RelationshipInfoUpdate
     _get_schema = RelationshipInfo
+    _list_schema = RelationshipInfo
+    _list_fields = [
+        "relationship_type",
+        "child_id",
+        "parent_id",
+        "child_data_source_id",
+        "is_enabled",
+        "updated_by",
+        "created_at",
+        "updated_at",
+    ]
 
     @classmethod
     @typechecked
     def list(
-        cls, include_id: Optional[bool] = False, relationship_type: Optional[str] = ""
+        cls, include_id: Optional[bool] = True, relationship_type: Optional[str] = ""
     ) -> pd.DataFrame:
         """
         List a dataframe of the relationships. This provides a dataframe with:
@@ -62,7 +73,7 @@ class Relationships(RelationshipInfo, ApiObject):
         return list_responses
 
     @typechecked
-    def enable(self, enable: bool = True) -> None:
+    def enable(self, enable: bool) -> None:
         """
         Enable
 
@@ -78,11 +89,10 @@ class Relationships(RelationshipInfo, ApiObject):
         """
 
         payload = RelationshipInfoUpdate(
-            id=self.id,
             is_enabled=enable,
         )
 
         client = Configurations().get_client()
-        response = client.patch(url="/relationship_info", json=payload.json_dict())
+        response = client.patch(url=f"/relationship_info/{self.id}", json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)

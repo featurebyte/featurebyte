@@ -11,6 +11,8 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteWorkspaceBaseDocumentModel,
     PydanticObjectId,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
 )
 
 
@@ -52,8 +54,18 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     """
 
     class Settings:
+        """
+        Settings
+        """
 
         collection_name = "relationship_info"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]
 
     relationship_type: str
     child_id: PydanticObjectId

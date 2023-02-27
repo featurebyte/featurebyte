@@ -91,7 +91,7 @@ async def update_relationship_info(
     """
     controller = request.state.app_container.relationship_info_controller
     await controller.update_relationship_info(
-        document_id=relationship_info_id,
+        relationship_info_id=relationship_info_id,
         data=data,
     )
 

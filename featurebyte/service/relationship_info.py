@@ -31,7 +31,7 @@ class RelationshipInfoService(
         """
         await self.persistent.update_one(
             collection_name="relationship_info",
-            query_filter={"_id": {"$in": relationship_id}},
-            update={"$set": {"enable": enable}},
+            query_filter={"_id": {"$in": [relationship_id]}},
+            update={"$set": {"is_enabled": enable}},
             user_id=self.user.id,
         )
