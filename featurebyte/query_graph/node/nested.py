@@ -250,11 +250,12 @@ class EventViewGraphNodeParameters(BaseGraphNodeParameters):
 
     def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
-        metadata["column_cleaning_operations"] = [
-            col
-            for col in self.metadata.column_cleaning_operations
-            if col.column_name in target_columns
-        ]
+        if target_columns:
+            metadata["column_cleaning_operations"] = [
+                col
+                for col in self.metadata.column_cleaning_operations
+                if col.column_name in target_columns
+            ]
         return metadata
 
     def derive_sdk_code(
@@ -293,11 +294,12 @@ class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
 
     def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
-        metadata["column_cleaning_operations"] = [
-            col
-            for col in self.metadata.column_cleaning_operations
-            if col.column_name in target_columns
-        ]
+        if target_columns:
+            metadata["column_cleaning_operations"] = [
+                col
+                for col in self.metadata.column_cleaning_operations
+                if col.column_name in target_columns
+            ]
         return metadata
 
     def derive_sdk_code(
@@ -328,11 +330,12 @@ class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
 
     def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
-        metadata["column_cleaning_operations"] = [
-            col
-            for col in self.metadata.column_cleaning_operations
-            if col.column_name in target_columns
-        ]
+        if target_columns:
+            metadata["column_cleaning_operations"] = [
+                col
+                for col in self.metadata.column_cleaning_operations
+                if col.column_name in target_columns
+            ]
         return metadata
 
     def derive_sdk_code(
@@ -361,11 +364,12 @@ class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
 
     def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
-        metadata["column_cleaning_operations"] = [
-            col
-            for col in self.metadata.column_cleaning_operations
-            if col.column_name in target_columns
-        ]
+        if target_columns:
+            metadata["column_cleaning_operations"] = [
+                col
+                for col in self.metadata.column_cleaning_operations
+                if col.column_name in target_columns
+            ]
         return metadata
 
     def derive_sdk_code(
@@ -401,11 +405,13 @@ class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
 
     def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
-        metadata["column_cleaning_operations"] = [
-            col
-            for col in self.metadata.column_cleaning_operations
-            if col.column_name in target_columns
-        ]
+        if target_columns:
+            if target_columns:
+                metadata["column_cleaning_operations"] = [
+                    col
+                    for col in self.metadata.column_cleaning_operations
+                    if col.column_name in target_columns
+                ]
         return metadata
 
     def derive_sdk_code(
