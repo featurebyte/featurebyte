@@ -142,7 +142,7 @@ class OperationStructureExtractor(
         if proxy_input_operation_structures:
             state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
 
-        global_state = OperationStructureInfo(**state_params)
+        global_state = OperationStructureInfo(**state_params)  # type: ignore[arg-type]
         self._extract(
             node=node,
             branch_state=OperationStructureBranchState(),

@@ -3,8 +3,6 @@ This module contains graph pruning related classes.
 """
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
-from pydantic import BaseModel, Field
-
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -126,11 +124,19 @@ def prune_query_graph(
 class NodeParametersPruningGlobalState(OperationStructureInfo):
     """NodeParametersPruningGlobalState class"""
 
-    # variables for extractor output
-    graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
-    node_name_map: NodeNameMap = Field(default_factory=dict)
-    target_columns: Optional[List[str]] = Field(default=None)
-    target_node_name: str
+    def __init__(
+        self,
+        target_node_name: str,
+        graph: Optional[QueryGraphModel] = None,
+        node_name_map: Optional[NodeNameMap] = None,
+        target_columns: Optional[List[str]] = None,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
+        self.graph = graph or QueryGraphModel()
+        self.node_name_map = node_name_map or {}
+        self.target_columns = target_columns
+        self.target_node_name = target_node_name
 
 
 class NodeParametersPruningExtractor(
@@ -233,22 +239,26 @@ class NodeParametersPruningExtractor(
         return global_state.graph, global_state.node_name_map
 
 
-class GraphPruningBranchState(BaseModel):
+class GraphPruningBranchState:
     """GraphPruningBranchState class"""
 
 
 class GraphPruningGlobalState(OperationStructureInfo):
     """GraphPruningGlobalState class"""
 
-    # variables to store some internal pruning info
-    node_names: Set[str]  # node names that contributes to the final output
-
-    # variables for extractor output
-    graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
-    node_name_map: NodeNameMap = Field(default_factory=dict)
-
-    # variables to control pruning behavior
-    aggressive: bool
+    def __init__(
+        self,
+        node_names: Set[str],
+        graph: Optional[QueryGraphModel] = None,
+        node_name_map: Optional[NodeNameMap] = None,
+        aggressive: bool = False,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
+        self.node_names = node_names
+        self.graph = graph or QueryGraphModel()
+        self.node_name_map = node_name_map or {}
+        self.aggressive = aggressive
 
 
 class GraphStructurePruningExtractor(
