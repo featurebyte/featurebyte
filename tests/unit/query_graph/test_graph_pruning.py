@@ -330,6 +330,8 @@ def test_join_is_prunable(
     )
     pruned_graph, node_name_map = global_graph.prune(target_node=join_node, aggressive=True)
     pruned_graph = QueryGraph(**pruned_graph.dict())
+    pruned_ev_node = pruned_graph.get_node_by_name(node_name_map[event_data_input_node.name])
+    pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_data_input_node.name])
 
     # check operation structure of the join node output
     op_struct = pruned_graph.extract_operation_structure(node=join_node)
@@ -337,11 +339,14 @@ def test_join_is_prunable(
     input_only_names = ["cust_id", "order_id", "order_method"]
     input_and_join_names = ["item_type", "item_name"]
     for i, name in enumerate(input_only_names):
-        assert op_struct.columns[i].dict(**kwargs) == {"name": name, "node_names": {"input_1"}}
+        assert op_struct.columns[i].dict(**kwargs) == {
+            "name": name,
+            "node_names": {pruned_ev_node.name},
+        }
     for i, name in enumerate(input_and_join_names):
         assert op_struct.columns[i + 3].dict(**kwargs) == {
             "name": name,
-            "node_names": {"input_2", "join_1"},
+            "node_names": {pruned_it_node.name, "join_1"},
         }
 
     # check join node can be pruned
