@@ -1,15 +1,15 @@
 import textwrap
 
+import pytest
+
 from featurebyte import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 
 
-def test_window_function__as_filter_qualify_not_supported(global_graph, input_node):
-    """
-    Test window function as filter but QUALIFY is not supported
-    """
+@pytest.fixture
+def graph_with_window_function_filter(global_graph, input_node):
     graph = global_graph
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -53,10 +53,18 @@ def test_window_function__as_filter_qualify_not_supported(global_graph, input_no
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, window_based_condition],
     )
+    yield graph, filtered_node_2
+
+
+def test_window_function__as_filter_qualify_not_supported(graph_with_window_function_filter):
+    """
+    Test window function as filter but QUALIFY is not supported
+    """
+    graph, node = graph_with_window_function_filter
     sql_graph = SQLOperationGraph(
         graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SPARK
     )
-    sql_tree = sql_graph.build(filtered_node_2).sql
+    sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -72,6 +80,54 @@ def test_window_function__as_filter_qualify_not_supported(global_graph, input_no
             "a" AS "a",
             "b" AS "b",
             LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a",
+            (
+              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
+            ) AS "__fb_qualify_condition_column"
+          FROM "db"."public"."event_table"
+          WHERE
+            (
+              "a" = 123
+            )
+        )
+        WHERE
+          "__fb_qualify_condition_column"
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
+def test_window_function__as_filter_qualify_not_supported_unnamed(
+    graph_with_window_function_filter,
+):
+    """
+    Test window function as filter but QUALIFY is not supported. Project a temporary expression.
+    """
+    graph, node = graph_with_window_function_filter
+    project_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node],
+    )
+    add_node = graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_node],
+    )
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SPARK
+    )
+    sql_tree = sql_graph.build(add_node).sql_standalone
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "Unnamed0"
+        FROM (
+          SELECT
+            (
+              "a" + 123
+            ) AS "Unnamed0",
             (
               LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
             ) AS "__fb_qualify_condition_column"

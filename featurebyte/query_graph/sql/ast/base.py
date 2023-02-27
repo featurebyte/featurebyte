@@ -213,6 +213,20 @@ class TableNode(SQLNode, ABC):
         sql = cast(expressions.Subqueryable, self.sql)
         return cast(expressions.Expression, sql.subquery())
 
+    @property
+    def require_nested_filter_post_select(self) -> bool:
+        """
+        Whether there is a need to apply a nested filter after the Select statement
+
+        Returns
+        -------
+        bool
+        """
+        return (
+            self.qualify_condition is not None
+            and not self.context.adapter.is_qualify_clause_supported()
+        )
+
     def get_sql_for_expressions(
         self,
         exprs: list[Expression],
@@ -234,24 +248,29 @@ class TableNode(SQLNode, ABC):
         """
         if aliases is not None:
             assert len(exprs) == len(aliases)
-        else:
+
+        if aliases is None and self.require_nested_filter_post_select:
+            # When previewing an unnamed expression, e.g. ("a" + "b") but at the same time a nested
+            # filter is required, we need to give ("a" + "b") a name so that we can remove the
+            # temporary nested filter column in the output.
             aliases = [f"Unnamed{i}" for i in range(len(exprs))]
+
+        if aliases is None:
+            named_exprs = exprs
+        else:
+            named_exprs = [
+                expressions.alias_(expr, alias=alias, quoted=True)
+                for (expr, alias) in zip(exprs, aliases)
+            ]
 
         select_expr = self.get_select_statement_without_columns()
 
         # Specify required expressions / columns for the SELECT clause
-        select_expr = select_expr.select(
-            *[
-                expressions.alias_(expr, alias=alias, quoted=True)
-                for (expr, alias) in zip(exprs, aliases)
-            ]
-        )
+        select_expr = select_expr.select(*named_exprs)
 
         # Use nested filter if QUALIFY clause is not supported
-        if (
-            self.qualify_condition is not None
-            and not self.context.adapter.is_qualify_clause_supported()
-        ):
+        if self.require_nested_filter_post_select:
+            assert aliases is not None
             select_expr = select_expr.select(
                 expressions.alias_(
                     self.qualify_condition, alias=FB_QUALIFY_CONDITION_COLUMN, quoted=True
