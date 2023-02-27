@@ -84,7 +84,7 @@ test-unit:
 	poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
 
 test-integration:
-	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 --cov=featurebyte tests/integration
 
 test-merge:
 	echo "coverage: platform" > pytest-coverage.txt
