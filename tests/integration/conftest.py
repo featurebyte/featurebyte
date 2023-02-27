@@ -61,7 +61,24 @@ def pytest_collection_modifyitems(config, items):
 
     For example, we need to ensure that all tests using Snowflake are run first, then run the Spark
     tests, etc. Before the Spark tests run, pytest will tear down all the Snowflake fixtures.
+
+    Also handles filtering of integration tests by source_type (specified via --source-types option
+    as a comma separated list).
     """
+
+    source_types_config = config.getoption("source_types")
+    if source_types_config is not None:
+        filtered_source_types = source_types_config.split(",")
+        filtered_source_types = {source_type.strip() for source_type in filtered_source_types}
+    else:
+        filtered_source_types = None
+
+    def get_source_type_from_item(item):
+        if hasattr(item, "callspec"):
+            source_type = item.callspec.params.get("source_type")
+            if source_type is not None:
+                return source_type
+        return None
 
     def get_sorting_key(entry):
 
@@ -69,19 +86,34 @@ def pytest_collection_modifyitems(config, items):
         extra_ordering_key = ""
 
         # check for the source_type parameter if available
-        if hasattr(item, "callspec"):
-            source_type = item.callspec.params.get("source_type")
-            if source_type is not None:
-                extra_ordering_key = source_type
+        source_type = get_source_type_from_item(item)
+        if source_type is not None:
+            extra_ordering_key = source_type
 
         # include index as the sorting key to preserve the original ordering
         return extra_ordering_key, index
+
+    def filter_items_by_source_types(all_items):
+
+        if not filtered_source_types:
+            return all_items
+
+        filtered_items = []
+        for item in all_items:
+            source_type = get_source_type_from_item(item)
+            if source_type is None:
+                source_type = "none"
+            if source_type in filtered_source_types:
+                filtered_items.append(item)
+
+        return filtered_items
 
     # re-order the tests
     _ = config
     sorted_entries = sorted(enumerate(items), key=get_sorting_key)
     sorted_items = [entry[1] for entry in sorted_entries]
-    items[:] = sorted_items
+    filtered_items = filter_items_by_source_types(sorted_items)
+    items[:] = filtered_items
 
 
 @pytest.fixture(name="config", scope="session")
