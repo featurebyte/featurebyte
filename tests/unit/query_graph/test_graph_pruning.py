@@ -398,3 +398,26 @@ def test_join_is_prunable(
         "join_1": ["project_1"],
     }
     assert node_name_map[proj_cust_id_inner.name] == "project_1"
+
+
+def test_project_node_parameters_pruning(query_graph_and_assign_node):
+    """Test pruning of project node parameters"""
+    graph, assign_node = query_graph_and_assign_node
+    proj_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts", "cust_id", "a", "b", "c"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    target_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_node],
+    )
+
+    # after pruning, the project node parameters should be pruned
+    pruned_graph, node_name_map = graph.prune(target_node=target_node, aggressive=True)
+    mapped_proj_node_name = node_name_map[proj_node.name]
+    mapped_proj_node = pruned_graph.get_node_by_name(mapped_proj_node_name)
+    assert mapped_proj_node.parameters.columns == ["ts", "cust_id", "a", "b"]
