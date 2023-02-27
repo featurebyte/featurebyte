@@ -167,7 +167,7 @@ class BuildTileNode(TableNode):
             select(
                 f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
                 *keys,
-                *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
+                *[alias_(spec.tile_expr, alias=spec.tile_column_name) for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
             .group_by("tile_index", *keys)
