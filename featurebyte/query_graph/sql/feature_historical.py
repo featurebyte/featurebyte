@@ -203,7 +203,7 @@ async def get_historical_features(
     )
 
     # Execute feature SQL code
-    await session.register_table(request_table_name, training_events)
+    await session.register_table(request_table_name, training_events, temporary=False)
 
     # Compute tiles on demand if required
     if not is_feature_list_deployed:

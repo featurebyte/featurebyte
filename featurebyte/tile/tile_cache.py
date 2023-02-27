@@ -164,7 +164,8 @@ class TileCache:
     async def cleanup_temp_tables(self) -> None:
         """Drops all the temp tables that was created by TileCache"""
         for temp_table_name in self._materialized_temp_table_names:
-            await self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
+            # await self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
+            pass
         self._materialized_temp_table_names = set()
 
     async def get_required_computation(  # pylint: disable=too-many-locals
@@ -384,7 +385,9 @@ class TileCache:
         tile_cache_working_table_name = (
             f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        await self.session.register_table_with_query(tile_cache_working_table_name, table_sql)
+        await self.session.register_table_with_query(
+            tile_cache_working_table_name, table_sql, temporary=False
+        )
         self._materialized_temp_table_names.add(tile_cache_working_table_name)
 
     async def _get_tile_cache_validity_from_working_table(

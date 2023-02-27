@@ -464,6 +464,17 @@ class DatabricksAdapter(BaseAdapter):
     Helper class to generate Databricks specific SQL expressions
     """
 
+    class DataType(StrEnum):
+        """
+        Possible column types in DataBricks
+        """
+
+        FLOAT = "DOUBLE"
+        OBJECT = "MAP"
+        TIMESTAMP = "TIMESTAMP"
+        STRING = "STRING"
+        MAP = "MAP"
+
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
         return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])
@@ -531,7 +542,16 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
-        raise NotImplementedError()
+        mapping = {
+            DBVarType.INT: cls.DataType.FLOAT,
+            DBVarType.FLOAT: cls.DataType.FLOAT,
+            DBVarType.VARCHAR: cls.DataType.STRING,
+            DBVarType.OBJECT: cls.DataType.MAP,
+            DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
+        }
+        if dtype in mapping:
+            return mapping[dtype]
+        return cls.DataType.STRING
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
@@ -574,10 +594,6 @@ class SparkAdapter(DatabricksAdapter):
         bool
         """
         return False
-
-    @classmethod
-    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
-        raise NotImplementedError()
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:

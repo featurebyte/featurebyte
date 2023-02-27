@@ -17,7 +17,11 @@ from featurebyte.query_graph.sql.aggregator.base import (
     TileBasedAggregator,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    CteStatements,
+    get_qualified_column_identifier,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
@@ -411,9 +415,9 @@ class WindowAggregator(TileBasedAggregator):
             f"TILE.INDEX < REQ.{last_index_name}",
         ]
 
-        group_by_keys = [f"REQ.{quoted_identifier(point_in_time_column).sql()}"]
+        group_by_keys = [get_qualified_column_identifier(point_in_time_column, "REQ")]
         for serving_name in serving_names:
-            group_by_keys.append(f"REQ.{quoted_identifier(serving_name).sql()}")
+            group_by_keys.append(get_qualified_column_identifier(serving_name, "REQ"))
 
         if value_by is None:
             inner_agg_result_names = agg_result_names
@@ -422,7 +426,9 @@ class WindowAggregator(TileBasedAggregator):
             inner_agg_result_names = [
                 f"inner_{agg_result_name}" for agg_result_name in agg_result_names
             ]
-            inner_group_by_keys = group_by_keys + [f"TILE.{quoted_identifier(value_by).sql()}"]
+            inner_group_by_keys = group_by_keys + [
+                get_qualified_column_identifier(value_by, "TILE")
+            ]
 
         # Join expanded request table with tile table using range join
         req_joined_with_tiles = (
@@ -469,7 +475,7 @@ class WindowAggregator(TileBasedAggregator):
     @staticmethod
     def merge_tiles_order_independent(
         req_joined_with_tiles: Select,
-        inner_group_by_keys: list[str],
+        inner_group_by_keys: list[Expression],
         merge_exprs: list[str],
         inner_agg_result_names: list[str],
     ) -> Select:
@@ -482,7 +488,7 @@ class WindowAggregator(TileBasedAggregator):
         ----------
         req_joined_with_tiles: Select
             Result of joining expanded request table with tile table
-        inner_group_by_keys: list[str]
+        inner_group_by_keys: list[Expression]
             Keys that the aggregation should use
         merge_exprs: list[str]
             Expressions that merge tile values to produce feature values
@@ -505,7 +511,7 @@ class WindowAggregator(TileBasedAggregator):
     @staticmethod
     def merge_tiles_order_dependent(
         req_joined_with_tiles: Select,
-        inner_group_by_keys: list[str],
+        inner_group_by_keys: list[Expression],
         merge_exprs: list[str],
         inner_agg_result_names: list[str],
     ) -> Select:
@@ -520,7 +526,7 @@ class WindowAggregator(TileBasedAggregator):
         ----------
         req_joined_with_tiles: Select
             Result of joining expanded request table with tile table
-        inner_group_by_keys: list[str]
+        inner_group_by_keys: list[Expression]
             Keys that the aggregation should use
         merge_exprs: list[str]
             Expressions that merge tile values to produce feature values

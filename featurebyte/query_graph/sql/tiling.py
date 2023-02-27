@@ -8,8 +8,11 @@ from typing import Optional
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from sqlglot import expressions
+
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.common import quoted_identifier
 
 
 @dataclass
@@ -215,7 +218,9 @@ class LatestValueAggregator(OrderDependentAggregator):
         assert col is not None
         return [
             TileSpec(
-                f'FIRST_VALUE("{col.name}")',
+                expressions.Anonymous(
+                    this="FIRST_VALUE", expressions=[quoted_identifier(col.name)]
+                ),
                 f"value_{agg_id}",
                 self.adapter.get_physical_type_from_dtype(col.dtype),
             ),
