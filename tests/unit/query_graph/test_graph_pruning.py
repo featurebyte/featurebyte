@@ -3,7 +3,6 @@ Test for graph pruning related logics
 """
 import os
 
-import pytest
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -299,3 +298,92 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")
     assert pruned_join_node.parameters == expected_pruned_join_node_params
+
+
+def test_join_is_prunable(
+    global_graph, event_data_input_node, item_data_input_node, groupby_node_params
+):
+    """Test join node parameters pruning"""
+    # construct a join node to join an item data & an event data (with a redundant column)
+    join_node_parameters = {
+        "left_on": "order_id",
+        "right_on": "order_id",
+        "left_input_columns": ["cust_id", "order_id", "order_method"],
+        "left_output_columns": ["cust_id", "order_id", "order_method"],
+        "right_input_columns": ["item_type", "item_name"],
+        "right_output_columns": ["item_type", "item_name"],
+        "join_type": "left",
+        "scd_parameters": None,
+        "metadata": {"type": "join", "on": None, "rsuffix": ""},
+    }
+    join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=join_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, item_data_input_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=join_node, aggressive=True)
+    pruned_graph = QueryGraph(**pruned_graph.dict())
+
+    # check operation structure of the join node output
+    op_struct = pruned_graph.extract_operation_structure(node=join_node)
+    kwargs = {"include": {"name": True, "node_names": True}}
+    input_only_names = ["cust_id", "order_id", "order_method"]
+    input_and_join_names = ["item_type", "item_name"]
+    for i, name in enumerate(input_only_names):
+        assert op_struct.columns[i].dict(**kwargs) == {"name": name, "node_names": {"input_1"}}
+    for i, name in enumerate(input_and_join_names):
+        assert op_struct.columns[i + 3].dict(**kwargs) == {
+            "name": name,
+            "node_names": {"input_2", "join_1"},
+        }
+
+    # check join node can be pruned
+    proj_cust_id = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[join_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_cust_id, aggressive=True)
+    assert pruned_graph.edges_map == {"input_1": ["project_1"]}
+    assert node_name_map[proj_cust_id.name] == "project_1"
+
+    # check join node is kept if it is required
+    proj_item_type = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["item_type"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[join_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(target_node=proj_item_type, aggressive=True)
+    assert pruned_graph.edges_map == {
+        "input_1": ["join_1"],
+        "input_2": ["join_1"],
+        "join_1": ["project_1"],
+    }
+    assert node_name_map[proj_item_type.name] == "project_1"
+
+    # check inner join should not prune join node
+    join_node_parameters["join_type"] = "inner"
+    inner_join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=join_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_data_input_node, item_data_input_node],
+    )
+    proj_cust_id_inner = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[inner_join_node],
+    )
+    pruned_graph, node_name_map = global_graph.prune(
+        target_node=proj_cust_id_inner, aggressive=True
+    )
+    assert pruned_graph.edges_map == {
+        "input_1": ["join_1"],
+        "input_2": ["join_1"],
+        "join_1": ["project_1"],
+    }
+    assert node_name_map[proj_cust_id_inner.name] == "project_1"
