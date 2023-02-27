@@ -469,6 +469,5 @@ def test_sdk_code_generation(saved_scd_data, update_fixtures):
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/change_view.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
         data_id=saved_scd_data.id,
     )

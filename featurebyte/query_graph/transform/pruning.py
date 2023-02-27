@@ -168,8 +168,8 @@ class NodeParametersPruningExtractor(
         input_op_structs = []
         mapped_input_nodes = []
         for input_node_name in self.graph.get_input_node_names(node):
-            input_op_structs.append(global_state.operation_structure_map[input_node_name])
             mapped_input_node_name = global_state.node_name_map[input_node_name]
+            input_op_structs.append(global_state.operation_structure_map[mapped_input_node_name])
             mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
 
         if not isinstance(node, BaseGraphNode):

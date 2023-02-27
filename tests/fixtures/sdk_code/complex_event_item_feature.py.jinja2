@@ -33,6 +33,6 @@ grouped_1 = event_view.groupby(by_keys=["cust_id"], category="col_int").aggregat
 )
 feat_1 = grouped_1["count_a_24h_per_col_int"]
 feat_2 = (feat_1.cd.entropy()) * (feat_1.cd.most_frequent()).str.len()
-feat_3 = feat_1.cd.unique_count(include_missing=False)
-feat_4 = feat_1.cd.unique_count(include_missing=True)
-output = (feat + feat_2) - (feat_3 / feat_4)
+feat_3 = feat_1.cd.unique_count(include_missing=True)
+feat_4 = feat_1.cd.unique_count(include_missing=False)
+output = (feat + feat_2) - (feat_4 / feat_3)

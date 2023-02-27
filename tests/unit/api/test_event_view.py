@@ -229,15 +229,15 @@ def test_event_view_groupby__prune(
     pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
-        "input_1": ["graph_1"],
-        "graph_1": ["project_1", "assign_1"],
-        "project_1": ["add_1"],
         "add_1": ["assign_1", "add_2"],
         "add_2": ["assign_2"],
         "assign_1": ["assign_2"],
         "assign_2": ["groupby_1", "groupby_2"],
+        "graph_1": ["project_1", "assign_1"],
         "groupby_1": ["project_2"],
         "groupby_2": ["project_3"],
+        "input_1": ["graph_1"],
+        "project_1": ["add_1"],
         "project_2": ["mul_1"],
         "project_3": ["mul_1"],
     }
@@ -685,6 +685,5 @@ def test_sdk_code_generation(saved_event_data, update_fixtures):
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/event_view.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
         data_id=saved_event_data.id,
     )

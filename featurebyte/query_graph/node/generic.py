@@ -54,6 +54,24 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
+    def prune(
+        self: NodeT,
+        target_nodes: Sequence[NodeT],
+        input_operation_structures: List[OperationStructure],
+    ) -> NodeT:
+        assert len(input_operation_structures) == 1
+        input_op_struct = input_operation_structures[0]
+        if input_op_struct.output_category == NodeOutputCategory.VIEW:
+            # for view, the available columns are the columns
+            avail_columns = set(col.name for col in input_op_struct.columns)
+        else:
+            # for feature, the available columns are the aggregations
+            avail_columns = set(col.name for col in input_op_struct.aggregations)
+
+        node_params = self.parameters.dict()
+        node_params["columns"] = [col for col in self.parameters.columns if col in avail_columns]  # type: ignore
+        return self.clone(parameters=node_params)
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
