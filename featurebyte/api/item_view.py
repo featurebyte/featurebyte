@@ -154,6 +154,15 @@ class ItemView(View, GroupByMixin):
             item_table_data = item_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )
+        else:
+            column_cleaning_operations = [
+                ColumnCleaningOperation(
+                    column_name=col.name,
+                    cleaning_operations=col.critical_data_info.cleaning_operations,
+                )
+                for col in item_table_data.columns_info
+                if col.critical_data_info and col.critical_data_info.cleaning_operations
+            ]
 
         (
             view_graph_node,

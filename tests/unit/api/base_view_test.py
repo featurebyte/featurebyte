@@ -102,7 +102,12 @@ class BaseViewTestSuite:
             )
         assert metadata.view_mode == "auto"
         assert metadata.drop_column_names == expected_drop_column_names
-        assert metadata.column_cleaning_operations == []
+        assert metadata.column_cleaning_operations == [
+            {
+                "column_name": self.col,
+                "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
+            }
+        ]
         assert metadata.data_id == data_under_test_with_imputation.id
 
         # check that cleaning graph is created

@@ -3,6 +3,7 @@ Unit test for EventView class
 """
 
 import copy
+import pdb
 from unittest import mock
 from unittest.mock import PropertyMock
 
@@ -671,7 +672,7 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
             cleaning_operations=[MissingValueImputation(imputed_value=-1)]
         )
 
-    # create event view
+    # create event view & the metadata
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
 
     # create feature

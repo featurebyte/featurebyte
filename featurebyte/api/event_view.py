@@ -134,6 +134,15 @@ class EventView(View, GroupByMixin):
             event_table_data = event_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )
+        else:
+            column_cleaning_operations = [
+                ColumnCleaningOperation(
+                    column_name=col.name,
+                    cleaning_operations=col.critical_data_info.cleaning_operations,
+                )
+                for col in event_table_data.columns_info
+                if col.critical_data_info and col.critical_data_info.cleaning_operations
+            ]
 
         view_graph_node, columns_info = event_table_data.construct_event_view_graph_node(
             event_data_node=data_node,

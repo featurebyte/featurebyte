@@ -12,7 +12,6 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.critical_data_info import (
-    ConditionOperationField,
     CriticalDataInfo,
     DisguisedValueImputation,
     MissingValueImputation,
@@ -21,6 +20,7 @@ from featurebyte.query_graph.model.critical_data_info import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.model.table import DimensionTableData, EventTableData, GenericTableData
+from featurebyte.query_graph.node.nested import ConditionOperationField
 from featurebyte.query_graph.node.schema import (
     FeatureStoreDetails,
     SnowflakeDetails,

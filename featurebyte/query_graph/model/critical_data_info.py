@@ -11,37 +11,28 @@ from abc import abstractmethod
 import pandas as pd
 from pydantic import Field, validator
 
-from featurebyte.common.typing import OptionalScalar
-from featurebyte.enum import DBVarType, StrEnum
+from featurebyte.common.typing import Numeric, OptionalScalar
+from featurebyte.enum import DBVarType
 from featurebyte.exception import InvalidImputationsError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.nested import BaseCleaningOperation
+from featurebyte.query_graph.node.nested import (
+    BaseCleaningOperation,
+    ConditionOperationField,
+    DisguisedValueImputationOp,
+    MissingValueImputationOp,
+    StringValueImputationOp,
+    UnexpectedValueImputationOp,
+    ValueBeyondEndpointImputationOp,
+)
 
-
-class ConditionOperationField(StrEnum):
-    """Field values used in critical data info operation"""
-
-    MISSING = "missing"
-    DISGUISED = "disguised"
-    NOT_IN = "not_in"
-    LESS_THAN = "less_than"
-    LESS_THAN_OR_EQUAL = "less_than_or_equal"
-    GREATER_THAN = "greater_than"
-    GREATER_THAN_OR_EQUAL = "greater_than_or_equal"
-    IS_STRING = "is_string"
-
-
-NumericT = Union[int, float]
 IMPUTE_OPERATIONS = []
 
 
 class BaseImputeOperation(BaseCleaningOperation):
     """BaseImputeOperation class"""
-
-    imputed_value: OptionalScalar
 
     def __init_subclass__(cls, **kwargs: Any):
         if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
@@ -55,6 +46,22 @@ class BaseImputeOperation(BaseCleaningOperation):
     def add_cleaning_operation(
         self, graph_node: GraphNode, input_node: Node, dtype: DBVarType
     ) -> Node:
+        """
+        Add cleaning operation to the graph node
+
+        Parameters
+        ----------
+        graph_node: BaseGraphNode
+            Nested graph node
+        input_node: NodeT
+            Input node to the query graph
+        dtype: DBVarType
+            Data type that output column will be casted to
+
+        Returns
+        -------
+        Node
+        """
         condition_node = self.add_condition_operation(graph_node=graph_node, input_node=input_node)
         cond_assign_node = graph_node.add_operation(
             node_type=NodeType.CONDITIONAL,
@@ -90,10 +97,6 @@ class BaseImputeOperation(BaseCleaningOperation):
         Node
         """
 
-
-class BaseCondition(FeatureByteBaseModel):
-    """Base condition model"""
-
     @abstractmethod
     def check_condition(self, value: OptionalScalar) -> bool:
         """
@@ -109,30 +112,20 @@ class BaseCondition(FeatureByteBaseModel):
         bool
         """
 
-    @abstractmethod
-    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
-        """
-        Construct a node that generate conditional filtering column
 
-        Parameters
-        ----------
-        graph_node: GraphNode
-            Graph node
-        input_node: Node
-            Input (series) node
+class MissingValueImputation(BaseImputeOperation, MissingValueImputationOp):
+    """
+    MissingValueImputation class is used to impute the missing value of a data column.
 
-        Returns
-        -------
-        Node
-        """
+    imputed_value: OptionalScalar
+        Value to replace missing value
 
+    Examples
+    --------
+    Create an imputation rule to replace missing value with 0
 
-class MissingValueCondition(BaseCondition):
-    """Missing value condition"""
-
-    type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, const=True
-    )
+    >>> MissingValueImputation(imputed_value=0) # doctest: +SKIP
+    """
 
     def check_condition(self, value: OptionalScalar) -> bool:
         return bool(pd.isnull(value))
@@ -146,13 +139,21 @@ class MissingValueCondition(BaseCondition):
         )
 
 
-class DisguisedValueCondition(BaseCondition):
-    """Disguised value condition"""
+class DisguisedValueImputation(BaseImputeOperation, DisguisedValueImputationOp):
+    """
+    DisguisedValueImputation class is used to impute the disguised missing value of a data column.
 
-    type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, const=True
-    )
-    disguised_values: Sequence[OptionalScalar]
+    disguised_values: List[OptionalScalar]
+        List of disguised missing values
+    imputed_value: OptionalScalar
+        Value to replace disguised missing value
+
+    Examples
+    --------
+    Create an imputation rule to replace -999 with 0
+
+    >>> DisguisedValueImputation(disguised_values=[-999], imputed_value=0) # doctest: +SKIP
+    """
 
     def check_condition(self, value: OptionalScalar) -> bool:
         return value in self.disguised_values
@@ -166,13 +167,22 @@ class DisguisedValueCondition(BaseCondition):
         )
 
 
-class UnexpectedValueCondition(BaseCondition):
-    """Unexpected value condition"""
+class UnexpectedValueImputation(BaseImputeOperation, UnexpectedValueImputationOp):
+    """
+    UnexpectedValueImputation class is used to impute the unexpected value of a data column.
+    Note that this imputation operation will not impute missing value.
 
-    type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, const=True
-    )
-    expected_values: Sequence[OptionalScalar]
+    expected_values: List[OptionalScalar]
+        List of expected values, values not in expected value will be imputed
+    imputed_value: OptionalScalar
+        Value to replace unexpected value
+
+    Examples
+    --------
+    Create an imputation rule to replace value other than "buy" or "sell" to "missing"
+
+    >>> UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
+    """
 
     def check_condition(self, value: OptionalScalar) -> bool:
         return value not in self.expected_values
@@ -192,8 +202,23 @@ class UnexpectedValueCondition(BaseCondition):
         )
 
 
-class BoundaryCondition(BaseCondition):
-    """Boundary value condition"""
+class ValueBeyondEndpointImputation(BaseImputeOperation, ValueBeyondEndpointImputationOp):
+    """
+    ValueBeyondEndpointImputation class is used to impute the value exceed a specified endpoint
+
+    type: Literal["less_than", "less_than_or_equal", "greater_than", "greater_than_or_equal"]
+        Boundary type
+    end_point: Union[int, float]
+        End point
+    imputed_value: OptionalScalar
+        Value to replace value outside the end point boundary
+
+    Examples
+    --------
+    Create an imputation rule to replace value less than 0 to 0
+
+    >>> ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
+    """
 
     type: Literal[
         ConditionOperationField.LESS_THAN,
@@ -201,7 +226,7 @@ class BoundaryCondition(BaseCondition):
         ConditionOperationField.GREATER_THAN,
         ConditionOperationField.GREATER_THAN_OR_EQUAL,
     ] = Field(allow_mutation=False)
-    end_point: NumericT
+    end_point: Numeric
 
     def check_condition(self, value: OptionalScalar) -> bool:
         operation_map = {
@@ -231,95 +256,7 @@ class BoundaryCondition(BaseCondition):
         )
 
 
-class IsStringCondition(BaseCondition):
-    """Is string condition"""
-
-    type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, const=True
-    )
-
-    def check_condition(self, value: OptionalScalar) -> bool:
-        return isinstance(value, str)
-
-    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
-        return graph_node.add_operation(
-            node_type=NodeType.IS_STRING,
-            node_params={},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[input_node],
-        )
-
-
-class MissingValueImputation(MissingValueCondition, BaseImputeOperation):
-    """
-    MissingValueImputation class is used to impute the missing value of a data column.
-
-    imputed_value: OptionalScalar
-        Value to replace missing value
-
-    Examples
-    --------
-    Create an imputation rule to replace missing value with 0
-
-    >>> MissingValueImputation(imputed_value=0) # doctest: +SKIP
-    """
-
-
-class DisguisedValueImputation(DisguisedValueCondition, BaseImputeOperation):
-    """
-    DisguisedValueImputation class is used to impute the disguised missing value of a data column.
-
-    disguised_values: List[OptionalScalar]
-        List of disguised missing values
-    imputed_value: OptionalScalar
-        Value to replace disguised missing value
-
-    Examples
-    --------
-    Create an imputation rule to replace -999 with 0
-
-    >>> DisguisedValueImputation(disguised_values=[-999], imputed_value=0) # doctest: +SKIP
-    """
-
-
-class UnexpectedValueImputation(UnexpectedValueCondition, BaseImputeOperation):
-    """
-    UnexpectedValueImputation class is used to impute the unexpected value of a data column.
-    Note that this imputation operation will not impute missing value.
-
-    expected_values: List[OptionalScalar]
-        List of expected values, values not in expected value will be imputed
-    imputed_value: OptionalScalar
-        Value to replace unexpected value
-
-    Examples
-    --------
-    Create an imputation rule to replace value other than "buy" or "sell" to "missing"
-
-    >>> UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
-    """
-
-
-class ValueBeyondEndpointImputation(BoundaryCondition, BaseImputeOperation):
-    """
-    ValueBeyondEndpointImputation class is used to impute the value exceed a specified endpoint
-
-    type: Literal["less_than", "less_than_or_equal", "greater_than", "greater_than_or_equal"]
-        Boundary type
-    end_point: Union[int, float]
-        End point
-    imputed_value: OptionalScalar
-        Value to replace value outside the end point boundary
-
-    Examples
-    --------
-    Create an imputation rule to replace value less than 0 to 0
-
-    >>> ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
-    """
-
-
-class StringValueImputation(IsStringCondition, BaseImputeOperation):
+class StringValueImputation(BaseImputeOperation, StringValueImputationOp):
     """
     StringValueImputation class is used to impute those value which is string type
 
@@ -332,6 +269,17 @@ class StringValueImputation(IsStringCondition, BaseImputeOperation):
 
     >>> StringValueImputation(imputed_value=0) # doctest: +SKIP
     """
+
+    def check_condition(self, value: OptionalScalar) -> bool:
+        return isinstance(value, str)
+
+    def add_condition_operation(self, graph_node: GraphNode, input_node: Node) -> Node:
+        return graph_node.add_operation(
+            node_type=NodeType.IS_STRING,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
 
 
 if TYPE_CHECKING:

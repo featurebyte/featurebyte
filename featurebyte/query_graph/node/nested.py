@@ -9,7 +9,8 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import DBVarType, ViewMode
+from featurebyte.common.typing import Numeric, OptionalScalar
+from featurebyte.enum import StrEnum, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, NodeT
@@ -26,10 +27,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VarNameExpressionStr,
 )
-
-if TYPE_CHECKING:
-    from featurebyte.query_graph.graph_node.base import GraphNode
-    from featurebyte.query_graph.node import Node
 
 
 class ProxyInputNode(BaseNode):
@@ -106,30 +103,81 @@ class BaseGraphNodeParameters(BaseModel):
         """
 
 
+class ConditionOperationField(StrEnum):
+    """Field values used in critical data info operation"""
+
+    MISSING = "missing"
+    DISGUISED = "disguised"
+    NOT_IN = "not_in"
+    LESS_THAN = "less_than"
+    LESS_THAN_OR_EQUAL = "less_than_or_equal"
+    GREATER_THAN = "greater_than"
+    GREATER_THAN_OR_EQUAL = "greater_than_or_equal"
+    IS_STRING = "is_string"
+
+
 class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
-    def add_cleaning_operation(
-        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
-    ) -> "Node":
-        """
-        Add cleaning operation to the graph node
+    imputed_value: OptionalScalar
 
-        Parameters
-        ----------
-        graph_node: BaseGraphNode
-            Nested graph node
-        input_node: NodeT
-            Input node to the query graph
-        dtype: DBVarType
-            Data type that output column will be casted to
 
-        Raises
-        ------
-        NotImplementedError
-            If this method is called
-        """
-        raise NotImplementedError("This should not be called")
+class MissingValueImputationOp(BaseCleaningOperation):
+    """MissingValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.MISSING] = Field(
+        ConditionOperationField.MISSING, const=True
+    )
+
+
+class DisguisedValueImputationOp(BaseCleaningOperation):
+    """DisguisedValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.DISGUISED] = Field(
+        ConditionOperationField.DISGUISED, const=True
+    )
+    disguised_values: Sequence[OptionalScalar]
+
+
+class UnexpectedValueImputationOp(BaseCleaningOperation):
+    """UnexpectedValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.NOT_IN] = Field(
+        ConditionOperationField.NOT_IN, const=True
+    )
+    expected_values: Sequence[OptionalScalar]
+
+
+class ValueBeyondEndpointImputationOp(BaseCleaningOperation):
+    """ValueBeyondEndpointImputationOp class"""
+
+    type: Literal[
+        ConditionOperationField.LESS_THAN,
+        ConditionOperationField.LESS_THAN_OR_EQUAL,
+        ConditionOperationField.GREATER_THAN,
+        ConditionOperationField.GREATER_THAN_OR_EQUAL,
+    ] = Field(allow_mutation=False)
+    end_point: Numeric
+
+
+class StringValueImputationOp(BaseCleaningOperation):
+    """StringValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.IS_STRING] = Field(
+        ConditionOperationField.IS_STRING, const=True
+    )
+
+
+CleaningOperation = Annotated[
+    Union[
+        MissingValueImputationOp,
+        DisguisedValueImputationOp,
+        UnexpectedValueImputationOp,
+        ValueBeyondEndpointImputationOp,
+        StringValueImputationOp,
+    ],
+    Field(discriminator="type"),
+]
 
 
 class ColumnCleaningOperation(FeatureByteBaseModel):
@@ -138,7 +186,7 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     """
 
     column_name: str
-    cleaning_operations: Sequence[BaseCleaningOperation]
+    cleaning_operations: Sequence[CleaningOperation]
 
 
 class DataCleaningOperation(FeatureByteBaseModel):

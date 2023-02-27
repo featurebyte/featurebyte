@@ -261,6 +261,15 @@ class ChangeView(View, GroupByMixin):
             scd_table_data = scd_table_data.clone(
                 column_cleaning_operations=column_cleaning_operations
             )
+        else:
+            column_cleaning_operations = [
+                ColumnCleaningOperation(
+                    column_name=col.name,
+                    cleaning_operations=col.critical_data_info.cleaning_operations,
+                )
+                for col in scd_table_data.columns_info
+                if col.critical_data_info and col.critical_data_info.cleaning_operations
+            ]
 
         view_graph_node, columns_info = scd_table_data.construct_change_view_graph_node(
             scd_data_node=data_node,

@@ -31,6 +31,7 @@ TimedeltaSupportedUnitType = Literal[
 Scalar = Union[int, float, str, bool]
 OptionalScalar = Optional[Scalar]
 ScalarSequence = Sequence[Scalar]
+Numeric = Union[int, float]
 
 
 def is_scalar_nan(value: Any) -> bool:
