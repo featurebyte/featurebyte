@@ -42,7 +42,9 @@ class TableDataFrame(BaseFrame):
         node = self.node
         if kwargs.get("after_cleaning"):
             assert isinstance(node, InputNode)
-            graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node)
+            graph_node = self.table_data.construct_cleaning_recipe_node(
+                input_node=node, skip_column_names=[]
+            )
             if graph_node:
                 node = self.graph.add_node(node=graph_node, input_nodes=[self.node])
 

@@ -61,7 +61,12 @@ def test_auto_view_mode(snowflake_scd_data_with_imputation):
     assert snowflake_scd_data_with_imputation.record_creation_date_column is None
     assert metadata.view_mode == "auto"
     assert metadata.drop_column_names == []
-    assert metadata.column_cleaning_operations == []
+    assert metadata.column_cleaning_operations == [
+        {
+            "column_name": "col_int",
+            "cleaning_operations": [{"imputed_value": -1, "type": "missing"}],
+        }
+    ]
     assert metadata.data_id == snowflake_scd_data_with_imputation.id
 
     # check that cleaning graph is created
@@ -446,8 +451,8 @@ def test_from_slowly_changing_data__keep_record_creation_date_column(snowflake_s
     # check the change view graph node
     assert change_view.node.type == NodeType.GRAPH
     assert change_view.node.parameters.graph.edges[:2] == [
-        {"source": "proxy_input_1", "target": "graph_1"},
-        {"source": "graph_1", "target": "project_1"},
+        {"source": "proxy_input_1", "target": "project_1"},
+        {"source": "project_1", "target": "graph_1"},
     ]
     nested_graph_node = change_view.node.parameters.graph.get_node_by_name("graph_1")
     assert nested_graph_node.parameters.type == "cleaning"

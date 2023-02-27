@@ -159,7 +159,7 @@ class BaseTableData(FeatureByteBaseModel):
         """
         input_node: Node = project_node
         for cleaning_operation in cleaning_operations:
-            input_node = cleaning_operation.add_cleaning_operation(
+            input_node = cleaning_operation.add_cleaning_operation(  # type: ignore
                 graph_node=graph_node, input_node=input_node, dtype=dtype
             )
 
@@ -170,7 +170,9 @@ class BaseTableData(FeatureByteBaseModel):
             input_nodes=[frame_node, input_node],
         )
 
-    def construct_cleaning_recipe_node(self, input_node: InputNode) -> Optional[GraphNode]:
+    def construct_cleaning_recipe_node(
+        self, input_node: InputNode, skip_column_names: List[str]
+    ) -> Optional[GraphNode]:
         """
         Construct cleaning recipe graph node
 
@@ -178,6 +180,8 @@ class BaseTableData(FeatureByteBaseModel):
         ----------
         input_node: InputNode
             Input node for the cleaning recipe
+        skip_column_names: List[str]
+            List of column names to skip
 
         Returns
         -------
@@ -187,6 +191,9 @@ class BaseTableData(FeatureByteBaseModel):
         proxy_input_nodes: List[BaseNode] = []
         frame_node: Node
         for col_info in self._iterate_column_info_with_cleaning_operations():
+            if col_info.name in skip_column_names:
+                continue
+
             if graph_node is None:
                 graph_node, proxy_input_nodes = GraphNode.create(
                     node_type=NodeType.PROJECT,
@@ -277,35 +284,29 @@ class BaseTableData(FeatureByteBaseModel):
         columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
         project_columns = [col.name for col in columns_info]
 
+        # project node assume single input only and view_graph_input_nodes could have more than 1 item.
+        # therefore, nested_node_input_indices is used to specify the input node index for the project node
+        # without using all the proxy input nodes.
+        view_graph_node, proxy_input_nodes = GraphNode.create(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": project_columns},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=view_graph_input_nodes,
+            graph_node_type=graph_node_type,
+            nested_node_input_indices=[0],
+            metadata=metadata,
+        )
+
         # prepare view graph node
-        cleaning_graph_node = self.construct_cleaning_recipe_node(input_node=data_node)
+        cleaning_graph_node = self.construct_cleaning_recipe_node(
+            input_node=data_node, skip_column_names=drop_column_names
+        )
         if cleaning_graph_node:
-            view_graph_node, proxy_input_nodes = GraphNode.create(
+            view_graph_node.add_operation(
                 node_type=NodeType.GRAPH,
                 node_params=cleaning_graph_node.parameters.dict(by_alias=True),
                 node_output_type=NodeOutputType.FRAME,
-                input_nodes=view_graph_input_nodes,
-                graph_node_type=graph_node_type,
-                metadata=metadata,
-            )
-            view_graph_node.add_operation(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": project_columns},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[view_graph_node.output_node],
-            )
-        else:
-            # project node assume single input only and view_graph_input_nodes could have more than 1 item.
-            # therefore, nested_node_input_indices is used to specify the input node index for the project node
-            # without using all the proxy input nodes.
-            view_graph_node, proxy_input_nodes = GraphNode.create(
-                node_type=NodeType.PROJECT,
-                node_params={"columns": project_columns},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=view_graph_input_nodes,
-                graph_node_type=graph_node_type,
-                nested_node_input_indices=[0],
-                metadata=metadata,
+                input_nodes=[view_graph_node.output_node, *proxy_input_nodes[1:]],
             )
 
         assert len(proxy_input_nodes) == len(view_graph_input_nodes)

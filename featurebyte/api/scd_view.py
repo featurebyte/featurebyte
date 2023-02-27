@@ -106,10 +106,14 @@ class SlowlyChangingView(View, GroupByMixin):
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, slowly_changing_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if view_mode == ViewMode.MANUAL:
-            scd_table_data = scd_table_data.clone(
-                column_cleaning_operations=column_cleaning_operations
-            )
+        (
+            scd_table_data,
+            column_cleaning_operations,
+        ) = cls._prepare_table_data_and_column_cleaning_operations(
+            table_data=scd_table_data,
+            column_cleaning_operations=column_cleaning_operations,
+            view_mode=view_mode,
+        )
 
         view_graph_node, columns_info = scd_table_data.construct_scd_view_graph_node(
             scd_data_node=data_node,

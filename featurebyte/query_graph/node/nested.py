@@ -5,11 +5,12 @@ This module contains nested graph related node classes
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import Annotated
 
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import DBVarType, ViewMode
+from featurebyte.common.typing import Numeric, OptionalScalar
+from featurebyte.enum import StrEnum, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, NodeT
@@ -26,10 +27,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VarNameExpressionStr,
 )
-
-if TYPE_CHECKING:
-    from featurebyte.query_graph.graph_node.base import GraphNode
-    from featurebyte.query_graph.node import Node
 
 
 class ProxyInputNode(BaseNode):
@@ -76,6 +73,21 @@ class BaseGraphNodeParameters(BaseModel):
     type: GraphNodeType
 
     @abstractmethod
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        """
+        Prune metadata for the current graph node
+
+        Parameters
+        ----------
+        target_columns: List[str]
+            Target columns
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+
+    @abstractmethod
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -106,30 +118,81 @@ class BaseGraphNodeParameters(BaseModel):
         """
 
 
+class ConditionOperationField(StrEnum):
+    """Field values used in critical data info operation"""
+
+    MISSING = "missing"
+    DISGUISED = "disguised"
+    NOT_IN = "not_in"
+    LESS_THAN = "less_than"
+    LESS_THAN_OR_EQUAL = "less_than_or_equal"
+    GREATER_THAN = "greater_than"
+    GREATER_THAN_OR_EQUAL = "greater_than_or_equal"
+    IS_STRING = "is_string"
+
+
 class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
-    def add_cleaning_operation(
-        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
-    ) -> "Node":
-        """
-        Add cleaning operation to the graph node
+    imputed_value: OptionalScalar
 
-        Parameters
-        ----------
-        graph_node: BaseGraphNode
-            Nested graph node
-        input_node: NodeT
-            Input node to the query graph
-        dtype: DBVarType
-            Data type that output column will be casted to
 
-        Raises
-        ------
-        NotImplementedError
-            If this method is called
-        """
-        raise NotImplementedError("This should not be called")
+class MissingValueImputationOp(BaseCleaningOperation):
+    """MissingValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.MISSING] = Field(
+        ConditionOperationField.MISSING, const=True
+    )
+
+
+class DisguisedValueImputationOp(BaseCleaningOperation):
+    """DisguisedValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.DISGUISED] = Field(
+        ConditionOperationField.DISGUISED, const=True
+    )
+    disguised_values: Sequence[OptionalScalar]
+
+
+class UnexpectedValueImputationOp(BaseCleaningOperation):
+    """UnexpectedValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.NOT_IN] = Field(
+        ConditionOperationField.NOT_IN, const=True
+    )
+    expected_values: Sequence[OptionalScalar]
+
+
+class ValueBeyondEndpointImputationOp(BaseCleaningOperation):
+    """ValueBeyondEndpointImputationOp class"""
+
+    type: Literal[
+        ConditionOperationField.LESS_THAN,
+        ConditionOperationField.LESS_THAN_OR_EQUAL,
+        ConditionOperationField.GREATER_THAN,
+        ConditionOperationField.GREATER_THAN_OR_EQUAL,
+    ] = Field(allow_mutation=False)
+    end_point: Numeric
+
+
+class StringValueImputationOp(BaseCleaningOperation):
+    """StringValueImputationOp class"""
+
+    type: Literal[ConditionOperationField.IS_STRING] = Field(
+        ConditionOperationField.IS_STRING, const=True
+    )
+
+
+CleaningOperation = Annotated[
+    Union[
+        MissingValueImputationOp,
+        DisguisedValueImputationOp,
+        UnexpectedValueImputationOp,
+        ValueBeyondEndpointImputationOp,
+        StringValueImputationOp,
+    ],
+    Field(discriminator="type"),
+]
 
 
 class ColumnCleaningOperation(FeatureByteBaseModel):
@@ -138,7 +201,7 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     """
 
     column_name: str
-    cleaning_operations: Sequence[BaseCleaningOperation]
+    cleaning_operations: Sequence[CleaningOperation]
 
 
 class DataCleaningOperation(FeatureByteBaseModel):
@@ -155,6 +218,9 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
 
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        return self.metadata
 
     def derive_sdk_code(
         self,
@@ -176,11 +242,26 @@ class ViewMetadata(BaseModel):
     data_id: PydanticObjectId
 
 
-class EventViewGraphNodeParameters(BaseGraphNodeParameters):
+class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
+    """BaseViewGraphNodeParameters class"""
+
+    metadata: ViewMetadata
+
+    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+        metadata = self.metadata.dict(by_alias=True)
+        if target_columns:
+            metadata["column_cleaning_operations"] = [
+                col
+                for col in self.metadata.column_cleaning_operations
+                if col.column_name in target_columns
+            ]
+        return metadata
+
+
+class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:event_view) parameters"""
 
     type: Literal[GraphNodeType.EVENT_VIEW] = Field(GraphNodeType.EVENT_VIEW, const=True)
-    metadata: ViewMetadata
 
     def derive_sdk_code(
         self,
@@ -210,7 +291,7 @@ class ItemViewMetadata(ViewMetadata):
     event_data_id: PydanticObjectId
 
 
-class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
+class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:item_view) parameters"""
 
     type: Literal[GraphNodeType.ITEM_VIEW] = Field(GraphNodeType.ITEM_VIEW, const=True)
@@ -236,11 +317,10 @@ class ItemViewGraphNodeParameters(BaseGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
-class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
+class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:dimension_view) parameters"""
 
     type: Literal[GraphNodeType.DIMENSION_VIEW] = Field(GraphNodeType.DIMENSION_VIEW, const=True)
-    metadata: ViewMetadata
 
     def derive_sdk_code(
         self,
@@ -260,11 +340,10 @@ class DimensionViewGraphNodeParameters(BaseGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
 
-class SCDViewGraphNodeParameters(BaseGraphNodeParameters):
+class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:scd_view) parameters"""
 
     type: Literal[GraphNodeType.SCD_VIEW] = Field(GraphNodeType.SCD_VIEW, const=True)
-    metadata: ViewMetadata
 
     def derive_sdk_code(
         self,
@@ -291,7 +370,7 @@ class ChangeViewMetadata(ViewMetadata):
     prefixes: Optional[Tuple[Optional[str], Optional[str]]]
 
 
-class ChangeViewGraphNodeParameters(BaseGraphNodeParameters):
+class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:change_view) parameters"""
 
     type: Literal[GraphNodeType.CHANGE_VIEW] = Field(GraphNodeType.CHANGE_VIEW, const=True)
