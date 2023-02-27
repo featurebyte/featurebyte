@@ -21,7 +21,7 @@ from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 from collections import defaultdict
 
 from bson import json_util
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -565,7 +565,7 @@ class OperationStructure(FeatureByteBaseModel):
 class OperationStructureBranchState:
     """OperationStructureBranchState class"""
 
-    def __init__(self, visited_node_types=None):
+    def __init__(self, visited_node_types: Optional[Set[NodeType]] = None):
         if visited_node_types is None:
             visited_node_types = set()
         self.visited_node_types = visited_node_types
@@ -581,6 +581,7 @@ class OperationStructureInfo:
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
         **kwargs: Any,
     ):
+        _ = kwargs
         if edges_map is None:
             edges_map = defaultdict(set)
         else:
