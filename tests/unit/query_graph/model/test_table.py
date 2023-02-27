@@ -202,7 +202,19 @@ def test_construct_cleaning_recipe_node__missing_critical_data_info(
     generic_table_data, generic_input_node
 ):
     """Test construct_cleaning_recipe_node on a table data without any critical data info"""
-    output = generic_table_data.construct_cleaning_recipe_node(input_node=generic_input_node)
+    output = generic_table_data.construct_cleaning_recipe_node(
+        input_node=generic_input_node, skip_column_names=[]
+    )
+    assert output is None
+
+
+def test_construct_cleaning_recipe_node__check_skip_columns_works_as_expected(
+    event_table_data, event_input_node
+):
+    """Test construct_cleaning_recipe_node (skip columns)"""
+    output = event_table_data.construct_cleaning_recipe_node(
+        input_node=event_input_node, skip_column_names=["amount"]
+    )
     assert output is None
 
 
@@ -211,7 +223,9 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     # construct an input node & a graph node
     query_graph = QueryGraph()
     inserted_input_node = query_graph.add_node(node=event_input_node, input_nodes=[])
-    graph_node = event_table_data.construct_cleaning_recipe_node(input_node=inserted_input_node)
+    graph_node = event_table_data.construct_cleaning_recipe_node(
+        input_node=inserted_input_node, skip_column_names=[]
+    )
     output_node = query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
     # generate query
@@ -240,7 +254,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
 def test_construct_cleaning_recipe_node__dimension_data(dimension_table_data, dimension_input_node):
     """Test construct_cleaning_recipe_node (SQL generation is not ready for IS_IN and IS_STRING node)"""
     graph_node = dimension_table_data.construct_cleaning_recipe_node(
-        input_node=dimension_input_node
+        input_node=dimension_input_node, skip_column_names=[]
     )
     assert graph_node.parameters.graph.edges_map == {
         "proxy_input_1": ["project_1", "assign_1", "project_2"],
