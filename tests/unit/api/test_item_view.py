@@ -868,7 +868,6 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/item_view.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
         data_id=saved_item_data.id,
         event_data_id=saved_event_data.id,
     )

@@ -370,6 +370,5 @@ def test_sdk_code_generation(saved_dimension_data, update_fixtures):
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/dimension_view.py",
         update_fixtures=update_fixtures,
-        to_compare_generated_code=True,
         data_id=saved_dimension_data.id,
     )

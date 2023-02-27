@@ -114,14 +114,13 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     assert left_pruned_graph == right_pruned_graph
 
 
-def check_sdk_code_generation(  # pylint: disable=too-many-locals
+def check_sdk_code_generation(
     api_object,
     to_use_saved_data=False,
     data_id_to_info=None,
     to_format=True,
     fixture_path=None,
     update_fixtures=False,
-    to_compare_generated_code=True,
     data_id=None,
     **kwargs,
 ):
@@ -175,7 +174,7 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
 
             with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
                 file_handle.write(formatted_sdk_code)
-        elif to_compare_generated_code:
+        else:
             with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
                 expected = file_handle.read().format(
                     feature_store_id=feature_store_id, data_id=data_id, **kwargs
