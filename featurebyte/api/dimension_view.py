@@ -98,19 +98,14 @@ class DimensionView(View):
         assert isinstance(data_node, InputNode)
         dimension_table_data = cast(DimensionTableData, dimension_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
-        if view_mode == ViewMode.MANUAL:
-            dimension_table_data = dimension_table_data.clone(
-                column_cleaning_operations=column_cleaning_operations
-            )
-        else:
-            column_cleaning_operations = [
-                ColumnCleaningOperation(
-                    column_name=col.name,
-                    cleaning_operations=col.critical_data_info.cleaning_operations,
-                )
-                for col in dimension_data.columns_info
-                if col.critical_data_info and col.critical_data_info.cleaning_operations
-            ]
+        (
+            dimension_table_data,
+            column_cleaning_operations,
+        ) = cls._prepare_table_data_and_column_cleaning_operations(
+            table_data=dimension_table_data,
+            column_cleaning_operations=column_cleaning_operations,
+            view_mode=view_mode,
+        )
 
         view_graph_node, columns_info = dimension_table_data.construct_dimension_view_graph_node(
             dimension_data_node=data_node,

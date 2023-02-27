@@ -50,6 +50,7 @@ from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.nested import ColumnCleaningOperation
@@ -60,6 +61,7 @@ else:
     GroupBy = TypeVar("GroupBy")
 
 ViewT = TypeVar("ViewT", bound="View")
+TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
 class ViewColumn(Series, SampleMixin):
@@ -305,6 +307,26 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             params = ", ".join(non_empty_params)
             is_or_are = "is" if len(non_empty_params) == 1 else "are"
             raise ValueError(f"{params} {is_or_are} only supported in manual mode")
+
+    @staticmethod
+    def _prepare_table_data_and_column_cleaning_operations(
+        table_data: TableDataT,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
+        view_mode: ViewMode,
+    ) -> Tuple[TableDataT, List[ColumnCleaningOperation]]:
+        column_cleaning_operations = column_cleaning_operations or []
+        if view_mode == ViewMode.MANUAL:
+            table_data = table_data.clone(column_cleaning_operations=column_cleaning_operations)
+        else:
+            column_cleaning_operations = [
+                ColumnCleaningOperation(
+                    column_name=col.name,
+                    cleaning_operations=col.critical_data_info.cleaning_operations,
+                )
+                for col in table_data.columns_info
+                if col.critical_data_info and col.critical_data_info.cleaning_operations
+            ]
+        return table_data, column_cleaning_operations
 
     def _get_additional_inherited_columns(self) -> set[str]:
         """
