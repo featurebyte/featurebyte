@@ -52,6 +52,7 @@ from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
+from featurebyte.service.user_service import UserService
 from featurebyte.service.workspace import WorkspaceService
 
 ObjectT = TypeVar("ObjectT")
@@ -109,6 +110,7 @@ class InfoService(BaseService):
         self.relationship_info_service = RelationshipInfoService(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
+        self.user_service = UserService(user=user, persistent=persistent, workspace_id=workspace_id)
 
     @staticmethod
     async def _get_list_object(
@@ -270,6 +272,7 @@ class InfoService(BaseService):
         data_info = await self.data_service.get_document(
             document_id=relationship_info.child_data_source_id
         )
+        updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
         child_entity = None
         parent_entity = None
         if relationship_info.relationship_type == "parent_child":
@@ -287,7 +290,7 @@ class InfoService(BaseService):
             data_source_name=data_info.name,
             child_name=child_entity.name if child_entity else "unknown",
             parent_name=parent_entity.name if parent_entity else "unknown",
-            updated_by=relationship_info.updated_by,  # TODO: convert from user ID to name
+            updated_by=updated_user_name,
         )
 
     async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
