@@ -109,9 +109,11 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     Test not valid aggregation method passed to groupby
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         grouped.aggregate_over("a", "unknown_method", ["1d"], ["feature_name"])
-    expected_message = "Aggregation method not supported: unknown_method"
+    expected_message = (
+        'type of argument "method" must be one of (Literal[sum, avg, min, max, count, na_count'
+    )
     assert expected_message in str(exc.value)
 
 
