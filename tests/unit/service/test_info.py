@@ -25,7 +25,7 @@ from featurebyte.schema.info import (
     ItemDataInfo,
     SCDDataInfo,
 )
-from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoInfo
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.info import InfoService
 
 
