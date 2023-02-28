@@ -3,7 +3,7 @@ This module contains graph pruning related classes.
 """
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
-from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BasePrunableNode
