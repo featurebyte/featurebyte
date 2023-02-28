@@ -101,20 +101,20 @@ async def update_relationship_info(
 @router.get("/{relationship_info_id}/info", response_model=RelationshipInfoInfo)
 async def get_relationship_info_info(
     request: Request,
-    item_data_id: PydanticObjectId,
+    relationship_info_id: PydanticObjectId,
 ) -> RelationshipInfoInfo:
     """
     Retrieve RelationshipInfo info
     """
     controller = request.state.app_container.relationship_info_controller
     info = await controller.get_info(
-        document_id=item_data_id,
+        document_id=relationship_info_id,
     )
     return cast(RelationshipInfoInfo, info)
 
 
 @router.get("/audit/{relationship_info_id}", response_model=AuditDocumentList)
-async def list_scd_data_audit_logs(
+async def list_relationship_info_audit_logs(
     request: Request,
     relationship_info_id: PydanticObjectId,
     page: int = PageQuery,

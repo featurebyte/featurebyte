@@ -40,7 +40,7 @@ class Relationships(RelationshipInfo, ApiObject):
     @classmethod
     @typechecked
     def list(
-        cls, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = ""  # type: ignore[misc]
+        cls, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore[misc]
     ) -> pd.DataFrame:
         """
         List a dataframe of the relationships. This provides a dataframe with:
