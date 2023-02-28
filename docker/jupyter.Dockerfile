@@ -20,14 +20,15 @@ COPY poetry.lock pyproject.toml /app/
 
 # Install into .venv
 RUN poetry config virtualenvs.in-project true && \
-    poetry install --only main --extras "server" --no-interaction --no-ansi
+    poetry install --only main --extras "server" --no-interaction --no-ansi && \
+    poetry run pip install jupyterlab==3.5.3
 
 FROM python:3.8-slim AS runner
 
 ARG USER_HOME=/app
 
 RUN apt-get update && \
-    apt-get install -y netcat libsasl2-dev wkhtmltopdf gosu curl && \
+    apt-get install -y netcat libsasl2-dev wkhtmltopdf gosu && \
     apt-get clean
 
 WORKDIR $USER_HOME
@@ -37,7 +38,7 @@ ENV PATH="${USER_HOME}/.venv/bin:${PATH}"
 RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f ${USER_HOME}/dist featurebyte"  # Install featurebyte into /app/.venv
 
 ## Copy script
-COPY ./docker/entrypoint.sh             /scripts/entrypoint.sh
+COPY ./docker/entrypoint-jupyter.sh             /scripts/entrypoint.sh
 RUN chmod +x /scripts/entrypoint.sh
 
 ENTRYPOINT ["/scripts/entrypoint.sh"]

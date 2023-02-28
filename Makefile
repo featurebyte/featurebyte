@@ -27,7 +27,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
-.PHONY: beta-build
+.PHONY: docker-build
 .PHONY: clean
 
 #* Initialize
@@ -109,10 +109,10 @@ test-teardown:
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
-#* Docker
-beta-build: build-hive-udf-jar
+docker-build: | build-hive-udf-jar
 	poetry build
-	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
+	docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-server:latest
+	docker buildx build . -f docker/jupyter.Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-jupyter:latest
 
 #* Cleaning
 clean:

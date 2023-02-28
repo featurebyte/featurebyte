@@ -8,25 +8,43 @@ services:
     entrypoint: ["/bin/bash", "./scripts/entrypoint.sh"]
     volumes:
       - ./entrypoint-mongo.sh:/scripts/entrypoint.sh
-      - ~/.featurebyte/data/:/data/
+      - ~/.featurebyte/data/mongodb:/data/
+    healthcheck:
+      test: ["CMD", "mongosh", "--port=27022", "--eval", "rs.status()"]
 
   featurebyte-server:
     hostname: featurebyte-server
     container_name: featurebyte-server
-    depends_on: [mongo-rs]
-    image: featurebyte-beta:latest
-    volumes:
-      - ./entrypoint.sh:/scripts/entrypoint.sh
-      - ./migration.py:/scripts/migration.py
-      - ~/.featurebyte:/app/.featurebyte
-      - ~/.spark/data:/data
-      - /tmp:/tmp
+    image: featurebyte-server:latest
+    depends_on:
+      mongo-rs:
+        condition: service_healthy
     environment:
       FEATUREBYTE_HOME: /app/.featurebyte
+      MPLCONFIGDIR: /app/matplotlib
       MONGODB_URI: mongodb://mongo-rs:27021,mongo-rs:27022/?replicaSet=rs0
       API_HOST: 0.0.0.0
       API_PORT: 8088
       WORKERS: 3
       LOG_LEVEL: warning
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
+    volumes:
+      - ./migration.py:/scripts/migration.py
+
+  featurebyte-jupyter:
+    hostname: featurebyte-jupyter
+    container_name: featurebyte-jupyter
+    image: featurebyte-jupyter:latest
+    depends_on:
+      featurebyte-server:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:8088:8088"  # featurebyte-server
+      - "127.0.0.1:8090:8090"
+    environment:
+      - FEATUREBYTE_HOME=/app/.featurebyte
+      - MPLCONFIGDIR=/app/matplotlib
+      - "LOCAL_UID=${LOCAL_UID}"
+      - "LOCAL_GID=${LOCAL_GID}"
+    volumes:
+      - ~/.featurebyte:/app/.featurebyte
