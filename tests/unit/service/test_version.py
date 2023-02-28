@@ -450,7 +450,7 @@ async def test_create_new_feature_version__with_event_data_cleaning_operations(
 async def test_create_new_feature_version__document_error_with_item_data_cleaning_operations(
     version_service, feature_non_time_based, event_data, item_data
 ):
-    """Test create new feature version with event data cleaning operations"""
+    """Test create new feature version with event data cleaning operations (document error)"""
     # create a new feature version with irrelevant data cleaning operations
     # feature_non_time_based has the following definition:
     # feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
@@ -472,3 +472,58 @@ async def test_create_new_feature_version__document_error_with_item_data_cleanin
         )
     expected_msg = "Data cleaning operation(s) has no effect in feature value derivation."
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version__with_item_data_cleaning_operations(
+    version_service, feature_non_time_based, event_data, item_data
+):
+    """Test create new feature version with event data cleaning operations"""
+    event_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_1")
+    item_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_2")
+    event_metadata = {
+        "view_mode": "auto",
+        "drop_column_names": ["created_at"],
+        "column_cleaning_operations": [],
+        "data_id": event_data.id,
+    }
+    assert event_view_graph_node.parameters.metadata == event_metadata
+    item_metadata = {
+        "view_mode": "auto",
+        "drop_column_names": [],
+        "column_cleaning_operations": [],
+        "data_id": item_data.id,
+        "event_suffix": "_event_table",
+        "event_drop_column_names": event_metadata["drop_column_names"],
+        "event_column_cleaning_operations": event_metadata["column_cleaning_operations"],
+        "event_data_id": event_data.id,
+        "event_join_column_names": ["event_timestamp", "col_int", "cust_id"],
+    }
+    assert item_view_graph_node.parameters.metadata == item_metadata
+
+    # create a new feature version with relevant data cleaning operations
+    new_version = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature_non_time_based.id,
+            data_cleaning_operations=[
+                create_data_cleaning_operations(item_data.name, ["item_amount"]),
+            ],
+        )
+    )
+
+    # check graph node metadata
+    new_event_view_graph_node = new_version.graph.get_node_by_name("graph_1")
+    new_item_view_graph_node = new_version.graph.get_node_by_name("graph_2")
+    assert new_event_view_graph_node.parameters.metadata == event_metadata
+    assert new_item_view_graph_node.parameters.metadata == {
+        **item_metadata,
+        "column_cleaning_operations": [
+            {
+                "column_name": "item_amount",
+                "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+            }
+        ],
+    }
+
+    # graph structure (edges) should be the same
+    assert new_version.graph.edges == feature_non_time_based.graph.edges

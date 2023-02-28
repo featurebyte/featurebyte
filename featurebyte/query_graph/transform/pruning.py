@@ -329,6 +329,7 @@ class GraphStructurePruningExtractor(
         target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         target_columns: Optional[List[str]] = None
         if target_nodes:
+            # TODO: (DEV-1127) should not call get_required_input_columns() if the target node is a graph node
             required_columns = set().union(
                 *(node.get_required_input_columns() for node in target_nodes)
             )
