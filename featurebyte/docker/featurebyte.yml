@@ -19,6 +19,8 @@ services:
     depends_on:
       mongo-rs:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:8088:8088"
     environment:
       FEATUREBYTE_HOME: /app/.featurebyte
       MPLCONFIGDIR: /app/matplotlib
@@ -32,19 +34,19 @@ services:
     volumes:
       - ./migration.py:/scripts/migration.py
 
-  featurebyte-jupyter:
-    hostname: featurebyte-jupyter
-    container_name: featurebyte-jupyter
-    image: featurebyte-jupyter:latest
-    depends_on:
-      featurebyte-server:
-        condition: service_healthy
-    ports:
-      - "127.0.0.1:8090:8090"
-    environment:
-      - FEATUREBYTE_HOME=/app/.featurebyte
-      - MPLCONFIGDIR=/app/matplotlib
-      - "LOCAL_UID=${LOCAL_UID}"
-      - "LOCAL_GID=${LOCAL_GID}"
-    volumes:
-      - ~/.featurebyte:/app/.featurebyte
+#  featurebyte-jupyter:
+#    hostname: featurebyte-jupyter
+#    container_name: featurebyte-jupyter
+#    image: featurebyte-jupyter:latest
+#    depends_on:
+#      featurebyte-server:
+#        condition: service_healthy
+#    ports:
+#      - "127.0.0.1:8090:8090"
+#    environment:
+#      - FEATUREBYTE_HOME=/app/.featurebyte
+#      - MPLCONFIGDIR=/app/matplotlib
+#      - "LOCAL_UID=${LOCAL_UID}"
+#      - "LOCAL_GID=${LOCAL_GID}"
+#    volumes:
+#      - ~/.featurebyte:/app/.featurebyte
