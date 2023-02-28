@@ -139,7 +139,7 @@ async def test_scd_join_small(session, feature_store):
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_dataframe_scd_join):
     """
     Test joining an EventView with and SCDView
@@ -164,7 +164,7 @@ def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_d
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     """
     Test joining an EventView with and SCDView
