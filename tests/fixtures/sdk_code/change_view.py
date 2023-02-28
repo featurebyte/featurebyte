@@ -12,5 +12,8 @@ change_view = ChangeView.from_slowly_changing_data(
         blind_spot="0", frequency="24h", time_modulo_frequency="1h"
     ),
     prefixes=(None, "_past"),
+    view_mode="manual",
+    drop_column_names=[],
+    column_cleaning_operations=[],
 )
 output = change_view

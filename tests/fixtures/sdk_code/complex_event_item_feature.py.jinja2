@@ -6,24 +6,29 @@ from featurebyte import ItemData
 from featurebyte import ItemView
 
 item_data = ItemData.get_by_id(ObjectId("{item_data_id}"))
-item_view = ItemView.from_item_data(item_data=item_data, event_suffix="_event_view")
+item_view = ItemView.from_item_data(
+    item_data=item_data,
+    event_suffix="_event_view",
+    view_mode="manual",
+    drop_column_names=[],
+    column_cleaning_operations=[],
+    event_drop_column_names=["created_at"],
+    event_column_cleaning_operations=[],
+    event_join_column_names=["event_timestamp", "cust_id"],
+)
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
-event_view = EventView.from_event_data(event_data=event_data)
+event_view = EventView.from_event_data(
+    event_data=event_data,
+    view_mode="manual",
+    drop_column_names=["created_at"],
+    column_cleaning_operations=[],
+)
 item_view.join_event_data_attributes(columns=["col_float"], event_suffix=None)
 col = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
     value_column="col_float", method="sum", feature_name="non_time_sum_feature", skip_fill_na=True
 )
 event_view.add_feature(new_column_name="non_time_sum_feature", feature=col, entity_column="cust_id")
-grouped = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
-    value_column="non_time_sum_feature",
-    method="sum",
-    windows=["24h"],
-    feature_names=["sum_a_24h"],
-    feature_job_setting={{"blind_spot": "90s", "frequency": "360s", "time_modulo_frequency": "180s"}},
-    skip_fill_na=True,
-)
-feat = grouped["sum_a_24h"]
-grouped_1 = event_view.groupby(by_keys=["cust_id"], category="col_int").aggregate_over(
+grouped = event_view.groupby(by_keys=["cust_id"], category="col_int").aggregate_over(
     value_column=None,
     method="count",
     windows=["24h"],
@@ -31,8 +36,17 @@ grouped_1 = event_view.groupby(by_keys=["cust_id"], category="col_int").aggregat
     feature_job_setting={{"blind_spot": "90s", "frequency": "360s", "time_modulo_frequency": "180s"}},
     skip_fill_na=True,
 )
-feat_1 = grouped_1["count_a_24h_per_col_int"]
-feat_2 = (feat_1.cd.entropy()) * (feat_1.cd.most_frequent()).str.len()
-feat_3 = feat_1.cd.unique_count(include_missing=True)
-feat_4 = feat_1.cd.unique_count(include_missing=False)
-output = (feat + feat_2) - (feat_4 / feat_3)
+feat = grouped["count_a_24h_per_col_int"]
+feat_1 = (feat.cd.entropy()) * (feat.cd.most_frequent()).str.len()
+grouped_1 = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
+    value_column="non_time_sum_feature",
+    method="sum",
+    windows=["24h"],
+    feature_names=["sum_a_24h"],
+    feature_job_setting={{"blind_spot": "90s", "frequency": "360s", "time_modulo_frequency": "180s"}},
+    skip_fill_na=True,
+)
+feat_2 = grouped_1["sum_a_24h"]
+feat_3 = feat.cd.unique_count(include_missing=False)
+feat_4 = feat.cd.unique_count(include_missing=True)
+output = (feat_2 + feat_1) - (feat_3 / feat_4)

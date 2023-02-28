@@ -13,7 +13,7 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from featurebyte.api.database_table import AbstractTableData
 from featurebyte.core.generic import QueryObject
 from featurebyte.enum import AggFunc
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
@@ -114,6 +114,19 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     assert left_pruned_graph == right_pruned_graph
 
 
+def _replace_view_mode_to_manual(pruned_graph):
+    """Replace view mode to manual"""
+    # to enable graph comparison, we need to replace view_mode to manual.
+    # otherwise, the comparison will fail equality check even if the graphs are the same
+    # (only difference is the view_mode in metadata).
+    pruned_graph_dict = pruned_graph.dict()
+    for node in pruned_graph_dict["nodes"]:
+        if node["type"] == NodeType.GRAPH:
+            if "view_mode" in node["parameters"]["metadata"]:
+                node["parameters"]["metadata"]["view_mode"] = "manual"
+    return QueryGraph(**pruned_graph_dict)
+
+
 def check_sdk_code_generation(  # pylint: disable=too-many-locals
     api_object,
     to_use_saved_data=False,
@@ -145,6 +158,7 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     # compare the output
     pruned_graph, node = output.extract_pruned_graph_and_node()
     expected_pruned_graph, expected_node = query_object.extract_pruned_graph_and_node()
+    expected_pruned_graph = _replace_view_mode_to_manual(expected_pruned_graph)
 
     # check the final node hash value of two graph to make sure they are the same
     assert (

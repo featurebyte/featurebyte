@@ -24,6 +24,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ObjectClass,
     StatementT,
+    ValueStr,
     VariableNameGenerator,
     VarNameExpressionStr,
 )
@@ -276,7 +277,17 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="event_view"
         )
         expression = ClassEnum.EVENT_VIEW(
-            _method_name="from_event_data", event_data=input_var_name_expressions[0]
+            _method_name="from_event_data",
+            event_data=input_var_name_expressions[0],
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=[
+                ClassEnum.COLUMN_CLEANING_OPERATION(
+                    column_name=col_clean_op.column_name,
+                    cleaning_operations=col_clean_op.cleaning_operations,
+                )
+                for col_clean_op in self.metadata.column_cleaning_operations
+            ],
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -313,6 +324,24 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
             _method_name="from_item_data",
             item_data=input_var_name_expressions[0],
             event_suffix=self.metadata.event_suffix,
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=[
+                ClassEnum.COLUMN_CLEANING_OPERATION(
+                    column_name=col_clean_op.column_name,
+                    cleaning_operations=col_clean_op.cleaning_operations,
+                )
+                for col_clean_op in self.metadata.column_cleaning_operations
+            ],
+            event_drop_column_names=self.metadata.event_drop_column_names,
+            event_column_cleaning_operations=[
+                ClassEnum.COLUMN_CLEANING_OPERATION(
+                    column_name=col_clean_op.column_name,
+                    cleaning_operations=col_clean_op.cleaning_operations,
+                )
+                for col_clean_op in self.metadata.event_column_cleaning_operations
+            ],
+            event_join_column_names=self.metadata.event_join_column_names,
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -335,7 +364,17 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="dimension_view"
         )
         expression = ClassEnum.DIMENSION_VIEW(
-            _method_name="from_dimension_data", dimension_data=input_var_name_expressions[0]
+            _method_name="from_dimension_data",
+            dimension_data=input_var_name_expressions[0],
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=[
+                ClassEnum.COLUMN_CLEANING_OPERATION(
+                    column_name=col_clean_op.column_name,
+                    cleaning_operations=col_clean_op.cleaning_operations,
+                )
+                for col_clean_op in self.metadata.column_cleaning_operations
+            ],
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -358,6 +397,15 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
         expression = ClassEnum.SCD_VIEW(
             _method_name="from_slowly_changing_data",
             slowly_changing_data=input_var_name_expressions[0],
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=[
+                ClassEnum.COLUMN_CLEANING_OPERATION(
+                    column_name=col_clean_op.column_name,
+                    cleaning_operations=col_clean_op.cleaning_operations,
+                )
+                for col_clean_op in self.metadata.column_cleaning_operations
+            ],
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -401,6 +449,15 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
             track_changes_column=self.metadata.track_changes_column,
             default_feature_job_setting=feature_job_setting,
             prefixes=self.metadata.prefixes,
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=[
+                ClassEnum.COLUMN_CLEANING_OPERATION(
+                    column_name=col_clean_op.column_name,
+                    cleaning_operations=col_clean_op.cleaning_operations,
+                )
+                for col_clean_op in self.metadata.column_cleaning_operations
+            ],
         )
         return [(view_var_name, expression)], view_var_name
 
