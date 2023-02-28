@@ -200,7 +200,7 @@ class ValueBeyondEndpointImputationOp(BaseCleaningOperation):
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.VALUE_BEYOND_ENDPOINT_IMPUTATION(
-            imputed_value=self.imputed_value, end_point=self.end_point
+            type=self.type, end_point=self.end_point, imputed_value=self.imputed_value
         )
 
 

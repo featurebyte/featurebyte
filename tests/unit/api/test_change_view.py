@@ -500,3 +500,23 @@ def test_sdk_code_generation(saved_scd_data, update_fixtures):
         update_fixtures=update_fixtures,
         data_id=saved_scd_data.id,
     )
+
+    # check the case when the view is construct with cleaning operations
+    change_view = ChangeView.from_slowly_changing_data(
+        saved_scd_data,
+        track_changes_column="col_int",
+        view_mode="manual",
+        column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name="col_int",
+                cleaning_operations=[MissingValueImputation(imputed_value=0)],
+            )
+        ],
+    )
+    check_sdk_code_generation(
+        change_view,
+        to_use_saved_data=to_use_saved_data,
+        fixture_path="tests/fixtures/sdk_code/change_view_with_column_clean_ops.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_scd_data.id,
+    )

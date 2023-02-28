@@ -3,14 +3,12 @@ Unit test for EventView class
 """
 
 import copy
-import pdb
 from unittest import mock
 from unittest.mock import PropertyMock
 
 import pytest
 from bson import ObjectId
 
-from featurebyte import MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -20,6 +18,10 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
+from featurebyte.query_graph.model.critical_data_info import (
+    DisguisedValueImputation,
+    MissingValueImputation,
+)
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
@@ -748,6 +750,27 @@ def test_sdk_code_generation(saved_event_data, update_fixtures):
         event_view,
         to_use_saved_data=to_use_saved_data,
         fixture_path="tests/fixtures/sdk_code/event_view.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_event_data.id,
+    )
+
+    # add some cleaning operations to the data before view construction
+    saved_event_data.col_int.update_critical_data_info(
+        cleaning_operations=[
+            MissingValueImputation(imputed_value=-1),
+        ]
+    )
+    saved_event_data.col_float.update_critical_data_info(
+        cleaning_operations=[
+            DisguisedValueImputation(disguised_values=[-99], imputed_value=-1),
+        ]
+    )
+
+    event_view = EventView.from_event_data(event_data=saved_event_data)
+    check_sdk_code_generation(
+        event_view,
+        to_use_saved_data=to_use_saved_data,
+        fixture_path="tests/fixtures/sdk_code/event_view_with_column_clean_ops.py",
         update_fixtures=update_fixtures,
         data_id=saved_event_data.id,
     )
