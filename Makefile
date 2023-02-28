@@ -76,15 +76,22 @@ test:
 	${MAKE} build-hive-udf-jar
 	${MAKE} test-setup
 	${MAKE} test-unit
-	${MAKE} test-integration
+	${MAKE} test-integration-all
 	${MAKE} test-merge
 	${MAKE} test-teardown
 
 test-unit:
 	poetry run pytest --timeout=240 --junitxml=pytest.xml.0 -n auto --cov=featurebyte tests/unit
 
-test-integration:
-	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration
+test-integration-all:
+	${MAKE} test-integration-snowflake
+	${MAKE} test-integration-spark
+
+test-integration-snowflake:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
+
+test-integration-spark:
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
 
 test-merge:
 	echo "coverage: platform" > pytest-coverage.txt

@@ -23,6 +23,7 @@ def pytest_configure(config):
 def pytest_addoption(parser):
     """Set up additional pytest options"""
     parser.addoption("--update-fixtures", action="store_true", default=False)
+    parser.addoption("--source-types", type=str, default=None)
 
 
 @pytest.fixture(scope="session")
