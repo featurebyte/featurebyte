@@ -24,7 +24,14 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     cleaning_graph_node = inner_graph.get_node_by_name("graph_1")
     assert cleaning_graph_node.parameters.type == GraphNodeType.CLEANING
     cleaning_graph_node_node_names = list(cleaning_graph_node.parameters.graph.nodes_map.keys())
-    assert cleaning_graph_node_node_names == ["proxy_input_1"]
+    assert cleaning_graph_node_node_names == [
+        "proxy_input_1",
+        "project_1",
+        "is_null_1",
+        "conditional_1",
+        "cast_1",
+        "assign_1",
+    ]
 
     # Try to flatten the graph
     transformer = GraphFlatteningTransformer(pruned_graph)
@@ -36,8 +43,13 @@ def test_flatten_graph__flatten_cleaning_node(feature_with_cleaning_operations):
     assert set(new_graph_node_names) == {
         "input_1",
         "project_1",
-        "groupby_1",
         "project_2",
+        "is_null_1",
+        "conditional_1",
+        "cast_1",
+        "assign_1",
+        "groupby_1",
+        "project_3",
     }
 
 

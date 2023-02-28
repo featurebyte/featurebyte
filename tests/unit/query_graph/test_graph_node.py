@@ -492,24 +492,9 @@ def test_graph_node__redundant_graph_node(input_node_params):
         "row_index_lineage": ("input_1",),
         "is_time_based": False,
     }
-    # TODO: [DEV-868] Make graph node prunable
+    # the cleaning graph node is pruned as it does not contribute to the final output
     pruned_graph, node_name_map = graph.prune(target_node=proj_node, aggressive=True)
-    assert pruned_graph.edges_map == {
-        "input_1": ["project_1", "graph_1"],
-        "project_1": ["add_1"],
-        "add_1": ["graph_1"],
-        "graph_1": ["project_2"],
-    }
-    nested_graph_nodes = pruned_graph.get_node_by_name("graph_1").parameters.graph.nodes
-    assert nested_graph_nodes == [
-        # note that second proxy input node is pruned
-        {
-            "name": "proxy_input_1",
-            "type": "proxy_input",
-            "output_type": "frame",
-            "parameters": {"input_order": 0},
-        }
-    ]
+    assert pruned_graph.edges_map == {"input_1": ["project_1"]}
 
 
 def test_graph_flattening(test_dir):

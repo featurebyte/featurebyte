@@ -714,7 +714,7 @@ def feature_with_cleaning_operations_fixture(
     snowflake_feature_store.save()
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_data.save()
-    snowflake_event_data["col_int"].update_critical_data_info(
+    snowflake_event_data["col_float"].update_critical_data_info(
         cleaning_operations=[
             MissingValueImputation(imputed_value=0.0),
         ]

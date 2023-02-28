@@ -295,6 +295,10 @@ class GraphStructurePruningExtractor(
             and isinstance(node, BasePrunableNode)
             and node.name not in global_state.node_names
         ):
+            if isinstance(node, BaseGraphNode) and not node.is_prunable:
+                # graph node is not prunable
+                return input_node_names, False
+
             # prune the graph structure if
             # - pruning mode is aggressive (means that travelled node can be removed)
             # - node is prunable
