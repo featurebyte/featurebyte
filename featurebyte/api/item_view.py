@@ -146,7 +146,7 @@ class ItemView(View, GroupByMixin):
             if item_data.record_creation_date_column:
                 drop_column_names.append(item_data.record_creation_date_column)
 
-            event_view_param_metadata = event_view.node.parameters.metadata
+            event_view_param_metadata = event_view.node.parameters.metadata  # type: ignore
             event_join_column_names = [event_view.timestamp_column] + event_view.entity_columns
             event_drop_column_names = event_view_param_metadata.drop_column_names
             event_column_cleaning_operations = event_view_param_metadata.column_cleaning_operations

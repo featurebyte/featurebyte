@@ -24,7 +24,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationConfig,
     ObjectClass,
     StatementT,
-    ValueStr,
     VariableNameGenerator,
     VarNameExpressionStr,
 )
@@ -292,7 +291,19 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
     @staticmethod
     def prepare_column_cleaning_operation_code_generation(
         column_cleaning_operations: List[ColumnCleaningOperation],
-    ) -> List[ClassEnum.COLUMN_CLEANING_OPERATION]:
+    ) -> List[ObjectClass]:
+        """
+        Prepare column cleaning operation code generation
+
+        Parameters
+        ----------
+        column_cleaning_operations: List[ColumnCleaningOperation]
+            Column cleaning operations to be converted to SDK code
+
+        Returns
+        -------
+        List[ClassEnum.COLUMN_CLEANING_OPERATION]
+        """
         return [
             ClassEnum.COLUMN_CLEANING_OPERATION(
                 column_name=col_clean_op.column_name,
