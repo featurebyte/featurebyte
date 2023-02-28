@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, List, Optional, OrderedDict, cast
 
 import collections
+import decimal
 import os
 
 import pandas as pd
@@ -253,7 +254,7 @@ class SparkSession(BaseSession):
             "TIME_TYPE": pa.time32("ms"),
             "DOUBLE_TYPE": pa.float64(),
             "FLOAT_TYPE": pa.float32(),
-            "DECIMAL_TYPE": pa.decimal256(38, 0),
+            "DECIMAL_TYPE": pa.float64(),
             "INTERVAL_TYPE": pa.duration("ns"),
             "NULL_TYPE": pa.null(),
             "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
@@ -271,6 +272,10 @@ class SparkSession(BaseSession):
             logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
             pyarrow_type = pa.string()
         return pyarrow_type
+
+    @staticmethod
+    def _convert_decimal_to_float(row: Any) -> Any:
+        yield from (float(item) if isinstance(item, decimal.Decimal) else item for item in row)
 
     @staticmethod
     def fetchall_arrow(cursor: Cursor) -> pa.Table:
@@ -296,15 +301,13 @@ class SparkSession(BaseSession):
         results = cursor.fetchall()
         if not results:
             return pa.Table.from_arrays([tuple() for _ in range(len(schema))], schema=schema)
-        return pa.Table.from_batches(
-            [
-                pa.record_batch(
-                    [[item] for item in row],
-                    schema=schema,
-                )
-                for row in results
-            ]
-        )
+        record_batches = []
+        for row in results:
+            record_batch = pa.record_batch(
+                [[item] for item in SparkSession._convert_decimal_to_float(row)], schema=schema
+            )
+            record_batches.append(record_batch)
+        return pa.Table.from_batches(record_batches)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         arrow_table = self.fetchall_arrow(cursor)

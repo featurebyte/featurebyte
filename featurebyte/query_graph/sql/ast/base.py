@@ -22,6 +22,8 @@ from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
+FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
+
 
 @dataclass
 class SQLNodeContext:
@@ -148,16 +150,9 @@ class TableNode(SQLNode, ABC):
 
     @property
     def sql(self) -> Expression:
-
-        select_expr = self.get_select_statement_without_columns()
-
-        # SELECT clause
-        for column_name, column_expr in self.columns_map.items():
-            select_expr = select_expr.select(
-                expressions.alias_(column_expr, quoted_identifier(column_name))
-            )
-
-        return select_expr
+        exprs = list(self.columns_map.values())
+        aliases = list(self.columns_map.keys())
+        return self.get_sql_for_expressions(exprs=exprs, aliases=aliases)
 
     def get_select_statement_without_columns(self) -> Select:
         """
@@ -168,8 +163,11 @@ class TableNode(SQLNode, ABC):
         Select
         """
 
-        # QUALIFY clause
-        if self.qualify_condition is not None:
+        # QUALIFY clause if supported
+        if (
+            self.qualify_condition is not None
+            and self.context.adapter.is_qualify_clause_supported()
+        ):
             qualify_expr = expressions.Qualify(this=self.qualify_condition)
             select_expr = expressions.Select(qualify=qualify_expr)
         else:
@@ -215,25 +213,76 @@ class TableNode(SQLNode, ABC):
         sql = cast(expressions.Subqueryable, self.sql)
         return cast(expressions.Expression, sql.subquery())
 
-    def get_sql_for_expression(self, expr: Expression, alias: Optional[str] = None) -> Expression:
+    @property
+    def require_nested_filter_post_select(self) -> bool:
+        """
+        Whether there is a need to apply a nested filter after the Select statement
+
+        Returns
+        -------
+        bool
+        """
+        return (
+            self.qualify_condition is not None
+            and not self.context.adapter.is_qualify_clause_supported()
+        )
+
+    def get_sql_for_expressions(
+        self,
+        exprs: list[Expression],
+        aliases: Optional[list[str]] = None,
+    ) -> Expression:
         """
         Construct a Select statement using expr within the context of this table
 
         Parameters
         ----------
-        expr: Expression
-            Expression
-        alias: Optional[str]
-            Alias of the expression
+        exprs: list[Expression]
+            Expressions
+        aliases: Optional[list[str]]
+            Aliases of the expressions
 
         Returns
         -------
         Select
         """
+        if aliases is not None:
+            assert len(exprs) == len(aliases)
+
+        if aliases is None and self.require_nested_filter_post_select:
+            # When previewing an unnamed expression, e.g. ("a" + "b") but at the same time a nested
+            # filter is required, we need to give ("a" + "b") a name so that we can remove the
+            # temporary nested filter column in the output.
+            aliases = [f"Unnamed{i}" for i in range(len(exprs))]
+
+        if aliases is None:
+            named_exprs = exprs
+        else:
+            named_exprs = [
+                expressions.alias_(expr, alias=alias, quoted=True)
+                for (expr, alias) in zip(exprs, aliases)
+            ]
+
         select_expr = self.get_select_statement_without_columns()
-        if alias is not None:
-            expr = expressions.alias_(expr, alias=alias, quoted=True)
-        return select_expr.select(expr)
+
+        # Specify required expressions / columns for the SELECT clause
+        select_expr = select_expr.select(*named_exprs)
+
+        # Use nested filter if QUALIFY clause is not supported
+        if self.require_nested_filter_post_select:
+            assert aliases is not None
+            select_expr = select_expr.select(
+                expressions.alias_(
+                    self.qualify_condition, alias=FB_QUALIFY_CONDITION_COLUMN, quoted=True
+                )
+            )
+            select_expr = (
+                select(*[quoted_identifier(column_name) for column_name in aliases])
+                .from_(select_expr.subquery())
+                .where(quoted_identifier(FB_QUALIFY_CONDITION_COLUMN))
+            )
+
+        return select_expr
 
     def assign_column(self, column_name: str, node: ExpressionNode) -> None:
         """Performs an assignment and update column_name's expression
@@ -355,7 +404,7 @@ class ExpressionNode(SQLNode, ABC):
         Expression
             A sqlglot Expression object
         """
-        return self.table_node.get_sql_for_expression(self.sql)
+        return self.table_node.get_sql_for_expressions([self.sql])
 
 
 def has_window_function(expression: Expression) -> bool:

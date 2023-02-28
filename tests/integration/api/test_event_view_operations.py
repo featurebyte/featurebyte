@@ -235,8 +235,8 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_event_view_ops(event_view, transaction_data_upper_case):
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
     """
     Test operations that can be performed on an EventView before creating features
     """
@@ -271,6 +271,10 @@ def test_event_view_ops(event_view, transaction_data_upper_case):
     columns = [
         col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
     ]
+    if source_type == "spark":
+        expected["ËVENT_TIMESTAMP"] = pd.to_datetime(
+            expected["ËVENT_TIMESTAMP"], utc=True
+        ).dt.tz_localize(None)
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
@@ -778,6 +782,9 @@ def check_datetime_operations(event_view, column_name, limit=100):
     event_view_filtered = event_view[event_view["event_interval_second"] > 500000]
     df_filtered = event_view_filtered.preview(limit=limit)
     assert (df_filtered["event_interval_second"] > 500000).all()
+
+    df_filtered_col = event_view_filtered["event_interval_second"].preview()
+    assert (df_filtered_col["event_interval_second"] > 500000).all()
 
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)

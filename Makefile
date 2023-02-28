@@ -91,7 +91,7 @@ test-integration-snowflake:
 	poetry run pytest --timeout=240 --junitxml=pytest.xml.1 -n auto --cov=featurebyte tests/integration --source-types none,snowflake
 
 test-integration-spark:
-	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark
+	poetry run pytest --timeout=240 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --maxfail=1
 
 test-merge:
 	echo "coverage: platform" > pytest-coverage.txt

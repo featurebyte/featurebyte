@@ -333,6 +333,17 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    def is_qualify_clause_supported(cls) -> bool:
+        """
+        Check whether the database supports the qualify clause
+
+        Returns
+        -------
+        bool
+        """
+        return True
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -546,6 +557,47 @@ class DatabricksAdapter(BaseAdapter):
         return timestamp_expr
 
 
+class SparkAdapter(DatabricksAdapter):
+    """
+    Helper class to generate Spark specific SQL expressions
+
+    Spark is the OSS version of Databricks, so it shares most of the same SQL syntax.
+    """
+
+    @classmethod
+    def is_qualify_clause_supported(cls) -> bool:
+        """
+        Spark does not support the `QUALIFY` clause though DataBricks does.
+
+        Returns
+        -------
+        bool
+        """
+        return False
+
+    @classmethod
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
+        raise NotImplementedError()
+
+
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     """
     Factory that returns an engine specific adapter given source type
@@ -560,6 +612,8 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     BaseAdapter
         Instance of BaseAdapter
     """
-    if source_type in [SourceType.DATABRICKS, SourceType.SPARK]:
+    if source_type == SourceType.DATABRICKS:
         return DatabricksAdapter()
+    if source_type == SourceType.SPARK:
+        return SparkAdapter()
     return SnowflakeAdapter()
