@@ -969,7 +969,7 @@ def get_non_time_based_feature_fixture(item_data):
     )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_add_feature(event_view, non_time_based_feature, scd_data):
     """
     Test add feature
@@ -1016,7 +1016,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_data):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_add_feature_on_view_with_join(event_view, scd_data, non_time_based_feature):
     """
     Test add feature when the input EventView involves a join
