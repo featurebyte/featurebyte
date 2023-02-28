@@ -51,14 +51,19 @@ async def test_relationships_list(relationship_info_service):
     assert relationships.shape[0] == 1
     assert relationships["child_id"][0] == child_id
 
-    # apply relationship_type filter for existing filter
+    # apply relationship_type filter for existing filter using enum
     relationships = Relationships.list(relationship_type=relationship_type)
     assert relationships.shape[0] == 1
     assert relationships["child_id"][0] == child_id
 
+    # apply relationship_type filter for existing filter using string
+    relationships = Relationships.list(relationship_type="child_parent")
+    assert relationships.shape[0] == 1
+    assert relationships["child_id"][0] == child_id
+
     # apply relationship_type filter for non-existing filter
-    relationships = Relationships.list(relationship_type="random_filter")
-    assert relationships.shape[0] == 0
+    with pytest.raises(TypeError):
+        Relationships.list(relationship_type="random_filter")
 
 
 @pytest.mark.asyncio

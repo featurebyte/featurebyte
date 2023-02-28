@@ -1,7 +1,7 @@
 """
 Relationships API object
 """
-from typing import Optional
+from typing import Literal, Optional
 
 from http import HTTPStatus
 
@@ -11,7 +11,7 @@ from typeguard import typechecked
 from featurebyte import Configurations
 from featurebyte.api.api_object import ApiObject
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.relationship import RelationshipInfo
+from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
 
 
@@ -40,7 +40,7 @@ class Relationships(RelationshipInfo, ApiObject):
     @classmethod
     @typechecked
     def list(
-        cls, include_id: Optional[bool] = True, relationship_type: Optional[str] = ""
+        cls, include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = ""  # type: ignore[misc]
     ) -> pd.DataFrame:
         """
         List a dataframe of the relationships. This provides a dataframe with:
@@ -57,7 +57,7 @@ class Relationships(RelationshipInfo, ApiObject):
         ----------
         include_id: Optional[bool]
             Whether to include the id in the dataframe
-        relationship_type: str
+        relationship_type: Optional[Literal[tuple[RelationshipType]]]
             The type of relationship to list
 
         Returns
