@@ -11,7 +11,14 @@ from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.critical_data_info import (
+    MissingValueImputation,
+    StringValueImputation,
+    UnexpectedValueImputation,
+    ValueBeyondEndpointImputation,
+)
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -151,7 +158,7 @@ def test_from_item_data__auto_join_columns(
                 "drop_column_names": [],
                 "data_id": snowflake_item_data_id,
                 "column_cleaning_operations": [],
-                "event_drop_column_names": [],
+                "event_drop_column_names": ["created_at"],
                 "event_column_cleaning_operations": [],
                 "event_data_id": snowflake_event_data_id,
                 "event_join_column_names": ["event_timestamp", "cust_id"],
@@ -497,7 +504,7 @@ def test_item_view__item_data_same_event_id_column_as_event_data(
                 "drop_column_names": [],
                 "column_cleaning_operations": [],
                 "data_id": snowflake_item_data_same_event_id.id,
-                "event_drop_column_names": [],
+                "event_drop_column_names": ["created_at"],
                 "event_column_cleaning_operations": [],
                 "event_data_id": snowflake_event_data.id,
                 "event_join_column_names": ["event_timestamp", "cust_id"],
@@ -870,4 +877,43 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
         update_fixtures=update_fixtures,
         data_id=saved_item_data.id,
         event_data_id=saved_event_data.id,
+    )
+
+    # add some cleaning operations during view construction
+    item_view = ItemView.from_item_data(
+        saved_item_data,
+        event_suffix="_event_data",
+        view_mode="manual",
+        column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name="item_amount",
+                cleaning_operations=[
+                    ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
+                    StringValueImputation(imputed_value=0),
+                ],
+            )
+        ],
+        event_column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name="col_int",
+                cleaning_operations=[
+                    MissingValueImputation(imputed_value=0),
+                ],
+            ),
+            ColumnCleaningOperation(
+                column_name="col_char",
+                cleaning_operations=[
+                    UnexpectedValueImputation(
+                        expected_values=["a", "b", "c", "unknown"], imputed_value="unknown"
+                    ),
+                ],
+            ),
+        ],
+    )
+    check_sdk_code_generation(
+        item_view,
+        to_use_saved_data=to_use_saved_data,
+        fixture_path="tests/fixtures/sdk_code/item_view_with_column_clean_ops.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_item_data.id,
     )

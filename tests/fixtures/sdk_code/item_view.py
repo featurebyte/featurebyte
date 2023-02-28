@@ -4,5 +4,14 @@ from featurebyte import ItemData
 from featurebyte import ItemView
 
 item_data = ItemData.get_by_id(ObjectId("{data_id}"))
-item_view = ItemView.from_item_data(item_data=item_data, event_suffix="_event_data")
+item_view = ItemView.from_item_data(
+    item_data=item_data,
+    event_suffix="_event_data",
+    view_mode="manual",
+    drop_column_names=[],
+    column_cleaning_operations=[],
+    event_drop_column_names=["created_at"],
+    event_column_cleaning_operations=[],
+    event_join_column_names=["event_timestamp", "cust_id"],
+)
 output = item_view

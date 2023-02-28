@@ -140,11 +140,16 @@ class ItemView(View, GroupByMixin):
         #                            +----------------------+    +---------------------------+
         drop_column_names = drop_column_names or []
         event_drop_column_names = event_drop_column_names or []
+        event_column_cleaning_operations = event_column_cleaning_operations or []
         event_join_column_names = event_join_column_names or [event_view.timestamp_column]
-        if view_mode == ViewMode.AUTO and item_data.record_creation_date_column:
-            drop_column_names.append(item_data.record_creation_date_column)
         if view_mode == ViewMode.AUTO:
+            if item_data.record_creation_date_column:
+                drop_column_names.append(item_data.record_creation_date_column)
+
+            event_view_param_metadata = event_view.node.parameters.metadata  # type: ignore
             event_join_column_names = [event_view.timestamp_column] + event_view.entity_columns
+            event_drop_column_names = event_view_param_metadata.drop_column_names
+            event_column_cleaning_operations = event_view_param_metadata.column_cleaning_operations
 
         data_node = item_data.frame.node
         assert isinstance(data_node, InputNode)
@@ -178,7 +183,7 @@ class ItemView(View, GroupByMixin):
                 column_cleaning_operations=column_cleaning_operations,
                 data_id=data_node.parameters.id,
                 event_drop_column_names=event_drop_column_names,
-                event_column_cleaning_operations=event_column_cleaning_operations or [],
+                event_column_cleaning_operations=event_column_cleaning_operations,
                 event_join_column_names=event_join_column_names,
                 event_data_id=event_data.id,
             ),

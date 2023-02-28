@@ -4,5 +4,10 @@ from featurebyte import DimensionData
 from featurebyte import DimensionView
 
 dimension_data = DimensionData.get_by_id(ObjectId("{data_id}"))
-dimension_view = DimensionView.from_dimension_data(dimension_data=dimension_data)
+dimension_view = DimensionView.from_dimension_data(
+    dimension_data=dimension_data,
+    view_mode="manual",
+    drop_column_names=["created_at"],
+    column_cleaning_operations=[],
+)
 output = dimension_view

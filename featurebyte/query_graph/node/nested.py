@@ -136,6 +136,16 @@ class BaseCleaningOperation(FeatureByteBaseModel):
 
     imputed_value: OptionalScalar
 
+    @abstractmethod
+    def derive_sdk_code(self) -> ObjectClass:
+        """
+        Derive SDK code for the current cleaning operation
+
+        Returns
+        -------
+        ObjectClass
+        """
+
 
 class MissingValueImputationOp(BaseCleaningOperation):
     """MissingValueImputationOp class"""
@@ -143,6 +153,9 @@ class MissingValueImputationOp(BaseCleaningOperation):
     type: Literal[ConditionOperationField.MISSING] = Field(
         ConditionOperationField.MISSING, const=True
     )
+
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.MISSING_VALUE_IMPUTATION(imputed_value=self.imputed_value)
 
 
 class DisguisedValueImputationOp(BaseCleaningOperation):
@@ -153,6 +166,11 @@ class DisguisedValueImputationOp(BaseCleaningOperation):
     )
     disguised_values: Sequence[OptionalScalar]
 
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.DISGUISED_VALUE_IMPUTATION(
+            imputed_value=self.imputed_value, disguised_values=self.disguised_values
+        )
+
 
 class UnexpectedValueImputationOp(BaseCleaningOperation):
     """UnexpectedValueImputationOp class"""
@@ -161,6 +179,11 @@ class UnexpectedValueImputationOp(BaseCleaningOperation):
         ConditionOperationField.NOT_IN, const=True
     )
     expected_values: Sequence[OptionalScalar]
+
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.UNEXPECTED_VALUE_IMPUTATION(
+            imputed_value=self.imputed_value, expected_values=self.expected_values
+        )
 
 
 class ValueBeyondEndpointImputationOp(BaseCleaningOperation):
@@ -174,6 +197,11 @@ class ValueBeyondEndpointImputationOp(BaseCleaningOperation):
     ] = Field(allow_mutation=False)
     end_point: Numeric
 
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.VALUE_BEYOND_ENDPOINT_IMPUTATION(
+            type=self.type, end_point=self.end_point, imputed_value=self.imputed_value
+        )
+
 
 class StringValueImputationOp(BaseCleaningOperation):
     """StringValueImputationOp class"""
@@ -181,6 +209,9 @@ class StringValueImputationOp(BaseCleaningOperation):
     type: Literal[ConditionOperationField.IS_STRING] = Field(
         ConditionOperationField.IS_STRING, const=True
     )
+
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.STRING_VALUE_IMPUTATION(imputed_value=self.imputed_value)
 
 
 CleaningOperation = Annotated[
@@ -257,6 +288,32 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
             ]
         return metadata
 
+    @staticmethod
+    def prepare_column_cleaning_operation_code_generation(
+        column_cleaning_operations: List[ColumnCleaningOperation],
+    ) -> List[ObjectClass]:
+        """
+        Prepare column cleaning operation code generation
+
+        Parameters
+        ----------
+        column_cleaning_operations: List[ColumnCleaningOperation]
+            Column cleaning operations to be converted to SDK code
+
+        Returns
+        -------
+        List[ClassEnum.COLUMN_CLEANING_OPERATION]
+        """
+        return [
+            ClassEnum.COLUMN_CLEANING_OPERATION(
+                column_name=col_clean_op.column_name,
+                cleaning_operations=[
+                    col.derive_sdk_code() for col in col_clean_op.cleaning_operations
+                ],
+            )
+            for col_clean_op in column_cleaning_operations
+        ]
+
 
 class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
     """GraphNode (type:event_view) parameters"""
@@ -276,7 +333,13 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="event_view"
         )
         expression = ClassEnum.EVENT_VIEW(
-            _method_name="from_event_data", event_data=input_var_name_expressions[0]
+            _method_name="from_event_data",
+            event_data=input_var_name_expressions[0],
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.column_cleaning_operations
+            ),
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -313,6 +376,16 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
             _method_name="from_item_data",
             item_data=input_var_name_expressions[0],
             event_suffix=self.metadata.event_suffix,
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.column_cleaning_operations
+            ),
+            event_drop_column_names=self.metadata.event_drop_column_names,
+            event_column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.event_column_cleaning_operations
+            ),
+            event_join_column_names=self.metadata.event_join_column_names,
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -335,7 +408,13 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="dimension_view"
         )
         expression = ClassEnum.DIMENSION_VIEW(
-            _method_name="from_dimension_data", dimension_data=input_var_name_expressions[0]
+            _method_name="from_dimension_data",
+            dimension_data=input_var_name_expressions[0],
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.column_cleaning_operations
+            ),
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -358,6 +437,11 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
         expression = ClassEnum.SCD_VIEW(
             _method_name="from_slowly_changing_data",
             slowly_changing_data=input_var_name_expressions[0],
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.column_cleaning_operations
+            ),
         )
         return [(view_var_name, expression)], view_var_name
 
@@ -401,6 +485,11 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
             track_changes_column=self.metadata.track_changes_column,
             default_feature_job_setting=feature_job_setting,
             prefixes=self.metadata.prefixes,
+            view_mode=ViewMode.MANUAL,
+            drop_column_names=self.metadata.drop_column_names,
+            column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(
+                column_cleaning_operations=self.metadata.column_cleaning_operations
+            ),
         )
         return [(view_var_name, expression)], view_var_name
 

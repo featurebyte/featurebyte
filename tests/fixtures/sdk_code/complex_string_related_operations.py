@@ -4,7 +4,12 @@ from featurebyte import EventData
 from featurebyte import EventView
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
-event_view = EventView.from_event_data(event_data=event_data)
+event_view = EventView.from_event_data(
+    event_data=event_data,
+    view_mode="manual",
+    drop_column_names=["created_at"],
+    column_cleaning_operations=[],
+)
 col = event_view["col_text"]
 col_1 = col.str.len().astype(str) + col.str.strip(to_strip=" ")
 col_2 = col_1 + col.str.replace(pat=" ", repl="_")

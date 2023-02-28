@@ -5,7 +5,12 @@ from featurebyte import EventView
 from featurebyte import to_timedelta
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
-event_view = EventView.from_event_data(event_data=event_data)
+event_view = EventView.from_event_data(
+    event_data=event_data,
+    view_mode="manual",
+    drop_column_names=["created_at"],
+    column_cleaning_operations=[],
+)
 col = event_view["event_timestamp"]
 col_1 = (col.dt.month * col.dt.week) / col.dt.day
 col_2 = (col.dt.year + col.dt.quarter) - (col_1 % col.dt.day_of_week)

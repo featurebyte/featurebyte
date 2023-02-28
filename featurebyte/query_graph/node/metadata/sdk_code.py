@@ -200,10 +200,18 @@ class ClassEnum(Enum):
     SCD_VIEW = ("featurebyte", "SlowlyChangingView")
     CHANGE_VIEW = ("featurebyte", "ChangeView")
 
+    # imputations
+    MISSING_VALUE_IMPUTATION = ("featurebyte", "MissingValueImputation")
+    DISGUISED_VALUE_IMPUTATION = ("featurebyte", "DisguisedValueImputation")
+    UNEXPECTED_VALUE_IMPUTATION = ("featurebyte", "UnexpectedValueImputation")
+    VALUE_BEYOND_ENDPOINT_IMPUTATION = ("featurebyte", "ValueBeyondEndpointImputation")
+    STRING_VALUE_IMPUTATION = ("featurebyte", "StringValueImputation")
+
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
+    COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
