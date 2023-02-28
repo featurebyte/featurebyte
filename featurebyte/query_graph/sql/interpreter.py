@@ -18,7 +18,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.metadata.operation import ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -116,7 +116,7 @@ class TileSQLGenerator:
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
         for node in self.query_graph.iterate_nodes(starting_node, NodeType.GROUPBY):
-            assert isinstance(node, GroupbyNode)
+            assert isinstance(node, GroupByNode)
             tile_generating_nodes[node.name] = node
 
         sqls = []
@@ -126,12 +126,12 @@ class TileSQLGenerator:
 
         return sqls
 
-    def make_one_tile_sql(self, groupby_node: GroupbyNode) -> TileGenSql:
+    def make_one_tile_sql(self, groupby_node: GroupByNode) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
         Parameters
         ----------
-        groupby_node: GroupbyNode
+        groupby_node: GroupByNode
             Groupby query graph node
 
         Returns

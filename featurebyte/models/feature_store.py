@@ -18,8 +18,12 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 
@@ -159,6 +163,27 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteWorkspaceBaseDocu
         Returns
         -------
         List[str]
+        """
+
+    @abstractmethod
+    def create_view_graph_node(
+        self, input_node: InputNode, metadata: Any, **kwargs: Any
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Create view graph node
+
+        Parameters
+        ----------
+        input_node: InputNode
+            Input node
+        metadata: Any
+            Metadata add to the graph node
+        kwargs: Any
+            Additional arguments
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
         """
 
     class Settings(FeatureByteBaseDocumentModel.Settings):

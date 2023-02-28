@@ -2,7 +2,19 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 from typing_extensions import Annotated
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
@@ -264,6 +276,9 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
         raise RuntimeError("Not implemented")
 
 
+ViewMetadataT = TypeVar("ViewMetadataT", bound="ViewMetadata")
+
+
 class ViewMetadata(BaseModel):
     """View metadata (used by event, scd & dimension view)"""
 
@@ -271,6 +286,34 @@ class ViewMetadata(BaseModel):
     drop_column_names: List[str]
     column_cleaning_operations: List[ColumnCleaningOperation]
     data_id: PydanticObjectId
+
+    def clone(
+        self: ViewMetadataT,
+        view_mode: ViewMode,
+        column_cleaning_operations: List[ColumnCleaningOperation],
+    ) -> ViewMetadataT:
+        """
+        Clone the current instance by replacing column cleaning operations with the
+        given column cleaning operations.
+
+        Parameters
+        ----------
+        view_mode: ViewMode
+            View mode
+        column_cleaning_operations: List[ColumnCleaningOperation]
+            Column cleaning operations
+
+        Returns
+        -------
+        ViewMetadataT
+        """
+        return type(self)(
+            **{
+                **self.dict(by_alias=True),
+                "view_mode": view_mode,
+                "column_cleaning_operations": column_cleaning_operations,
+            }
+        )
 
 
 class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):

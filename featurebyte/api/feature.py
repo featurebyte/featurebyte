@@ -46,7 +46,7 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.generic import (
     AliasNode,
-    GroupbyNode,
+    GroupByNode,
     ItemGroupbyNode,
     ProjectNode,
 )
@@ -427,7 +427,7 @@ class Feature(
         """
         entity_ids: list[str] = []
         for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
-            entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
+            entity_ids.extend(cast(GroupByNode, node).parameters.keys)
         for node in self.graph.iterate_nodes(
             target_node=self.node, node_type=NodeType.ITEM_GROUPBY
         ):

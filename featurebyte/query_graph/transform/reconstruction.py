@@ -11,7 +11,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode, NodeT
-from featurebyte.query_graph.node.generic import GroupbyNode as BaseGroupbyNode
+from featurebyte.query_graph.node.generic import GroupByNode as BaseGroupbyNode
 from featurebyte.query_graph.node.generic import ItemGroupbyNode as BaseItemGroupbyNode
 from featurebyte.query_graph.transform.base import BaseGraphTransformer, QueryGraphT
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
@@ -65,7 +65,7 @@ class BasePruningSensitiveNode(BaseNode):
         """
 
 
-class GroupbyNode(BaseGroupbyNode, BasePruningSensitiveNode):
+class GroupByNode(BaseGroupbyNode, BasePruningSensitiveNode):
     """An extended GroupbyNode that implements the derive_parameters_post_prune method"""
 
     @staticmethod

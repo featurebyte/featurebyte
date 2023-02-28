@@ -242,6 +242,16 @@ async def entity_fixture(test_dir, entity_service):
         return entity
 
 
+@pytest_asyncio.fixture(name="entity_transaction")
+async def entity_transaction_fixture(test_dir, entity_service):
+    """Entity model"""
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/entity_transaction.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        entity = await entity_service.create_document(data=EntityCreate(**payload))
+        return entity
+
+
 @pytest_asyncio.fixture(name="context")
 async def context_fixture(test_dir, context_service, feature_store, entity):
     """Context model"""
@@ -334,6 +344,19 @@ async def feature_iet_fixture(test_dir, event_data, entity, feature_service):
     """Feature model (IET feature)"""
     _ = event_data, entity
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_iet.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        feature = await feature_service.create_document(data=FeatureCreate(**payload))
+        return feature
+
+
+@pytest_asyncio.fixture(name="feature_non_time_based")
+async def feature_non_time_based_fixture(
+    test_dir, event_data, item_data, entity_transaction, feature_service
+):
+    """Feature model (non-time-based feature)"""
+    _ = event_data, item_data, entity_transaction
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_non_time_based.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature = await feature_service.create_document(data=FeatureCreate(**payload))

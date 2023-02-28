@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, Qu
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.transform.reconstruction import (
-    GroupbyNode,
+    GroupByNode,
     add_pruning_sensitive_operation,
 )
 from tests.util.helper import get_node
@@ -275,7 +275,7 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
     groupby_node = add_pruning_sensitive_operation(
-        graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=node_input
+        graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "TILE_F3600_M1800_B900_EC6D76DA23C191C86A5DCF6D5777C82C92C34930"
     aggregation_id = "sum_a73868167cb600aedfaf16dee4559ad29681e63e"
@@ -291,7 +291,7 @@ def test_query_graph__add_groupby_operation_with_graph_node(
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
     groupby_node = add_pruning_sensitive_operation(
-        graph=graph, node_cls=GroupbyNode, node_params=groupby_node_params, input_node=graph_node
+        graph=graph, node_cls=GroupByNode, node_params=groupby_node_params, input_node=graph_node
     )
     tile_id = "TILE_F3600_M1800_B900_B0C4FEC926625091C00D634AF8F7D03EA464918C"
     aggregation_id = "sum_aca8e1c2bca28b4e16e7267f1bbafa698b125c03"
@@ -464,3 +464,51 @@ def test_query_graph_insensitive_to_node_name(
         == node_name_map_cab[node_cab.name]
         == node_name_map_bca[node_bca.name]
     )
+
+
+@pytest.fixture(name="invalid_query_graph_groupby_node")
+def invalid_query_graph_groupby_node_fixture(
+    snowflake_feature_store_details_dict, snowflake_table_details_dict
+):
+    """Invalid query graph fixture"""
+    groupby_node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "avg",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_average", "a_48h_average"],
+        "windows": ["2h", "48h"],
+    }
+    graph = QueryGraph()
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "generic",
+            "columns": ["random_column"],
+            "table_details": snowflake_table_details_dict,
+            "feature_store_details": snowflake_feature_store_details_dict,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    node_group_by = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params=groupby_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    return graph, node_group_by
+
+
+def test_iterate_group_by_and_event_data_input_node_pairs(invalid_query_graph_groupby_node):
+    """Test iterate_group_by_and_event_data_input_node_pairs"""
+    graph, node_groupby = invalid_query_graph_groupby_node
+    with pytest.raises(ValueError) as exc:
+        list(graph.iterate_group_by_and_event_data_input_node_pairs(target_node=node_groupby))
+    expected_msg = "GroupBy node does not have valid EventData Input node!"
+    assert expected_msg in str(exc.value)

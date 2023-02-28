@@ -3,15 +3,18 @@ This module contains SCD data related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Type
+from typing import Any, ClassVar, List, Literal, Tuple, Type, Union
 
 from pydantic import root_validator
 
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
-from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.table import SCDTableData
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ChangeViewMetadata, ViewMetadata
 
 
 class SCDDataModel(SCDTableData, DataModel):
@@ -30,7 +33,7 @@ class SCDDataModel(SCDTableData, DataModel):
         The current status of the data.
     """
 
-    _table_data_class: ClassVar[Type[BaseTableData]] = SCDTableData
+    _table_data_class: ClassVar[Type[SCDTableData]] = SCDTableData
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
@@ -58,3 +61,27 @@ class SCDDataModel(SCDTableData, DataModel):
     @property
     def primary_key_columns(self) -> List[str]:
         return [self.natural_key_column]
+
+    def create_view_graph_node(
+        self,
+        input_node: InputNode,
+        metadata: Union[ViewMetadata, ChangeViewMetadata],
+        **kwargs: Any,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        table_data = SCDTableData(**self.dict(by_alias=True)).clone(
+            column_cleaning_operations=metadata.column_cleaning_operations,
+        )
+        if isinstance(metadata, ChangeViewMetadata):
+            return table_data.construct_change_view_graph_node(
+                scd_data_node=input_node,
+                track_changes_column=metadata.track_changes_column,
+                prefixes=metadata.prefixes,
+                drop_column_names=metadata.drop_column_names,
+                metadata=metadata,
+            )
+
+        return table_data.construct_scd_view_graph_node(
+            scd_data_node=input_node,
+            drop_column_names=metadata.drop_column_names,
+            metadata=metadata,
+        )

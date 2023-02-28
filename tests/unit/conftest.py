@@ -1049,7 +1049,9 @@ def test_save_payload_fixtures(
     snowflake_scd_data,
     snowflake_event_view_with_entity,
     feature_group,
+    non_time_based_feature,
     cust_id_entity,
+    transaction_entity,
 ):
     """
     Write request payload for testing api route
@@ -1111,6 +1113,7 @@ def test_save_payload_fixtures(
     if update_fixtures:
         api_object_name_pairs = [
             (cust_id_entity, "entity"),
+            (transaction_entity, "entity_transaction"),
             (snowflake_feature_store, "feature_store"),
             (snowflake_event_data, "event_data"),
             (snowflake_item_data, "item_data"),
@@ -1118,6 +1121,7 @@ def test_save_payload_fixtures(
             (snowflake_scd_data, "scd_data"),
             (feature_sum_30m, "feature_sum_30m"),
             (feature_sum_2h, "feature_sum_2h"),
+            (non_time_based_feature, "feature_non_time_based"),
             (feature_iet, "feature_iet"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),

@@ -3,15 +3,18 @@ This module contains DimensionData related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Type
+from typing import Any, ClassVar, List, Tuple, Type
 
 from pydantic import root_validator
 
 from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
-from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.table import DimensionTableData
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ViewMetadata
 
 
 class DimensionDataModel(DimensionTableData, DataModel):
@@ -22,7 +25,7 @@ class DimensionDataModel(DimensionTableData, DataModel):
         The primary key of the dimension data table in the DWH
     """
 
-    _table_data_class: ClassVar[Type[BaseTableData]] = DimensionTableData
+    _table_data_class: ClassVar[Type[DimensionTableData]] = DimensionTableData
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
@@ -45,3 +48,15 @@ class DimensionDataModel(DimensionTableData, DataModel):
     @property
     def primary_key_columns(self) -> List[str]:
         return [self.dimension_id_column]
+
+    def create_view_graph_node(
+        self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        table_data = DimensionTableData(**self.dict(by_alias=True)).clone(
+            column_cleaning_operations=metadata.column_cleaning_operations
+        )
+        return table_data.construct_dimension_view_graph_node(
+            dimension_data_node=input_node,
+            drop_column_names=metadata.drop_column_names,
+            metadata=metadata,
+        )

@@ -3,22 +3,27 @@ VersionService class
 """
 from __future__ import annotations
 
-from typing import Any, Iterator, Optional, Tuple, cast
+from typing import Any, Iterator, List, Optional, Tuple, cast
 
 from bson.objectid import ObjectId
 
-from featurebyte.enum import TableDataType
-from featurebyte.exception import DocumentError
+from featurebyte.enum import TableDataType, ViewMode
+from featurebyte.exception import DocumentError, GraphInconsistencyError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
+    ViewMetadata,
+)
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService
@@ -26,6 +31,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.tabular_data import DataService
 
 
 class VersionService(BaseService):
@@ -47,61 +53,228 @@ class VersionService(BaseService):
         self.feature_list_namespace_service = FeatureListNamespaceService(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
+        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
 
     @staticmethod
-    def _iterate_groupby_and_event_data_input_node_pairs(
-        graph: QueryGraph, target_node: Node
-    ) -> Iterator[Tuple[GroupbyNode, InputNode]]:
-        # add a staticmethod here, move it to QueryGraph if it is reused by others
-        for groupby_node in graph.iterate_nodes(
-            target_node=target_node, node_type=NodeType.GROUPBY
-        ):
-            event_data_input_node: Optional[InputNode] = None
-            for input_node in graph.iterate_nodes(
-                target_node=groupby_node, node_type=NodeType.INPUT
-            ):
-                assert isinstance(input_node, InputNode)
-                if input_node.parameters.type == TableDataType.EVENT_DATA:
-                    event_data_input_node = input_node
-            if event_data_input_node is None:
-                raise ValueError("Groupby node does not have valid event data!")
-            yield cast(GroupbyNode, groupby_node), event_data_input_node
+    def _prepare_group_by_node_name_to_replacement_node(
+        feature: FeatureModel, feature_job_setting: Optional[FeatureJobSetting]
+    ) -> dict[str, Node]:
+        """
+        Prepare group by node name to replacement node mapping by using the provided feature job setting
+        to construct new group by node. If the new group by node is the same as the existing one, then
+        the mapping will be empty.
 
-    @classmethod
-    def _create_new_feature_version(
-        cls, feature: FeatureModel, feature_job_setting: Optional[FeatureJobSetting]
-    ) -> FeatureModel:
-        has_change: bool = False
-        has_groupby_node: bool = False
-        graph: QueryGraphModel = feature.graph
-        node_name = feature.node_name
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature model
+        feature_job_setting: Optional[FeatureJobSetting]
+            Feature job setting
+
+        Returns
+        -------
+        dict[str, Node]
+        """
+        node_name_to_replacement_node: dict[str, Node] = {}
         if feature_job_setting:
-            node_name_to_replacement_node: dict[str, Node] = {}
-            for groupby_node, _ in cls._iterate_groupby_and_event_data_input_node_pairs(
-                feature.graph, feature.node
+            for group_by_node, _ in feature.graph.iterate_group_by_and_event_data_input_node_pairs(
+                target_node=feature.node
             ):
                 # input node will be used when we need to support updating specific groupby node given event data ID
-                has_groupby_node = True
-                parameters = {**groupby_node.parameters.dict(), **feature_job_setting.to_seconds()}
-                if groupby_node.parameters.dict() != parameters:
-                    node_name_to_replacement_node[groupby_node.name] = GroupbyNode(
-                        **{**groupby_node.dict(), "parameters": parameters}
+                parameters = {**group_by_node.parameters.dict(), **feature_job_setting.to_seconds()}
+                if group_by_node.parameters.dict() != parameters:
+                    node_name_to_replacement_node[group_by_node.name] = GroupByNode(
+                        **{**group_by_node.dict(), "parameters": parameters}
                     )
 
-            if node_name_to_replacement_node:
-                has_change = True
-                graph, node_name_map = feature.graph.reconstruct(
-                    node_name_to_replacement_node=node_name_to_replacement_node,
-                    regenerate_groupby_hash=True,
-                )
-                node_name = node_name_map[feature.node_name]
+        return node_name_to_replacement_node
 
-        if has_change:
-            return FeatureModel(
-                **{**feature.dict(), "graph": graph, "node_name": node_name, "_id": ObjectId()}
+    async def _prepare_view_graph_node_name_to_replacement_node(
+        self, feature: FeatureModel, data_cleaning_operations: Optional[List[DataCleaningOperation]]
+    ) -> dict[str, Node]:
+        """
+        Prepare view graph node name to replacement node mapping by using the provided data cleaning and
+        the view graph node metadata.
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature model
+        data_cleaning_operations: Optional[List[DataCleaningOperation]]
+            Data cleaning operations
+
+        Returns
+        -------
+        dict[str, Node]
+        """
+        if not data_cleaning_operations:
+            return {}
+
+        node_name_to_replacement_node: dict[str, Node] = {}
+        data_name_to_column_cleaning_operations: dict[str, List[ColumnCleaningOperation]] = {
+            data_clean_op.data_name: data_clean_op.column_cleaning_operations
+            for data_clean_op in data_cleaning_operations
+        }
+        # view node name to (view graph node, view columns_info & data input node)
+        view_node_name_to_data_info: dict[str, Tuple[Node, List[ColumnInfo], InputNode]] = {}
+
+        # since the graph node is topically sorted, input to the view graph node will always be
+        # processed before the view graph node itself
+        for graph_node in feature.graph.iterate_sorted_graph_nodes(
+            graph_node_types=GraphNodeType.view_graph_node_types()
+        ):
+            # the first graph node of view graph node is always the data input node
+            input_node_names = feature.graph.get_input_node_names(node=graph_node)
+            view_graph_input_node = feature.graph.get_node_by_name(node_name=input_node_names[0])
+
+            # additional parameters used to construct view graph node
+            create_view_graph_node_kwargs = {}
+
+            if not isinstance(view_graph_input_node, InputNode):
+                raise GraphInconsistencyError(
+                    "First input node of view graph node is not an input node."
+                )
+
+            if graph_node.parameters.type == GraphNodeType.ITEM_VIEW:
+                # prepare the event view graph node and its columns info for item view graph node to use
+                # handle the following assumption so that it won't throw internal server error
+                if len(input_node_names) != 2:
+                    raise GraphInconsistencyError("Item view graph node must have 2 input nodes.")
+
+                event_view_graph_node_name = input_node_names[1]
+                if event_view_graph_node_name not in view_node_name_to_data_info:
+                    raise GraphInconsistencyError(
+                        "Event view graph node must be processed before item view graph node."
+                    )
+
+                # retrieve the processed graph node and its columns info
+                (
+                    event_view_node,
+                    event_view_columns_info,
+                    data_input_node,
+                ) = view_node_name_to_data_info[event_view_graph_node_name]
+                create_view_graph_node_kwargs["event_view_node"] = event_view_node
+                create_view_graph_node_kwargs["event_view_columns_info"] = event_view_columns_info
+                create_view_graph_node_kwargs[
+                    "event_view_event_id_column"
+                ] = data_input_node.parameters.id_column
+
+            # get the data document based on the data ID in input node
+            data_id = view_graph_input_node.parameters.id
+            assert data_id is not None
+            data_document = await self.data_service.get_document(document_id=data_id)
+            assert data_document.name is not None
+            parameters_metadata = graph_node.parameters.metadata  # type: ignore
+            assert isinstance(parameters_metadata, ViewMetadata)
+
+            # check whether the data document has column cleaning operations
+            # use the column cleaning operations to create a new view graph node
+            column_clean_ops = data_name_to_column_cleaning_operations.get(data_document.name)
+            if column_clean_ops:
+                parameters_metadata = parameters_metadata.clone(
+                    view_mode=parameters_metadata.view_mode,
+                    column_cleaning_operations=column_clean_ops,
+                )
+
+            new_view_graph_node, view_columns_info = data_document.create_view_graph_node(
+                input_node=view_graph_input_node,
+                metadata=parameters_metadata,
+                **create_view_graph_node_kwargs,
             )
-        if feature_job_setting and not has_groupby_node:
-            raise DocumentError("Feature job setting has no effect in feature value derivation.")
+            view_node_name_to_data_info[graph_node.name] = (
+                new_view_graph_node,
+                view_columns_info,
+                view_graph_input_node,
+            )
+
+            # check whether there is any changes on the new view graph node
+            if new_view_graph_node != graph_node:
+                node_name_to_replacement_node[graph_node.name] = new_view_graph_node
+
+        return node_name_to_replacement_node
+
+    @staticmethod
+    def _create_new_feature_version_from(
+        feature: FeatureModel, node_name_to_replacement_node: dict[str, Node]
+    ) -> Optional[FeatureModel]:
+        """
+        Create a new feature version from the provided feature model and node name to replacement node mapping.
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            Feature model
+        node_name_to_replacement_node: dict[str, Node]
+            Node name to replacement node mapping
+
+        Returns
+        -------
+        Optional[FeatureModel]
+        """
+        if node_name_to_replacement_node:
+            graph, node_name_map = feature.graph.reconstruct(
+                node_name_to_replacement_node=node_name_to_replacement_node,
+                regenerate_groupby_hash=True,
+            )
+            node_name = node_name_map[feature.node_name]
+
+            # prune the graph to remove unnecessary nodes
+            pruned_graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
+                target_node=graph.get_node_by_name(node_name), aggressive=True
+            )
+            pruned_node_name = node_name_map[node_name]
+
+            # only return a new feature version if the graph is changed
+            reference_hash_before = feature.graph.node_name_to_ref[feature.node_name]
+            reference_hash_after = pruned_graph.node_name_to_ref[pruned_node_name]
+            if reference_hash_before != reference_hash_after:
+                return FeatureModel(
+                    **{
+                        **feature.dict(),
+                        "graph": pruned_graph,
+                        "node_name": pruned_node_name,
+                        "_id": ObjectId(),
+                    }
+                )
+
+    async def _create_new_feature_version(
+        self,
+        feature: FeatureModel,
+        feature_job_setting: Optional[FeatureJobSetting],
+        data_cleaning_operations: Optional[List[DataCleaningOperation]],
+    ) -> FeatureModel:
+        node_name_to_replacement_node: dict[str, Node] = {}
+
+        # prepare group by node replacement
+        group_by_node_replacement = self._prepare_group_by_node_name_to_replacement_node(
+            feature=feature, feature_job_setting=feature_job_setting
+        )
+        node_name_to_replacement_node.update(group_by_node_replacement)
+
+        # prepare view graph node replacement
+        view_graph_node_replacement = await self._prepare_view_graph_node_name_to_replacement_node(
+            feature=feature, data_cleaning_operations=data_cleaning_operations
+        )
+        node_name_to_replacement_node.update(view_graph_node_replacement)
+
+        # create a new feature version if the new feature graph is different from the source feature graph
+        new_feature_version = self._create_new_feature_version_from(
+            feature=feature, node_name_to_replacement_node=node_name_to_replacement_node
+        )
+        if new_feature_version:
+            return new_feature_version
+
+        # no new feature is created, raise the error message accordingly
+        if feature_job_setting or data_cleaning_operations:
+            actions = []
+            if feature_job_setting:
+                actions.append("feature job setting")
+            if data_cleaning_operations:
+                actions.append("data cleaning operation(s)")
+
+            actions_str = " and ".join(actions).capitalize()
+            has_str = "have" if len(actions) > 1 else "has"
+            raise DocumentError(f"{actions_str} {has_str} no effect in feature value derivation.")
         raise DocumentError("No change detected on the new feature version.")
 
     async def create_new_feature_version(
@@ -121,7 +294,9 @@ class VersionService(BaseService):
         FeatureModel
         """
         feature = await self.feature_service.get_document(document_id=data.source_feature_id)
-        new_feature = self._create_new_feature_version(feature, data.feature_job_setting)
+        new_feature = await self._create_new_feature_version(
+            feature, data.feature_job_setting, data.data_cleaning_operations
+        )
         return await self.feature_service.create_document(
             data=FeatureCreate(**new_feature.dict(by_alias=True))
         )

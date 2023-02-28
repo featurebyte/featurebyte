@@ -4,7 +4,7 @@
         {
             "critical_data_info": null,
             "dtype": "INT",
-            "entity_id": null,
+            "entity_id": "63f94ed6ea1f050131379204",
             "name": "event_id_col",
             "semantic_id": null
         },

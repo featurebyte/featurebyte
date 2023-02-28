@@ -391,8 +391,8 @@ class LagNode(BaseSeriesOutputNode):
         return [], ExpressionStr(expression)
 
 
-class GroupbyNode(AggregationOpStructMixin, BaseNode):
-    """GroupbyNode class"""
+class GroupByNode(AggregationOpStructMixin, BaseNode):
+    """GroupByNode class"""
 
     class Parameters(BaseGroupbyParameters):
         """Parameters"""

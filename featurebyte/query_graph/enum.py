@@ -1,6 +1,8 @@
 """
 This module contains all the enums used for query graph.
 """
+from typing import Set
+
 from featurebyte.enum import StrEnum
 
 
@@ -116,3 +118,20 @@ class GraphNodeType(StrEnum):
     DIMENSION_VIEW = "dimension_view"
     SCD_VIEW = "scd_view"
     CHANGE_VIEW = "change_view"
+
+    @classmethod
+    def view_graph_node_types(cls) -> Set["GraphNodeType"]:
+        """
+        Returns all the view graph node types
+
+        Returns
+        -------
+        Set[GraphNodeType]
+        """
+        return {
+            cls.EVENT_VIEW,
+            cls.ITEM_VIEW,
+            cls.DIMENSION_VIEW,
+            cls.SCD_VIEW,
+            cls.CHANGE_VIEW,
+        }
