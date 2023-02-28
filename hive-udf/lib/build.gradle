@@ -34,7 +34,6 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:31.1-jre'
-    implementation 'com.neovisionaries:nv-i18n:1.28'
 }
 
 tasks.named('test') {

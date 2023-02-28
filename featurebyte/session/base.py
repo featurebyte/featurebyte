@@ -82,6 +82,10 @@ class BaseSession(BaseModel):
     _unique_id: int = PrivateAttr(default=0)
     _no_schema_error: ClassVar[Any] = Exception
 
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        # close connection
+        self._connection.close()
+
     async def initialize(self) -> None:
         """
         Initialize session
