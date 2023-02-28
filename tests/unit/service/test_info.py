@@ -5,7 +5,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import SnowflakeDetails
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
@@ -25,6 +25,7 @@ from featurebyte.schema.info import (
     ItemDataInfo,
     SCDDataInfo,
 )
+from featurebyte.schema.relationship_info import RelationshipInfoCreate, RelationshipInfoInfo
 from featurebyte.service.info import InfoService
 
 
@@ -543,3 +544,31 @@ def test_get_main_data(info_service, item_data, event_data, dimension_data):
         == dimension_data_with_entity
     )
     assert info_service._get_main_data([dimension_data]) == dimension_data
+
+
+@pytest.mark.asyncio
+async def test_get_relationship_info_info(
+    relationship_info_service, info_service, event_data, entity
+):
+    """
+    Test get relationship info info
+    """
+    # create new relationship
+    relationship_type = "parent_child"
+    created_relationship = await relationship_info_service.create_document(
+        RelationshipInfoCreate(
+            name="test_relationship",
+            relationship_type=relationship_type,
+            child_id=entity.id,
+            parent_id=entity.id,
+            child_data_source_id=event_data.id,
+            is_enabled=True,
+            updated_by=PydanticObjectId(ObjectId()),
+        )
+    )
+    relationship_info = await info_service.get_relationship_info_info(created_relationship.id)
+    assert relationship_info.relationship_type == relationship_type
+    assert relationship_info.child_name == "customer"
+    assert relationship_info.parent_name == "customer"
+    assert relationship_info.data_source_name == "sf_event_data"
+    assert relationship_info.updated_by == "default user"
