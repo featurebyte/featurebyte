@@ -3,7 +3,7 @@ This module contains graph pruning related classes.
 """
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
-from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType
 from featurebyte.query_graph.model.graph import GraphNodeNameMap, NodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BasePrunableNode
@@ -295,6 +295,10 @@ class GraphStructurePruningExtractor(
             and isinstance(node, BasePrunableNode)
             and node.name not in global_state.node_names
         ):
+            if isinstance(node, BaseGraphNode) and not node.is_prunable:
+                # graph node is not prunable
+                return input_node_names, False
+
             # prune the graph structure if
             # - pruning mode is aggressive (means that travelled node can be removed)
             # - node is prunable

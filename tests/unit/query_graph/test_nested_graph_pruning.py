@@ -62,6 +62,13 @@ def add_graph_node(query_graph, input_nodes, groupby_node_params=None):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[node_assign],
         )
+    else:
+        graph_node.add_operation(
+            node_type=NodeType.ASSIGN,
+            node_params={"name": "a", "value": 100},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[graph_node.output_node],
+        )
     return query_graph.add_node(graph_node, input_nodes)
 
 
@@ -182,14 +189,20 @@ def test_graph_node__when_graph_node_is_output_node(input_details):
     pruned_graph, node_name_map = graph.prune(target_node=proj_node, aggressive=True)
     assert pruned_graph.edges_map == {"input_1": ["graph_1"], "graph_1": ["project_1"]}
 
-    # check nested graph edges (check all the nested assign nodes get pruned)
+    # check nested graph edges (check all the unused nested nodes get pruned)
     nested_graph = pruned_graph.nodes_map["graph_1"].parameters.graph
-    assert nested_graph.edges_map == {}
+    assert nested_graph.edges_map == {"proxy_input_1": ["assign_1"]}
     assert nested_graph.nodes == [
         {
             "name": "proxy_input_1",
             "type": "proxy_input",
             "output_type": "frame",
             "parameters": {"input_order": 0},
+        },
+        {
+            "name": "assign_1",
+            "type": "assign",
+            "output_type": "frame",
+            "parameters": {"name": "a", "value": 100},
         },
     ]

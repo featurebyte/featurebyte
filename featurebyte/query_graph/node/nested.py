@@ -2,7 +2,19 @@
 This module contains nested graph related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 from typing_extensions import Annotated
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
@@ -13,7 +25,7 @@ from featurebyte.common.typing import Numeric, OptionalScalar
 from featurebyte.enum import StrEnum, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode, NodeT
+from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
@@ -421,7 +433,7 @@ else:
     ]
 
 
-class BaseGraphNode(BaseNode):
+class BaseGraphNode(BasePrunableNode):
     """Graph node"""
 
     type: Literal[NodeType.GRAPH] = Field(NodeType.GRAPH, const=True)
@@ -442,6 +454,24 @@ class BaseGraphNode(BaseNode):
         NodeT
         """
         return cast(NodeT, self.parameters.graph.nodes_map[self.parameters.output_node_name])
+
+    @property
+    def is_prunable(self) -> bool:
+        """
+        Whether the graph node is prunable
+
+        Returns
+        -------
+        bool
+        """
+        return self.parameters.type == GraphNodeType.CLEANING
+
+    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+        if self.parameters.type == GraphNodeType.CLEANING:
+            return input_node_names[0]
+
+        # other graph node types should not reach here as they are not prunable
+        raise RuntimeError("BaseGraphNode.resolve_node_pruned should not be called!")
 
     def _derive_node_operation_info(
         self,
