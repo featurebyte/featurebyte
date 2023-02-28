@@ -6,6 +6,7 @@ from bson import ObjectId
 
 from featurebyte.api.relationships import Relationships
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
 
@@ -31,7 +32,7 @@ async def test_relationships_list(relationship_info_service):
     updated_by_user_id = PydanticObjectId(ObjectId())
 
     # create new relationship
-    relationship_type = "parent_child"
+    relationship_type = RelationshipType.CHILD_PARENT
     created_relationship = await relationship_info_service.create_document(
         RelationshipInfoCreate(
             name="test_relationship",
@@ -71,7 +72,7 @@ async def test_enable(relationship_info_service):
     updated_by_user_id = PydanticObjectId(ObjectId())
 
     # create new relationship
-    relationship_type = "parent_child"
+    relationship_type = RelationshipType.CHILD_PARENT
     created_relationship = await relationship_info_service.create_document(
         RelationshipInfoCreate(
             name="test_relationship",

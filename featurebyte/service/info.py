@@ -11,6 +11,7 @@ from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
@@ -275,7 +276,7 @@ class InfoService(BaseService):
         updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
         child_entity = None
         parent_entity = None
-        if relationship_info.relationship_type == "parent_child":
+        if relationship_info.relationship_type == RelationshipType.CHILD_PARENT:
             child_entity = await self.entity_service.get_document(
                 document_id=relationship_info.child_id
             )

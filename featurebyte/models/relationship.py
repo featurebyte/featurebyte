@@ -6,6 +6,7 @@ from typing import List
 from pydantic import Field, validator
 
 from featurebyte.common.validator import construct_sort_validator
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -45,6 +46,14 @@ class WorkspaceRelationship(Relationship, FeatureByteWorkspaceBaseDocumentModel)
     """
 
 
+class RelationshipType(StrEnum):
+    """
+    Relationship Type enum
+    """
+
+    CHILD_PARENT = "child_parent"
+
+
 class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     """
     Relationship info data model.
@@ -53,7 +62,7 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     The Relationship class above stores all relationships for a given child in a single document.
     """
 
-    relationship_type: str
+    relationship_type: RelationshipType
     child_id: PydanticObjectId
     parent_id: PydanticObjectId
     child_data_source_id: PydanticObjectId

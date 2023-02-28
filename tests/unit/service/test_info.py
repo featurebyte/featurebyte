@@ -7,6 +7,7 @@ from bson import ObjectId
 from featurebyte import SnowflakeDetails
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
@@ -554,7 +555,7 @@ async def test_get_relationship_info_info(
     Test get relationship info info
     """
     # create new relationship
-    relationship_type = "parent_child"
+    relationship_type = RelationshipType.CHILD_PARENT
     created_relationship = await relationship_info_service.create_document(
         RelationshipInfoCreate(
             name="test_relationship",

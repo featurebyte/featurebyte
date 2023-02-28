@@ -9,7 +9,7 @@ from bson import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.relationship import RelationshipInfo
+from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -20,7 +20,7 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    relationship_type: str
+    relationship_type: RelationshipType
     child_id: PydanticObjectId
     parent_id: PydanticObjectId
     child_data_source_id: PydanticObjectId
@@ -49,7 +49,7 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
     RelationshipInfo info
     """
 
-    relationship_type: str
+    relationship_type: RelationshipType
     child_name: str
     parent_name: str
     data_source_name: str
