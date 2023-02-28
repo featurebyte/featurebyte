@@ -12,6 +12,7 @@ import shutil
 import sqlite3
 import tempfile
 import textwrap
+import traceback
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -675,16 +676,21 @@ async def session_fixture(source_type, session_manager, dataset_registration_hel
 
     yield session
 
-    if source_type == "snowflake":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name}")
+    try:
+        if source_type == "snowflake":
+            await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name}")
 
-    if source_type == "databricks":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+        if source_type == "databricks":
+            await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
 
-    if source_type == "spark":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
-        # clean up storage
-        shutil.rmtree(Path(feature_store.details.storage_url).expanduser())
+        if source_type == "spark":
+            await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+            # clean up storage
+            shutil.rmtree(Path(feature_store.details.storage_url).expanduser())
+
+    except Exception as e:
+        print("Error while cleaning up test schema:", e)
+        traceback.print_exc()
 
 
 def create_generic_tile_spec():
