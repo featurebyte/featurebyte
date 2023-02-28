@@ -70,7 +70,11 @@ class ItemDataModel(ItemTableData, DataModel):
         table_data = ItemTableData(**self.dict(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
-        view_graph_node, columns_info, _ = table_data.construct_item_view_graph_node(
+        (
+            view_graph_node,
+            columns_info,
+            _,
+        ) = table_data.construct_item_view_graph_node(  # pylint: disable=no-member
             item_data_node=input_node,
             columns_to_join=metadata.event_join_column_names,
             event_suffix=metadata.event_suffix,

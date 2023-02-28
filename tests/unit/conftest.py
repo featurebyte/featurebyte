@@ -1040,7 +1040,7 @@ def api_object_to_id_fixture():
     return output
 
 
-def test_save_payload_fixtures(
+def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     update_fixtures,
     snowflake_feature_store,
     snowflake_event_data,

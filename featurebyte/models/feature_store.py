@@ -23,7 +23,6 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 
 

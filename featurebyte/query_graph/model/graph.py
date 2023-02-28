@@ -338,6 +338,24 @@ class QueryGraphModel(FeatureByteBaseModel):
     def iterate_group_by_and_event_data_input_node_pairs(
         self, target_node: Node
     ) -> Iterator[Tuple[GroupByNode, InputNode]]:
+        """
+        Iterate all GroupBy nodes and their corresponding EventData input nodes
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+
+        Yields
+        ------
+        Tuple[GroupByNode, InputNode]
+            GroupBy node and its corresponding EventData input node
+
+        Raises
+        ------
+        ValueError
+            GroupBy node does not have valid EventData Input node
+        """
         for group_by_node in self.iterate_nodes(
             target_node=target_node, node_type=NodeType.GROUPBY
         ):

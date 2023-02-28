@@ -3,16 +3,15 @@ VersionService class
 """
 from __future__ import annotations
 
-from typing import Any, Iterator, List, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 
-from featurebyte.enum import TableDataType, ViewMode
 from featurebyte.exception import DocumentError, GraphInconsistencyError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -106,6 +105,11 @@ class VersionService(BaseService):
         Returns
         -------
         dict[str, Node]
+
+        Raises
+        ------
+        GraphInconsistencyError
+            If the graph has unexpected structure
         """
         if not data_cleaning_operations:
             return {}
@@ -128,7 +132,7 @@ class VersionService(BaseService):
             view_graph_input_node = feature.graph.get_node_by_name(node_name=input_node_names[0])
 
             # additional parameters used to construct view graph node
-            create_view_graph_node_kwargs = {}
+            create_view_graph_node_kwargs: dict[str, Any] = {}
 
             if not isinstance(view_graph_input_node, InputNode):
                 raise GraphInconsistencyError(
@@ -157,7 +161,7 @@ class VersionService(BaseService):
                 create_view_graph_node_kwargs["event_view_columns_info"] = event_view_columns_info
                 create_view_graph_node_kwargs[
                     "event_view_event_id_column"
-                ] = data_input_node.parameters.id_column
+                ] = data_input_node.parameters.id_column  # type: ignore
 
             # get the data document based on the data ID in input node
             data_id = view_graph_input_node.parameters.id
@@ -236,6 +240,7 @@ class VersionService(BaseService):
                         "_id": ObjectId(),
                     }
                 )
+        return None
 
     async def _create_new_feature_version(
         self,

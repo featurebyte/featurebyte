@@ -55,7 +55,7 @@ class DimensionDataModel(DimensionTableData, DataModel):
         table_data = DimensionTableData(**self.dict(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
-        return table_data.construct_dimension_view_graph_node(
+        return table_data.construct_dimension_view_graph_node(  # pylint: disable=no-member
             dimension_data_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,

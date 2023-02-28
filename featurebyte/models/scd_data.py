@@ -3,7 +3,7 @@ This module contains SCD data related models
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Tuple, Type, Union
+from typing import Any, ClassVar, List, Tuple, Type, Union
 
 from pydantic import root_validator
 
@@ -72,7 +72,7 @@ class SCDDataModel(SCDTableData, DataModel):
             column_cleaning_operations=metadata.column_cleaning_operations,
         )
         if isinstance(metadata, ChangeViewMetadata):
-            return table_data.construct_change_view_graph_node(
+            return table_data.construct_change_view_graph_node(  # pylint: disable=no-member
                 scd_data_node=input_node,
                 track_changes_column=metadata.track_changes_column,
                 prefixes=metadata.prefixes,
@@ -80,7 +80,7 @@ class SCDDataModel(SCDTableData, DataModel):
                 metadata=metadata,
             )
 
-        return table_data.construct_scd_view_graph_node(
+        return table_data.construct_scd_view_graph_node(  # pylint: disable=no-member
             scd_data_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,
