@@ -22,11 +22,11 @@ if ! mongosh --quiet --port=27021 --eval "rs.status()" 1>/dev/null 2>&1; then
             "members": [
                 {
                     "_id": 1,
-                    "host": "mongo-rs:27021",
+                    "host": "localhost:27021",
                     "priority": 1
                 }, {
                     "_id": 2,
-                    "host": "mongo-rs:27022",
+                    "host": "localhost:27022",
                     "priority": 2
                 },
             ]
