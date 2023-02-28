@@ -1,6 +1,8 @@
 """
 Integration tests for SCDView
 """
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,6 +16,7 @@ from featurebyte import (
     SlowlyChangingView,
 )
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from tests.util.helper import assert_preview_result_equal
 
 
 def get_expected_scd_join_result(
@@ -64,9 +67,9 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
     return df
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_scd_join_small(session, feature_store):
+async def test_scd_join_small(session, feature_store, source_type):
     """
     Self-contained test case to test SCD with small datasets
     """
@@ -112,10 +115,10 @@ async def test_scd_join_small(session, feature_store):
         EventData.from_tabular_source(
             tabular_source=feature_store.get_table(
                 table_name=f"{table_prefix}_EVENT",
-                database_name=session.database,
-                schema_name=session.sf_schema,
+                database_name=session.database_name,
+                schema_name=session.schema_name,
             ),
-            name="event_data",
+            name=f"{source_type}_{table_prefix}_EVENT_DATA",
             event_id_column="event_id",
             event_timestamp_column="ts",
         )
@@ -124,10 +127,10 @@ async def test_scd_join_small(session, feature_store):
         SlowlyChangingData.from_tabular_source(
             tabular_source=feature_store.get_table(
                 table_name=f"{table_prefix}_SCD",
-                database_name=session.database,
-                schema_name=session.sf_schema,
+                database_name=session.database_name,
+                schema_name=session.schema_name,
             ),
-            name="scd_data",
+            name=f"{source_type}_{table_prefix}_SCD_DATA",
             natural_key_column="scd_cust_id",
             effective_timestamp_column="effective_ts",
             surrogate_key_column="scd_cust_id",
@@ -182,14 +185,15 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
 
     df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
 
-    assert df.iloc[0].to_dict() == {
+    expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
         "count_7d": '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}',
     }
+    assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe):
     """
     Test creating lookup feature from a SlowlyChangingView
@@ -240,10 +244,12 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert preview_output["count_7d"] == '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
+    assert json.loads(preview_output["count_7d"]) == json.loads(
+        '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
+    )
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
     """
     Test creating lookup feature from a SlowlyChangingView with offset
@@ -271,7 +277,7 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
     assert preview_output["Current User Status"] == expected_row["User Status"]
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(scd_data, scd_dataframe):
     """
     Test aggregate_asat aggregation on SlowlyChangingView
@@ -393,7 +399,7 @@ def test_scd_view__create_with_minimal_params(scd_data_with_minimal_cols):
     SlowlyChangingView.from_slowly_changing_data(scd_data_with_minimal_cols)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     """
     Test aggregate_over using a key column joined from another view
