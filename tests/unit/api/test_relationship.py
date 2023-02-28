@@ -4,7 +4,7 @@ Test relationships module
 import pytest
 from bson import ObjectId
 
-from featurebyte.api.relationships import Relationships
+from featurebyte.api.relationship import Relationship
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
@@ -23,7 +23,7 @@ async def test_relationships_list(relationship_info_service):
     """
     Test relationships list
     """
-    relationships = Relationships.list()
+    relationships = Relationship.list()
     assert relationships.shape[0] == 0
 
     child_id = PydanticObjectId(ObjectId())
@@ -47,23 +47,23 @@ async def test_relationships_list(relationship_info_service):
     assert created_relationship.child_id == child_id
 
     # verify that there's one relationship that was created
-    relationships = Relationships.list()
+    relationships = Relationship.list()
     assert relationships.shape[0] == 1
     assert relationships["child_id"][0] == child_id
 
     # apply relationship_type filter for existing filter using enum
-    relationships = Relationships.list(relationship_type=relationship_type)
+    relationships = Relationship.list(relationship_type=relationship_type)
     assert relationships.shape[0] == 1
     assert relationships["child_id"][0] == child_id
 
     # apply relationship_type filter for existing filter using string
-    relationships = Relationships.list(relationship_type="child_parent")
+    relationships = Relationship.list(relationship_type="child_parent")
     assert relationships.shape[0] == 1
     assert relationships["child_id"][0] == child_id
 
     # apply relationship_type filter for non-existing filter
     with pytest.raises(TypeError):
-        Relationships.list(relationship_type="random_filter")
+        Relationship.list(relationship_type="random_filter")
 
 
 @pytest.mark.asyncio
@@ -92,12 +92,12 @@ async def test_enable(relationship_info_service):
     assert not created_relationship.is_enabled
 
     # retrieve relationship via get_by_id
-    relationship = Relationships.get_by_id(created_relationship.id)
+    relationship = Relationship.get_by_id(created_relationship.id)
     assert not relationship.is_enabled
 
     # enable relationship
     relationship.enable(True)
 
     # verify that relationship is now enabled
-    relationship = Relationships.get_by_id(created_relationship.id)
+    relationship = Relationship.get_by_id(created_relationship.id)
     assert relationship.is_enabled
