@@ -74,6 +74,18 @@ def test_auto_view_mode(snowflake_scd_data_with_imputation):
     cleaning_graph_node = nested_graph.get_node_by_name("graph_1")
     assert cleaning_graph_node.parameters.type == "cleaning"
 
+    # check SDK code generation
+    check_sdk_code_generation(
+        snowflake_change_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data_with_imputation.id: {
+                "name": snowflake_scd_data_with_imputation.name,
+                "record_creation_date_column": snowflake_scd_data_with_imputation.record_creation_date_column,
+            }
+        },
+    )
+
 
 def test_manual_view_mode(snowflake_scd_data_with_imputation):
     """
@@ -94,6 +106,18 @@ def test_manual_view_mode(snowflake_scd_data_with_imputation):
     # check that there is no cleaning graph
     nested_graph = snowflake_change_view.node.parameters.graph
     assert all(not node_name.startswith("graph") for node_name in nested_graph.nodes_map.keys())
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        snowflake_change_view,
+        to_use_saved_data=False,
+        data_id_to_info={
+            snowflake_scd_data_with_imputation.id: {
+                "name": snowflake_scd_data_with_imputation.name,
+                "record_creation_date_column": snowflake_scd_data_with_imputation.record_creation_date_column,
+            }
+        },
+    )
 
 
 def test_view_mode__auto_manual_equality_check(snowflake_scd_data_with_imputation):

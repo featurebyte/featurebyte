@@ -126,6 +126,18 @@ class BaseViewTestSuite:
             ]
         assert list(nested_graph.nodes_map.keys()) == expected_node_names
 
+        # check SDK code generation
+        check_sdk_code_generation(
+            view,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test_with_imputation.id: {
+                    "name": data_under_test_with_imputation.name,
+                    "record_creation_date_column": data_under_test_with_imputation.record_creation_date_column,
+                }
+            },
+        )
+
     def test_manual_view_mode(self, data_under_test_with_imputation):
         """
         Test manual view mode
@@ -152,6 +164,18 @@ class BaseViewTestSuite:
         if self.view_type == ViewType.ITEM_VIEW:
             expected_node_names = ["proxy_input_1", "proxy_input_2", "project_1", "join_1"]
         assert list(nested_graph.nodes_map.keys()) == expected_node_names
+
+        # check SDK code generation
+        check_sdk_code_generation(
+            view,
+            to_use_saved_data=False,
+            data_id_to_info={
+                data_under_test_with_imputation.id: {
+                    "name": data_under_test_with_imputation.name,
+                    "record_creation_date_column": data_under_test_with_imputation.record_creation_date_column,
+                }
+            },
+        )
 
     def test_view_mode__auto_manual_equality_check(self, data_under_test_with_imputation):
         """
