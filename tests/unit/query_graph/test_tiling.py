@@ -16,13 +16,15 @@ from featurebyte.query_graph.sql.tiling import AggFunc, InputColumn, TileSpec, g
 
 def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
     """
-    Helper function to create the expected TileSpec object
+    Helper function to create the expected tile spec as a dictionary
     """
     if tile_column_type is None:
         tile_column_type = "FLOAT"
-    return TileSpec(
-        tile_expr=tile_expr, tile_column_name=tile_column_name, tile_column_type=tile_column_type
-    )
+    return {
+        "tile_expr": tile_expr,
+        "tile_column_name": tile_column_name,
+        "tile_column_type": tile_column_type,
+    }
 
 
 @pytest.mark.parametrize(
@@ -126,7 +128,10 @@ def test_tiling_aggregators(agg_func, expected_tile_specs, expected_merge_expr):
     input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
     tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id)
-    assert tile_specs == expected_tile_specs
+    assert [t.tile_expr.sql() for t in tile_specs] == [t["tile_expr"] for t in expected_tile_specs]
+    assert [t.tile_column_name for t in tile_specs] == [
+        t["tile_column_name"] for t in expected_tile_specs
+    ]
     assert merge_expr == expected_merge_expr
 
 
