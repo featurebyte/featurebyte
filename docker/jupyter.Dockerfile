@@ -41,4 +41,4 @@ RUN bash -c "source ${USER_HOME}/.venv/bin/activate; pip install --no-index -f $
 COPY ./docker/entrypoint-jupyter.sh             /scripts/entrypoint.sh
 RUN chmod +x /scripts/entrypoint.sh
 
-ENTRYPOINT ["/scripts/entrypoint.sh"]
+CMD ["/bin/bash", "/scripts/entrypoint.sh"]
