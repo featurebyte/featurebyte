@@ -15,7 +15,7 @@ from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
 
 
-class Relationships(RelationshipInfo, ApiObject):
+class Relationship(RelationshipInfo, ApiObject):
     """
     The relationships class allows users to see explore what types of relationships exist between the various
     entities they have.

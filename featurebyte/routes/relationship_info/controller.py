@@ -82,7 +82,6 @@ class RelationshipInfoController(
         sort_dir: Literal["asc", "desc"] = "desc",
         search: Optional[str] = None,
         name: Optional[str] = None,
-        version: Optional[str] = None,
     ) -> RelationshipInfoList:
         """
         List RelationshipInfo at persistent
@@ -101,8 +100,6 @@ class RelationshipInfoController(
             Search token to be used in filtering
         name: str | None
             Feature name to be used in filtering
-        version: str | None
-            Feature version to be used in filtering
 
         Returns
         -------
@@ -110,9 +107,6 @@ class RelationshipInfoController(
             List of RelationshipInfo objects
         """
         params: Dict[str, Any] = {"search": search, "name": name}
-        if version:
-            params["version"] = VersionIdentifier.from_str(version).dict()
-
         return await self.list(
             page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir, **params
         )

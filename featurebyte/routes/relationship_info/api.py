@@ -57,7 +57,7 @@ async def list_relationship_info(
     List RelationshipInfo's
     """
     controller = request.state.app_container.relationship_info_controller
-    relationship_info_list: RelationshipInfoList = await controller.list(
+    relationship_info_list: RelationshipInfoList = await controller.list_relationship_info(
         page=page,
         page_size=page_size,
         sort_by=sort_by,

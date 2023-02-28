@@ -81,4 +81,9 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
+            UniqueValuesConstraint(
+                fields=("child_id", "parent_id"),
+                conflict_fields_signature={"child_id": ["child_id"], "parent_id": ["parent_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+            ),
         ]
