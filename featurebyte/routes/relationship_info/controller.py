@@ -5,7 +5,6 @@ from typing import Any, Dict, Literal, Optional
 
 from bson import ObjectId
 
-from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.relationship import RelationshipInfo
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.relationship_info import (
