@@ -4,7 +4,7 @@
 server = ["apscheduler", "sqlalchemy", "aiofiles", "cachetools", "databricks-cli", "fastapi", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "orjson", "pdfkit", "pyhive", "sasl", "thrift-sasl", "boto3", "smart-open"]
 
 [metadata]
-content-hash = "ad651b2fa8cb5f019ccf77feabbcda6b52dd3ede8ded1ac2a652ae3f670599c6"
+content-hash = "35afb4c62b694f6e425f2b8360981b910473a348e5b029b67aab3550b74502d1"
 lock-version = "2.0"
 python-versions = ">=3.8,<3.11"
 
@@ -2723,18 +2723,6 @@ version = "0.6.2"
 gssapi = ["kerberos (>=1.3.0)"]
 
 [[package]]
-category = "dev"
-description = "Enables Python programs to dynamically access arbitrary Java objects"
-files = [
-    {file = "py4j-0.10.9.5-py2.py3-none-any.whl", hash = "sha256:52d171a6a2b031d8a5d1de6efe451cf4f5baff1a2819aabc3741c8406539ba04"},
-    {file = "py4j-0.10.9.5.tar.gz", hash = "sha256:276a4a3c5a2154df1860ef3303a927460e02e97b047dc0a47c1c3fb8cce34db6"},
-]
-name = "py4j"
-optional = false
-python-versions = "*"
-version = "0.10.9.5"
-
-[[package]]
 category = "main"
 description = "Python library for Apache Arrow"
 files = [
@@ -3110,26 +3098,6 @@ version = "3.0.9"
 
 [package.extras]
 diagrams = ["jinja2", "railroad-diagrams"]
-
-[[package]]
-category = "dev"
-description = "Apache Spark Python API"
-files = [
-    {file = "pyspark-3.3.2.tar.gz", hash = "sha256:0dfd5db4300c1f6cc9c16d8dbdfb82d881b4b172984da71344ede1a9d4893da8"},
-]
-name = "pyspark"
-optional = false
-python-versions = ">=3.7"
-version = "3.3.2"
-
-[package.dependencies]
-py4j = "0.10.9.5"
-
-[package.extras]
-ml = ["numpy (>=1.15)"]
-mllib = ["numpy (>=1.15)"]
-pandas-on-spark = ["numpy (>=1.15)", "pandas (>=1.0.5)", "pyarrow (>=1.0.0)"]
-sql = ["pandas (>=1.0.5)", "pyarrow (>=1.0.0)"]
 
 [[package]]
 category = "dev"

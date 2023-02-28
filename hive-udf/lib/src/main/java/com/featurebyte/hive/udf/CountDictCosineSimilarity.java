@@ -9,6 +9,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.Pr
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 import java.util.Map;
+import java.util.Set;
 
 
 @Description(name = "F_COUNT_COSINE_SIMILARITY",
@@ -63,18 +64,22 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     double norm = 0.0;
     double normOther = 0.0;
 
-    for (String k : counts.keySet()) {
-      double value = ((DoubleWritable) converters[1].convert(counts.get(k))).get();
-      if (countsOther.containsKey(k)) {
-        double valueOther = ((DoubleWritable) otherConverters[1].convert(countsOther.get(k))).get();
+    for (Map.Entry<String, Object> set : counts.entrySet()) {
+      double value = ((DoubleWritable) converters[1].convert(set.getValue())).get();
+      Object objectOther = countsOther.getOrDefault(set.getKey(), null);
+      if (objectOther != null) {
+        double valueOther = ((DoubleWritable) otherConverters[1].convert(objectOther)).get();
         dotProduct = dotProduct + value * valueOther;
+        normOther += valueOther * valueOther;
       }
-      norm = norm + value * value;
+      norm += value * value;
     }
 
-    for (String k : countsOther.keySet()) {
+    Set<String> keySet = countsOther.keySet();
+    keySet.removeAll(counts.keySet());
+    for (String k : keySet) {
       double value = ((DoubleWritable) otherConverters[1].convert(countsOther.get(k))).get();
-      normOther = normOther + value * value;
+      normOther += value * value;
     }
 
     output.set(dotProduct / (Math.sqrt(norm) * Math.sqrt(normOther)));

@@ -25,6 +25,7 @@ services:
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
       - ~/.spark/data:/opt/spark/data/derby
+      - /tmp:/tmp
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
@@ -43,7 +44,7 @@ services:
         --hiveconf derby.system.home=/opt/spark/data/derby \
         --master=local[2] \
         --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
-        --conf spark.driver.memory=1G \
+        --conf spark.driver.memory=2G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
         --conf spark.sql.catalogImplementation=hive  \

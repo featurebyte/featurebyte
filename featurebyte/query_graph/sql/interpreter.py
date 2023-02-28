@@ -696,7 +696,7 @@ class GraphInterpreter:
                     quoted=True,
                 ),
             )
-            .from_("data")
+            .from_("casted_data")
             .group_by(col_expr)
             .order_by("COUNTS DESC")
             .limit(500)
@@ -706,7 +706,7 @@ class GraphInterpreter:
                 expression=expressions.Anonymous(
                     this="object_agg",
                     expressions=[
-                        expressions.Cast(this=col_expr, to=parse_one("STRING")),
+                        col_expr,
                         quoted_identifier("COUNTS"),
                     ],
                 ),
@@ -789,6 +789,21 @@ class GraphInterpreter:
         }
         cte_statements = [("data", sql_tree)]
 
+        # get subquery with columns casted to string to compute value counts
+        casted_columns = []
+        for col_expr in sql_tree.expressions:
+            col_name = col_expr.alias or col_expr.name
+            # add casted columns
+            casted_columns.append(
+                expressions.alias_(
+                    expressions.Cast(this=quoted_identifier(col_name), to=parse_one("STRING")),
+                    col_name,
+                    quoted=True,
+                )
+            )
+        sql_tree = expressions.select(*casted_columns).from_("data")
+        cte_statements.append(("casted_data", sql_tree))
+
         stats_selections = []
         count_tables = []
         final_selections = []
@@ -801,7 +816,9 @@ class GraphInterpreter:
 
             # add dtype
             final_selections.append(
-                expressions.alias_(make_literal_value(column.dtype), f"dtype__{column_idx}")
+                expressions.alias_(
+                    make_literal_value(column.dtype), f"dtype__{column_idx}", quoted=True
+                )
             )
 
             if self._is_dtype_supported(

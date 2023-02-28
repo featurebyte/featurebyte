@@ -59,7 +59,6 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
     private transient ObjectInspector inputKeyOI;
     private transient ObjectInspector inputValueOI;
     private transient MapObjectInspector internalMergeOI;
-
     public ObjectAggregatorEvaluator() {
     }
 
@@ -96,7 +95,7 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
     @Override
     public void iterate(AggregationBuffer agg, Object[] parameters) {
       assert (parameters.length == 2);
-      String k = (String) parameters[0];
+      Object k = parameters[0];
       Object v = parameters[1];
 
       if (k != null) {
@@ -114,9 +113,9 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
     @Override
     public void merge(AggregationBuffer agg, Object partial) {
       MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-      Map<String, Object> partialResult = (Map<String, Object>) internalMergeOI.getMap(partial);
+      Map<Object, Object> partialResult = (Map<Object, Object>) internalMergeOI.getMap(partial);
       if (partialResult != null) {
-        for (Map.Entry<String, Object> set : partialResult.entrySet()) {
+        for (Map.Entry<Object, Object> set : partialResult.entrySet()) {
           putIntoCollection(set.getKey(), set.getValue(), myagg);
         }
       }
@@ -127,10 +126,8 @@ public class ObjectAggregate extends AbstractGenericUDAFResolver {
       return this.terminatePartial(agg);
     }
 
-    private void putIntoCollection(String k, Object v, MapAggregationBuffer myagg) {
-      String kCopy = (String) ObjectInspectorUtils.copyToStandardObject(k,  this.inputKeyOI);
-      Object vCopy = ObjectInspectorUtils.copyToStandardObject(v,  this.inputValueOI);
-      myagg.container.put(kCopy, vCopy);
+    private void putIntoCollection(Object k, Object v, MapAggregationBuffer myagg) {
+      myagg.container.put(k, v);
     }
   }
 

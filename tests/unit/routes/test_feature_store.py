@@ -16,6 +16,7 @@ from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import CredentialsError
 from featurebyte.schema.feature_store import FeatureStoreSample
 from tests.unit.routes.base import BaseApiTestSuite
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 class TestFeatureStoreApi(BaseApiTestSuite):
@@ -414,7 +415,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         }
 
     def test_description_200(
-        self, test_api_client_persistent, data_sample_payload, mock_get_session
+        self, test_api_client_persistent, data_sample_payload, mock_get_session, update_fixtures
     ):
         """Test data description (success)"""
         test_api_client, _ = test_api_client_persistent
@@ -514,6 +515,13 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         response = test_api_client.post("/feature_store/description", json=sample_payload)
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
+
+        # check SQL statement
+        assert_equal_with_expected_fixture(
+            mock_session.execute_query.call_args[0][0],
+            "tests/fixtures/expected_describe_request.sql",
+            update_fixture=update_fixtures,
+        )
 
     def test_description_200_numeric_only(
         self, test_api_client_persistent, data_sample_payload, mock_get_session

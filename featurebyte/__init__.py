@@ -19,7 +19,7 @@ from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
-from featurebyte.enum import AggFunc, SourceType
+from featurebyte.enum import AggFunc, SourceType, StorageType
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNewVersionMode
@@ -60,11 +60,13 @@ __all__ = [
     "SlowlyChangingData",
     "SlowlyChangingView",
     "to_timedelta",
-    "AggFunc",
-    "SourceType",
     "SnowflakeDetails",
     "SparkDetails",
     "UsernamePasswordCredential",
+    # enums
+    "AggFunc",
+    "SourceType",
+    "StorageType",
     # imputation related classes
     "MissingValueImputation",
     "DisguisedValueImputation",
