@@ -789,7 +789,21 @@ class GraphInterpreter:
         }
         cte_statements = [("data", sql_tree)]
 
+        # get subquery with columns casted to string to compute value counts
         casted_columns = []
+        for col_expr in sql_tree.expressions:
+            col_name = col_expr.alias or col_expr.name
+            # add casted columns
+            casted_columns.append(
+                expressions.alias_(
+                    expressions.Cast(this=quoted_identifier(col_name), to=parse_one("STRING")),
+                    col_name,
+                    quoted=True,
+                )
+            )
+        sql_tree = expressions.select(*casted_columns).from_("data")
+        cte_statements.append(("casted_data", sql_tree))
+
         stats_selections = []
         count_tables = []
         final_selections = []
@@ -799,13 +813,6 @@ class GraphInterpreter:
             column = columns_info[col_name]
             output_columns.append(column)
             col_expr = quoted_identifier(col_name)
-
-            # add casted columns
-            casted_columns.append(
-                expressions.alias_(
-                    expressions.Cast(this=col_expr, to=parse_one("STRING")), col_name, quoted=True
-                )
-            )
 
             # add dtype
             final_selections.append(
@@ -884,10 +891,6 @@ class GraphInterpreter:
                             this=quoted_identifier(f"{stats_name}__{column_idx}"), table="stats"
                         )
                     )
-
-        # get columns casted to string
-        sql_tree = expressions.select(*casted_columns).from_("data")
-        cte_statements.insert(1, ("casted_data", sql_tree))
 
         # get statistics
         sql_tree = expressions.select(*stats_selections).from_("data")
