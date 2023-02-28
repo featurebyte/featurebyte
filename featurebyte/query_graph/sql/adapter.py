@@ -566,6 +566,9 @@ class SparkAdapter(DatabricksAdapter):
 
     @classmethod
     def is_qualify_clause_supported(cls) -> bool:
+        """
+        Spark does not support the `QUALIFY` clause though DataBricks does.
+        """
         return False
 
     @classmethod
