@@ -831,8 +831,8 @@ class JoinNode(BasePrunableNode):
         if input_order >= 2:
             raise ValueError(f"Invalid input order: {input_order}")
         if input_order == 0:
-            return self.parameters.left_input_columns
-        return self.parameters.right_input_columns
+            return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
+        return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
 
     @staticmethod
     def _filter_columns(
