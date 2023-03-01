@@ -314,7 +314,7 @@ class BaseTableData(FeatureByteBaseModel):
         # first input node is the cleaning graph node output node (apply cleaning recipe)
         # other input nodes are the proxy input nodes (used to construct additional proxy input nodes
         # in the nested graph)
-        nested_input_nodes = [view_graph_node.output_node, *proxy_input_nodes[1:]]
+        nested_input_nodes: List[Node] = [view_graph_node.output_node, *proxy_input_nodes[1:]]
         assert len(proxy_input_nodes) == len(nested_input_nodes)
         return view_graph_node, nested_input_nodes
 

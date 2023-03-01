@@ -54,7 +54,7 @@ class ProxyInputNode(BaseNode):
     output_type: NodeOutputType
     parameters: ProxyInputNodeParameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         raise RuntimeError("Proxy input node should not be used to derive input columns.")
 
     def _derive_node_operation_info(
@@ -595,7 +595,7 @@ class BaseGraphNode(BasePrunableNode):
         """
         return self.parameters.type == GraphNodeType.CLEANING
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         # first the corresponding input proxy node in the nested graph
         proxy_input_node: Optional[BaseNode] = None
         for node in self.parameters.graph.iterate_nodes(
@@ -637,7 +637,7 @@ class BaseGraphNode(BasePrunableNode):
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")

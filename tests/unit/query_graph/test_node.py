@@ -35,11 +35,12 @@ def node_fixture():
         type: Literal["type"] = Field("node_type", const=True)
         parameters: NodeParams
 
-        def get_required_input_columns(self, input_order: int) -> List[str]:
+        def get_required_input_columns(self, input_order: int):
             _ = input_order
             return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
-        def _derive_node_operation_info(self, inputs):
+        def _derive_node_operation_info(self, inputs, branch_state, global_state):
+            _ = inputs, branch_state, global_state
             return OperationStructure(
                 output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
             )

@@ -145,7 +145,7 @@ class BaseNode(BaseModel):
         return list(out)
 
     @abstractmethod
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         """
         Get the required input column names for the given input based on this node parameters.
         For example, a JoinNode will consume two input node and inside the JoinNode parameters,
@@ -161,7 +161,7 @@ class BaseNode(BaseModel):
 
         Returns
         -------
-        list[str]
+        Sequence[str]
         """
 
     def derive_node_operation_info(
@@ -491,7 +491,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order {input_order}")
@@ -574,7 +574,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         Union[Type[VariableNameStr], Type[ExpressionStr]]
     ] = VariableNameStr
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order: {input_order}")

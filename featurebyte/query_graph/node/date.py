@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Sequence, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -68,7 +68,7 @@ class DateDifference(BaseSeriesOutputNode):
 
     type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order: {input_order}")
@@ -100,7 +100,7 @@ class TimeDelta(BaseSeriesOutputNode):
     type: Literal[NodeType.TIMEDELTA] = Field(NodeType.TIMEDELTA, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order: {input_order}")
@@ -138,7 +138,7 @@ class DateAdd(BaseSeriesOutputNode):
     type: Literal[NodeType.DATE_ADD] = Field(NodeType.DATE_ADD, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order: {input_order}")

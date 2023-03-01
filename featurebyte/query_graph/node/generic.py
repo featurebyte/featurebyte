@@ -54,14 +54,14 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order == 0:
             return self.parameters.columns
         raise ValueError(f"Invalid input order: {input_order}")
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         assert len(input_operation_structures) == 1
@@ -161,7 +161,7 @@ class FilterNode(BaseNode):
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order: {input_order}")
@@ -312,7 +312,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 2:
             return []
         raise ValueError(f"Invalid input order: {input_order}")
@@ -388,7 +388,7 @@ class LagNode(BaseSeriesOutputNode):
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         # this node has the following input structure:
         # [0] column to lag
         # [1...n-1] entity column(s)
@@ -441,7 +441,7 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order != 0:
             raise ValueError(f"Invalid input order: {input_order}")
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
@@ -558,7 +558,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     # class variable
     _auto_convert_expression_to_variable: ClassVar[bool] = False
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order != 0:
             raise ValueError(f"Invalid input order: {input_order}")
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
@@ -689,7 +689,7 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order != 0:
             raise ValueError(f"Invalid input order: {input_order}")
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
@@ -827,7 +827,7 @@ class JoinNode(BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: JoinNodeParameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order >= 2:
             raise ValueError(f"Invalid input order: {input_order}")
         if input_order == 0:
@@ -1011,7 +1011,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order == 0:
             view_required_columns = [self.parameters.view_entity_column]
             if self.parameters.view_point_in_time_column:
@@ -1094,7 +1094,7 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: AggregateAsAtParameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order != 0:
             raise ValueError(f"Invalid input order: {input_order}")
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
@@ -1177,7 +1177,7 @@ class AliasNode(BaseNode):
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order != 0:
             raise ValueError(f"Invalid input order: {input_order}")
         return []
@@ -1245,7 +1245,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
 
-    def get_required_input_columns(self, input_order: int) -> List[str]:
+    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
         if input_order < 3:
             return []
         raise ValueError(f"Invalid input order: {input_order}")
