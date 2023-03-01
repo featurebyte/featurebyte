@@ -221,6 +221,17 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         """Test new version creation (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
+        graph_origin = QueryGraphModel(**create_response_dict["graph"])
+        graph_node_origin = graph_origin.get_node_by_name("graph_1")
+        assert graph_node_origin.parameters.metadata.column_cleaning_operations == []
+
+        # create a new version
+        column_cleaning_operations = [
+            {
+                "column_name": "col_float",
+                "cleaning_operations": [{"type": "missing", "imputed_value": 0.0}],
+            },
+        ]
         response = test_api_client.post(
             f"{self.base_route}",
             json={
@@ -230,18 +241,31 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
                     "frequency": "1d",
                     "time_modulo_frequency": "1h",
                 },
+                "data_cleaning_operations": [
+                    {
+                        "data_name": "sf_event_data",
+                        "column_cleaning_operations": column_cleaning_operations,
+                    }
+                ],
             },
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict["version"] == {"name": get_version(), "suffix": 1}
 
+        # check feature job setting using the specified feature job setting
         graph = QueryGraphModel(**response_dict["graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
         parameters = groupby_node.parameters.dict()
         assert parameters["time_modulo_frequency"] == 3600
         assert parameters["frequency"] == 86400
         assert parameters["blind_spot"] == 86400
+
+        # check that the data cleaning operations are applied
+        graph_node = graph.get_node_by_name("graph_1")
+        assert (
+            graph_node.parameters.metadata.column_cleaning_operations == column_cleaning_operations
+        )
 
     def test_create_422__create_new_version(
         self, test_api_client_persistent, create_success_response
@@ -257,6 +281,27 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
 
         response_dict = response.json()
         assert response_dict["detail"] == "No change detected on the new feature version."
+
+    def test_create_422__create_new_version__unrelated_cleaning_operations(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create new version (unprocessable entity due to unrelated cleaning operations)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": create_response_dict["_id"],
+                "data_cleaning_operations": [
+                    {"data_name": "random_data", "column_cleaning_operations": []}
+                ],
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        response_dict = response.json()
+        expected_msg = "Data cleaning operation(s) has no effect in feature value derivation."
+        assert response_dict["detail"] == expected_msg
 
     def test_list_200__filter_by_name_and_version(
         self, test_api_client_persistent, create_multiple_success_responses
