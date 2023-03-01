@@ -17,16 +17,3 @@ class RelationshipInfoService(
     """
 
     document_class = RelationshipInfo
-
-    async def update_relationship_info(self, relationship_id: ObjectId, enable: bool) -> None:
-        """
-        Update relationship enable
-
-        Parameters
-        ----------
-        relationship_id: ObjectId
-            The relationship id
-        enable: bool
-            The enable value
-        """
-        await self.update_document(relationship_id, RelationshipInfoUpdate(is_enabled=enable))

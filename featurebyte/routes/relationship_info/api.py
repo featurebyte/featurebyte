@@ -92,10 +92,7 @@ async def update_relationship_info(
     Update RelationshipInfo
     """
     controller = request.state.app_container.relationship_info_controller
-    await controller.update_relationship_info(
-        relationship_info_id=relationship_info_id,
-        data=data,
-    )
+    await controller.update_document(relationship_info_id, data)
 
 
 @router.get("/{relationship_info_id}/info", response_model=RelationshipInfoInfo)
