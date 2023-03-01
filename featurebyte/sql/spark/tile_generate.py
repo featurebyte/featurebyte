@@ -51,6 +51,13 @@ class TileGenerate(TileCommon):
             tile_type=self.tile_type,
         ).execute()
 
+        if self.entity_column_names:
+            entity_and_value_column_names_str = (
+                f"{self.entity_column_names_str}, {self.value_column_names_str}"
+            )
+        else:
+            entity_and_value_column_names_str = self.value_column_names_str
+
         tile_sql = f"""
             select
                 F_TIMESTAMP_TO_INDEX({self.tile_start_date_column},
@@ -58,8 +65,7 @@ class TileGenerate(TileCommon):
                     {self.blind_spot_second},
                     {self.frequency_minute}
                 ) as index,
-                {self.entity_column_names_str},
-                {self.value_column_names_str},
+                {entity_and_value_column_names_str},
                 current_timestamp() as created_at
             from ({self.sql})
         """
