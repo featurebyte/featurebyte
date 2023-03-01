@@ -132,7 +132,7 @@ def print_logs(app_name: ApplicationName, tail: int) -> None:
 
 
 ### WARNING THIS NEEDS TO BE REMOVED AFTER BETA ###
-def __backup_docker_conf():
+def __backup_docker_conf() -> None:
     with open(
         os.path.expanduser("~/.docker/config.json"), "w", encoding="utf-8"
     ) as docker_cfg_file:
@@ -142,7 +142,7 @@ def __backup_docker_conf():
             backup_file.write(docker_cfg_file.read())
 
 
-def __use_docker_svc_account():
+def __use_docker_svc_account() -> None:
     with open(
         os.path.expanduser("~/.docker/config.json"), "w", encoding="utf-8"
     ) as docker_cfg_file:
@@ -159,7 +159,7 @@ def __use_docker_svc_account():
         )
 
 
-def __restore_docker_conf():
+def __restore_docker_conf() -> None:
     if os.path.isfile(os.path.expanduser("~/.docker/config.json.old")):
         with open(
             os.path.expanduser("~/.docker/config.json.old"), "rb", encoding="utf-8"
@@ -170,7 +170,7 @@ def __restore_docker_conf():
                 docker_cfg_file.write(backup_file.read())
 
 
-def __delete_docker_backup():
+def __delete_docker_backup() -> None:
     if os.path.isfile(os.path.expanduser("~/.docker/config.json.old")):
         os.remove(os.path.expanduser("~/.docker/config.json.old"))
 
