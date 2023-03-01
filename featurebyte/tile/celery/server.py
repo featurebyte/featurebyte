@@ -69,9 +69,7 @@ class FBRedis(BaseModel):
         """
         Shutdown the redis sever
         """
-        if self.redis_server:
-            self.redis_conn.delete(self.redis_pid_key)
-            self.redis_server.shutdown()
+        subprocess.Popen(["kill", str(self.redis_pid)])
 
 
 class FBCelery(BaseModel):
@@ -90,9 +88,13 @@ class FBCelery(BaseModel):
         self.celery_pid = cast(int, self.redis_server.redis_conn.get(self.celery_pid_key))
         logger.info(f"existing celery_pid: {self.celery_pid}")
         if not self.celery_pid:
-            command = "celery -A featurebyte.tile.celery.tasks worker --beat --loglevel=DEBUG --scheduler redbeat.RedBeatScheduler"
+            command = "celery -A featurebyte.tile.celery.tasks worker --beat --loglevel=DEBUG --scheduler redbeat.RedBeatScheduler".split(
+                " "
+            )
             process = subprocess.Popen(
-                command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, shell=True
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
             )
             self.celery_pid = process.pid
             self.redis_server.redis_conn.set(self.celery_pid_key, self.celery_pid)
@@ -103,9 +105,9 @@ class FBCelery(BaseModel):
         Shutdown both redis and celery sever
         """
         if self.redis_server:
-            self.redis_server.redis_conn.delete(self.celery_pid_key)
-            subprocess.Popen(f"kill {self.celery_pid}", shell=True)
             self.redis_server.shutdown()
+
+        subprocess.Popen(["kill", str(self.celery_pid)])
 
 
 redis_server = FBRedis(redis_port=6379, redis_host="localhost")

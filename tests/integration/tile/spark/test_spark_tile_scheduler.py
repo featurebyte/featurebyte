@@ -1,19 +1,29 @@
 """
 This module contains integration tests for TileManager scheduler
 """
-from datetime import datetime, timedelta
+import importlib
+import json
+from datetime import datetime
 
 import pytest
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 from featurebyte.common import date_util
 from featurebyte.models.tile import TileType
+from featurebyte.tile.celery.server import celery_instance
 from featurebyte.tile.scheduler import TileSchedulerFactory
+
+
+@pytest.fixture(name="tile_scheduler")
+def mock_tile_scheduler_fixture():
+    tile_scheduler = TileSchedulerFactory.get_instance()
+    yield tile_scheduler
+    celery_instance.shutdown()
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tiles_with_scheduler(tile_spec, session, tile_manager):
+async def test_generate_tiles_with_scheduler(tile_spec, session, tile_manager, tile_scheduler):
     """
     Test generate_tiles method in TileSnowflake
     """
@@ -28,22 +38,28 @@ async def test_generate_tiles_with_scheduler(tile_spec, session, tile_manager):
     await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-    tile_scheduler = TileSchedulerFactory.get_instance()
     job_ids = tile_scheduler.get_jobs()
     assert job_id in job_ids
 
     job_details = tile_scheduler.get_job_details(job_id=job_id)
 
     # verifying scheduling trigger
-    interval_trigger = job_details.trigger
-    assert isinstance(interval_trigger, IntervalTrigger)
-    assert interval_trigger.interval == timedelta(minutes=tile_spec.frequency_minute)
-    assert interval_trigger.start_date.strftime("%Y-%m-%d %H:%M:%S") == next_job_time.strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+    trigger = job_details.trigger
+    assert isinstance(trigger, CronTrigger)
+    scheduled = [int(str(f)) for f in trigger.fields if not f.is_default]
+    expected = [f for f in next_job_time.timetuple()][:6]
+    assert scheduled == expected
 
-    # verifying scheduling function
-    await job_details.func()
+    # verifying the scheduling function
+    module_path = job_details.func.__self__.args[0]
+    class_name = job_details.func.__self__.args[1]
+    instance_str = job_details.func.__self__.args[2]
+    module = importlib.import_module(module_path)
+    instance_class = getattr(module, class_name)
+    instance_json = json.loads(instance_str)
+
+    instance = instance_class(spark_session=session, **instance_json)
+    await instance.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)

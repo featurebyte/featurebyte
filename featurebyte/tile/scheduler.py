@@ -1,25 +1,20 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from datetime import datetime
 
 from apscheduler.job import Job
 from apscheduler.jobstores.base import JobLookupError
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from celery.schedules import schedule
 from pydantic import BaseModel, PrivateAttr
+from redbeat import RedBeatSchedulerEntry
 
 from featurebyte.logger import logger
-
-JOB_STORES: Dict[str, Any] = {
-    "default": MemoryJobStore(),
-    "local": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite"),
-    # "mongo": MongoDBJobStore(),
-}
+from featurebyte.tile.celery.tasks import celery_app
 
 
 class TileScheduler(BaseModel):
@@ -27,7 +22,7 @@ class TileScheduler(BaseModel):
     FeatureByte Scheduler using apscheduler
     """
 
-    _scheduler: AsyncIOScheduler = PrivateAttr()
+    _scheduler: BackgroundScheduler = PrivateAttr()
     _job_store: str = PrivateAttr()
     _tile_scheduler_map: Dict[str, Any] = PrivateAttr()
 
@@ -44,7 +39,7 @@ class TileScheduler(BaseModel):
         """
         super().__init__(**kw)
         self._job_store = job_store
-        self._scheduler = AsyncIOScheduler(jobstores=JOB_STORES)
+        self._scheduler = BackgroundScheduler()
         self._scheduler.start()
 
     def start_job_with_interval(
@@ -52,9 +47,7 @@ class TileScheduler(BaseModel):
         job_id: str,
         interval_seconds: int,
         start_from: datetime,
-        func: Any,
-        args: Optional[List[Any]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
+        instance: Any,
     ) -> None:
         """
         Start job with Interval seconds
@@ -67,23 +60,36 @@ class TileScheduler(BaseModel):
             interval between runs
         start_from: datetime
             starting point for the interval calculation
-        func: Any
-            function to be triggered periodically
-        args: Optional[List[Any]]
-            args to func
-        kwargs: Optional[Dict[str, Any]]
-            kwargs to func
+        instance: Any
+            input instance
         """
-        interval_trigger = IntervalTrigger(
-            start_date=start_from, seconds=interval_seconds, timezone="utc"
+
+        onetime_trigger = CronTrigger(
+            second=start_from.second,
+            minute=start_from.minute,
+            hour=start_from.hour,
+            day=start_from.day,
+            month=start_from.month,
+            year=start_from.year,
+            timezone="utc",
         )
+
+        module_path = instance.__class__.__module__
+        class_name = instance.__class__.__name__
+        instance_str = instance.json()
+        entry = RedBeatSchedulerEntry(
+            name=job_id,
+            task="featurebyte.tile.celery.tasks.execute",
+            schedule=schedule(interval_seconds),
+            args=[module_path, class_name, instance_str],
+            app=celery_app,
+        )
+
         self._scheduler.add_job(
             id=job_id,
             jobstore=self._job_store,
-            func=func,
-            args=args,
-            kwargs=kwargs,
-            trigger=interval_trigger,
+            func=entry.save,
+            trigger=onetime_trigger,
         )
 
     def stop_job(self, job_id: str) -> None:
@@ -97,6 +103,8 @@ class TileScheduler(BaseModel):
         """
         try:
             self._scheduler.remove_job(job_id=job_id, jobstore=self._job_store)
+            entry = RedBeatSchedulerEntry(name=job_id, app=celery_app)
+            entry.delete()
             logger.info(f"{job_id} removed successfully")
         except JobLookupError:
             logger.warning(f"{job_id} does not exist")
@@ -104,12 +112,10 @@ class TileScheduler(BaseModel):
     def get_job_details(self, job_id: str) -> Job:
         """
         Get Jobs from input job store
-
         Parameters
         ----------
         job_id: str
             job id
-
         Returns
         ----------
             Job Instance
@@ -119,12 +125,11 @@ class TileScheduler(BaseModel):
     def get_jobs(self) -> List[str]:
         """
         Get Jobs from input job store
-
         Returns
         ----------
             List of job ids
         """
-        jobs = self._scheduler.get_jobs(jobstore=self._job_store)
+        jobs = self._scheduler.get_jobs()
         return [job.id for job in jobs]
 
 
@@ -133,27 +138,18 @@ class TileSchedulerFactory:
     Factory for TileScheduler
     """
 
-    tile_scheduler_map: Dict[str, TileScheduler] = {}
+    tile_scheduler_instance = None
 
     @classmethod
-    def get_instance(cls, job_store: Optional[str] = None) -> TileScheduler:
+    def get_instance(cls) -> TileScheduler:
         """
-        Retrieve corresponding TileScheduler instance
-
-        Parameters
-        ----------
-        job_store: Optional[str]
-            input job store name
+        Retrieve the TileScheduler instance
 
         Returns
         -------
-            TileScheduler instance based on input job_store
+            TileScheduler instance
         """
-        if not cls.tile_scheduler_map:
-            for j_store in JOB_STORES:
-                cls.tile_scheduler_map[j_store] = TileScheduler(job_store=j_store)
+        if not cls.tile_scheduler_instance:
+            cls.tile_scheduler_instance = TileScheduler()
 
-        if not job_store:
-            job_store = "default"
-
-        return cls.tile_scheduler_map[job_store]
+        return cls.tile_scheduler_instance

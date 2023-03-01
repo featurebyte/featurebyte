@@ -16,7 +16,7 @@ celery_app.config_from_object(
     {
         "redbeat_redis_url": f"{redis_server.redis_url}/1",
         "beat_max_loop_interval": 5,
-        "redbeat_key_prefix": "redbeat",
+        "redbeat_key_prefix": "redbeat-",
         "redbeat_lock_key": None,
     }
 )

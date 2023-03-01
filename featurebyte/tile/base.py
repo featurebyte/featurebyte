@@ -40,7 +40,7 @@ class BaseTileManager(BaseModel, ABC):
         """
         super().__init__(**kw)
         self._session = session
-        self._scheduler = TileSchedulerFactory.get_instance(job_store="default")
+        self._scheduler = TileSchedulerFactory.get_instance()
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
@@ -234,7 +234,7 @@ class BaseTileManager(BaseModel, ABC):
             job_id=job_id,
             interval_seconds=tile_spec.frequency_minute * 60,
             start_from=next_job_time,
-            func=tile_schedule_ins.execute,
+            instance=tile_schedule_ins,
         )
 
         return tile_schedule_ins.json()
