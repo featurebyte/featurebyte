@@ -300,6 +300,7 @@ class ViewMetadata(BaseModel):
         self: ViewMetadataT,
         view_mode: ViewMode,
         column_cleaning_operations: List[ColumnCleaningOperation],
+        **kwargs: Any,
     ) -> ViewMetadataT:
         """
         Clone the current instance by replacing column cleaning operations with the
@@ -311,6 +312,8 @@ class ViewMetadata(BaseModel):
             View mode
         column_cleaning_operations: List[ColumnCleaningOperation]
             Column cleaning operations
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------
@@ -321,6 +324,7 @@ class ViewMetadata(BaseModel):
                 **self.dict(by_alias=True),
                 "view_mode": view_mode,
                 "column_cleaning_operations": column_cleaning_operations,
+                **kwargs,
             }
         )
 
