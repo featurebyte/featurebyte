@@ -35,6 +35,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID, VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -43,6 +44,7 @@ from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage import LocalTempStorage
@@ -1109,6 +1111,16 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
         late_data_allowance=5e-05,
     )
     context = ContextCreate(name="transaction_context", entity_ids=[cust_id_entity.id])
+    relationship_info = RelationshipInfoCreate(
+        _id="63f6a145e549df8ccf123456",
+        name="child_parent_relationship",
+        relationship_type=RelationshipType.CHILD_PARENT,
+        primary_entity_id="63f6a145e549df8ccf2bf3f1",
+        related_entity_id="63f94ed6ea1f050131379204",
+        primary_data_source_id="6337f9651050ee7d5980660d",
+        is_enabled=True,
+        updated_by="63f6a145e549df8ccf123444",
+    )
 
     if update_fixtures:
         api_object_name_pairs = [
@@ -1141,6 +1153,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
             (feature_list_namespace, "feature_list_namespace"),
             (feature_job_setting_analysis, "feature_job_setting_analysis"),
             (context, "context"),
+            (relationship_info, "relationship_info"),
         ]
         for schema, name in schema_payload_name_pairs:
             filename = f"{base_path}/{name}.json"
