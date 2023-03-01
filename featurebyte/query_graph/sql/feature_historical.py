@@ -147,7 +147,7 @@ async def get_historical_features(
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
-    training_events: pd.DataFrame,
+    observation_set: pd.DataFrame,
     source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
     is_feature_list_deployed: bool = False,
@@ -163,8 +163,8 @@ async def get_historical_features(
         Query graph
     nodes : list[Node]
         List of query graph node
-    training_events : pd.DataFrame
-        Training events DataFrame
+    observation_set : pd.DataFrame
+        Observation set DataFrame
     source_type : SourceType
         Source type information
     serving_names_mapping : dict[str, str] | None
@@ -184,8 +184,8 @@ async def get_historical_features(
     tic_ = time.time()
 
     # Validate request
-    validate_request_schema(training_events)
-    training_events = validate_historical_requests_point_in_time(training_events)
+    validate_request_schema(observation_set)
+    training_events = validate_historical_requests_point_in_time(observation_set)
 
     # use a unique request table name
     request_id = session.generate_session_unique_id()

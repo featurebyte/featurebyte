@@ -100,7 +100,7 @@ class FeatureListPreview(FeatureListSQL):
     FeatureList preview schema
     """
 
-    point_in_time_and_serving_name: Dict[str, Any]
+    point_in_time_and_serving_name_list: List[Dict[str, Any]] = Field(min_items=1, max_items=50)
 
 
 class FeatureListGetHistoricalFeatures(FeatureByteBaseModel):

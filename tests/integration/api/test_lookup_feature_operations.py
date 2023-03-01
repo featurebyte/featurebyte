@@ -30,7 +30,7 @@ def test_lookup_features_same_column_name(dimension_view, item_data):
 
     # assert
     preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "item_id": "item_42"}
-    new_feature_preview = new_feature.preview(preview_params)
+    new_feature_preview = new_feature.preview(pd.DataFrame([preview_params]))
     assert new_feature_preview.iloc[0].to_dict() == {
         new_feature.name: False,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
@@ -63,10 +63,14 @@ def check_lookup_feature_is_time_aware(
 
     # Point in time after event time - non-NA
     df = feature.preview(
-        {
-            "POINT_IN_TIME": ts_after_event,
-            primary_key_serving_name: primary_key_value,
-        }
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": ts_after_event,
+                    primary_key_serving_name: primary_key_value,
+                }
+            ]
+        )
     )
     expected = pd.Series(
         {
@@ -79,10 +83,14 @@ def check_lookup_feature_is_time_aware(
 
     # Point in time before event time - NA
     df = feature.preview(
-        {
-            "POINT_IN_TIME": ts_before_event,
-            primary_key_serving_name: primary_key_value,
-        }
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": ts_before_event,
+                    primary_key_serving_name: primary_key_value,
+                }
+            ]
+        )
     )
     expected = pd.Series(
         {

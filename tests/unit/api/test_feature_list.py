@@ -20,6 +20,7 @@ from featurebyte.api.feature_list import (
 )
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.utils import dataframe_from_arrow_stream
+from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
@@ -117,7 +118,7 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
         with patch(
             "featurebyte.api.feature_list.dataframe_from_arrow_stream"
         ) as mock_from_arrow_stream:
-            mock_from_arrow_stream.return_value = pd.DataFrame()
+            mock_from_arrow_stream.return_value = pd.DataFrame({InternalName.ROW_INDEX: []})
             flist.get_historical_features(dataframe)
 
     # check the case when response status code is not OK
@@ -157,7 +158,7 @@ def test_feature_list__get_historical_features__iteration_logic(
         with patch(
             "featurebyte.api.feature_list.dataframe_from_arrow_stream"
         ) as mock_from_arrow_stream:
-            mock_from_arrow_stream.return_value = pd.DataFrame()
+            mock_from_arrow_stream.return_value = pd.DataFrame({InternalName.ROW_INDEX: []})
             mock_response = mock_post.return_value
             mock_response.status_code = 200
             mock_response.context = ""
@@ -166,14 +167,13 @@ def test_feature_list__get_historical_features__iteration_logic(
     # check that no training events are missed
     training_events_data = []
     for call_args in mock_post.call_args_list:
-        training_events_bytes = call_args[1]["files"]["training_events"]
+        training_events_bytes = call_args[1]["files"]["observation_set"]
         training_events_data.append(dataframe_from_arrow_stream(training_events_bytes))
 
     post_training_events_df = pd.concat(training_events_data)
-    columns = list(dataframe.columns)
     pd.testing.assert_frame_equal(
-        dataframe.sort_values(columns).reset_index(drop=True),
-        post_training_events_df.sort_values(columns).reset_index(drop=True),
+        dataframe,
+        post_training_events_df.drop(InternalName.ROW_INDEX, axis=1).reset_index(drop=True),
     )
 
 
@@ -381,7 +381,7 @@ def test_feature_group__preview_zero_feature():
     """
     feature_group = FeatureGroup([])
     with pytest.raises(ValueError) as exc:
-        feature_group.preview(point_in_time_and_serving_name={})
+        feature_group.preview(pd.DataFrame())
     expected_msg = "There is no feature in the FeatureGroup object."
     assert expected_msg in str(exc.value)
 

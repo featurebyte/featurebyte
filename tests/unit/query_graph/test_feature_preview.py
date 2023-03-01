@@ -21,7 +21,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
 
@@ -44,7 +44,7 @@ def test_get_feature_preview_sql__category_groupby(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -67,7 +67,7 @@ def test_get_feature_preview_sql__multiple_nodes(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=groupby_nodes,
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -88,7 +88,7 @@ def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, u
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -111,7 +111,7 @@ def test_get_feature_preview_sql__databricks(query_graph_with_groupby, update_fi
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.DATABRICKS,
     )
 
@@ -136,7 +136,7 @@ def test_get_feature_preview_sql__item_groupby(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[groupby_node, item_groupby_feature_node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -163,7 +163,7 @@ def test_get_feature_preview_sql__double_aggregation(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -191,7 +191,7 @@ def test_get_feature_preview_sql__lookup_features(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -217,7 +217,7 @@ def test_get_feature_preview_sql__event_lookup_features(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[event_lookup_node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -245,7 +245,7 @@ def test_get_feature_preview_sql__scd_lookup_features(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -273,7 +273,7 @@ def test_get_feature_preview_sql__scd_lookup_features_with_offset(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -299,7 +299,7 @@ def test_get_feature_preview_sql__latest_aggregation(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[latest_value_aggregation_feature_node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -325,7 +325,7 @@ def test_get_feature_preview_sql__latest_aggregation_no_window(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[latest_value_without_window_feature_node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -351,7 +351,7 @@ def test_get_feature_preview_sql__aggregate_asat(
         request_table_name=REQUEST_TABLE_NAME,
         graph=global_graph,
         nodes=[aggregate_asat_feature_node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -394,7 +394,7 @@ def test_get_feature_preview_sql__all_types(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=nodes,
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -417,7 +417,7 @@ def test_get_feature_preview_sql__with_missing_value_imputation(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
@@ -443,7 +443,7 @@ def test_get_feature_preview_sql__with_parent_serving_preparation(
         request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
-        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_type=SourceType.SNOWFLAKE,
         parent_serving_preparation=parent_serving_preparation,
     )

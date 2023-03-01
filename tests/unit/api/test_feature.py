@@ -136,9 +136,7 @@ def test_feature__preview_missing_point_in_time(float_feature):
     """
     Test feature preview validation missing point in time
     """
-    invalid_params = {
-        "cust_id": "C1",
-    }
+    invalid_params = pd.DataFrame([{"cust_id": "C1"}])
     with pytest.raises(RecordRetrievalException) as exc_info:
         float_feature.preview(invalid_params)
     assert "Point in time column not provided: POINT_IN_TIME" in str(exc_info.value)
@@ -148,25 +146,10 @@ def test_feature__preview_missing_entity_id(float_feature):
     """
     Test feature preview validation missing required entity
     """
-    invalid_params = {
-        "POINT_IN_TIME": "2022-04-01",
-    }
+    invalid_params = pd.DataFrame([{"POINT_IN_TIME": "2022-04-01"}])
     with pytest.raises(RecordRetrievalException) as exc_info:
         float_feature.preview(invalid_params)
     assert "Required entities are not provided in the request" in str(exc_info.value)
-
-
-def test_feature__preview_not_a_dict(float_feature):
-    """
-    Test feature preview validation but dict is not provided
-    """
-    invalid_params = tuple(["2022-04-01", "C1"])
-    with pytest.raises(TypeError) as exc_info:
-        float_feature.preview(invalid_params)
-    expected_error = (
-        'type of argument "point_in_time_and_serving_name" must be a dict; got tuple instead'
-    )
-    assert expected_error in str(exc_info.value)
 
 
 def test_feature_deserialization(

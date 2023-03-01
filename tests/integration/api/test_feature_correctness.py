@@ -231,16 +231,12 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     ).dt.tz_localize(None)
 
     tic = time.time()
-    sampled_points = df_expected.sample(n=n_points, random_state=0)
-    for _, preview_time_point in sampled_points.iterrows():
-        preview_param = {
-            "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
-            "üser id": preview_time_point["ÜSER ID"],
-        }
-        output = feature_list[feature_list.feature_names].preview(preview_param)
-        output.rename({"üser id": "ÜSER ID"}, axis=1, inplace=True)
-        df_expected = pd.DataFrame([preview_time_point], index=output.index)
-        fb_assert_frame_equal(output, df_expected, dict_like_columns)
+    sampled_points = df_expected.sample(n=n_points, random_state=0).reset_index(drop=True)
+    sampled_points.rename({"ÜSER ID": "üser id"}, axis=1, inplace=True)
+    output = feature_list[feature_list.feature_names].preview(
+        sampled_points[["POINT_IN_TIME", "üser id"]]
+    )
+    fb_assert_frame_equal(output, sampled_points, dict_like_columns)
     elapsed = time.time() - tic
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
@@ -393,14 +389,6 @@ def test_aggregate_over(
     )
     elapsed_historical = time.time() - tic
     logger.debug(f"elapsed historical: {elapsed_historical}")
-
-    # Note: The row output order can be different, so sort before comparing
-    df_expected = df_expected.sort_values(["POINT_IN_TIME", entity_column_name]).reset_index(
-        drop=True
-    )
-    df_historical_features = df_historical_features.sort_values(
-        ["POINT_IN_TIME", entity_column_name]
-    ).reset_index(drop=True)
 
     # expect point-in-time to be converted to UTC without timezone
     df_expected["POINT_IN_TIME"] = pd.to_datetime(

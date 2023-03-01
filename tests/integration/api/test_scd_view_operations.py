@@ -183,7 +183,7 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
         feature_names=["count_7d"],
     )["count_7d"]
 
-    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
+    df = feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}]))
 
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
@@ -227,7 +227,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
         "üser id": user_id,
         "item_id": item_id,
     }
-    preview_output = feature_list.preview(preview_params).iloc[0].to_dict()
+    preview_output = feature_list.preview(pd.DataFrame([preview_params])).iloc[0].to_dict()
     assert set(preview_output.keys()) == {
         "POINT_IN_TIME",
         "üser id",
@@ -266,7 +266,7 @@ def test_scd_lookup_feature_with_offset(scd_data, scd_dataframe):
         "POINT_IN_TIME": point_in_time,
         "üser id": user_id,
     }
-    preview_output = scd_lookup_feature.preview(preview_params).iloc[0].to_dict()
+    preview_output = scd_lookup_feature.preview(pd.DataFrame([preview_params])).iloc[0].to_dict()
 
     # Compare with expected result
     mask = (
@@ -289,10 +289,14 @@ def test_aggregate_asat(scd_data, scd_dataframe):
 
     # check preview but provides children id
     df = FeatureList([feature], name="mylist").preview(
-        {
-            "POINT_IN_TIME": "2001-10-25 10:00:00",
-            "üser id": 1,
-        }
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-25 10:00:00",
+                    "üser id": 1,
+                }
+            ]
+        )
     )
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
@@ -303,10 +307,14 @@ def test_aggregate_asat(scd_data, scd_dataframe):
 
     # check preview
     df = feature.preview(
-        {
-            "POINT_IN_TIME": "2001-10-25 10:00:00",
-            "user_status": "STÀTUS_CODE_42",
-        }
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-25 10:00:00",
+                    "user_status": "STÀTUS_CODE_42",
+                }
+            ]
+        )
     )
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
@@ -342,9 +350,13 @@ def test_aggregate_asat__no_entity(scd_data, scd_dataframe, config):
 
     # check preview
     df = feature.preview(
-        {
-            "POINT_IN_TIME": "2001-10-25 10:00:00",
-        }
+        pd.DataFrame(
+            [
+                {
+                    "POINT_IN_TIME": "2001-10-25 10:00:00",
+                }
+            ]
+        )
     )
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-10-25 10:00:00"),
@@ -426,8 +438,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
         "user_status": "STÀTUS_CODE_47",
         "count_30d": 7,
     }
-    feature_list.preview(preview_param)
-    df = feature_list.preview(preview_param)
+    df = feature_list.preview(pd.DataFrame([preview_param]))
     assert df.iloc[0].to_dict() == expected
 
     # check historical features

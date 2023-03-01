@@ -74,7 +74,7 @@ def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     return data
 
 
-def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame | None:
+def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame:
     """
     Read data from arrow byte stream to pandas dataframe
 
@@ -85,7 +85,7 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame | None:
 
     Returns
     -------
-    pd.DataFrame | None
+    pd.DataFrame
         Pandas Dataframe object
     """
     if isinstance(buffer, bytes):

@@ -289,7 +289,7 @@ def test_feature_operations__feature_group_preview(feature_group):
     }
 
     # preview feature group
-    df_feature_preview = feature_group.preview(preview_param)
+    df_feature_preview = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(
         df_feature_preview,
         {
@@ -301,7 +301,7 @@ def test_feature_operations__feature_group_preview(feature_group):
     )
 
     # preview one feature only
-    df_feature_preview = feature_group["COUNT_2h"].preview(preview_param)
+    df_feature_preview = feature_group["COUNT_2h"].preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(
         df_feature_preview,
         {
@@ -313,7 +313,7 @@ def test_feature_operations__feature_group_preview(feature_group):
 
     # preview a not-yet-assigned feature
     new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    df_feature_preview = new_feature.preview(preview_param)
+    df_feature_preview = new_feature.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(
         df_feature_preview,
         {
@@ -374,7 +374,7 @@ def test_feature_operations__complex_feature_preview(
 
     feature_list_combined = FeatureList(features, name="My FeatureList")
     feature_group_combined = feature_list_combined[feature_list_combined.feature_names]
-    df_feature_preview = feature_group_combined.preview(preview_param)
+    df_feature_preview = feature_group_combined.preview(pd.DataFrame([preview_param]))
     expected_amount_sum_24h = 582.14
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
@@ -408,7 +408,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     if count_dict_supported:
         # preview count per category features
-        df_feature_preview = feature_group_per_category.preview(preview_param)
+        df_feature_preview = feature_group_per_category.preview(pd.DataFrame([preview_param]))
         expected = {
             "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
             "üser id": 1,
@@ -429,7 +429,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
     # assign new feature and preview again
     new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     feature_group["COUNT_2h / COUNT_24h"] = new_feature
-    df_feature_preview = feature_group.preview(preview_param)
+    df_feature_preview = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(
         df_feature_preview,
         {
@@ -443,7 +443,9 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     # check casting on feature
     df_feature_preview = (
-        (feature_group["COUNT_2h"].astype(int) + 1).astype(float).preview(preview_param)
+        (feature_group["COUNT_2h"].astype(int) + 1)
+        .astype(float)
+        .preview(pd.DataFrame([preview_param]))
     )
     assert_feature_preview_output_equal(
         df_feature_preview,
@@ -496,35 +498,35 @@ def run_test_conditional_assign_feature(feature_group):
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
     }
-    result = feature_count_24h.preview(preview_param)
+    result = feature_count_24h.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
 
     # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
     feature_group[feature_count_24h == 14.0, "COUNT_24h"] = 900
-    result = feature_count_24h.preview(preview_param)
+    result = feature_count_24h.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 900})
-    result = feature_group.preview(preview_param)
+    result = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 900})
 
     # Assign conditionally again (revert the above). Should be reflected in both Feature and
     # FeatureGroup
     mask = feature_count_24h == 900.0
     feature_count_24h[mask] = 14.0
-    result = feature_count_24h.preview(preview_param)
+    result = feature_count_24h.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
-    result = feature_group.preview(preview_param)
+    result = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
     # Assign conditionally a series
     double_feature_count_24h = feature_count_24h * 2
     feature_count_24h[mask] = double_feature_count_24h[mask]
-    result = feature_count_24h.preview(preview_param)
+    result = feature_count_24h.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 28})
 
     # Undo above
     mask = feature_count_24h == 28.0
     feature_count_24h[mask] = 14.0
-    result = feature_count_24h.preview(preview_param)
+    result = feature_count_24h.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
 
     # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
@@ -532,15 +534,15 @@ def run_test_conditional_assign_feature(feature_group):
     temp_feature = feature_count_24h * 10
     mask = temp_feature == 140.0
     temp_feature[mask] = 900
-    result = temp_feature.preview(preview_param)
+    result = temp_feature.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "Unnamed": 900})
-    result = feature_group.preview(preview_param)
+    result = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
     # Assign to copied Series should not be reflected in FeatureGroup
     cloned_feature = feature_group["COUNT_24h"].copy()
     cloned_feature[cloned_feature == 14] = 0
-    result = feature_group.preview(preview_param)
+    result = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
@@ -936,7 +938,7 @@ def check_day_of_week_counts(event_view, preview_param, source_type):
         "DAY_OF_WEEK_COUNTS_24h"
     ].cd.entropy()
     df_feature_preview = day_of_week_counts.preview(
-        preview_param,
+        pd.DataFrame([preview_param]),
     )
     if source_type == "snowflake":
         expected_counts = '{\n  "0": 4,\n  "1": 9,\n  "2": 1\n}'
@@ -988,7 +990,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_data):
     # test that one of the feature join keys is correct
     order_id_to_match = "T0"
     feature_preview = non_time_based_feature.preview(
-        {"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}
+        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}])
     )
     event_view_feature_value = event_view_preview[
         event_view_preview["TRANSACTION_ID"] == order_id_to_match
@@ -1006,7 +1008,7 @@ def test_add_feature(event_view, non_time_based_feature, scd_data):
     )
     timestamp_str = "2001-01-13 12:00:00"
     df_feature_preview = transaction_counts.preview(
-        {"POINT_IN_TIME": timestamp_str, "PRODUCT_ACTION": "purchase"},
+        pd.DataFrame([{"POINT_IN_TIME": timestamp_str, "PRODUCT_ACTION": "purchase"}]),
     )
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
@@ -1072,7 +1074,7 @@ def test_latest_per_category_aggregation(event_view):
         windows=["30d"],
         feature_names=["LATEST_ACTION_DICT_30d"],
     )
-    df = feature_group.preview({"POINT_IN_TIME": "2001-01-26", "cust_id": 545})
+    df = feature_group.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-01-26", "cust_id": 545}]))
     expected = json.loads(
         '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
     )
