@@ -508,7 +508,6 @@ async def test_create_new_feature_version__document_error_with_item_data_cleanin
                 ],
             )
         )
-
     expected_msg = "Data cleaning operation(s) does not result a new feature version."
     assert expected_msg in str(exc.value)
 

@@ -147,7 +147,12 @@ class BaseNode(BaseModel):
     @abstractmethod
     def get_required_input_columns(self, input_order: int) -> List[str]:
         """
-        Get the required input column names for the given input based on this node parameters
+        Get the required input column names for the given input based on this node parameters.
+        For example, a JoinNode will consume two input node and inside the JoinNode parameters,
+        some columns are referenced from the first input node and some are referenced from the
+        second input node. When the input_order is 0, this method will return the column names
+        from the first input node. When the input_order is 1, this method will return the column
+        names from the second input node.
 
         Parameters
         ----------
