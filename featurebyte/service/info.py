@@ -11,7 +11,6 @@ from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
-from featurebyte.models.relationship import RelationshipType
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
