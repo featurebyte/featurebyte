@@ -3,7 +3,7 @@ This module contains EventData related models
 """
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, Type
+from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 from datetime import datetime
 
@@ -13,9 +13,12 @@ from featurebyte.common.validator import construct_data_model_root_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
-from featurebyte.query_graph.model.common_table import BaseTableData
+from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import EventTableData
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ViewMetadata
 
 
 class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
@@ -59,7 +62,7 @@ class EventDataModel(EventTableData, DataModel):
     """
 
     default_feature_job_setting: Optional[FeatureJobSetting]
-    _table_data_class: ClassVar[Type[BaseTableData]] = EventTableData
+    _table_data_class: ClassVar[Type[EventTableData]] = EventTableData
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
@@ -78,3 +81,15 @@ class EventDataModel(EventTableData, DataModel):
         if self.event_id_column:
             return [self.event_id_column]
         return []  # DEV-556: event_id_column should not be empty
+
+    def create_view_graph_node(
+        self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        table_data = EventTableData(**self.dict(by_alias=True)).clone(
+            column_cleaning_operations=metadata.column_cleaning_operations
+        )
+        return table_data.construct_event_view_graph_node(  # pylint: disable=no-member
+            event_data_node=input_node,
+            drop_column_names=metadata.drop_column_names,
+            metadata=metadata,
+        )

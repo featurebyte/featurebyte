@@ -815,7 +815,10 @@ def test_non_time_feature__create_new_version(saved_item_data, transaction_entit
             )
         )
 
-    expected_msg = "Feature job setting has no effect in feature value derivation."
+    expected_msg = (
+        "Feature job setting does not result a new feature version. "
+        "This is because the new feature version is the same as the source feature."
+    )
     assert expected_msg in str(exc.value)
 
 

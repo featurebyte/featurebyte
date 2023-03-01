@@ -425,9 +425,10 @@ async def test_item_data_update_columns_info__entity_relationship(
     entity,
     entity_foo,
     entity_bar,
+    entity_transaction,
 ):
     """Test update columns info with entities"""
-    _ = entity
+    _ = entity, entity_transaction
     await _update_data_columns_info(
         data_update_service=data_update_service,
         data_service=item_data_service,

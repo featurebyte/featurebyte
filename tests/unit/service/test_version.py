@@ -7,19 +7,52 @@ import os
 import pytest
 import pytest_asyncio
 from bson import ObjectId
+from pydantic import ValidationError
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
 from featurebyte.models.feature_list import FeatureListNewVersionMode
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation
+from featurebyte.schema.feature import DataCleaningOperation, FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListNewVersionCreate,
     FeatureVersionInfo,
 )
+
+
+def test_feature_new_version_create_schema_validation():
+    """Test feature new version create schema validation"""
+    with pytest.raises(ValidationError) as exc:
+        FeatureNewVersionCreate(
+            source_feature_id=ObjectId(),
+            data_cleaning_operations=[
+                DataCleaningOperation(data_name="dup_data_name", column_cleaning_operations=[]),
+                DataCleaningOperation(data_name="dup_data_name", column_cleaning_operations=[]),
+            ],
+        )
+
+    expected_error = 'Name "dup_data_name" is duplicated (field: data_name).'
+    assert expected_error in str(exc.value)
+
+    with pytest.raises(ValidationError) as exc:
+        FeatureNewVersionCreate(
+            source_feature_id=ObjectId(),
+            data_cleaning_operations=[
+                DataCleaningOperation(
+                    data_name="data_name",
+                    column_cleaning_operations=[
+                        ColumnCleaningOperation(column_name="dup_col_name", cleaning_operations=[]),
+                        ColumnCleaningOperation(column_name="dup_col_name", cleaning_operations=[]),
+                    ],
+                ),
+            ],
+        )
+
+    expected_error = 'Name "dup_col_name" is duplicated (field: column_name).'
+    assert expected_error in str(exc.value)
 
 
 @pytest.mark.asyncio
@@ -97,64 +130,8 @@ async def test_create_new_feature_version(
     assert namespace.feature_ids == [feature.id, version.id]
 
 
-@pytest.fixture(name="invalid_query_graph_groupby_node")
-def invalid_query_graph_groupby_node_fixture(
-    snowflake_feature_store_details_dict, snowflake_table_details_dict
-):
-    """Invalid query graph fixture"""
-    groupby_node_params = {
-        "keys": ["cust_id"],
-        "serving_names": ["CUSTOMER_ID"],
-        "value_by": None,
-        "parent": "a",
-        "agg_func": "avg",
-        "time_modulo_frequency": 1800,  # 30m
-        "frequency": 3600,  # 1h
-        "blind_spot": 900,  # 15m
-        "timestamp": "ts",
-        "names": ["a_2h_average", "a_48h_average"],
-        "windows": ["2h", "48h"],
-    }
-    graph = QueryGraph()
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "generic",
-            "columns": ["random_column"],
-            "table_details": snowflake_table_details_dict,
-            "feature_store_details": snowflake_feature_store_details_dict,
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    node_groupy = graph.add_operation(
-        node_type=NodeType.GROUPBY,
-        node_params=groupby_node_params,
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_input],
-    )
-    return graph, node_groupy
-
-
-def test_version_service__iterate_groupby_and_event_input_node_pairs__invalid_graph(
-    version_service, invalid_query_graph_groupby_node
-):
-    """Test value error is raised when the input graph is invalid"""
-    graph, node = invalid_query_graph_groupby_node
-    with pytest.raises(ValueError) as exc:
-        for (
-            groupby_node,
-            input_node,
-        ) in version_service._iterate_groupby_and_event_data_input_node_pairs(
-            graph=graph, target_node=node
-        ):
-            _ = groupby_node, input_node
-    expected_msg = "Groupby node does not have valid event data!"
-    assert expected_msg in str(exc.value)
-
-
 @pytest.mark.asyncio
-async def test_create_new_feature_version__document_error(version_service, feature):
+async def test_create_new_feature_version__document_error(version_service, feature, event_data):
     """Test create new feature version (document error due to no change is detected)"""
     # check no feature job settings
     with pytest.raises(DocumentError) as exc:
@@ -165,17 +142,68 @@ async def test_create_new_feature_version__document_error(version_service, featu
     expected_msg = "No change detected on the new feature version."
     assert expected_msg in str(exc.value)
 
+    # check with empty data cleaning operations
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_version(
+            data=FeatureNewVersionCreate(source_feature_id=feature.id, data_cleaning_operations=[])
+        )
+
+    assert expected_msg in str(exc.value)
+
     # check same feature job settings
+    same_feature_job_setting = FeatureJobSetting(
+        blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+    )
     with pytest.raises(DocumentError) as exc:
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
-                feature_job_setting=FeatureJobSetting(
-                    blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
-                ),
+                feature_job_setting=same_feature_job_setting,
             ),
         )
 
+    expected_msg = (
+        "Feature job setting does not result a new feature version. "
+        "This is because the new feature version is the same as the source feature."
+    )
+    assert expected_msg in str(exc.value)
+
+    # check data cleaning operations with no effect in feature value derivation
+    no_effect_data_cleaning_operations = [
+        DataCleaningOperation(
+            data_name=event_data.name,
+            column_cleaning_operations=[
+                ColumnCleaningOperation(
+                    column_name="col_int",  # column is not used in this feature
+                    cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+                )
+            ],
+        )
+    ]
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_version(
+            data=FeatureNewVersionCreate(
+                source_feature_id=feature.id,
+                data_cleaning_operations=no_effect_data_cleaning_operations,
+            )
+        )
+
+    expected_msg = "Data cleaning operation(s) does not result a new feature version."
+    assert expected_msg in str(exc.value)
+
+    # check feature job setting and data cleaning operations with no effect in feature value derivation
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_version(
+            data=FeatureNewVersionCreate(
+                source_feature_id=feature.id,
+                feature_job_setting=same_feature_job_setting,
+                data_cleaning_operations=no_effect_data_cleaning_operations,
+            )
+        )
+
+    expected_msg = (
+        "Feature job setting and data cleaning operation(s) do not result a new feature version."
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -387,3 +415,153 @@ async def test_create_new_feature_list_version__semi_auto_mode(
         )
     expected_msg = "No change detected on the new feature list version."
     assert expected_msg in str(exc.value)
+
+
+def create_data_cleaning_operations(data_name, column_names):
+    """Create data cleaning operations ofr a given data and column"""
+    return DataCleaningOperation(
+        data_name=data_name,
+        column_cleaning_operations=[
+            ColumnCleaningOperation(
+                column_name=column_name,
+                cleaning_operations=[
+                    MissingValueImputation(imputed_value=0.0),
+                ],
+            )
+            for column_name in column_names
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version__with_event_data_cleaning_operations(
+    version_service, feature, event_data
+):
+    """Test create new feature version with event data cleaning operations"""
+    _ = event_data
+    version = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature.id,
+            data_cleaning_operations=[
+                create_data_cleaning_operations(event_data.name, ["col_float"])
+            ],
+        )
+    )
+
+    # check newly created version
+    assert (
+        version.graph.edges
+        == feature.graph.edges
+        == [
+            {"source": "input_1", "target": "graph_1"},
+            {"source": "graph_1", "target": "groupby_1"},
+            {"source": "groupby_1", "target": "project_1"},
+        ]
+    )
+
+    # check view graph node
+    updated_view_graph_node = version.graph.get_node_by_name("graph_1")
+    original_view_graph_node = feature.graph.get_node_by_name("graph_1")
+    assert original_view_graph_node.parameters.graph.edges_map == {"proxy_input_1": ["project_1"]}
+    assert updated_view_graph_node.parameters.graph.edges_map == {
+        "proxy_input_1": ["project_1"],
+        "project_1": ["graph_1"],
+    }
+
+    # check cleaning graph node
+    cleaning_graph_node = updated_view_graph_node.parameters.graph.get_node_by_name("graph_1")
+    assert cleaning_graph_node.parameters.graph.edges_map == {
+        "proxy_input_1": ["project_1", "assign_1"],
+        # is null node is used in missing value imputation
+        "project_1": ["is_null_1", "conditional_1"],
+        "is_null_1": ["conditional_1"],
+        "conditional_1": ["cast_1"],
+        "cast_1": ["assign_1"],
+    }
+
+    # check that the assign column name is expected
+    assign_node = cleaning_graph_node.parameters.graph.get_node_by_name("assign_1")
+    assert assign_node.parameters.name == "col_float"
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version__document_error_with_item_data_cleaning_operations(
+    version_service, feature_non_time_based, event_data, item_data
+):
+    """Test create new feature version with event data cleaning operations (document error)"""
+    # create a new feature version with irrelevant data cleaning operations
+    # feature_non_time_based has the following definition:
+    # feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
+    #     value_column="item_amount",
+    #     method="sum",
+    #     feature_name="non_time_time_sum_amount_feature",
+    #     skip_fill_na=True,
+    event_data_columns = ["col_float", "col_char", "col_text"]
+    item_data_columns = ["item_id_col", "item_type"]
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_version(
+            data=FeatureNewVersionCreate(
+                source_feature_id=feature_non_time_based.id,
+                data_cleaning_operations=[
+                    create_data_cleaning_operations(event_data.name, event_data_columns),
+                    create_data_cleaning_operations(item_data.name, item_data_columns),
+                ],
+            )
+        )
+    expected_msg = "Data cleaning operation(s) does not result a new feature version."
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version__with_item_data_cleaning_operations(
+    version_service, feature_non_time_based, event_data, item_data
+):
+    """Test create new feature version with event data cleaning operations"""
+    event_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_1")
+    item_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_2")
+    event_metadata = {
+        "view_mode": "auto",
+        "drop_column_names": ["created_at"],
+        "column_cleaning_operations": [],
+        "data_id": event_data.id,
+    }
+    assert event_view_graph_node.parameters.metadata == event_metadata
+    item_metadata = {
+        "view_mode": "auto",
+        "drop_column_names": [],
+        "column_cleaning_operations": [],
+        "data_id": item_data.id,
+        "event_suffix": "_event_table",
+        "event_drop_column_names": event_metadata["drop_column_names"],
+        "event_column_cleaning_operations": event_metadata["column_cleaning_operations"],
+        "event_data_id": event_data.id,
+        "event_join_column_names": ["event_timestamp", "col_int", "cust_id"],
+    }
+    assert item_view_graph_node.parameters.metadata == item_metadata
+
+    # create a new feature version with relevant data cleaning operations
+    new_version = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature_non_time_based.id,
+            data_cleaning_operations=[
+                create_data_cleaning_operations(item_data.name, ["item_amount"]),
+            ],
+        )
+    )
+
+    # check graph node metadata
+    new_event_view_graph_node = new_version.graph.get_node_by_name("graph_1")
+    new_item_view_graph_node = new_version.graph.get_node_by_name("graph_2")
+    assert new_event_view_graph_node.parameters.metadata == event_metadata
+    assert new_item_view_graph_node.parameters.metadata == {
+        **item_metadata,
+        "column_cleaning_operations": [
+            {
+                "column_name": "item_amount",
+                "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+            }
+        ],
+    }
+
+    # graph structure (edges) should be the same
+    assert new_version.graph.edges == feature_non_time_based.graph.edges

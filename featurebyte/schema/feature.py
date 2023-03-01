@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
@@ -17,6 +17,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.nested import DataCleaningOperation
+from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 
@@ -45,6 +46,11 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     source_feature_id: PydanticObjectId
     feature_job_setting: Optional[FeatureJobSetting]
     data_cleaning_operations: Optional[List[DataCleaningOperation]]
+
+    # pydantic validators
+    _validate_unique_data_name = validator("data_cleaning_operations", allow_reuse=True)(
+        construct_unique_name_validator(field="data_name")
+    )
 
 
 class FeaturePaginatedList(PaginationMixin):

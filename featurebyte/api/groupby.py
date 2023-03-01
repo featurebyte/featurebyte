@@ -29,7 +29,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import AggFuncType, construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
-    GroupbyNode,
+    GroupByNode,
     ItemGroupbyNode,
     add_pruning_sensitive_operation,
 )
@@ -269,7 +269,7 @@ class WindowAggregator(BaseAggregator):
         )
         groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
-            node_cls=GroupbyNode,
+            node_cls=GroupByNode,
             node_params=node_params,
             input_node=self.view.node,
         )
