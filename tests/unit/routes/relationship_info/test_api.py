@@ -65,7 +65,7 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
         _ = api_client
         # Create 3 distinct pairs of entity IDs so that the payload generated here is unique.
         entity_ids = [
-            "63f6a145e549df8ccf2bf3f1",
+            "63f94ed6ea1f050131379214",
             "63f94ed6ea1f050131379204",
             "63f94ed6ea1f050131379204",
             "63f6a145e549df8ccf2bf3f2",

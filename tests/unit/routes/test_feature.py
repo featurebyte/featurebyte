@@ -118,7 +118,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
             },
             (
                 'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                "the same \"entity_ids\" value (namespace: ['63f6a145e549df8ccf2bf3f1'], "
+                "the same \"entity_ids\" value (namespace: ['63f94ed6ea1f050131379214'], "
                 "feature: ['631161373527e8d21e4197ac'])."
             ),
         ),
@@ -193,6 +193,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         expected_response = new_payload.copy()
         expected_response["graph"] = new_response_dict["graph"]
         assert new_response.status_code == HTTPStatus.CREATED
+        expected_response.pop("_COMMENT")
         assert new_response_dict.items() >= expected_response.items()
         assert new_response_dict["version"] == {"name": get_version(), "suffix": 1}
 
