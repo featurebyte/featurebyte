@@ -11,7 +11,6 @@ from featurebyte.schema.relationship_info import (
     RelationshipInfoCreate,
     RelationshipInfoInfo,
     RelationshipInfoList,
-    RelationshipInfoUpdate,
 )
 from featurebyte.service.entity import EntityService
 from featurebyte.service.info import InfoService
@@ -89,25 +88,6 @@ class RelationshipInfoController(
 
         # Validate whether primary_data_source_id is ID by trying to retrieve it. If it's not, it will raise an error
         await self.data_service.get_document(data.primary_data_source_id)
-
-    async def update_relationship_info(
-        self,
-        relationship_info_id: ObjectId,
-        data: RelationshipInfoUpdate,
-    ) -> None:
-        """
-        Update RelationshipInfo at persistent
-
-        Parameters
-        ----------
-        relationship_info_id: ObjectId
-            RelationshipInfo id
-        data: RelationshipInfoUpdate
-            RelationshipInfo update payload
-        """
-        await self.relationship_info_service.update_relationship_info(
-            relationship_info_id, data.is_enabled
-        )
 
     async def list_relationship_info(
         self,
