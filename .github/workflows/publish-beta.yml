@@ -11,7 +11,6 @@
 # tags: [SHORT_HASH, 0.3, 0.3.4]
 
 name: publish-beta
-
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
 ## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
@@ -24,7 +23,6 @@ on:
         description: 'Version to publish'
         required: true
         default: '0.0.0'
-
 permissions:
   contents: write
 env:
@@ -94,7 +92,6 @@ jobs:
           git config --global user.email "featurebyte[bot]@users.noreply.github.com"
           git tag "release/beta/${{ github.inputs.version }}"
           git push origin "release/beta/${{ github.inputs.version }}"
-
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'
@@ -112,12 +109,10 @@ jobs:
           registry: ${{ env.BETA_PYPI_PROJECT_ID }}-docker.pkg.dev
           username: _json_key_base64
           password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW }}
-
       - name: Replace docker-compose image tag
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.services.featurebyte-server.image = "${IMAGE_REPO}:${{ github.inputs.version }}" featurebyte/docker/featurebyte.yml
-
       - name: featurebyte-server args and requirements
         run: |
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
