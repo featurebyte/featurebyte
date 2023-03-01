@@ -90,9 +90,9 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
             ("feature_store", "feature_store"),
             ("event_data", "event_data"),
             ("entity", "entity"),
-            ("entity", "transaction_entity"),
-            ("entity", "user_entity"),
-            ("entity", "country_entity"),
+            ("entity", "entity_transaction"),
+            ("entity", "entity_user"),
+            ("entity", "entity_country"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
