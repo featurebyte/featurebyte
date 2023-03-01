@@ -583,8 +583,8 @@ async def test_create_new_feature_version__with_item_data_cleaning_operations(
         "event_drop_column_names": expected_event_metadata["drop_column_names"],
         "event_column_cleaning_operations": expected_event_metadata["column_cleaning_operations"],
     }
-    assert new_event_view_graph_node.parameters.metadata == expected_event_metadata
-    assert new_item_view_graph_node.parameters.metadata == expected_item_metadata
+    assert new_event_view_graph_node.parameters.metadata.dict() == expected_event_metadata
+    assert new_item_view_graph_node.parameters.metadata.dict() == expected_item_metadata
 
     # graph structure (edges) should be the same
     assert new_version.graph.edges == feature_non_time_based.graph.edges
@@ -627,8 +627,8 @@ async def test_create_new_feature_version__with_event_data_cleaning_operations_o
         "event_drop_column_names": expected_event_metadata["drop_column_names"],
         "event_column_cleaning_operations": expected_event_metadata["column_cleaning_operations"],
     }
-    assert new_event_view_graph_node.parameters.metadata == expected_event_metadata
-    assert new_item_view_graph_node.parameters.metadata == expected_item_metadata
+    assert new_event_view_graph_node.parameters.metadata.dict() == expected_event_metadata
+    assert new_item_view_graph_node.parameters.metadata.dict() == expected_item_metadata
 
     # graph structure (edges) should be the same
     assert new_version.graph.edges == feature_non_time_based.graph.edges

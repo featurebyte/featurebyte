@@ -89,7 +89,9 @@ class BaseGraphNodeParameters(BaseModel):
     type: GraphNodeType
 
     @abstractmethod
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
         """
         Prune metadata for the current graph node
 
@@ -97,6 +99,8 @@ class BaseGraphNodeParameters(BaseModel):
         ----------
         target_columns: List[str]
             Target columns
+        input_nodes: Sequence[NodeT]
+            Input nodes
 
         Returns
         -------
@@ -271,7 +275,9 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
         return self.metadata
 
     def derive_sdk_code(
@@ -334,7 +340,9 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
 
     metadata: ViewMetadata
 
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
         if target_columns:
             metadata["column_cleaning_operations"] = [
@@ -444,6 +452,22 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
             event_join_column_names=self.metadata.event_join_column_names,
         )
         return [(view_var_name, expression)], view_var_name
+
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
+        metadata = super().prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
+        if target_columns:
+            # for item view graph node, we need to use the event view graph node's metadata
+            # to generate the event column cleaning operations
+            assert len(input_nodes) == 2
+            event_view_node = input_nodes[1]
+            assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
+            event_view_metadata = event_view_node.parameters.metadata
+            metadata[
+                "event_column_cleaning_operations"
+            ] = event_view_metadata.column_cleaning_operations
+        return metadata
 
 
 class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):

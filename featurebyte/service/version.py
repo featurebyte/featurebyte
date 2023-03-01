@@ -143,7 +143,7 @@ class VersionService(BaseService):
             view_parameters["event_view_event_id_column"] = data_input_node.parameters.id_column  # type: ignore
 
             # prepare additional parameters for metadata update
-            event_metadata = cast(ViewMetadata, event_view_node.parameters.metadata)
+            event_metadata = cast(ViewMetadata, event_view_node.parameters.metadata)  # type: ignore
             metadata_parameters["event_drop_column_names"] = event_metadata.drop_column_names
             metadata_parameters[
                 "event_column_cleaning_operations"

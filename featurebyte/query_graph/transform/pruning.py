@@ -357,6 +357,7 @@ class GraphStructurePruningExtractor(
         node: BaseGraphNode,
         target_columns: Optional[List[str]],
         proxy_input_operation_structures: List[OperationStructure],
+        input_nodes: List[Node],
         aggressive: bool,
     ) -> Node:
         nested_graph = node.parameters.graph
@@ -374,7 +375,10 @@ class GraphStructurePruningExtractor(
                 "graph": pruned_graph,
                 "output_node_name": output_node_name,
                 "type": node.parameters.type,
-                "metadata": node.parameters.prune_metadata(target_columns=target_columns),  # type: ignore
+                "metadata": node.parameters.prune_metadata(
+                    target_columns=target_columns,  # type: ignore
+                    input_nodes=input_nodes,
+                ),
             }
         )
 
@@ -421,6 +425,7 @@ class GraphStructurePruningExtractor(
                 node=node,
                 target_columns=target_columns,
                 proxy_input_operation_structures=proxy_input_operation_structures,
+                input_nodes=mapped_input_nodes,
                 aggressive=global_state.aggressive,
             )
 

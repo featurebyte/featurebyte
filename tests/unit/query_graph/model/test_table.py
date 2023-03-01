@@ -278,6 +278,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
             """
         SELECT
           "event_timestamp" AS "event_timestamp",
+          "event_id" AS "event_id",
           CAST(CASE
             WHEN (
               CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT) < 0
@@ -344,8 +345,15 @@ def test_event_view_graph_node(event_table_data, event_input_node):
     )
     # only amount is required as it is used in cleaning nested graph
     # since we drop event_timestamp, only "amount" is in columns_info
-    assert graph_node.get_required_input_columns(input_order=0) == ["amount"]
+    assert set(graph_node.get_required_input_columns(input_order=0)) == {"amount", "event_id"}
     assert columns_info == [
+        {
+            "name": "event_id",
+            "dtype": "INT",
+            "semantic_id": None,
+            "entity_id": None,
+            "critical_data_info": None,
+        },
         {
             "name": "amount",
             "dtype": "FLOAT",
@@ -357,7 +365,7 @@ def test_event_view_graph_node(event_table_data, event_input_node):
                     {"type": "less_than", "end_point": 0, "imputed_value": None},
                 ]
             },
-        }
+        },
     ]
 
 
