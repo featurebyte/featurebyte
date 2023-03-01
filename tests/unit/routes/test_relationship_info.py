@@ -6,6 +6,7 @@ from http import HTTPStatus
 import pytest
 from bson import ObjectId
 
+from featurebyte.schema.relationship_info import RelationshipInfoUpdate
 from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
 
@@ -63,3 +64,25 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
         assert response_dict["child_name"] == "customer"
         assert response_dict["parent_name"] == "transaction"
         assert response_dict["data_source_name"] == "sf_event_data"
+
+    def test_update_200(self, test_api_client_persistent, create_success_response):
+        """
+        Test patch to update is_enabled status
+        """
+        # Create RelationshipInfo and verify is_enabled is True
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        assert response_dict["is_enabled"]
+
+        # Update is_enabled to False
+        data_update = RelationshipInfoUpdate(is_enabled=False)
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}", json=data_update.dict()
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # Verify is_enabled is False
+        response = test_api_client.get(f"{self.base_route}/{response_dict['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert not response_dict["is_enabled"]

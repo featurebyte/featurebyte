@@ -1,9 +1,9 @@
 """
 This module contains Relation mixin model
 """
-from typing import List
+from typing import Any, Dict, List
 
-from pydantic import Field, validator
+from pydantic import Field, root_validator, validator
 
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import StrEnum
@@ -87,3 +87,12 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_child_and_parent_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        child_id = values.get("child_id")
+        parent_id = values.get("parent_id")
+        if child_id == parent_id:
+            raise ValueError("Child and parent id cannot be the same")
+        return values
