@@ -29,9 +29,4 @@ class RelationshipInfoService(
         enable: bool
             The enable value
         """
-        await self.persistent.update_one(
-            collection_name="relationship_info",
-            query_filter={"_id": {"$in": [relationship_id]}},
-            update={"$set": {"is_enabled": enable}},
-            user_id=self.user.id,
-        )
+        await self.update_document(relationship_id, RelationshipInfoUpdate(is_enabled=enable))

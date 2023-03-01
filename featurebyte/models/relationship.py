@@ -70,7 +70,6 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     primary_data_source_id: PydanticObjectId
     is_enabled: bool
     updated_by: PydanticObjectId
-    comments: List[str] = Field(default_factory=list)
 
     class Settings:
         """
