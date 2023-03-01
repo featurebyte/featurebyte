@@ -47,7 +47,7 @@ install: build-hive-udf-jar
 format:
 	poetry run pyupgrade --py38-plus **/*.py
 	poetry run isort .
-	poetry run black . --extend-exclude=docker
+	poetry run black .
 	poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
