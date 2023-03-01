@@ -157,7 +157,7 @@ app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_controller(
     "relationship_info_controller",
     RelationshipInfoController,
-    ["relationship_info_service", "info_service"],
+    ["relationship_info_service", "info_service", "entity_service", "tabular_data_service"],
 )
 app_container_config.add_controller("context_controller", ContextController, ["context_service"])
 app_container_config.add_controller(

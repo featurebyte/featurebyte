@@ -13,8 +13,10 @@ from featurebyte.schema.relationship_info import (
     RelationshipInfoList,
     RelationshipInfoUpdate,
 )
+from featurebyte.service.entity import EntityService
 from featurebyte.service.info import InfoService
 from featurebyte.service.relationship_info import RelationshipInfoService
+from featurebyte.service.tabular_data import DataService
 
 
 class RelationshipInfoController(
@@ -30,10 +32,14 @@ class RelationshipInfoController(
         self,
         relationship_info_service: RelationshipInfoService,
         info_service: InfoService,
+        entity_service: EntityService,
+        data_service: DataService,
     ):
         super().__init__(relationship_info_service)
         self.relationship_info_service = relationship_info_service
         self.info_service = info_service
+        self.entity_service = entity_service
+        self.data_service = data_service
 
     async def create_relationship_info(
         self,
@@ -53,6 +59,36 @@ class RelationshipInfoController(
             Newly created RelationshipInfo object
         """
         return await self.relationship_info_service.create_document(data)
+
+    async def _validate_relationship_info_create(
+        self,
+        data: RelationshipInfoCreate,
+    ) -> None:
+        """
+        Validate RelationshipInfo
+
+        Parameters
+        ----------
+        data: RelationshipInfoCreate
+            RelationshipInfo creation payload
+
+        Raises
+        ------
+        ValueError
+            If data is not a valid RelationshipInfoCreate object
+        """
+        # Validate whether child_id and parent_id are valid entities.
+        entity_ids_to_check = {data.child_id, data.parent_id}
+        entities = await self.entity_service.get_entities(entity_ids_to_check)
+        if len(entities) != 2:
+            entity_ids_found = {entity.id for entity in entities}
+            missing_entity_ids = {
+                entity_id for entity_id in entity_ids_to_check if entity_id not in entity_ids_found
+            }
+            raise ValueError(f"entity IDs not found: {missing_entity_ids}")
+
+        # Validate whether child_data_source_id is ID by trying to retrieve it. If it's not, it will raise an error
+        await self.data_service.get_document(data.child_data_source_id)
 
     async def update_relationship_info(
         self,
