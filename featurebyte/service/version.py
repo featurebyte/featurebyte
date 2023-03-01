@@ -100,7 +100,7 @@ class VersionService(BaseService):
 
         Parameters
         ----------
-        graph_node: Node
+        graph_node: BaseGraphNode
             Graph node
         input_node_names: list[str]
             Input node names
