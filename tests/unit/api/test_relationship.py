@@ -28,7 +28,7 @@ async def test_relationships_list(relationship_info_service):
 
     primary_entity_id = PydanticObjectId(ObjectId())
     related_entity_id = PydanticObjectId(ObjectId())
-    child_data_source_id = PydanticObjectId(ObjectId())
+    primary_data_source_id = PydanticObjectId(ObjectId())
     updated_by_user_id = PydanticObjectId(ObjectId())
 
     # create new relationship
@@ -39,7 +39,7 @@ async def test_relationships_list(relationship_info_service):
             relationship_type=relationship_type,
             primary_entity_id=primary_entity_id,
             related_entity_id=related_entity_id,
-            child_data_source_id=child_data_source_id,
+            primary_data_source_id=primary_data_source_id,
             is_enabled=True,
             updated_by=updated_by_user_id,
         )
@@ -73,7 +73,7 @@ async def test_enable(relationship_info_service):
     """
     primary_entity_id = PydanticObjectId(ObjectId())
     related_entity_id = PydanticObjectId(ObjectId())
-    child_data_source_id = PydanticObjectId(ObjectId())
+    primary_data_source_id = PydanticObjectId(ObjectId())
     updated_by_user_id = PydanticObjectId(ObjectId())
 
     # create new relationship
@@ -84,7 +84,7 @@ async def test_enable(relationship_info_service):
             relationship_type=relationship_type,
             primary_entity_id=primary_entity_id,
             related_entity_id=related_entity_id,
-            child_data_source_id=child_data_source_id,
+            primary_data_source_id=primary_data_source_id,
             is_enabled=False,
             updated_by=updated_by_user_id,
         )

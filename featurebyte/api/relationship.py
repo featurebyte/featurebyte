@@ -30,7 +30,7 @@ class Relationship(RelationshipInfo, ApiObject):
         "relationship_type",
         "primary_entity_id",
         "related_entity_id",
-        "child_data_source_id",
+        "primary_data_source_id",
         "is_enabled",
         "updated_by",
         "created_at",

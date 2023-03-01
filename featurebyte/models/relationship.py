@@ -67,7 +67,7 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     relationship_type: RelationshipType
     primary_entity_id: PydanticObjectId
     related_entity_id: PydanticObjectId
-    child_data_source_id: PydanticObjectId
+    primary_data_source_id: PydanticObjectId
     is_enabled: bool
     updated_by: PydanticObjectId
     comments: List[str] = Field(default_factory=list)

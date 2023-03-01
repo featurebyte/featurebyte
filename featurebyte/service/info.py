@@ -271,7 +271,7 @@ class InfoService(BaseService):
             document_id=document_id
         )
         data_info = await self.data_service.get_document(
-            document_id=relationship_info.child_data_source_id
+            document_id=relationship_info.primary_data_source_id
         )
         updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
         primary_entity = None

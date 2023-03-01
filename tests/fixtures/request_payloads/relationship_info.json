@@ -4,7 +4,7 @@
   "relationship_type": "child_parent",
   "primary_entity_id": "63f6a145e549df8ccf2bf3f1",
   "related_entity_id": "63f94ed6ea1f050131379204",
-  "child_data_source_id": "6337f9651050ee7d5980660d",
+  "primary_data_source_id": "6337f9651050ee7d5980660d",
   "is_enabled": true,
   "updated_by": "63f6a145e549df8ccf123444"
 }

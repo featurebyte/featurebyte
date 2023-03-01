@@ -572,7 +572,7 @@ async def test_get_relationship_info_info(
             relationship_type=relationship_type,
             primary_entity_id=entity.id,
             related_entity_id=transaction_entity.id,
-            child_data_source_id=event_data.id,
+            primary_data_source_id=event_data.id,
             is_enabled=True,
             updated_by=PydanticObjectId(ObjectId()),
         )

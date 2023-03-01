@@ -29,7 +29,7 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
             payload["_id"] = str(ObjectId())
             payload["primary_entity_id"] = str(ObjectId())
             payload["related_entity_id"] = str(ObjectId())
-            payload["child_data_source_id"] = str(ObjectId())
+            payload["primary_data_source_id"] = str(ObjectId())
             payload["updated_by"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
