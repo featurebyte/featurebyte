@@ -162,7 +162,10 @@ async def test_create_new_feature_version__document_error(version_service, featu
             ),
         )
 
-    expected_msg = "Feature job setting has no effect in feature value derivation."
+    expected_msg = (
+        "Feature job setting does not result a new feature version. "
+        "This is because the new feature version is the same as the source feature."
+    )
     assert expected_msg in str(exc.value)
 
     # check data cleaning operations with no effect in feature value derivation
@@ -185,7 +188,7 @@ async def test_create_new_feature_version__document_error(version_service, featu
             )
         )
 
-    expected_msg = "Data cleaning operation(s) has no effect in feature value derivation."
+    expected_msg = "Data cleaning operation(s) does not result a new feature version."
     assert expected_msg in str(exc.value)
 
     # check feature job setting and data cleaning operations with no effect in feature value derivation
@@ -198,7 +201,9 @@ async def test_create_new_feature_version__document_error(version_service, featu
             )
         )
 
-    expected_msg = "Feature job setting and data cleaning operation(s) have no effect in feature value derivation."
+    expected_msg = (
+        "Feature job setting and data cleaning operation(s) do not result a new feature version."
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -503,7 +508,7 @@ async def test_create_new_feature_version__document_error_with_item_data_cleanin
                 ],
             )
         )
-    expected_msg = "Data cleaning operation(s) has no effect in feature value derivation."
+    expected_msg = "Data cleaning operation(s) does not result a new feature version."
     assert expected_msg in str(exc.value)
 
 

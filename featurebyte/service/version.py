@@ -19,6 +19,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import (
+    BaseGraphNode,
     ColumnCleaningOperation,
     DataCleaningOperation,
     ViewMetadata,
@@ -88,6 +89,58 @@ class VersionService(BaseService):
 
         return node_name_to_replacement_node
 
+    @staticmethod
+    def _get_create_view_graph_node_keyword_parameters(
+        graph_node: BaseGraphNode,
+        input_node_names: list[str],
+        view_node_name_to_data_info: dict[str, tuple[Node, List[ColumnInfo], InputNode]],
+    ) -> dict[str, Any]:
+        """
+        Get additional parameters used to construct view graph node.
+
+        Parameters
+        ----------
+        graph_node: Node
+            Graph node
+        input_node_names: list[str]
+            Input node names
+        view_node_name_to_data_info: dict[str, tuple[Node, List[ColumnInfo], InputNode]]
+            View node name to data info mapping
+
+        Returns
+        -------
+        dict[str, Any]
+
+        Raises
+        ------
+        GraphInconsistencyError
+            If the graph has unexpected structure
+        """
+        parameters: dict[str, Any] = {}
+        if graph_node.parameters.type == GraphNodeType.ITEM_VIEW:
+            # prepare the event view graph node and its columns info for item view graph node to use
+            # handle the following assumption so that it won't throw internal server error
+            if len(input_node_names) != 2:
+                raise GraphInconsistencyError("Item view graph node must have 2 input nodes.")
+
+            event_view_graph_node_name = input_node_names[1]
+            if event_view_graph_node_name not in view_node_name_to_data_info:
+                raise GraphInconsistencyError(
+                    "Event view graph node must be processed before item view graph node."
+                )
+
+            # retrieve the processed graph node and its columns info
+            (
+                event_view_node,
+                event_view_columns_info,
+                data_input_node,
+            ) = view_node_name_to_data_info[event_view_graph_node_name]
+            parameters["event_view_node"] = event_view_node
+            parameters["event_view_columns_info"] = event_view_columns_info
+            parameters["event_view_event_id_column"] = data_input_node.parameters.id_column  # type: ignore
+
+        return parameters
+
     async def _prepare_view_graph_node_name_to_replacement_node(
         self, feature: FeatureModel, data_cleaning_operations: Optional[List[DataCleaningOperation]]
     ) -> dict[str, Node]:
@@ -122,7 +175,7 @@ class VersionService(BaseService):
         # view node name to (view graph node, view columns_info & data input node)
         view_node_name_to_data_info: dict[str, Tuple[Node, List[ColumnInfo], InputNode]] = {}
 
-        # since the graph node is topically sorted, input to the view graph node will always be
+        # since the graph node is topologically sorted, input to the view graph node will always be
         # processed before the view graph node itself
         for graph_node in feature.graph.iterate_sorted_graph_nodes(
             graph_node_types=GraphNodeType.view_graph_node_types()
@@ -131,37 +184,19 @@ class VersionService(BaseService):
             input_node_names = feature.graph.get_input_node_names(node=graph_node)
             view_graph_input_node = feature.graph.get_node_by_name(node_name=input_node_names[0])
 
-            # additional parameters used to construct view graph node
-            create_view_graph_node_kwargs: dict[str, Any] = {}
-
             if not isinstance(view_graph_input_node, InputNode):
                 raise GraphInconsistencyError(
                     "First input node of view graph node is not an input node."
                 )
 
-            if graph_node.parameters.type == GraphNodeType.ITEM_VIEW:
-                # prepare the event view graph node and its columns info for item view graph node to use
-                # handle the following assumption so that it won't throw internal server error
-                if len(input_node_names) != 2:
-                    raise GraphInconsistencyError("Item view graph node must have 2 input nodes.")
-
-                event_view_graph_node_name = input_node_names[1]
-                if event_view_graph_node_name not in view_node_name_to_data_info:
-                    raise GraphInconsistencyError(
-                        "Event view graph node must be processed before item view graph node."
-                    )
-
-                # retrieve the processed graph node and its columns info
-                (
-                    event_view_node,
-                    event_view_columns_info,
-                    data_input_node,
-                ) = view_node_name_to_data_info[event_view_graph_node_name]
-                create_view_graph_node_kwargs["event_view_node"] = event_view_node
-                create_view_graph_node_kwargs["event_view_columns_info"] = event_view_columns_info
-                create_view_graph_node_kwargs[
-                    "event_view_event_id_column"
-                ] = data_input_node.parameters.id_column  # type: ignore
+            # additional parameters used to construct view graph node
+            create_view_graph_node_kwargs: dict[
+                str, Any
+            ] = self._get_create_view_graph_node_keyword_parameters(
+                graph_node=graph_node,
+                input_node_names=input_node_names,
+                view_node_name_to_data_info=view_node_name_to_data_info,
+            )
 
             # get the data document based on the data ID in input node
             data_id = view_graph_input_node.parameters.id
@@ -278,8 +313,12 @@ class VersionService(BaseService):
                 actions.append("data cleaning operation(s)")
 
             actions_str = " and ".join(actions).capitalize()
-            has_str = "have" if len(actions) > 1 else "has"
-            raise DocumentError(f"{actions_str} {has_str} no effect in feature value derivation.")
+            do_str = "do" if len(actions) > 1 else "does"
+            error_message = (
+                f"{actions_str} {do_str} not result a new feature version. "
+                "This is because the new feature version is the same as the source feature."
+            )
+            raise DocumentError(error_message)
         raise DocumentError("No change detected on the new feature version.")
 
     async def create_new_feature_version(

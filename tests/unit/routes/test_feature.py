@@ -300,7 +300,10 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
         response_dict = response.json()
-        expected_msg = "Data cleaning operation(s) has no effect in feature value derivation."
+        expected_msg = (
+            "Data cleaning operation(s) does not result a new feature version. "
+            "This is because the new feature version is the same as the source feature."
+        )
         assert response_dict["detail"] == expected_msg
 
     def test_list_200__filter_by_name_and_version(
