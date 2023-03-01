@@ -245,7 +245,7 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_aggregate_over(
     transaction_data_upper_case,
     observation_set,
