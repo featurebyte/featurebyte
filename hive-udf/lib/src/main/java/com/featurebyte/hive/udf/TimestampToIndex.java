@@ -44,6 +44,9 @@ public class TimestampToIndex extends GenericUDF {
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
+    if (arguments[0].get() == null) {
+      return null;
+    }
     DeferredObject unix_timestamp_args[] = {arguments[0]};
 
     long period_in_seconds = ((LongWritable) unix_timestamp.evaluate(unix_timestamp_args)).get();
