@@ -274,15 +274,12 @@ class InfoService(BaseService):
             document_id=relationship_info.primary_data_source_id
         )
         updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
-        primary_entity = None
-        related_entity = None
-        if relationship_info.relationship_type == RelationshipType.CHILD_PARENT:
-            primary_entity = await self.entity_service.get_document(
-                document_id=relationship_info.primary_entity_id
-            )
-            related_entity = await self.entity_service.get_document(
-                document_id=relationship_info.related_entity_id
-            )
+        primary_entity = await self.entity_service.get_document(
+            document_id=relationship_info.primary_entity_id
+        )
+        related_entity = await self.entity_service.get_document(
+            document_id=relationship_info.related_entity_id
+        )
         return RelationshipInfoInfo(
             name=relationship_info.name,
             created_at=relationship_info.created_at,
