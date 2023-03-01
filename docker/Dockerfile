@@ -27,7 +27,7 @@ FROM python:3.8-slim AS runner
 ARG USER_HOME=/app
 
 RUN apt-get update && \
-    apt-get install -y netcat libsasl2-dev wkhtmltopdf gosu curl && \
+    apt-get install -y gosu curl && \
     apt-get clean
 
 WORKDIR $USER_HOME

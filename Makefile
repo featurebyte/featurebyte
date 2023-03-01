@@ -112,7 +112,6 @@ test-routes:
 docker-build: | build-hive-udf-jar
 	poetry build
 	docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-server:latest
-	# docker buildx build . -f docker/jupyter.Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-jupyter:latest
 
 #* Cleaning
 clean:
