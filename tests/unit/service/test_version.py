@@ -540,8 +540,81 @@ def item_metadata_fixture(item_data, event_metadata, event_data):
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_version__with_item_data_cleaning_operations(
-    version_service, feature_non_time_based, event_data, item_data, event_metadata, item_metadata
+@pytest.mark.parametrize(
+    "data_cleaning_operations, expected_event_metadata, expected_item_metadata",
+    [
+        # case 1: update item data only
+        (
+            [create_data_cleaning_operations("sf_item_data", ["item_amount"])],
+            {},  # no change in event metadata
+            {
+                "column_cleaning_operations": [
+                    {
+                        "column_name": "item_amount",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+                    }
+                ],
+            },
+        ),
+        # case 2: update event data only
+        (
+            [create_data_cleaning_operations("sf_event_data", ["col_int"])],
+            {
+                "column_cleaning_operations": [
+                    {
+                        "column_name": "col_int",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+                    }
+                ],
+            },
+            {
+                "event_column_cleaning_operations": [
+                    {
+                        "column_name": "col_int",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+                    }
+                ],
+            },
+        ),
+        # case 3: update event data & item data cleaning operations
+        (
+            [
+                create_data_cleaning_operations("sf_event_data", ["col_int"]),
+                create_data_cleaning_operations("sf_item_data", ["item_amount"]),
+            ],
+            {
+                "column_cleaning_operations": [
+                    {
+                        "column_name": "col_int",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+                    }
+                ],
+            },
+            {
+                "column_cleaning_operations": [
+                    {
+                        "column_name": "item_amount",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+                    }
+                ],
+                "event_column_cleaning_operations": [
+                    {
+                        "column_name": "col_int",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
+                    }
+                ],
+            },
+        ),
+    ],
+)
+async def test_create_new_feature_version__with_non_time_based_feature(
+    version_service,
+    feature_non_time_based,
+    event_metadata,
+    item_metadata,
+    data_cleaning_operations,
+    expected_event_metadata,
+    expected_item_metadata,
 ):
     """Test create new feature version with event data cleaning operations"""
     event_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_1")
@@ -553,82 +626,25 @@ async def test_create_new_feature_version__with_item_data_cleaning_operations(
     new_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_non_time_based.id,
-            data_cleaning_operations=[
-                create_data_cleaning_operations(event_data.name, ["col_int"]),
-                create_data_cleaning_operations(item_data.name, ["item_amount"]),
-            ],
+            data_cleaning_operations=data_cleaning_operations,
         )
     )
 
     # check graph node metadata
     new_event_view_graph_node = new_version.graph.get_node_by_name("graph_1")
     new_item_view_graph_node = new_version.graph.get_node_by_name("graph_2")
-    expected_event_metadata = {
-        **event_metadata,
-        "column_cleaning_operations": [
-            {
-                "column_name": "col_int",
-                "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
-            }
-        ],
-    }
-    expected_item_metadata = {
-        **item_metadata,
-        "column_cleaning_operations": [
-            {
-                "column_name": "item_amount",
-                "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
-            }
-        ],
-        "event_drop_column_names": expected_event_metadata["drop_column_names"],
-        "event_column_cleaning_operations": expected_event_metadata["column_cleaning_operations"],
-    }
+    expected_event_metadata = {**event_metadata, **expected_event_metadata}
+    expected_item_metadata = {**item_metadata, **expected_item_metadata}
     assert new_event_view_graph_node.parameters.metadata.dict() == expected_event_metadata
     assert new_item_view_graph_node.parameters.metadata.dict() == expected_item_metadata
 
-    # graph structure (edges) should be the same
-    assert new_version.graph.edges == feature_non_time_based.graph.edges
-
-
-@pytest.mark.asyncio
-async def test_create_new_feature_version__with_event_data_cleaning_operations_on_item_groupby_feature(
-    version_service, feature_non_time_based, event_data, event_metadata, item_metadata
-):
-    """Test create new feature version with event data cleaning operations"""
-    event_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_1")
-    item_view_graph_node = feature_non_time_based.graph.get_node_by_name("graph_2")
-    assert event_view_graph_node.parameters.metadata == event_metadata
-    assert item_view_graph_node.parameters.metadata == item_metadata
-
-    # create a new feature version with relevant data cleaning operations
-    new_version = await version_service.create_new_feature_version(
-        data=FeatureNewVersionCreate(
-            source_feature_id=feature_non_time_based.id,
-            data_cleaning_operations=[
-                create_data_cleaning_operations(event_data.name, ["col_int"]),
-            ],
-        )
+    # check consistencies
+    event_metadata = new_event_view_graph_node.parameters.metadata
+    item_metadata = new_item_view_graph_node.parameters.metadata
+    assert (
+        item_metadata.event_column_cleaning_operations == event_metadata.column_cleaning_operations
     )
-
-    # check graph node metadata
-    new_event_view_graph_node = new_version.graph.get_node_by_name("graph_1")
-    new_item_view_graph_node = new_version.graph.get_node_by_name("graph_2")
-    expected_event_metadata = {
-        **event_metadata,
-        "column_cleaning_operations": [
-            {
-                "column_name": "col_int",
-                "cleaning_operations": [{"type": "missing", "imputed_value": 0}],
-            }
-        ],
-    }
-    expected_item_metadata = {
-        **item_metadata,
-        "event_drop_column_names": expected_event_metadata["drop_column_names"],
-        "event_column_cleaning_operations": expected_event_metadata["column_cleaning_operations"],
-    }
-    assert new_event_view_graph_node.parameters.metadata.dict() == expected_event_metadata
-    assert new_item_view_graph_node.parameters.metadata.dict() == expected_item_metadata
+    assert item_metadata.event_drop_column_names == event_metadata.drop_column_names
 
     # graph structure (edges) should be the same
     assert new_version.graph.edges == feature_non_time_based.graph.edges
