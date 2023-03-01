@@ -11,9 +11,7 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(
-    event_data_service, feature_namespace_service, app_container
-):
+def production_ready_validator_fixture(feature_namespace_service, app_container):
     """
     Get production ready validator
     """
