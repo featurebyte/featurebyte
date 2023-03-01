@@ -98,6 +98,27 @@ class TilingAggregator(ABC):
         str
         """
 
+    def construct_numeric_tile_spec(self, tile_expr: Expression, tile_column_name: str) -> TileSpec:
+        """
+        Construct a TileSpec for a numeric tile
+
+        Parameters
+        ----------
+        tile_expr: Expression
+            SQL expression
+        tile_column_name: str
+            Alias for the result of the SQL expression
+
+        Returns
+        -------
+        TileSpec
+        """
+        return TileSpec(
+            tile_expr,
+            tile_column_name,
+            self.adapter.get_physical_type_from_dtype(DBVarType.FLOAT),
+        )
+
 
 class OrderIndependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are not order dependent"""
@@ -120,7 +141,11 @@ class CountAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         _ = col
-        return [TileSpec(expressions.Count(this=expressions.Star()), f"value_{agg_id}", "FLOAT")]
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Count(this=expressions.Star()), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -133,13 +158,12 @@ class AvgAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         tile_specs = [
-            TileSpec(
-                expressions.Sum(this=quoted_identifier(col.name)), f"sum_value_{agg_id}", "FLOAT"
+            self.construct_numeric_tile_spec(
+                expressions.Sum(this=quoted_identifier(col.name)), f"sum_value_{agg_id}"
             ),
-            TileSpec(
+            self.construct_numeric_tile_spec(
                 expressions.Count(this=quoted_identifier(col.name)),
                 f"count_value_{agg_id}",
-                "FLOAT",
             ),
         ]
         return tile_specs
@@ -155,7 +179,9 @@ class SumAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
-            TileSpec(expressions.Sum(this=quoted_identifier(col.name)), f"value_{agg_id}", "FLOAT")
+            self.construct_numeric_tile_spec(
+                expressions.Sum(this=quoted_identifier(col.name)), f"value_{agg_id}"
+            )
         ]
 
     @staticmethod
@@ -169,7 +195,9 @@ class MinAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
-            TileSpec(expressions.Min(this=quoted_identifier(col.name)), f"value_{agg_id}", "FLOAT")
+            self.construct_numeric_tile_spec(
+                expressions.Min(this=quoted_identifier(col.name)), f"value_{agg_id}"
+            )
         ]
 
     @staticmethod
@@ -183,7 +211,9 @@ class MaxAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
-            TileSpec(expressions.Max(this=quoted_identifier(col.name)), f"value_{agg_id}", "FLOAT")
+            self.construct_numeric_tile_spec(
+                expressions.Max(this=quoted_identifier(col.name)), f"value_{agg_id}"
+            )
         ]
 
     @staticmethod
@@ -200,7 +230,11 @@ class NACountAggregator(OrderIndependentAggregator):
             this=quoted_identifier(col.name), expression=expressions.Null()
         )
         col_casted_as_integer = expressions.Cast(this=col_is_null, to="INTEGER")
-        return [TileSpec(expressions.Sum(this=col_casted_as_integer), f"value_{agg_id}", "FLOAT")]
+        return [
+            self.construct_numeric_tile_spec(
+                expressions.Sum(this=col_casted_as_integer), f"value_{agg_id}"
+            )
+        ]
 
     @staticmethod
     def merge(agg_id: str) -> str:
@@ -219,9 +253,9 @@ class StdAggregator(OrderIndependentAggregator):
         sum_value = expressions.Sum(this=col_expr)
         count_value = expressions.Count(this=col_expr)
         return [
-            TileSpec(sum_value_squared, f"sum_value_squared_{agg_id}", "FLOAT"),
-            TileSpec(sum_value, f"sum_value_{agg_id}", "FLOAT"),
-            TileSpec(count_value, f"count_value_{agg_id}", "FLOAT"),
+            self.construct_numeric_tile_spec(sum_value_squared, f"sum_value_squared_{agg_id}"),
+            self.construct_numeric_tile_spec(sum_value, f"sum_value_{agg_id}"),
+            self.construct_numeric_tile_spec(count_value, f"count_value_{agg_id}"),
         ]
 
     @staticmethod

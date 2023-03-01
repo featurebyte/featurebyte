@@ -401,7 +401,7 @@ def test_aggregate_over(
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,
