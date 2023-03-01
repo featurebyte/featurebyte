@@ -292,6 +292,7 @@ class InfoService(BaseService):
             primary_entity_name=primary_entity.name if primary_entity else "unknown",
             related_entity_name=related_entity.name if related_entity else "unknown",
             updated_by=updated_user_name,
+            comments=relationship_info.comments,
         )
 
     async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
