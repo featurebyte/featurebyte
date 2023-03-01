@@ -548,7 +548,7 @@ def test_get_main_data(info_service, item_data, event_data, dimension_data):
 
 
 @pytest.fixture(name="transaction_entity")
-def entity_fixture():
+def transaction_entity_fixture():
     """
     Transaction entity fixture
     """

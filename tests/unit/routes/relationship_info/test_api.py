@@ -6,6 +6,7 @@ from http import HTTPStatus
 import pytest
 from bson import ObjectId
 
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
 from tests.unit.routes.base import BaseWorkspaceApiTestSuite
 
@@ -20,35 +21,90 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
     payload = BaseWorkspaceApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/relationship_info.json"
     )
+    create_conflict_payload_expected_detail_pairs = [
+        (
+            payload,
+            f'RelationshipInfo (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `RelationshipInfo.get_by_id(id="{payload["_id"]}")`.',
+        ),
+    ]
+    create_unprocessable_payload_expected_detail_pairs = [
+        (
+            {
+                "relationship_type": "child_parent",
+                "is_enabled": False,
+            },
+            [
+                {"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"},
+                {
+                    "loc": ["body", "primary_entity_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+                {
+                    "loc": ["body", "related_entity_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+                {
+                    "loc": ["body", "primary_data_source_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+                {
+                    "loc": ["body", "updated_by"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+            ],
+        ),
+    ]
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
+        # Create 3 distinct pairs of entity IDs so that the payload generated here is unique.
+        entity_ids = [
+            "63f6a145e549df8ccf2bf3f1",
+            "63f94ed6ea1f050131379204",
+            "63f94ed6ea1f050131379204",
+            "63f6a145e549df8ccf2bf3f2",
+            "63f6a145e549df8ccf2bf3f2",
+            "63f6a145e549df8ccf2bf3f3",
+        ]
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["primary_entity_id"] = str(ObjectId())
-            payload["related_entity_id"] = str(ObjectId())
-            payload["primary_data_source_id"] = str(ObjectId())
+            payload["primary_entity_id"] = entity_ids[i * 2]
+            payload["related_entity_id"] = entity_ids[i * 2 + 1]
+            payload["primary_data_source_id"] = "6337f9651050ee7d5980660d"
             payload["updated_by"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
-    @pytest.mark.asyncio
-    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
-        """Test retrieve info"""
-        test_api_client, _ = test_api_client_persistent
-
+    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
+        """
+        Setup for post route
+        """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
             ("event_data", "event_data"),
             ("entity", "entity"),
             ("entity", "transaction_entity"),
+            ("entity", "user_entity"),
+            ("entity", "country_entity"),
         ]
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = test_api_client.post(f"/{api_object}", json=payload)
+            response = api_client.post(
+                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+            )
             assert response.status_code == HTTPStatus.CREATED
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
 
         # Create relationship info
         create_response_dict = create_success_response.json()

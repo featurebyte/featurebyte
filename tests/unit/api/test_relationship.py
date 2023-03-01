@@ -101,3 +101,10 @@ async def test_enable(relationship_info_service):
     # verify that relationship is now enabled
     relationship = Relationship.get_by_id(created_relationship.id)
     assert relationship.is_enabled
+
+    # disable relationship
+    relationship.enable(False)
+
+    # verify that relationship is now enabled
+    relationship = Relationship.get_by_id(created_relationship.id)
+    assert not relationship.is_enabled
