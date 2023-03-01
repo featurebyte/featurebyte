@@ -285,8 +285,8 @@ class InfoService(BaseService):
             updated_at=relationship_info.updated_at,
             relationship_type=relationship_info.relationship_type,
             data_source_name=data_info.name,
-            primary_entity_name=primary_entity.name if primary_entity else "unknown",
-            related_entity_name=related_entity.name if related_entity else "unknown",
+            primary_entity_name=primary_entity.name,
+            related_entity_name=related_entity.name,
             updated_by=updated_user_name,
         )
 

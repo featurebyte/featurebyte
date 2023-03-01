@@ -93,7 +93,7 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
             ),
         ]
 
-    @root_validator(pre=True)
+    @root_validator
     @classmethod
     def _validate_child_and_parent_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         child_id = values.get("primary_entity_id")
