@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
+from featurebyte import MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -27,7 +28,8 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from tests.util.helper import check_aggressively_pruned_graph, get_node
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation, DataCleaningOperation
+from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -525,7 +527,8 @@ def test_create_new_version(saved_feature):
     new_version = saved_feature.create_new_version(
         feature_job_setting=FeatureJobSetting(
             blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-        )
+        ),
+        data_cleaning_operations=None,
     )
 
     assert new_version.id != saved_feature.id
@@ -545,13 +548,58 @@ def test_create_new_version(saved_feature):
     assert groupby_node_params["time_modulo_frequency"] == 15 * 60
 
 
+def test_create_new_version__with_data_cleaning_operations(saved_feature, update_fixtures):
+    """Test creation of new version with data cleaning operations"""
+    # check sdk code generation of source feature
+    check_sdk_code_generation(saved_feature, to_use_saved_data=True)
+
+    # create a new feature version
+    new_version = saved_feature.create_new_version(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+        ),
+        data_cleaning_operations=[
+            DataCleaningOperation(
+                data_name="sf_event_data",
+                column_cleaning_operations=[
+                    # column to be aggregated on
+                    ColumnCleaningOperation(
+                        column_name="col_float",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+                    ),
+                    # group by column
+                    ColumnCleaningOperation(
+                        column_name="cust_id",
+                        cleaning_operations=[MissingValueImputation(imputed_value=-999)],
+                    ),
+                    # unaffected column
+                    ColumnCleaningOperation(
+                        column_name="col_int",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0)],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    # check sdk code generation for newly created feature
+    check_sdk_code_generation(
+        new_version,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_time_based_with_data_cleaning_operations.py.jinja2",
+        update_fixtures=update_fixtures,
+        data_id=saved_feature.tabular_data_ids[0],
+    )
+
+
 def test_create_new_version__error(float_feature):
     """Test creation a new version (exception)"""
     with pytest.raises(RecordCreationException) as exc:
         float_feature.create_new_version(
             feature_job_setting=FeatureJobSetting(
                 blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-            )
+            ),
+            data_cleaning_operations=None,
         )
 
     expected_msg = (
@@ -565,7 +613,8 @@ def test_feature__as_default_version(saved_feature):
     new_version = saved_feature.create_new_version(
         feature_job_setting=FeatureJobSetting(
             blind_spot="15m", frequency="30m", time_modulo_frequency="15m"
-        )
+        ),
+        data_cleaning_operations=None,
     )
     assert new_version.is_default is True
     assert new_version.default_version_mode == "AUTO"

@@ -58,7 +58,8 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     amt_sum_30m_v1 = amt_sum_30m.create_new_version(
         feature_job_setting=FeatureJobSetting(
             blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-        )
+        ),
+        data_cleaning_operations=None,
     )
     assert amt_sum_30m_v1.version.to_str() == f"{get_version()}_1"
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m_v1.id
@@ -121,7 +122,8 @@ def test_feature_list__as_default_version(feature_group):
     feature_list["amt_sum_30m"].create_new_version(
         feature_job_setting=FeatureJobSetting(
             blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-        )
+        ),
+        data_cleaning_operations=None,
     )
 
     # create new feature list version

@@ -31,7 +31,7 @@ from featurebyte.query_graph.model.critical_data_info import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation, DataCleaningOperation
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
@@ -80,4 +80,5 @@ __all__ = [
     # others
     "Workspace",
     "ColumnCleaningOperation",
+    "DataCleaningOperation",
 ]
