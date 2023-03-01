@@ -570,8 +570,8 @@ async def test_get_relationship_info_info(
         RelationshipInfoCreate(
             name="test_relationship",
             relationship_type=relationship_type,
-            child_id=entity.id,
-            parent_id=transaction_entity.id,
+            primary_entity_id=entity.id,
+            related_entity_id=transaction_entity.id,
             child_data_source_id=event_data.id,
             is_enabled=True,
             updated_by=PydanticObjectId(ObjectId()),
@@ -579,7 +579,7 @@ async def test_get_relationship_info_info(
     )
     relationship_info = await info_service.get_relationship_info_info(created_relationship.id)
     assert relationship_info.relationship_type == relationship_type
-    assert relationship_info.child_name == "customer"
-    assert relationship_info.parent_name == "transaction"
+    assert relationship_info.primary_entity_name == "customer"
+    assert relationship_info.related_entity_name == "transaction"
     assert relationship_info.data_source_name == "sf_event_data"
     assert relationship_info.updated_by == "default user"

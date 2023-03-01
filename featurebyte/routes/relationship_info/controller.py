@@ -78,7 +78,7 @@ class RelationshipInfoController(
             If data is not a valid RelationshipInfoCreate object
         """
         # Validate whether child_id and parent_id are valid entities.
-        entity_ids_to_check = {data.child_id, data.parent_id}
+        entity_ids_to_check = {data.primary_entity_id, data.related_entity_id}
         entities = await self.entity_service.get_entities(entity_ids_to_check)  # type: ignore[arg-type]
         if len(entities) != 2:
             entity_ids_found = {entity.id for entity in entities}

@@ -26,8 +26,8 @@ async def test_relationships_list(relationship_info_service):
     relationships = Relationship.list()
     assert relationships.shape[0] == 0
 
-    child_id = PydanticObjectId(ObjectId())
-    parent_id = PydanticObjectId(ObjectId())
+    primary_entity_id = PydanticObjectId(ObjectId())
+    related_entity_id = PydanticObjectId(ObjectId())
     child_data_source_id = PydanticObjectId(ObjectId())
     updated_by_user_id = PydanticObjectId(ObjectId())
 
@@ -37,29 +37,29 @@ async def test_relationships_list(relationship_info_service):
         RelationshipInfoCreate(
             name="test_relationship",
             relationship_type=relationship_type,
-            child_id=child_id,
-            parent_id=parent_id,
+            primary_entity_id=primary_entity_id,
+            related_entity_id=related_entity_id,
             child_data_source_id=child_data_source_id,
             is_enabled=True,
             updated_by=updated_by_user_id,
         )
     )
-    assert created_relationship.child_id == child_id
+    assert created_relationship.primary_entity_id == primary_entity_id
 
     # verify that there's one relationship that was created
     relationships = Relationship.list()
     assert relationships.shape[0] == 1
-    assert relationships["child_id"][0] == child_id
+    assert relationships["primary_entity_id"][0] == primary_entity_id
 
     # apply relationship_type filter for existing filter using enum
     relationships = Relationship.list(relationship_type=relationship_type)
     assert relationships.shape[0] == 1
-    assert relationships["child_id"][0] == child_id
+    assert relationships["primary_entity_id"][0] == primary_entity_id
 
     # apply relationship_type filter for existing filter using string
     relationships = Relationship.list(relationship_type="child_parent")
     assert relationships.shape[0] == 1
-    assert relationships["child_id"][0] == child_id
+    assert relationships["primary_entity_id"][0] == primary_entity_id
 
     # apply relationship_type filter for non-existing filter
     with pytest.raises(TypeError):
@@ -71,8 +71,8 @@ async def test_enable(relationship_info_service):
     """
     Test enable
     """
-    child_id = PydanticObjectId(ObjectId())
-    parent_id = PydanticObjectId(ObjectId())
+    primary_entity_id = PydanticObjectId(ObjectId())
+    related_entity_id = PydanticObjectId(ObjectId())
     child_data_source_id = PydanticObjectId(ObjectId())
     updated_by_user_id = PydanticObjectId(ObjectId())
 
@@ -82,8 +82,8 @@ async def test_enable(relationship_info_service):
         RelationshipInfoCreate(
             name="test_relationship",
             relationship_type=relationship_type,
-            child_id=child_id,
-            parent_id=parent_id,
+            primary_entity_id=primary_entity_id,
+            related_entity_id=related_entity_id,
             child_data_source_id=child_data_source_id,
             is_enabled=False,
             updated_by=updated_by_user_id,

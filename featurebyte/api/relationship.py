@@ -28,8 +28,8 @@ class Relationship(RelationshipInfo, ApiObject):
     _list_schema = RelationshipInfo
     _list_fields = [
         "relationship_type",
-        "child_id",
-        "parent_id",
+        "primary_entity_id",
+        "related_entity_id",
         "child_data_source_id",
         "is_enabled",
         "updated_by",
@@ -45,13 +45,14 @@ class Relationship(RelationshipInfo, ApiObject):
         """
         List a dataframe of the relationships. This provides a dataframe with:
         - the relationship id
-        - child
-        - parent
+        - primary entity
+        - relate dentity
         - data source
         - enabled (whether the relationship is enabled)
         - creation timestamp
         - update timestamp
         - updated by
+        - comments
 
         Parameters
         ----------

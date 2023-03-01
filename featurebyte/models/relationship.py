@@ -3,6 +3,7 @@ This module contains Relation mixin model
 """
 from typing import Any, Dict, List
 
+from bson import ObjectId
 from pydantic import Field, root_validator, validator
 
 from featurebyte.common.validator import construct_sort_validator
@@ -62,12 +63,14 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     The Relationship class above stores all relationships for a given child in a single document.
     """
 
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
     relationship_type: RelationshipType
-    child_id: PydanticObjectId
-    parent_id: PydanticObjectId
+    primary_entity_id: PydanticObjectId
+    related_entity_id: PydanticObjectId
     child_data_source_id: PydanticObjectId
     is_enabled: bool
     updated_by: PydanticObjectId
+    comments: List[str] = Field(default_factory=list)
 
     class Settings:
         """
@@ -82,8 +85,11 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
             UniqueValuesConstraint(
-                fields=("child_id", "parent_id"),
-                conflict_fields_signature={"child_id": ["child_id"], "parent_id": ["parent_id"]},
+                fields=("primary_entity_id", "related_entity_id"),
+                conflict_fields_signature={
+                    "primary_entity_id": ["primary_entity_id"],
+                    "related_entity_id": ["related_entity_id"],
+                },
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
@@ -91,8 +97,8 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     @root_validator(pre=True)
     @classmethod
     def _validate_child_and_parent_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        child_id = values.get("child_id")
-        parent_id = values.get("parent_id")
+        child_id = values.get("primary_entity_id")
+        parent_id = values.get("related_entity_id")
         if child_id == parent_id:
-            raise ValueError("Child and parent id cannot be the same")
+            raise ValueError("Primary and Related entity id cannot be the same")
         return values

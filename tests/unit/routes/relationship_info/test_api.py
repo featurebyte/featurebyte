@@ -27,8 +27,8 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            payload["child_id"] = str(ObjectId())
-            payload["parent_id"] = str(ObjectId())
+            payload["primary_entity_id"] = str(ObjectId())
+            payload["related_entity_id"] = str(ObjectId())
             payload["child_data_source_id"] = str(ObjectId())
             payload["updated_by"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
@@ -61,8 +61,8 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
         assert response_dict["relationship_type"] == "child_parent"
-        assert response_dict["child_name"] == "customer"
-        assert response_dict["parent_name"] == "transaction"
+        assert response_dict["primary_entity_name"] == "customer"
+        assert response_dict["related_entity_name"] == "transaction"
         assert response_dict["data_source_name"] == "sf_event_data"
 
     def test_update_200(self, test_api_client_persistent, create_success_response):

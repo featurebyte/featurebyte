@@ -30,14 +30,14 @@ def relationship_info_create_fixture():
     """
     relationship_info_create fixture
     """
-    child_id = PydanticObjectId(ObjectId())
-    parent_id = PydanticObjectId(ObjectId())
+    primary_entity_id = PydanticObjectId(ObjectId())
+    related_entity_id = PydanticObjectId(ObjectId())
     child_data_source_id = PydanticObjectId(ObjectId())
     return RelationshipInfoCreate(
         name="random",
         relationship_type=RelationshipType.CHILD_PARENT,
-        child_id=child_id,
-        parent_id=parent_id,
+        primary_entity_id=primary_entity_id,
+        related_entity_id=related_entity_id,
         child_data_source_id=child_data_source_id,
         is_enabled=False,
         updated_by=PydanticObjectId(ObjectId()),
@@ -64,11 +64,11 @@ def entities_fixture(relationship_info_create):
     Create entities
     """
     entity_1 = Entity(
-        name="entity_1", serving_names=["entity_1"], _id=relationship_info_create.child_id
+        name="entity_1", serving_names=["entity_1"], _id=relationship_info_create.primary_entity_id
     )
     entity_1.save()
     entity_2 = Entity(
-        name="entity_2", serving_names=["entity_2"], _id=relationship_info_create.parent_id
+        name="entity_2", serving_names=["entity_2"], _id=relationship_info_create.related_entity_id
     )
     entity_2.save()
 
