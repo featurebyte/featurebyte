@@ -108,7 +108,7 @@ async def test_feature_list_deployed(
                 SELECT
                   "cust_id" AS "cust_id",
                   "agg_w1800_sum_60e19c3e160be7db3a64f2a828c1c7929543abb4"
-                FROM online_store_99b71adc2d15285256a763636c9922f0aaa3e8af
+                FROM online_store_ff698d3d3703c3afda95ec949ba386a02c6bd61d
               ) AS T0
                 ON REQ."cust_id" = T0."cust_id"
             )

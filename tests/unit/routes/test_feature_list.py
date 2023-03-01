@@ -54,7 +54,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         ),
         (
             payload_multi,
-            'Feature (id: "63f6a145e549df8ccf2bf3fa") not found. Please save the Feature object first.',
+            'Feature (id: "63ff1a9d5631c515f17fc67f") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},
