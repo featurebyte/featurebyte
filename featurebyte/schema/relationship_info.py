@@ -26,7 +26,6 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     primary_data_source_id: PydanticObjectId
     is_enabled: bool
     updated_by: PydanticObjectId
-    comments: List[str]
 
 
 class RelationshipInfoList(PaginationMixin):
@@ -57,4 +56,3 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
     updated_by: str
-    comments: List[str]
