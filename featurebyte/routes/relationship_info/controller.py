@@ -57,6 +57,7 @@ class RelationshipInfoController(
         RelationshipInfo
             Newly created RelationshipInfo object
         """
+        await self._validate_relationship_info_create(data)
         return await self.relationship_info_service.create_document(data)
 
     async def _validate_relationship_info_create(
