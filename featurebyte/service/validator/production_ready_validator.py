@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupbyNode
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.input import InputNode, ItemDataInputNodeParameters
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -139,7 +139,7 @@ class ProductionReadyValidator:
             feature job setting
         """
         for current_node in graph.iterate_nodes(target_node=node, node_type=NodeType.GROUPBY):
-            groupby_node = cast(GroupbyNode, current_node)
+            groupby_node = cast(GroupByNode, current_node)
             parameters = groupby_node.parameters
             blind_spot_str = f"{parameters.blind_spot}s"
             frequency_str = f"{parameters.frequency}s"
