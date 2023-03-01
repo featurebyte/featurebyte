@@ -69,8 +69,8 @@ jobs:
           sudo apt-get install python-dev libsasl2-dev gcc
       - name: Install dependencies
         run: make install
-  # Github caches do not update themselves on a successful run
-  # This workflow will delete them and rebuild them to the most updated dependencies / requirements
+  # Removing tags older than 30 days
+  # Ignoring release/* tags
   tags:
     runs-on: ubuntu-latest
     steps:
@@ -84,7 +84,7 @@ jobs:
       - name: "Removing Tags"
         run: |
           export CUTOFF_DATE=$(date --date="-30days" +%Y-%m-%d)
-          export EXPIRED_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags | awk -v "CUTOFF_DATE=$CUTOFF_DATE" '{ if ($1 < CUTOFF_DATE) print $2; }')
+          export EXPIRED_TAGS=$(git for-each-ref --format '%(creatordate:short) %(refname)' refs/tags | grep -v "release/" | awk -v "CUTOFF_DATE=$CUTOFF_DATE" '{ if ($1 < CUTOFF_DATE) print $2; }')
 
           echo "### Expired tags" >> $GITHUB_STEP_SUMMARY
           printenv EXPIRED_TAGS >> $GITHUB_STEP_SUMMARY
