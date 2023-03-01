@@ -144,25 +144,20 @@ class BaseNode(BaseModel):
                     out.update(cls._extract_column_str_values(val, column_str_type))
         return list(out)
 
-    def get_required_input_columns(self) -> List[str]:
+    @abstractmethod
+    def get_required_input_columns(self, input_order: int) -> List[str]:
         """
-        Get the required input column names based on this node parameters
+        Get the required input column names for the given input based on this node parameters
+
+        Parameters
+        ----------
+        input_order: int
+            This parameter is used to specify which input to get the required columns
 
         Returns
         -------
         list[str]
         """
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
-
-    def get_new_output_columns(self) -> List[str]:
-        """
-        Get additional column names generated based on this node parameters
-
-        Returns
-        -------
-        list[str]
-        """
-        return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
 
     def derive_node_operation_info(
         self,
@@ -268,7 +263,7 @@ class BaseNode(BaseModel):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         """
@@ -276,7 +271,7 @@ class BaseNode(BaseModel):
 
         Parameters
         ----------
-        target_nodes: Sequence[BaseNode]
+        target_node_input_order_pairs: Sequence[Tuple[BaseNode, int]]
             List of target nodes
         input_operation_structures: List[OperationStructure]
             List of input operation structures
@@ -285,7 +280,7 @@ class BaseNode(BaseModel):
         -------
         NodeT
         """
-        _ = target_nodes, input_operation_structures
+        _ = target_node_input_order_pairs, input_operation_structures
         return self
 
     @staticmethod
@@ -491,6 +486,11 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
+    def get_required_input_columns(self, input_order: int) -> List[str]:
+        if input_order < 2:
+            return []
+        raise ValueError(f"Invalid input order {input_order}")
+
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         _ = self
         return left_operand, right_operand
@@ -568,6 +568,11 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     _derive_sdk_code_return_var_name_expression_type: ClassVar[
         Union[Type[VariableNameStr], Type[ExpressionStr]]
     ] = VariableNameStr
+
+    def get_required_input_columns(self, input_order: int) -> List[str]:
+        if input_order < 2:
+            return []
+        raise ValueError(f"Invalid input order: {input_order}")
 
     @abstractmethod
     def generate_expression(self, operand: str) -> str:

@@ -578,6 +578,7 @@ class OperationStructureInfo:
         self,
         operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
         edges_map: Optional[DefaultDict[str, Set[str]]] = None,
+        backward_edges_map: Optional[DefaultDict[str, List[str]]] = None,
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
         **kwargs: Any,
     ):
@@ -588,4 +589,5 @@ class OperationStructureInfo:
             edges_map = defaultdict(set, edges_map)
         self.operation_structure_map = operation_structure_map or {}
         self.edges_map = edges_map
+        self.backward_edges_map = backward_edges_map
         self.proxy_input_operation_structures = proxy_input_operation_structures or []

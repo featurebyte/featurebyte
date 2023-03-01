@@ -83,7 +83,7 @@ def test_from_item_data__auto_join_columns(
                 "edges": [
                     {"source": "proxy_input_1", "target": "project_1"},
                     {"source": "proxy_input_2", "target": "join_1"},
-                    {"source": "proxy_input_1", "target": "join_1"},
+                    {"source": "project_1", "target": "join_1"},
                 ],
                 "nodes": [
                     {
@@ -455,7 +455,7 @@ def test_item_view__item_data_same_event_id_column_as_event_data(
                 "edges": [
                     {"source": "proxy_input_1", "target": "project_1"},
                     {"source": "proxy_input_2", "target": "join_1"},
-                    {"source": "proxy_input_1", "target": "join_1"},
+                    {"source": "project_1", "target": "join_1"},
                 ],
                 "nodes": [
                     {

@@ -302,15 +302,21 @@ class BaseTableData(FeatureByteBaseModel):
             input_node=data_node, skip_column_names=drop_column_names
         )
         if cleaning_graph_node:
+            # cleaning graph node only requires single input
             view_graph_node.add_operation(
                 node_type=NodeType.GRAPH,
                 node_params=cleaning_graph_node.parameters.dict(by_alias=True),
                 node_output_type=NodeOutputType.FRAME,
-                input_nodes=[view_graph_node.output_node, *proxy_input_nodes[1:]],
+                input_nodes=[view_graph_node.output_node],
             )
 
-        assert len(proxy_input_nodes) == len(view_graph_input_nodes)
-        return view_graph_node, proxy_input_nodes
+        # prepare nested input nodes
+        # first input node is the cleaning graph node output node (apply cleaning recipe)
+        # other input nodes are the proxy input nodes (used to construct additional proxy input nodes
+        # in the nested graph)
+        nested_input_nodes = [view_graph_node.output_node, *proxy_input_nodes[1:]]
+        assert len(proxy_input_nodes) == len(nested_input_nodes)
+        return view_graph_node, nested_input_nodes
 
     @property
     @abstractmethod

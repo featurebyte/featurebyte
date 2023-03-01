@@ -176,27 +176,32 @@ class NodeParametersPruningExtractor(
             # For the graph node, the pruning happens in GraphStructurePruningExtractor.
             # Prepare target nodes (nodes that consider current node as an input node) & input operation
             # structures to the node. Use these 2 info to perform the actual node parameters pruning.
-            target_nodes: Sequence[Node]
+            target_node_input_order_pairs: List[Tuple[Node, int]] = []
             if node.name == global_state.target_node_name and global_state.target_columns:
                 # create a temporary project node if
                 # - current node name equals to target_node_name
                 # - target_columns is not empty
-                target_nodes = [
-                    ProjectNode(
-                        name="temp",
-                        parameters={"columns": global_state.target_columns},
-                        output_type=NodeOutputType.FRAME,
-                    )
-                ]
+                project_node = ProjectNode(
+                    name="temp",
+                    parameters={"columns": global_state.target_columns},
+                    output_type=NodeOutputType.FRAME,
+                )
+                target_node_input_order_pairs.append((project_node, 0))
             else:
                 # get the output nodes of current node (target nodes)
                 target_node_names = self.graph.edges_map[node.name]
-                target_nodes = [
-                    self.graph.get_node_by_name(node_name) for node_name in target_node_names
-                ]
+                for target_node_name in target_node_names:
+                    target_node = self.graph.get_node_by_name(target_node_name)
+                    target_node_input_order_pairs.append(
+                        (
+                            target_node,
+                            self.graph.get_input_node_names(target_node).index(node.name),
+                        )
+                    )
 
             node = node.prune(
-                target_nodes=target_nodes, input_operation_structures=input_op_structs
+                target_node_input_order_pairs=target_node_input_order_pairs,
+                input_operation_structures=input_op_structs,
             )
 
         # add the pruned node back to a graph to reconstruct a parameters-pruned graph
@@ -329,9 +334,19 @@ class GraphStructurePruningExtractor(
         target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
         target_columns: Optional[List[str]] = None
         if target_nodes:
-            # TODO: (DEV-1127) should not call get_required_input_columns() if the target node is a graph node
+            # get the input column order from current node to the target nodes
+            target_node_input_order_pairs = []
+            for target_node in target_nodes:
+                target_node_input_node_names = self.graph.get_input_node_names(node=target_node)
+                node_name_input_order = target_node_input_node_names.index(node.name)
+                target_node_input_order_pairs.append((target_node, node_name_input_order))
+
+            # construct required column names
             required_columns = set().union(
-                *(node.get_required_input_columns() for node in target_nodes)
+                *(
+                    node.get_required_input_columns(input_order=input_order)
+                    for node, input_order in target_node_input_order_pairs
+                )
             )
             target_columns = list(required_columns)
         return target_columns

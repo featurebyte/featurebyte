@@ -35,6 +35,10 @@ def node_fixture():
         type: Literal["type"] = Field("node_type", const=True)
         parameters: NodeParams
 
+        def get_required_input_columns(self, input_order: int) -> List[str]:
+            _ = input_order
+            return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+
         def _derive_node_operation_info(self, inputs):
             return OperationStructure(
                 output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
@@ -61,23 +65,12 @@ def node_fixture():
 
 def test_get_required_input_columns(node):
     """Test get_required_input_columns"""
-    required_in_cols = node.get_required_input_columns()
+    required_in_cols = node.get_required_input_columns(0)
     assert set(required_in_cols) == {
         "required_column",
         "required_columns",
         "nested_required_column",
         "nested_required_columns",
-    }
-
-
-def test_get_new_output_columns(node):
-    """Test get_new_output_columns"""
-    required_in_cols = node.get_new_output_columns()
-    assert set(required_in_cols) == {
-        "new_output_column",
-        "new_output_columns",
-        "nested_new_output_column",
-        "nested_new_output_columns",
     }
 
 

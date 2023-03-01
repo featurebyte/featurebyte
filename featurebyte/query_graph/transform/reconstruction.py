@@ -160,7 +160,7 @@ def add_pruning_sensitive_operation(
     pruned_graph, _, pruned_input_node_name = prune_query_graph(
         graph=graph,
         node=input_node,
-        target_columns=temp_node.get_required_input_columns(),
+        target_columns=temp_node.get_required_input_columns(input_order=0),
         aggressive=True,
     )
 
