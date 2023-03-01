@@ -1,5 +1,7 @@
 ## Publish Beta ##
+### REQUIREMENTS ###
 # Given a branch name of release/beta/0.3 and a version of 0.3.4
+
 # == GIT TAG ==
 # git tag will be created based on the branch name: release/beta/0.3.4
 # == PYPI ==
@@ -110,6 +112,12 @@ jobs:
           registry: ${{ env.BETA_PYPI_PROJECT_ID }}-docker.pkg.dev
           username: _json_key_base64
           password: ${{ secrets.BETA_ARTIFACT_REGISTRY_RW }}
+
+      - name: Replace docker-compose image tag
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.services.featurebyte-server.image = "${IMAGE_REPO}:${{ github.inputs.version }}" featurebyte/docker/featurebyte.yml
+
       - name: featurebyte-server args and requirements
         run: |
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
