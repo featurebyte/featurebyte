@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
-from featurebyte import EventView, FeatureList
+from featurebyte import AggFunc, EventView, FeatureList
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
@@ -46,7 +46,7 @@ def item_aggregate_with_category_features(item_data):
     """
     item_view = ItemView.from_item_data(item_data)
     feature = item_view.groupby("order_id", category="item_type").aggregate(
-        method="count", feature_name="my_item_feature"
+        method=AggFunc.COUNT, feature_name="my_item_feature"
     )
     most_frequent_feature = feature.cd.most_frequent()
     most_frequent_feature.name = "most_frequent_item_type"
@@ -156,7 +156,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
 
     # Create a feature using aggregation without time window and preview it
     feature = item_view_filtered.groupby("order_id").aggregate(
-        method="count",
+        method=AggFunc.COUNT,
         feature_name="order_size",
     )
     df = feature.preview({"order_id": "T30"})

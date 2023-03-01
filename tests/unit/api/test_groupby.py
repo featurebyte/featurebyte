@@ -9,7 +9,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import BaseAggregator, GroupBy
 from featurebyte.api.view import View
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 
 
@@ -109,9 +109,11 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     Test not valid aggregation method passed to groupby
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         grouped.aggregate_over("a", "unknown_method", ["1d"], ["feature_name"])
-    expected_message = "Aggregation method not supported: unknown_method"
+    expected_message = (
+        'type of argument "method" must be one of (Literal[sum, avg, min, max, count, na_count'
+    )
     assert expected_message in str(exc.value)
 
 
@@ -399,7 +401,7 @@ def test_supported_views__aggregate(snowflake_event_view_with_entity):
     """
     with pytest.raises(AggregationNotSupportedForViewError) as exc:
         snowflake_event_view_with_entity.groupby("cust_id").aggregate(
-            value_column="col_float", method="sum", feature_name="my_feature"
+            value_column="col_float", method=AggFunc.SUM, feature_name="my_feature"
         )
     assert str(exc.value) == "aggregate() is only available for ItemView"
 

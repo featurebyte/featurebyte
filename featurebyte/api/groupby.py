@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, Union, cast
+from typing import Any, Dict, List, Literal, Optional, Type, Union, cast
 
 from abc import ABC, abstractmethod
 
@@ -558,7 +558,7 @@ class SimpleAggregator(BaseAggregator):
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
@@ -570,7 +570,7 @@ class SimpleAggregator(BaseAggregator):
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: str
             Output feature name
@@ -608,7 +608,7 @@ class SimpleAggregator(BaseAggregator):
 
         assert method is not None
         assert feature_name is not None
-        agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
+        agg_method = construct_agg_func(agg_func=method)
         feature = self._project_feature_from_groupby_node(
             agg_method=agg_method,
             feature_name=feature_name,
@@ -678,7 +678,7 @@ class GroupBy:
     def aggregate_over(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
@@ -695,7 +695,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         windows: List[str]
             List of aggregation window sizes. Use `None` to indicated unbounded window size (only
@@ -763,7 +763,7 @@ class GroupBy:
     def aggregate_asat(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,
@@ -777,7 +777,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: str
             Output feature name
@@ -833,7 +833,7 @@ class GroupBy:
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: bool = False,
@@ -847,7 +847,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[str]
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: Optional[str]
             Output feature name

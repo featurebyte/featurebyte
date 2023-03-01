@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import (
+    AggFunc,
     DisguisedValueImputation,
     EventView,
     FeatureList,
@@ -147,7 +148,7 @@ def test_item_data_update_critical_data_info(item_data):
     assert window_preview_df.count_12h.iloc[0] == '{\n  "type_84": 1\n}'
 
     feature = item_view.groupby("order_id").aggregate(
-        method="count",
+        method=AggFunc.COUNT,
         feature_name="order_size",
     )
     preview_df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"})
