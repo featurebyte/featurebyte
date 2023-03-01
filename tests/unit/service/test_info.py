@@ -4,9 +4,10 @@ Test for InfoService
 import pytest
 from bson import ObjectId
 
-from featurebyte import SnowflakeDetails
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte import Entity, SnowflakeDetails
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
 from featurebyte.schema.info import (
@@ -25,6 +26,7 @@ from featurebyte.schema.info import (
     ItemDataInfo,
     SCDDataInfo,
 )
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.service.info import InfoService
 
 
@@ -543,3 +545,41 @@ def test_get_main_data(info_service, item_data, event_data, dimension_data):
         == dimension_data_with_entity
     )
     assert info_service._get_main_data([dimension_data]) == dimension_data
+
+
+@pytest.fixture(name="transaction_entity")
+def transaction_entity_fixture():
+    """
+    Transaction entity fixture
+    """
+    entity = Entity(name="transaction", serving_names=["transaction_id"])
+    entity.save()
+    yield entity
+
+
+@pytest.mark.asyncio
+async def test_get_relationship_info_info(
+    relationship_info_service, info_service, event_data, entity, transaction_entity
+):
+    """
+    Test get relationship info info
+    """
+    # create new relationship
+    relationship_type = RelationshipType.CHILD_PARENT
+    created_relationship = await relationship_info_service.create_document(
+        RelationshipInfoCreate(
+            name="test_relationship",
+            relationship_type=relationship_type,
+            primary_entity_id=entity.id,
+            related_entity_id=transaction_entity.id,
+            primary_data_source_id=event_data.id,
+            is_enabled=True,
+            updated_by=PydanticObjectId(ObjectId()),
+        )
+    )
+    relationship_info = await info_service.get_relationship_info_info(created_relationship.id)
+    assert relationship_info.relationship_type == relationship_type
+    assert relationship_info.primary_entity_name == "customer"
+    assert relationship_info.related_entity_name == "transaction"
+    assert relationship_info.data_source_name == "sf_event_data"
+    assert relationship_info.updated_by == "default user"

@@ -171,6 +171,14 @@ def preview_service_fixture(app_container):
     return app_container.preview_service
 
 
+@pytest.fixture(name="relationship_info_service")
+def relationship_info_service_fixture(app_container):
+    """
+    RelationshipInfoService fixture
+    """
+    return app_container.relationship_info_service
+
+
 @pytest.fixture(name="online_enable_service_data_warehouse_mocks")
 def online_enable_service_data_warehouse_mocks_fixture():
     """

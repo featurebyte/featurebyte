@@ -32,6 +32,7 @@ from featurebyte.schema.info import (
     SCDDataInfo,
     WorkspaceInfo,
 )
+from featurebyte.schema.relationship_info import RelationshipInfoInfo
 from featurebyte.schema.semantic import SemanticList
 from featurebyte.schema.tabular_data import TabularDataList
 from featurebyte.service.base_document import BaseDocumentService, DocumentUpdateSchema
@@ -47,9 +48,11 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import Document, DocumentCreateSchema
+from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
+from featurebyte.service.user_service import UserService
 from featurebyte.service.workspace import WorkspaceService
 
 ObjectT = TypeVar("ObjectT")
@@ -104,6 +107,10 @@ class InfoService(BaseService):
         self.workspace_service = WorkspaceService(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
+        self.relationship_info_service = RelationshipInfoService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.user_service = UserService(user=user, persistent=persistent, workspace_id=workspace_id)
 
     @staticmethod
     async def _get_list_object(
@@ -245,6 +252,43 @@ class InfoService(BaseService):
             "columns_info": columns_info,
             "workspace_name": workspace.name,
         }
+
+    async def get_relationship_info_info(self, document_id: ObjectId) -> RelationshipInfoInfo:
+        """
+        Get relationship info info
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Returns
+        -------
+        RelationshipInfoInfo
+        """
+        relationship_info = await self.relationship_info_service.get_document(
+            document_id=document_id
+        )
+        data_info = await self.data_service.get_document(
+            document_id=relationship_info.primary_data_source_id
+        )
+        updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
+        primary_entity = await self.entity_service.get_document(
+            document_id=relationship_info.primary_entity_id
+        )
+        related_entity = await self.entity_service.get_document(
+            document_id=relationship_info.related_entity_id
+        )
+        return RelationshipInfoInfo(
+            name=relationship_info.name,
+            created_at=relationship_info.created_at,
+            updated_at=relationship_info.updated_at,
+            relationship_type=relationship_info.relationship_type,
+            data_source_name=data_info.name,
+            primary_entity_name=primary_entity.name,
+            related_entity_name=related_entity.name,
+            updated_by=updated_user_name,
+        )
 
     async def get_event_data_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
         """
