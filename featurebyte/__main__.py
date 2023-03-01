@@ -131,6 +131,50 @@ def print_logs(app_name: ApplicationName, tail: int) -> None:
             console.print(Text(line, style=style))
 
 
+### WARNING THIS NEEDS TO BE REMOVED AFTER BETA ###
+def __backup_docker_conf() -> None:
+    with open(os.path.expanduser("~/.docker/config.json"), encoding="utf-8") as docker_cfg_file:
+        with open(
+            os.path.expanduser("~/.docker/config.json.old"), "w", encoding="utf-8"
+        ) as backup_file:
+            backup_file.write(docker_cfg_file.read())
+
+
+def __use_docker_svc_account() -> None:
+    with open(
+        os.path.expanduser("~/.docker/config.json"), "w", encoding="utf-8"
+    ) as docker_cfg_file:
+        # pylint: disable=line-too-long
+        docker_cfg_file.write(
+            """
+        {
+          "auths": {
+            "us-central1-docker.pkg.dev": {
+              "auth": "X2pzb25fa2V5X2Jhc2U2NDpld29nSUNKMGVYQmxJam9nSW5ObGNuWnBZMlZmWVdOamIzVnVkQ0lzQ2lBZ0luQnliMnBsWTNSZmFXUWlPaUFpWW1WMFlTMTBaWE4wYVc1bkxUTTNNemt3TnlJc0NpQWdJbkJ5YVhaaGRHVmZhMlY1WDJsa0lqb2dJalkzWmpCbU5EVm1aVFJsT0RVNE9XUXlNemszWXpka01qVTFOalV3WlRVMlltRTBNVEU1T1RjaUxBb2dJQ0p3Y21sMllYUmxYMnRsZVNJNklDSXRMUzB0TFVKRlIwbE9JRkJTU1ZaQlZFVWdTMFZaTFMwdExTMWNiazFKU1VWMlVVbENRVVJCVGtKbmEzRm9hMmxIT1hjd1FrRlJSVVpCUVZORFFrdGpkMmRuVTJwQlowVkJRVzlKUWtGUlEyZFNSWEpJTUcxR09GQk1NRVJjYm5Sek9YVkJjbUl5UWxSV1ZFbzBRMGN6UmxSNFNEaE5hRkZQVEd0UlJGSjVhRFUxTTI5RWRsazNXSFpCUzJwUWRYZG9ibWxFY0U5YVZFRkRNVE4yYVRGY2JqRnRZVmRTUzFSRWVqRXdSRTV5YldGWldqWkthaXRaVmk4d2JEaHdjSEp6UTFKS2QwbDBTbFpRVUdsbmJuVjVhRUZJZVVFMU16VktSbFZSWlZNeWIyVmNibVo2ZVhkNlFteG5ZMWhuVlc5clNsb3hjVXR6YkRSYVpsVTFSbVJsVW5Ob1NXWkpaemt5Y2l0RlNFeGxNSGh1UVVKak9YcE1iM1ZvT1VoSFVUUm5TM0JjYmxCcE4wbDFUME5XVkZwWlR6QlhZbEZUY2pCMllYaGhRa0ZhWVZwQ2VXSktiVU5hVWpsSE1tTXJWemRWVFcxSVlqSjNWbGtyYjNwdlNsSnVObkJQUmpOY2JtbHVUbHBzYzFoYVRXbE5XbFZHUXpGd1VIbEZjWGg0YjBnd05WSjRNRzVzYjJrNFZXVnFNM05RZWpaRFp6QkJNbXR6Y21kb1ZVbDFja05DUjFWNFJXVmNialZzUmtGSE5FcFVRV2ROUWtGQlJVTm5aMFZCVXpoeWQwOUtOMmRXYjBwakt6RkJkSFZtSzFSeGFtRmtWMDVYUTBoWlZTdHpTV1pQV0hOQlUySldTMFpjYmpKNlNWTXJZM3AyT0VzcmFrTnBZVXhTT1hSSmNGWlZlV0pXYkRWeWIydHFkM000UWpGblptaHBaVGRpZEVsVWFHTnpZU3N4U25sWFpXZHRkM0JqUVdWY2JqTlJhVkJVVkZCVGJEbG5UbFowZWtJeVNWSnFNMUY0WkdRd0sxVXhkVlJuWVRCeVQwWXlhREpwWkhOMmNVVmFlVXhaTVhCbmEycHZiR1JXZFVacE9VeGNibnB3VTBGa2FFSjJlRFUxUlc0eFZsWnJZamhrUVhjMFZteGlaV0l6UTJFdkwwSllWSFEzVEZWemRUWktOVnBLWlZGd1oyZHFiVmwzZW5CSmFHeG5hMGhjYm1WU1ZsSkpRVE01UkZnM2RFaHBlWEZ0YlRsaGJUaE1LMFZXUVZSWlFqRXlTVXcxVW1oTlpVdzFlU3N2T1RkT1J6Rk1RWGcwVEdwUmVYbEZURzVFTXpGY2JuTTFXbXgzU0hkaEwyVnZPRlZFVVZVMVQzUnBWbUZ5ZUhSUldpdFJNVE5yTTB0QlJXWkRkR1UyVVV0Q1oxRkVUakJwZUcxMGRVUlpZVGhYTkc5SmRVMWNibXR2YVRJNFYxUlZiMmN2TWxKelJEVXhPRXRITUV0TmJHNDFUbGhRVXpaMVlrWXJWemRLTTNGUk1uWlhZM0ZYUW5KeE5EZFFaRWhMTm1sNmJ6UnlNbVZjYm1kcVlrdEdTa2h4WVd0TFdDdHlOM2huYm1oSVJXWjBRa1ZJYWsxRWFIbEVUbXBJTld0NWExaE5lRXgwYVdKeFUwTllMMFpDYURSaGIwdE1SVk5NUmxKY2JsRlVUR0V6UW1weWExWkRjM0ExV2tsSGFGUTBVM01yU1cxUlMwSm5VVVJJVm5aWVdtdEdNWEpEVWxZMmFucFhXRmwwYkRneVNHeEdaM1pzVURacmVFbGNia2RCVkdzM2VtRnNabHBFZDJoM2IwdEZWVGhxU0dsNmMxQk5VMHhyUVZCWWNtTTNSbFJ6VFhOREt6QnhVRTkwWXlzd1dWSjVVbk5OVDFFMFEzUjFNbkJjYm10Tk1ETXdSU3RNU2pWTU0zaFpVVGxyVTNGVWIwaFpVRmhuUzFGUVYyUXZaVzFrV2tKWEt6SjFibTQyWjBWSFprbExaR1Y2VTJGRk9HSktSVzFxUzBoY2JqVjNNelZPY0ZaYWVYZExRbWRSUXpKNGNHdEdhMmQyTUZKVGFYUjJNbmxPY0dsa1oyaDBabkVyUVhoRGQxTjRiamgwU0dReFVFODRNbTkzUnpSa09VNWNibkZDU0haUWFYTjVUMVJPVUcxcWIyVkJkR3BaTlZKdmEwZ3paRWxVVDNKc1JUSXZRMWg1WjBKVGRVaGxaM2c0UkRZNFFWTktVV0pEUkdaWGIwTkVVVXhjYmpGYWJteHlNbXBFU1VkclJIQjBZVmhFTTFveWNXVnpZamRIUkNzdlEzSjZTa2h2WWpNeU9FWTJkVTFCYjBWaFZuVjNkVFpRZGpCNmNWRkxRbWRJY0VaY2JsUmxTRmx0YlZOWlIzUlBiRmRwVERCdlEwUnFRekptYlRCYVVVTlVRelJCYUdGblJGUjNjWFJtWVZRM2Rqa3lla0pyTm5STFRFeDZRbm92ZGpReGREbGNia2xvUzBkdlJrczFUV2N3ZUdSMFJDc3dPV29ySzFKa1JFOHJVRkZZZGtWbFpqZEtXR3hUVEhVNFJXZEpiMGhsTDFCc1ZqRklSbGRMZGxwdVMwRkdNRU5jYmsxTVp6ZEVSelJTTjJSWlNYRTNaVEp4VGsxUGJGTXdRWElyT1VOblprazBaVXR4TDI0eFlVaEJiMGRCVmxNcmFuZ3plamR0YTB4SGFtMUJTM3BTWTJaY2JsSTRkelJCZEhGYVNXMWpRbXRsY0hKak0zTlRMM1JXTnpWS1EweE5VREZTY1VoWVVUQkpSRzFETmtoTVdYcFpkWFprYVVNeU1rNDJPRFV3UkVkUVdEQmNibTA0UkdaUlYwRm1UV3d6WjFWMGFXNDBkREkzYzB4dmFXdDVOVE42UVUxUVpYTTBhMFk1TDBrNFl6VmFWVU5QTUVvclUyVmtRV0k0UTFWNVYwSndkRGhjYmk5SFRXaDJWR2xRUVRSWFNUaGxiamhtVFd0a0t6UnpQVnh1TFMwdExTMUZUa1FnVUZKSlZrRlVSU0JMUlZrdExTMHRMVnh1SWl3S0lDQWlZMnhwWlc1MFgyVnRZV2xzSWpvZ0ltSmxkR0V0WVhKMGFXWmhZM1F0Y21WbmFYTjBjbmt0Y2tCaVpYUmhMWFJsYzNScGJtY3RNemN6T1RBM0xtbGhiUzVuYzJWeWRtbGpaV0ZqWTI5MWJuUXVZMjl0SWl3S0lDQWlZMnhwWlc1MFgybGtJam9nSWpFeE1qa3lPVEUzT0RRME5UZzFOREEzTURNME1pSXNDaUFnSW1GMWRHaGZkWEpwSWpvZ0ltaDBkSEJ6T2k4dllXTmpiM1Z1ZEhNdVoyOXZaMnhsTG1OdmJTOXZMMjloZFhSb01pOWhkWFJvSWl3S0lDQWlkRzlyWlc1ZmRYSnBJam9nSW1oMGRIQnpPaTh2YjJGMWRHZ3lMbWR2YjJkc1pXRndhWE11WTI5dEwzUnZhMlZ1SWl3S0lDQWlZWFYwYUY5d2NtOTJhV1JsY2w5NE5UQTVYMk5sY25SZmRYSnNJam9nSW1oMGRIQnpPaTh2ZDNkM0xtZHZiMmRzWldGd2FYTXVZMjl0TDI5aGRYUm9NaTkyTVM5alpYSjBjeUlzQ2lBZ0ltTnNhV1Z1ZEY5NE5UQTVYMk5sY25SZmRYSnNJam9nSW1oMGRIQnpPaTh2ZDNkM0xtZHZiMmRzWldGd2FYTXVZMjl0TDNKdlltOTBMM1l4TDIxbGRHRmtZWFJoTDNnMU1Ea3ZZbVYwWVMxaGNuUnBabUZqZEMxeVpXZHBjM1J5ZVMxeUpUUXdZbVYwWVMxMFpYTjBhVzVuTFRNM016a3dOeTVwWVcwdVozTmxjblpwWTJWaFkyTnZkVzUwTG1OdmJTSUtmUW89Cg=="
+            }
+          }
+        }
+        """
+        )
+
+
+def __restore_docker_conf() -> None:
+    if os.path.isfile(os.path.expanduser("~/.docker/config.json.old")):
+        with open(os.path.expanduser("~/.docker/config.json.old"), encoding="utf-8") as backup_file:
+            with open(
+                os.path.expanduser("~/.docker/config.json"), "w", encoding="utf-8"
+            ) as docker_cfg_file:
+                docker_cfg_file.write(backup_file.read())
+
+
+def __delete_docker_backup() -> None:
+    if os.path.isfile(os.path.expanduser("~/.docker/config.json.old")):
+        os.remove(os.path.expanduser("~/.docker/config.json.old"))
+
+
+### END WARNING ###
+
+
 @app.command(name="start")
 def start(
     app_name: ApplicationName = typer.Argument(
@@ -138,8 +182,16 @@ def start(
     )
 ) -> None:
     """Start application"""
-    with get_docker_client(app_name) as docker:
-        docker.compose.up(detach=True)
+    try:
+        __backup_docker_conf()
+        __use_docker_svc_account()
+        with get_docker_client(app_name) as docker:
+            docker.compose.pull()
+            __restore_docker_conf()  # Restore as early as possible
+            docker.compose.up(detach=True)
+    finally:
+        __restore_docker_conf()
+        __delete_docker_backup()
     console.print(Panel(Align.left(messages[app_name]["start"]), title=app_name.value, width=120))
 
 

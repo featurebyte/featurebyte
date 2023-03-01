@@ -27,7 +27,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: lint lint-style lint-type lint-safety lint-requirements-txt
 .PHONY: test test-setup test-teardown
 .PHONY: docs docs-build
-.PHONY: beta-build
+.PHONY: docker-build
 .PHONY: clean
 
 #* Initialize
@@ -47,7 +47,7 @@ install: build-hive-udf-jar
 format:
 	poetry run pyupgrade --py38-plus **/*.py
 	poetry run isort .
-	poetry run black . --extend-exclude=docker
+	poetry run black .
 	poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
@@ -109,10 +109,9 @@ test-teardown:
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
-#* Docker
-beta-build: build-hive-udf-jar
+docker-build: | build-hive-udf-jar
 	poetry build
-	docker buildx build -f docker/Dockerfile -t "featurebyte-beta:latest" --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" .
+	docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-server:latest
 
 #* Cleaning
 clean:
