@@ -610,14 +610,14 @@ class BaseGraphNode(BasePrunableNode):
         # from the proxy input node, find all the target nodes (nodes that use the proxy input node as input)
         # for each target node, find the input order of the proxy input node
         # use the input order to get the required input columns and combine them
-        required_input_columns = []
+        required_input_columns = set()
         target_node_names = self.parameters.graph.edges_map[proxy_input_node.name]
         for target_node_name in target_node_names:
             target_node = self.parameters.graph.nodes_map[target_node_name]
             target_input_node_names = self.parameters.graph.get_input_node_names(target_node)
             input_order = target_input_node_names.index(proxy_input_node.name)
-            required_input_columns.extend(target_node.get_required_input_columns(input_order))
-        return required_input_columns
+            required_input_columns.update(target_node.get_required_input_columns(input_order))
+        return list(required_input_columns)
 
     def resolve_node_pruned(self, input_node_names: List[str]) -> str:
         if self.parameters.type == GraphNodeType.CLEANING:

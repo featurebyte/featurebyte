@@ -398,12 +398,11 @@ class LagNode(BaseSeriesOutputNode):
         if input_order == 0:
             # first input (zero-based)
             return []
-        elif input_order == len(self.parameters.entity_columns):
+        if input_order == len(self.parameters.entity_columns):
             # last input (zero-based)
             return [self.parameters.timestamp_column]
-        else:
-            # entity column
-            return [self.parameters.entity_columns[input_order - 1]]
+        # entity column
+        return [self.parameters.entity_columns[input_order - 1]]
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
@@ -829,11 +828,11 @@ class JoinNode(BasePrunableNode):
     parameters: JoinNodeParameters
 
     def get_required_input_columns(self, input_order: int) -> List[str]:
+        if input_order >= 2:
+            raise ValueError(f"Invalid input order: {input_order}")
         if input_order == 0:
             return self.parameters.left_input_columns
-        elif input_order == 1:
-            return self.parameters.right_input_columns
-        raise ValueError(f"Invalid input order: {input_order}")
+        return self.parameters.right_input_columns
 
     @staticmethod
     def _filter_columns(
@@ -1018,10 +1017,9 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             if self.parameters.view_point_in_time_column:
                 view_required_columns.append(self.parameters.view_point_in_time_column)
             return view_required_columns
-        elif input_order == 1:
+        if input_order == 1:
             return [self.parameters.feature_entity_column]
-        else:
-            raise ValueError(f"Invalid input order {input_order}")
+        raise ValueError(f"Invalid input order {input_order}")
 
     @staticmethod
     def _validate_feature(feature_op_structure: OperationStructure) -> None:
