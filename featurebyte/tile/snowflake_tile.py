@@ -13,6 +13,7 @@ from pydantic import PrivateAttr
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -203,6 +204,9 @@ class TileManagerSnowflake(BaseTileManager):
         tile_spec: TileSpec,
         monitor_periods: int = 10,
         schedule_time: datetime = datetime.utcnow(),
+        user_id: Optional[PydanticObjectId] = None,
+        feature_store_id: Optional[PydanticObjectId] = None,
+        workspace_id: Optional[PydanticObjectId] = None,
     ) -> str:
         """
         Schedule online tiles
@@ -215,6 +219,12 @@ class TileManagerSnowflake(BaseTileManager):
             number of tile periods to monitor and re-generate. Default is 10
         schedule_time: datetime
             the moment of scheduling the job
+        user_id: Optional[PydanticObjectId]
+            user id of the user who scheduled the job
+        feature_store_id: Optional[PydanticObjectId]
+            feature store id of the feature store where the job is scheduled
+        workspace_id: Optional[PydanticObjectId]
+            workspace id of the workspace where the job is scheduled
 
         Returns
         -------
@@ -249,6 +259,9 @@ class TileManagerSnowflake(BaseTileManager):
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
         schedule_time: datetime = datetime.utcnow(),
+        user_id: Optional[PydanticObjectId] = None,
+        feature_store_id: Optional[PydanticObjectId] = None,
+        workspace_id: Optional[PydanticObjectId] = None,
     ) -> str:
         """
         Schedule offline tiles
@@ -261,6 +274,12 @@ class TileManagerSnowflake(BaseTileManager):
             offline tile lookback minutes to monitor and re-generate. Default is 1440
         schedule_time: datetime
             the moment of scheduling the job
+        user_id: Optional[PydanticObjectId]
+            user id of the user who scheduled the job
+        feature_store_id: Optional[PydanticObjectId]
+            feature store id of the feature store where the job is scheduled
+        workspace_id: Optional[PydanticObjectId]
+            workspace id of the workspace where the job is scheduled
 
         Returns
         -------

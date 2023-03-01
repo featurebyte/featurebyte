@@ -13,6 +13,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
@@ -107,6 +108,9 @@ class BaseTileManager(BaseModel, ABC):
         tile_spec: TileSpec,
         monitor_periods: int = 10,
         schedule_time: datetime = datetime.utcnow(),
+        user_id: Optional[PydanticObjectId] = None,
+        feature_store_id: Optional[PydanticObjectId] = None,
+        workspace_id: Optional[PydanticObjectId] = None,
     ) -> str:
         """
         Schedule online tiles
@@ -119,6 +123,12 @@ class BaseTileManager(BaseModel, ABC):
             number of tile periods to monitor and re-generate. Default is 10
         schedule_time: datetime
             the moment of scheduling the job
+        user_id: Optional[PydanticObjectId]
+            user id of the user who scheduled the job
+        feature_store_id: Optional[PydanticObjectId]
+            feature store id of the feature store where the job is scheduled
+        workspace_id: Optional[PydanticObjectId]
+            workspace id of the workspace where the job is scheduled
 
         Returns
         -------
@@ -135,6 +145,9 @@ class BaseTileManager(BaseModel, ABC):
             tile_type=TileType.ONLINE,
             next_job_time=next_job_time,
             monitor_periods=monitor_periods,
+            user_id=user_id,
+            feature_store_id=feature_store_id,
+            workspace_id=workspace_id,
         )
 
         return sql
@@ -144,6 +157,9 @@ class BaseTileManager(BaseModel, ABC):
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
         schedule_time: datetime = datetime.utcnow(),
+        user_id: Optional[PydanticObjectId] = None,
+        feature_store_id: Optional[PydanticObjectId] = None,
+        workspace_id: Optional[PydanticObjectId] = None,
     ) -> str:
         """
         Schedule offline tiles
@@ -156,6 +172,12 @@ class BaseTileManager(BaseModel, ABC):
             offline tile lookback minutes to monitor and re-generate. Default is 1440
         schedule_time: datetime
             the moment of scheduling the job
+        user_id: Optional[PydanticObjectId]
+            user id of the user who scheduled the job
+        feature_store_id: Optional[PydanticObjectId]
+            feature store id of the feature store where the job is scheduled
+        workspace_id: Optional[PydanticObjectId]
+            workspace id of the workspace where the job is scheduled
 
         Returns
         -------
@@ -173,6 +195,9 @@ class BaseTileManager(BaseModel, ABC):
             tile_type=TileType.ONLINE,
             next_job_time=next_job_time,
             offline_minutes=offline_minutes,
+            user_id=user_id,
+            feature_store_id=feature_store_id,
+            workspace_id=workspace_id,
         )
 
         return sql
@@ -184,6 +209,9 @@ class BaseTileManager(BaseModel, ABC):
         next_job_time: datetime,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
+        user_id: Optional[PydanticObjectId] = None,
+        feature_store_id: Optional[PydanticObjectId] = None,
+        workspace_id: Optional[PydanticObjectId] = None,
     ) -> str:
         """
         Common tile schedule method
@@ -200,6 +228,12 @@ class BaseTileManager(BaseModel, ABC):
             offline tile lookback minutes
         monitor_periods: int
             online tile lookback period
+        user_id: Optional[PydanticObjectId]
+            user id of the user who scheduled the job
+        feature_store_id: Optional[PydanticObjectId]
+            feature store id of the feature store where the job is scheduled
+        workspace_id: Optional[PydanticObjectId]
+            workspace id of the workspace where the job is scheduled
 
         Returns
         -------
@@ -208,6 +242,10 @@ class BaseTileManager(BaseModel, ABC):
 
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+
+        target_user_id = str(user_id) if user_id else None
+        target_feature_store_id = str(feature_store_id) if feature_store_id else None
+        target_workspace_id = str(workspace_id) if workspace_id else None
 
         tile_schedule_ins = TileGenerateSchedule(
             spark_session=self._session,
@@ -228,6 +266,9 @@ class BaseTileManager(BaseModel, ABC):
             monitor_periods=monitor_periods,
             agg_id=tile_spec.aggregation_id,
             job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            user_id=target_user_id,
+            feature_store_id=target_feature_store_id,
+            workspace_id=target_workspace_id,
         )
 
         self._scheduler.start_job_with_interval(

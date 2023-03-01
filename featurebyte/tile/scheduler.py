@@ -1,7 +1,7 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any, Dict, List
+from typing import Any, List
 
 from datetime import datetime
 
@@ -23,22 +23,17 @@ class TileScheduler(BaseModel):
     """
 
     _scheduler: BackgroundScheduler = PrivateAttr()
-    _job_store: str = PrivateAttr()
-    _tile_scheduler_map: Dict[str, Any] = PrivateAttr()
 
-    def __init__(self, job_store: str = "default", **kw: Any) -> None:
+    def __init__(self, **kw: Any) -> None:
         """
         Instantiate TileScheduler instance
 
         Parameters
         ----------
-        job_store: str
-            target job store name
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
-        self._job_store = job_store
         self._scheduler = BackgroundScheduler()
         self._scheduler.start()
 
@@ -87,7 +82,6 @@ class TileScheduler(BaseModel):
 
         self._scheduler.add_job(
             id=job_id,
-            jobstore=self._job_store,
             func=entry.save,
             trigger=onetime_trigger,
         )
@@ -102,7 +96,7 @@ class TileScheduler(BaseModel):
             job id to be stopped
         """
         try:
-            self._scheduler.remove_job(job_id=job_id, jobstore=self._job_store)
+            self._scheduler.remove_job(job_id=job_id)
             entry = RedBeatSchedulerEntry(name=job_id, app=celery_app)
             entry.delete()
             logger.info(f"{job_id} removed successfully")

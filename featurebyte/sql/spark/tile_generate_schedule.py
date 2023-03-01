@@ -1,7 +1,7 @@
 """
 Tile Generate Schedule script for SP_TILE_GENERATE
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime, timedelta
 
@@ -30,6 +30,11 @@ class TileGenerateSchedule(TileCommon):
     monitor_periods: int
     agg_id: str
     job_schedule_ts: str = Field(default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+
+    # used for celery worker process
+    feature_store_id: Optional[str]
+    user_id: Optional[str]
+    workspace_id: Optional[str]
 
     # pylint: disable=too-many-locals
     async def execute(self) -> None:

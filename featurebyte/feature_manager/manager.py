@@ -69,6 +69,10 @@ class FeatureManager(BaseModel):
         """
         logger.info(f"online_enable: {feature_spec.feature.name}")
 
+        user_id = feature_spec.feature.user_id
+        feature_store_id = feature_spec.feature.tabular_source.feature_store_id
+        workspace_id = feature_spec.feature.workspace_id
+
         # insert records into tile-feature mapping table
         await self._update_tile_feature_mapping_table(feature_spec)
 
@@ -81,13 +85,21 @@ class FeatureManager(BaseModel):
             if exist_tasks is None or len(exist_tasks) == 0:
                 # enable online tiles scheduled job
                 await self._tile_manager.schedule_online_tiles(
-                    tile_spec=tile_spec, schedule_time=schedule_time
+                    tile_spec=tile_spec,
+                    schedule_time=schedule_time,
+                    user_id=user_id,
+                    feature_store_id=feature_store_id,
+                    workspace_id=workspace_id,
                 )
                 logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
                 # enable offline tiles scheduled job
                 await self._tile_manager.schedule_offline_tiles(
-                    tile_spec=tile_spec, schedule_time=schedule_time
+                    tile_spec=tile_spec,
+                    schedule_time=schedule_time,
+                    user_id=user_id,
+                    feature_store_id=feature_store_id,
+                    workspace_id=workspace_id,
                 )
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
@@ -113,6 +125,14 @@ class FeatureManager(BaseModel):
         await self._session.execute_query(populate_sql)
 
     async def _generate_historical_tiles(self, tile_spec: TileSpec) -> None:
+        """
+        Generate historical tiles for a given tile_spec
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            input tile spec
+        """
         # generate historical tile_values
         date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 
