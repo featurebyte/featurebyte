@@ -19,7 +19,7 @@ from typing_extensions import Annotated
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from featurebyte.common.typing import Numeric, OptionalScalar
 from featurebyte.enum import StrEnum, ViewMode
@@ -39,6 +39,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VarNameExpressionStr,
 )
+from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
 class ProxyInputNode(BaseNode):
@@ -254,6 +255,11 @@ class DataCleaningOperation(FeatureByteBaseModel):
 
     data_name: str
     column_cleaning_operations: List[ColumnCleaningOperation]
+
+    # pydantic validators
+    _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(
+        construct_unique_name_validator(field="column_name")
+    )
 
 
 class CleaningGraphNodeParameters(BaseGraphNodeParameters):

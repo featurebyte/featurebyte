@@ -7,6 +7,7 @@ import os
 import pytest
 import pytest_asyncio
 from bson import ObjectId
+from pydantic import ValidationError
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
@@ -20,6 +21,38 @@ from featurebyte.schema.feature_list import (
     FeatureListNewVersionCreate,
     FeatureVersionInfo,
 )
+
+
+def test_feature_new_version_create_schema_validation():
+    """Test feature new version create schema validation"""
+    with pytest.raises(ValidationError) as exc:
+        FeatureNewVersionCreate(
+            source_feature_id=ObjectId(),
+            data_cleaning_operations=[
+                DataCleaningOperation(data_name="dup_data_name", column_cleaning_operations=[]),
+                DataCleaningOperation(data_name="dup_data_name", column_cleaning_operations=[]),
+            ],
+        )
+
+    expected_error = 'Name "dup_data_name" is duplicated (field: data_name).'
+    assert expected_error in str(exc.value)
+
+    with pytest.raises(ValidationError) as exc:
+        FeatureNewVersionCreate(
+            source_feature_id=ObjectId(),
+            data_cleaning_operations=[
+                DataCleaningOperation(
+                    data_name="data_name",
+                    column_cleaning_operations=[
+                        ColumnCleaningOperation(column_name="dup_col_name", cleaning_operations=[]),
+                        ColumnCleaningOperation(column_name="dup_col_name", cleaning_operations=[]),
+                    ],
+                ),
+            ],
+        )
+
+    expected_error = 'Name "dup_col_name" is duplicated (field: column_name).'
+    assert expected_error in str(exc.value)
 
 
 @pytest.mark.asyncio
