@@ -58,13 +58,15 @@ async def revert_when_done(session, table_name):
         await session.execute_query(f"CREATE OR REPLACE TABLE {table_name} CLONE {backup_name}")
 
 
-@pytest_asyncio.fixture(name="bad_feature_stores")
-async def bad_feature_stores_fixture(feature_store, persistent, user):
+@pytest_asyncio.fixture(name="bad_feature_stores", scope="session")
+async def bad_feature_stores_fixture(feature_store, persistent, user, session):
     """
     Invalid FeatureStore documents to test error handling during migration
     """
     feature_store_doc = await persistent.find_one("feature_store", {"_id": feature_store.id})
     del feature_store_doc["_id"]
+
+    bad_feature_store_docs = []
 
     # FeatureStore without credentials configured
     feature_store = deepcopy(feature_store_doc)
@@ -73,6 +75,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+    bad_feature_store_docs.append(feature_store)
 
     # FeatureStore with wrong credentials
     feature_store = deepcopy(feature_store_doc)
@@ -81,6 +84,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+    bad_feature_store_docs.append(feature_store)
 
     # FeatureStore that can no longer instantiate a session object because of working schema
     # collision (they used to be allowed and might still exist as old documents)
@@ -96,6 +100,7 @@ async def bad_feature_stores_fixture(feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+    bad_feature_store_docs.append(feature_store)
 
     # FeatureStore with unreachable host
     feature_store = deepcopy(feature_store_doc)
@@ -105,6 +110,12 @@ async def bad_feature_stores_fixture(feature_store, persistent, user):
     await persistent.insert_one(
         collection_name="feature_store", document=feature_store, user_id=user.id
     )
+
+    yield
+
+    for doc in bad_feature_store_docs:
+        drop_schema_query = f'DROP SCHEMA IF EXISTS {doc["details"]["sf_schema"]}'
+        await session.execute_query(drop_schema_query)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
