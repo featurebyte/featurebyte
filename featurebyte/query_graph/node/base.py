@@ -144,7 +144,6 @@ class BaseNode(BaseModel):
                     out.update(cls._extract_column_str_values(val, column_str_type))
         return list(out)
 
-    @abstractmethod
     def get_required_input_columns(self, input_index: int) -> Sequence[str]:
         """
         Get the required input column names for the given input based on this node parameters.
@@ -153,6 +152,25 @@ class BaseNode(BaseModel):
         second input node. When the input_order is 0, this method will return the column names
         from the first input node. When the input_order is 1, this method will return the column
         names from the second input node.
+
+        Parameters
+        ----------
+        input_index: int
+            This parameter is used to specify which input to get the required columns
+
+        Returns
+        -------
+        Sequence[str]
+            When the output is empty, it means this node does not have any column name requirement
+            for the given input index.
+        """
+        self._validate_get_required_input_columns_input_index(input_index)
+        return self._get_required_input_columns(input_index)
+
+    @abstractmethod
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        """
+        Helper method for get_required_input_columns
 
         Parameters
         ----------
@@ -381,6 +399,37 @@ class BaseNode(BaseModel):
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
 
+    @property
+    @abstractmethod
+    def max_input_count(self) -> int:
+        """
+        Maximum number of inputs for this node
+
+        Returns
+        -------
+        int
+        """
+
+    def _validate_get_required_input_columns_input_index(self, input_index: int) -> None:
+        """
+        Validate that input index value is within the correct range.
+
+        Parameters
+        ----------
+        input_index: int
+            Input index
+
+        Raises
+        ------
+        ValueError
+            If input index is out of range
+        """
+        if input_index < 0 or input_index >= self.max_input_count:
+            raise ValueError(
+                f"Input index {input_index} is out of range. "
+                f"Input index should be within 0 to {self.max_input_count - 1}."
+            )
+
     def _assert_empty_required_input_columns(self) -> Sequence[str]:
         """
         Assert empty required input columns and return emtpy list. This is used to check if the node
@@ -510,10 +559,12 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 2:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         _ = self
@@ -593,10 +644,12 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         Union[Type[VariableNameStr], Type[ExpressionStr]]
     ] = VariableNameStr
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 2:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     @abstractmethod
     def generate_expression(self, operand: str) -> str:

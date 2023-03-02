@@ -296,7 +296,11 @@ class InputNode(BaseNode):
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    @property
+    def max_input_count(self) -> int:
+        return 0
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _derive_node_operation_info(

@@ -28,10 +28,12 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
     """BaseCountDictOpNode class"""
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 2:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def _derive_sdk_code(
         self,
@@ -114,10 +116,12 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.DICTIONARY_KEYS] = Field(NodeType.DICTIONARY_KEYS, const=True)
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 1:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.ARRAY

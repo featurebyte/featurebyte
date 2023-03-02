@@ -54,7 +54,11 @@ class ProxyInputNode(BaseNode):
     output_type: NodeOutputType
     parameters: ProxyInputNodeParameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    @property
+    def max_input_count(self) -> int:
+        return 0
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         raise RuntimeError("Proxy input node should not be used to derive input columns.")
 
     def _derive_node_operation_info(
@@ -613,6 +617,13 @@ class BaseGraphNode(BasePrunableNode):
         return cast(NodeT, self.parameters.graph.nodes_map[self.parameters.output_node_name])
 
     @property
+    def max_input_count(self) -> int:
+        node_iter = self.parameters.graph.iterate_nodes(
+            target_node=self.output_node, node_type=NodeType.PROXY_INPUT
+        )
+        return len(list(node_iter))
+
+    @property
     def is_prunable(self) -> bool:
         """
         Whether the graph node is prunable
@@ -623,7 +634,7 @@ class BaseGraphNode(BasePrunableNode):
         """
         return self.parameters.type == GraphNodeType.CLEANING
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         # first the corresponding input proxy node in the nested graph
         proxy_input_node: Optional[BaseNode] = None
         for node in self.parameters.graph.iterate_nodes(

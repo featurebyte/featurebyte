@@ -54,10 +54,12 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index == 0:
-            return self.parameters.columns
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self.parameters.columns
 
     def prune(
         self: NodeT,
@@ -161,10 +163,12 @@ class FilterNode(BaseNode):
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 2:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
@@ -312,10 +316,12 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 2:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     @staticmethod
     def _validate_series(series_op_structure: OperationStructure) -> None:
@@ -388,13 +394,15 @@ class LagNode(BaseSeriesOutputNode):
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    @property
+    def max_input_count(self) -> int:
+        return len(self.parameters.entity_columns) + 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         # this node has the following input structure:
         # [0] column to lag
         # [1...n-1] entity column(s)
         # [n] timestamp column
-        if input_index >= len(self.parameters.entity_columns) + 2:
-            raise ValueError(f"Invalid input order: {input_index}")
         if input_index == 0:
             # first input (zero-based)
             return []
@@ -441,9 +449,11 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index != 0:
-            raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -558,9 +568,11 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     # class variable
     _auto_convert_expression_to_variable: ClassVar[bool] = False
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index != 0:
-            raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -689,9 +701,11 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index != 0:
-            raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
@@ -827,9 +841,11 @@ class JoinNode(BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: JoinNodeParameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index >= 2:
-            raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         if input_index == 0:
             return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
         return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
@@ -839,7 +855,6 @@ class JoinNode(BasePrunableNode):
         input_columns: Sequence[str], output_columns: Sequence[str], available_columns: Set[str]
     ) -> Tuple[List[str], List[str]]:
         # filter input & output columns using the available columns
-
         in_cols, out_cols = [], []
         for in_col, out_col in zip(input_columns, output_columns):
             if in_col in available_columns:
@@ -1012,15 +1027,17 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         if input_index == 0:
             view_required_columns = [self.parameters.view_entity_column]
             if self.parameters.view_point_in_time_column:
                 view_required_columns.append(self.parameters.view_point_in_time_column)
             return view_required_columns
-        if input_index == 1:
-            return [self.parameters.feature_entity_column]
-        raise ValueError(f"Invalid input order {input_index}")
+        return [self.parameters.feature_entity_column]
 
     @staticmethod
     def _validate_feature(feature_op_structure: OperationStructure) -> None:
@@ -1095,9 +1112,11 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: AggregateAsAtParameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index != 0:
-            raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
@@ -1178,9 +1197,11 @@ class AliasNode(BaseNode):
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index != 0:
-            raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
@@ -1246,10 +1267,12 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
 
-    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
-        if input_index < 3:
-            return self._assert_empty_required_input_columns()
-        raise ValueError(f"Invalid input order: {input_index}")
+    @property
+    def max_input_count(self) -> int:
+        return 3
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype

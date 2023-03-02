@@ -345,7 +345,7 @@ def test_event_view_graph_node(event_table_data, event_input_node):
     )
     # only amount is required as it is used in cleaning nested graph
     # since we drop event_timestamp, only "amount" is in columns_info
-    assert set(graph_node.get_required_input_columns(input_index=0)) == {"amount", "event_id"}
+    assert set(graph_node._get_required_input_columns(input_index=0)) == {"amount", "event_id"}
     assert columns_info == [
         {
             "name": "event_id",
@@ -406,12 +406,12 @@ def test_item_view_graph_node(item_table_data, event_table_data, item_input_node
         ),
     )
 
-    assert set(item_graph_node.get_required_input_columns(input_index=0)) == {
+    assert set(item_graph_node._get_required_input_columns(input_index=0)) == {
         "item_name",
         "item_amount",
         "item_id",
     }
-    assert set(item_graph_node.get_required_input_columns(input_index=1)) == {
+    assert set(item_graph_node._get_required_input_columns(input_index=1)) == {
         "amount",
         "event_id",
         "event_timestamp",
