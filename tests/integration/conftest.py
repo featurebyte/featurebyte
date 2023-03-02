@@ -183,7 +183,9 @@ def event_loop():
     """
     Event loop to be used for async tests
     """
-    return asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(name="persistent", scope="session")
