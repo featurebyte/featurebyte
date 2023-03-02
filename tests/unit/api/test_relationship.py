@@ -2,11 +2,12 @@
 Test relationships module
 """
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.api.relationship import Relationship
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.relationship import RelationshipType
+from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
 
@@ -18,33 +19,71 @@ def relationship_info_service_fixture(app_container):
     return app_container.relationship_info_service
 
 
+@pytest.fixture(name="persistable_relationship_info")
+def persistable_relationship_info_fixture(relationship_info_service):
+    """
+    Get a callback function that will persist a relationship info.
+    """
+    primary_entity_id = PydanticObjectId(ObjectId())
+
+    async def save() -> RelationshipInfo:
+        created_relationship = await relationship_info_service.create_document(
+            RelationshipInfoCreate(
+                name="test_relationship",
+                relationship_type=RelationshipType.CHILD_PARENT,
+                primary_entity_id=primary_entity_id,
+                related_entity_id=PydanticObjectId(ObjectId()),
+                primary_data_source_id=PydanticObjectId(ObjectId()),
+                is_enabled=False,
+                updated_by=PydanticObjectId(ObjectId()),
+            )
+        )
+        assert created_relationship.primary_entity_id == primary_entity_id
+        return created_relationship
+
+    return save
+
+
+@pytest_asyncio.fixture(name="persisted_relationship_info")
+async def persisted_relationship_info_fixture(persistable_relationship_info):
+    """
+    Persisted relationship info fixture
+    """
+    persisted = await persistable_relationship_info()
+    yield persisted
+
+
+def test_accessing_persisted_relationship_info_attributes(persisted_relationship_info):
+    """
+    Test accessing relationship info attributes
+    """
+    # Retrieving one copy from the database
+    version_1 = Relationship.get_by_id(id=persisted_relationship_info.id)
+    assert not version_1.is_enabled
+
+    # Retrieving another copy from the database
+    version_2 = Relationship.get_by_id(id=persisted_relationship_info.id)
+    assert not version_2.is_enabled
+
+    # Update the enabled value on the first in-memory version
+    version_1.enable(True)
+
+    # Check that both versions are updated
+    assert version_1.is_enabled
+    assert version_2.is_enabled
+
+
 @pytest.mark.asyncio
-async def test_relationships_list(relationship_info_service):
+async def test_relationships_list(persistable_relationship_info):
     """
     Test relationships list
     """
     relationships = Relationship.list()
     assert relationships.shape[0] == 0
 
-    primary_entity_id = PydanticObjectId(ObjectId())
-    related_entity_id = PydanticObjectId(ObjectId())
-    primary_data_source_id = PydanticObjectId(ObjectId())
-    updated_by_user_id = PydanticObjectId(ObjectId())
-
-    # create new relationship
-    relationship_type = RelationshipType.CHILD_PARENT
-    created_relationship = await relationship_info_service.create_document(
-        RelationshipInfoCreate(
-            name="test_relationship",
-            relationship_type=relationship_type,
-            primary_entity_id=primary_entity_id,
-            related_entity_id=related_entity_id,
-            primary_data_source_id=primary_data_source_id,
-            is_enabled=True,
-            updated_by=updated_by_user_id,
-        )
-    )
-    assert created_relationship.primary_entity_id == primary_entity_id
+    persisted_relationship_info = await persistable_relationship_info()
+    primary_entity_id = persisted_relationship_info.primary_entity_id
+    relationship_type = persisted_relationship_info.relationship_type
 
     # verify that there's one relationship that was created
     relationships = Relationship.list()
@@ -67,44 +106,27 @@ async def test_relationships_list(relationship_info_service):
 
 
 @pytest.mark.asyncio
-async def test_enable(relationship_info_service):
+async def test_enable(persisted_relationship_info):
     """
     Test enable
     """
-    primary_entity_id = PydanticObjectId(ObjectId())
-    related_entity_id = PydanticObjectId(ObjectId())
-    primary_data_source_id = PydanticObjectId(ObjectId())
-    updated_by_user_id = PydanticObjectId(ObjectId())
-
-    # create new relationship
-    relationship_type = RelationshipType.CHILD_PARENT
-    created_relationship = await relationship_info_service.create_document(
-        RelationshipInfoCreate(
-            name="test_relationship",
-            relationship_type=relationship_type,
-            primary_entity_id=primary_entity_id,
-            related_entity_id=related_entity_id,
-            primary_data_source_id=primary_data_source_id,
-            is_enabled=False,
-            updated_by=updated_by_user_id,
-        )
-    )
-    assert not created_relationship.is_enabled
+    # verify that relationship is not enabled
+    assert not persisted_relationship_info.is_enabled
 
     # retrieve relationship via get_by_id
-    relationship = Relationship.get_by_id(created_relationship.id)
+    relationship = Relationship.get_by_id(persisted_relationship_info.id)
     assert not relationship.is_enabled
 
     # enable relationship
     relationship.enable(True)
 
     # verify that relationship is now enabled
-    relationship = Relationship.get_by_id(created_relationship.id)
+    relationship = Relationship.get_by_id(persisted_relationship_info.id)
     assert relationship.is_enabled
 
     # disable relationship
     relationship.enable(False)
 
     # verify that relationship is now enabled
-    relationship = Relationship.get_by_id(created_relationship.id)
+    relationship = Relationship.get_by_id(persisted_relationship_info.id)
     assert not relationship.is_enabled

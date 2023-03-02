@@ -3,13 +3,10 @@ Relationships API object
 """
 from typing import Literal, Optional
 
-from http import HTTPStatus
-
 import pandas as pd
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte import Configurations
 from featurebyte.api.api_object import ApiObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
@@ -128,8 +125,4 @@ class Relationship(ApiObject):
         payload = RelationshipInfoUpdate(
             is_enabled=enable,
         )
-
-        client = Configurations().get_client()
-        response = client.patch(url=f"/relationship_info/{self.id}", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
+        self.update(payload.json_dict(), allow_update_local=True, add_internal_prefix=True)
