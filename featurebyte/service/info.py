@@ -7,12 +7,12 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
-from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (

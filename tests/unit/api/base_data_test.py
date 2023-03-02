@@ -5,9 +5,9 @@ import textwrap
 
 import pytest
 
+from featurebyte import MissingValueImputation
 from featurebyte.api.base_data import DataColumn
 from featurebyte.enum import StrEnum
-from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 
 
 class DataType(StrEnum):

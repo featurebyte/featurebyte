@@ -52,8 +52,8 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy

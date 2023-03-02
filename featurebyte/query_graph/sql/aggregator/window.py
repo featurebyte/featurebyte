@@ -8,8 +8,7 @@ from typing import Any, Iterable, Optional, Tuple, cast
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte import SourceType
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,

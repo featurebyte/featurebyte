@@ -27,8 +27,11 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
+)
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation, DataCleaningOperation
 from tests.util.helper import check_aggressively_pruned_graph, check_sdk_code_generation, get_node
 
 

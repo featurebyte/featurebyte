@@ -17,9 +17,10 @@ from featurebyte.logger import logger
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.table import SCDTableData
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation, ViewMetadata
+from featurebyte.query_graph.node.nested import ViewMetadata
 
 
 class SlowlyChangingViewColumn(ViewColumn):
