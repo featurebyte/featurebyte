@@ -572,7 +572,7 @@ def test_create_new_version__with_data_cleaning_operations(saved_feature, update
                         column_name="cust_id",
                         cleaning_operations=[MissingValueImputation(imputed_value=-999)],
                     ),
-                    # unaffected column
+                    # unused column
                     ColumnCleaningOperation(
                         column_name="col_int",
                         cleaning_operations=[MissingValueImputation(imputed_value=0)],

@@ -848,7 +848,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
                         column_name="event_id_col",
                         cleaning_operations=[MissingValueImputation(imputed_value=-999)],
                     ),
-                    # unaffected column
+                    # unused column
                     ColumnCleaningOperation(
                         column_name="item_id_col",
                         cleaning_operations=[MissingValueImputation(imputed_value=-99)],
@@ -863,7 +863,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
                         column_name="col_int",
                         cleaning_operations=[MissingValueImputation(imputed_value=-99)],
                     ),
-                    # unaffected column
+                    # unused column
                     ColumnCleaningOperation(
                         column_name="col_float",
                         cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
@@ -896,7 +896,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
     )
 
 
-def test_as_feature__from_view_column(saved_item_data, item_entity):
+def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtures):
     """
     Test calling as_feature() from ItemView column
     """
@@ -940,6 +940,33 @@ def test_as_feature__from_view_column(saved_item_data, item_entity):
                 "record_creation_date_column": saved_item_data.record_creation_date_column,
             }
         },
+    )
+
+    # test create new version & check SDK code generation
+    feature.save()
+    new_version = feature.create_new_version(
+        feature_job_setting=None,
+        data_cleaning_operations=[
+            DataCleaningOperation(
+                data_name="sf_item_data",
+                column_cleaning_operations=[
+                    ColumnCleaningOperation(
+                        column_name="item_amount",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        new_version,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_as_feat_with_data_cleaning_operations.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_item_data.id,
+        event_data_id=saved_item_data.event_data_id,
     )
 
 
