@@ -55,7 +55,6 @@ async def test_update_feature__no_update_except_updated_at(
     updated_feature = await deploy_service._update_feature(
         feature_id=feature.id,
         feature_list=feature_list,
-        get_credential=Mock(),
     )
     assert updated_feature.dict(exclude={"updated_at": True}) == feature.dict(
         exclude={"updated_at": True}
