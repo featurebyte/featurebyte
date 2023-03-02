@@ -220,6 +220,9 @@ jobs:
         run: |
           make test-setup
           make test-integration-spark
+          if [ $? -ne 0 ]; then
+              docker logs spark-thrift | tail -n 2000
+          fi
           make test-teardown
           mv .coverage .coverage.2
       - name: Upload test results
