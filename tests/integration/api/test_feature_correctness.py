@@ -245,20 +245,12 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_aggregate_over(
-    transaction_data_upper_case,
-    observation_set,
-    event_data,
-    config,
-):
+@pytest.fixture(name="feature_parameters")
+def feature_parameters_fixture(source_type):
     """
-    Test that aggregate_over produces correct feature values
+    Parameters for feature tests using aggregate_over
     """
-
-    # Test cases listed here. This is written this way instead of parametrized test is so that all
-    # features can be retrieved in one historical request
-    feature_parameters = [
+    parameters = [
         ("ÀMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), None),
         ("ÀMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), None),
         ("ÀMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
@@ -294,7 +286,22 @@ def test_aggregate_over(
             None,
         ),
     ]
+    if source_type == "spark":
+        parameters = [param for param in parameters if param[1] in ["max", "std", "latest"]]
+    return parameters
 
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_aggregate_over(
+    transaction_data_upper_case,
+    observation_set,
+    event_data,
+    config,
+    feature_parameters,
+):
+    """
+    Test that aggregate_over produces correct feature values
+    """
     event_view = EventView.from_event_data(event_data)
     feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
@@ -375,6 +382,8 @@ def test_aggregate_over(
     feature_list = FeatureList(features, name="feature_list")
 
     dict_like_columns = ["count_by_action_24h"]
+    dict_like_columns = [col for col in dict_like_columns if col in df_expected.columns]
+
     check_feature_preview(feature_list, df_expected, dict_like_columns)
 
     tic = time.time()
@@ -401,7 +410,7 @@ def test_aggregate_over(
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat(
     scd_dataframe,
     scd_observation_set,
