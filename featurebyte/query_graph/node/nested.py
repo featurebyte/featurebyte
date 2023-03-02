@@ -54,7 +54,7 @@ class ProxyInputNode(BaseNode):
     output_type: NodeOutputType
     parameters: ProxyInputNodeParameters
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
         raise RuntimeError("Proxy input node should not be used to derive input columns.")
 
     def _derive_node_operation_info(
@@ -623,14 +623,14 @@ class BaseGraphNode(BasePrunableNode):
         """
         return self.parameters.type == GraphNodeType.CLEANING
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
         # first the corresponding input proxy node in the nested graph
         proxy_input_node: Optional[BaseNode] = None
         for node in self.parameters.graph.iterate_nodes(
             target_node=self.output_node, node_type=NodeType.PROXY_INPUT
         ):
             assert isinstance(node, ProxyInputNode)
-            if node.parameters.input_order == input_order:
+            if node.parameters.input_order == input_index:
                 proxy_input_node = node
 
         assert proxy_input_node is not None, "Cannot find corresponding proxy input node!"
@@ -643,8 +643,8 @@ class BaseGraphNode(BasePrunableNode):
         for target_node_name in target_node_names:
             target_node = self.parameters.graph.nodes_map[target_node_name]
             target_input_node_names = self.parameters.graph.get_input_node_names(target_node)
-            input_order = target_input_node_names.index(proxy_input_node.name)
-            required_input_columns.update(target_node.get_required_input_columns(input_order))
+            input_index = target_input_node_names.index(proxy_input_node.name)
+            required_input_columns.update(target_node.get_required_input_columns(input_index))
         return list(required_input_columns)
 
     def resolve_node_pruned(self, input_node_names: List[str]) -> str:

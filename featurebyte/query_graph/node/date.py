@@ -68,10 +68,10 @@ class DateDifference(BaseSeriesOutputNode):
 
     type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
-        if input_order < 2:
-            return []
-        raise ValueError(f"Invalid input order: {input_order}")
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index < 2:
+            return self._assert_empty_required_input_columns()
+        raise ValueError(f"Invalid input order: {input_index}")
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
@@ -100,10 +100,10 @@ class TimeDelta(BaseSeriesOutputNode):
     type: Literal[NodeType.TIMEDELTA] = Field(NodeType.TIMEDELTA, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
-        if input_order < 2:
-            return []
-        raise ValueError(f"Invalid input order: {input_order}")
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index < 2:
+            return self._assert_empty_required_input_columns()
+        raise ValueError(f"Invalid input order: {input_index}")
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
@@ -138,10 +138,10 @@ class DateAdd(BaseSeriesOutputNode):
     type: Literal[NodeType.DATE_ADD] = Field(NodeType.DATE_ADD, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
-        if input_order < 2:
-            return []
-        raise ValueError(f"Invalid input order: {input_order}")
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index < 2:
+            return self._assert_empty_required_input_columns()
+        raise ValueError(f"Invalid input order: {input_index}")
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].columns[0].dtype

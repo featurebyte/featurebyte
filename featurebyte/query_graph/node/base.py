@@ -145,7 +145,7 @@ class BaseNode(BaseModel):
         return list(out)
 
     @abstractmethod
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
         """
         Get the required input column names for the given input based on this node parameters.
         For example, a JoinNode will consume two input node and inside the JoinNode parameters,
@@ -156,7 +156,7 @@ class BaseNode(BaseModel):
 
         Parameters
         ----------
-        input_order: int
+        input_index: int
             This parameter is used to specify which input to get the required columns
 
         Returns
@@ -381,6 +381,25 @@ class BaseNode(BaseModel):
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
 
+    def _assert_empty_required_input_columns(self) -> Sequence[str]:
+        """
+        Assert empty required input columns and return emtpy list. This is used to check if the node
+        parameters has any InColumnStr parameters. If yes, we should update get_required_input_columns
+        method to reflect the required input columns.
+
+        Returns
+        -------
+        Sequence[str]
+
+        Raises
+        ------
+        AssertionError
+            If required input columns is not empty
+        """
+        input_columns = self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        assert len(input_columns) == 0
+        return input_columns
+
 
 class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""
@@ -491,10 +510,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
-        if input_order < 2:
-            return []
-        raise ValueError(f"Invalid input order {input_order}")
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index < 2:
+            return self._assert_empty_required_input_columns()
+        raise ValueError(f"Invalid input order {input_index}")
 
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         _ = self
@@ -574,10 +593,10 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         Union[Type[VariableNameStr], Type[ExpressionStr]]
     ] = VariableNameStr
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
-        if input_order < 2:
-            return []
-        raise ValueError(f"Invalid input order: {input_order}")
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index < 2:
+            return self._assert_empty_required_input_columns()
+        raise ValueError(f"Invalid input order: {input_index}")
 
     @abstractmethod
     def generate_expression(self, operand: str) -> str:

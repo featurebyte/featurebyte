@@ -344,7 +344,7 @@ class GraphStructurePruningExtractor(
             # construct required column names
             required_columns = set().union(
                 *(
-                    node.get_required_input_columns(input_order=input_order)
+                    node.get_required_input_columns(input_index=input_order)
                     for node, input_order in target_node_input_order_pairs
                 )
             )

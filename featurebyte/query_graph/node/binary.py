@@ -158,10 +158,10 @@ class IsInNode(BaseSeriesOutputNode):
     type: Literal[NodeType.IS_IN] = Field(NodeType.IS_IN, const=True)
     parameters: Parameters
 
-    def get_required_input_columns(self, input_order: int) -> Sequence[str]:
-        if input_order < 2:
-            return []
-        raise ValueError(f"Invalid input order: {input_order}")
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index < 2:
+            return self._assert_empty_required_input_columns()
+        raise ValueError(f"Invalid input order: {input_index}")
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
