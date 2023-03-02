@@ -89,7 +89,7 @@ jobs:
       - name: Replace docker-compose image tag
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.services.featurebyte-server.image = "${IMAGE_REPO}:${{ github.event.inputs.version }}" featurebyte/docker/featurebyte.yml
+          cmd: yq -i '.services.featurebyte-server.image = "${IMAGE_REPO}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'
