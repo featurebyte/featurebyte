@@ -664,13 +664,33 @@ class Feature(
 
         Create a new version of a feature with different feature job setting
 
-        >>> feature = Feature.get("my_magic_feature")  # doctest: +SKIP
-        >>> feature.created_new_version(
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.create_new_version(
         ...   feature_job_setting=FeatureJobSetting(
         ...     blind_spot="10m",
         ...     frequency="30m",
         ...     time_modulo_frequency="5m",
         ...   )
+        ... )  # doctest: +SKIP
+
+
+        Create a new version of a feature with data cleaning operations
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.create_new_version(
+        ...   data_cleaning_operations=[
+        ...     fb.DataCleaningOperation(
+        ...       data_name="some_event_data_name",
+        ...       column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...           column_name="some_column_name",
+        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...         )
+        ...       ],
+        ...     )
+        ...   ]
         ... )  # doctest: +SKIP
 
         """
