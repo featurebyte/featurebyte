@@ -8,12 +8,16 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.relationship import RelationshipType
+from featurebyte.models.user import DEFAULT_USER_PYDANTIC_OBJECT_ID
 from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataServiceUpdate
 from featurebyte.schema.item_data import ItemDataServiceUpdate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_data import SCDDataServiceUpdate
 from featurebyte.schema.tabular_data import DataServiceUpdate
 
@@ -267,7 +271,14 @@ async def entity_qux_fixture(entity_service):
         (set(), {"baz"}, {"foo"}, {"baz"}, [], ["baz"]),
         # add a new parent entity
         ({"foo"}, set(), {"foo"}, {"bar"}, ["bar"], ["bar"]),
-        ({"foo"}, {"bar"}, {"foo"}, {"bar", "baz"}, ["bar", "baz"], ["bar", "baz"]),
+        (
+            {"foo"},
+            {"bar"},
+            {"foo"},
+            {"bar", "baz"},
+            ["bar", "baz"],
+            ["bar", "baz"],
+        ),
         # remove a parent entity
         ({"foo"}, {"bar"}, {"foo"}, set(), [], []),
         ({"foo"}, {"bar", "baz"}, {"foo"}, {"bar"}, ["bar"], ["bar"]),
@@ -282,6 +293,7 @@ async def entity_qux_fixture(entity_service):
 async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     data_update_service,
     entity_service,
+    relationship_info_service,
     event_data,
     entity_foo,
     entity_bar,
@@ -308,6 +320,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     new_primary_entities = convert_entity_name_to_ids(new_primary_entities, entities)
     new_parent_entities = convert_entity_name_to_ids(new_parent_entities, entities)
     for entity_id in old_primary_entities:
+        # Initialize the primary entity
         await entity_service.update_document(
             document_id=entity_id,
             data=EntityServiceUpdate(
@@ -317,6 +330,19 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
                 ]
             ),
         )
+        # Initialize relationships
+        for parent_id in old_parent_entities:
+            await relationship_info_service.create_document(
+                data=RelationshipInfoCreate(
+                    name=f"{entity_id}_{parent_id}",
+                    relationship_type=RelationshipType.CHILD_PARENT,
+                    primary_entity_id=PydanticObjectId(entity_id),
+                    related_entity_id=PydanticObjectId(parent_id),
+                    primary_data_source_id=PydanticObjectId(event_data.id),
+                    is_enabled=True,
+                    updated_by=DEFAULT_USER_PYDANTIC_OBJECT_ID,
+                )
+            )
 
     # call update entity relationship
     await data_update_service._update_entity_relationship(
@@ -343,6 +369,8 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
             expected_parents, key=key_sorter
         )
 
+        # TODO: assert that relationship info's are deleted
+
     for entity_id in new_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
         expected_parent_ids = convert_entity_name_to_ids(expected_new_primary_parents, entities)
@@ -353,6 +381,27 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
         assert sorted(primary_entity.parents, key=key_sorter) == sorted(
             expected_parents, key=key_sorter
         )
+
+        # Verify that relationship info's are created
+        expect_change = (
+            len(new_parent_entities.difference(old_parent_entities)) > 0
+            or len(new_primary_entities.difference(old_primary_entities)) > 0
+        )
+        for expected_parent_id in expected_parent_ids:
+            results, count = await relationship_info_service.persistent.find(
+                collection_name=relationship_info_service.collection_name,
+                query_filter={
+                    "primary_entity_id": entity_id,
+                    "related_entity_id": expected_parent_id,
+                },
+            )
+            if expect_change:
+                assert count == 1
+                results = [result for result in results]
+                assert len(results) == 1
+                result = results[0]
+                assert result["primary_entity_id"] == entity_id
+                assert result["related_entity_id"] == expected_parent_id
 
 
 async def _update_data_columns_info(
