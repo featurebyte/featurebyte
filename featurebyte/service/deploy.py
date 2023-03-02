@@ -90,8 +90,13 @@ class DeployService(BaseService):
             document = await self.online_enable_service.update_feature(
                 feature_id=feature_id,
                 online_enabled=online_enabled,
-                get_credential=get_credential,
             )
+
+            # move update warehouse and backfill tiles to outside of transaction
+            await self.online_enable_service.update_data_warehouse(
+                feature_id=feature_id, get_credential=get_credential
+            )
+
         return await self.feature_service.update_document(
             document_id=feature_id,
             data=FeatureServiceUpdate(
@@ -172,8 +177,11 @@ class DeployService(BaseService):
                 await self.online_enable_service.update_feature(
                     feature_id=feature_id,
                     online_enabled=online_enabled,
-                    get_credential=get_credential,
                 )
+            # move update warehouse and backfill tiles to outside of transaction
+            await self.online_enable_service.update_data_warehouse(
+                feature_id=feature_id, get_credential=get_credential
+            )
 
         # update feature list namespace again
         assert isinstance(feature_list, FeatureListModel)

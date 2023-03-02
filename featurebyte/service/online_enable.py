@@ -167,18 +167,20 @@ class OnlineEnableService(BaseService):
         else:
             await feature_manager.online_disable(online_feature_spec)
 
-    async def _update_data_warehouse(self, feature: FeatureModel, get_credential: Any) -> None:
+    async def update_data_warehouse(self, feature_id: ObjectId, get_credential: Any) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
         disabling scheduled tile and feature jobs
 
         Parameters
         ----------
-        feature: FeatureModel
-            Updated Feature object
+        feature_id: ObjectId
+            Updated Feature ID
         get_credential: Any
             Get credential handler function
         """
+        feature = await self.feature_service.get_document(document_id=feature_id)
+
         feature_store_model = await self.feature_store_service.get_document(
             document_id=feature.tabular_source.feature_store_id
         )
@@ -191,7 +193,6 @@ class OnlineEnableService(BaseService):
         self,
         feature_id: ObjectId,
         online_enabled: bool,
-        get_credential: Any,
     ) -> FeatureModel:
         """
         Update feature online enabled & trigger list of cascading updates
@@ -202,8 +203,6 @@ class OnlineEnableService(BaseService):
             Target feature ID
         online_enabled: bool
             Value to update the feature online_enabled status
-        get_credential: Any
-            Get credential handler function
 
         Returns
         -------
@@ -230,6 +229,7 @@ class OnlineEnableService(BaseService):
                         feature=feature,
                         return_document=False,
                     )
-                await self._update_data_warehouse(feature=feature, get_credential=get_credential)
+
                 return await self.feature_service.get_document(document_id=feature_id)
+
         return document
