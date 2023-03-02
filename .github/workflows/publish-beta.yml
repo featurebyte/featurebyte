@@ -121,6 +121,9 @@ jobs:
             ${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}
             ${{ env.IMAGE_REPO }}:${{ github.ref_name }}
           context: .
+          platforms: |
+            linux/amd64
+            linux/arm64
           file: docker/Dockerfile
           cache-from: type=registry,ref=${{ env.IMAGE_REPO }}:${{ github.ref_name }}
           cache-to: type=inline
