@@ -50,6 +50,7 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     ProjectNode,
 )
+from featurebyte.query_graph.node.nested import DataCleaningOperation
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
@@ -634,14 +635,20 @@ class Feature(
         return dataframe_from_json(result)
 
     @typechecked
-    def create_new_version(self, feature_job_setting: FeatureJobSetting) -> Feature:
+    def create_new_version(
+        self,
+        feature_job_setting: Optional[FeatureJobSetting] = None,
+        data_cleaning_operations: Optional[List[DataCleaningOperation]] = None,
+    ) -> Feature:
         """
         Create new feature version from the current one.
 
         Parameters
         ----------
-        feature_job_setting: FeatureJobSetting
+        feature_job_setting: Optional[FeatureJobSetting]
             New feature job setting
+        data_cleaning_operations: Optional[List[DataCleaningOperation]]
+            List of data cleaning operations to be applied to the feature
 
         Returns
         -------
@@ -657,13 +664,33 @@ class Feature(
 
         Create a new version of a feature with different feature job setting
 
-        >>> feature = Feature.get("my_magic_feature")  # doctest: +SKIP
-        >>> feature.created_new_version(
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.create_new_version(
         ...   feature_job_setting=FeatureJobSetting(
         ...     blind_spot="10m",
         ...     frequency="30m",
         ...     time_modulo_frequency="5m",
-        ...   )
+        ...   ),
+        ... )  # doctest: +SKIP
+
+
+        Create a new version of a feature with data cleaning operations
+
+        >>> import featurebyte as fb
+        >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
+        >>> feature.create_new_version(
+        ...   data_cleaning_operations=[
+        ...     fb.DataCleaningOperation(
+        ...       data_name="some_event_data_name",
+        ...       column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...           column_name="some_column_name",
+        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...         )
+        ...       ],
+        ...     )
+        ...   ]
         ... )  # doctest: +SKIP
 
         """
@@ -672,7 +699,12 @@ class Feature(
             url=self._route,
             json={
                 "source_feature_id": str(self.id),
-                "feature_job_setting": feature_job_setting.dict(),
+                "feature_job_setting": feature_job_setting.dict() if feature_job_setting else None,
+                "data_cleaning_operations": [
+                    clean_ops.dict() for clean_ops in data_cleaning_operations
+                ]
+                if data_cleaning_operations
+                else None,
             },
         )
         if response.status_code != HTTPStatus.CREATED:

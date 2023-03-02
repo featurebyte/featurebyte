@@ -19,7 +19,7 @@ from featurebyte.query_graph.model.critical_data_info import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation
+from featurebyte.query_graph.node.nested import ColumnCleaningOperation, DataCleaningOperation
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -795,10 +795,9 @@ def test_validate_aggregate_over_parameters(snowflake_item_data, transaction_ent
     snowflake_item_view.validate_aggregate_over_parameters(group_by.keys, None)
 
 
-def test_non_time_feature__create_new_version(saved_item_data, transaction_entity):
-    """
-    Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
-    """
+@pytest.fixture(name="non_time_based_saved_feature")
+def non_time_based_saved_feature_fixture(saved_item_data, transaction_entity):
+    """Non-time-based saved feature fixture"""
     saved_item_data["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_view = ItemView.from_item_data(saved_item_data, event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
@@ -808,12 +807,19 @@ def test_non_time_feature__create_new_version(saved_item_data, transaction_entit
     derived_feature = feature + 123
     derived_feature.name = "feat"
     derived_feature.save()
+    return derived_feature
 
+
+def test_non_time_based_feature__create_new_version(non_time_based_saved_feature):
+    """
+    Test aggregating on event id column yields item groupby operation (ItemGroupbyNode)
+    """
     with pytest.raises(RecordCreationException) as exc:
-        derived_feature.create_new_version(
+        non_time_based_saved_feature.create_new_version(
             feature_job_setting=FeatureJobSetting(
                 blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-            )
+            ),
+            data_cleaning_operations=None,
         )
 
     expected_msg = (
@@ -823,7 +829,74 @@ def test_non_time_feature__create_new_version(saved_item_data, transaction_entit
     assert expected_msg in str(exc.value)
 
 
-def test_as_feature__from_view_column(saved_item_data, item_entity):
+def test_non_time_based_feature__create_new_version_with_data_cleaning(
+    saved_item_data, non_time_based_saved_feature, update_fixtures
+):
+    """Test creation of new version with data cleaning operations"""
+    # check sdk code generation of source feature
+    check_sdk_code_generation(non_time_based_saved_feature, to_use_saved_data=True)
+
+    # create a new version with data cleaning operations
+    new_version = non_time_based_saved_feature.create_new_version(
+        feature_job_setting=None,
+        data_cleaning_operations=[
+            DataCleaningOperation(
+                data_name="sf_item_data",
+                column_cleaning_operations=[
+                    # group by column
+                    ColumnCleaningOperation(
+                        column_name="event_id_col",
+                        cleaning_operations=[MissingValueImputation(imputed_value=-999)],
+                    ),
+                    # unused column
+                    ColumnCleaningOperation(
+                        column_name="item_id_col",
+                        cleaning_operations=[MissingValueImputation(imputed_value=-99)],
+                    ),
+                ],
+            ),
+            DataCleaningOperation(
+                data_name="sf_event_data",
+                column_cleaning_operations=[
+                    # event ID column
+                    ColumnCleaningOperation(
+                        column_name="col_int",
+                        cleaning_operations=[MissingValueImputation(imputed_value=-99)],
+                    ),
+                    # unused column
+                    ColumnCleaningOperation(
+                        column_name="col_float",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    # check sdk code generation of newly created feature
+    # Note: check_final_hash=False because the hash of the generated SDK code is different from original pruned graph.
+    # DEV-1162: Inside the item view graph, below is the list of nodes in the nested graph:
+    # {"proxy_input_1": ["project_1"], "project_1": ["graph_1"], "graph_1": ["join_1"], "proxy_input_2": ["join_1"]}
+    # proxy_input_1: item data node
+    # proxy_input_2: event view graph node
+    # graph_1: cleaning operation graph node for item data
+    # The cleaning operation graph node's output node is a join node. Since all the columns used in the join node
+    # will be kept during graph pruning, we can't prune the cleaning operation graph node.
+    # However, we can prune the item view graph node's metadata, which affects the generated SDK code.
+    # This causes the difference in the generated SDK code has vs the original pruned graph as
+    # the graph constructed by the SDK code will not contain unused cleaning operations.
+    check_sdk_code_generation(
+        new_version,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_non_time_based_with_data_cleaning_operations.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_item_data.id,
+        event_data_id=saved_item_data.event_data_id,
+        check_final_hash=False,
+    )
+
+
+def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtures):
     """
     Test calling as_feature() from ItemView column
     """
@@ -867,6 +940,33 @@ def test_as_feature__from_view_column(saved_item_data, item_entity):
                 "record_creation_date_column": saved_item_data.record_creation_date_column,
             }
         },
+    )
+
+    # test create new version & check SDK code generation
+    feature.save()
+    new_version = feature.create_new_version(
+        feature_job_setting=None,
+        data_cleaning_operations=[
+            DataCleaningOperation(
+                data_name="sf_item_data",
+                column_cleaning_operations=[
+                    ColumnCleaningOperation(
+                        column_name="item_amount",
+                        cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    # check SDK code generation
+    check_sdk_code_generation(
+        new_version,
+        to_use_saved_data=True,
+        fixture_path="tests/fixtures/sdk_code/feature_as_feat_with_data_cleaning_operations.py",
+        update_fixtures=update_fixtures,
+        data_id=saved_item_data.id,
+        event_data_id=saved_item_data.event_data_id,
     )
 
 
