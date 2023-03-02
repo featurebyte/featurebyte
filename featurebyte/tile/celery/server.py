@@ -8,6 +8,7 @@ import subprocess
 import redis
 import redislite
 from pydantic import BaseModel, Field
+from redislite.client import RedisLiteServerStartError
 
 from featurebyte.logger import logger
 
@@ -57,11 +58,17 @@ class FBRedis(BaseModel):
             logger.info(f"existing redis_pid: {redis_pid}")
         except redis.exceptions.ConnectionError:
             logger.info(f"Starting local redis {self.redis_url}")
-            self.redis_server = redislite.Redis(serverconfig={"port": self.redis_port})
-            redis_pid = self.redis_server.pid
 
-            self.redis_conn.set(self.redis_pid_key, redis_pid)
-            logger.info(f"new redis_pid: {redis_pid}")
+            try:
+                self.redis_server = redislite.Redis(serverconfig={"port": self.redis_port})
+                redis_pid = self.redis_server.pid
+            except RedisLiteServerStartError:
+                logger.info(f"Redis server already started")
+                redis_pid = self.redis_conn.get(self.redis_pid_key)
+                logger.info(f"existing redis_pid 2: {redis_pid}")
+
+            self.redis_conn.set(self.redis_pid_key, cast(int, redis_pid))
+            logger.info(f"redis_pid: {redis_pid}")
 
         self.redis_pid = cast(int, redis_pid)
 
