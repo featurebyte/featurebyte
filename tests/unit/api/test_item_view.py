@@ -875,7 +875,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
 
     # check sdk code generation of newly created feature
     # Note: check_final_hash=False because the hash of the generated SDK code is different from original pruned graph.
-    # Inside the item view graph, below is the list of nodes in the nested graph:
+    # DEV-1162: Inside the item view graph, below is the list of nodes in the nested graph:
     # {"proxy_input_1": ["project_1"], "project_1": ["graph_1"], "graph_1": ["join_1"], "proxy_input_2": ["join_1"]}
     # proxy_input_1: item data node
     # proxy_input_2: event view graph node
