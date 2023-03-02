@@ -262,6 +262,8 @@ def print_version() -> None:
     """Print featurebyte version"""
     console.print(Text("featurebyte ", style="cyan") + Text(version, style="bold green"))
 
+@app.command(name="datasets")
+
 
 if __name__ == "__main__":
     app()

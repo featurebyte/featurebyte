@@ -33,3 +33,54 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
     volumes:
       - ./migration.py:/scripts/migration.py
+
+  spark-pthrift:
+    image: featurebyte/cluster-apache-spark:3.3.1
+    container_name: spark-thrift
+    ports:
+      - "10000:10000"
+      - "4040:4040"
+    environment:
+      - SPARK_MASTER=local
+      - SPARK_LOCAL_IP=spark-thrift
+      - "LOCAL_UID=${LOCAL_UID}"
+      - "LOCAL_GID=${LOCAL_GID}"
+    volumes:
+      - type: volume
+        target: /opt/spark/data/derby/warehouse
+        source: spark-warehouse
+      - type: bind
+        target: /opt/spark/data/derby
+        source: ~/.featurebyte/data/spark
+      - type: bind
+        target: /tmp
+        source: /tmp
+    healthcheck:
+      test: netstat -ltn | grep -c 10000
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    command:
+      - /bin/sh
+      - -c
+      - |
+        /opt/spark/bin/spark-submit \
+        --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 \
+        --name Thrift JDBC/ODBC Server \
+        --hiveconf hive.server2.thrift.port=10000 \
+        --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
+        --hiveconf derby.system.home=/opt/spark/data/derby \
+        --master=local[*] \
+        --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
+        --conf spark.driver.memory=6G \
+        --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+        --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+        --conf spark.sql.catalogImplementation=hive  \
+        --conf spark.sql.warehouse.dir=file:///opt/spark/data/derby/warehouse/ \
+        --conf spark.sql.hive.thriftServer.singleSession=false \
+        --conf spark.hadoop.metastore.catalog.default=spark \
+        --conf spark.sql.adaptive.enabled=true
+
+volumes:
+  spark-warehouse: {}

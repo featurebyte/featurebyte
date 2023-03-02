@@ -56,7 +56,7 @@ def import_dataset(dataset_name: str) -> None:
     if not os.path.exists(path):
         raise FileNotFoundError(path)
 
-    local_staging_basepath = Path("~/.spark/data/staging/datasets").expanduser()
+    local_staging_basepath = Path("~/.featurebyte/data/spark/staging/datasets").expanduser()
     local_staging_basepath.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=local_staging_basepath) as local_staging_path:
 

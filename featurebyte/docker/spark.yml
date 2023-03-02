@@ -14,6 +14,7 @@ services:
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
       - ~/.featurebyte/data/spark:/opt/spark/data/derby
+      - namevalume:/opt/spark/data/derby/warehouse
       - /tmp:/tmp
     healthcheck:
       test: netstat -ltn | grep -c 10000
