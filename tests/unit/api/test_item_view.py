@@ -5,21 +5,21 @@ import textwrap
 
 import pytest
 
-from featurebyte import AggFunc
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.critical_data_info import (
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
     MissingValueImputation,
     StringValueImputation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation, DataCleaningOperation
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
 from tests.util.helper import check_sdk_code_generation, get_node
 

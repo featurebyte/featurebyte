@@ -16,7 +16,7 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.nested import DataCleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject

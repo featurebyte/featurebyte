@@ -6,12 +6,11 @@ from abc import abstractmethod
 
 import pytest
 
-from featurebyte import MissingValueImputation
+from featurebyte import ColumnCleaningOperation, MissingValueImputation
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation
 from tests.util.helper import check_sdk_code_generation
 
 

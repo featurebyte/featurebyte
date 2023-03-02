@@ -16,14 +16,13 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import (
-    BaseGraphNode,
+from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     DataCleaningOperation,
-    ViewMetadata,
 )
+from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import BaseGraphNode, ViewMetadata
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService

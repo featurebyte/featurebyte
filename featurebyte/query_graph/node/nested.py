@@ -19,13 +19,13 @@ from typing_extensions import Annotated
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
-from featurebyte.common.typing import Numeric, OptionalScalar
-from featurebyte.enum import StrEnum, ViewMode
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.enum import ViewMode
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.metadata.operation import (
     OperationStructure,
     OperationStructureBranchState,
@@ -39,7 +39,6 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VariableNameGenerator,
     VarNameExpressionStr,
 )
-from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
 class ProxyInputNode(BaseNode):
@@ -140,137 +139,6 @@ class BaseGraphNodeParameters(BaseModel):
         -------
         Tuple[List[StatementT], VarNameExpressionStr]
         """
-
-
-class ConditionOperationField(StrEnum):
-    """Field values used in critical data info operation"""
-
-    MISSING = "missing"
-    DISGUISED = "disguised"
-    NOT_IN = "not_in"
-    LESS_THAN = "less_than"
-    LESS_THAN_OR_EQUAL = "less_than_or_equal"
-    GREATER_THAN = "greater_than"
-    GREATER_THAN_OR_EQUAL = "greater_than_or_equal"
-    IS_STRING = "is_string"
-
-
-class BaseCleaningOperation(FeatureByteBaseModel):
-    """BaseCleaningOperation class"""
-
-    imputed_value: OptionalScalar
-
-    @abstractmethod
-    def derive_sdk_code(self) -> ObjectClass:
-        """
-        Derive SDK code for the current cleaning operation
-
-        Returns
-        -------
-        ObjectClass
-        """
-
-
-class MissingValueImputationOp(BaseCleaningOperation):
-    """MissingValueImputationOp class"""
-
-    type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, const=True
-    )
-
-    def derive_sdk_code(self) -> ObjectClass:
-        return ClassEnum.MISSING_VALUE_IMPUTATION(imputed_value=self.imputed_value)
-
-
-class DisguisedValueImputationOp(BaseCleaningOperation):
-    """DisguisedValueImputationOp class"""
-
-    type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, const=True
-    )
-    disguised_values: Sequence[OptionalScalar]
-
-    def derive_sdk_code(self) -> ObjectClass:
-        return ClassEnum.DISGUISED_VALUE_IMPUTATION(
-            imputed_value=self.imputed_value, disguised_values=self.disguised_values
-        )
-
-
-class UnexpectedValueImputationOp(BaseCleaningOperation):
-    """UnexpectedValueImputationOp class"""
-
-    type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, const=True
-    )
-    expected_values: Sequence[OptionalScalar]
-
-    def derive_sdk_code(self) -> ObjectClass:
-        return ClassEnum.UNEXPECTED_VALUE_IMPUTATION(
-            imputed_value=self.imputed_value, expected_values=self.expected_values
-        )
-
-
-class ValueBeyondEndpointImputationOp(BaseCleaningOperation):
-    """ValueBeyondEndpointImputationOp class"""
-
-    type: Literal[
-        ConditionOperationField.LESS_THAN,
-        ConditionOperationField.LESS_THAN_OR_EQUAL,
-        ConditionOperationField.GREATER_THAN,
-        ConditionOperationField.GREATER_THAN_OR_EQUAL,
-    ] = Field(allow_mutation=False)
-    end_point: Numeric
-
-    def derive_sdk_code(self) -> ObjectClass:
-        return ClassEnum.VALUE_BEYOND_ENDPOINT_IMPUTATION(
-            type=self.type, end_point=self.end_point, imputed_value=self.imputed_value
-        )
-
-
-class StringValueImputationOp(BaseCleaningOperation):
-    """StringValueImputationOp class"""
-
-    type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, const=True
-    )
-
-    def derive_sdk_code(self) -> ObjectClass:
-        return ClassEnum.STRING_VALUE_IMPUTATION(imputed_value=self.imputed_value)
-
-
-CleaningOperation = Annotated[
-    Union[
-        MissingValueImputationOp,
-        DisguisedValueImputationOp,
-        UnexpectedValueImputationOp,
-        ValueBeyondEndpointImputationOp,
-        StringValueImputationOp,
-    ],
-    Field(discriminator="type"),
-]
-
-
-class ColumnCleaningOperation(FeatureByteBaseModel):
-    """
-    ColumnCleaningOperation schema
-    """
-
-    column_name: str
-    cleaning_operations: Sequence[CleaningOperation]
-
-
-class DataCleaningOperation(FeatureByteBaseModel):
-    """
-    DataCleaningOperation schema
-    """
-
-    data_name: str
-    column_cleaning_operations: List[ColumnCleaningOperation]
-
-    # pydantic validators
-    _validate_unique_column_name = validator("column_cleaning_operations", allow_reuse=True)(
-        construct_unique_name_validator(field="column_name")
-    )
 
 
 class CleaningGraphNodeParameters(BaseGraphNodeParameters):

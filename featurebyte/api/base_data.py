@@ -26,9 +26,10 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData
-from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.cleaning_operation import CleaningOperation
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")

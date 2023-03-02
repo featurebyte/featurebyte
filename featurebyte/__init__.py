@@ -24,15 +24,16 @@ from featurebyte.enum import AggFunc, SourceType, StorageType
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNewVersionMode
-from featurebyte.query_graph.model.critical_data_info import (
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation, DataCleaningOperation
 from featurebyte.query_graph.node.schema import DatabricksDetails, SnowflakeDetails, SparkDetails
 from featurebyte.schema.feature_list import FeatureVersionInfo
 

@@ -13,12 +13,16 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.critical_data_info import CleaningOperation, CriticalDataInfo
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.node.cleaning_operation import (
+    CleaningOperation,
+    ColumnCleaningOperation,
+)
 from featurebyte.query_graph.node.generic import ProjectNode
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ColumnCleaningOperation, ViewMetadata
+from featurebyte.query_graph.node.nested import ViewMetadata
 from featurebyte.query_graph.node.schema import ColumnSpec, FeatureStoreDetails, TableDetails
 
 
@@ -65,7 +69,7 @@ class BaseTableData(FeatureByteBaseModel):
 
         Returns
         -------
-        List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]
+        List[featurebyte.ColumnCleaningOperation]
         """
         return [
             ColumnCleaningOperation(
@@ -83,7 +87,7 @@ class BaseTableData(FeatureByteBaseModel):
 
         Parameters
         ----------
-        column_cleaning_operations: List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]
+        column_cleaning_operations: List[featurebyte.ColumnCleaningOperation]
             Column cleaning operations
 
         Returns
@@ -159,7 +163,7 @@ class BaseTableData(FeatureByteBaseModel):
         """
         input_node: Node = project_node
         for cleaning_operation in cleaning_operations:
-            input_node = cleaning_operation.add_cleaning_operation(  # type: ignore
+            input_node = cleaning_operation.add_cleaning_operation(
                 graph_node=graph_node, input_node=input_node, dtype=dtype
             )
 

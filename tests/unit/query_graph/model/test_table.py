@@ -6,30 +6,27 @@ import textwrap
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.common.validator import columns_info_validator
-from featurebyte.enum import DBVarType, ViewMode
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.critical_data_info import (
-    CriticalDataInfo,
+from featurebyte import (
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
 )
+from featurebyte.common.validator import columns_info_validator
+from featurebyte.enum import DBVarType, ViewMode
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.table import (
     DimensionTableData,
     EventTableData,
     GenericTableData,
     ItemTableData,
 )
-from featurebyte.query_graph.node.nested import (
-    ConditionOperationField,
-    ItemViewMetadata,
-    ViewMetadata,
-)
+from featurebyte.query_graph.node.cleaning_operation import ConditionOperationField
+from featurebyte.query_graph.node.nested import ItemViewMetadata, ViewMetadata
 from featurebyte.query_graph.node.schema import (
     FeatureStoreDetails,
     SnowflakeDetails,
