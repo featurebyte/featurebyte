@@ -54,7 +54,7 @@ jobs:
           if (grep -vqP '^release/beta/[0-9]+[.][0-9]+' <<< "${{ github.ref_name }}" ); then
               echo "Branch name must be in the format of 'release/beta/[0-9]+[.][0-9]+'"
               exit 1
-          if
+          fi
           if (grep -vqP "^${${{ github.ref_name }}#release/beta/}" <<< "${{ github.event.inputs.version }}"); then
               echo "Version must match the branch name"
               exit 1
@@ -85,17 +85,11 @@ jobs:
           make install
       - name: Bump Version
         run: |
-          poetry version -- ${{ github.inputs.version }}
-      - name: Tagging version
-        run: |
-          git config --global user.name "featurebyte[bot]"
-          git config --global user.email "featurebyte[bot]@users.noreply.github.com"
-          git tag "release/beta/${{ github.inputs.version }}"
-          git push origin "release/beta/${{ github.inputs.version }}"
+          poetry version -- ${{ github.event.inputs.version }}
       - name: Replace docker-compose image tag
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.services.featurebyte-server.image = "${IMAGE_REPO}:${{ github.inputs.version }}" featurebyte/docker/featurebyte.yml
+          cmd: yq -i '.services.featurebyte-server.image = "${IMAGE_REPO}:${{ github.event.inputs.version }}" featurebyte/docker/featurebyte.yml
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'
@@ -124,13 +118,19 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_REPO }}:${{ env.SHORT_HASH }}
-            ${{ env.IMAGE_REPO }}:${{ github.inputs.version }}
+            ${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}
             ${{ env.IMAGE_REPO }}:${{ github.ref_name }}
           context: .
           file: docker/Dockerfile
           cache-from: type=registry,ref=${{ env.IMAGE_REPO }}:${{ github.ref_name }}
           cache-to: type=inline
           build-args: FEATUREBYTE_NP_PASSWORD=${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}
+      - name: Tagging version
+        run: |
+          git config --global user.name "featurebyte[bot]"
+          git config --global user.email "featurebyte[bot]@users.noreply.github.com"
+          git tag "release/beta/${{ github.event.inputs.version }}"
+          git push origin "release/beta/${{ github.event.inputs.version }}"
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -165,7 +165,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                    "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url || github.repository.html_url }}"
                   }
                 }, {
                   "type": "section",
