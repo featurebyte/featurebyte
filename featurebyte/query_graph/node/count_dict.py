@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Sequence, Tuple, Union
 from typing_extensions import Annotated
 
 from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
@@ -27,6 +27,13 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 
 class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
     """BaseCountDictOpNode class"""
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def _derive_sdk_code(
         self,
@@ -108,6 +115,13 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
     """Dictionary keys node class"""
 
     type: Literal[NodeType.DICTIONARY_KEYS] = Field(NodeType.DICTIONARY_KEYS, const=True)
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.ARRAY

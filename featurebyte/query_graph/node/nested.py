@@ -54,6 +54,13 @@ class ProxyInputNode(BaseNode):
     output_type: NodeOutputType
     parameters: ProxyInputNodeParameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 0
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        raise RuntimeError("Proxy input node should not be used to derive input columns.")
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -86,7 +93,9 @@ class BaseGraphNodeParameters(BaseModel):
     type: GraphNodeType
 
     @abstractmethod
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
         """
         Prune metadata for the current graph node
 
@@ -94,6 +103,8 @@ class BaseGraphNodeParameters(BaseModel):
         ----------
         target_columns: List[str]
             Target columns
+        input_nodes: Sequence[NodeT]
+            Input nodes
 
         Returns
         -------
@@ -268,7 +279,9 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
         return self.metadata
 
     def derive_sdk_code(
@@ -297,6 +310,7 @@ class ViewMetadata(BaseModel):
         self: ViewMetadataT,
         view_mode: ViewMode,
         column_cleaning_operations: List[ColumnCleaningOperation],
+        **kwargs: Any,
     ) -> ViewMetadataT:
         """
         Clone the current instance by replacing column cleaning operations with the
@@ -308,6 +322,8 @@ class ViewMetadata(BaseModel):
             View mode
         column_cleaning_operations: List[ColumnCleaningOperation]
             Column cleaning operations
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------
@@ -318,6 +334,7 @@ class ViewMetadata(BaseModel):
                 **self.dict(by_alias=True),
                 "view_mode": view_mode,
                 "column_cleaning_operations": column_cleaning_operations,
+                **kwargs,
             }
         )
 
@@ -327,7 +344,9 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
 
     metadata: ViewMetadata
 
-    def prune_metadata(self, target_columns: List[str]) -> Dict[str, Any]:
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
         if target_columns:
             metadata["column_cleaning_operations"] = [
@@ -437,6 +456,22 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
             event_join_column_names=self.metadata.event_join_column_names,
         )
         return [(view_var_name, expression)], view_var_name
+
+    def prune_metadata(
+        self, target_columns: List[str], input_nodes: Sequence[NodeT]
+    ) -> Dict[str, Any]:
+        metadata = super().prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
+        if target_columns:
+            # for item view graph node, we need to use the event view graph node's metadata
+            # to generate the event column cleaning operations
+            assert len(input_nodes) == 2
+            event_view_node = input_nodes[1]
+            assert isinstance(event_view_node.parameters, EventViewGraphNodeParameters)
+            event_view_metadata = event_view_node.parameters.metadata
+            metadata[
+                "event_column_cleaning_operations"
+            ] = event_view_metadata.column_cleaning_operations
+        return metadata
 
 
 class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
@@ -582,6 +617,13 @@ class BaseGraphNode(BasePrunableNode):
         return cast(NodeT, self.parameters.graph.nodes_map[self.parameters.output_node_name])
 
     @property
+    def max_input_count(self) -> int:
+        node_iter = self.parameters.graph.iterate_nodes(
+            target_node=self.output_node, node_type=NodeType.PROXY_INPUT
+        )
+        return len(list(node_iter))
+
+    @property
     def is_prunable(self) -> bool:
         """
         Whether the graph node is prunable
@@ -591,6 +633,30 @@ class BaseGraphNode(BasePrunableNode):
         bool
         """
         return self.parameters.type == GraphNodeType.CLEANING
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        # first the corresponding input proxy node in the nested graph
+        proxy_input_node: Optional[BaseNode] = None
+        for node in self.parameters.graph.iterate_nodes(
+            target_node=self.output_node, node_type=NodeType.PROXY_INPUT
+        ):
+            assert isinstance(node, ProxyInputNode)
+            if node.parameters.input_order == input_index:
+                proxy_input_node = node
+
+        assert proxy_input_node is not None, "Cannot find corresponding proxy input node!"
+
+        # from the proxy input node, find all the target nodes (nodes that use the proxy input node as input)
+        # for each target node, find the input order of the proxy input node
+        # use the input order to get the required input columns and combine them
+        required_input_columns = set()
+        target_node_names = self.parameters.graph.edges_map[proxy_input_node.name]
+        for target_node_name in target_node_names:
+            target_node = self.parameters.graph.nodes_map[target_node_name]
+            target_input_node_names = self.parameters.graph.get_input_node_names(target_node)
+            input_index = target_input_node_names.index(proxy_input_node.name)
+            required_input_columns.update(target_node.get_required_input_columns(input_index))
+        return list(required_input_columns)
 
     def resolve_node_pruned(self, input_node_names: List[str]) -> str:
         if self.parameters.type == GraphNodeType.CLEANING:
@@ -610,7 +676,7 @@ class BaseGraphNode(BasePrunableNode):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")

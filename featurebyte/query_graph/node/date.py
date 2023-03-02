@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Sequence, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -68,6 +68,13 @@ class DateDifference(BaseSeriesOutputNode):
 
     type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
 
@@ -94,6 +101,13 @@ class TimeDelta(BaseSeriesOutputNode):
 
     type: Literal[NodeType.TIMEDELTA] = Field(NodeType.TIMEDELTA, const=True)
     parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.TIMEDELTA
@@ -127,6 +141,13 @@ class DateAdd(BaseSeriesOutputNode):
 
     type: Literal[NodeType.DATE_ADD] = Field(NodeType.DATE_ADD, const=True)
     parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].columns[0].dtype

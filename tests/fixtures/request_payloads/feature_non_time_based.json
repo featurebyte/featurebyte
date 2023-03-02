@@ -216,7 +216,7 @@
                                 "target": "join_1"
                             },
                             {
-                                "source": "proxy_input_1",
+                                "source": "project_1",
                                 "target": "join_1"
                             }
                         ],

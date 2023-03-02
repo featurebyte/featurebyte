@@ -54,9 +54,16 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self.parameters.columns
+
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         assert len(input_operation_structures) == 1
@@ -81,7 +88,7 @@ class ProjectNode(BaseNode):
         _ = branch_state, global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
-        names = set(self.get_required_input_columns())
+        names = set(self.parameters.columns)
         node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
@@ -155,6 +162,13 @@ class FilterNode(BaseNode):
 
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
@@ -302,6 +316,13 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
     @staticmethod
     def _validate_series(series_op_structure: OperationStructure) -> None:
         assert series_op_structure.output_type == NodeOutputType.SERIES
@@ -373,6 +394,24 @@ class LagNode(BaseSeriesOutputNode):
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return len(self.parameters.entity_columns) + 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        # this node has the following input structure:
+        # [0] column to lag
+        # [1...n-1] entity column(s)
+        # [n] timestamp column
+        if input_index == 0:
+            # first input (zero-based)
+            return []
+        if input_index == len(self.parameters.entity_columns):
+            # last input (zero-based)
+            return [self.parameters.timestamp_column]
+        # entity column
+        return [self.parameters.entity_columns[input_index - 1]]
+
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
 
@@ -410,6 +449,13 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+
     def _exclude_source_columns(self) -> List[str]:
         cols = self.parameters.keys + [self.parameters.timestamp]
         return [str(col) for col in cols]
@@ -444,16 +490,15 @@ class GroupByNode(AggregationOpStructMixin, BaseNode):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
-        _ = input_operation_structures
-
-        # Only prune the groupby node if all the target output are the project node, this is to prevent
-        # unexpected parameters pruning if groupby node output is used by other node like graph node.
-        if target_nodes and all(node.type == NodeType.PROJECT for node in target_nodes):
+        if target_node_input_order_pairs:
             required_columns = set().union(
-                *(node.get_required_input_columns() for node in target_nodes)
+                *(
+                    node.get_required_input_columns(input_index=input_order)
+                    for node, input_order in target_node_input_order_pairs
+                )
             )
             params = self.parameters
             pruned_params_dict = self.parameters.dict()
@@ -522,6 +567,13 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     # class variable
     _auto_convert_expression_to_variable: ClassVar[bool] = False
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
@@ -648,6 +700,13 @@ class LookupNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.LOOKUP] = Field(NodeType.LOOKUP, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         parent_columns = [col for col in columns if col.name in self.parameters.input_column_names]
@@ -782,6 +841,15 @@ class JoinNode(BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: JoinNodeParameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index == 0:
+            return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
+        return list(set(self.parameters.right_input_columns).union([self.parameters.right_on]))
+
     @staticmethod
     def _filter_columns(
         input_columns: Sequence[str], output_columns: Sequence[str], available_columns: Set[str]
@@ -796,7 +864,7 @@ class JoinNode(BasePrunableNode):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         # Prune the join node parameters by using the available columns. If the input column is not found in the
@@ -959,6 +1027,18 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        if input_index == 0:
+            view_required_columns = [self.parameters.view_entity_column]
+            if self.parameters.view_point_in_time_column:
+                view_required_columns.append(self.parameters.view_point_in_time_column)
+            return view_required_columns
+        return [self.parameters.feature_entity_column]
+
     @staticmethod
     def _validate_feature(feature_op_structure: OperationStructure) -> None:
         columns = feature_op_structure.columns
@@ -1031,6 +1111,13 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     type: Literal[NodeType.AGGREGATE_AS_AT] = Field(NodeType.AGGREGATE_AS_AT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: AggregateAsAtParameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
@@ -1110,6 +1197,13 @@ class AliasNode(BaseNode):
     type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     parameters: Parameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
     def _derive_node_operation_info(
         self,
         inputs: List[OperationStructure],
@@ -1172,6 +1266,13 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
 
     type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
+
+    @property
+    def max_input_count(self) -> int:
+        return 3
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype

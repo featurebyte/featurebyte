@@ -2,7 +2,7 @@
 This module contains SQL operation related to input node
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
@@ -295,6 +295,13 @@ class InputNode(BaseNode):
             if "parameters" in values and "type" not in values["parameters"]:
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
+
+    @property
+    def max_input_count(self) -> int:
+        return 0
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
     def _derive_node_operation_info(
         self,

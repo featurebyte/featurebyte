@@ -144,25 +144,43 @@ class BaseNode(BaseModel):
                     out.update(cls._extract_column_str_values(val, column_str_type))
         return list(out)
 
-    def get_required_input_columns(self) -> List[str]:
+    def get_required_input_columns(self, input_index: int) -> Sequence[str]:
         """
-        Get the required input column names based on this node parameters
+        Get the required input column names for the given input based on this node parameters.
+        For example, a JoinNode will consume two input node and inside the JoinNode parameters,
+        some columns are referenced from the first input node and some are referenced from the
+        second input node. When the input_order is 0, this method will return the column names
+        from the first input node. When the input_order is 1, this method will return the column
+        names from the second input node.
+
+        Parameters
+        ----------
+        input_index: int
+            This parameter is used to specify which input to get the required columns
 
         Returns
         -------
-        list[str]
+        Sequence[str]
+            When the output is empty, it means this node does not have any column name requirement
+            for the given input index.
         """
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        self._validate_get_required_input_columns_input_index(input_index)
+        return self._get_required_input_columns(input_index)
 
-    def get_new_output_columns(self) -> List[str]:
+    @abstractmethod
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
         """
-        Get additional column names generated based on this node parameters
+        Helper method for get_required_input_columns
+
+        Parameters
+        ----------
+        input_index: int
+            This parameter is used to specify which input to get the required columns
 
         Returns
         -------
-        list[str]
+        Sequence[str]
         """
-        return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
 
     def derive_node_operation_info(
         self,
@@ -268,7 +286,7 @@ class BaseNode(BaseModel):
 
     def prune(
         self: NodeT,
-        target_nodes: Sequence[NodeT],
+        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
         input_operation_structures: List[OperationStructure],
     ) -> NodeT:
         """
@@ -276,7 +294,7 @@ class BaseNode(BaseModel):
 
         Parameters
         ----------
-        target_nodes: Sequence[BaseNode]
+        target_node_input_order_pairs: Sequence[Tuple[BaseNode, int]]
             List of target nodes
         input_operation_structures: List[OperationStructure]
             List of input operation structures
@@ -285,7 +303,7 @@ class BaseNode(BaseModel):
         -------
         NodeT
         """
-        _ = target_nodes, input_operation_structures
+        _ = target_node_input_order_pairs, input_operation_structures
         return self
 
     @staticmethod
@@ -380,6 +398,56 @@ class BaseNode(BaseModel):
         input_params = ", ".join(input_var_name_expressions)
         expression = ExpressionStr(f"{self.type}({input_params})")
         return [], expression
+
+    @property
+    @abstractmethod
+    def max_input_count(self) -> int:
+        """
+        Maximum number of inputs for this node
+
+        Returns
+        -------
+        int
+        """
+
+    def _validate_get_required_input_columns_input_index(self, input_index: int) -> None:
+        """
+        Validate that input index value is within the correct range.
+
+        Parameters
+        ----------
+        input_index: int
+            Input index
+
+        Raises
+        ------
+        ValueError
+            If input index is out of range
+        """
+        if input_index < 0 or input_index >= self.max_input_count:
+            raise ValueError(
+                f"Input index {input_index} is out of range. "
+                f"Input index should be within 0 to {self.max_input_count - 1}."
+            )
+
+    def _assert_empty_required_input_columns(self) -> Sequence[str]:
+        """
+        Assert empty required input columns and return emtpy list. This is used to check if the node
+        parameters has any InColumnStr parameters. If yes, we should update get_required_input_columns
+        method to reflect the required input columns.
+
+        Returns
+        -------
+        Sequence[str]
+
+        Raises
+        ------
+        AssertionError
+            If required input columns is not empty
+        """
+        input_columns = self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        assert len(input_columns) == 0
+        return input_columns
 
 
 class SeriesOutputNodeOpStructMixin:
@@ -491,6 +559,13 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: SingleValueNodeParameters
 
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         _ = self
         return left_operand, right_operand
@@ -568,6 +643,13 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
     _derive_sdk_code_return_var_name_expression_type: ClassVar[
         Union[Type[VariableNameStr], Type[ExpressionStr]]
     ] = VariableNameStr
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(self, input_index: int) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
 
     @abstractmethod
     def generate_expression(self, operand: str) -> str:

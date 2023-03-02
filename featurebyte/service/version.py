@@ -3,7 +3,7 @@ VersionService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, cast
 
 from bson.objectid import ObjectId
 
@@ -90,13 +90,13 @@ class VersionService(BaseService):
         return node_name_to_replacement_node
 
     @staticmethod
-    def _get_create_view_graph_node_keyword_parameters(
+    def _get_additional_keyword_parameters_pairs(
         graph_node: BaseGraphNode,
         input_node_names: list[str],
         view_node_name_to_data_info: dict[str, tuple[Node, List[ColumnInfo], InputNode]],
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """
-        Get additional parameters used to construct view graph node.
+        Get additional parameters pair to construct view graph node and update metadata.
 
         Parameters
         ----------
@@ -109,14 +109,15 @@ class VersionService(BaseService):
 
         Returns
         -------
-        dict[str, Any]
+        tuple[dict[str, Any], dict[str, Any]]
 
         Raises
         ------
         GraphInconsistencyError
             If the graph has unexpected structure
         """
-        parameters: dict[str, Any] = {}
+        view_parameters: dict[str, Any] = {}
+        metadata_parameters: dict[str, Any] = {}
         if graph_node.parameters.type == GraphNodeType.ITEM_VIEW:
             # prepare the event view graph node and its columns info for item view graph node to use
             # handle the following assumption so that it won't throw internal server error
@@ -135,11 +136,20 @@ class VersionService(BaseService):
                 event_view_columns_info,
                 data_input_node,
             ) = view_node_name_to_data_info[event_view_graph_node_name]
-            parameters["event_view_node"] = event_view_node
-            parameters["event_view_columns_info"] = event_view_columns_info
-            parameters["event_view_event_id_column"] = data_input_node.parameters.id_column  # type: ignore
 
-        return parameters
+            # prepare additional parameters for view construction parameters
+            view_parameters["event_view_node"] = event_view_node
+            view_parameters["event_view_columns_info"] = event_view_columns_info
+            view_parameters["event_view_event_id_column"] = data_input_node.parameters.id_column  # type: ignore
+
+            # prepare additional parameters for metadata update
+            event_metadata = cast(ViewMetadata, event_view_node.parameters.metadata)  # type: ignore
+            metadata_parameters["event_drop_column_names"] = event_metadata.drop_column_names
+            metadata_parameters[
+                "event_column_cleaning_operations"
+            ] = event_metadata.column_cleaning_operations
+
+        return view_parameters, metadata_parameters
 
     async def _prepare_view_graph_node_name_to_replacement_node(
         self, feature: FeatureModel, data_cleaning_operations: Optional[List[DataCleaningOperation]]
@@ -190,9 +200,7 @@ class VersionService(BaseService):
                 )
 
             # additional parameters used to construct view graph node
-            create_view_graph_node_kwargs: dict[
-                str, Any
-            ] = self._get_create_view_graph_node_keyword_parameters(
+            (create_view_kwargs, metadata_kwargs) = self._get_additional_keyword_parameters_pairs(
                 graph_node=graph_node,
                 input_node_names=input_node_names,
                 view_node_name_to_data_info=view_node_name_to_data_info,
@@ -209,16 +217,17 @@ class VersionService(BaseService):
             # check whether the data document has column cleaning operations
             # use the column cleaning operations to create a new view graph node
             column_clean_ops = data_name_to_column_cleaning_operations.get(data_document.name)
-            if column_clean_ops:
+            if column_clean_ops or metadata_kwargs:
                 parameters_metadata = parameters_metadata.clone(
                     view_mode=parameters_metadata.view_mode,
-                    column_cleaning_operations=column_clean_ops,
+                    column_cleaning_operations=column_clean_ops or [],
+                    **metadata_kwargs,
                 )
 
             new_view_graph_node, view_columns_info = data_document.create_view_graph_node(
                 input_node=view_graph_input_node,
                 metadata=parameters_metadata,
-                **create_view_graph_node_kwargs,
+                **create_view_kwargs,
             )
             view_node_name_to_data_info[graph_node.name] = (
                 new_view_graph_node,
