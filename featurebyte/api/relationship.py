@@ -6,16 +6,18 @@ from typing import Literal, Optional
 from http import HTTPStatus
 
 import pandas as pd
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte import Configurations
 from featurebyte.api.api_object import ApiObject
 from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
 
 
-class Relationship(RelationshipInfo, ApiObject):
+class Relationship(ApiObject):
     """
     The relationships class allows users to see explore what types of relationships exist between the various
     entities they have.
@@ -36,6 +38,40 @@ class Relationship(RelationshipInfo, ApiObject):
         "created_at",
         "updated_at",
     ]
+
+    # pydantic instance variable (internal use)
+    internal_is_enabled: bool = Field(alias="is_enabled")
+    internal_updated_by: PydanticObjectId = Field(alias="updated_by")
+
+    @property
+    def is_enabled(self) -> bool:
+        """
+        Whether the relationship has been updated
+
+        Returns
+        -------
+        bool
+            Whether the relationship has been updated
+        """
+        try:
+            return self.cached_model.is_enabled
+        except RecordRetrievalException:
+            return self.internal_is_enabled
+
+    @property
+    def updated_by(self) -> PydanticObjectId:
+        """
+        Who the relationship was updated by
+
+        Returns
+        -------
+        PydanticObjectId
+            User ID of the user who updated the relationship
+        """
+        try:
+            return self.cached_model.updated_by
+        except RecordRetrievalException:
+            return self.internal_updated_by
 
     @classmethod
     @typechecked
