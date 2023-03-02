@@ -637,17 +637,17 @@ class Feature(
     @typechecked
     def create_new_version(
         self,
-        feature_job_setting: Optional[FeatureJobSetting],
-        data_cleaning_operations: Optional[List[DataCleaningOperation]],
+        feature_job_setting: Optional[FeatureJobSetting] = None,
+        data_cleaning_operations: Optional[List[DataCleaningOperation]] = None,
     ) -> Feature:
         """
         Create new feature version from the current one.
 
         Parameters
         ----------
-        feature_job_setting: FeatureJobSetting
+        feature_job_setting: Optional[FeatureJobSetting]
             New feature job setting
-        data_cleaning_operations: List[DataCleaningOperation]
+        data_cleaning_operations: Optional[List[DataCleaningOperation]]
             List of data cleaning operations to be applied to the feature
 
         Returns
@@ -671,7 +671,7 @@ class Feature(
         ...     blind_spot="10m",
         ...     frequency="30m",
         ...     time_modulo_frequency="5m",
-        ...   )
+        ...   ),
         ... )  # doctest: +SKIP
 
 
