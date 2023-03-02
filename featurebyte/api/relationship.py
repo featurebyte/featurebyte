@@ -115,11 +115,6 @@ class Relationship(ApiObject):
         ----------
         enable: bool
             Whether to enable or disable the relationship
-
-        Raises
-        ------
-        RecordRetrievalException
-            raised if the record cannot be retrieved
         """
 
         payload = RelationshipInfoUpdate(
