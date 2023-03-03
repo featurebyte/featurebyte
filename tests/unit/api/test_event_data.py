@@ -23,8 +23,8 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from featurebyte.schema.task import Task, TaskStatus
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation

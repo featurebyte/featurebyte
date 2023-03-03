@@ -20,8 +20,9 @@ from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import SCDTableData
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ChangeViewMetadata, ColumnCleaningOperation
+from featurebyte.query_graph.node.nested import ChangeViewMetadata
 
 
 class ChangeViewColumn(LaggableViewColumn):
@@ -220,7 +221,7 @@ class ChangeView(View, GroupByMixin):
             from the data and the record creation date column will be dropped
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only)
-        column_cleaning_operations: Optional[List[featurebyte.query_graph.node.nested.ColumnCleaningOperation]]
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
             Column cleaning operations to apply (manual mode only)
 
         Returns

@@ -10,7 +10,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.critical_data_info import (
+from featurebyte.query_graph.node.cleaning_operation import (
     MissingValueImputation,
     StringValueImputation,
     ValueBeyondEndpointImputation,

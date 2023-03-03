@@ -44,13 +44,13 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.generic import (
     AliasNode,
     GroupByNode,
     ItemGroupbyNode,
     ProjectNode,
 )
-from featurebyte.query_graph.node.nested import DataCleaningOperation
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 
