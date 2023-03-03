@@ -178,15 +178,21 @@ def config_fixture():
                     yield Configurations(config_file_path=config_file_path)
 
 
-# @pytest.fixture(scope="session")
-# def event_loop():
-#     """
-#     Event loop to be used for async tests
-#     """
-#     loop = asyncio.get_event_loop()
-#     loop.run_forever()
-#     yield loop
-#     loop.close()
+@pytest.fixture(scope="session")
+def event_loop():
+    """
+    Event loop to be used for async tests
+    """
+    try:
+        loop = asyncio.get_event_loop()
+        yield loop
+        loop.close()
+    except Exception as e:
+        if "there is no current event loop in thread" in str(e):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            yield loop
+            loop.close()
 
 
 @pytest.fixture(name="persistent", scope="session")
