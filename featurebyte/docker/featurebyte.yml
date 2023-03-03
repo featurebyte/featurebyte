@@ -23,7 +23,6 @@ services:
     hostname: featurebyte-server
     container_name: featurebyte-server
     image: featurebyte-server:latest
-    pull_policy: never
     depends_on:
       mongo-rs:
         condition: service_healthy
@@ -49,7 +48,6 @@ services:
     hostname: featurebyte-worker
     container_name: featurebyte-worker
     image: featurebyte-server:latest
-    pull_policy: never
     depends_on:
       featurebyte-server:
         condition: service_healthy
