@@ -75,10 +75,8 @@ class FeatureManager(BaseModel):
         # enable tile generation with scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
 
-            exist_tasks = await self._session.execute_query(
-                f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
-            )
-            if exist_tasks is None or len(exist_tasks) == 0:
+            tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
+            if not tile_job_exists:
                 # enable online tiles scheduled job
                 await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time

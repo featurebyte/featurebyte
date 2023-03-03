@@ -69,6 +69,19 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 @pytest.mark.asyncio
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+async def test_tile_job_exists(mock_execute_query, mock_snowflake_tile, tile_manager):
+    """
+    Test tile_job_exists method in TileSnowflake
+    """
+    mock_execute_query.return_value = [{"TASK_NAME": "SHELL_TASK_agg_id1_ONLINE"}]
+    assert await tile_manager.tile_job_exists(mock_snowflake_tile) is True
+
+    mock_execute_query.return_value = []
+    assert await tile_manager.tile_job_exists(mock_snowflake_tile) is False
+
+
+@pytest.mark.asyncio
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test generate_tiles method in TileSnowflake

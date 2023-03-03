@@ -55,6 +55,25 @@ class TileManagerSnowflake(BaseTileManager):
         super().__init__(session=session, **kw)
         self._use_snowflake_scheduling = use_snowflake_scheduling
 
+    async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
+        """
+        Get existing tile jobs for the given tile_spec
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+
+        Returns
+        -------
+            whether the tile jobs already exist
+        """
+        exist_tasks = await self._session.execute_query(
+            f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
+        )
+
+        return exist_tasks is not None and len(exist_tasks) > 0
+
     async def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
         Insert new tile registry record if it does not exist
