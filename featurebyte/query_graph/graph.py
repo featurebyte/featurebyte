@@ -162,27 +162,6 @@ class QueryGraph(QueryGraphModel):
             ),
         )
 
-    def prepare_to_store(self, target_node: Node) -> Tuple[QueryGraphModel, str]:
-        """
-        Prepare the graph before getting stored at persistent
-
-        Parameters
-        ----------
-        target_node: Node
-            Target node
-
-        Returns
-        -------
-        Tuple[QueryGraphModel, str]
-            Aggressively pruned graph (with regenerated hash) & node name
-        """
-        pruned_graph, pruned_node_name_map = self.prune(target_node=target_node, aggressive=True)
-        reconstructed_graph, recon_node_name_map = QueryGraph(**pruned_graph.dict()).reconstruct(
-            node_name_to_replacement_node={},
-            regenerate_groupby_hash=True,
-        )
-        return reconstructed_graph, recon_node_name_map[pruned_node_name_map[target_node.name]]
-
 
 class GraphState(TypedDict):
     """

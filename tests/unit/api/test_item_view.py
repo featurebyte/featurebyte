@@ -874,17 +874,6 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
     )
 
     # check sdk code generation of newly created feature
-    # Note: check_final_hash=False because the hash of the generated SDK code is different from original pruned graph.
-    # DEV-1162: Inside the item view graph, below is the list of nodes in the nested graph:
-    # {"proxy_input_1": ["project_1"], "project_1": ["graph_1"], "graph_1": ["join_1"], "proxy_input_2": ["join_1"]}
-    # proxy_input_1: item data node
-    # proxy_input_2: event view graph node
-    # graph_1: cleaning operation graph node for item data
-    # The cleaning operation graph node's output node is a join node. Since all the columns used in the join node
-    # will be kept during graph pruning, we can't prune the cleaning operation graph node.
-    # However, we can prune the item view graph node's metadata, which affects the generated SDK code.
-    # This causes the difference in the generated SDK code has vs the original pruned graph as
-    # the graph constructed by the SDK code will not contain unused cleaning operations.
     check_sdk_code_generation(
         new_version,
         to_use_saved_data=True,
@@ -892,7 +881,6 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
         update_fixtures=update_fixtures,
         data_id=saved_item_data.id,
         event_data_id=saved_item_data.event_data_id,
-        check_final_hash=False,
     )
 
 
@@ -968,6 +956,14 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
         data_id=saved_item_data.id,
         event_data_id=saved_item_data.event_data_id,
     )
+
+    # create another new version & check SDK code generation
+    version_without_clean_ops = new_version.create_new_version(
+        data_cleaning_operations=[
+            DataCleaningOperation(data_name="sf_item_data", column_cleaning_operations=[])
+        ]
+    )
+    check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
 
 
 def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures):

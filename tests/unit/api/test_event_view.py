@@ -700,7 +700,11 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
     assert nested_view_graph_node.parameters.type == "event_view"
     assert nested_view_graph_node.parameters.metadata.column_cleaning_operations == [
-        # note that col_int cleaning operation is pruned
+        # note that col_int cleaning operation is not pruned
+        {
+            "column_name": "col_int",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
         {
             "column_name": "col_float",
             "cleaning_operations": [{"type": "missing", "imputed_value": -1}],

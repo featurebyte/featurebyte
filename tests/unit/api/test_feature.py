@@ -594,6 +594,14 @@ def test_create_new_version__with_data_cleaning_operations(saved_feature, update
         data_id=saved_feature.tabular_data_ids[0],
     )
 
+    # create another new feature version without data cleaning operations
+    version_without_clean_ops = new_version.create_new_version(
+        data_cleaning_operations=[
+            DataCleaningOperation(data_name="sf_event_data", column_cleaning_operations=[])
+        ]
+    )
+    check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
+
 
 def test_create_new_version__error(float_feature):
     """Test creation a new version (exception)"""
