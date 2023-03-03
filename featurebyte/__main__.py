@@ -1,7 +1,7 @@
 """
 Featurebyte CLI tools
 """
-from typing import Generator, List, cast
+from typing import Generator, List
 
 import os
 import pwd
@@ -10,7 +10,6 @@ from contextlib import contextmanager
 from enum import Enum
 
 import typer
-from python_on_whales.components.compose.models import ComposeConfig
 from python_on_whales.docker_client import DockerClient
 from rich.align import Align
 from rich.console import Console
