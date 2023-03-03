@@ -410,7 +410,7 @@ def test_feature_execution_planner__query_graph_with_graph_node(
         query_graph, source_type=SourceType.SNOWFLAKE, is_online_serving=False
     )
     execution_plan = planner.generate_plan([groupby_node])
-    groupby_node_aggregation_id = "e823fe7a3191330a0679e9a81157e812069df2ea"
+    groupby_node_aggregation_id = "c71175f130409c5091d0bc0058c328194000e16d"
     assert execution_plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",

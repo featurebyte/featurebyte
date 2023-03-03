@@ -158,8 +158,12 @@ class QueryGraphModel(FeatureByteBaseModel):
         """
         node_parameters = node.parameters.dict()
         if node.type == NodeType.GRAPH:
-            temp_graph = QueryGraphModel(**node_parameters["graph"])
-            node_parameters["graph"] = temp_graph.node_name_to_ref[node.parameters.output_node_name]  # type: ignore
+            nested_graph = node.parameters.graph  # type: ignore
+            node_parameters["graph"] = nested_graph.node_name_to_ref[node.parameters.output_node_name]  # type: ignore
+            # remove node name from graph parameters to prevent the node name
+            # from affecting the graph hash (node name could be different if the insert order is different)
+            # even if the final graph is the same
+            node_parameters.pop("output_node_name")
         return node_parameters
 
     @classmethod
