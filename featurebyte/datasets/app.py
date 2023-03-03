@@ -1,6 +1,7 @@
 """
 CLI tools for managing sample datasets
 """
+import base64
 import os
 import re
 import tarfile
@@ -9,11 +10,11 @@ from pathlib import Path
 from urllib import request
 
 import typer
+from python_on_whales.docker_client import DockerClient
 from rich.console import Console
 from rich.table import Table
 
 from featurebyte.common.path_util import get_package_root
-from featurebyte.session.hive import HiveConnection
 
 console = Console()
 datasets_dir = os.path.join(get_package_root(), "datasets")
@@ -89,16 +90,13 @@ def import_dataset(dataset_name: str) -> None:
                 with tarfile.open(local_path) as file_obj:
                     file_obj.extractall(local_staging_path)
 
-        # execute sql
-        conn = HiveConnection()
-        for statement in sql.split(";"):
-            cursor = conn.cursor()
-            statement = statement.strip()
-            if not statement:
-                continue
-            console.print(statement)
-            cursor.execute(statement)
-            console.print(cursor.fetchall())
+        sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
+        for line in DockerClient().execute(  # type:ignore
+            container="featurebyte-server",
+            command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
+            tty=True,
+        ):
+            console.print(line)
 
 
 if __name__ == "__main__":

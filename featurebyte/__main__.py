@@ -1,7 +1,7 @@
 """
 Featurebyte CLI tools
 """
-from typing import Generator, List, cast
+from typing import Generator, List
 
 import os
 import pwd
@@ -10,7 +10,6 @@ from contextlib import contextmanager
 from enum import Enum
 
 import typer
-from python_on_whales.components.compose.models import ComposeConfig
 from python_on_whales.docker_client import DockerClient
 from rich.align import Align
 from rich.console import Console
@@ -38,7 +37,6 @@ app = typer.Typer(
     add_completion=False,
 )
 app.add_typer(datasets_app, name="datasets")
-
 
 # Application messages
 messages = {
@@ -99,7 +97,7 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
             file_obj.write(f'LOCAL_UID="{uid}" LOCAL_GID="{user.pw_gid}"')
         docker = DockerClient(
             compose_project_name=app_name.value,
-            compose_files=[os.path.join(get_package_root(), f"docker/{app_name}.yml")],
+            compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
             compose_env_file=compose_env_file,
         )
         yield docker
@@ -117,9 +115,24 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
     -------
     List[str]
     """
-    with get_docker_client(app_name) as docker:
-        services = cast(ComposeConfig, docker.compose.config()).services
-    return list(services.keys())
+    if app_name == ApplicationName.FEATUREBYTE:
+        return ["featurebyte-server", "featurebyte-worker"]
+    if app_name == ApplicationName.SPARK:
+        return ["spark-thrift"]
+    raise ValueError("Not a valid application name")
+
+
+def __setup_network() -> None:
+    """
+    Setup docker network
+    """
+    client = DockerClient()
+    networks = client.network.list()
+    if "featurebyte" in map(lambda x: x.name, networks):
+        console.print(Text("featurebyte", style="cyan") + Text(" network already exists"))
+    else:
+        console.print(Text("featurebyte", style="cyan") + Text(" network creating"))
+        DockerClient().network.create("featurebyte", driver="bridge")
 
 
 def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
@@ -198,13 +211,14 @@ def start(
 ) -> None:
     """Start application"""
     try:
+        __setup_network()
         __backup_docker_conf()
         __use_docker_svc_account()
         with get_docker_client(app_name) as docker:
             if not local:
                 docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
-            docker.compose.up(detach=True)
+            docker.compose.up(services=get_service_names(app_name), detach=True)
     finally:
         __restore_docker_conf()
         __delete_docker_backup()
