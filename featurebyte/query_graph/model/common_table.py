@@ -69,7 +69,7 @@ class BaseTableData(FeatureByteBaseModel):
 
         Returns
         -------
-        List[featurebyte.ColumnCleaningOperation]
+        List[ColumnCleaningOperation]
         """
         return [
             ColumnCleaningOperation(
@@ -87,7 +87,7 @@ class BaseTableData(FeatureByteBaseModel):
 
         Parameters
         ----------
-        column_cleaning_operations: List[featurebyte.ColumnCleaningOperation]
+        column_cleaning_operations: List[ColumnCleaningOperation]
             Column cleaning operations
 
         Returns

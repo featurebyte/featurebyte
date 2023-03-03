@@ -105,7 +105,7 @@ class EventView(View, GroupByMixin):
             from the data and the record creation date column will be dropped
         drop_column_names: Optional[List[str]]
             List of column names to drop (manual mode only)
-        column_cleaning_operations: Optional[List[featurebyte.ColumnCleaningOperation]]
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
             Column cleaning operations to apply (manual mode only)
 
         Returns

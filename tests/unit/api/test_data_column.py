@@ -5,12 +5,16 @@ import textwrap
 
 import pytest
 
-from featurebyte import MissingValueImputation, StringValueImputation, ValueBeyondEndpointImputation
 from featurebyte.api.base_data import DataColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.cleaning_operation import (
+    MissingValueImputation,
+    StringValueImputation,
+    ValueBeyondEndpointImputation,
+)
 
 
 def test_data_column__as_entity(snowflake_event_data, mock_api_object_cache):

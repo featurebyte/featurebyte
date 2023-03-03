@@ -99,11 +99,11 @@ class ItemView(View, GroupByMixin):
             EventView will be automatically selected
         drop_column_names: Optional[List[str]]
             List of column names to drop for the ItemView (manual mode only)
-        column_cleaning_operations: Optional[List[featurebyte.ColumnCleaningOperation]]
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
             Column cleaning operations to apply to the ItemView (manual mode only)
         event_drop_column_names: Optional[List[str]]
             List of column names to drop for the EventView (manual mode only)
-        event_column_cleaning_operations: Optional[List[featurebyte.ColumnCleaningOperation]]
+        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
             Column cleaning operations to apply to the EventView (manual mode only)
         event_join_column_names: Optional[List[str]]
             List of column names to join from the EventView (manual mode only)
