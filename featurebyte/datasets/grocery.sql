@@ -10,6 +10,7 @@ USING parquet OPTIONS (
     path '{staging_path}/GroceryCustomer.parquet'
 );
 CREATE TABLE GROCERY.__GROCERYCUSTOMER USING DELTA AS SELECT * FROM temp_table;
+OPTIMIZE GROCERY.__GROCERYCUSTOMER;
 CREATE OR REPLACE VIEW GROCERY.GROCERYCUSTOMER(
     `RowID`,
     `GroceryCustomerGuid`,
@@ -41,6 +42,7 @@ USING parquet OPTIONS (
     path '{staging_path}/GroceryInvoice.parquet'
 );
 CREATE TABLE GROCERY.__GROCERYINVOICE USING DELTA AS SELECT * FROM temp_table;
+OPTIMIZE GROCERY.__GROCERYINVOICE;
 CREATE OR REPLACE VIEW GROCERY.GROCERYINVOICE(
     `GroceryInvoiceGuid`,
     `GroceryCustomerGuid`,
@@ -57,6 +59,7 @@ USING parquet OPTIONS (
     path '{staging_path}/InvoiceItems.parquet'
 );
 CREATE TABLE GROCERY.__INVOICEITEMS USING DELTA AS SELECT * FROM temp_table;
+OPTIMIZE GROCERY.__INVOICEITEMS;
 CREATE OR REPLACE VIEW GROCERY.INVOICEITEMS(
     `GroceryInvoiceItemGuid`,
     `GroceryInvoiceGuid`,
@@ -76,5 +79,6 @@ USING parquet OPTIONS (
     path '{staging_path}/GroceryProduct.parquet'
 );
 CREATE TABLE GROCERY.GROCERYPRODUCT USING DELTA AS SELECT * FROM temp_table;
+OPTIMIZE GROCERY.GROCERYPRODUCT;
 
 DROP VIEW temp_table;

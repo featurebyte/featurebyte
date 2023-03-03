@@ -1,6 +1,7 @@
 """
 Test FastAPI app
 """
+import importlib
 import os
 import time
 from http import HTTPStatus
@@ -11,8 +12,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.app import get_app
 from featurebyte.config import Configurations
+from featurebyte.utils import persistent
 from featurebyte.utils.credential import get_credential
-from featurebyte.utils.persistent import get_persistent
 
 
 @pytest.mark.asyncio
@@ -34,11 +35,12 @@ def test_get_persistent():
     """
     Test get_persistent works as expected
     """
+    importlib.reload(persistent)
     with patch("featurebyte.utils.persistent.MongoDB") as mock_mongodb:
         with pytest.raises(ValueError):
             mock_mongodb.side_effect = ValueError()
-            get_persistent()
-    mock_mongodb.assert_called_once_with(uri="mongodb://localhost:27022")
+            persistent.get_persistent()
+    mock_mongodb.assert_called_once_with(uri="mongodb://localhost:27022", database="featurebyte")
 
 
 def test_get_app__loading_time():
