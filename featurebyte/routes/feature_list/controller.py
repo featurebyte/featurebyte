@@ -324,7 +324,7 @@ class FeatureListController(
 
     async def get_historical_features_sql(
         self,
-        training_events: UploadFile,
+        observation_set: UploadFile,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
     ) -> str:
         """
@@ -332,7 +332,7 @@ class FeatureListController(
 
         Parameters
         ----------
-        training_events: UploadFile
+        observation_set: UploadFile
             Uploaded file
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
@@ -349,7 +349,7 @@ class FeatureListController(
         """
         try:
             return await self.preview_service.get_historical_features_sql(
-                training_events=dataframe_from_arrow_stream(training_events.file),
+                observation_set=dataframe_from_arrow_stream(observation_set.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
             )
         except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:

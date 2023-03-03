@@ -278,12 +278,13 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return (
+        result_dataframe = (
             dataframe_from_json(result)  # pylint: disable=no-member
             .sort_values(InternalName.ROW_INDEX)
             .drop(InternalName.ROW_INDEX, axis=1)
-            .reset_index(drop=True)
         )
+        result_dataframe.index = observation_set.index
+        return result_dataframe
 
     @property
     def sql(self) -> str:
@@ -874,7 +875,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @typechecked
     def get_historical_features_sql(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> str:
         """
@@ -882,8 +883,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Parameters
         ----------
-        training_events : pd.DataFrame
-            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
@@ -909,7 +910,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         response = client.post(
             "/feature_list/historical_features_sql",
             data={"payload": payload.json()},
-            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+            files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)

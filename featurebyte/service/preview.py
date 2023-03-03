@@ -522,7 +522,7 @@ class PreviewService(BaseService):
 
     async def get_historical_features_sql(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
     ) -> str:
         """
@@ -530,8 +530,8 @@ class PreviewService(BaseService):
 
         Parameters
         ----------
-        training_events: pd.DataFrame
-            Training events data
+        observation_set: pd.DataFrame
+            Observation set data
         featurelist_get_historical_features: FeatureListGetHistoricalFeatures
             FeatureListGetHistoricalFeatures object
 
@@ -553,7 +553,7 @@ class PreviewService(BaseService):
             request_table_name=REQUEST_TABLE_NAME,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
-            request_table_columns=training_events.columns.tolist(),
+            request_table_columns=observation_set.columns.tolist(),
             source_type=source_type,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )

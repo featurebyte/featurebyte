@@ -635,12 +635,13 @@ class Feature(
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return (
+        result_dataframe = (
             dataframe_from_json(result)  # pylint: disable=no-member
             .sort_values(InternalName.ROW_INDEX)
             .drop(InternalName.ROW_INDEX, axis=1)
-            .reset_index(drop=True)
         )
+        result_dataframe.index = observation_set.index
+        return result_dataframe
 
     @typechecked
     def create_new_version(
