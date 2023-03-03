@@ -187,7 +187,7 @@ def event_loop():
         loop = asyncio.get_event_loop()
         yield loop
         loop.close()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         if "there is no current event loop in thread" in str(e):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
