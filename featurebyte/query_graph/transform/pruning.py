@@ -329,27 +329,8 @@ class GraphStructurePruningExtractor(
             # we use the target columns in the global state
             return global_state.target_columns
 
-        # otherwise, we use the target nodes of current node in the graph to construct the target columns
-        target_node_names = global_state.edges_map[node.name]
-        target_nodes = [self.graph.get_node_by_name(node_name) for node_name in target_node_names]
-        target_columns: Optional[List[str]] = None
-        if target_nodes:
-            # get the input column order from current node to the target nodes
-            target_node_input_order_pairs = []
-            for target_node in target_nodes:
-                target_node_input_node_names = self.graph.get_input_node_names(node=target_node)
-                node_name_input_order = target_node_input_node_names.index(node.name)
-                target_node_input_order_pairs.append((target_node, node_name_input_order))
-
-            # construct required column names
-            required_columns = set().union(
-                *(
-                    node.get_required_input_columns(input_index=input_order)
-                    for node, input_order in target_node_input_order_pairs
-                )
-            )
-            target_columns = list(required_columns)
-        return target_columns
+        # otherwise, we use the target columns from the node
+        return self.graph.get_target_nodes_required_column_names(node.name)
 
     @classmethod
     def _prune_nested_graph(
@@ -357,7 +338,6 @@ class GraphStructurePruningExtractor(
         node: BaseGraphNode,
         target_columns: Optional[List[str]],
         proxy_input_operation_structures: List[OperationStructure],
-        input_nodes: List[Node],
         aggressive: bool,
     ) -> Node:
         nested_graph = node.parameters.graph
@@ -375,10 +355,7 @@ class GraphStructurePruningExtractor(
                 "graph": pruned_graph,
                 "output_node_name": output_node_name,
                 "type": node.parameters.type,
-                "metadata": node.parameters.prune_metadata(
-                    target_columns=target_columns,  # type: ignore
-                    input_nodes=input_nodes,
-                ),
+                "metadata": node.parameters.metadata,  # type: ignore
             }
         )
 
@@ -425,7 +402,6 @@ class GraphStructurePruningExtractor(
                 node=node,
                 target_columns=target_columns,
                 proxy_input_operation_structures=proxy_input_operation_structures,
-                input_nodes=mapped_input_nodes,
                 aggressive=global_state.aggressive,
             )
 

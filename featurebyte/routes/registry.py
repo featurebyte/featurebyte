@@ -53,6 +53,7 @@ from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.tabular_data import DataService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.version import VersionService
+from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.workspace import WorkspaceService
 from featurebyte.utils.credential import ConfigCredentialProvider
 
@@ -153,6 +154,7 @@ app_container_config.add_basic_service("info_service", InfoService)
 app_container_config.add_basic_service("workspace_service", WorkspaceService)
 app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
 app_container_config.add_basic_service("user_service", UserService)
+app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
 
 app_container_config.add_controller(
     "relationship_info_controller",

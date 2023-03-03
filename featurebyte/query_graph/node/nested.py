@@ -92,25 +92,6 @@ class BaseGraphNodeParameters(BaseModel):
     type: GraphNodeType
 
     @abstractmethod
-    def prune_metadata(
-        self, target_columns: List[str], input_nodes: Sequence[NodeT]
-    ) -> Dict[str, Any]:
-        """
-        Prune metadata for the current graph node
-
-        Parameters
-        ----------
-        target_columns: List[str]
-            Target columns
-        input_nodes: Sequence[NodeT]
-            Input nodes
-
-        Returns
-        -------
-        Dict[str, Any]
-        """
-
-    @abstractmethod
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -147,7 +128,7 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    def prune_metadata(
+    def _prune_metadata(
         self, target_columns: List[str], input_nodes: Sequence[NodeT]
     ) -> Dict[str, Any]:
         return self.metadata
@@ -212,7 +193,24 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
 
     metadata: ViewMetadata
 
-    def prune_metadata(
+    def prune_metadata(self, target_columns: List[str], input_nodes: Sequence[NodeT]) -> Any:
+        """
+        Prune metadata for the current graph node
+
+        Parameters
+        ----------
+        target_columns: List[str]
+            Target columns
+        input_nodes: Sequence[NodeT]
+            Input nodes
+
+        Returns
+        -------
+        ParameterT
+        """
+        return type(self.metadata)(**self._prune_metadata(target_columns, input_nodes))
+
+    def _prune_metadata(
         self, target_columns: List[str], input_nodes: Sequence[NodeT]
     ) -> Dict[str, Any]:
         metadata = self.metadata.dict(by_alias=True)
@@ -325,10 +323,10 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         )
         return [(view_var_name, expression)], view_var_name
 
-    def prune_metadata(
+    def _prune_metadata(
         self, target_columns: List[str], input_nodes: Sequence[NodeT]
     ) -> Dict[str, Any]:
-        metadata = super().prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
+        metadata = super()._prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
         if target_columns:
             # for item view graph node, we need to use the event view graph node's metadata
             # to generate the event column cleaning operations
