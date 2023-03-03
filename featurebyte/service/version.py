@@ -11,6 +11,7 @@ from featurebyte.exception import DocumentError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
@@ -100,11 +101,19 @@ class VersionService(BaseService):
         -------
         Optional[FeatureModel]
         """
+        # reconstruct the view graph
         graph, node_name_map = feature.graph.reconstruct(
             node_name_to_replacement_node=node_name_to_replacement_node,
             regenerate_groupby_hash=True,
         )
         node_name = node_name_map[feature.node_name]
+
+        # prune the graph again to remove unused nodes inside the view graph node
+        pruned_graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
+            target_node=graph.get_node_by_name(node_name),
+            aggressive=True,
+        )
+        pruned_node_name = node_name_map[node_name]
 
         # only return a new feature version if the graph is changed
         reference_hash_before = feature.graph.node_name_to_ref[feature.node_name]
@@ -113,8 +122,8 @@ class VersionService(BaseService):
             return FeatureModel(
                 **{
                     **feature.dict(),
-                    "graph": graph,
-                    "node_name": node_name,
+                    "graph": pruned_graph,
+                    "node_name": pruned_node_name,
                     "_id": ObjectId(),
                 }
             )

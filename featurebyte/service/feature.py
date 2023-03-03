@@ -17,6 +17,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
@@ -104,15 +105,24 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         Tuple[GraphNode, str]
             GraphNode object & target node name
         """
+        # prune unused nodes & parameters
         pruned_graph, pruned_node_name_map = feature.graph.prune(
             target_node=feature.node, aggressive=True
         )
         pruned_node_name = pruned_node_name_map[feature.node.name]
+
+        # reconstruct view graph node
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=pruned_graph,
             data_cleaning_operations=[],
         )
-        return graph, node_name_map[pruned_node_name]
+        node = graph.get_node_by_name(node_name_map[pruned_node_name])
+
+        # prune the graph again to remove unused nodes inside the view graph node
+        pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
+            target_node=node, aggressive=True
+        )
+        return pruned_graph, pruned_node_name_map[node.name]
 
     async def create_document(self, data: FeatureCreate) -> FeatureModel:
         document = FeatureModel(

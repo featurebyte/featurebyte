@@ -114,6 +114,61 @@ class ViewConstructionService(BaseService):
                 input_nodes.append(query_graph.get_node_by_name(input_node_name))
         return target_columns, input_nodes
 
+    async def _construct_view_graph_node(
+        self,
+        query_graph: QueryGraphModel,
+        graph_node: BaseGraphNode,
+        input_node: InputNode,
+        input_node_names: list[str],
+        data_name_to_column_cleaning_operations: dict[str, list[ColumnCleaningOperation]],
+        view_node_name_to_data_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
+        create_view_kwargs: dict[str, Any],
+        metadata_kwargs: dict[str, Any],
+    ) -> tuple[BaseGraphNode, list[ColumnInfo]]:
+        # get the data document based on the data ID in input node
+        data_id = input_node.parameters.id
+        assert data_id is not None
+        data_document = await self.data_service.get_document(document_id=data_id)
+
+        # get the additional parameters for view construction and metadata update
+        parameters_metadata = graph_node.parameters.metadata  # type: ignore
+        assert isinstance(parameters_metadata, ViewMetadata)
+        assert data_document.name is not None
+        column_clean_ops = data_name_to_column_cleaning_operations.get(
+            data_document.name,
+            parameters_metadata.column_cleaning_operations,
+        )
+        parameters_metadata = parameters_metadata.clone(
+            view_mode=parameters_metadata.view_mode,
+            column_cleaning_operations=column_clean_ops,
+            **metadata_kwargs,
+        )
+
+        # create a temporary view graph node & use it to prune the view graph node parameters
+        temp_view_graph_node, _ = data_document.create_view_graph_node(
+            input_node=input_node,
+            metadata=parameters_metadata,
+            **create_view_kwargs,
+        )
+
+        # prune the view graph node metadata and reconstruct a new view graph node
+        target_columns, input_nodes = self._prepare_target_columns_and_input_nodes(
+            query_graph=query_graph,
+            view_node_name_to_data_info=view_node_name_to_data_info,
+            input_node_names=input_node_names,
+            node_name=graph_node.name,
+        )
+
+        assert isinstance(temp_view_graph_node.parameters, BaseViewGraphNodeParameters)
+        new_view_graph_node, new_view_columns_info = data_document.create_view_graph_node(
+            input_node=input_node,
+            metadata=temp_view_graph_node.parameters.prune_metadata(
+                target_columns=target_columns, input_nodes=input_nodes
+            ),
+            **create_view_kwargs,
+        )
+        return new_view_graph_node, new_view_columns_info
+
     async def prepare_view_node_name_to_replacement_node(
         self, query_graph: QueryGraphModel, data_cleaning_operations: list[DataCleaningOperation]
     ) -> dict[str, Node]:
@@ -166,50 +221,19 @@ class ViewConstructionService(BaseService):
                 view_node_name_to_data_info=view_node_name_to_data_info,
             )
 
-            # get the data document based on the data ID in input node
-            data_id = view_graph_input_node.parameters.id
-            assert data_id is not None
-            data_document = await self.data_service.get_document(document_id=data_id)
-
-            # check whether the data document has column cleaning operations
-            # use the column cleaning operations to create a new view graph node
-            parameters_metadata = graph_node.parameters.metadata  # type: ignore
-            assert isinstance(parameters_metadata, ViewMetadata)
-            assert data_document.name is not None
-            column_clean_ops = data_name_to_column_cleaning_operations.get(
-                data_document.name,
-                parameters_metadata.column_cleaning_operations,
-            )
-            parameters_metadata = parameters_metadata.clone(
-                view_mode=parameters_metadata.view_mode,
-                column_cleaning_operations=column_clean_ops,
-                **metadata_kwargs,
-            )
-
-            # create a temporary view graph node & use it to prune the view graph node parameters
-            temp_view_graph_node, _ = data_document.create_view_graph_node(
-                input_node=view_graph_input_node,
-                metadata=parameters_metadata,
-                **create_view_kwargs,
-            )
-
-            # prune the view graph node parameters and reconstruct a new view graph node
-            target_columns, input_nodes = self._prepare_target_columns_and_input_nodes(
+            # create a new view graph node
+            new_view_graph_node, new_view_columns_info = await self._construct_view_graph_node(
                 query_graph=query_graph,
-                view_node_name_to_data_info=view_node_name_to_data_info,
-                input_node_names=input_node_names,
-                node_name=graph_node.name,
-            )
-
-            assert isinstance(temp_view_graph_node.parameters, BaseViewGraphNodeParameters)
-            new_view_graph_node, new_view_columns_info = data_document.create_view_graph_node(
+                graph_node=graph_node,
                 input_node=view_graph_input_node,
-                metadata=temp_view_graph_node.parameters.prune_metadata(
-                    target_columns=target_columns, input_nodes=input_nodes
-                ),
-                **create_view_kwargs,
+                input_node_names=input_node_names,
+                data_name_to_column_cleaning_operations=data_name_to_column_cleaning_operations,
+                view_node_name_to_data_info=view_node_name_to_data_info,
+                create_view_kwargs=create_view_kwargs,
+                metadata_kwargs=metadata_kwargs,
             )
 
+            # store the new view graph node, view columns info and data input node
             view_node_name_to_data_info[graph_node.name] = (
                 new_view_graph_node,
                 new_view_columns_info,

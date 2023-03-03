@@ -128,11 +128,6 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     type: Literal[GraphNodeType.CLEANING] = Field(GraphNodeType.CLEANING, const=True)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    def _prune_metadata(
-        self, target_columns: List[str], input_nodes: Sequence[NodeT]
-    ) -> Dict[str, Any]:
-        return self.metadata
-
     def derive_sdk_code(
         self,
         input_var_name_expressions: List[VarNameExpressionStr],
@@ -213,6 +208,7 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
     def _prune_metadata(
         self, target_columns: List[str], input_nodes: Sequence[NodeT]
     ) -> Dict[str, Any]:
+        _ = input_nodes
         metadata = self.metadata.dict(by_alias=True)
         if target_columns:
             metadata["column_cleaning_operations"] = [
