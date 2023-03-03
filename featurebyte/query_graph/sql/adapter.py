@@ -344,6 +344,17 @@ class BaseAdapter:
         """
         return True
 
+    @classmethod
+    @abstractmethod
+    def current_timestamp(cls) -> Expression:
+        """
+        Expression to get the current timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -457,6 +468,10 @@ class SnowflakeAdapter(BaseAdapter):
         return expressions.Anonymous(
             this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
         )
+
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return expressions.Anonymous(this="SYSDATE")
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -575,6 +590,10 @@ class DatabricksAdapter(BaseAdapter):
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
         # timestamps do not have timezone information
         return timestamp_expr
+
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return expressions.Anonymous(this="current_timestamp")
 
 
 class SparkAdapter(DatabricksAdapter):

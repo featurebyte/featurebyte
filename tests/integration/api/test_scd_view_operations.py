@@ -338,7 +338,7 @@ def test_aggregate_asat(scd_data, scd_dataframe):
     pd.testing.assert_frame_equal(df, expected)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_aggregate_asat__no_entity(scd_data, scd_dataframe, config):
     """
     Test aggregate_asat aggregation on SlowlyChangingView without entity

@@ -385,7 +385,10 @@ def get_online_store_retrieval_sql(
 
     # Form a request table as a common table expression (CTE) and add the point in time column
     expr = select(*[f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns])
-    expr = expr.select(f"SYSDATE() AS {SpecialColumnName.POINT_IN_TIME}")
+    adapter = get_sql_adapter(source_type)
+    expr = expr.select(
+        expressions.alias_(adapter.current_timestamp(), alias=SpecialColumnName.POINT_IN_TIME)
+    )
     request_table_columns.append(SpecialColumnName.POINT_IN_TIME)
 
     if request_table_name is not None:
