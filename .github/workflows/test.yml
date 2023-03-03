@@ -219,9 +219,13 @@ jobs:
       - name: Run tests
         run: |
           make test-setup
+          set +e
           make test-integration-spark
-          if [ $? -ne 0 ]; then
-              docker logs spark-thrift | tail -n 2000
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+              echo "Spark Thrift Server logs:"
+              docker logs spark-thrift --tail 2000
+              exit $EXIT_CODE
           fi
           make test-teardown
           mv .coverage .coverage.2
