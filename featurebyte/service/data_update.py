@@ -11,11 +11,10 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import DEFAULT_USER_OBJECT_ID, PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataModel, DataStatus
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.models.user import DEFAULT_USER_OBJECT_ID, DEFAULT_USER_PYDANTIC_OBJECT_ID
 from featurebyte.persistent import Persistent
 from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityServiceUpdate
@@ -281,7 +280,7 @@ class DataUpdateService(BaseService):
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
                     primary_data_source_id=PydanticObjectId(data_source_id),
                     is_enabled=True,
-                    updated_by=DEFAULT_USER_PYDANTIC_OBJECT_ID,
+                    updated_by=PydanticObjectId(DEFAULT_USER_OBJECT_ID),
                 )
             )
 
