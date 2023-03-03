@@ -942,6 +942,11 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
                         column_name="item_amount",
                         cleaning_operations=[MissingValueImputation(imputed_value=0.0)],
                     ),
+                    # unused column (check that it won't affect the saved feature)
+                    ColumnCleaningOperation(
+                        column_name="item_type",
+                        cleaning_operations=[MissingValueImputation(imputed_value="unknown")],
+                    ),
                 ],
             )
         ],
