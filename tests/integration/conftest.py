@@ -41,6 +41,7 @@ from featurebyte.config import Configurations
 from featurebyte.enum import InternalName, SourceType, StorageType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
+from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.persistent.mongo import MongoDB
@@ -189,6 +190,10 @@ def event_loop():
         loop.close()
     except Exception as e:  # pylint: disable=broad-except
         if "there is no current event loop in thread" in str(e):
+            logger.exception(
+                f"no event loop found. explicitly recreating and resetting new event loop.\n"
+                f"previous error: {str(e)}"
+            )
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             yield loop
