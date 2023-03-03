@@ -11,7 +11,6 @@ import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte import MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.enum import TableDataType
@@ -24,6 +23,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 

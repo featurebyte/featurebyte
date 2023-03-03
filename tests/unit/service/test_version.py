@@ -9,12 +9,15 @@ import pytest_asyncio
 from bson import ObjectId
 from pydantic import ValidationError
 
-from featurebyte import ColumnCleaningOperation, MissingValueImputation
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
+    MissingValueImputation,
+)
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,

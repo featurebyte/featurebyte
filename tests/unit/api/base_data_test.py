@@ -5,9 +5,9 @@ import textwrap
 
 import pytest
 
-from featurebyte import MissingValueImputation
 from featurebyte.api.base_data import DataColumn
 from featurebyte.enum import StrEnum
+from featurebyte.query_graph.node.cleaning_operation import MissingValueImputation
 
 
 class DataType(StrEnum):
