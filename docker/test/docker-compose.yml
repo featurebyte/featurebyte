@@ -12,6 +12,13 @@ services:
       - 27021:27021
       - 27022:27022
 
+  redis:
+    hostname: redis-test
+    container_name: redis-test
+    image: "redis:6.2.5"
+    ports:
+      - 6379:6379
+
   spark-thrift:
     image: featurebyte/cluster-apache-spark:3.3.1
     container_name: spark-thrift

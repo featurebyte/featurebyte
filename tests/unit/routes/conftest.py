@@ -4,18 +4,20 @@ Fixture for API unit tests
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-import json
+import datetime
 import traceback
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import pytest
 from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 
 from featurebyte.app import app
-from featurebyte.enum import WorkerCommand
 from featurebyte.models.base import User
+from featurebyte.models.task import Task as TaskModel
 from featurebyte.schema.task import TaskStatus
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
 
@@ -41,65 +43,70 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_process_store(request, persistent, storage, temp_storage):
+def mock_task_manager(persistent, storage, temp_storage):
     """
-    Mock process store to avoid running task in subprocess for testing
+    Mock celery task manager for testing
     """
-    if "no_mock_process_store" in request.keywords:
-        yield
-        return
+    task_status = {}
+    with patch("featurebyte.service.task_manager.get_persistent") as mock_get_persistent:
+        mock_get_persistent.return_value = persistent
+        with patch("featurebyte.service.task_manager.TaskManager.submit") as mock_submit:
 
-    with patch("featurebyte.service.task_manager.ProcessStore.submit") as mock_submit:
-        process_store = {}
+            async def submit(payload: BaseTaskPayload):
+                kwargs = payload.json_dict()
+                kwargs["task_output_path"] = payload.task_output_path
+                task = TASK_MAP[payload.command](
+                    payload=kwargs,
+                    progress=Mock(),
+                    user=User(id=kwargs.get("user_id")),
+                    get_credential=get_credential,
+                    get_persistent=lambda: persistent,
+                    get_storage=lambda: storage,
+                    get_temp_storage=lambda: temp_storage,
+                )
+                try:
+                    await task.execute()
+                    status = TaskStatus.SUCCESS
+                    traceback_info = None
+                except Exception:  # pylint: disable=broad-except
+                    status = TaskStatus.FAILURE
+                    traceback_info = traceback.format_exc()
 
-        async def submit(payload, output_path):
-            _ = output_path
-            payload_dict = json.loads(payload)
-            command = WorkerCommand(payload_dict["command"])
-            task = TASK_MAP[command](
-                payload=payload_dict,
-                progress=Mock(),
-                user=User(id=payload_dict.get("user_id")),
-                get_credential=get_credential,
-                get_persistent=lambda: persistent,
-                get_storage=lambda: storage,
-                get_temp_storage=lambda: temp_storage,
-            )
-            try:
-                await task.execute()
-                status = TaskStatus.SUCCESS
-                traceback_info = None
-            except Exception:  # pylint: disable=broad-except
-                status = TaskStatus.FAILURE
-                traceback_info = traceback.format_exc()
+                task_id = str(uuid4())
+                task_status[task_id] = status
 
-            task_id = ObjectId()
-            process_store[task_id] = {
-                "output_path": output_path,
-                "payload": payload_dict,
-                "status": status,
-                "traceback": traceback_info,
-            }
-            return task_id
+                # insert task into db manually since we are mocking celery
+                task = TaskModel(
+                    _id=task_id,
+                    status=status,
+                    result="",
+                    children=[],
+                    date_done=datetime.datetime.utcnow(),
+                    name=payload.command,
+                    args=[],
+                    kwargs=kwargs,
+                    worker="worker",
+                    retries=0,
+                    queue="default",
+                    traceback=traceback_info,
+                )
+                document = task.dict(by_alias=True)
+                document["_id"] = str(document["_id"])
+                await persistent._db[TaskModel.collection_name()].insert_one(document)
+                return task_id
 
-        mock_submit.side_effect = submit
+            mock_submit.side_effect = submit
 
-        with patch("featurebyte.service.task_manager.ProcessStore.get") as mock_get:
+            with patch("featurebyte.service.task_manager.celery") as mock_celery:
 
-            async def get(user_id, task_id):
-                _ = user_id
-                process_data = process_store.get(task_id, {})
-                return {
-                    "id": task_id,
-                    "process": Mock(exitcode=0),
-                    "output_path": process_data.get("output_path", "some_path"),
-                    "payload": process_data.get("payload", {"key": "value"}),
-                    "status": process_data.get("status", TaskStatus.SUCCESS),
-                    "traceback": process_data.get("traceback"),
-                }
+                def get_task(task_id):
+                    status = task_status.get(task_id)
+                    if status is None:
+                        return None
+                    return Mock(status=status)
 
-            mock_get.side_effect = get
-            yield
+                mock_celery.AsyncResult.side_effect = get_task
+                yield
 
 
 @pytest.fixture()

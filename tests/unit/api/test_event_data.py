@@ -4,7 +4,8 @@ Unit test for EventData class
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -24,6 +25,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.query_graph.model.critical_data_info import MissingValueImputation
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.schema.task import Task, TaskStatus
 from tests.unit.api.base_data_test import BaseDataTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation
 
@@ -604,17 +606,17 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
     assert expected_msg in str(exc)
 
 
-@pytest.fixture(name="mock_process_store")
-def mock_process_store_fixture():
-    with patch("featurebyte.service.task_manager.ProcessStore") as mock:
-        task_id = ObjectId()
-        mock.return_value.submit = AsyncMock()
-        mock.return_value.submit.return_value = task_id
-        yield mock
+@pytest.fixture(name="mock_celery")
+def mock_celery_fixture():
+    with patch("featurebyte.service.task_manager.celery") as mock_celery:
+        mock_celery.send_task.side_effect = lambda *args, **kwargs: Mock(id=uuid4())
+        mock_celery.AsyncResult.return_value.status = TaskStatus.STARTED
+        yield mock_celery
 
 
-def test_update_default_job_setting__feature_job_setting_analysis_failure(
-    mock_process_store,
+@pytest.mark.asyncio
+async def test_update_default_job_setting__feature_job_setting_analysis_failure(
+    mock_celery,
     saved_event_data,
     config,
 ):
@@ -629,10 +631,10 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure(
         "status": "FAILURE",
         "traceback": "ValueError: Event Data not found",
     }
-    mock_process_store.return_value.get = AsyncMock()
-    mock_process_store.return_value.get.return_value = get_return
-    with pytest.raises(RecordCreationException) as exc:
-        saved_event_data.initialize_default_feature_job_setting()
+    with patch("featurebyte.service.task_manager.TaskManager.get_task") as mock_get_task:
+        mock_get_task.return_value = Task(**get_return)
+        with pytest.raises(RecordCreationException) as exc:
+            saved_event_data.initialize_default_feature_job_setting()
     assert "ValueError: Event Data not found" in str(exc.value)
 
 

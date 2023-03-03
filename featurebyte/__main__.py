@@ -1,7 +1,7 @@
 """
 Featurebyte CLI tools
 """
-from typing import Generator
+from typing import Generator, List, cast
 
 import os
 import pwd
@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from enum import Enum
 
 import typer
+from python_on_whales.components.compose.models import ComposeConfig
 from python_on_whales.docker_client import DockerClient
 from rich.align import Align
 from rich.console import Console
@@ -38,11 +39,6 @@ app = typer.Typer(
 )
 app.add_typer(datasets_app, name="datasets")
 
-# Map application name to service names
-services_map = {
-    ApplicationName.FEATUREBYTE: ["featurebyte-server", "mongo-rs"],
-    ApplicationName.SPARK: ["spark-thrift"],
-}
 
 # Application messages
 messages = {
@@ -109,7 +105,24 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
         yield docker
 
 
-def print_logs(app_name: ApplicationName, tail: int) -> None:
+def get_service_names(app_name: ApplicationName) -> List[str]:
+    """
+    Get list of service names for application
+
+    Parameters
+    ----------
+    app_name: ApplicationName
+
+    Returns
+    -------
+    List[str]
+    """
+    with get_docker_client(app_name) as docker:
+        services = cast(ComposeConfig, docker.compose.config()).services
+    return list(services.keys())
+
+
+def print_logs(app_name: ApplicationName, service_name: str, tail: int) -> None:
     """
     Print service logs
 
@@ -117,15 +130,16 @@ def print_logs(app_name: ApplicationName, tail: int) -> None:
     ----------
     app_name: ApplicationName
         Application name
+    service_name: str
+        Service name
     tail: int
         Number of lines to print
     """
     with get_docker_client(app_name) as docker:
         docker_logs = docker.compose.logs(follow=True, stream=True, tail=str(tail))
-        docker_service = services_map[app_name][0]
         for source, content in docker_logs:
             line = content.decode("utf-8").strip()
-            if not line.startswith(docker_service):
+            if service_name != "all" and not line.startswith(service_name):
                 continue
             style = "green" if source == "stdout" else "red"
             console.print(Text(line, style=style))
@@ -179,14 +193,16 @@ def __delete_docker_backup() -> None:
 def start(
     app_name: ApplicationName = typer.Argument(
         default="featurebyte", help="Name of application to start"
-    )
+    ),
+    local: bool = typer.Option(default=False, help="Do not pull new images from registry"),
 ) -> None:
     """Start application"""
     try:
         __backup_docker_conf()
         __use_docker_svc_account()
         with get_docker_client(app_name) as docker:
-            docker.compose.pull()
+            if not local:
+                docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
             docker.compose.up(detach=True)
     finally:
@@ -220,12 +236,13 @@ def logs(
     app_name: ApplicationName = typer.Argument(
         default="featurebyte", help="Name of application to print logs for"
     ),
+    service_name: str = typer.Argument(default="all", help="Name of service to print logs for"),
     tail: int = typer.Argument(
         default=500, help="Number of lines to print from the end of the logs"
     ),
 ) -> None:
     """Print application logs"""
-    print_logs(app_name, tail)
+    print_logs(app_name, service_name, tail)
 
 
 @app.command(name="status")

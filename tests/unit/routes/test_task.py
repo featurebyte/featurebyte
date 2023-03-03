@@ -10,12 +10,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.worker.process_store import ProcessStore
-from tests.util.task import Command, LongRunningPayload, TaskExecutor
-
-# pylint: disable=protected-access
-ProcessStore._command_class = Command
-ProcessStore._task_executor = TaskExecutor
+from tests.util.task import LongRunningPayload
 
 
 class TestTaskStatusApi:
@@ -25,10 +20,11 @@ class TestTaskStatusApi:
     base_route = "/task"
 
     @pytest.fixture
-    def task_manager(self, user_id):
+    def task_manager(self, user_id, persistent):
         """Task manager fixture"""
-        with patch("featurebyte.service.task_manager.ProcessStore", wraps=ProcessStore):
-            return TaskManager(user_id=user_id)
+        with patch("featurebyte.service.task_manager.get_persistent") as mock_get_persistent:
+            mock_get_persistent.return_value = persistent
+            yield TaskManager(user_id=user_id)
 
     @pytest_asyncio.fixture
     async def task_status_id(self, user_id, task_manager):
@@ -37,14 +33,13 @@ class TestTaskStatusApi:
             payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
         )
 
-    @pytest.mark.no_mock_process_store
     def test_get_200(self, test_api_client_persistent, task_status_id, user_id):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/{task_status_id}")
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
-        assert response_dict.items() > {"id": str(task_status_id), "status": "STARTED"}.items()
+        assert response_dict.items() > {"id": str(task_status_id), "status": "SUCCESS"}.items()
         assert (
             response_dict["payload"].items()
             > {
@@ -54,7 +49,6 @@ class TestTaskStatusApi:
             }.items()
         )
 
-    @pytest.mark.no_mock_process_store
     def test_get_404(self, test_api_client_persistent):
         """Test get (not found)"""
         test_api_client, _ = test_api_client_persistent
@@ -63,14 +57,21 @@ class TestTaskStatusApi:
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json()["detail"] == f'Task (id: "{unknown_id}") not found.'
 
-    @pytest.mark.parametrize("sort_dir, reverse", [("desc", True), ("asc", False)])
-    def test_list_200(self, test_api_client_persistent, sort_dir, reverse):
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("sort_dir", ["desc", "asc"])
+    async def test_list_200(self, user_id, task_manager, test_api_client_persistent, sort_dir):
         """Test list (success, multiple)"""
+        expected_task_ids = []
+        for _ in range(3):
+            task_id = await task_manager.submit(
+                payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+            )
+            expected_task_ids.append(task_id)
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(self.base_route, params={"sort_dir": sort_dir})
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["total"] == len(response_dict["data"])
-        assert response_dict["data"] == sorted(
-            response_dict["data"], key=lambda d: d["id"], reverse=reverse
+        assert [data["id"] for data in response_dict["data"]] == (
+            expected_task_ids if sort_dir == "asc" else list(reversed(expected_task_ids))
         )

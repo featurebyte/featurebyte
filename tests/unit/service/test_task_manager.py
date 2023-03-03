@@ -1,21 +1,20 @@
 """
 Test for task manager service
 """
+import datetime
 import math
-from unittest.mock import patch
+import time
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
-from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.models.task import Task
+from featurebyte.schema.task import TaskStatus
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.worker.process_store import ProcessStore
-from featurebyte.worker.progress import GlobalProgress
-from tests.util.task import Command, LongRunningPayload, TaskExecutor
-
-ProcessStore._command_class = Command
-ProcessStore._task_executor = TaskExecutor
+from tests.util.task import LongRunningPayload
 
 
 @pytest.fixture(name="user_id")
@@ -24,91 +23,99 @@ def user_id_fixture():
     return ObjectId()
 
 
+@pytest.fixture(name="celery")
+def celery_fixture():
+    """Celery fixture"""
+    with patch("featurebyte.service.task_manager.celery") as mock_celery:
+        mock_celery.send_task.side_effect = lambda *args, **kwargs: Mock(id=uuid4())
+        mock_celery.AsyncResult.return_value.status = TaskStatus.STARTED
+        yield mock_celery
+
+
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(user_id):
+def task_manager_fixture(user_id, persistent):
     """Task manager fixture"""
-    with patch("featurebyte.service.task_manager.ProcessStore", wraps=ProcessStore):
-        return TaskManager(user_id=user_id)
+    with patch("featurebyte.service.task_manager.get_persistent") as mock_get_persistent:
+        mock_get_persistent.return_value = persistent
+        yield TaskManager(user_id=user_id)
 
 
 @pytest.mark.asyncio
-async def test_task_manager__long_running_tasks(task_manager, user_id):
+async def test_task_manager__long_running_tasks(task_manager, celery, user_id, persistent):
     """Test task manager service"""
     expected_tasks = []
-    tasks = []
     for _ in range(3):
-        task_id = await task_manager.submit(
-            payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+        payload = LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+        task_id = await task_manager.submit(payload=payload)
+
+        # check celery task submission
+        celery.send_task.assert_called_with(
+            "featurebyte.worker.task_executor.execute_task",
+            kwargs={
+                "user_id": str(user_id),
+                "output_document_id": str(payload.output_document_id),
+                "command": payload.command,
+                "workspace_id": str(payload.workspace_id),
+                "output_collection_name": payload.output_collection_name,
+                "task_output_path": payload.task_output_path,
+            },
         )
+
+        # insert task into db manually since we are mocking celery
+        task = Task(
+            _id=task_id,
+            status=TaskStatus.STARTED,
+            result="",
+            children=[],
+            date_done=datetime.datetime.utcnow(),
+            name=LongRunningPayload.command,
+            args=[],
+            kwargs=celery.send_task.call_args.kwargs["kwargs"],
+            worker="worker",
+            retries=0,
+            queue="default",
+        )
+        document = task.dict(by_alias=True)
+        document["_id"] = str(document["_id"])
+        await persistent._db[Task.collection_name()].insert_one(document)
+
         task = await task_manager.get_task(task_id=task_id)
         assert task.id == task_id
         assert task.status == "STARTED"
         expected_tasks.append(task)
         tasks, _ = await task_manager.list_tasks()
         assert tasks == expected_tasks
-
-    # check progress update
-    for task in expected_tasks:
-        progress_queue = GlobalProgress().get_progress(user_id=user_id, task_id=task.id)
-        progress_percents = [progress_queue.get()["percent"]]
-        while progress_percents[-1] < 100:
-            progress_percents.append(progress_queue.get()["percent"])
-        assert progress_queue.empty()
-        assert progress_percents == [10 * (i + 1) for i in range(10)]
-
-    # wait a bit to let the process finishes
-    for task in tasks:
-        process_data = await ProcessStore().get(user_id, task.id)
-        process_data["process"].join()
-
-    # check all task completed
-    tasks, _ = await task_manager.list_tasks()
-    for task in tasks:
-        assert task.status == "SUCCESS"
+        time.sleep(0.1)
 
 
 @pytest.mark.asyncio
-async def test_task_manager__not_found_task(task_manager, user_id):
-    """Test task manager service on not found task"""
-
-    class NewTaskPayload(BaseTaskPayload):
-        """NewTaskPayload class"""
-
-        output_collection_name = "random_collection"
-        command = Command.UNKNOWN_TASK_COMMAND
-
-    task_id = await task_manager.submit(
-        payload=NewTaskPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
-    )
-
-    # wait until task finishes
-    process_data = await ProcessStore().get(user_id, task_id)
-    process_data["process"].join()
-
-    task = await task_manager.get_task(task_id=task_id)
-    assert task.status == "FAILURE"
-
-    # test retrieve random task_status_id
-    task_status_random = await task_manager.get_task(task_id=ObjectId())
-    assert task_status_random is None
-
-
-@patch("featurebyte.service.task_manager.ProcessStore", wraps=ProcessStore)
-@pytest.mark.asyncio
-async def test_task_manager__list_tasks(mock_process_store):
+async def test_task_manager__list_tasks(task_manager, celery, user_id, persistent):
     """Test task manager service -- list task status"""
-    _ = mock_process_store
-    user_id = ObjectId()
-    task_manager = TaskManager(user_id=user_id)
-
     task_num = 10
     task_ids = []
     for _ in range(task_num):
-        task_ids.append(
-            await task_manager.submit(
-                payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
-            )
+        task_id = await task_manager.submit(
+            payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
         )
+        task_ids.append(task_id)
+        # insert task into db manually since we are mocking celery
+        task = Task(
+            _id=task_id,
+            status=TaskStatus.STARTED,
+            result="",
+            children=[],
+            date_done=datetime.datetime.utcnow(),
+            name=LongRunningPayload.command,
+            args=[],
+            kwargs=celery.send_task.call_args.kwargs["kwargs"],
+            worker="worker",
+            retries=0,
+            queue="default",
+        )
+        document = task.dict(by_alias=True)
+        document["_id"] = str(document["_id"])
+        await persistent._db[Task.collection_name()].insert_one(document)
+        time.sleep(0.1)
 
     page_sizes = [1, 2, 5, 10, 20]
     for page_size in page_sizes:
@@ -129,5 +136,5 @@ async def test_task_manager__list_tasks(mock_process_store):
             descending_list.extend(items)
 
         # check list order
-        assert [item.id for item in ascending_list] == sorted(task_ids)
-        assert [item.id for item in descending_list] == sorted(task_ids, reverse=True)
+        assert [item.id for item in ascending_list] == task_ids
+        assert [item.id for item in descending_list] == list(reversed(task_ids))
