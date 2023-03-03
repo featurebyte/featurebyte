@@ -55,7 +55,6 @@ async def test_update_feature__no_update_except_updated_at(
     updated_feature = await deploy_service._update_feature(
         feature_id=feature.id,
         feature_list=feature_list,
-        get_credential=Mock(),
     )
     assert updated_feature.dict(exclude={"updated_at": True}) == feature.dict(
         exclude={"updated_at": True}
@@ -98,7 +97,7 @@ async def production_ready_feature_list_fixture(feature_list, feature_readiness_
 def mock_update_data_warehouse():
     """Mock update data warehouse method"""
     with patch(
-        "featurebyte.service.deploy.OnlineEnableService._update_data_warehouse"
+        "featurebyte.service.deploy.OnlineEnableService.update_data_warehouse"
     ) as mock_update_data_warehouse:
         yield mock_update_data_warehouse
 
@@ -122,7 +121,7 @@ async def test_update_feature_list(
         get_credential=Mock(),
     )
     mock_update_data_warehouse.assert_called_once()
-    assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is True
+    assert mock_update_data_warehouse.call_args[1]["updated_feature"].online_enabled is True
 
     assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
@@ -142,7 +141,7 @@ async def test_update_feature_list(
         get_credential=Mock(),
     )
     assert mock_update_data_warehouse.call_count == 2
-    assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is False
+    assert mock_update_data_warehouse.call_args[1]["updated_feature"].online_enabled is False
 
     assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
@@ -202,8 +201,10 @@ async def test_update_feature_list_error__state_is_reverted_when_update_feature_
     feature_list_service,
     production_ready_feature_list,
     deploy_service,
+    mock_update_data_warehouse,
 ):
     """Test update feature list exception happens when updating feature"""
+    _ = mock_update_data_warehouse
     feature_list = production_ready_feature_list
     assert feature_list.deployed is False
     assert feature_list.online_enabled_feature_ids == []
