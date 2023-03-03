@@ -67,7 +67,7 @@ def features_fixture(event_data):
     return features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_online_serving_sql(features, session, config):
     """
