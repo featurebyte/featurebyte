@@ -47,6 +47,6 @@ grouped_1 = event_view.groupby(by_keys=["cust_id"], category=None).aggregate_ove
     skip_fill_na=True,
 )
 feat_2 = grouped_1["sum_a_24h"]
-feat_3 = feat.cd.unique_count(include_missing=True)
-feat_4 = feat.cd.unique_count(include_missing=False)
-output = (feat_2 + feat_1) - (feat_4 / feat_3)
+feat_3 = feat.cd.unique_count(include_missing=False)
+feat_4 = feat.cd.unique_count(include_missing=True)
+output = (feat_2 + feat_1) - (feat_3 / feat_4)

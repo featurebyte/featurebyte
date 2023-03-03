@@ -141,7 +141,34 @@ class QueryGraphModel(FeatureByteBaseModel):
         return node_type_counter
 
     @staticmethod
+    def _get_node_parameter_for_compute_node_hash(node: Node) -> Dict[str, Any]:
+        """
+        Get node parameters for computing node hash. If the node is a graph node, the output node hash of the
+        nested graph is used to represent the graph parameters. Without doing this, the graph node's hash will
+        be sensitive to the order of the nodes/edges in the nested graph.
+
+        Parameters
+        ----------
+        node: Node
+            Node to get parameters for computing node hash
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        node_parameters = node.parameters.dict()
+        if node.type == NodeType.GRAPH:
+            nested_graph = node.parameters.graph  # type: ignore
+            node_parameters["graph"] = nested_graph.node_name_to_ref[node.parameters.output_node_name]  # type: ignore
+            # remove node name from graph parameters to prevent the node name
+            # from affecting the graph hash (node name could be different if the insert order is different)
+            # even if the final graph is the same
+            node_parameters.pop("output_node_name")
+        return node_parameters
+
+    @classmethod
     def _derive_node_name_to_ref(
+        cls,
         nodes_map: Dict[str, Node],
         edges_map: Dict[str, List[str]],
         backward_edges_map: Dict[str, List[str]],
@@ -158,7 +185,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             node = nodes_map[node_name]
             node_name_to_ref[node_name] = hash_node(
                 node.type,
-                node.parameters.dict(),
+                cls._get_node_parameter_for_compute_node_hash(node),
                 node.output_type,
                 input_node_refs,
             )
@@ -472,7 +499,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         )
         node_ref = hash_node(
             temp_node.type,
-            temp_node.parameters.dict(),
+            self._get_node_parameter_for_compute_node_hash(temp_node),
             temp_node.output_type,
             input_node_refs,
         )
