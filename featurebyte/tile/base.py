@@ -79,6 +79,23 @@ class BaseTileManager(BaseModel, ABC):
         """
 
     @abstractmethod
+    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> str:
+        """
+        Populate feature store with the given tile_spec and timestamp string
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        job_schedule_ts_str: str
+            timestamp string of the job schedule
+
+        Returns
+        -------
+            generated sql string
+        """
+
+    @abstractmethod
     async def generate_tiles(
         self,
         tile_spec: TileSpec,
