@@ -117,10 +117,9 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
     """
     if app_name == ApplicationName.FEATUREBYTE:
         return ["featurebyte-server", "featurebyte-worker"]
-    elif app_name == ApplicationName.SPARK:
+    if app_name == ApplicationName.SPARK:
         return ["spark-thrift"]
-    else:
-        raise ValueError("Not a valid application name")
+    raise ValueError("Not a valid application name")
 
 
 def __setup_network() -> None:
