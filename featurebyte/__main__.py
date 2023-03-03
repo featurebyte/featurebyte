@@ -116,9 +116,10 @@ def get_service_names(app_name: ApplicationName) -> List[str]:
     -------
     List[str]
     """
-    with get_docker_client(app_name) as docker:
-        services = cast(ComposeConfig, docker.compose.config()).services
-    return list(services.keys())
+    if app_name == ApplicationName.FEATUREBYTE:
+        return ["featurebyte-server", "featurebyte-worker"]
+    if app_name == ApplicationName.SPARK:
+        return ["spark-thrift"]
 
 
 def __setup_network() -> None:
@@ -130,11 +131,7 @@ def __setup_network() -> None:
     if "featurebyte" in map(lambda x: x.name, networks):
         console.print(Text("featurebyte", style="cyan") + Text(" network already exists"))
     else:
-        console.print(
-            Text("featurebyte", style="cyan")
-            + Text(version, style="bold green")
-            + Text(" network creating")
-        )
+        console.print(Text("featurebyte", style="cyan") + Text(" network creating"))
         DockerClient().network.create("featurebyte", driver="bridge")
 
 

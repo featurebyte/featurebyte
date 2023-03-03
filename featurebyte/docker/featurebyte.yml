@@ -59,6 +59,8 @@ services:
     depends_on:
       featurebyte-server:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       FEATUREBYTE_HOME: /app/.featurebyte
       MPLCONFIGDIR: /app/matplotlib

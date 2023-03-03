@@ -91,12 +91,12 @@ def import_dataset(dataset_name: str) -> None:
                     file_obj.extractall(local_staging_path)
 
         sql_b64 = base64.b64encode(sql.encode("utf-8")).decode("utf-8")
-        print(
-            DockerClient().execute(
-                container="featurebyte-server",
-                command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
-            )
-        )
+        for line in DockerClient().execute(
+            container="featurebyte-server",
+            command=["python", "-m", "featurebyte.datasets.__main__", sql_b64],
+            tty=True,
+        ):
+            console.print(line)
 
 
 if __name__ == "__main__":

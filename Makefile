@@ -112,6 +112,12 @@ docker-build: | build-hive-udf-jar
 	poetry build
 	docker buildx build . -f docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" -t featurebyte-server:latest
 
+docker-dev: | docker-build
+	poetry run featurebyte stop
+	poetry run featurebyte stop spark
+	poetry run featurebyte start --local
+	poetry run featurebyte start spark --local
+
 #* Cleaning
 clean:
 	git stash -u
