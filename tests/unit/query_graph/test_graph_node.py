@@ -522,3 +522,66 @@ def test_graph_flattening(test_dir):
         "created_at",
         "cust_id",
     ]
+
+
+def test_graph_node_hash_insensitive_to_nodes_and_edges_ordering(input_node_params):
+    """Test graph node hash is insensitive to nested nodes and edges ordering"""
+
+    def insert_project_node(graph_node, input_node, columns):
+        return graph_node.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": columns},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+
+    def insert_add_node(graph_node, left_node, right_node):
+        return graph_node.add_operation(
+            node_type=NodeType.ADD,
+            node_params={"value": 1},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[left_node, right_node],
+        )
+
+    graph = QueryGraph()
+
+    # construct first graph node
+    graph_node_1, _ = GraphNode.create(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    input_node_1 = graph_node_1.output_node
+    proj_int_node_1 = insert_project_node(graph_node_1, input_node_1, ["col_int"])
+    proj_float_node_1 = insert_project_node(graph_node_1, input_node_1, ["col_float"])
+    add_node_1 = insert_add_node(graph_node_1, proj_int_node_1, proj_float_node_1)
+    inserted_graph_node_1 = graph.add_node(node=graph_node_1, input_nodes=[])
+    assert inserted_graph_node_1.parameters.output_node_name == add_node_1.name
+
+    # same node inserted again should get back the same node
+    assert graph.add_node(node=graph_node_1, input_nodes=[]) == inserted_graph_node_1
+
+    # construct another graph node with different ordering of nested nodes and edges
+    graph_node_2, _ = GraphNode.create(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    input_node_2 = graph_node_2.output_node
+    proj_float_node_2 = insert_project_node(graph_node_2, input_node_2, ["col_float"])
+    proj_int_node_2 = insert_project_node(graph_node_2, input_node_2, ["col_int"])
+    add_node_2 = insert_add_node(graph_node_2, proj_int_node_2, proj_float_node_2)
+    inserted_graph_node_2 = graph.add_node(node=graph_node_2, input_nodes=[])
+    assert inserted_graph_node_2.parameters.output_node_name == add_node_2.name
+
+    # check the two graph nested nodes & edges are different
+    assert graph_node_1.parameters.graph.nodes != graph_node_2.parameters.graph.nodes
+    assert graph_node_1.parameters.graph.edges != graph_node_2.parameters.graph.edges
+
+    # check that the inserted nodes are the same (no new node is inserted)
+    assert inserted_graph_node_2 == inserted_graph_node_1
+    assert list(graph.nodes_map.keys()) == ["graph_1"]
