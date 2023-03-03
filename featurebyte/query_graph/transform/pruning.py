@@ -355,7 +355,6 @@ class GraphStructurePruningExtractor(
                 "graph": pruned_graph,
                 "output_node_name": output_node_name,
                 "type": node.parameters.type,
-                # for view graph node, the metadata will be pruned at view reconstruction service
                 "metadata": node.parameters.metadata,  # type: ignore
             }
         )

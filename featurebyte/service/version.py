@@ -101,7 +101,7 @@ class VersionService(BaseService):
         -------
         Optional[FeatureModel]
         """
-        # reconstruct the view graph
+        # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = feature.graph.reconstruct(
             node_name_to_replacement_node=node_name_to_replacement_node,
             regenerate_groupby_hash=True,

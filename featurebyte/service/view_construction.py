@@ -250,7 +250,20 @@ class ViewConstructionService(BaseService):
         self, query_graph: QueryGraphModel, data_cleaning_operations: list[DataCleaningOperation]
     ) -> GraphNodeNameMap:
         """
-        Constructs the view graph nodes inside the query graph.
+        Constructs the query graph by reconstructing the view graph nodes in the query graph.
+        During the reconstruction, the view graph node will remove unused column cleaning operations
+        and update the metadata of the view graph node.
+
+        Parameters
+        ----------
+        query_graph: QueryGraphModel
+            Query graph model
+        data_cleaning_operations: list[DataCleaningOperation]
+            List of data cleaning operations to be applied to the data used by the query graph
+
+        Returns
+        -------
+        GraphNodeNameMap
         """
         node_name_to_replacement_node = await self.prepare_view_node_name_to_replacement_node(
             query_graph=query_graph, data_cleaning_operations=data_cleaning_operations

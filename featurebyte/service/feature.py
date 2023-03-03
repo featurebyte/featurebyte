@@ -105,20 +105,14 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         Tuple[GraphNode, str]
             GraphNode object & target node name
         """
-        # prune unused nodes & parameters
-        pruned_graph, pruned_node_name_map = feature.graph.prune(
-            target_node=feature.node, aggressive=True
-        )
-        pruned_node_name = pruned_node_name_map[feature.node.name]
-
-        # reconstruct view graph node
+        # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = await self.view_construction_service.construct_graph(
-            query_graph=pruned_graph,
+            query_graph=feature.graph,
             data_cleaning_operations=[],
         )
-        node = graph.get_node_by_name(node_name_map[pruned_node_name])
+        node = graph.get_node_by_name(node_name_map[feature.node_name])
 
-        # prune the graph again to remove unused nodes inside the view graph node
+        # prune the graph to remove unused nodes inside the view graph node
         pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
             target_node=node, aggressive=True
         )
