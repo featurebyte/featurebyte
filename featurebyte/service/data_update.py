@@ -240,7 +240,7 @@ class DataUpdateService(BaseService):
         data_id: ObjectId,
         data_type: TableDataType,
         parent_entity_ids: List[ObjectId],
-    ) -> Tuple[List[ParentEntity], List[ObjectId]]:
+    ) -> Tuple[List[ParentEntity], List[PydanticObjectId]]:
         removed_parent_entity_ids = []
         output = []
         for parent in parents:
@@ -255,13 +255,13 @@ class DataUpdateService(BaseService):
         return output, removed_parent_entity_ids
 
     async def _remove_parent_entity_ids(
-        self, primary_entity_id: ObjectId, parent_entity_ids_to_remove: List[ObjectId]
+        self, primary_entity_id: ObjectId, parent_entity_ids_to_remove: List[PydanticObjectId]
     ) -> None:
         # Remove relationship info links for old parent entity relationships
         for removed_parent_entity_id in parent_entity_ids_to_remove:
             await self.relationship_info_service.remove_relationship(
                 primary_entity_id=PydanticObjectId(primary_entity_id),
-                related_entity_id=PydanticObjectId(removed_parent_entity_id),
+                related_entity_id=removed_parent_entity_id,
                 user_id=DEFAULT_USER_OBJECT_ID,
             )
 
