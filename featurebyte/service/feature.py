@@ -112,7 +112,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         )
         node = graph.get_node_by_name(node_name_map[feature.node_name])
 
-        # prune the graph to remove unused nodes inside the view graph node
+        # prune the graph to remove unused nodes
         pruned_graph, pruned_node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
             target_node=node, aggressive=True
         )
