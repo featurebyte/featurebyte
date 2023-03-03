@@ -84,7 +84,7 @@ class VersionService(BaseService):
         return node_name_to_replacement_node
 
     @staticmethod
-    async def _create_new_feature_version_from(
+    def _create_new_feature_version_from(
         feature: FeatureModel, node_name_to_replacement_node: dict[str, Node]
     ) -> Optional[FeatureModel]:
         """
@@ -108,7 +108,7 @@ class VersionService(BaseService):
         )
         node_name = node_name_map[feature.node_name]
 
-        # prune the graph again to remove unused nodes
+        # prune the graph to remove unused nodes
         pruned_graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
             target_node=graph.get_node_by_name(node_name),
             aggressive=True,
@@ -154,7 +154,7 @@ class VersionService(BaseService):
             node_name_to_replacement_node.update(view_node_name_replacement)
 
         # create a new feature version if the new feature graph is different from the source feature graph
-        new_feature_version = await self._create_new_feature_version_from(
+        new_feature_version = self._create_new_feature_version_from(
             feature=feature, node_name_to_replacement_node=node_name_to_replacement_node
         )
         if new_feature_version:
