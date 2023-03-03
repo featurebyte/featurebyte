@@ -463,10 +463,8 @@ def assert_relationships_match(relationship_list_a, relationship_list_b):
         ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [("baz", "qux")], [("foo", "bar")]),
     ],
 )
-async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-arguments
+async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-locals
     data_update_service,
-    entity_service,
-    relationship_info_service,
     event_data,
     event_data_entity_initializer,
     entity_docs,
