@@ -10,7 +10,9 @@ from uuid import uuid4
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.exception import DocumentNotFoundError
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import Task
 from featurebyte.schema.task import TaskStatus
 from featurebyte.service.task_manager import TaskManager
@@ -35,9 +37,9 @@ def celery_fixture():
 @pytest.fixture(name="task_manager")
 def task_manager_fixture(user_id, persistent):
     """Task manager fixture"""
-    with patch("featurebyte.service.task_manager.get_persistent") as mock_get_persistent:
-        mock_get_persistent.return_value = persistent
-        yield TaskManager(user_id=user_id)
+    yield TaskManager(
+        user=User(id=user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
 
 
 @pytest.mark.asyncio
@@ -138,3 +140,51 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
         # check list order
         assert [item.id for item in ascending_list] == task_ids
         assert [item.id for item in descending_list] == list(reversed(task_ids))
+
+
+@pytest.mark.asyncio
+async def test_task_manager__schedule_interval_task(task_manager, user_id):
+    """
+    Test task manager service -- schedule interval task
+    """
+    interval = Interval(every=1, period="minutes")
+    payload = LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+    periodic_task_id = await task_manager.schedule_interval_task(
+        name="test_interval_task",
+        payload=payload,
+        interval=interval,
+    )
+    periodic_task = await task_manager.get_periodic_task(
+        periodic_task_id,
+    )
+    assert periodic_task.name == "test_interval_task"
+    assert periodic_task.kwargs == payload.json_dict()
+    assert periodic_task.interval == interval
+
+    await task_manager.delete_periodic_task(periodic_task_id)
+    with pytest.raises(DocumentNotFoundError):
+        await task_manager.get_periodic_task(periodic_task_id)
+
+
+@pytest.mark.asyncio
+async def test_task_manager__schedule_cron_task(task_manager, user_id):
+    """
+    Test task manager service -- schedule interval task
+    """
+    crontab = Crontab(minute="*/1", hour="*", day_of_week="*", day_of_month="*", month_of_year="*")
+    payload = LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+    periodic_task_id = await task_manager.schedule_cron_task(
+        name="test_cron_task",
+        payload=payload,
+        crontab=crontab,
+    )
+    periodic_task = await task_manager.get_periodic_task(
+        periodic_task_id,
+    )
+    assert periodic_task.name == "test_cron_task"
+    assert periodic_task.kwargs == payload.json_dict()
+    assert periodic_task.crontab == crontab
+
+    await task_manager.delete_periodic_task(periodic_task_id)
+    with pytest.raises(DocumentNotFoundError):
+        await task_manager.get_periodic_task(periodic_task_id)

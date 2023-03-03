@@ -61,14 +61,18 @@ def _get_api_deps() -> Callable[[Request], None]:
         request.state.get_credential = ConfigCredentialProvider().get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-
+        workspace_id = ObjectId(request.query_params.get("workspace_id", DEFAULT_WORKSPACE_ID))
         request.state.app_container = AppContainer.get_instance(
             user=request.state.user,
-            persistent=get_persistent(),
+            persistent=request.state.persistent,
             temp_storage=get_temp_storage(),
-            task_manager=TaskManager(user_id=request.state.user.id),
+            task_manager=TaskManager(
+                user=request.state.user,
+                persistent=request.state.persistent,
+                workspace_id=workspace_id,
+            ),
             storage=get_storage(),
-            workspace_id=ObjectId(request.query_params.get("workspace_id", DEFAULT_WORKSPACE_ID)),
+            workspace_id=workspace_id,
         )
 
     return _dep_injection_func
