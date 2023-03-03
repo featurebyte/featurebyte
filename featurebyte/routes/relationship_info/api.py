@@ -87,12 +87,15 @@ async def update_relationship_info(
     request: Request,
     relationship_info_id: PydanticObjectId,
     data: RelationshipInfoUpdate,
-) -> None:
+) -> RelationshipInfo:
     """
     Update RelationshipInfo
     """
     controller = request.state.app_container.relationship_info_controller
-    await controller.relationship_info_service.update_document(relationship_info_id, data)
+    relationship_info = await controller.relationship_info_service.update_document(
+        relationship_info_id, data
+    )
+    return cast(RelationshipInfo, relationship_info)
 
 
 @router.get("/{relationship_info_id}/info", response_model=RelationshipInfoInfo)
