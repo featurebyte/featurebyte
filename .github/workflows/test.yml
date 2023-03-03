@@ -101,7 +101,7 @@ jobs:
           sudo apt-get install python-dev libsasl2-dev gcc
       - name: Install dependencies
         run: |
-          sudo apt-get install wkhtmltopdf jq
+          sudo apt-get install wkhtmltopdf
           poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
@@ -154,7 +154,7 @@ jobs:
           sudo apt-get install python-dev libsasl2-dev gcc
       - name: Install dependencies
         run: |
-          sudo apt-get install wkhtmltopdf jq
+          sudo apt-get install wkhtmltopdf
           poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
@@ -209,7 +209,7 @@ jobs:
           sudo apt-get install python-dev libsasl2-dev gcc
       - name: Install dependencies
         run: |
-          sudo apt-get install wkhtmltopdf jq
+          sudo apt-get install wkhtmltopdf
           poetry install -n --sync --extras=server
       - name: Download hive-udf
         uses: actions/download-artifact@v3
