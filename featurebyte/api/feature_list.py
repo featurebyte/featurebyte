@@ -53,11 +53,11 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     dataframe_from_json,
     dataframe_to_arrow_bytes,
+    enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.core.series import Series
-from featurebyte.enum import InternalName
 from featurebyte.exception import (
     DuplicatedRecordException,
     FeatureListNotOnlineEnabledError,
@@ -236,6 +236,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         )
 
     @typechecked
+    @enforce_observation_set_row_order
     def preview(
         self,
         observation_set: pd.DataFrame,
@@ -262,8 +263,6 @@ class BaseFeatureGroup(FeatureByteBaseModel):
             Preview request failed
         """
         tic = time.time()
-        observation_set = observation_set.copy()
-        observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])
 
         payload = FeatureListPreview(
             feature_clusters=self._get_feature_clusters(),
@@ -278,13 +277,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        result_dataframe = (
-            dataframe_from_json(result)  # pylint: disable=no-member
-            .sort_values(InternalName.ROW_INDEX)
-            .drop(InternalName.ROW_INDEX, axis=1)
-        )
-        result_dataframe.index = observation_set.index
-        return result_dataframe
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @property
     def sql(self) -> str:
@@ -921,6 +914,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         )
 
     @typechecked
+    @enforce_observation_set_row_order
     def get_historical_features(
         self,
         observation_set: pd.DataFrame,
@@ -980,7 +974,6 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             for _, batch in observation_set.groupby(
                 np.arange(len(observation_set)) // max_batch_size
             ):
-                batch[InternalName.ROW_INDEX] = range(batch.shape[0])
                 response = client.post(
                     "/feature_list/historical_features",
                     data={"payload": payload.json()},
@@ -995,12 +988,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                         ),
                     )
 
-                output.append(
-                    dataframe_from_arrow_stream(response.content)
-                    .sort_values(InternalName.ROW_INDEX)
-                    .drop(InternalName.ROW_INDEX, axis=1)
-                    .reset_index(drop=True)
-                )
+                output.append(dataframe_from_arrow_stream(response.content))
                 progress_bar()  # pylint: disable=not-callable
 
         return pd.concat(output, ignore_index=True)

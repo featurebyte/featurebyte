@@ -15,7 +15,7 @@ import pandas as pd
 import pyarrow as pa
 from dateutil import parser
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, InternalName
 
 
 def get_version() -> str:
@@ -254,3 +254,32 @@ def validate_datetime_input(value: Union[datetime, str]) -> str:
         datetime_value = parser.parse(value)
 
     return datetime_value.isoformat()
+
+
+def enforce_observation_set_row_order(function: Any) -> Any:
+    """
+    Decorator to enforce that the row order of the output is consistent with that of the observation set
+
+    Parameters
+    ----------
+    function: Any
+        Function to decorate
+
+    Returns
+    -------
+    Any
+        Decorated function
+    """
+
+    def wrapper(self: Any, observation_set: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
+        observation_set = observation_set.copy()
+        observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])
+        result_dataframe = (
+            function(self, observation_set, **kwargs)
+            .sort_values(InternalName.ROW_INDEX)
+            .drop(InternalName.ROW_INDEX, axis=1)
+        )
+        result_dataframe.index = observation_set.index
+        return result_dataframe
+
+    return wrapper

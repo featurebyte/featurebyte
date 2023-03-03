@@ -22,12 +22,11 @@ from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import dataframe_from_json
+from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.enum import InternalName
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
@@ -589,6 +588,7 @@ class Feature(
         return FeatureModel(**feature_dict)
 
     @typechecked
+    @enforce_observation_set_row_order
     def preview(
         self,
         observation_set: pd.DataFrame,
@@ -617,9 +617,6 @@ class Feature(
         tic = time.time()
 
         feature = self._get_pruned_feature_model()
-        observation_set = observation_set.copy()
-        observation_set[InternalName.ROW_INDEX] = range(observation_set.shape[0])
-
         payload = FeaturePreview(
             feature_store_name=self.feature_store.name,
             graph=feature.graph,
@@ -635,13 +632,7 @@ class Feature(
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        result_dataframe = (
-            dataframe_from_json(result)  # pylint: disable=no-member
-            .sort_values(InternalName.ROW_INDEX)
-            .drop(InternalName.ROW_INDEX, axis=1)
-        )
-        result_dataframe.index = observation_set.index
-        return result_dataframe
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @typechecked
     def create_new_version(
