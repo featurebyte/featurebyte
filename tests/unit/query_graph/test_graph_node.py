@@ -563,7 +563,8 @@ def test_graph_node_hash_insensitive_to_nodes_and_edges_ordering(input_node_para
     # same node inserted again should get back the same node
     assert graph.add_node(node=graph_node_1, input_nodes=[]) == inserted_graph_node_1
 
-    # construct another graph node with different ordering of nested nodes and edges
+    # construct another graph node with different ordering of nested nodes and edges by altering proj_int and
+    # proj_float insertion order (note: the add node inputs must be the same: int + float)
     graph_node_2, _ = GraphNode.create(
         node_type=NodeType.INPUT,
         node_params=input_node_params,
