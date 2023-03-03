@@ -172,7 +172,7 @@ async def get_feature_list_preview(
 async def get_historical_features(
     request: Request,
     payload: str = Form(),
-    training_events: UploadFile = File(description="Training events data in parquet format"),
+    observation_set: UploadFile = File(description="Observation set data in parquet format"),
 ) -> StreamingResponse:
     """
     Retrieve historical features
@@ -180,7 +180,7 @@ async def get_historical_features(
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(**json.loads(payload))
     controller = request.state.app_container.feature_list_controller
     result: StreamingResponse = await controller.get_historical_features(
-        training_events=training_events,
+        observation_set=observation_set,
         featurelist_get_historical_features=featurelist_get_historical_features,
         get_credential=request.state.get_credential,
     )
@@ -206,7 +206,7 @@ async def get_feature_list_sql(
 async def get_historical_features_sql(
     request: Request,
     payload: str = Form(),
-    training_events: UploadFile = File(description="Training events data in parquet format"),
+    observation_set: UploadFile = File(description="Observation set data in parquet format"),
 ) -> str:
     """
     Retrieve historical features SQL
@@ -216,7 +216,7 @@ async def get_historical_features_sql(
     return cast(
         str,
         await controller.get_historical_features_sql(
-            training_events=training_events,
+            observation_set=observation_set,
             featurelist_get_historical_features=featurelist_get_historical_features,
         ),
     )

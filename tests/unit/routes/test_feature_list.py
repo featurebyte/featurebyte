@@ -542,10 +542,12 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         """
         return {
             "feature_clusters": featurelist_feature_clusters,
-            "point_in_time_and_serving_name": {
-                "cust_id": "C1",
-                "POINT_IN_TIME": "2022-04-01",
-            },
+            "point_in_time_and_serving_name_list": [
+                {
+                    "cust_id": "C1",
+                    "POINT_IN_TIME": "2022-04-01",
+                }
+            ],
         }
 
     def test_preview_200(
@@ -581,7 +583,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
     ):
         """Test feature list get_historical_features"""
         test_api_client, _ = test_api_client_persistent
-        training_events = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
+        observation_set = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
 
         async def mock_get_async_query_stream(query):
@@ -598,7 +600,7 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
         response = test_api_client.post(
             f"{self.base_route}/historical_features",
             data={"payload": json.dumps(featurelist_get_historical_features_payload)},
-            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+            files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
             stream=True,
         )
         assert response.status_code == HTTPStatus.OK, response.json()

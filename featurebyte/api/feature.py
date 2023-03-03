@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+from typing import Any, ClassVar, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 import time
 from http import HTTPStatus
@@ -22,7 +22,7 @@ from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import dataframe_from_json
+from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -588,18 +588,19 @@ class Feature(
         return FeatureModel(**feature_dict)
 
     @typechecked
+    @enforce_observation_set_row_order
     def preview(
         self,
-        point_in_time_and_serving_name: Dict[str, Any],
+        observation_set: pd.DataFrame,
     ) -> pd.DataFrame:
         """
         Preview a Feature
 
         Parameters
         ----------
-        point_in_time_and_serving_name : Dict[str, Any]
-            Dictionary consisting the point in time and serving names based on which the feature
-            preview will be computed
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature list.
 
         Returns
         -------
@@ -616,12 +617,11 @@ class Feature(
         tic = time.time()
 
         feature = self._get_pruned_feature_model()
-
         payload = FeaturePreview(
             feature_store_name=self.feature_store.name,
             graph=feature.graph,
             node_name=feature.node_name,
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
+            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
         )
 
         client = Configurations().get_client()
@@ -632,7 +632,7 @@ class Feature(
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @typechecked
     def create_new_version(

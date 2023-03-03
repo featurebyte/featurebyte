@@ -101,7 +101,7 @@ def test_event_data_update_critical_data_info(event_data):
         },
     )
     feat_preview_df = feature_group.preview(
-        point_in_time_and_serving_name={"POINT_IN_TIME": "2001-01-14", "cust_id": 938}
+        observation_set=pd.DataFrame([{"POINT_IN_TIME": "2001-01-14", "cust_id": 938}])
     )
     assert list(feat_preview_df.columns) == ["POINT_IN_TIME", "cust_id", "COUNT_2h", "COUNT_24h"]
     assert feat_preview_df.COUNT_2h.iloc[0] == 0
@@ -143,7 +143,7 @@ def test_item_data_update_critical_data_info(item_data):
         feature_names=["count_12h"],
     )["count_12h"]
     window_preview_df = window_feature.preview(
-        {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
+        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
     )
     assert window_preview_df.count_12h.iloc[0] == '{\n  "type_84": 1\n}'
 
@@ -151,7 +151,9 @@ def test_item_data_update_critical_data_info(item_data):
         method=AggFunc.COUNT,
         feature_name="order_size",
     )
-    preview_df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"})
+    preview_df = feature.preview(
+        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T236"}])
+    )
     assert preview_df["order_size"].iloc[0] == 6
 
     # check historical request

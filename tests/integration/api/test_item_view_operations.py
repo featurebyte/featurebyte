@@ -61,11 +61,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     Test ItemView.groupby(..., category=...).aggregate() feature
     """
     # check preview
-    df = item_aggregate_with_category_features.preview(
-        {
-            "order_id": "T42",
-        }
-    )
+    df = item_aggregate_with_category_features.preview(pd.DataFrame([{"order_id": "T42"}]))
     assert df.iloc[0].to_dict() == {
         "order_id": "T42",
         "most_frequent_item_type": "type_21",
@@ -127,7 +123,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
         windows=["30d"],
         feature_names=["count_30d"],
     )["count_30d"]
-    df = feature.preview({"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1})
+    df = feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}]))
     assert df.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
@@ -159,7 +155,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
         method=AggFunc.COUNT,
         feature_name="order_size",
     )
-    df = feature.preview({"order_id": "T30"})
+    df = feature.preview(pd.DataFrame([{"order_id": "T30"}]))
     assert df.iloc[0].to_dict() == {"order_id": "T30", "order_size": 1}
 
 

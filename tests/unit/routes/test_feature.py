@@ -485,10 +485,16 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
             "feature_store_name": feature_store["name"],
             "graph": feature["graph"],
             "node_name": feature["node_name"],
-            "point_in_time_and_serving_name": {
-                "cust_id": "C1",
-                "POINT_IN_TIME": "2022-04-01",
-            },
+            "point_in_time_and_serving_name_list": [
+                {
+                    "cust_id": "C1",
+                    "POINT_IN_TIME": "2022-04-01",
+                },
+                {
+                    "cust_id": "C3",
+                    "POINT_IN_TIME": "2022-04-03",
+                },
+            ],
         }
 
     def test_preview_200(
@@ -511,7 +517,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         Test feature preview validation missing point in time
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name"] = {
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = {
             "cust_id": "C1",
         }
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
@@ -523,7 +529,7 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         Test feature preview validation missing point in time
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name"] = {
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = {
             "POINT_IN_TIME": "2022-04-01",
         }
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
@@ -535,12 +541,14 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
         Test feature preview validation but dict is not provided
         """
         test_api_client, _ = test_api_client_persistent
-        feature_preview_payload["point_in_time_and_serving_name"] = tuple(["2022-04-01", "C1"])
+        feature_preview_payload["point_in_time_and_serving_name_list"][0] = tuple(
+            ["2022-04-01", "C1"]
+        )
         response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == [
             {
-                "loc": ["body", "point_in_time_and_serving_name"],
+                "loc": ["body", "point_in_time_and_serving_name_list", 0],
                 "msg": "value is not a valid dict",
                 "type": "type_error.dict",
             }

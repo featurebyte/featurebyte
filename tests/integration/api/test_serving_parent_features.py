@@ -166,11 +166,11 @@ def test_preview(feature_list_with_child_entities, point_in_time, provided_entit
 
     # Preview feature
     feature = feature_list_with_child_entities["Country Name"]
-    df = feature.preview(preview_params)
+    df = feature.preview(pd.DataFrame([preview_params]))
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
     # Preview feature list
-    df = feature_list_with_child_entities.preview(preview_params)
+    df = feature_list_with_child_entities.preview(pd.DataFrame([preview_params]))
     pd.testing.assert_series_equal(df[expected.index].iloc[0], expected, check_names=False)
 
 

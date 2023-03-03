@@ -53,6 +53,7 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     dataframe_from_json,
     dataframe_to_arrow_bytes,
+    enforce_observation_set_row_order,
 )
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
@@ -235,18 +236,19 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         )
 
     @typechecked
+    @enforce_observation_set_row_order
     def preview(
         self,
-        point_in_time_and_serving_name: Dict[str, Any],
-    ) -> pd.DataFrame:
+        observation_set: pd.DataFrame,
+    ) -> Optional[pd.DataFrame]:
         """
         Preview a FeatureGroup
 
         Parameters
         ----------
-        point_in_time_and_serving_name : Dict[str, Any]
-            Dictionary consisting the point in time and serving names based on which the feature
-            preview will be computed
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
+            as well as columns with serving names for all entities used by features in the feature list.
 
         Returns
         -------
@@ -264,18 +266,18 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         payload = FeatureListPreview(
             feature_clusters=self._get_feature_clusters(),
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
+            point_in_time_and_serving_name_list=observation_set.to_dict(orient="records"),
         )
 
         client = Configurations().get_client()
-        response = client.post(url="/feature_list/preview", json=payload.json_dict())
+        response = client.post("/feature_list/preview", json=payload.json_dict())
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         result = response.json()
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)
+        return dataframe_from_json(result)  # pylint: disable=no-member
 
     @property
     def sql(self) -> str:
@@ -866,7 +868,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
     @typechecked
     def get_historical_features_sql(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> str:
         """
@@ -874,8 +876,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Parameters
         ----------
-        training_events : pd.DataFrame
-            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
@@ -901,7 +903,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         response = client.post(
             "/feature_list/historical_features_sql",
             data={"payload": payload.json()},
-            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+            files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
         )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
@@ -912,9 +914,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         )
 
     @typechecked
+    @enforce_observation_set_row_order
     def get_historical_features(
         self,
-        training_events: pd.DataFrame,
+        observation_set: pd.DataFrame,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         max_batch_size: int = 5000,
     ) -> Optional[pd.DataFrame]:
@@ -922,8 +925,8 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
 
         Parameters
         ----------
-        training_events : pd.DataFrame
-            Training events DataFrame, which should contain the `POINT_IN_TIME` column,
+        observation_set : pd.DataFrame
+            Observation set DataFrame, which should contain the `POINT_IN_TIME` column,
             as well as columns with serving names for all entities used by features in the feature list.
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
@@ -964,17 +967,17 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         client = Configurations().get_client()
         output = []
         with alive_bar(
-            total=int(np.ceil(len(training_events) / max_batch_size)),
+            total=int(np.ceil(len(observation_set) / max_batch_size)),
             title="Retrieving Historical Feature(s)",
             **get_alive_bar_additional_params(),
         ) as progress_bar:
-            for _, batch in training_events.groupby(
-                np.arange(len(training_events)) // max_batch_size
+            for _, batch in observation_set.groupby(
+                np.arange(len(observation_set)) // max_batch_size
             ):
                 response = client.post(
                     "/feature_list/historical_features",
                     data={"payload": payload.json()},
-                    files={"training_events": dataframe_to_arrow_bytes(batch)},
+                    files={"observation_set": dataframe_to_arrow_bytes(batch)},
                 )
                 if response.status_code != HTTPStatus.OK:
                     raise RecordRetrievalException(

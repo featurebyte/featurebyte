@@ -26,7 +26,7 @@ def get_feature_preview_sql(
     graph: QueryGraphModel,
     nodes: list[Node],
     source_type: SourceType,
-    point_in_time_and_serving_name: Optional[dict[str, Any]] = None,
+    point_in_time_and_serving_name_list: Optional[list[dict[str, Any]]] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> str:
     """Get SQL code for previewing SQL
@@ -41,8 +41,8 @@ def get_feature_preview_sql(
         List of query graph node
     source_type : SourceType
         Source type information
-    point_in_time_and_serving_name : Optional[dict[str, Any]]
-        Dictionary consisting the point in time and entity ids based on which the feature
+    point_in_time_and_serving_name_list : Optional[list[dict[str, Any]]]
+        List of Dictionary consisting the point in time and entity ids based on which the feature
         preview will be computed
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
@@ -59,11 +59,13 @@ def get_feature_preview_sql(
     )
     execution_plan = planner.generate_plan(nodes)
 
-    if point_in_time_and_serving_name:
+    if point_in_time_and_serving_name_list:
         # build required tiles
         tic = time.time()
-        point_in_time = point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME]
-        tile_compute_plan = OnDemandTileComputePlan(point_in_time, source_type=source_type)
+        point_in_time_list = [
+            entry[SpecialColumnName.POINT_IN_TIME] for entry in point_in_time_and_serving_name_list
+        ]
+        tile_compute_plan = OnDemandTileComputePlan(point_in_time_list, source_type=source_type)
         for node in nodes:
             tile_compute_plan.process_node(graph, node)
         cte_statements = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
@@ -72,7 +74,7 @@ def get_feature_preview_sql(
 
         # prepare request table
         tic = time.time()
-        df_request = pd.DataFrame([point_in_time_and_serving_name])
+        df_request = pd.DataFrame(point_in_time_and_serving_name_list)
         request_table_sql = construct_dataframe_sql_expr(
             df_request, [SpecialColumnName.POINT_IN_TIME]
         )
