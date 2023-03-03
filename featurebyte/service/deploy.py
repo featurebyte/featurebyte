@@ -172,7 +172,9 @@ class DeployService(BaseService):
                 )
             # move update warehouse and backfill tiles to outside of transaction
             await self.online_enable_service.update_data_warehouse(
-                feature=document, online_enabled=online_enabled, get_credential=get_credential
+                updated_feature=document,
+                online_enabled_before_update=online_enabled,
+                get_credential=get_credential,
             )
 
         # update feature list namespace again
@@ -244,8 +246,8 @@ class DeployService(BaseService):
                     if updated_feature:
                         # move update warehouse and backfill tiles to outside of transaction
                         await self.online_enable_service.update_data_warehouse(
-                            feature=updated_feature,
-                            online_enabled=feature.online_enabled,
+                            updated_feature=updated_feature,
+                            online_enabled_before_update=feature.online_enabled,
                             get_credential=get_credential,
                         )
 

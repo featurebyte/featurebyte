@@ -168,7 +168,7 @@ class OnlineEnableService(BaseService):
             await feature_manager.online_disable(online_feature_spec)
 
     async def update_data_warehouse(
-        self, feature: FeatureModel, online_enabled: bool, get_credential: Any
+        self, updated_feature: FeatureModel, online_enabled_before_update: bool, get_credential: Any
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -176,24 +176,25 @@ class OnlineEnableService(BaseService):
 
         Parameters
         ----------
-        feature: FeatureModel
+        updated_feature: FeatureModel
             Updated Feature
-        online_enabled: bool
+        online_enabled_before_update: bool
             Online enabled status
         get_credential: Any
             Get credential handler function
         """
-        if feature.online_enabled == online_enabled:
-            # to-be-update feature has the same online_enabled status as the current one
+        if updated_feature.online_enabled == online_enabled_before_update:
+            # updated_feature has the same online_enabled status as the original one
+            # no need to update
             return
 
         feature_store_model = await self.feature_store_service.get_document(
-            document_id=feature.tabular_source.feature_store_id
+            document_id=updated_feature.tabular_source.feature_store_id
         )
         session = await self.session_manager_service.get_feature_store_session(
             feature_store_model, get_credential
         )
-        await self.update_data_warehouse_with_session(session=session, feature=feature)
+        await self.update_data_warehouse_with_session(session=session, feature=updated_feature)
 
     async def update_feature(
         self,
