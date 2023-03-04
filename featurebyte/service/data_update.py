@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import DEFAULT_USER_OBJECT_ID, PydanticObjectId
+from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataModel, DataStatus
 from featurebyte.models.relationship import RelationshipType
@@ -261,7 +261,7 @@ class DataUpdateService(BaseService):
             await self.relationship_info_service.remove_relationship(
                 primary_entity_id=PydanticObjectId(primary_entity_id),
                 related_entity_id=removed_parent_entity_id,
-                user_id=DEFAULT_USER_OBJECT_ID,
+                user_id=DEFAULT_USER_ID,
             )
 
     async def _add_new_child_parent_relationships(
@@ -280,7 +280,7 @@ class DataUpdateService(BaseService):
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
                     primary_data_source_id=PydanticObjectId(data_source_id),
                     is_enabled=True,
-                    updated_by=PydanticObjectId(DEFAULT_USER_OBJECT_ID),
+                    updated_by=PydanticObjectId(DEFAULT_USER_ID),
                 )
             )
 
