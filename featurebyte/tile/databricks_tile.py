@@ -62,7 +62,7 @@ class TileManagerDatabricks(BaseTileManager):
         # TODO: implement this
         return True
 
-    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> str:
+    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
         """
         Populate feature store with the given tile_spec and timestamp string
 
@@ -72,13 +72,8 @@ class TileManagerDatabricks(BaseTileManager):
             the input TileSpec
         job_schedule_ts_str: str
             timestamp string of the job schedule
-
-        Returns
-        -------
-            generated sql string
         """
-        # TODO: implement this
-        return ""
+        raise NotImplementedError()
 
     async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
         """

@@ -75,7 +75,7 @@ class TileManagerSnowflake(BaseTileManager):
 
         return exist_tasks is not None and len(exist_tasks) > 0
 
-    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> str:
+    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
         """
         Populate feature store with the given tile_spec and timestamp string
 
@@ -85,18 +85,12 @@ class TileManagerSnowflake(BaseTileManager):
             the input TileSpec
         job_schedule_ts_str: str
             timestamp string of the job schedule
-
-        Returns
-        -------
-            generated sql string
         """
         populate_sql = tm_call_schedule_online_store.render(
             aggregation_id=tile_spec.aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
         )
         await self._session.execute_query(populate_sql)
-
-        return populate_sql
 
     async def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
