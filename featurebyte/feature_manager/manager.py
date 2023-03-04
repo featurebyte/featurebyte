@@ -25,6 +25,7 @@ from featurebyte.feature_manager.sql_template import (
 from featurebyte.logger import logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import BaseTileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -37,6 +38,7 @@ class FeatureManager(BaseModel):
 
     _session: BaseSession = PrivateAttr()
     _tile_manager: BaseTileManager = PrivateAttr()
+    _adapter: BaseAdapter = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
@@ -52,6 +54,7 @@ class FeatureManager(BaseModel):
         super().__init__(**kw)
         self._session = session
         self._tile_manager = tile_manager_from_session(session)
+        self._adapter = get_sql_adapter(session.source_type)
 
     async def online_enable(
         self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
@@ -175,7 +178,7 @@ class FeatureManager(BaseModel):
                 aggregation_id=query.aggregation_id,
                 result_id=query.result_name,
                 result_type=query.result_type,
-                sql_query=query.sql.replace("'", "''"),
+                sql_query=self._adapter.escape_quote_char(query.sql),
                 online_store_table_name=query.table_name,
                 entity_column_names=",".join(escape_column_names(query.serving_names)),
                 is_deleted=False,

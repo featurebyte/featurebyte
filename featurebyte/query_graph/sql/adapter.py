@@ -355,6 +355,22 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    @abstractmethod
+    def escape_quote_char(cls, query: str) -> str:
+        """
+        Escape the quote character in the query
+
+        Parameters
+        ----------
+        query : str
+            Query to escape
+
+        Returns
+        -------
+        str
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -473,6 +489,10 @@ class SnowflakeAdapter(BaseAdapter):
     def current_timestamp(cls) -> Expression:
         return expressions.Anonymous(this="SYSDATE")
 
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        return query.replace("'", "''")
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -485,10 +505,9 @@ class DatabricksAdapter(BaseAdapter):
         """
 
         FLOAT = "DOUBLE"
-        OBJECT = "MAP"
         TIMESTAMP = "TIMESTAMP"
         STRING = "STRING"
-        MAP = "MAP"
+        MAP = "MAP<STRING, DOUBLE>"
 
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
@@ -594,6 +613,10 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def current_timestamp(cls) -> Expression:
         return expressions.Anonymous(this="current_timestamp")
+
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        return query.replace("'", "\\'")
 
 
 class SparkAdapter(DatabricksAdapter):

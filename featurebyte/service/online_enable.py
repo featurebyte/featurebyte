@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.enum import SourceType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel

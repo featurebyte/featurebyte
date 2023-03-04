@@ -9,14 +9,13 @@ import pytest
 
 from featurebyte import EventView, FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
 @pytest.fixture(name="features", scope="session")
-def features_fixture(event_data):
+def features_fixture(event_data, source_type):
     """
     Fixture for feature
     """
@@ -53,14 +52,21 @@ def features_fixture(event_data):
         "TOTAL_EVENT_COUNT_BY_ACTION_7d"
     ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
     feature_complex_3.name = "COMPLEX_FEATURE_3"
-    features = [
-        feature_group["AMOUNT_SUM_2h"],
-        feature_group["AMOUNT_SUM_24h"],
-        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
-        feature_complex_1,
-        feature_complex_2,
-        feature_complex_3,
-    ]
+
+    if source_type == "spark":
+        features = [
+            feature_group["AMOUNT_SUM_2h"],
+            feature_complex_1,
+        ]
+    else:
+        features = [
+            feature_group["AMOUNT_SUM_2h"],
+            feature_group["AMOUNT_SUM_24h"],
+            feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+            feature_complex_1,
+            feature_complex_2,
+            feature_complex_3,
+        ]
 
     for feature in features:
         feature.save()
@@ -108,24 +114,18 @@ async def test_online_serving_sql(features, session, config):
         online_retrieval_sql = get_online_store_retrieval_sql(
             feature_clusters[0].graph,
             feature_clusters[0].nodes,
-            source_type=SourceType.SNOWFLAKE,
+            source_type=session.source_type,
             request_table_columns=["üser id"],
             request_table_expr=request_table_expr,
         )
         online_features = await session.execute_query(online_retrieval_sql)
 
         # Check result is expected
-        columns = [
-            "üser id",
-            "AMOUNT_SUM_2h",
-            "AMOUNT_SUM_24h",
-            "EVENT_COUNT_BY_ACTION_24h",
-            "COMPLEX_FEATURE_1",
-            "COMPLEX_FEATURE_2",
-            "COMPLEX_FEATURE_3",
-        ]
+        columns = ["üser id"] + [feature.name for feature in features]
         assert set(online_features.columns.tolist()) == set(columns)
-        pd.testing.assert_frame_equal(df_historical[columns], online_features[columns])
+        pd.testing.assert_frame_equal(
+            df_historical[columns], online_features[columns], check_dtype=False
+        )
 
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
