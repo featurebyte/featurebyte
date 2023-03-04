@@ -549,6 +549,17 @@ class Feature(
         operation_structure = self.extract_operation_structure()
         return operation_structure.is_time_based
 
+    @property
+    def definition(self) -> str:
+        """
+        Display feature definition string of this feature.
+
+        Returns
+        -------
+        str
+        """
+        return self._generate_code(to_format=True, to_use_saved_data=True)
+
     def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
