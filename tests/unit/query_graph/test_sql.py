@@ -571,6 +571,8 @@ def test_datediff_resolves_correctly(dataframe):
         (float("nan"), "NULL"),
         (np.nan, "NULL"),
         (None, "NULL"),
+        (True, "TRUE"),
+        (False, "FALSE"),
     ],
 )
 def test_make_literal_value(value, expected_sql):
