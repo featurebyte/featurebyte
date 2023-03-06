@@ -36,6 +36,7 @@ class RelationshipInfoService(
         Raises
         ------
         DocumentNotFoundError
+            If relationship not found
         """
         result = await self.list_documents(
             query_filter={
