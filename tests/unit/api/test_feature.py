@@ -577,6 +577,14 @@ def test_create_new_version__with_data_cleaning_operations(saved_feature, update
         data_id=saved_feature.tabular_data_ids[0],
     )
 
+    # create another new feature version without data cleaning operations
+    version_without_clean_ops = new_version.create_new_version(
+        data_cleaning_operations=[
+            DataCleaningOperation(data_name="sf_event_data", column_cleaning_operations=[])
+        ]
+    )
+    check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
+
 
 def test_create_new_version__error(float_feature):
     """Test creation a new version (exception)"""
@@ -975,3 +983,55 @@ def test_feature_properties_from_cached_model__after_save(saved_feature):
     assert saved_feature.is_default is True
     assert saved_feature.default_version_mode == DefaultVersionMode.AUTO
     assert saved_feature.default_readiness == FeatureReadiness.DRAFT
+
+
+def test_feature_graph_prune_unused_cleaning_operations(saved_event_data, cust_id_entity):
+    """Test feature graph pruning unused cleaning operations"""
+    col_names = ["col_int", "col_float", "cust_id"]
+    for col_name in col_names:
+        col = saved_event_data[col_name]
+        imputed_value = -1
+        col.update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=imputed_value)]
+        )
+
+    saved_event_data.cust_id.as_entity("customer")
+    event_view = EventView.from_event_data(saved_event_data)
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["3d"],
+        feature_names=["sum_3d"],
+        feature_job_setting={"frequency": "6h", "time_modulo_frequency": "3h", "blind_spot": "3h"},
+    )["sum_3d"]
+
+    # check feature graph before saving
+    graph = QueryGraphModel(**feature._get_create_payload()["graph"])
+    event_view_graph_node_metadata = graph.get_node_by_name("graph_1").parameters.metadata
+    assert event_view_graph_node_metadata.column_cleaning_operations == [
+        {"column_name": col_name, "cleaning_operations": [{"type": "missing", "imputed_value": -1}]}
+        for col_name in col_names
+    ]
+
+    # check feature graph after saving
+    feature.save()
+    graph = QueryGraphModel(**feature.dict()["graph"])
+
+    # check event view graph node metadata
+    event_view_graph_node = graph.get_node_by_name("graph_1")
+    assert event_view_graph_node.parameters.type == "event_view"
+    event_view_graph_node_metadata = event_view_graph_node.parameters.metadata
+    assert event_view_graph_node_metadata.column_cleaning_operations == [
+        {"column_name": col_name, "cleaning_operations": [{"type": "missing", "imputed_value": -1}]}
+        for col_name in ["col_float", "cust_id"]
+    ]
+
+    # check cleaning graph node (should contain only those columns that are used in the feature)
+    cleaning_graph_node = event_view_graph_node.parameters.graph.get_node_by_name("graph_1")
+    assert cleaning_graph_node.parameters.type == "cleaning"
+    nested_graph = cleaning_graph_node.parameters.graph
+    for assign_node in nested_graph.iterate_nodes(
+        target_node=cleaning_graph_node.output_node,
+        node_type="assign",
+    ):
+        assert assign_node.parameters.name in {"col_float", "cust_id"}

@@ -5,6 +5,7 @@ Note that we don't currently inherit from the base view test suite as there are 
 work on updating that in a follow-up.
 """
 import textwrap
+import time
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -25,17 +26,18 @@ from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture
-def feature_from_change_view(snowflake_scd_data_with_entity):
+def feature_from_change_view(saved_scd_data, cust_id_entity):
     """
     Fixture for a feature created from a ChangeView
     """
-    snowflake_change_view = ChangeView.from_slowly_changing_data(
-        snowflake_scd_data_with_entity, "col_int"
-    )
+    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
+    snowflake_change_view = ChangeView.from_slowly_changing_data(saved_scd_data, "col_int")
     feature_group = snowflake_change_view.groupby("col_text").aggregate_over(
         method="count", windows=["30d"], feature_names=["feat_30d"]
     )
-    return feature_group["feat_30d"]
+    feature = feature_group["feat_30d"]
+    feature.save()
+    return feature
 
 
 @pytest.fixture(name="snowflake_scd_data_with_imputation")
@@ -426,11 +428,14 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
     assert tile_infos[0].sql == expected
 
 
-def test_from_slowly_changing_data__keep_record_creation_date_column(snowflake_scd_data):
+def test_from_slowly_changing_data__keep_record_creation_date_column(
+    snowflake_scd_data, mock_api_object_cache
+):
     """
     Test create ChangeView using record creation date column as track changes column
     """
     snowflake_scd_data.update_record_creation_date_column("created_at")
+    assert snowflake_scd_data.record_creation_date_column == "created_at"
     change_view = ChangeView.from_slowly_changing_data(
         snowflake_scd_data, track_changes_column=snowflake_scd_data.record_creation_date_column
     )

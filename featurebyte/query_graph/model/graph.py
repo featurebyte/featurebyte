@@ -315,6 +315,41 @@ class QueryGraphModel(FeatureByteBaseModel):
         """
         return self.backward_edges_map.get(node.name, [])
 
+    def get_target_nodes_required_column_names(self, node_name: str) -> List[str]:
+        """
+        Get the target required column names of the given node.
+        Current node output must have these columns, otherwise it will trigger error in processing the graph.
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+
+        Returns
+        -------
+        List[str]
+        """
+        assert node_name in self.edges_map, "Node name not found in edges_map"
+        target_node_names = self.edges_map[node_name]
+        target_nodes = [self.get_node_by_name(node_name) for node_name in target_node_names]
+        if target_nodes:
+            # get the input column order from current node to the target nodes
+            target_node_input_order_pairs = []
+            for target_node in target_nodes:
+                target_node_input_node_names = self.get_input_node_names(node=target_node)
+                node_name_input_order = target_node_input_node_names.index(node_name)
+                target_node_input_order_pairs.append((target_node, node_name_input_order))
+
+            # construct required column names
+            required_columns = set().union(
+                *(
+                    node.get_required_input_columns(input_index=input_order)
+                    for node, input_order in target_node_input_order_pairs
+                )
+            )
+            return list(required_columns)
+        return []
+
     def iterate_nodes(self, target_node: Node, node_type: NodeType) -> Iterator[Node]:
         """
         Iterate all specified nodes in this query graph
