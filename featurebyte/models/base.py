@@ -19,6 +19,10 @@ Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
 DEFAULT_WORKSPACE_ID = ObjectId("63eda344d0313fb925f7883a")
 
+# This is the default user id that we use for the open source version.
+# We provide a static value here since there isn't a real concept of users in the open source version.
+DEFAULT_USER_ID = ObjectId("000000000000000000000001")
+
 
 class PydanticObjectId(ObjectId):
     """
