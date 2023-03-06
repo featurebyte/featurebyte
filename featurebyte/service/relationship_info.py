@@ -1,7 +1,6 @@
 """
 Relationship Info Service
 """
-from bson import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import PydanticObjectId
