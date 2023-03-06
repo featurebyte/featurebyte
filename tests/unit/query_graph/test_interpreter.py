@@ -982,7 +982,9 @@ def test_isnull(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          "a" IS NULL
+          (
+            "a" IS NULL
+          )
         FROM "db"."public"."event_table"
         LIMIT 10
         """
