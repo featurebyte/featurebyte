@@ -38,6 +38,8 @@ class Crontab(BaseModel):
 class PeriodicTask(FeatureByteWorkspaceBaseDocumentModel):
     """
     PeriodicTask document model
+    Schema to match model in celerybeatnmongo scheduler package for the scheduler to work
+    https://github.com/zmap/celerybeat-mongo/blob/master/celerybeatmongo/models.py
     """
 
     cls: str = Field(default="PeriodicTask", alias="_cls")
