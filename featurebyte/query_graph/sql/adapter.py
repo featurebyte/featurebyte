@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+import re
 from abc import abstractmethod
 
 from sqlglot import expressions
@@ -491,7 +492,8 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def escape_quote_char(cls, query: str) -> str:
-        return query.replace("'", "''")
+        # Snowflake sql escapes ' with ''. Use regex to make it safe to call this more than once.
+        return re.sub("(?<!')'(?!')", "''", query)
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -616,7 +618,8 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def escape_quote_char(cls, query: str) -> str:
-        return query.replace("'", "\\'")
+        # Databricks sql escapes ' with \'. Use regex to make it safe to call this more than once.
+        return re.sub(r"(?<!\\)'", "\\'", query)
 
 
 class SparkAdapter(DatabricksAdapter):
