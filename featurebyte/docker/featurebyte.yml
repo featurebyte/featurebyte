@@ -57,7 +57,7 @@ services:
     container_name: featurebyte-worker
     image: featurebyte-server:latest
     depends_on:
-      featurebyte-server:
+      mongo-rs:
         condition: service_healthy
       redis:
         condition: service_healthy
