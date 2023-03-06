@@ -216,6 +216,11 @@ class ProductionReadyValidator:
         -------
         Dict[str, Any]
             returns a dictionary with the difference in values in the FeatureJobSetting
+
+        Raises
+        ------
+        ValueError
+            raised if there is no feature job setting for the data source
         """
         input_event_data_id = ProductionReadyValidator._get_input_event_data_id(node, graph)
         # If there is no input_event_data_id, this means that the feature is not created from an item or event data.
