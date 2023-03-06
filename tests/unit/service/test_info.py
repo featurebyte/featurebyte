@@ -4,12 +4,23 @@ Test for InfoService
 import pytest
 from bson import ObjectId
 
-from featurebyte import Entity, SnowflakeDetails, DataCleaningOperation, ColumnCleaningOperation, MissingValueImputation
+from featurebyte import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
+    Entity,
+    MissingValueImputation,
+    SnowflakeDetails,
+)
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison, FeatureNewVersionCreate
+from featurebyte.schema.feature import (
+    FeatureBriefInfo,
+    FeatureNewVersionCreate,
+    ReadinessComparison,
+    VersionComparison,
+)
 from featurebyte.schema.info import (
     DataBriefInfo,
     DataColumnInfo,
@@ -416,7 +427,9 @@ def expected_feature_iet_info_fixture(feature_iet):
 
 
 @pytest.mark.asyncio
-async def test_get_feature_info__complex_feature(info_service, feature_iet, expected_feature_iet_info):
+async def test_get_feature_info__complex_feature(
+    info_service, feature_iet, expected_feature_iet_info
+):
     """Test get_feature_info"""
     info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
     expected = {
@@ -428,7 +441,9 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet, expe
 
 
 @pytest.mark.asyncio
-async def test_get_feature_info__complex_feature_with_cdi(info_service, feature_iet, version_service):
+async def test_get_feature_info__complex_feature_with_cdi(
+    info_service, feature_iet, expected_feature_iet_info, version_service
+):
     """Test get_feature_info"""
     new_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
@@ -439,16 +454,35 @@ async def test_get_feature_info__complex_feature_with_cdi(info_service, feature_
                     column_cleaning_operations=[
                         ColumnCleaningOperation(
                             column_name="cust_id",
-                            cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+                            cleaning_operations=[MissingValueImputation(imputed_value=-1)],
                         ),
-                    ]
+                    ],
                 )
-            ]
+            ],
         )
     )
 
     info = await info_service.get_feature_info(document_id=new_version.id, verbose=False)
-    import pdb;pdb.set_trace()
+    expected_version = expected_feature_iet_info.version
+    expected = {
+        **expected_feature_iet_info.dict(),
+        "created_at": info.created_at,
+        "updated_at": info.updated_at,
+        "data_cleaning_operations": [
+            {
+                "data_name": "sf_event_data",
+                "column_cleaning_operations": [
+                    {
+                        "column_name": "cust_id",
+                        "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+                    }
+                ],
+            }
+        ],
+        "version": {**expected_version.dict(), "this": new_version.version.to_str()},
+        "version_count": 2,
+    }
+    assert info.dict() == expected
 
 
 @pytest.mark.asyncio

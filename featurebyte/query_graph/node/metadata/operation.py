@@ -222,6 +222,9 @@ class BaseDerivedColumn(BaseColumn):
                 transforms.extend(column.transforms)
             else:
                 col_map = cls.insert_column(col_map, column)
+
+        # remove empty transforms
+        transforms = [transform for transform in transforms if transform]
         return list(col_map.values()), transforms, node_names
 
     @classmethod
