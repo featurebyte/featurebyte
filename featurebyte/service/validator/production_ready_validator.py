@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional, cast
 
 from featurebyte import FeatureJobSetting
 from featurebyte.enum import TableDataType
-from featurebyte.models import EventDataModel
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
