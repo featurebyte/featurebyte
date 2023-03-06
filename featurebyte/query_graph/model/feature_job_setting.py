@@ -121,3 +121,12 @@ class FeatureJobSetting(FeatureByteBaseModel):
         if not isinstance(other, FeatureJobSetting):
             return NotImplemented
         return self.to_seconds() == other.to_seconds()
+
+
+class DataFeatureJobSetting(FeatureByteBaseModel):
+    """
+    Data feature job setting schema
+    """
+
+    data_name: str
+    feature_job_setting: FeatureJobSetting

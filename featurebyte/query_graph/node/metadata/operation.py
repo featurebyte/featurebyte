@@ -579,6 +579,7 @@ class OperationStructureInfo:
         operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
         edges_map: Optional[DefaultDict[str, Set[str]]] = None,
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        keep_all_source_columns: bool = False,
         **kwargs: Any,
     ):
         _ = kwargs
@@ -589,3 +590,4 @@ class OperationStructureInfo:
         self.operation_structure_map = operation_structure_map or {}
         self.edges_map = edges_map
         self.proxy_input_operation_structures = proxy_input_operation_structures or []
+        self.keep_all_source_columns = keep_all_source_columns

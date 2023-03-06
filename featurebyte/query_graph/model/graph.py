@@ -1,20 +1,18 @@
 """
 This model contains query graph internal model structures
 """
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple
 
 import json
 from collections import defaultdict
 
 from pydantic import Field, root_validator, validator
 
-from featurebyte.enum import TableDataType
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
-from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.util import hash_node
@@ -396,42 +394,6 @@ class QueryGraphModel(FeatureByteBaseModel):
                         graph_node_types=graph_node_types
                     ):
                         yield graph_node
-
-    def iterate_group_by_and_event_data_input_node_pairs(
-        self, target_node: Node
-    ) -> Iterator[Tuple[GroupByNode, InputNode]]:
-        """
-        Iterate all GroupBy nodes and their corresponding EventData input nodes
-
-        Parameters
-        ----------
-        target_node: Node
-            Node from which to start the backward search
-
-        Yields
-        ------
-        Tuple[GroupByNode, InputNode]
-            GroupBy node and its corresponding EventData input node
-
-        Raises
-        ------
-        ValueError
-            GroupBy node does not have valid EventData Input node
-        """
-        for group_by_node in self.iterate_nodes(
-            target_node=target_node, node_type=NodeType.GROUPBY
-        ):
-            event_data_input_node: Optional[InputNode] = None
-            for input_node in self.iterate_nodes(
-                target_node=group_by_node, node_type=NodeType.INPUT
-            ):
-                assert isinstance(input_node, InputNode)
-                if input_node.parameters.type == TableDataType.EVENT_DATA:
-                    event_data_input_node = input_node
-
-            if event_data_input_node is None:
-                raise ValueError("GroupBy node does not have valid EventData Input node!")
-            yield cast(GroupByNode, group_by_node), event_data_input_node
 
     def iterate_sorted_nodes(self) -> Iterator[Node]:
         """

@@ -11,11 +11,16 @@ from featurebyte.exception import DocumentError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService
@@ -23,6 +28,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.tabular_data import DataService
 from featurebyte.service.view_construction import ViewConstructionService
 
 
@@ -33,6 +39,7 @@ class VersionService(BaseService):
 
     def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
         super().__init__(user, persistent, workspace_id)
+        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
         self.feature_service = FeatureService(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
@@ -49,9 +56,10 @@ class VersionService(BaseService):
             user=user, persistent=persistent, workspace_id=workspace_id
         )
 
-    @staticmethod
-    def _prepare_group_by_node_name_to_replacement_node(
-        feature: FeatureModel, feature_job_setting: Optional[FeatureJobSetting]
+    async def _prepare_group_by_node_name_to_replacement_node(
+        self,
+        feature: FeatureModel,
+        data_feature_job_settings: Optional[list[DataFeatureJobSetting]],
     ) -> dict[str, Node]:
         """
         Prepare group by node name to replacement node mapping by using the provided feature job setting
@@ -62,7 +70,7 @@ class VersionService(BaseService):
         ----------
         feature: FeatureModel
             Feature model
-        feature_job_setting: Optional[FeatureJobSetting]
+        data_feature_job_settings: Optional[list[DataFeatureJobSetting]]
             Feature job setting
 
         Returns
@@ -70,16 +78,46 @@ class VersionService(BaseService):
         dict[str, Node]
         """
         node_name_to_replacement_node: dict[str, Node] = {}
-        if feature_job_setting:
-            for group_by_node, _ in feature.graph.iterate_group_by_and_event_data_input_node_pairs(
-                target_node=feature.node
+        if data_feature_job_settings:
+            data_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {
+                data_feature_job_setting.data_name: data_feature_job_setting.feature_job_setting
+                for data_feature_job_setting in data_feature_job_settings
+            }
+            operation_structure_info = OperationStructureExtractor(graph=feature.graph).extract(
+                node=feature.node,
+                keep_all_source_columns=True,
+            )
+            data_id_to_doc: dict[ObjectId, dict[str, Any]] = {
+                doc["_id"]: doc
+                async for doc in self.data_service.list_documents_iterator(
+                    query_filter={"_id": {"$in": feature.tabular_data_ids}}
+                )
+            }
+            for group_by_node in feature.graph.iterate_nodes(
+                target_node=feature.node, node_type=NodeType.GROUPBY
             ):
-                # input node will be used when we need to support updating specific groupby node given event data ID
-                parameters = {**group_by_node.parameters.dict(), **feature_job_setting.to_seconds()}
-                if group_by_node.parameters.dict() != parameters:
-                    node_name_to_replacement_node[group_by_node.name] = GroupByNode(
-                        **{**group_by_node.dict(), "parameters": parameters}
-                    )
+                assert isinstance(group_by_node, GroupByNode)
+                group_by_op_struct = operation_structure_info.operation_structure_map[
+                    group_by_node.name
+                ]
+                timestamp_col = next(
+                    col
+                    for col in group_by_op_struct.source_columns
+                    if col.name == group_by_node.parameters.timestamp
+                )
+                assert timestamp_col.tabular_data_id is not None
+                data_name = data_id_to_doc[timestamp_col.tabular_data_id]["name"]
+                feature_job_setting = data_name_to_feature_job_setting.get(data_name)
+                if feature_job_setting:
+                    # input node will be used when we need to support updating specific groupby node given event data ID
+                    parameters = {
+                        **group_by_node.parameters.dict(),
+                        **feature_job_setting.to_seconds(),
+                    }
+                    if group_by_node.parameters.dict() != parameters:
+                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(
+                            **{**group_by_node.dict(), "parameters": parameters}
+                        )
 
         return node_name_to_replacement_node
 
@@ -132,14 +170,14 @@ class VersionService(BaseService):
     async def _create_new_feature_version(
         self,
         feature: FeatureModel,
-        feature_job_setting: Optional[FeatureJobSetting],
+        data_feature_job_settings: Optional[list[DataFeatureJobSetting]],
         data_cleaning_operations: Optional[list[DataCleaningOperation]],
     ) -> FeatureModel:
         node_name_to_replacement_node: dict[str, Node] = {}
 
         # prepare group by node replacement
-        group_by_node_replacement = self._prepare_group_by_node_name_to_replacement_node(
-            feature=feature, feature_job_setting=feature_job_setting
+        group_by_node_replacement = await self._prepare_group_by_node_name_to_replacement_node(
+            feature=feature, data_feature_job_settings=data_feature_job_settings
         )
         node_name_to_replacement_node.update(group_by_node_replacement)
 
@@ -161,9 +199,9 @@ class VersionService(BaseService):
             return new_feature_version
 
         # no new feature is created, raise the error message accordingly
-        if feature_job_setting or data_cleaning_operations:
+        if data_feature_job_settings or data_cleaning_operations:
             actions = []
-            if feature_job_setting:
+            if data_feature_job_settings:
                 actions.append("feature job setting")
             if data_cleaning_operations:
                 actions.append("data cleaning operation(s)")
@@ -195,7 +233,7 @@ class VersionService(BaseService):
         """
         feature = await self.feature_service.get_document(document_id=data.source_feature_id)
         new_feature = await self._create_new_feature_version(
-            feature, data.feature_job_setting, data.data_cleaning_operations
+            feature, data.data_feature_job_settings, data.data_cleaning_operations
         )
         return await self.feature_service.create_document(
             data=FeatureCreate(**new_feature.dict(by_alias=True))

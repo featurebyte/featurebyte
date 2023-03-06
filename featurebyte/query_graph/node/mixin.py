@@ -149,7 +149,9 @@ class AggregationOpStructMixin:
         _ = global_state
         input_operation_info = inputs[0]
         lineage_columns = set(self.get_required_input_columns(input_index=0))  # type: ignore
-        wanted_columns = lineage_columns.difference(self._exclude_source_columns())
+        wanted_columns = lineage_columns
+        if not global_state.keep_all_source_columns:
+            wanted_columns = lineage_columns.difference(self._exclude_source_columns())
         parent_columns = self._get_parent_columns(input_operation_info.columns)
         agg_func = self._get_agg_func()
         if parent_columns:

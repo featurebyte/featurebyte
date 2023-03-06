@@ -11,7 +11,10 @@ from featurebyte.core.series import Series
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     DataCleaningOperation,
@@ -816,9 +819,14 @@ def test_non_time_based_feature__create_new_version(non_time_based_saved_feature
     """
     with pytest.raises(RecordCreationException) as exc:
         non_time_based_saved_feature.create_new_version(
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-            ),
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name="sf_event_data",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                    ),
+                )
+            ],
             data_cleaning_operations=None,
         )
 
@@ -838,7 +846,7 @@ def test_non_time_based_feature__create_new_version_with_data_cleaning(
 
     # create a new version with data cleaning operations
     new_version = non_time_based_saved_feature.create_new_version(
-        feature_job_setting=None,
+        data_feature_job_settings=None,
         data_cleaning_operations=[
             DataCleaningOperation(
                 data_name="sf_item_data",
@@ -933,7 +941,7 @@ def test_as_feature__from_view_column(saved_item_data, item_entity, update_fixtu
     # test create new version & check SDK code generation
     feature.save()
     new_version = feature.create_new_version(
-        feature_job_setting=None,
+        data_feature_job_settings=None,
         data_cleaning_operations=[
             DataCleaningOperation(
                 data_name="sf_item_data",

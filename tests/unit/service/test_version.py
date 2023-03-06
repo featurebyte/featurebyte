@@ -12,7 +12,10 @@ from pydantic import ValidationError
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
 from featurebyte.models.feature_list import FeatureListNewVersionMode
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     DataCleaningOperation,
@@ -66,9 +69,14 @@ async def test_create_new_feature_version(
     version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
-            ),
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name="sf_event_data",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
         )
     )
 
@@ -161,7 +169,11 @@ async def test_create_new_feature_version__document_error(version_service, featu
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
-                feature_job_setting=same_feature_job_setting,
+                data_feature_job_settings=[
+                    DataFeatureJobSetting(
+                        data_name=event_data.name, feature_job_setting=same_feature_job_setting
+                    )
+                ],
             ),
         )
 
@@ -199,7 +211,12 @@ async def test_create_new_feature_version__document_error(version_service, featu
         await version_service.create_new_feature_version(
             data=FeatureNewVersionCreate(
                 source_feature_id=feature.id,
-                feature_job_setting=same_feature_job_setting,
+                data_feature_job_settings=[
+                    DataFeatureJobSetting(
+                        data_name=event_data.name,
+                        feature_job_setting=same_feature_job_setting,
+                    )
+                ],
                 data_cleaning_operations=no_effect_data_cleaning_operations,
             )
         )
@@ -287,6 +304,7 @@ async def test_create_new_feature_list_version__document_error__unexpected_featu
 @pytest.mark.asyncio
 async def test_create_new_feature_list_version__auto_mode(
     version_service,
+    event_data,
     feature,
     feature_sum_2h,
     feature_list_multi,
@@ -296,9 +314,14 @@ async def test_create_new_feature_list_version__auto_mode(
     new_feat_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature.id,
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
-            ),
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name=event_data.name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
         ),
     )
     feat_namespace = await feature_readiness_service.update_feature_namespace(
@@ -329,6 +352,7 @@ async def test_create_new_feature_list_version__auto_mode(
 @pytest.mark.asyncio
 async def test_create_new_feature_list_version__manual_mode(
     version_service,
+    event_data,
     feature,
     feature_sum_2h,
     feature_list_multi,
@@ -338,9 +362,14 @@ async def test_create_new_feature_list_version__manual_mode(
     new_feat_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_sum_2h.id,
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
-            ),
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name=event_data.name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
         ),
     )
     feat_namespace = await feature_readiness_service.update_feature_namespace(
@@ -377,6 +406,7 @@ async def test_create_new_feature_list_version__manual_mode(
 @pytest.mark.asyncio
 async def test_create_new_feature_list_version__semi_auto_mode(
     version_service,
+    event_data,
     feature,
     feature_sum_2h,
     feature_list_multi,
@@ -386,9 +416,14 @@ async def test_create_new_feature_list_version__semi_auto_mode(
     new_feat_version = await version_service.create_new_feature_version(
         data=FeatureNewVersionCreate(
             source_feature_id=feature_sum_2h.id,
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
-            ),
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name=event_data.name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", frequency="1d", time_modulo_frequency="1h"
+                    ),
+                )
+            ],
         ),
     )
     feat_namespace = await feature_readiness_service.update_feature_namespace(

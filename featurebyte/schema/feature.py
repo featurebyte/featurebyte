@@ -15,7 +15,7 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, Vers
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import DataFeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
@@ -44,11 +44,14 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_id: PydanticObjectId
-    feature_job_setting: Optional[FeatureJobSetting]
+    data_feature_job_settings: Optional[List[DataFeatureJobSetting]]
     data_cleaning_operations: Optional[List[DataCleaningOperation]]
 
     # pydantic validators
-    _validate_unique_data_name = validator("data_cleaning_operations", allow_reuse=True)(
+    _validate_unique_feat_job_data_name = validator("data_feature_job_settings", allow_reuse=True)(
+        construct_unique_name_validator(field="data_name")
+    )
+    _validate_unique_clean_ops_data_name = validator("data_cleaning_operations", allow_reuse=True)(
         construct_unique_name_validator(field="data_name")
     )
 

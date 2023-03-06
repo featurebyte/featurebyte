@@ -26,7 +26,10 @@ from featurebyte.exception import (
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
@@ -509,12 +512,17 @@ def test_feature_derived_from_saved_feature_not_saved(saved_feature):
     assert derived_feat.saved is False
 
 
-def test_create_new_version(saved_feature):
+def test_create_new_version(saved_feature, snowflake_event_data):
     """Test creation a new version"""
     new_version = saved_feature.create_new_version(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-        ),
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name=snowflake_event_data.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
         data_cleaning_operations=None,
     )
 
@@ -535,16 +543,23 @@ def test_create_new_version(saved_feature):
     assert groupby_node_params["time_modulo_frequency"] == 15 * 60
 
 
-def test_create_new_version__with_data_cleaning_operations(saved_feature, update_fixtures):
+def test_create_new_version__with_data_cleaning_operations(
+    saved_feature, snowflake_event_data, update_fixtures
+):
     """Test creation of new version with data cleaning operations"""
     # check sdk code generation of source feature
     check_sdk_code_generation(saved_feature, to_use_saved_data=True)
 
     # create a new feature version
     new_version = saved_feature.create_new_version(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-        ),
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name=snowflake_event_data.name,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
         data_cleaning_operations=[
             DataCleaningOperation(
                 data_name="sf_event_data",
@@ -591,9 +606,14 @@ def test_create_new_version__error(float_feature):
     """Test creation a new version (exception)"""
     with pytest.raises(RecordCreationException) as exc:
         float_feature.create_new_version(
-            feature_job_setting=FeatureJobSetting(
-                blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
-            ),
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name="sf_event_data",
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+                    ),
+                )
+            ],
             data_cleaning_operations=None,
         )
 
@@ -606,9 +626,14 @@ def test_create_new_version__error(float_feature):
 def test_feature__as_default_version(saved_feature):
     """Test feature as_default_version method"""
     new_version = saved_feature.create_new_version(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="15m", frequency="30m", time_modulo_frequency="15m"
-        ),
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name="sf_event_data",
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="15m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
         data_cleaning_operations=None,
     )
     assert new_version.is_default is True

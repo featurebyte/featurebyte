@@ -3,14 +3,16 @@ Generic graph related algorithms
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
 
 if TYPE_CHECKING:
     from featurebyte.query_graph.model.graph import QueryGraphModel
     from featurebyte.query_graph.node import Node
 
 
-def dfs_traversal(query_graph: QueryGraphModel, node: Node) -> Iterator[Node]:
+def dfs_traversal(
+    query_graph: QueryGraphModel, node: Node, max_parent: Optional[int] = None
+) -> Iterator[Node]:
     """Perform a DFS traversal
 
     Parameters
@@ -19,16 +21,23 @@ def dfs_traversal(query_graph: QueryGraphModel, node: Node) -> Iterator[Node]:
         Query graph
     node : Node
         Current node to traverse from
+    max_parent : Optional[int]
+        Maximum number of parents to traverse (if not provided, all parents are traversed)
 
     Yields
     ------
     Node
         Query graph nodes
     """
-    yield from dfs_inner(query_graph, node, {})
+    yield from dfs_inner(query_graph, node, {}, max_parent=max_parent)
 
 
-def dfs_inner(query_graph: QueryGraphModel, node: Node, visited: dict[str, bool]) -> Iterator[Node]:
+def dfs_inner(
+    query_graph: QueryGraphModel,
+    node: Node,
+    visited: dict[str, bool],
+    max_parent: Optional[int] = None,
+) -> Iterator[Node]:
     """Performs the actual work of a DFS traversal
 
     Parameters
@@ -39,6 +48,8 @@ def dfs_inner(query_graph: QueryGraphModel, node: Node, visited: dict[str, bool]
         Current node to traverse from
     visited : dict
         Markers for visited nodes
+    max_parent : Optional[int]
+        Maximum number of parents to traverse (if not provided, all parents are traversed)
 
     Yields
     ------
@@ -47,7 +58,10 @@ def dfs_inner(query_graph: QueryGraphModel, node: Node, visited: dict[str, bool]
     """
     visited[node.name] = True
     yield node
-    for parent_name in query_graph.backward_edges_map[node.name]:
+    parent_names = query_graph.backward_edges_map[node.name]
+    if max_parent:
+        parent_names = parent_names[:max_parent]
+    for parent_name in parent_names:
         if visited.get(parent_name):
             continue
         parent_node = query_graph.get_node_by_name(parent_name)
