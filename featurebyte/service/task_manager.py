@@ -3,17 +3,20 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
+import datetime
 from abc import abstractmethod
 from uuid import UUID
 
 from bson.objectid import ObjectId
 
+from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
+from featurebyte.persistent import Persistent
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.utils.persistent import get_persistent
+from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.worker import celery
 
 TaskId = Union[ObjectId, UUID]
@@ -24,16 +27,22 @@ class AbstractTaskManager:
     AbstractTaskManager defines interface for TaskManager
     """
 
-    def __init__(self, user_id: Optional[ObjectId]):
+    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId) -> None:
         """
         TaskManager constructor
 
         Parameters
         ----------
-        user_id: Optional[ObjectId]
-            User ID
+        user: Any
+            User
+        persistent: Persistent
+            Persistent
+        workspace_id: ObjectId
+            Workspace ID
         """
-        self.user_id = user_id
+        self.user = user
+        self.persistent = persistent
+        self.workspace_id = workspace_id
 
     @abstractmethod
     async def submit(self, payload: BaseTaskPayload) -> TaskId:
@@ -110,7 +119,7 @@ class TaskManager(AbstractTaskManager):
         TaskId
             Task ID
         """
-        assert self.user_id == payload.user_id
+        assert self.user.id == payload.user_id
         kwargs = payload.json_dict()
         kwargs["task_output_path"] = payload.task_output_path
         task = celery.send_task("featurebyte.worker.task_executor.execute_task", kwargs=kwargs)
@@ -137,8 +146,7 @@ class TaskManager(AbstractTaskManager):
         traceback = None
 
         # try to find in persistent first
-        persistent = get_persistent()
-        document = await persistent.find_one(
+        document = await self.persistent.find_one(
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": task_id},
         )
@@ -165,8 +173,7 @@ class TaskManager(AbstractTaskManager):
         ascending: bool = True,
     ) -> tuple[list[Task], int]:
         # Perform the query
-        persistent = get_persistent()
-        results, total = await persistent.find(
+        results, total = await self.persistent.find(
             collection_name=TaskModel.collection_name(),
             query_filter={},
             page=page,
@@ -185,3 +192,125 @@ class TaskManager(AbstractTaskManager):
             for document in results
         ]
         return tasks, total
+
+    async def schedule_interval_task(
+        self,
+        name: str,
+        payload: BaseTaskPayload,
+        interval: Interval,
+        start_after: Optional[datetime.datetime] = None,
+    ) -> ObjectId:
+        """
+        Schedule task to run periodically
+
+        Parameters
+        ----------
+        name: str
+            Task name
+        payload: BaseTaskPayload
+            Payload to use for scheduled task
+        interval: Interval
+            Interval specification
+        start_after: Optional[datetime.datetime]
+            Start after this time
+
+        Returns
+        -------
+        ObjectId
+            PeriodicTask ID
+        """
+        assert self.user.id == payload.user_id
+        periodic_task = PeriodicTask(
+            name=name,
+            task="featurebyte.worker.task_executor.execute_task",
+            interval=interval,
+            args=[],
+            kwargs=payload.json_dict(),
+            start_after=start_after,
+        )
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.create_document(data=periodic_task)
+        return periodic_task.id
+
+    async def schedule_cron_task(
+        self,
+        name: str,
+        payload: BaseTaskPayload,
+        crontab: Crontab,
+        start_after: Optional[datetime.datetime] = None,
+    ) -> ObjectId:
+        """
+        Schedule task to run on cron setting
+
+        Parameters
+        ----------
+        name: str
+            Task name
+        payload: BaseTaskPayload
+            Payload to use for scheduled task
+        crontab: Crontab
+            Cron specification
+        start_after: Optional[datetime.datetime]
+            Start after this time
+
+        Returns
+        -------
+        ObjectId
+            PeriodicTask ID
+        """
+        assert self.user.id == payload.user_id
+        periodic_task = PeriodicTask(
+            name=name,
+            task="featurebyte.worker.task_executor.execute_task",
+            crontab=crontab,
+            args=[],
+            kwargs=payload.json_dict(),
+            start_after=start_after,
+        )
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.create_document(data=periodic_task)
+        return periodic_task.id
+
+    async def get_periodic_task(self, periodic_task_id: ObjectId) -> PeriodicTask:
+        """
+        Retrieve periodic task
+
+        Parameters
+        ----------
+        periodic_task_id: ObjectId
+            PeriodicTask ID
+
+        Returns
+        -------
+        PeriodicTask
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        return await periodic_task_service.get_document(document_id=periodic_task_id)
+
+    async def delete_periodic_task(self, periodic_task_id: ObjectId) -> None:
+        """
+        Delete periodic task
+
+        Parameters
+        ----------
+        periodic_task_id: ObjectId
+            PeriodicTask ID
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.delete_document(document_id=periodic_task_id)

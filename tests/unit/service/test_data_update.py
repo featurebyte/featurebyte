@@ -7,13 +7,17 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte import Relationship
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataServiceUpdate
 from featurebyte.schema.item_data import ItemDataServiceUpdate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_data import SCDDataServiceUpdate
 from featurebyte.schema.tabular_data import DataServiceUpdate
 
@@ -252,6 +256,62 @@ async def entity_qux_fixture(entity_service):
     return entity
 
 
+@pytest.fixture(name="entity_docs")
+def entity_docs_fixture(entity_foo, entity_bar, entity_baz, entity_qux):
+    """Entity docs"""
+    return [entity_foo, entity_bar, entity_baz, entity_qux]
+
+
+def convert_entity_name_to_ids(entity_names, entity_docs):
+    """
+    Helper method to convert entity names to IDs
+    """
+    # convert list of entity names to entity ids
+    entity_name_id_map = {entity.name: entity.id for entity in entity_docs}
+    return set(entity_name_id_map[name] for name in entity_names)
+
+
+def map_entity_id_to_name(entity_docs):
+    """
+    Helper method to convert entity docs to a map of id to name
+    """
+    return {entity.id: entity.name for entity in entity_docs}
+
+
+@pytest.fixture(name="event_data_entity_initializer")
+def event_data_entity_initializer_fixture(entity_service, relationship_info_service, event_data):
+    """
+    Fixture to initialize event data entities
+    """
+
+    async def initialize_entities(entity_id, parent_entity_ids):
+        # Initialize entities
+        await entity_service.update_document(
+            document_id=entity_id,
+            data=EntityServiceUpdate(
+                parents=[
+                    ParentEntity(id=parent_id, data_type="event_data", data_id=event_data.id)
+                    for parent_id in parent_entity_ids
+                ]
+            ),
+        )
+        # Initialize relationships
+        for parent_id in parent_entity_ids:
+            await relationship_info_service.create_document(
+                data=RelationshipInfoCreate(
+                    name=f"{entity_id}_{parent_id}",
+                    relationship_type=RelationshipType.CHILD_PARENT,
+                    primary_entity_id=PydanticObjectId(entity_id),
+                    related_entity_id=PydanticObjectId(parent_id),
+                    primary_data_source_id=PydanticObjectId(event_data.id),
+                    is_enabled=True,
+                    updated_by=PydanticObjectId(DEFAULT_USER_ID),
+                )
+            )
+
+    return initialize_entities
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "old_primary_entities,old_parent_entities,new_primary_entities,new_parent_entities,"
@@ -267,7 +327,14 @@ async def entity_qux_fixture(entity_service):
         (set(), {"baz"}, {"foo"}, {"baz"}, [], ["baz"]),
         # add a new parent entity
         ({"foo"}, set(), {"foo"}, {"bar"}, ["bar"], ["bar"]),
-        ({"foo"}, {"bar"}, {"foo"}, {"bar", "baz"}, ["bar", "baz"], ["bar", "baz"]),
+        (
+            {"foo"},
+            {"bar"},
+            {"foo"},
+            {"bar", "baz"},
+            ["bar", "baz"],
+            ["bar", "baz"],
+        ),
         # remove a parent entity
         ({"foo"}, {"bar"}, {"foo"}, set(), [], []),
         ({"foo"}, {"bar", "baz"}, {"foo"}, {"bar"}, ["bar"], ["bar"]),
@@ -281,12 +348,10 @@ async def entity_qux_fixture(entity_service):
 )
 async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     data_update_service,
-    entity_service,
+    event_data_entity_initializer,
     event_data,
-    entity_foo,
-    entity_bar,
-    entity_baz,
-    entity_qux,
+    entity_service,
+    entity_docs,
     old_primary_entities,
     old_parent_entities,
     new_primary_entities,
@@ -295,28 +360,14 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
     expected_new_primary_parents,
 ):
     """Test _update_entity_relationship"""
-
-    def convert_entity_name_to_ids(entity_names, entity_docs):
-        # convert list of entity names to entity ids
-        entity_name_id_map = {entity.name: entity.id for entity in entity_docs}
-        return set(entity_name_id_map[name] for name in entity_names)
-
     # setup old primary entity
-    entities = [entity_foo, entity_bar, entity_baz, entity_qux]
-    old_primary_entities = convert_entity_name_to_ids(old_primary_entities, entities)
-    old_parent_entities = convert_entity_name_to_ids(old_parent_entities, entities)
-    new_primary_entities = convert_entity_name_to_ids(new_primary_entities, entities)
-    new_parent_entities = convert_entity_name_to_ids(new_parent_entities, entities)
+    old_primary_entities = convert_entity_name_to_ids(old_primary_entities, entity_docs)
+    old_parent_entities = convert_entity_name_to_ids(old_parent_entities, entity_docs)
+    new_primary_entities = convert_entity_name_to_ids(new_primary_entities, entity_docs)
+    new_parent_entities = convert_entity_name_to_ids(new_parent_entities, entity_docs)
     for entity_id in old_primary_entities:
-        await entity_service.update_document(
-            document_id=entity_id,
-            data=EntityServiceUpdate(
-                parents=[
-                    ParentEntity(id=parent_id, data_type="event_data", data_id=event_data.id)
-                    for parent_id in old_parent_entities
-                ]
-            ),
-        )
+        # Initialize the primary entity
+        await event_data_entity_initializer(entity_id, old_parent_entities)
 
     # call update entity relationship
     await data_update_service._update_entity_relationship(
@@ -334,7 +385,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
 
     for entity_id in old_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
-        expected_parent_ids = convert_entity_name_to_ids(expected_old_primary_parents, entities)
+        expected_parent_ids = convert_entity_name_to_ids(expected_old_primary_parents, entity_docs)
         expected_parents = [
             ParentEntity(id=entity_id, data_type="event_data", data_id=event_data.id)
             for entity_id in expected_parent_ids
@@ -345,7 +396,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
 
     for entity_id in new_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
-        expected_parent_ids = convert_entity_name_to_ids(expected_new_primary_parents, entities)
+        expected_parent_ids = convert_entity_name_to_ids(expected_new_primary_parents, entity_docs)
         expected_parents = [
             ParentEntity(id=entity_id, data_type="event_data", data_id=event_data.id)
             for entity_id in expected_parent_ids
@@ -353,6 +404,117 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
         assert sorted(primary_entity.parents, key=key_sorter) == sorted(
             expected_parents, key=key_sorter
         )
+
+
+def get_relationships(entity_id_to_name):
+    """
+    Helper function to get relationships in (child, parent) format.
+    """
+    relationships = Relationship.list()
+    expected_relationships = []
+    for _, relationship in relationships.iterrows():
+        primary_entity_name = entity_id_to_name[relationship.primary_entity_id]
+        related_entity_name = entity_id_to_name[relationship.related_entity_id]
+        expected_relationships.append((primary_entity_name, related_entity_name))
+    return expected_relationships
+
+
+def assert_relationships_match(relationship_list_a, relationship_list_b):
+    """
+    Helper function to compare two lists of relationships.
+    """
+    assert len(relationship_list_a) == len(relationship_list_b)
+    for relationship in relationship_list_a:
+        assert relationship in relationship_list_b
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "old_primary_entities,old_parent_entities,new_primary_entities,new_parent_entities,"
+    "expected_additions,expected_removals",
+    [
+        # data has no entity at all
+        (set(), set(), set(), set(), [], []),
+        # data has no primary entity
+        (set(), {"foo"}, set(), {"bar"}, [], []),
+        # data has no changes in entities
+        ({"foo"}, {"bar"}, {"foo"}, {"bar"}, [], []),
+        # add a new primary entity
+        (set(), {"baz"}, {"foo"}, {"baz"}, [("foo", "baz")], []),
+        # add a new parent entity
+        ({"foo"}, set(), {"foo"}, {"bar"}, [("foo", "bar")], []),
+        (
+            {"foo"},
+            {"bar"},
+            {"foo"},
+            {"bar", "baz"},
+            [("foo", "baz")],
+            [],
+        ),
+        # remove a parent entity
+        ({"foo"}, {"bar"}, {"foo"}, set(), [], [("foo", "bar")]),
+        ({"foo"}, {"bar", "baz"}, {"foo"}, {"bar"}, [], [("foo", "baz")]),
+        # change of primary entity from foo to bar
+        ({"foo"}, {"baz"}, {"bar"}, {"baz"}, [("bar", "baz")], [("foo", "baz")]),
+        # change of parent entity from bar to baz
+        ({"foo"}, {"bar"}, {"foo"}, {"baz"}, [("foo", "baz")], [("foo", "bar")]),
+        # change of primary & parent entity
+        ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [("baz", "qux")], [("foo", "bar")]),
+    ],
+)
+async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-locals
+    data_update_service,
+    event_data,
+    event_data_entity_initializer,
+    entity_docs,
+    old_primary_entities,
+    old_parent_entities,
+    new_primary_entities,
+    new_parent_entities,
+    expected_additions,
+    expected_removals,
+):
+    """
+    Test _update_entity_relationship when relationship infos are added
+    """
+    # setup old primary entity
+    old_primary_entity_ids = convert_entity_name_to_ids(old_primary_entities, entity_docs)
+    old_parent_entity_ids = convert_entity_name_to_ids(old_parent_entities, entity_docs)
+
+    # Initialize entities
+    for entity_id in old_primary_entity_ids:
+        # Initialize the primary entity
+        await event_data_entity_initializer(entity_id, old_parent_entity_ids)
+
+    # Create tuples of expected relationships
+    initial_relationships = []
+    for old_primary_entity in old_primary_entities:
+        for old_parent_entity in old_parent_entities:
+            initial_relationships.append((old_primary_entity, old_parent_entity))
+
+    # Query database to get the current relationships persisted
+    entity_id_to_name = map_entity_id_to_name(entity_docs)
+    relationships = get_relationships(entity_id_to_name)
+    assert_relationships_match(relationships, initial_relationships)
+
+    # Call update entity relationship
+    await data_update_service._update_entity_relationship(
+        document=event_data,
+        old_primary_entities=old_primary_entity_ids,
+        old_parent_entities=old_parent_entity_ids,
+        new_primary_entities=convert_entity_name_to_ids(new_primary_entities, entity_docs),
+        new_parent_entities=convert_entity_name_to_ids(new_parent_entities, entity_docs),
+    )
+
+    # Create list of expected relationships --> initial + additions - removals
+    final_expected_relationships = initial_relationships.copy()
+    final_expected_relationships.extend(expected_additions)
+    for removed_relationship in expected_removals:
+        final_expected_relationships.remove(removed_relationship)
+
+    # Verify the final relationships
+    final_relationships = get_relationships(entity_id_to_name)
+    assert_relationships_match(final_relationships, final_expected_relationships)
 
 
 async def _update_data_columns_info(

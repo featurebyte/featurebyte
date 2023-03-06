@@ -9,7 +9,7 @@ from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 
 PERSISTENT = None
-DATABASE_NAME = "featurebyte"
+DATABASE_NAME = os.environ.get("MONGODB_DB", "featurebyte")
 MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27021")
 
 

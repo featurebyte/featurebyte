@@ -135,7 +135,6 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     fixture_path=None,
     update_fixtures=False,
     data_id=None,
-    check_final_hash=True,
     **kwargs,
 ):
     """Check SDK code generation"""
@@ -162,11 +161,10 @@ def check_sdk_code_generation(  # pylint: disable=too-many-locals
     expected_pruned_graph = _replace_view_mode_to_manual(expected_pruned_graph)
 
     # check the final node hash value of two graph to make sure they are the same
-    if check_final_hash:
-        assert (
-            pruned_graph.node_name_to_ref[node.name]
-            == expected_pruned_graph.node_name_to_ref[expected_node.name]
-        ), sdk_code
+    assert (
+        pruned_graph.node_name_to_ref[node.name]
+        == expected_pruned_graph.node_name_to_ref[expected_node.name]
+    ), sdk_code
 
     if fixture_path:
         feature_store_id = api_object.feature_store.id

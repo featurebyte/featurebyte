@@ -47,7 +47,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
     volumes:
       - ./migration.py:/scripts/migration.py
-      - ~/.featurebyte/data/spark:/data
+      - ~/.featurebyte/data/spark/staging:/data/staging
       - /tmp:/tmp
 
   featurebyte-worker:
@@ -57,7 +57,7 @@ services:
     container_name: featurebyte-worker
     image: featurebyte-server:latest
     depends_on:
-      featurebyte-server:
+      mongo-rs:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -70,7 +70,7 @@ services:
       /bin/bash /scripts/entrypoint-worker.sh
     volumes:
       - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
-      - ~/.featurebyte/data/spark:/data
+      - ~/.featurebyte/data/spark/staging:/data/staging
       - /tmp:/tmp
 
   spark-thrift:
@@ -87,8 +87,9 @@ services:
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
-      - ~/.featurebyte/data/spark:/opt/spark/data/derby
-      - /tmp:/tmp
+      - ~/.featurebyte/data/spark/staging:/opt/spark/data/staging
+      - spark-warehouse:/opt/spark/data/derby
+      - spark-tmp:/tmp
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
@@ -105,7 +106,7 @@ services:
         --hiveconf hive.server2.thrift.port=10000 \
         --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
         --hiveconf derby.system.home=/opt/spark/data/derby \
-        --master=local[*] \
+        --master=local[4] \
         --jars /opt/spark/jars/delta-core_2.12-2.2.0.jar,/opt/spark/jars/delta-storage-2.2.0.jar,/opt/spark/jars/antlr4-runtime-4.8.jar \
         --conf spark.driver.memory=6G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
@@ -120,3 +121,7 @@ networks:
   featurebyte:
     driver: bridge
     external: true
+
+volumes:
+  spark-tmp:
+  spark-warehouse:

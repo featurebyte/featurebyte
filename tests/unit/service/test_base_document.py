@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, Mock
 import numpy as np
 import pytest
 
-from featurebyte.exception import DocumentConflictError
+from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.base import (
     DEFAULT_WORKSPACE_ID,
     FeatureByteBaseDocumentModel,
@@ -36,6 +36,12 @@ class DocumentService(BaseDocumentService):
     # pylint: disable=abstract-method
 
     document_class = Document
+
+
+@pytest.fixture(name="document_service")
+def document_service_fixture(user, persistent):
+    """Fixture for DocumentService"""
+    return DocumentService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
 
 
 @pytest.mark.asyncio
@@ -313,11 +319,8 @@ def test_construct_list_query_filter(kwargs, expected):
 
 
 @pytest.mark.asyncio
-async def test_list_documents_iterator(user, persistent):
+async def test_list_documents_iterator(document_service):
     """Test list document iterator"""
-    document_service = DocumentService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
-    )
     total = 15
     for _ in range(total):
         await document_service.create_document(data=Document())
@@ -335,3 +338,17 @@ async def test_list_documents_iterator(user, persistent):
             )
         ]
         assert set(doc_ids) == expected_doc_ids
+
+
+@pytest.mark.asyncio
+async def test_delete_document(document_service):
+    """Test delete document"""
+    # create document
+    document = await document_service.create_document(data=Document())
+
+    # delete document
+    await document_service.delete_document(document_id=document.id)
+
+    # try to delete document - expect an error
+    with pytest.raises(DocumentNotFoundError):
+        await document_service.get_document(document_id=document.id)

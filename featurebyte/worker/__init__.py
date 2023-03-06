@@ -8,12 +8,13 @@ from inspect import isawaitable
 
 from celery import Celery
 
+from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.models.task import Task
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import DATABASE_NAME, MONGO_URI
 
 CELERY_TASK_COLLECTION = Task.collection_name()
-CELERY_SCHEDULE_COLLECTION = "schedules"
+CELERY_SCHEDULE_COLLECTION = PeriodicTask.collection_name()
 
 
 class AsyncCelery(Celery):
@@ -83,5 +84,6 @@ celery.conf.mongodb_backend_settings = {
 }
 
 # beat scheduler
+celery.conf.mongodb_scheduler_db = DATABASE_NAME
 celery.conf.mongodb_scheduler_collection = CELERY_SCHEDULE_COLLECTION
 celery.conf.mongodb_scheduler_url = MONGO_URI

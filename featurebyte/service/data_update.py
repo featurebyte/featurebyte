@@ -3,7 +3,7 @@ DataStatusService
 """
 from __future__ import annotations
 
-from typing import Any, List, Union
+from typing import Any, List, Tuple, Union
 
 from collections import defaultdict
 
@@ -11,13 +11,16 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataModel, DataStatus
+from featurebyte.models.relationship import RelationshipType
 from featurebyte.persistent import Persistent
 from featurebyte.schema.dimension_data import DimensionDataServiceUpdate
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataServiceUpdate
 from featurebyte.schema.item_data import ItemDataServiceUpdate
+from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_data import SCDDataServiceUpdate
 from featurebyte.service.base_service import BaseService
 from featurebyte.service.dimension_data import DimensionDataService
@@ -25,6 +28,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 
@@ -48,6 +52,9 @@ class DataUpdateService(BaseService):
             user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.entity_service = EntityService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self.relationship_info_service = RelationshipInfoService(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
 
@@ -212,7 +219,7 @@ class DataUpdateService(BaseService):
         data_id: ObjectId,
         data_type: TableDataType,
         parent_entity_ids: List[ObjectId],
-    ) -> List[ParentEntity]:
+    ) -> Tuple[List[ParentEntity], List[ObjectId]]:
         current_parent_entity_ids = {
             parent.id
             for parent in parents
@@ -224,7 +231,7 @@ class DataUpdateService(BaseService):
         output = parents.copy()
         for entity_id in additional_parent_entity_ids:
             output.append(ParentEntity(id=entity_id, data_type=data_type, data_id=data_id))
-        return output
+        return output, additional_parent_entity_ids
 
     @staticmethod
     def _exclude_parent_entities(
@@ -232,7 +239,8 @@ class DataUpdateService(BaseService):
         data_id: ObjectId,
         data_type: TableDataType,
         parent_entity_ids: List[ObjectId],
-    ) -> List[ParentEntity]:
+    ) -> Tuple[List[ParentEntity], List[PydanticObjectId]]:
+        removed_parent_entity_ids = []
         output = []
         for parent in parents:
             if (
@@ -240,9 +248,40 @@ class DataUpdateService(BaseService):
                 and parent.data_id == data_id
                 and parent.data_type == data_type
             ):
+                removed_parent_entity_ids.append(parent.id)
                 continue
             output.append(parent)
-        return output
+        return output, removed_parent_entity_ids
+
+    async def _remove_parent_entity_ids(
+        self, primary_entity_id: ObjectId, parent_entity_ids_to_remove: List[PydanticObjectId]
+    ) -> None:
+        # Remove relationship info links for old parent entity relationships
+        for removed_parent_entity_id in parent_entity_ids_to_remove:
+            await self.relationship_info_service.remove_relationship(
+                primary_entity_id=PydanticObjectId(primary_entity_id),
+                related_entity_id=removed_parent_entity_id,
+            )
+
+    async def _add_new_child_parent_relationships(
+        self,
+        primary_entity_id: ObjectId,
+        data_source_id: ObjectId,
+        parent_entity_ids_to_add: List[ObjectId],
+    ) -> None:
+        # Add relationship info links for new parent entity relationships
+        for new_parent_entity_id in parent_entity_ids_to_add:
+            await self.relationship_info_service.create_document(
+                data=RelationshipInfoCreate(
+                    name=f"{primary_entity_id}_{new_parent_entity_id}",
+                    relationship_type=RelationshipType.CHILD_PARENT,
+                    primary_entity_id=PydanticObjectId(primary_entity_id),
+                    related_entity_id=PydanticObjectId(new_parent_entity_id),
+                    primary_data_source_id=PydanticObjectId(data_source_id),
+                    is_enabled=True,
+                    updated_by=PydanticObjectId(DEFAULT_USER_ID),
+                )
+            )
 
     async def _update_entity_relationship(
         self,
@@ -259,7 +298,7 @@ class DataUpdateService(BaseService):
             # new primary entities are introduced
             for entity_id in new_diff_old_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
-                parents = self._include_parent_entities(
+                parents, new_parent_entity_ids = self._include_parent_entities(
                     parents=primary_entity.parents,
                     data_id=document.id,
                     data_type=document.type,
@@ -269,11 +308,16 @@ class DataUpdateService(BaseService):
                     document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
                 )
 
+                # Add relationship info links for new parent entity relationships
+                await self._add_new_child_parent_relationships(
+                    entity_id, document.id, new_parent_entity_ids
+                )
+
         if old_diff_new_primary_entities:
             # old primary entities are removed
             for entity_id in old_diff_new_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
-                parents = self._exclude_parent_entities(
+                parents, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
                     data_id=document.id,
                     data_type=document.type,
@@ -283,17 +327,20 @@ class DataUpdateService(BaseService):
                     document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
                 )
 
+                # Remove relationship info links for old parent entity relationships
+                await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
+
         if common_primary_entities:
             # change of non-primary entities
             for entity_id in common_primary_entities:
                 primary_entity = await self.entity_service.get_document(document_id=entity_id)
-                parents = self._exclude_parent_entities(
+                parents, removed_parent_entity_ids = self._exclude_parent_entities(
                     parents=primary_entity.parents,
                     data_id=document.id,
                     data_type=document.type,
                     parent_entity_ids=list(old_parent_entities.difference(new_parent_entities)),
                 )
-                parents = self._include_parent_entities(
+                parents, new_parent_entity_ids = self._include_parent_entities(
                     parents=parents,
                     data_id=document.id,
                     data_type=document.type,
@@ -303,6 +350,12 @@ class DataUpdateService(BaseService):
                     await self.entity_service.update_document(
                         document_id=primary_entity.id, data=EntityServiceUpdate(parents=parents)
                     )
+                    # Add relationship info links for new parent entity relationships
+                    await self._add_new_child_parent_relationships(
+                        entity_id, document.id, new_parent_entity_ids
+                    )
+                    # Remove relationship info links for old parent entity relationships
+                    await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
     async def update_entity_data_references(
         self, document: DataModel, data: DataServiceUpdateSchema

@@ -22,6 +22,6 @@ class TestTask(BaseTask):
         Execute test task
         """
         logger.debug("Test task started")
-        for percent in range(0, 100, 10):
+        for percent in range(0, 100, 20):
             self.update_progress(percent=percent)
         logger.debug("Test task completed")

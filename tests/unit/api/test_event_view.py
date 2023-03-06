@@ -702,28 +702,18 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     pruned_graph, node = feat.extract_pruned_graph_and_node()
     nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
     assert nested_view_graph_node.parameters.type == "event_view"
+
+    # note that cleaning operation is not pruned before saving
     assert nested_view_graph_node.parameters.metadata.column_cleaning_operations == [
-        # note that col_int cleaning operation is pruned
+        {
+            "column_name": "col_int",
+            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+        },
         {
             "column_name": "col_float",
             "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
         },
     ]
-
-    # check nested graph's cleaning graph node: only cleaning operations of col_float should be kept
-    nested_cleaning_graph_node = nested_view_graph_node.parameters.graph.get_node_by_name("graph_1")
-    assert nested_cleaning_graph_node.parameters.type == "cleaning"
-    assert nested_cleaning_graph_node.parameters.graph.edges == [
-        {"source": "proxy_input_1", "target": "project_1"},
-        {"source": "project_1", "target": "is_null_1"},
-        {"source": "project_1", "target": "conditional_1"},
-        {"source": "is_null_1", "target": "conditional_1"},
-        {"source": "conditional_1", "target": "cast_1"},
-        {"source": "proxy_input_1", "target": "assign_1"},
-        {"source": "cast_1", "target": "assign_1"},
-    ]
-    nested_project_node = nested_cleaning_graph_node.parameters.graph.get_node_by_name("project_1")
-    assert nested_project_node.parameters.columns == ["col_float"]
 
 
 def test__validate_column_is_not_used(empty_event_view_builder):

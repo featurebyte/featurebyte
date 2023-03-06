@@ -1179,7 +1179,7 @@ def app_container_fixture(persistent):
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     user = User()
-    task_manager = TaskManager(user_id=user.id)
+    task_manager = TaskManager(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
     return AppContainer.get_instance(
         user=user,
         persistent=persistent,
