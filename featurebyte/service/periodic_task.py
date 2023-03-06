@@ -3,8 +3,6 @@ PeriodicTaskService class
 """
 from __future__ import annotations
 
-from bson import ObjectId
-
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.schema.periodic_task import PeriodicTaskUpdate
