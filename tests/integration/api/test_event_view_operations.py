@@ -325,6 +325,16 @@ def test_feature_operations__feature_group_preview(feature_group):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+def test_isnull_compare_with_bool(event_view):
+    """
+    Test a special case of using isnull with bool literal
+    """
+    filtered_view = event_view[event_view["ÀMOUNT"].isnull() == False]
+    df = filtered_view.preview()
+    assert df["ÀMOUNT"].notnull().all()
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_feature_operations__conditional_assign(feature_group):
     """
     Test operations on Feature objects - conditional assignment
