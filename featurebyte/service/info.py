@@ -566,10 +566,6 @@ class InfoService(BaseService):
                 query_filter={"_id": {"$in": feature.tabular_data_ids}}
             )
         }
-        data_cleaning_operations = self._extract_feature_data_cleaning_operations(
-            feature=feature, data_id_to_name=data_id_to_name
-        )
-
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,
