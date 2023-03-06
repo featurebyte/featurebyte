@@ -4,7 +4,7 @@ Featurebyte CLI tools
 from typing import Generator, List
 
 import os
-import pwd
+import sys
 import tempfile
 from contextlib import contextmanager
 from enum import Enum
@@ -91,15 +91,23 @@ def get_docker_client(app_name: ApplicationName) -> Generator[DockerClient, None
     """
     with tempfile.TemporaryDirectory() as temp_dir:
         compose_env_file = os.path.join(temp_dir, ".env")
-        uid = os.getuid()
-        user = pwd.getpwuid(uid)
-        with open(compose_env_file, "w", encoding="utf8") as file_obj:
-            file_obj.write(f'LOCAL_UID="{uid}" LOCAL_GID="{user.pw_gid}"')
-        docker = DockerClient(
-            compose_project_name=app_name.value,
-            compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
-            compose_env_file=compose_env_file,
-        )
+        if sys.platform != "win32":
+            import pwd  # pylint: disable=import-outside-toplevel
+
+            uid = os.getuid()
+            user = pwd.getpwuid(uid)
+            with open(compose_env_file, "w", encoding="utf8") as file_obj:
+                file_obj.write(f'LOCAL_UID="{uid}" LOCAL_GID="{user.pw_gid}"')
+            docker = DockerClient(
+                compose_project_name=app_name.value,
+                compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
+                compose_env_file=compose_env_file,
+            )
+        else:
+            docker = DockerClient(
+                compose_project_name=app_name.value,
+                compose_files=[os.path.join(get_package_root(), "docker/featurebyte.yml")],
+            )
         yield docker
 
 
