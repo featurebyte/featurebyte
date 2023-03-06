@@ -224,7 +224,7 @@ jobs:
           EXIT_CODE=$?
           if [ $EXIT_CODE -ne 0 ]; then
               echo "Spark Thrift Server logs:"
-              docker logs spark-thrift
+              docker logs spark-thrift --tail 50000
               exit $EXIT_CODE
           fi
           make test-teardown
