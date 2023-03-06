@@ -16,7 +16,7 @@ from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest.fixture(name="features", scope="session")
-def features_fixture(event_data, source_type):
+def features_fixture(event_data):
     """
     Fixture for feature
     """
@@ -54,20 +54,14 @@ def features_fixture(event_data, source_type):
     ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
     feature_complex_3.name = "COMPLEX_FEATURE_3"
 
-    if source_type == "spark":
-        features = [
-            feature_group["AMOUNT_SUM_2h"],
-            feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
-        ]
-    else:
-        features = [
-            feature_group["AMOUNT_SUM_2h"],
-            feature_group["AMOUNT_SUM_24h"],
-            feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
-            feature_complex_1,
-            feature_complex_2,
-            feature_complex_3,
-        ]
+    features = [
+        feature_group["AMOUNT_SUM_2h"],
+        feature_group["AMOUNT_SUM_24h"],
+        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
+        feature_complex_1,
+        feature_complex_2,
+        feature_complex_3,
+    ]
 
     for feature in features:
         feature.save()
