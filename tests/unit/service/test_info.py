@@ -7,10 +7,9 @@ from bson import ObjectId
 from featurebyte import (
     ColumnCleaningOperation,
     DataCleaningOperation,
-    Entity,
     MissingValueImputation,
-    SnowflakeDetails,
 )
+from featurebyte import Entity, FeatureJobSetting, SnowflakeDetails
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.relationship import RelationshipType
@@ -104,7 +103,9 @@ async def test_get_event_data_info(info_service, event_data, entity):
             schema_name="sf_schema",
             table_name="sf_event_table",
         ),
-        default_job_setting=None,
+        default_feature_job_setting=FeatureJobSetting(
+            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+        ),
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
         ],
