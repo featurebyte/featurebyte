@@ -471,8 +471,12 @@ def test_from_slowly_changing_data__keep_record_creation_date_column(
           "col_text" AS "col_text",
           CAST("effective_timestamp" AS STRING) AS "new_effective_timestamp",
           CAST(LAG("effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_effective_timestamp",
-          CAST(CASE WHEN "created_at" IS NULL THEN '2020-01-01' ELSE "created_at" END AS STRING) AS "new_created_at",
-          CAST(LAG(CASE WHEN "created_at" IS NULL THEN '2020-01-01' ELSE "created_at" END, 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_created_at"
+          CAST(CASE WHEN (
+            "created_at" IS NULL
+          ) THEN '2020-01-01' ELSE "created_at" END AS STRING) AS "new_created_at",
+          CAST(LAG(CASE WHEN (
+            "created_at" IS NULL
+          ) THEN '2020-01-01' ELSE "created_at" END, 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_created_at"
         FROM "sf_database"."sf_schema"."scd_table"
         LIMIT 10
         """

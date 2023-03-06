@@ -278,10 +278,14 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
           "event_id" AS "event_id",
           CAST(CASE
             WHEN (
-              CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT) < 0
+              CAST(CASE WHEN (
+                "amount" IS NULL
+              ) THEN 0 ELSE "amount" END AS FLOAT) < 0
             )
             THEN NULL
-            ELSE CAST(CASE WHEN "amount" IS NULL THEN 0 ELSE "amount" END AS FLOAT)
+            ELSE CAST(CASE WHEN (
+              "amount" IS NULL
+            ) THEN 0 ELSE "amount" END AS FLOAT)
           END AS FLOAT) AS "amount"
         FROM "db_name"."schema_name"."table_name"
         LIMIT 10

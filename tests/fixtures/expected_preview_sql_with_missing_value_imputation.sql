@@ -31,7 +31,9 @@ WITH TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
             SELECT
               "ts" AS "ts",
               "cust_id" AS "cust_id",
-              CASE WHEN "a" IS NULL THEN 0 ELSE "a" END AS "a",
+              CASE WHEN (
+                "a" IS NULL
+              ) THEN 0 ELSE "a" END AS "a",
               "b" AS "b"
             FROM "db"."public"."event_table"
           )

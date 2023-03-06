@@ -886,7 +886,15 @@ def test_notnull(bool_series, expression_sql_template):
         construct_node(name="not_1", type=NodeType.NOT, **node_kwargs),
         exclude=exclude,
     )
-    expected_sql = expression_sql_template.format(expression='NOT "MASK" IS NULL')
+    expected_sql = expression_sql_template.format(
+        expression=textwrap.dedent(
+            """
+            NOT (
+              "MASK" IS NULL
+            )
+            """
+        ).strip()
+    )
     assert expected_sql == result.preview_sql()
 
 
