@@ -12,11 +12,12 @@ from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
+from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
-from featurebyte.tile.scheduler import TileScheduler, TileSchedulerFactory
+from featurebyte.tile.scheduler import TileScheduler
 
 
 class BaseTileManager(BaseModel, ABC):
@@ -25,7 +26,6 @@ class BaseTileManager(BaseModel, ABC):
     """
 
     _session: BaseSession = PrivateAttr()
-    _scheduler: TileScheduler = PrivateAttr()
 
     def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
@@ -40,7 +40,6 @@ class BaseTileManager(BaseModel, ABC):
         """
         super().__init__(**kw)
         self._session = session
-        self._scheduler = TileSchedulerFactory.get_instance(job_store="default")
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
@@ -233,6 +232,11 @@ class BaseTileManager(BaseModel, ABC):
         monitor_periods: int
             online tile lookback period
 
+        Raises
+        -------
+        TileScheduleNotSupportedError
+            if user_id, workspace_id or feature_store_id is not provided
+
         Returns
         -------
             generated sql to be executed
@@ -240,6 +244,11 @@ class BaseTileManager(BaseModel, ABC):
 
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+
+        if not tile_spec.user_id or not tile_spec.workspace_id or not tile_spec.feature_store_id:
+            raise TileScheduleNotSupportedError(
+                "user_id, workspace_id and feature_store_id must be provided"
+            )
 
         tile_schedule_ins = TileGenerateSchedule(
             spark_session=self._session,
@@ -262,11 +271,16 @@ class BaseTileManager(BaseModel, ABC):
             job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         )
 
-        self._scheduler.start_job_with_interval(
+        scheduler = TileScheduler(user_id=tile_spec.user_id, workspace_id=tile_spec.workspace_id)
+
+        await scheduler.start_job_with_interval(
             job_id=job_id,
             interval_seconds=tile_spec.frequency_minute * 60,
-            start_from=next_job_time,
-            func=tile_schedule_ins.execute,
+            start_after=next_job_time,
+            instance=tile_schedule_ins,
+            user_id=tile_spec.user_id,
+            feature_store_id=tile_spec.feature_store_id,
+            workspace_id=tile_spec.workspace_id,
         )
 
         return tile_schedule_ins.json()
@@ -282,7 +296,19 @@ class BaseTileManager(BaseModel, ABC):
         ----------
         tile_spec: TileSpec
             the input TileSpec
+
+        Raises
+        -------
+        TileScheduleNotSupportedError
+            if user_id, workspace_id or feature_store_id is not provided
         """
+        if not tile_spec.user_id or not tile_spec.workspace_id or not tile_spec.feature_store_id:
+            raise TileScheduleNotSupportedError(
+                "user_id, workspace_id and feature_store_id must be provided"
+            )
+
+        scheduler = TileScheduler(user_id=tile_spec.user_id, workspace_id=tile_spec.workspace_id)
+
         exist_mapping = await self._session.execute_query(
             f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
         )
@@ -290,4 +316,4 @@ class BaseTileManager(BaseModel, ABC):
         if exist_mapping is None or len(exist_mapping) == 0:
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
-                self._scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")
+                await scheduler.stop_job(job_id=f"{t_type}_{tile_spec.aggregation_id}")

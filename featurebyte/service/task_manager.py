@@ -299,6 +299,26 @@ class TaskManager(AbstractTaskManager):
         )
         return await periodic_task_service.get_document(document_id=periodic_task_id)
 
+    async def get_periodic_task_by_name(self, name: str) -> PeriodicTask:
+        """
+        Retrieve periodic task
+
+        Parameters
+        ----------
+        name: str
+            name of the periodic task
+
+        Returns
+        -------
+        PeriodicTask
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        return await periodic_task_service.get_document_by_name(name=name)
+
     async def delete_periodic_task(self, periodic_task_id: ObjectId) -> None:
         """
         Delete periodic task
@@ -314,3 +334,19 @@ class TaskManager(AbstractTaskManager):
             workspace_id=self.workspace_id,
         )
         await periodic_task_service.delete_document(document_id=periodic_task_id)
+
+    async def delete_periodic_task_by_name(self, name: str) -> None:
+        """
+        Delete periodic task by name
+
+        Parameters
+        ----------
+        name: str
+            Document Name
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        await periodic_task_service.delete_document_by_name(name=name)

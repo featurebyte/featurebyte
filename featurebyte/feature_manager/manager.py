@@ -80,6 +80,10 @@ class FeatureManager(BaseModel):
             tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 # enable online tiles scheduled job
+                tile_spec.user_id = feature_spec.feature.user_id
+                tile_spec.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
+                tile_spec.workspace_id = feature_spec.feature.workspace_id
+
                 await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )

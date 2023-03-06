@@ -277,3 +277,9 @@ class ChangeViewNoJoinColumnError(Exception):
 
     ChangeView's don't have a primary key, and as such we don't expect there to be a join column.
     """
+
+
+class TileScheduleNotSupportedError(NotImplementedError):
+    """
+    Raise when the Tile Scheduling is not supported
+    """

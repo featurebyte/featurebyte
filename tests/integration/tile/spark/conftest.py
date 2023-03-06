@@ -1,7 +1,6 @@
 """
 Tile Tests for Spark Session
 """
-import os
 from datetime import datetime
 
 import pytest_asyncio

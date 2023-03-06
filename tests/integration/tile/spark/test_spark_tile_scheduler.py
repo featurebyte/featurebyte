@@ -1,49 +1,102 @@
 """
 This module contains integration tests for TileManager scheduler
 """
-from datetime import datetime, timedelta
+from datetime import datetime
+from unittest import mock
 
 import pytest
-from apscheduler.triggers.interval import IntervalTrigger
+import pytest_asyncio
+from bson import ObjectId
 
+from featurebyte import SourceType
 from featurebyte.common import date_util
+from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
-from featurebyte.tile.scheduler import TileSchedulerFactory
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.tile.scheduler import TileScheduler
+from featurebyte.worker.task_executor import TaskExecutor
+
+
+@pytest_asyncio.fixture(name="feature")
+async def mock_feature_fixture(feature_model_dict, session, feature_store):
+    """
+    Fixture for a ExtendedFeatureModel object
+    """
+
+    # this fixture was written to work for snowflake only
+    assert session.source_type == SourceType.SPARK
+
+    feature_model_dict.update(
+        {
+            "user_id": ObjectId(),
+            "tabular_source": {
+                "feature_store_id": feature_store.id,
+                "table_details": TableDetails(table_name="some_random_table"),
+            },
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "online_enabled": False,
+            "tabular_data_ids": [
+                ObjectId("626bccb9697a12204fb22ea3"),
+                ObjectId("726bccb9697a12204fb22ea3"),
+            ],
+        }
+    )
+    feature = ExtendedFeatureModel(**feature_model_dict)
+
+    yield feature
+
+
+@pytest_asyncio.fixture(name="scheduler_fixture")
+async def mock_scheduler_fixture(feature, tile_spec):
+    """
+    Fixture for TileScheduler information
+    """
+    tile_spec.tile_sql = "SELECT * FROM TEMP_TABLE"
+    tile_spec.user_id = feature.user_id
+    tile_spec.workspace_id = feature.workspace_id
+    tile_spec.feature_store_id = feature.tabular_source.feature_store_id
+    job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+
+    tile_scheduler = TileScheduler(user_id=tile_spec.user_id, workspace_id=tile_spec.workspace_id)
+
+    yield tile_scheduler, tile_spec, job_id
+
+    await tile_scheduler.stop_job(job_id=job_id)
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tiles_with_scheduler(tile_spec, session, tile_manager):
+async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
+    feature_store, session, tile_manager, scheduler_fixture
+):
     """
-    Test generate_tiles method in TileSnowflake
+    Test generate_tiles with scheduler
     """
+    tile_scheduler, tile_spec, job_id = scheduler_fixture
+
     schedule_time = datetime.utcnow()
     next_job_time = date_util.get_next_job_datetime(
         input_dt=schedule_time,
         frequency_minutes=tile_spec.frequency_minute,
         time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
     )
-    tile_spec.tile_sql = "SELECT * FROM TEMP_TABLE"
 
     await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
-    job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-    tile_scheduler = TileSchedulerFactory.get_instance()
-    job_ids = tile_scheduler.get_jobs()
-    assert job_id in job_ids
+    job_details = await tile_scheduler.get_job_details(job_id=job_id)
+    assert job_details.name == job_id
+    assert job_details.start_after == next_job_time
+    assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
 
-    job_details = tile_scheduler.get_job_details(job_id=job_id)
-
-    # verifying scheduling trigger
-    interval_trigger = job_details.trigger
-    assert isinstance(interval_trigger, IntervalTrigger)
-    assert interval_trigger.interval == timedelta(minutes=tile_spec.frequency_minute)
-    assert interval_trigger.start_date.strftime("%Y-%m-%d %H:%M:%S") == next_job_time.strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
-
-    # verifying scheduling function
-    await job_details.func()
+    task_executor = TaskExecutor(payload=job_details.kwargs)
+    with mock.patch(
+        "featurebyte.service.feature_store.FeatureStoreService.get_document"
+    ) as mock_feature_store_service:
+        mock_feature_store_service.return_value = feature_store
+        await task_executor.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)
