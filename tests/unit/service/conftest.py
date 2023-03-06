@@ -12,7 +12,6 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte import FeatureJobSetting
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.entity import ParentEntity
