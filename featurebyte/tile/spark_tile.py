@@ -34,6 +34,40 @@ class TileManagerSpark(BaseTileManager):
         """
         super().__init__(session=session, **kw)
 
+    async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
+        """
+        Get existing tile jobs for the given tile_spec
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+
+        Returns
+        -------
+            whether the tile jobs already exist
+        """
+        # TODO: implement this
+        return True
+
+    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> str:
+        """
+        Populate feature store with the given tile_spec and timestamp string
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        job_schedule_ts_str: str
+            timestamp string of the job schedule
+
+        Returns
+        -------
+            generated sql string
+        """
+        # TODO: implement this
+        return ""
+
     async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
         """
         Update <tile_id>_entity_tracker table for last_tile_start_date

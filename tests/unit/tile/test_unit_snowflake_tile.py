@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 from featurebyte.common import date_util
+from featurebyte.feature_manager.sql_template import tm_call_schedule_online_store
 from featurebyte.models.tile import TileSpec, TileType
 
 
@@ -65,6 +66,36 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
     assert tile_spec.time_modulo_frequency_second == 0
     assert tile_spec.blind_spot_second == 3
     assert tile_spec.frequency_minute == 3
+
+
+@pytest.mark.asyncio
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+async def test_tile_job_exists(mock_execute_query, mock_snowflake_tile, tile_manager):
+    """
+    Test tile_job_exists method in TileSnowflake
+    """
+    mock_execute_query.return_value = [{"TASK_NAME": "SHELL_TASK_agg_id1_ONLINE"}]
+    assert await tile_manager.tile_job_exists(mock_snowflake_tile) is True
+
+    mock_execute_query.return_value = []
+    assert await tile_manager.tile_job_exists(mock_snowflake_tile) is False
+
+
+@pytest.mark.asyncio
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+async def test_populate_feature_store(mock_execute_query, mock_snowflake_tile, tile_manager):
+    """
+    Test populate_feature_store method in TileSnowflake
+    """
+    job_schedule_ts_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sql = await tile_manager.populate_feature_store(mock_snowflake_tile, job_schedule_ts_str)
+    expected_sql = textwrap.dedent(
+        tm_call_schedule_online_store.render(
+            aggregation_id=mock_snowflake_tile.aggregation_id,
+            job_schedule_ts_str=job_schedule_ts_str,
+        )
+    ).strip()
+    assert textwrap.dedent(sql).strip() == expected_sql
 
 
 @pytest.mark.asyncio

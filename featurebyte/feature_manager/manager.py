@@ -15,7 +15,6 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.common.tile_util import tile_manager_from_session
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import (
-    tm_call_schedule_online_store,
     tm_delete_online_store_mapping,
     tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
@@ -75,10 +74,8 @@ class FeatureManager(BaseModel):
         # enable tile generation with scheduled jobs
         for tile_spec in feature_spec.feature.tile_specs:
 
-            exist_tasks = await self._session.execute_query(
-                f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
-            )
-            if exist_tasks is None or len(exist_tasks) == 0:
+            tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
+            if not tile_job_exists:
                 # enable online tiles scheduled job
                 await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
@@ -106,11 +103,7 @@ class FeatureManager(BaseModel):
         job_schedule_ts = next_job_time - timedelta(minutes=tile_spec.frequency_minute)
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
 
-        populate_sql = tm_call_schedule_online_store.render(
-            aggregation_id=tile_spec.aggregation_id,
-            job_schedule_ts_str=job_schedule_ts_str,
-        )
-        await self._session.execute_query(populate_sql)
+        await self._tile_manager.populate_feature_store(tile_spec, job_schedule_ts_str)
 
     async def _generate_historical_tiles(self, tile_spec: TileSpec) -> None:
         # generate historical tile_values

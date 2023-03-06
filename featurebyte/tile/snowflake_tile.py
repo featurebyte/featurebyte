@@ -12,6 +12,7 @@ from pydantic import PrivateAttr
 
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
+from featurebyte.feature_manager.sql_template import tm_call_schedule_online_store
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
@@ -54,6 +55,48 @@ class TileManagerSnowflake(BaseTileManager):
         """
         super().__init__(session=session, **kw)
         self._use_snowflake_scheduling = use_snowflake_scheduling
+
+    async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
+        """
+        Get existing tile jobs for the given tile_spec
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+
+        Returns
+        -------
+            whether the tile jobs already exist
+        """
+        exist_tasks = await self._session.execute_query(
+            f"SHOW TASKS LIKE '%{tile_spec.aggregation_id}%'"
+        )
+
+        return exist_tasks is not None and len(exist_tasks) > 0
+
+    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> str:
+        """
+        Populate feature store with the given tile_spec and timestamp string
+
+        Parameters
+        ----------
+        tile_spec: TileSpec
+            the input TileSpec
+        job_schedule_ts_str: str
+            timestamp string of the job schedule
+
+        Returns
+        -------
+            generated sql string
+        """
+        populate_sql = tm_call_schedule_online_store.render(
+            aggregation_id=tile_spec.aggregation_id,
+            job_schedule_ts_str=job_schedule_ts_str,
+        )
+        await self._session.execute_query(populate_sql)
+
+        return populate_sql
 
     async def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
