@@ -12,6 +12,7 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest.fixture(name="features", scope="session")
@@ -56,7 +57,7 @@ def features_fixture(event_data, source_type):
     if source_type == "spark":
         features = [
             feature_group["AMOUNT_SUM_2h"],
-            feature_complex_1,
+            feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
         ]
     else:
         features = [
@@ -123,8 +124,10 @@ async def test_online_serving_sql(features, session, config):
         # Check result is expected
         columns = ["üser id"] + [feature.name for feature in features]
         assert set(online_features.columns.tolist()) == set(columns)
-        pd.testing.assert_frame_equal(
-            df_historical[columns], online_features[columns], check_dtype=False
+        fb_assert_frame_equal(
+            df_historical[columns],
+            online_features[columns],
+            dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"],
         )
 
         # Check online_features route
@@ -158,4 +161,4 @@ def check_online_features_route(feature_list, config, df_historical, columns):
     df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(
         drop=True
     )
-    pd.testing.assert_frame_equal(df_expected, df, check_dtype=False)
+    fb_assert_frame_equal(df_expected, df, dict_like_columns=["EVENT_COUNT_BY_ACTION_24h"])

@@ -72,6 +72,11 @@ class TileManagerDatabricks(BaseTileManager):
             the input TileSpec
         job_schedule_ts_str: str
             timestamp string of the job schedule
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not yet supported
         """
         raise NotImplementedError()
 
