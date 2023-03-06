@@ -512,10 +512,10 @@ class InfoService(BaseService):
         return data_cleaning_operations
 
     @staticmethod
-    def _extract_data_feature_job_setting(
+    def _extract_data_feature_job_settings(
         feature: FeatureModel, data_id_to_name: dict[ObjectId, str]
     ) -> list[DataFeatureJobSetting]:
-        data_feature_job_setting = []
+        data_feature_job_settings = []
         for group_by_node in feature.graph.iterate_nodes(
             target_node=feature.node, node_type=NodeType.GROUPBY
         ):
@@ -532,7 +532,7 @@ class InfoService(BaseService):
             assert data_name is not None, "Event data input node not found"
             assert isinstance(group_by_node, GroupByNode), "GroupBy node expected"
             group_by_node_params = group_by_node.parameters
-            data_feature_job_setting.append(
+            data_feature_job_settings.append(
                 DataFeatureJobSetting(
                     data_name=data_name,
                     feature_job_setting=FeatureJobSetting(
@@ -542,7 +542,7 @@ class InfoService(BaseService):
                     ),
                 )
             )
-        return data_feature_job_setting
+        return data_feature_job_settings
 
     async def get_feature_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         """
@@ -602,16 +602,23 @@ class InfoService(BaseService):
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             feature_job_setting={
-                "this": self._extract_data_feature_job_setting(
+                "this": self._extract_data_feature_job_settings(
                     feature=feature, data_id_to_name=data_id_to_name
                 ),
-                "default": self._extract_data_feature_job_setting(
+                "default": self._extract_data_feature_job_settings(
+                    feature=default_feature, data_id_to_name=data_id_to_name
+                ),
+            },
+            data_cleaning_operation={
+                "this": self._extract_feature_data_cleaning_operations(
+                    feature=feature, data_id_to_name=data_id_to_name
+                ),
+                "default": self._extract_feature_data_cleaning_operations(
                     feature=default_feature, data_id_to_name=data_id_to_name
                 ),
             },
             versions_info=versions_info,
             metadata=metadata,
-            data_cleaning_operations=data_cleaning_operations,
         )
 
     async def get_feature_namespace_info(

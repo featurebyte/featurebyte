@@ -16,7 +16,9 @@ from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import (
+    DataCleaningOperationComparison,
     FeatureBriefInfo,
+    FeatureJobSettingComparison,
     FeatureNewVersionCreate,
     ReadinessComparison,
     VersionComparison,
@@ -299,6 +301,16 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         },
         "post_aggregation": None,
     }
+    data_feature_job_setting = [
+        {
+            "data_name": "sf_event_data",
+            "feature_job_setting": {
+                "blind_spot": "600s",
+                "frequency": "1800s",
+                "time_modulo_frequency": "300s",
+            },
+        }
+    ]
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[
@@ -316,11 +328,14 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             default=production_ready_feature.version.to_str(),
         ),
         readiness=ReadinessComparison(this="PRODUCTION_READY", default="PRODUCTION_READY"),
+        data_cleaning_operation=DataCleaningOperationComparison(this=[], default=[]),
+        feature_job_setting=FeatureJobSettingComparison(
+            this=data_feature_job_setting, default=data_feature_job_setting
+        ),
         metadata=expected_metadata,
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
         workspace_name="default",
-        data_cleaning_operations=[],
     )
     assert info == expected_info
 
@@ -425,16 +440,16 @@ def expected_feature_iet_info_fixture(feature_iet):
             this=feature_iet.version.to_str(),
             default=feature_iet.version.to_str(),
         ),
+        readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
         feature_job_setting={
             "this": [data_feature_job_setting, data_feature_job_setting],
             "default": [data_feature_job_setting, data_feature_job_setting],
         },
-        readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
+        data_cleaning_operation={"this": [], "default": []},
         metadata=expected_metadata,
         created_at=feature_iet.created_at,
         updated_at=feature_iet.updated_at,
         workspace_name="default",
-        data_cleaning_operations={"this": [], "default": []},
     )
 
 
@@ -480,7 +495,7 @@ async def test_get_feature_info__complex_feature_with_cdi(
         **expected_feature_iet_info.dict(),
         "created_at": info.created_at,
         "updated_at": info.updated_at,
-        "data_cleaning_operations": {
+        "data_cleaning_operation": {
             "this": [
                 {
                     "data_name": "sf_event_data",

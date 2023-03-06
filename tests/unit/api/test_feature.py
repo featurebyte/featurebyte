@@ -302,6 +302,14 @@ def test_info(saved_feature):
     Test info
     """
     info_dict = saved_feature.info()
+    data_feature_job_setting = {
+        "data_name": "sf_event_data",
+        "feature_job_setting": {
+            "blind_spot": "600s",
+            "frequency": "1800s",
+            "time_modulo_frequency": "300s",
+        },
+    }
     expected_info = {
         "name": "sum_1d",
         "dtype": "FLOAT",
@@ -309,6 +317,11 @@ def test_info(saved_feature):
             {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
         ],
         "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
+        "feature_job_setting": {
+            "this": [data_feature_job_setting],
+            "default": [data_feature_job_setting],
+        },
+        "data_cleaning_operation": {"this": [], "default": []},
         "default_version_mode": "AUTO",
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},

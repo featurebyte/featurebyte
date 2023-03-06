@@ -144,7 +144,7 @@ class BaseColumn(FeatureByteBaseModel):
             node_kwargs["node_names"].add(graph_node_name)
             node_kwargs["node_name"] = graph_node_name
             if hasattr(self, "transforms"):
-                node_kwargs["transforms"] = [graph_node_transform]
+                node_kwargs["transforms"] = [graph_node_transform] if graph_node_transform else []
         return self.clone(**node_kwargs, **kwargs)
 
 
