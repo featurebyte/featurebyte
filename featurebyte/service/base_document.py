@@ -275,7 +275,7 @@ class BaseDocumentService(
                 f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
             )
             raise DocumentNotFoundError(exception_detail)
-        return num_of_records_deleted
+        return int(num_of_records_deleted)
 
     def _construct_list_query_filter(
         self,
