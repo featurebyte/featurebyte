@@ -7,11 +7,13 @@ from typing import Any, Dict, Optional, Type, TypeVar
 
 from bson.objectid import ObjectId
 
+from featurebyte import DataCleaningOperation
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import DataModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
@@ -504,6 +506,26 @@ class InfoService(BaseService):
         FeatureInfo
         """
         feature = await self.feature_service.get_document(document_id=document_id)
+        data_id_to_name = {
+            doc["_id"]: doc["name"]
+            async for doc in self.data_service.list_documents_iterator(
+                query_filter={"_id": {"$in": feature.tabular_data_ids}}
+            )
+        }
+
+        data_cleaning_operations: list[DataCleaningOperation] = []
+        for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
+            graph_node_types=GraphNodeType.view_graph_node_types()
+        ):
+            view_metadata = view_graph_node.parameters.metadata
+            if view_metadata.column_cleaning_operations:
+                data_cleaning_operations.append(
+                    DataCleaningOperation(
+                        data_name=data_id_to_name[view_metadata.data_id],
+                        column_cleaning_operations=view_metadata.column_cleaning_operations,
+                    )
+                )
+
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,
@@ -537,6 +559,7 @@ class InfoService(BaseService):
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             versions_info=versions_info,
             metadata=metadata,
+            data_cleaning_operations=data_cleaning_operations,
         )
 
     async def get_feature_namespace_info(
