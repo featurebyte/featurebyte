@@ -261,7 +261,6 @@ class DataUpdateService(BaseService):
             await self.relationship_info_service.remove_relationship(
                 primary_entity_id=PydanticObjectId(primary_entity_id),
                 related_entity_id=removed_parent_entity_id,
-                user_id=DEFAULT_USER_ID,
             )
 
     async def _add_new_child_parent_relationships(

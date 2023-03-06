@@ -231,6 +231,52 @@ class BaseDocumentService(
             raise DocumentNotFoundError(exception_detail)
         return self.document_class(**document_dict)
 
+    async def delete_document(
+        self,
+        document_id: ObjectId,
+        exception_detail: Optional[str] = None,
+        use_raw_query_filter: bool = False,
+        **kwargs: Any,
+    ) -> int:
+        """
+        Delete document dictionary given document id
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        exception_detail: Optional[str]
+            Exception detail message
+        use_raw_query_filter: bool
+            Use only provided query filter
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        int
+            number of records deleted
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the requested document not found
+        """
+        query_filter = self._construct_get_query_filter(
+            document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
+        )
+        num_of_records_deleted = await self.persistent.delete_one(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
+        )
+        if not num_of_records_deleted:
+            exception_detail = exception_detail or (
+                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
+            )
+            raise DocumentNotFoundError(exception_detail)
+        return num_of_records_deleted
+
     def _construct_list_query_filter(
         self,
         query_filter: Optional[Dict[str, Any]] = None,
