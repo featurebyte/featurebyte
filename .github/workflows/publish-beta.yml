@@ -85,10 +85,14 @@ jobs:
       - name: Bump Version
         run: |
           poetry version -- ${{ github.event.inputs.version }}
-      - name: Replace docker-compose image tag
+      - name: Replace docker-compose image tag (server)
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.services.featurebyte-server.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
+      - name: Replace docker-compose image tag (worker)
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.services.featurebyte-worker.image = "${{ env.IMAGE_REPO }}:${{ github.event.inputs.version }}"' featurebyte/docker/featurebyte.yml
       - name: Authenticate to Google Cloud
         id: 'auth'
         uses: 'google-github-actions/auth@v1'
