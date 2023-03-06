@@ -68,7 +68,11 @@ class TileScheduleOnlineStore(BaseModel):
 
             logger.debug(f"{f_name}, {fs_table}, {f_entity_columns}, {f_value_type}")
 
-            entity_columns = [col.replace('"', "") for col in f_entity_columns.split(",")]
+            entity_columns = (
+                [col.replace('"', "") for col in f_entity_columns.split(",")]
+                if f_entity_columns
+                else []
+            )
             fs_table_exist_flag = True
             try:
                 await self._spark.execute_query(f"select * from {fs_table} limit 1")
@@ -114,12 +118,14 @@ class TileScheduleOnlineStore(BaseModel):
 
                 # update or insert feature values for entities that are in entity universe
                 if entity_columns:
+                    on_condition_str = entity_filter_cols_str
                     values_args = f"{entity_insert_cols_str}, b.`{f_name}`"
                 else:
+                    on_condition_str = "true"
                     values_args = f"b.`{f_name}`"
                 merge_sql = f"""
                     merge into {fs_table} a using ({f_sql}) b
-                        on {entity_filter_cols_str}
+                        on {on_condition_str}
                         when matched then
                             update set a.{f_name} = b.{f_name}
                         when not matched then
