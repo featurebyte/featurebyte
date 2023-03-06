@@ -51,13 +51,19 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     }
     Map<String, Object> counts;
     Map<String, Object> countsOther;
+    ObjectInspectorConverters.Converter converter;
+    ObjectInspectorConverters.Converter converterOther;
     if (counts1.size() < counts2.size()) {
       counts = counts1;
       countsOther = counts2;
+      converter = converters[1];
+      converterOther = otherConverters[1];
     }
     else {
       counts = counts2;
       countsOther = counts1;
+      converter = otherConverters[1];
+      converterOther = converters[1];
     }
 
     double dotProduct = 0.0;
@@ -65,10 +71,10 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     double normOther = 0.0;
 
     for (Map.Entry<String, Object> set : counts.entrySet()) {
-      double value = ((DoubleWritable) converters[1].convert(set.getValue())).get();
+      double value = ((DoubleWritable) converter.convert(set.getValue())).get();
       Object objectOther = countsOther.getOrDefault(set.getKey(), null);
       if (objectOther != null) {
-        double valueOther = ((DoubleWritable) otherConverters[1].convert(objectOther)).get();
+        double valueOther = ((DoubleWritable) converterOther.convert(objectOther)).get();
         dotProduct = dotProduct + value * valueOther;
         normOther += valueOther * valueOther;
       }
@@ -78,7 +84,7 @@ public class CountDictCosineSimilarity extends CountDictUDF {
     Set<String> keySet = countsOther.keySet();
     keySet.removeAll(counts.keySet());
     for (String k : keySet) {
-      double value = ((DoubleWritable) otherConverters[1].convert(countsOther.get(k))).get();
+      double value = ((DoubleWritable) converterOther.convert(countsOther.get(k))).get();
       normOther += value * value;
     }
 
