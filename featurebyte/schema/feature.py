@@ -120,6 +120,33 @@ class VersionComparison(FeatureByteBaseModel):
         return cls(this=this.to_str(), default=default.to_str())
 
 
+class DataFeatureJobSetting(FeatureByteBaseModel):
+    """
+    Data feature job setting schema
+    """
+
+    data_name: str
+    feature_job_setting: FeatureJobSetting
+
+
+class FeatureJobSettingComparison(FeatureByteBaseModel):
+    """
+    Data feature job setting comparison schema
+    """
+
+    this: List[DataFeatureJobSetting]
+    default: List[DataFeatureJobSetting]
+
+
+class DataCleaningOperationComparison(FeatureByteBaseModel):
+    """
+    Data cleaning operation comparison schema
+    """
+
+    this: List[DataCleaningOperation]
+    default: List[DataCleaningOperation]
+
+
 class FeatureBriefInfo(FeatureByteBaseModel):
     """
     Feature brief info schema

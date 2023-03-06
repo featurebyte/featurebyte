@@ -401,6 +401,14 @@ def expected_feature_iet_info_fixture(feature_iet):
             "transforms": ["mul(value=-1)", "div", "add(value=0.1)", "log", "add"],
         },
     }
+    data_feature_job_setting = {
+        "data_name": "sf_event_data",
+        "feature_job_setting": {
+            "blind_spot": "10800s",
+            "frequency": "21600s",
+            "time_modulo_frequency": "10800s",
+        },
+    }
     return FeatureInfo(
         name="iet_entropy_24h",
         entities=[
@@ -417,12 +425,16 @@ def expected_feature_iet_info_fixture(feature_iet):
             this=feature_iet.version.to_str(),
             default=feature_iet.version.to_str(),
         ),
+        feature_job_setting={
+            "this": [data_feature_job_setting, data_feature_job_setting],
+            "default": [data_feature_job_setting, data_feature_job_setting],
+        },
         readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
         metadata=expected_metadata,
         created_at=feature_iet.created_at,
         updated_at=feature_iet.updated_at,
         workspace_name="default",
-        data_cleaning_operations=[],
+        data_cleaning_operations={"this": [], "default": []},
     )
 
 
@@ -468,17 +480,20 @@ async def test_get_feature_info__complex_feature_with_cdi(
         **expected_feature_iet_info.dict(),
         "created_at": info.created_at,
         "updated_at": info.updated_at,
-        "data_cleaning_operations": [
-            {
-                "data_name": "sf_event_data",
-                "column_cleaning_operations": [
-                    {
-                        "column_name": "cust_id",
-                        "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
-                    }
-                ],
-            }
-        ],
+        "data_cleaning_operations": {
+            "this": [
+                {
+                    "data_name": "sf_event_data",
+                    "column_cleaning_operations": [
+                        {
+                            "column_name": "cust_id",
+                            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+                        }
+                    ],
+                }
+            ],
+            "default": [],
+        },
         "version": {**expected_version.dict(), "this": new_version.version.to_str()},
         "version_count": 2,
     }

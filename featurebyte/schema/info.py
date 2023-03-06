@@ -21,11 +21,16 @@ from featurebyte.models.feature_list import (
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.feature import FeatureBriefInfoList, ReadinessComparison, VersionComparison
+from featurebyte.schema.feature import (
+    DataCleaningOperationComparison,
+    FeatureBriefInfoList,
+    FeatureJobSettingComparison,
+    ReadinessComparison,
+    VersionComparison,
+)
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
 
 
@@ -240,9 +245,10 @@ class FeatureInfo(FeatureNamespaceInfo):
     dtype: DBVarType
     version: VersionComparison
     readiness: ReadinessComparison
+    feature_job_setting: FeatureJobSettingComparison
+    data_cleaning_operation: DataCleaningOperationComparison
     versions_info: Optional[FeatureBriefInfoList]
     metadata: Any
-    data_cleaning_operations: List[DataCleaningOperation]
 
 
 class FeatureListBriefInfo(FeatureByteBaseModel):

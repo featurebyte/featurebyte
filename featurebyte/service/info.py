@@ -10,13 +10,16 @@ from bson.objectid import ObjectId
 from featurebyte import DataCleaningOperation
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import DataModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.schema.feature import FeatureBriefInfoList
+from featurebyte.schema.feature import DataFeatureJobSetting, FeatureBriefInfoList
 from featurebyte.schema.info import (
     DataBriefInfoList,
     DimensionDataInfo,
@@ -490,6 +493,57 @@ class InfoService(BaseService):
             "post_aggregation": post_aggregation,
         }
 
+    @staticmethod
+    def _extract_feature_data_cleaning_operations(
+        feature: FeatureModel, data_id_to_name: dict[ObjectId, str]
+    ) -> list[DataCleaningOperation]:
+        data_cleaning_operations: list[DataCleaningOperation] = []
+        for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
+            graph_node_types=GraphNodeType.view_graph_node_types()
+        ):
+            view_metadata = view_graph_node.parameters.metadata  # type: ignore
+            if view_metadata.column_cleaning_operations:
+                data_cleaning_operations.append(
+                    DataCleaningOperation(
+                        data_name=data_id_to_name[view_metadata.data_id],
+                        column_cleaning_operations=view_metadata.column_cleaning_operations,
+                    )
+                )
+        return data_cleaning_operations
+
+    @staticmethod
+    def _extract_data_feature_job_setting(
+        feature: FeatureModel, data_id_to_name: dict[ObjectId, str]
+    ) -> list[DataFeatureJobSetting]:
+        data_feature_job_setting = []
+        for group_by_node in feature.graph.iterate_nodes(
+            target_node=feature.node, node_type=NodeType.GROUPBY
+        ):
+            # find event data input node
+            data_name = None
+            for input_node in feature.graph.iterate_nodes(
+                target_node=group_by_node, node_type=NodeType.INPUT
+            ):
+                assert isinstance(input_node, InputNode), "Input node expected"
+                if input_node.parameters.type == TableDataType.EVENT_DATA:
+                    assert input_node.parameters.id is not None
+                    data_name = data_id_to_name[input_node.parameters.id]
+
+            assert data_name is not None, "Event data input node not found"
+            assert isinstance(group_by_node, GroupByNode), "GroupBy node expected"
+            group_by_node_params = group_by_node.parameters
+            data_feature_job_setting.append(
+                DataFeatureJobSetting(
+                    data_name=data_name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot=f"{group_by_node_params.blind_spot}s",
+                        frequency=f"{group_by_node_params.frequency}s",
+                        time_modulo_frequency=f"{group_by_node_params.time_modulo_frequency}s",
+                    ),
+                )
+            )
+        return data_feature_job_setting
+
     async def get_feature_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         """
         Get feature info
@@ -512,19 +566,9 @@ class InfoService(BaseService):
                 query_filter={"_id": {"$in": feature.tabular_data_ids}}
             )
         }
-
-        data_cleaning_operations: list[DataCleaningOperation] = []
-        for view_graph_node in feature.graph.iterate_sorted_graph_nodes(
-            graph_node_types=GraphNodeType.view_graph_node_types()
-        ):
-            view_metadata = view_graph_node.parameters.metadata
-            if view_metadata.column_cleaning_operations:
-                data_cleaning_operations.append(
-                    DataCleaningOperation(
-                        data_name=data_id_to_name[view_metadata.data_id],
-                        column_cleaning_operations=view_metadata.column_cleaning_operations,
-                    )
-                )
+        data_cleaning_operations = self._extract_feature_data_cleaning_operations(
+            feature=feature, data_id_to_name=data_id_to_name
+        )
 
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
@@ -557,6 +601,14 @@ class InfoService(BaseService):
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
+            feature_job_setting={
+                "this": self._extract_data_feature_job_setting(
+                    feature=feature, data_id_to_name=data_id_to_name
+                ),
+                "default": self._extract_data_feature_job_setting(
+                    feature=default_feature, data_id_to_name=data_id_to_name
+                ),
+            },
             versions_info=versions_info,
             metadata=metadata,
             data_cleaning_operations=data_cleaning_operations,
