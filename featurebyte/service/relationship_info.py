@@ -37,18 +37,23 @@ class RelationshipInfoService(
         ------
         DocumentNotFoundError
         """
-        result = await self.persistent.find_one(
-            collection_name=self.collection_name,
+        result = await self.list_documents(
             query_filter={
                 "primary_entity_id": primary_entity_id,
                 "related_entity_id": related_entity_id,
             },
         )
-        if not result:
+        data = result["data"]
+        if not data:
+            # Note that throwing an error here means that this function is not idempotent - meaning that repeated calls
+            # to this function will return different results, as one call might succeed, and others would fail.
+            # However, given that this function is only called from the user-initiated API, this is probably fine to
+            # do for now to raise a more informative user error.
+            # Alternatively, we could also make the caller's idempotent by catching this error and ignoring it there
+            # in the future.
             raise DocumentNotFoundError(
                 f"Relationship not found for primary entity {primary_entity_id} "
                 f"and related entity {related_entity_id}."
             )
-        await self.delete_document(
-            document_id=result["_id"],
-        )
+        assert len(data) == 1
+        await self.delete_document(document_id=data[0]["_id"])
