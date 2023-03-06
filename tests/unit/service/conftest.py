@@ -12,6 +12,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte import FeatureJobSetting
 from featurebyte.enum import SemanticType, SourceType
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
 from featurebyte.models.entity import ParentEntity
@@ -375,7 +376,7 @@ async def feature_non_time_based_fixture(
 async def production_ready_feature_fixture(feature_readiness_service, feature):
     """Production ready readiness feature fixture"""
     prod_feat = await feature_readiness_service.update_feature(
-        feature_id=feature.id, readiness="PRODUCTION_READY"
+        feature_id=feature.id, readiness="PRODUCTION_READY", ignore_guardrails=True
     )
     assert prod_feat.readiness == "PRODUCTION_READY"
     return prod_feat

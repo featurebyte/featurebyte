@@ -259,7 +259,7 @@ def test_get_cleaning_node_from_feature_graph(feature_with_cleaning_operations):
         {
             "name": "project_1",
             "output_type": "series",
-            "parameters": {"columns": ["col_int"]},
+            "parameters": {"columns": ["col_float"]},
             "type": "project",
         },
         {"name": "is_null_1", "output_type": "series", "parameters": {}, "type": "is_null"},
@@ -272,13 +272,13 @@ def test_get_cleaning_node_from_feature_graph(feature_with_cleaning_operations):
         {
             "name": "cast_1",
             "output_type": "series",
-            "parameters": {"from_dtype": "INT", "type": "int"},
+            "parameters": {"from_dtype": "FLOAT", "type": "float"},
             "type": "cast",
         },
         {
             "name": "assign_1",
             "output_type": "frame",
-            "parameters": {"name": "col_int", "value": None},
+            "parameters": {"name": "col_float", "value": None},
             "type": "assign",
         },
     ]

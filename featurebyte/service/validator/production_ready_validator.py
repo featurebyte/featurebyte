@@ -305,7 +305,7 @@ class ProductionReadyValidator:
         input_node = input_data.construct_input_node(
             data_input_node.parameters.feature_store_details
         )
-        return input_data.construct_cleaning_recipe_node(input_node)
+        return input_data.construct_cleaning_recipe_node(input_node, [])
 
     @staticmethod
     def _diff_cleaning_nodes(
