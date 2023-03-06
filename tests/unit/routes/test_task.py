@@ -2,13 +2,12 @@
 Test for TaskStatus route
 """
 from http import HTTPStatus
-from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
 from featurebyte.service.task_manager import TaskManager
 from tests.util.task import LongRunningPayload
 
@@ -22,9 +21,9 @@ class TestTaskStatusApi:
     @pytest.fixture
     def task_manager(self, user_id, persistent):
         """Task manager fixture"""
-        with patch("featurebyte.service.task_manager.get_persistent") as mock_get_persistent:
-            mock_get_persistent.return_value = persistent
-            yield TaskManager(user_id=user_id)
+        yield TaskManager(
+            user=User(id=user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        )
 
     @pytest_asyncio.fixture
     async def task_status_id(self, user_id, task_manager):

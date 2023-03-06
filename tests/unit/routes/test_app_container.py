@@ -25,7 +25,9 @@ def app_container_constructor_params_fixture(persistent):
         "persistent": persistent,
         "temp_storage": get_temp_storage(),
         "storage": get_storage(),
-        "task_manager": TaskManager(user_id=user.id),
+        "task_manager": TaskManager(
+            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        ),
         "workspace_id": DEFAULT_WORKSPACE_ID,
     }
 
