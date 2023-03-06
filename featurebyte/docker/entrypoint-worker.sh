@@ -20,8 +20,16 @@ setup_permissions() {
 
   if [ "$(id -u)" = '0' ]; then
     echo "Creating user runner:runnergroup (uid:gid ${HOST_UID}:${HOST_GID})"
-    groupadd -g "${HOST_GID}" "${NON_PRIVGROUP}" -o
-    useradd -g "${HOST_GID}" -u "${HOST_UID}" -o -M -d /app -r "${NON_PRIVUSER}"
+    if [ "$(getent group runnergroup)" ]; then
+      echo "group exists."
+    else
+      groupadd -g "${HOST_GID}" "${NON_PRIVGROUP}" -o
+    fi
+    if [ "$(getent passwd runner)" ]; then
+      echo "user exists."
+    else
+      useradd -g "${HOST_GID}" -u "${HOST_UID}" -o -M -d /app -r "${NON_PRIVUSER}"
+    fi
     chown -R "${HOST_UID}:${HOST_GID}" /app
   fi
 }
