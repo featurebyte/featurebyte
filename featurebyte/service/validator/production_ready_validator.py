@@ -231,8 +231,10 @@ class ProductionReadyValidator:
             input_event_data_id
         )
         if data_source_feature_job_setting is None:
-            return {}
-        if current_feature_job_setting.to_seconds() != data_source_feature_job_setting.to_seconds():
+            raise ValueError(
+                f"no feature job setting found for input data ID {input_event_data_id}"
+            )
+        if current_feature_job_setting != data_source_feature_job_setting:
             return {
                 "default": data_source_feature_job_setting,
                 "feature": current_feature_job_setting,
