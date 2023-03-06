@@ -676,6 +676,11 @@ def feature_group_fixture(
     """
     FeatureList fixture
     """
+    snowflake_event_data_with_entity.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            **feature_group_feature_job_setting,
+        )
+    )
     global_graph = GlobalQueryGraph()
     assert id(global_graph.nodes) == id(grouped_event_view.view_obj.graph.nodes)
     feature_group = grouped_event_view.aggregate_over(
