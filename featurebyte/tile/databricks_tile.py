@@ -12,6 +12,7 @@ from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.tile.base import BaseTileManager
@@ -26,7 +27,9 @@ class TileManagerDatabricks(BaseTileManager):
     _jobs_api: JobsApi = PrivateAttr()
     _runs_api: RunsApi = PrivateAttr()
 
-    def __init__(self, session: BaseSession, **kw: Any) -> None:
+    def __init__(
+        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+    ) -> None:
         """
         Custom constructor for TileManagerDatabricks to instantiate a datasource session
 
@@ -34,10 +37,12 @@ class TileManagerDatabricks(BaseTileManager):
         ----------
         session: BaseSession
             input session for datasource
+        task_manager: Optional[TaskManager]
+            input task manager
         kw: Any
             constructor arguments
         """
-        super().__init__(session=session, **kw)
+        super().__init__(session=session, task_manager=task_manager, **kw)
 
         api_client = ApiClient(
             host=f"https://{self._session.server_hostname}", token=self._session.access_token

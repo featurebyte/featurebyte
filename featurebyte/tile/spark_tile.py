@@ -7,6 +7,7 @@ from pydantic import PrivateAttr
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.session.spark import SparkSession
 from featurebyte.sql.spark.tile_generate import TileGenerate
@@ -22,7 +23,9 @@ class TileManagerSpark(BaseTileManager):
 
     _session: SparkSession = PrivateAttr()
 
-    def __init__(self, session: BaseSession, **kw: Any) -> None:
+    def __init__(
+        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+    ) -> None:
         """
         Custom constructor for TileManagerSpark to instantiate a datasource session
 
@@ -30,10 +33,12 @@ class TileManagerSpark(BaseTileManager):
         ----------
         session: BaseSession
             input session for datasource
+        task_manager: Optional[TaskManager]
+            input task manager
         kw: Any
             constructor arguments
         """
-        super().__init__(session=session, **kw)
+        super().__init__(session=session, task_manager=task_manager, **kw)
 
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
         """

@@ -11,6 +11,8 @@ from uuid import UUID
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import DocumentNotFoundError
+from featurebyte.logger import logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
@@ -299,6 +301,42 @@ class TaskManager(AbstractTaskManager):
         )
         return await periodic_task_service.get_document(document_id=periodic_task_id)
 
+    async def get_periodic_task_by_name(self, name: str) -> PeriodicTask:
+        """
+        Retrieve periodic task
+
+        Parameters
+        ----------
+        name: str
+            name of the periodic task
+
+        Raises
+        -------
+        DocumentNotFoundError
+            If document is not found
+
+        Returns
+        -------
+        PeriodicTask
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+
+        result = await periodic_task_service.list_documents(
+            page=1,
+            page_size=0,
+            query_filter={"name": name},
+        )
+
+        data = result["data"]
+        if not data:
+            raise DocumentNotFoundError(f"Document with name {name} not found")
+
+        return PeriodicTask(**data[0])
+
     async def delete_periodic_task(self, periodic_task_id: ObjectId) -> None:
         """
         Delete periodic task
@@ -314,3 +352,29 @@ class TaskManager(AbstractTaskManager):
             workspace_id=self.workspace_id,
         )
         await periodic_task_service.delete_document(document_id=periodic_task_id)
+
+    async def delete_periodic_task_by_name(self, name: str) -> None:
+        """
+        Delete periodic task by name
+
+        Parameters
+        ----------
+        name: str
+            Document Name
+        """
+        periodic_task_service = PeriodicTaskService(
+            user=self.user,
+            persistent=self.persistent,
+            workspace_id=self.workspace_id,
+        )
+        result = await periodic_task_service.list_documents(
+            page=1,
+            page_size=0,
+            query_filter={"name": name},
+        )
+
+        data = result["data"]
+        if not data:
+            logger.error(f"Document with name {name} not found")
+        else:
+            await periodic_task_service.delete_document(document_id=data[0]["_id"])

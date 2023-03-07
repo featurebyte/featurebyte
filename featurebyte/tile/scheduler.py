@@ -1,25 +1,16 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datetime import datetime
 
-from apscheduler.job import Job
-from apscheduler.jobstores.base import JobLookupError
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from bson import ObjectId
 from pydantic import BaseModel, PrivateAttr
 
-from featurebyte.logger import logger
-
-JOB_STORES: Dict[str, Any] = {
-    "default": MemoryJobStore(),
-    "local": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite"),
-    # "mongo": MongoDBJobStore(),
-}
+from featurebyte.models.periodic_task import Interval, PeriodicTask
+from featurebyte.schema.worker.task.tile import TileTaskPayload
+from featurebyte.service.task_manager import TaskManager
 
 
 class TileScheduler(BaseModel):
@@ -27,34 +18,31 @@ class TileScheduler(BaseModel):
     FeatureByte Scheduler using apscheduler
     """
 
-    _scheduler: AsyncIOScheduler = PrivateAttr()
-    _job_store: str = PrivateAttr()
-    _tile_scheduler_map: Dict[str, Any] = PrivateAttr()
+    _task_manager: TaskManager = PrivateAttr()
 
-    def __init__(self, job_store: str = "default", **kw: Any) -> None:
+    def __init__(self, task_manager: TaskManager, **kw: Any) -> None:
         """
         Instantiate TileScheduler instance
 
         Parameters
         ----------
-        job_store: str
-            target job store name
+        task_manager: TaskManager
+            Task Manager instance
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
-        self._job_store = job_store
-        self._scheduler = AsyncIOScheduler(jobstores=JOB_STORES)
-        self._scheduler.start()
+        self._task_manager = task_manager
 
-    def start_job_with_interval(
+    async def start_job_with_interval(
         self,
         job_id: str,
         interval_seconds: int,
-        start_from: datetime,
-        func: Any,
-        args: Optional[List[Any]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
+        start_after: datetime,
+        instance: Any,
+        user_id: ObjectId,
+        feature_store_id: ObjectId,
+        workspace_id: ObjectId,
     ) -> None:
         """
         Start job with Interval seconds
@@ -65,28 +53,36 @@ class TileScheduler(BaseModel):
             job id
         interval_seconds: int
             interval between runs
-        start_from: datetime
+        start_after: datetime
             starting point for the interval calculation
-        func: Any
-            function to be triggered periodically
-        args: Optional[List[Any]]
-            args to func
-        kwargs: Optional[Dict[str, Any]]
-            kwargs to func
+        instance: Any
+            instance of the class to be run
+        user_id: ObjectId
+            user id
+        feature_store_id: ObjectId
+            feature store id
+        workspace_id: ObjectId
+            workspace id
         """
-        interval_trigger = IntervalTrigger(
-            start_date=start_from, seconds=interval_seconds, timezone="utc"
-        )
-        self._scheduler.add_job(
-            id=job_id,
-            jobstore=self._job_store,
-            func=func,
-            args=args,
-            kwargs=kwargs,
-            trigger=interval_trigger,
+
+        payload = TileTaskPayload(
+            name=job_id,
+            module_path=instance.__class__.__module__,
+            class_name=instance.__class__.__name__,
+            instance_str=instance.json(),
+            user_id=user_id,
+            feature_store_id=feature_store_id,
+            workspace_id=workspace_id,
         )
 
-    def stop_job(self, job_id: str) -> None:
+        await self._task_manager.schedule_interval_task(
+            name=job_id,
+            payload=payload,
+            interval=Interval(every=interval_seconds, period="seconds"),
+            start_after=start_after,
+        )
+
+    async def stop_job(self, job_id: str) -> None:
         """
         Stop job
 
@@ -95,13 +91,9 @@ class TileScheduler(BaseModel):
         job_id: str
             job id to be stopped
         """
-        try:
-            self._scheduler.remove_job(job_id=job_id, jobstore=self._job_store)
-            logger.info(f"{job_id} removed successfully")
-        except JobLookupError:
-            logger.warning(f"{job_id} does not exist")
+        await self._task_manager.delete_periodic_task_by_name(job_id)
 
-    def get_job_details(self, job_id: str) -> Job:
+    async def get_job_details(self, job_id: str) -> PeriodicTask:
         """
         Get Jobs from input job store
 
@@ -114,46 +106,4 @@ class TileScheduler(BaseModel):
         ----------
             Job Instance
         """
-        return self._scheduler.get_job(job_id=job_id)
-
-    def get_jobs(self) -> List[str]:
-        """
-        Get Jobs from input job store
-
-        Returns
-        ----------
-            List of job ids
-        """
-        jobs = self._scheduler.get_jobs(jobstore=self._job_store)
-        return [job.id for job in jobs]
-
-
-class TileSchedulerFactory:
-    """
-    Factory for TileScheduler
-    """
-
-    tile_scheduler_map: Dict[str, TileScheduler] = {}
-
-    @classmethod
-    def get_instance(cls, job_store: Optional[str] = None) -> TileScheduler:
-        """
-        Retrieve corresponding TileScheduler instance
-
-        Parameters
-        ----------
-        job_store: Optional[str]
-            input job store name
-
-        Returns
-        -------
-            TileScheduler instance based on input job_store
-        """
-        if not cls.tile_scheduler_map:
-            for j_store in JOB_STORES:
-                cls.tile_scheduler_map[j_store] = TileScheduler(job_store=j_store)
-
-        if not job_store:
-            job_store = "default"
-
-        return cls.tile_scheduler_map[job_store]
+        return await self._task_manager.get_periodic_task_by_name(name=job_id)

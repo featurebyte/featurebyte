@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from bson.objectid import ObjectId
+from pydantic import PrivateAttr
 
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -22,6 +23,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 
 
@@ -30,6 +32,8 @@ class OnlineEnableService(BaseService):
     OnlineEnableService class is responsible for maintaining the feature & feature list structure
     of feature online enablement.
     """
+
+    _task_manager: TaskManager = PrivateAttr()
 
     def __init__(
         self,
@@ -50,6 +54,9 @@ class OnlineEnableService(BaseService):
             user=user, persistent=persistent, workspace_id=workspace_id
         )
         self.feature_list_service = FeatureListService(
+            user=user, persistent=persistent, workspace_id=workspace_id
+        )
+        self._task_manager = TaskManager(
             user=user, persistent=persistent, workspace_id=workspace_id
         )
 
@@ -136,7 +143,7 @@ class OnlineEnableService(BaseService):
 
     @staticmethod
     async def update_data_warehouse_with_session(
-        session: BaseSession, feature: FeatureModel
+        session: BaseSession, feature: FeatureModel, task_manager: Optional[TaskManager] = None
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -148,6 +155,8 @@ class OnlineEnableService(BaseService):
             Session object
         feature: FeatureModel
             Updated Feature object
+        task_manager: Optional[TaskManager]
+            TaskManager object
         """
         extended_feature_model = ExtendedFeatureModel(**feature.dict())
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
@@ -155,7 +164,7 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        feature_manager = FeatureManager(session)
+        feature_manager = FeatureManager(session=session, task_manager=task_manager)
 
         if feature.online_enabled:
             await feature_manager.online_enable(online_feature_spec)
@@ -189,7 +198,9 @@ class OnlineEnableService(BaseService):
         session = await self.session_manager_service.get_feature_store_session(
             feature_store_model, get_credential
         )
-        await self.update_data_warehouse_with_session(session=session, feature=updated_feature)
+        await self.update_data_warehouse_with_session(
+            session=session, feature=updated_feature, task_manager=self._task_manager
+        )
 
     async def update_feature(
         self,

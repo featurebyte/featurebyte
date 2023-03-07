@@ -3,7 +3,7 @@ Feature Manager class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from datetime import datetime, timedelta, timezone
 
@@ -26,6 +26,7 @@ from featurebyte.logger import logger
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import BaseTileManager
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -40,7 +41,9 @@ class FeatureManager(BaseModel):
     _tile_manager: BaseTileManager = PrivateAttr()
     _adapter: BaseAdapter = PrivateAttr()
 
-    def __init__(self, session: BaseSession, **kw: Any) -> None:
+    def __init__(
+        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+    ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
 
@@ -48,13 +51,15 @@ class FeatureManager(BaseModel):
         ----------
         session: BaseSession
             input session for datasource
+        task_manager: Optional[TaskManager]
+            input task manager
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
         self._session = session
-        self._tile_manager = tile_manager_from_session(session)
         self._adapter = get_sql_adapter(session.source_type)
+        self._tile_manager = tile_manager_from_session(session, task_manager)
 
     async def online_enable(
         self, feature_spec: OnlineFeatureSpec, schedule_time: datetime = datetime.utcnow()
@@ -80,6 +85,10 @@ class FeatureManager(BaseModel):
             tile_job_exists = await self._tile_manager.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 # enable online tiles scheduled job
+                tile_spec.user_id = feature_spec.feature.user_id
+                tile_spec.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
+                tile_spec.workspace_id = feature_spec.feature.workspace_id
+
                 await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time
                 )
