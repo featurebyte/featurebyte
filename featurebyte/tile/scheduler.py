@@ -8,11 +8,9 @@ from datetime import datetime
 from bson import ObjectId
 from pydantic import BaseModel, PrivateAttr
 
-from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.utils.persistent import get_persistent
 
 
 class TileScheduler(BaseModel):
@@ -22,23 +20,19 @@ class TileScheduler(BaseModel):
 
     _task_manager: TaskManager = PrivateAttr()
 
-    def __init__(self, user_id: ObjectId, workspace_id: ObjectId, **kw: Any) -> None:
+    def __init__(self, task_manager: TaskManager, **kw: Any) -> None:
         """
         Instantiate TileScheduler instance
 
         Parameters
         ----------
-        user_id: ObjectId
-            user id
-        workspace_id: ObjectId
-            workspace id
+        task_manager: TaskManager
+            Task Manager instance
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
-        self._task_manager = TaskManager(
-            user=User(id=user_id), persistent=get_persistent(), workspace_id=workspace_id
-        )
+        self._task_manager = task_manager
 
     async def start_job_with_interval(
         self,

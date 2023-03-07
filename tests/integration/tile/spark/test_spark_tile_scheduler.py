@@ -6,51 +6,18 @@ from unittest import mock
 
 import pytest
 import pytest_asyncio
-from bson import ObjectId
 
-from featurebyte import SourceType
 from featurebyte.common import date_util
-from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.tile.scheduler import TileScheduler
 from featurebyte.worker.task_executor import TaskExecutor
 
 
-@pytest_asyncio.fixture(name="feature")
-async def mock_feature_fixture(feature_model_dict, session, feature_store):
-    """
-    Fixture for a ExtendedFeatureModel object
-    """
-
-    # this fixture was written to work for snowflake only
-    assert session.source_type == SourceType.SPARK
-
-    feature_model_dict.update(
-        {
-            "user_id": ObjectId(),
-            "tabular_source": {
-                "feature_store_id": feature_store.id,
-                "table_details": TableDetails(table_name="some_random_table"),
-            },
-            "version": "v1",
-            "readiness": FeatureReadiness.DRAFT,
-            "online_enabled": False,
-            "tabular_data_ids": [
-                ObjectId("626bccb9697a12204fb22ea3"),
-                ObjectId("726bccb9697a12204fb22ea3"),
-            ],
-        }
-    )
-    feature = ExtendedFeatureModel(**feature_model_dict)
-
-    yield feature
-
-
 @pytest_asyncio.fixture(name="scheduler_fixture")
-async def mock_scheduler_fixture(feature, tile_spec):
+async def mock_scheduler_fixture(feature, tile_spec, persistent):
     """
     Fixture for TileScheduler information
     """
@@ -60,7 +27,10 @@ async def mock_scheduler_fixture(feature, tile_spec):
     tile_spec.feature_store_id = feature.tabular_source.feature_store_id
     job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-    tile_scheduler = TileScheduler(user_id=tile_spec.user_id, workspace_id=tile_spec.workspace_id)
+    task_manager = TaskManager(
+        user=User(id=feature.user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
+    tile_scheduler = TileScheduler(task_manager=task_manager)
 
     yield tile_scheduler, tile_spec, job_id
 

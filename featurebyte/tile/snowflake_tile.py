@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName
 from featurebyte.feature_manager.sql_template import tm_call_schedule_online_store
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.base import BaseTileManager
@@ -39,7 +40,11 @@ class TileManagerSnowflake(BaseTileManager):
     _use_snowflake_scheduling: bool = PrivateAttr()
 
     def __init__(
-        self, session: BaseSession, use_snowflake_scheduling: bool = True, **kw: Any
+        self,
+        session: BaseSession,
+        task_manager: Optional[TaskManager] = None,
+        use_snowflake_scheduling: bool = True,
+        **kw: Any,
     ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
@@ -48,12 +53,14 @@ class TileManagerSnowflake(BaseTileManager):
         ----------
         session: BaseSession
             input session for datasource
+        task_manager: Optional[TaskManager]
+            input task manager
         use_snowflake_scheduling: bool
             whether to use snowflake scheduling mechanism
         kw: Any
             constructor arguments
         """
-        super().__init__(session=session, **kw)
+        super().__init__(session=session, task_manager=task_manager, **kw)
         self._use_snowflake_scheduling = use_snowflake_scheduling
 
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:

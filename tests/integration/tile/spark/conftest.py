@@ -4,7 +4,14 @@ Tile Tests for Spark Session
 from datetime import datetime
 
 import pytest_asyncio
+from bson import ObjectId
 
+from featurebyte import SourceType
+from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.tile.spark_tile import TileManagerSpark
 
 
@@ -60,10 +67,43 @@ async def tile_task_online_store_prep(session):
     await session.execute_query(f"DROP TABLE IF EXISTS {feature_store_table_name}")
 
 
+@pytest_asyncio.fixture(name="feature")
+async def mock_feature_fixture(feature_model_dict, session, feature_store):
+    """
+    Fixture for a ExtendedFeatureModel object
+    """
+
+    # this fixture was written to work for snowflake only
+    assert session.source_type == SourceType.SPARK
+
+    feature_model_dict.update(
+        {
+            "user_id": ObjectId(),
+            "tabular_source": {
+                "feature_store_id": feature_store.id,
+                "table_details": TableDetails(table_name="some_random_table"),
+            },
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "online_enabled": False,
+            "tabular_data_ids": [
+                ObjectId("626bccb9697a12204fb22ea3"),
+                ObjectId("726bccb9697a12204fb22ea3"),
+            ],
+        }
+    )
+    feature = ExtendedFeatureModel(**feature_model_dict)
+
+    yield feature
+
+
 @pytest_asyncio.fixture(name="tile_manager")
-async def tile_manager_fixture(session, tile_spec):
+async def tile_manager_fixture(session, tile_spec, feature, persistent):
     assert session.source_type == "spark"
 
-    yield TileManagerSpark(session=session)
+    task_manager = TaskManager(
+        user=User(id=feature.user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
+    yield TileManagerSpark(session=session, task_manager=task_manager)
 
     await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER")

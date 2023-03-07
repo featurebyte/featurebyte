@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import TileScheduleNotSupportedError
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.spark.tile_generate_schedule import TileGenerateSchedule
 from featurebyte.tile.scheduler import TileScheduler
@@ -26,8 +27,11 @@ class BaseTileManager(BaseModel, ABC):
     """
 
     _session: BaseSession = PrivateAttr()
+    _task_manager: Optional[TaskManager] = PrivateAttr()
 
-    def __init__(self, session: BaseSession, **kw: Any) -> None:
+    def __init__(
+        self, session: BaseSession, task_manager: Optional[TaskManager] = None, **kw: Any
+    ) -> None:
         """
         Custom constructor for TileSnowflake to instantiate a datasource session
 
@@ -35,11 +39,14 @@ class BaseTileManager(BaseModel, ABC):
         ----------
         session: BaseSession
             input session for datasource
+        task_manager: Optional[TaskManager]
+            input task manager
         kw: Any
             constructor arguments
         """
         super().__init__(**kw)
         self._session = session
+        self._task_manager = task_manager
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
@@ -235,7 +242,7 @@ class BaseTileManager(BaseModel, ABC):
         Raises
         -------
         TileScheduleNotSupportedError
-            if user_id, workspace_id or feature_store_id is not provided
+            if user_id, workspace_id or feature_store_id is not provided or task manager is not initialized
 
         Returns
         -------
@@ -249,6 +256,9 @@ class BaseTileManager(BaseModel, ABC):
             raise TileScheduleNotSupportedError(
                 "user_id, workspace_id and feature_store_id must be provided"
             )
+
+        if not self._task_manager:
+            raise TileScheduleNotSupportedError("Task manager is not initialized")
 
         tile_schedule_ins = TileGenerateSchedule(
             spark_session=self._session,
@@ -271,7 +281,7 @@ class BaseTileManager(BaseModel, ABC):
             job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         )
 
-        scheduler = TileScheduler(user_id=tile_spec.user_id, workspace_id=tile_spec.workspace_id)
+        scheduler = TileScheduler(task_manager=self._task_manager)
 
         await scheduler.start_job_with_interval(
             job_id=job_id,
@@ -300,14 +310,17 @@ class BaseTileManager(BaseModel, ABC):
         Raises
         -------
         TileScheduleNotSupportedError
-            if user_id, workspace_id or feature_store_id is not provided
+            if user_id, workspace_id or feature_store_id is not provided or task manager is not initialized
         """
         if not tile_spec.user_id or not tile_spec.workspace_id or not tile_spec.feature_store_id:
             raise TileScheduleNotSupportedError(
                 "user_id, workspace_id and feature_store_id must be provided"
             )
 
-        scheduler = TileScheduler(user_id=tile_spec.user_id, workspace_id=tile_spec.workspace_id)
+        if not self._task_manager:
+            raise TileScheduleNotSupportedError("Task manager is not initialized")
+
+        scheduler = TileScheduler(task_manager=self._task_manager)
 
         exist_mapping = await self._session.execute_query(
             f"SELECT * FROM TILE_FEATURE_MAPPING WHERE AGGREGATION_ID = '{tile_spec.aggregation_id}' and IS_DELETED = FALSE"
