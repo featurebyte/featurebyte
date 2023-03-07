@@ -105,7 +105,7 @@ class ViewConstructionService(BaseService):
         node_name: str,
     ) -> tuple[list[str], list[Node]]:
         target_columns = query_graph.get_target_nodes_required_column_names(
-            node_name=node_name, keep_target_node_names=Node
+            node_name=node_name, keep_target_node_names=None
         )
         input_nodes = []
         for input_node_name in input_node_names:
