@@ -310,13 +310,8 @@ class BaseTileManager(BaseModel, ABC):
         Raises
         -------
         TileScheduleNotSupportedError
-            if user_id, workspace_id or feature_store_id is not provided or task manager is not initialized
+            if task manager is not initialized
         """
-        if not tile_spec.user_id or not tile_spec.workspace_id or not tile_spec.feature_store_id:
-            raise TileScheduleNotSupportedError(
-                "user_id, workspace_id and feature_store_id must be provided"
-            )
-
         if not self._task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
 

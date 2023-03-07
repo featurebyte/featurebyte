@@ -12,6 +12,7 @@ from uuid import UUID
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
+from featurebyte.logger import logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
@@ -360,11 +361,6 @@ class TaskManager(AbstractTaskManager):
         ----------
         name: str
             Document Name
-
-        Raises
-        -------
-        DocumentNotFoundError
-            If document is not found
         """
         periodic_task_service = PeriodicTaskService(
             user=self.user,
@@ -379,6 +375,6 @@ class TaskManager(AbstractTaskManager):
 
         data = result["data"]
         if not data:
-            raise DocumentNotFoundError(f"Document with name {name} not found")
-
-        await periodic_task_service.delete_document(document_id=data[0]["_id"])
+            logger.error(f"Document with name {name} not found")
+        else:
+            await periodic_task_service.delete_document(document_id=data[0]["_id"])
