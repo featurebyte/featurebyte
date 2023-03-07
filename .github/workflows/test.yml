@@ -223,8 +223,13 @@ jobs:
           set +e
           make test-integration-spark
           # capture the exit code from the test run before stashing logs
-          echo $? > status.txt
-          docker logs spark-thrift 2>&1 | tee spark-thrift.log
+          EXIT_CODE=$?
+          echo $EXIT_CODE > status.txt
+          docker logs spark-thrift 2>&1 > spark-thrift.log
+          # bail out now if the test run was a failure
+          if [ $EXIT_CODE -ne 0 ]; then
+            exit $EXIT_CODE
+          fi
           make test-teardown
           mv .coverage .coverage.2
       - name: Upload spark-thrift log file
@@ -236,7 +241,6 @@ jobs:
       - name: Check test status
         run: |
           EXIT_CODE=$(cat status.txt)
-          # bail out now if the test run was a failure
           if [ $EXIT_CODE -ne 0 ]; then
             exit $EXIT_CODE
           fi
