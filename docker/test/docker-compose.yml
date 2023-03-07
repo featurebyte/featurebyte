@@ -31,8 +31,7 @@ services:
       - "LOCAL_UID=${LOCAL_UID}"
       - "LOCAL_GID=${LOCAL_GID}"
     volumes:
-      - ~/.spark/data:/opt/spark/data/derby
-      - /tmp:/tmp
+      - ~/.spark/data/staging:/opt/spark/data/derby/staging
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
