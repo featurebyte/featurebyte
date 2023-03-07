@@ -317,7 +317,7 @@ def test_info(saved_feature):
             {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
         ],
         "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
-        "feature_job_setting": {
+        "data_feature_job_setting": {
             "this": [data_feature_job_setting],
             "default": [data_feature_job_setting],
         },

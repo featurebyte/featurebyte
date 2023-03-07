@@ -17,8 +17,8 @@ from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import (
     DataCleaningOperationComparison,
+    DataFeatureJobSettingComparison,
     FeatureBriefInfo,
-    FeatureJobSettingComparison,
     FeatureNewVersionCreate,
     ReadinessComparison,
     VersionComparison,
@@ -329,7 +329,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         ),
         readiness=ReadinessComparison(this="PRODUCTION_READY", default="PRODUCTION_READY"),
         data_cleaning_operation=DataCleaningOperationComparison(this=[], default=[]),
-        feature_job_setting=FeatureJobSettingComparison(
+        data_feature_job_setting=DataFeatureJobSettingComparison(
             this=data_feature_job_setting, default=data_feature_job_setting
         ),
         metadata=expected_metadata,
@@ -441,7 +441,7 @@ def expected_feature_iet_info_fixture(feature_iet):
             default=feature_iet.version.to_str(),
         ),
         readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
-        feature_job_setting={
+        data_feature_job_setting={
             "this": [data_feature_job_setting, data_feature_job_setting],
             "default": [data_feature_job_setting, data_feature_job_setting],
         },

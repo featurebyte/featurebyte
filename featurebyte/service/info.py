@@ -597,7 +597,7 @@ class InfoService(BaseService):
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
-            feature_job_setting={
+            data_feature_job_setting={
                 "this": self._extract_data_feature_job_settings(
                     feature=feature, data_id_to_name=data_id_to_name
                 ),

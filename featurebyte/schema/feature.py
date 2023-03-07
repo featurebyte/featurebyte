@@ -120,16 +120,7 @@ class VersionComparison(FeatureByteBaseModel):
         return cls(this=this.to_str(), default=default.to_str())
 
 
-class DataFeatureJobSetting(FeatureByteBaseModel):
-    """
-    Data feature job setting schema
-    """
-
-    data_name: str
-    feature_job_setting: FeatureJobSetting
-
-
-class FeatureJobSettingComparison(FeatureByteBaseModel):
+class DataFeatureJobSettingComparison(FeatureByteBaseModel):
     """
     Data feature job setting comparison schema
     """
