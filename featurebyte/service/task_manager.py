@@ -11,6 +11,7 @@ from uuid import UUID
 
 from bson.objectid import ObjectId
 
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
@@ -308,6 +309,11 @@ class TaskManager(AbstractTaskManager):
         name: str
             name of the periodic task
 
+        Raises
+        -------
+        DocumentNotFoundError
+            If document is not found
+
         Returns
         -------
         PeriodicTask
@@ -317,7 +323,18 @@ class TaskManager(AbstractTaskManager):
             persistent=self.persistent,
             workspace_id=self.workspace_id,
         )
-        return await periodic_task_service.get_document_by_name(name=name)
+
+        result = await periodic_task_service.list_documents(
+            page=1,
+            page_size=0,
+            query_filter={"name": name},
+        )
+
+        data = result["data"]
+        if not data:
+            raise DocumentNotFoundError(f"Document with name {name} not found")
+
+        return PeriodicTask(**data[0])
 
     async def delete_periodic_task(self, periodic_task_id: ObjectId) -> None:
         """
@@ -343,10 +360,25 @@ class TaskManager(AbstractTaskManager):
         ----------
         name: str
             Document Name
+
+        Raises
+        -------
+        DocumentNotFoundError
+            If document is not found
         """
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
             workspace_id=self.workspace_id,
         )
-        await periodic_task_service.delete_document_by_name(name=name)
+        result = await periodic_task_service.list_documents(
+            page=1,
+            page_size=0,
+            query_filter={"name": name},
+        )
+
+        data = result["data"]
+        if not data:
+            raise DocumentNotFoundError(f"Document with name {name} not found")
+
+        await periodic_task_service.delete_document(document_id=data[0]["_id"])

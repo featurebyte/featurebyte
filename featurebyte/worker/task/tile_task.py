@@ -9,7 +9,6 @@ import importlib
 import json
 
 from featurebyte.logger import logger
-from featurebyte.models.base import User
 from featurebyte.schema.worker.task.tile import TileTaskPayload
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.manager import SessionManager
@@ -41,7 +40,7 @@ class TileTask(BaseTask):
 
         # get feature store
         feature_store_service = FeatureStoreService(
-            user=User(id=payload.user_id),
+            user=self.user,
             persistent=self.get_persistent(),
             workspace_id=payload.workspace_id,
         )
