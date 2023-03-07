@@ -79,13 +79,11 @@ async def test_validate(
     )
 
     # Verify that validate does not throw an error if ignore_guardrails is True
-    await production_ready_validator.validate(
-        "sum_30m", feature.node, feature.graph, ignore_guardrails=True
-    )
+    await production_ready_validator.validate("sum_30m", feature.graph, ignore_guardrails=True)
 
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(ValueError) as exc:
-        await production_ready_validator.validate("sum_30m", feature.node, feature.graph)
+        await production_ready_validator.validate("sum_30m", feature.graph)
     exception_str = str(exc.value)
     assert "Discrepancies found between the current feature version" in exception_str
     assert "feature_job_setting" in exception_str

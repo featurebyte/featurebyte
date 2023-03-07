@@ -32,7 +32,7 @@ class ProductionReadyValidator:
         self.version_service = version_service
 
     async def validate(
-        self, feature_name: str, node: Node, graph: QueryGraph, ignore_guardrails: bool = False
+        self, feature_name: str, graph: QueryGraph, ignore_guardrails: bool = False
     ) -> None:
         """
         Validate.
@@ -41,8 +41,6 @@ class ProductionReadyValidator:
         ----------
         feature_name: str
             feature name
-        node: Node
-            node
         graph: QueryGraph
             graph
         ignore_guardrails: bool
@@ -52,10 +50,10 @@ class ProductionReadyValidator:
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
-            (
-                feature_version_source_node,
-                feature_version_source_graph,
-            ) = await self._get_feature_version_of_source(feature_name)
+            feature_version = await self._get_feature_version_of_source(feature_name)
+            if feature_version is None:
+                return
+            feature_version_source_node, feature_version_source_graph = feature_version
             feature_job_setting_diff = await self._get_feature_job_setting_diffs_source_vs_curr(
                 feature_version_source_node, feature_version_source_graph, graph
             )
@@ -90,8 +88,8 @@ class ProductionReadyValidator:
                 )
             )
             return new_feature.node, new_feature.graph
-        except DocumentError as e:
-            if "No change detected on the new feature version" in str(e):
+        except DocumentError as exc:
+            if "No change detected on the new feature version" in str(exc):
                 return None
 
     @staticmethod
