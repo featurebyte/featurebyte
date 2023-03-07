@@ -11,7 +11,6 @@ from featurebyte.exception import DocumentError
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
     DataFeatureJobSetting,
@@ -20,7 +19,6 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_service import BaseService
@@ -87,32 +85,19 @@ class VersionService(BaseService):
                 data_feature_job_setting.data_name: data_feature_job_setting.feature_job_setting
                 for data_feature_job_setting in data_feature_job_settings
             }
-            operation_structure_info = OperationStructureExtractor(graph=feature.graph).extract(
-                node=feature.node,
-                keep_all_source_columns=True,
-            )
             data_id_to_doc: dict[ObjectId, dict[str, Any]] = {
                 doc["_id"]: doc
                 async for doc in self.data_service.list_documents_iterator(
                     query_filter={"_id": {"$in": feature.tabular_data_ids}}
                 )
             }
-            for group_by_node in feature.graph.iterate_nodes(
-                target_node=feature.node, node_type=NodeType.GROUPBY
-            ):
-                assert isinstance(group_by_node, GroupByNode)
-                group_by_op_struct = operation_structure_info.operation_structure_map[
-                    group_by_node.name
-                ]
-                timestamp_col = next(
-                    col
-                    for col in group_by_op_struct.source_columns
-                    if col.name == group_by_node.parameters.timestamp
-                )
-                assert timestamp_col.tabular_data_id is not None
-                data_doc = data_id_to_doc[timestamp_col.tabular_data_id]
-
+            for (
+                group_by_node,
+                event_data_id,
+            ) in feature.graph.iterate_group_by_and_data_id_node_pairs(target_node=feature.node):
                 # prepare feature job setting
+                assert event_data_id is not None, "Event data ID should not be None."
+                data_doc = data_id_to_doc[event_data_id]
                 feature_job_setting = None
                 if use_source_settings:
                     # use the (event) data source's default feature job setting
