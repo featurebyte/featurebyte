@@ -3,7 +3,7 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, TypeVar, Union
 
 import pandas as pd
 from pydantic import Field
@@ -11,7 +11,7 @@ from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
-from featurebyte.core.series import Series
+from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -63,12 +63,15 @@ class BaseFrame(QueryObject, SampleMixin):
         return list(self.column_var_type_map)
 
 
-class Frame(BaseFrame, OpsMixin, GetAttrMixin):
+FrozenFrameT = TypeVar("FrozenFrameT", bound="FrozenFrame")
+
+
+class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
     """
-    Implement operations to manipulate database table
+    FrozenFrame class
     """
 
-    _series_class = Series
+    _series_class = FrozenSeries
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -92,13 +95,13 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         """
         return {}
 
-    def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
+    def _check_any_missing_column(self, item: str | list[str] | FrozenSeriesT) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)
 
         Parameters
         ----------
-        item: str | list[str]
+        item: str | list[str] | FrozenSeriesT
             input column(s)
 
         Raises
@@ -115,7 +118,9 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
+    def __getitem__(
+        self, item: Union[str, List[str], FrozenSeries]
+    ) -> Union[FrozenSeries, FrozenFrame]:
         """
         Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
         column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
@@ -123,12 +128,12 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
 
         Parameters
         ----------
-        item: Union[str, List[str], Series]
+        item: Union[str, List[str], FrozenSeries]
             input item used to perform column(s) projection or row filtering
 
         Returns
         -------
-        Series or Frame
+        FrozenSeries or FrozenFrame
         """
         self._check_any_missing_column(item)
         if isinstance(item, str):
@@ -174,19 +179,29 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             **self._getitem_frame_params,
         )
 
+
+class Frame(FrozenFrame):
+    """
+    Implement operations to manipulate database table
+    """
+
+    _series_class = Series
+
     @typechecked
     def __setitem__(
-        self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
+        self,
+        key: Union[str, Tuple[FrozenSeries, str]],
+        value: Union[int, float, str, bool, FrozenSeries],
     ) -> None:
         """
         Assign a scalar value or Series object of the same `dtype` to the `Frame` object
 
         Parameters
         ----------
-        key: Union[str, Tuple[Series, str]]
+        key: Union[str, Tuple[FrozenSeries, str]]
             column name to store the item. Alternatively, if a tuple is passed in, we will perform the masking
             operation.
-        value: Union[int, float, str, bool, Series]
+        value: Union[int, float, str, bool, FrozenSeries]
             value to be assigned to the column
 
         Raises
@@ -200,16 +215,22 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError(f"{len(key)} elements found, when we only expect 2.")
-            mask = key[0]
-            if type(mask) != Series:  # pylint: disable=unidiomatic-typecheck
-                raise ValueError("The mask provided should be a Series.")
+
+            # subset the column to get the type first
             column_name: str = key[1]
             column = self[column_name]
+
+            # check whether the mask has the same type as the column type
+            mask = key[0]
+            if type(mask) not in {Series, FrozenSeries}:
+                class_name = type(column).__name__
+                raise ValueError(f"The mask provided should be a {class_name}.")
+
             assert isinstance(column, Series)
             column[mask] = value
             return
 
-        if isinstance(value, Series):
+        if isinstance(value, FrozenSeries):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")
             node = self.graph.add_operation(

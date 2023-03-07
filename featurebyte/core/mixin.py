@@ -24,8 +24,8 @@ from featurebyte.query_graph.node import Node
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 
 if TYPE_CHECKING:
-    from featurebyte.core.frame import Frame
-    from featurebyte.core.series import Series
+    from featurebyte.core.frame import FrozenFrame
+    from featurebyte.core.series import FrozenSeries
 
 
 class OpsMixin:
@@ -52,16 +52,16 @@ class OpsMixin:
 
     @staticmethod
     def _add_filter_operation(
-        item: Frame | Series, mask: Series, node_output_type: NodeOutputType
+        item: FrozenFrame | FrozenSeries, mask: FrozenSeries, node_output_type: NodeOutputType
     ) -> Node:
         """
         Add filter node into the graph & return the node
 
         Parameters
         ----------
-        item: Frame | Series
+        item: FrozenFrame | FrozenSeries
             object to be filtered
-        mask: Series
+        mask: FrozenSeries
             mask used to filter the item object
         node_output_type: NodeOutputType
             note output type

@@ -10,9 +10,9 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 if TYPE_CHECKING:
-    from featurebyte.core.series import Series
+    from featurebyte.core.series import FrozenSeries
 
-    SeriesT = TypeVar("SeriesT", bound=Series)
+    SeriesT = TypeVar("SeriesT", bound=FrozenSeries)
 
 
 def series_unary_operation(

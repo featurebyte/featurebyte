@@ -144,7 +144,7 @@ def test__getitem__type_not_supported(dataframe):
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
     expected_msg = (
-        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); '
+        'type of argument "item" must be one of (str, List[str], featurebyte.core.series.FrozenSeries); '
         "got bool instead"
     )
     assert expected_msg in str(exc.value)
@@ -265,7 +265,7 @@ def test__setitem__type_not_supported(dataframe):
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
     assert (
-        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.Series, str]); got float '
+        'type of argument "key" must be one of (str, Tuple[featurebyte.core.series.FrozenSeries, str]); got float '
         "instead" in str(exc.value)
     )
 
