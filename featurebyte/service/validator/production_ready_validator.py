@@ -278,5 +278,5 @@ class ProductionReadyValidator:
 
             # compare cleaning operations
             if source_cleaning_operations != new_cleaning_operations:
-                return {"source": source_cleaning_operations, "new": new_cleaning_operations}
+                return {"default": source_cleaning_operations, "feature": new_cleaning_operations}
         return {}

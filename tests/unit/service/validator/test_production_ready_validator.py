@@ -1,7 +1,6 @@
 """
 Test production ready validator
 """
-from typing import Any, Dict, List
 
 import pytest
 
@@ -53,12 +52,18 @@ async def test_validate(
     snowflake_event_data_with_entity.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
+    snowflake_event_data_with_entity["col_int"].update_critical_data_info(
+        cleaning_operations=[
+            MissingValueImputation(imputed_value=2.0),
+        ]
+    )
+
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
     updated_feature_job_setting = feature_group_feature_job_setting
     assert feature_group_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
     feature = event_view.groupby("cust_id").aggregate_over(
-        value_column="col_float",
+        value_column="col_int",
         method="sum",
         windows=["30m", "2h", "1d"],
         feature_job_setting=updated_feature_job_setting,
@@ -183,69 +188,6 @@ def feature_from_dimension_data_fixture(cust_id_entity, snowflake_dimension_data
     snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
     dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
     return dimension_view["col_float"].as_feature("FloatFeature")  # pylint: disable=no-member
-
-
-def get_node_for_name(nodes: List[Dict[str, Any]], node_name: str) -> Dict[str, Any]:
-    """Helper function to get node dictionary for a node name"""
-    for node in nodes:
-        if node["name"] == node_name:
-            return node
-    return {}
-
-
-@pytest.mark.asyncio
-async def test_get_cleaning_operations_diffs__with_two_different_nodes(
-    snowflake_event_data_with_entity,
-    snowflake_feature_store,
-    production_ready_validator,
-    feature_group_feature_job_setting,
-    source_version_creator,
-):
-    """
-    Test diff_cleaning_nodes when the feature, and data, have different cleaning operations.
-    """
-    # Create some event data with a simple cleaning operation.
-    snowflake_feature_store.save()
-    snowflake_event_data_with_entity.save()
-    snowflake_event_data_with_entity["col_int"].update_critical_data_info(
-        cleaning_operations=[
-            MissingValueImputation(imputed_value=0.0),
-        ]
-    )
-
-    # Create a feature using that event data
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
-    feature_group = event_view.groupby("cust_id").aggregate_over(
-        value_column="col_float",
-        method="sum",
-        windows=["30m"],
-        feature_job_setting=feature_group_feature_job_setting,
-        feature_names=["sum_30m"],
-    )
-    feature = feature_group["sum_30m"]
-    feature.save()
-
-    # Update the event data to have a different cleaning operation
-    snowflake_event_data_with_entity["col_int"].update_critical_data_info(
-        cleaning_operations=[
-            MissingValueImputation(imputed_value=2.0),  # new value
-        ]
-    )
-
-    _, source_feature_version_graph = await source_version_creator(feature.name)
-
-    # Check to see if the cleaning operations between the feature, and input data, match.
-    diff = await production_ready_validator._get_cleaning_operations_diff_vs_source(
-        source_feature_version_graph, feature.graph
-    )
-
-    # Assert that they are different.
-    default_cleaning_graph_nodes = diff["default"]
-    conditional_node_a = get_node_for_name(default_cleaning_graph_nodes["nodes"], "conditional_1")
-    assert conditional_node_a["parameters"]["value"] == 2
-    feature_cleaning_graph_nodes = diff["feature"]
-    conditional_node_b = get_node_for_name(feature_cleaning_graph_nodes["nodes"], "conditional_1")
-    assert conditional_node_b["parameters"]["value"] == 0
 
 
 def test_raise_error_if_diffs_present():
