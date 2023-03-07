@@ -7,17 +7,19 @@ from __future__ import annotations
 from typing import Any, List, Optional, OrderedDict, cast
 
 import collections
-import decimal
 import os
 
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
+from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
+from pyarrow import Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
 from pyhive.hive import Cursor
 
 from featurebyte.common.path_util import get_package_root
+from featurebyte.common.utils import create_new_arrow_stream_writer
 from featurebyte.enum import DBVarType, InternalName, SourceType, StorageType
 from featurebyte.logger import logger
 from featurebyte.models.credential import (
@@ -252,7 +254,7 @@ class SparkSession(BaseSession):
             "BIGINT_TYPE": pa.int64(),
             "BINARY_TYPE": pa.large_binary(),
             "BOOLEAN_TYPE": pa.bool_(),
-            "DATE_TYPE": pa.date64(),
+            "DATE_TYPE": pa.timestamp("ns", tz=None),
             "TIME_TYPE": pa.time32("ms"),
             "DOUBLE_TYPE": pa.float64(),
             "FLOAT_TYPE": pa.float32(),
@@ -276,8 +278,60 @@ class SparkSession(BaseSession):
         return pyarrow_type
 
     @staticmethod
-    def _convert_decimal_to_float(row: Any) -> Any:
-        yield from (float(item) if isinstance(item, decimal.Decimal) else item for item in row)
+    def _process_batch_data(data: pd.DataFrame, schema: Schema) -> pd.DataFrame:
+        """
+        Process batch data before converting to PyArrow record batch.
+
+        Parameters
+        ----------
+        data: pd.DataFrame
+            Data to process
+        schema: Schema
+            Schema of the data
+
+        Returns
+        -------
+        pd.DataFrame
+            Processed data
+        """
+        for column in schema.names:
+            # Convert decimal columns to float
+            if schema.field_by_name(column).type == pa.float64() and not is_float_dtype(
+                data[column]
+            ):
+                data[column] = data[column].astype(float)
+            elif isinstance(
+                schema.field_by_name(column).type, pa.TimestampType
+            ) and not is_datetime64_dtype(data[column]):
+                data[column] = pd.to_datetime(data[column])
+        return data
+
+    @staticmethod
+    def _read_batch(cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
+        """
+        Fetch a batch of rows from a query result, returning them as a PyArrow record batch.
+
+        Parameters
+        ----------
+        cursor: Cursor
+            Cursor to fetch data from
+        schema: Schema
+            Schema of the data to fetch
+        batch_size: int
+            Number of rows to fetch at a time
+
+        Returns
+        -------
+        pa.RecordBatch
+            None if no more rows are available
+        """
+        results = cursor.fetchmany(batch_size)
+        return pa.record_batch(
+            SparkSession._process_batch_data(
+                pd.DataFrame(results if results else None, columns=schema.names), schema
+            ),
+            schema=schema,
+        )
 
     @staticmethod
     def fetchall_arrow(cursor: Cursor) -> pa.Table:
@@ -299,21 +353,33 @@ class SparkSession(BaseSession):
                 for metadata in cursor.description
             }
         )
-
-        results = cursor.fetchall()
-        if not results:
-            return pa.Table.from_arrays([tuple() for _ in range(len(schema))], schema=schema)
         record_batches = []
-        for row in results:
-            record_batch = pa.record_batch(
-                [[item] for item in SparkSession._convert_decimal_to_float(row)], schema=schema
-            )
+        while True:
+            record_batch = SparkSession._read_batch(cursor, schema)
             record_batches.append(record_batch)
+            if record_batch.num_rows == 0:
+                break
         return pa.Table.from_batches(record_batches)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         arrow_table = self.fetchall_arrow(cursor)
         return arrow_table.to_pandas()
+
+    def fetch_query_stream_impl(self, cursor: Any, output_pipe: Any) -> None:
+        # fetch results in batches and write to the stream
+        schema = pa.schema(
+            {
+                metadata[0]: SparkSession._get_pyarrow_type(metadata[1])
+                for metadata in cursor.description
+            }
+        )
+        writer = create_new_arrow_stream_writer(output_pipe, schema)
+        while True:
+            record_batch = SparkSession._read_batch(cursor, schema)
+            writer.write_batch(record_batch)
+            if record_batch.num_rows == 0:
+                break
+        writer.close()
 
     async def register_table(
         self, table_name: str, dataframe: pd.DataFrame, temporary: bool = True

@@ -283,3 +283,16 @@ def enforce_observation_set_row_order(function: Any) -> Any:
         return result_dataframe
 
     return wrapper
+
+
+class CodeStr(str):
+    """
+    Code string content that can be displayed in markdown format
+    """
+
+    def _repr_markdown_(self) -> str:
+        return (
+            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">\n\n'
+            f"```python\n{str(self).strip()}\n```"
+            "\n\n</div>"
+        )
