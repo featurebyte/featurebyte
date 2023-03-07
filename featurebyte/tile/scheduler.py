@@ -1,7 +1,7 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any
+from typing import Any, Optional
 
 from datetime import datetime
 
@@ -93,7 +93,7 @@ class TileScheduler(BaseModel):
         """
         await self._task_manager.delete_periodic_task_by_name(job_id)
 
-    async def get_job_details(self, job_id: str) -> PeriodicTask:
+    async def get_job_details(self, job_id: str) -> Optional[PeriodicTask]:
         """
         Get Jobs from input job store
 

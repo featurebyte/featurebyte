@@ -247,7 +247,7 @@ class TileManagerSnowflake(BaseTileManager):
         tile_spec: TileSpec,
         monitor_periods: int = 10,
         schedule_time: datetime = datetime.utcnow(),
-    ) -> str:
+    ) -> Optional[str]:
         """
         Schedule online tiles
 
@@ -293,7 +293,7 @@ class TileManagerSnowflake(BaseTileManager):
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
         schedule_time: datetime = datetime.utcnow(),
-    ) -> str:
+    ) -> Optional[str]:
         """
         Schedule offline tiles
 
@@ -342,7 +342,7 @@ class TileManagerSnowflake(BaseTileManager):
         cron_expr: str,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
-    ) -> str:
+    ) -> Optional[str]:
         """
         Common tile schedule method
 

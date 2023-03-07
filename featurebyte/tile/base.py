@@ -145,7 +145,7 @@ class BaseTileManager(BaseModel, ABC):
         tile_spec: TileSpec,
         monitor_periods: int = 10,
         schedule_time: datetime = datetime.utcnow(),
-    ) -> str:
+    ) -> Optional[str]:
         """
         Schedule online tiles
 
@@ -160,7 +160,7 @@ class BaseTileManager(BaseModel, ABC):
 
         Returns
         -------
-            generated sql to be executed
+            generated sql to be executed or None if the tile job already exists
         """
         next_job_time = date_util.get_next_job_datetime(
             input_dt=schedule_time,
@@ -182,7 +182,7 @@ class BaseTileManager(BaseModel, ABC):
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
         schedule_time: datetime = datetime.utcnow(),
-    ) -> str:
+    ) -> Optional[str]:
         """
         Schedule offline tiles
 
@@ -197,7 +197,7 @@ class BaseTileManager(BaseModel, ABC):
 
         Returns
         -------
-            generated sql to be executed
+            generated sql to be executed or None if the tile job already exists
         """
 
         next_job_time = date_util.get_next_job_datetime(
@@ -222,7 +222,7 @@ class BaseTileManager(BaseModel, ABC):
         next_job_time: datetime,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
-    ) -> str:
+    ) -> Optional[str]:
         """
         Common tile schedule method
 
@@ -246,7 +246,7 @@ class BaseTileManager(BaseModel, ABC):
 
         Returns
         -------
-            generated sql to be executed
+            generated sql to be executed or None if the tile job already exists
         """
 
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
@@ -260,40 +260,44 @@ class BaseTileManager(BaseModel, ABC):
         if not self._task_manager:
             raise TileScheduleNotSupportedError("Task manager is not initialized")
 
-        tile_schedule_ins = TileGenerateSchedule(
-            spark_session=self._session,
-            tile_id=tile_spec.tile_id,
-            tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
-            blind_spot_second=tile_spec.blind_spot_second,
-            frequency_minute=tile_spec.frequency_minute,
-            sql=tile_spec.tile_sql,
-            entity_column_names=tile_spec.entity_column_names,
-            value_column_names=tile_spec.value_column_names,
-            value_column_types=tile_spec.value_column_types,
-            tile_type=tile_type,
-            offline_period_minute=offline_minutes,
-            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE,
-            tile_start_date_column=InternalName.TILE_START_DATE,
-            tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
-            tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
-            monitor_periods=monitor_periods,
-            agg_id=tile_spec.aggregation_id,
-            job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        )
-
         scheduler = TileScheduler(task_manager=self._task_manager)
+        exist_job = await scheduler.get_job_details(job_id=job_id)
+        if not exist_job:
+            logger.info(f"Creating new job {job_id}")
+            tile_schedule_ins = TileGenerateSchedule(
+                spark_session=self._session,
+                tile_id=tile_spec.tile_id,
+                tile_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+                blind_spot_second=tile_spec.blind_spot_second,
+                frequency_minute=tile_spec.frequency_minute,
+                sql=tile_spec.tile_sql,
+                entity_column_names=tile_spec.entity_column_names,
+                value_column_names=tile_spec.value_column_names,
+                value_column_types=tile_spec.value_column_types,
+                tile_type=tile_type,
+                offline_period_minute=offline_minutes,
+                tile_last_start_date_column=InternalName.TILE_LAST_START_DATE,
+                tile_start_date_column=InternalName.TILE_START_DATE,
+                tile_start_date_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER,
+                tile_end_date_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER,
+                monitor_periods=monitor_periods,
+                agg_id=tile_spec.aggregation_id,
+                job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            )
 
-        await scheduler.start_job_with_interval(
-            job_id=job_id,
-            interval_seconds=tile_spec.frequency_minute * 60,
-            start_after=next_job_time,
-            instance=tile_schedule_ins,
-            user_id=tile_spec.user_id,
-            feature_store_id=tile_spec.feature_store_id,
-            workspace_id=tile_spec.workspace_id,
-        )
+            await scheduler.start_job_with_interval(
+                job_id=job_id,
+                interval_seconds=tile_spec.frequency_minute * 60,
+                start_after=next_job_time,
+                instance=tile_schedule_ins,
+                user_id=tile_spec.user_id,
+                feature_store_id=tile_spec.feature_store_id,
+                workspace_id=tile_spec.workspace_id,
+            )
 
-        return tile_schedule_ins.json()
+            return tile_schedule_ins.json()
+
+        return None
 
     async def remove_tile_jobs(
         self,
