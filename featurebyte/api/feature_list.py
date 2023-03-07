@@ -50,6 +50,7 @@ from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.common.typing import Scalar
 from featurebyte.common.utils import (
+    CodeStr,
     dataframe_from_arrow_stream,
     dataframe_from_json,
     dataframe_to_arrow_bytes,
@@ -89,19 +90,6 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-
-
-class CodeObject(str):
-    """
-    Code content
-    """
-
-    def _repr_markdown_(self) -> str:
-        return (
-            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">\n\n'
-            f"```python\n{str(self).strip()}\n```"
-            "\n\n</div>"
-        )
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -1200,7 +1188,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         ) as file_object:
             template = Template(file_object.read())
 
-        return CodeObject(
+        return CodeStr(
             template.render(
                 workspace_id=self.workspace_id,
                 headers=json.dumps(headers),

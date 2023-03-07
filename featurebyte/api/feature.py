@@ -22,7 +22,7 @@ from featurebyte.api.feature_validation_util import assert_is_lookup_feature
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.common.utils import dataframe_from_json, enforce_observation_set_row_order
+from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_observation_set_row_order
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -558,7 +558,7 @@ class Feature(
         -------
         str
         """
-        return self._generate_code(to_format=True, to_use_saved_data=True)
+        return CodeStr(self._generate_code(to_format=True, to_use_saved_data=True))
 
     def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
         """
