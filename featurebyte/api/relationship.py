@@ -106,6 +106,11 @@ class Relationship(ApiObject):
         -------
         pd.DataFrame
             A dataframe with named columns
+
+        Raises
+        ------
+        RecordRetrievalException
+            Raised if the relationship info cannot be retrieved
         """
         # Get IDs of relationship info's
         relationship_info_ids = []
