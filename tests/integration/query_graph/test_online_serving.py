@@ -58,7 +58,6 @@ def features_fixture(event_data, source_type):
         features = [
             feature_group["AMOUNT_SUM_2h"],
             feature_group_dict["EVENT_COUNT_BY_ACTION_24h"],
-            feature_complex_2,
         ]
     else:
         features = [
