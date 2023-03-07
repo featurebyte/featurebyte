@@ -7,13 +7,14 @@ from bson import ObjectId
 from featurebyte import (
     ColumnCleaningOperation,
     DataCleaningOperation,
+    Entity,
+    FeatureJobSetting,
     MissingValueImputation,
 )
-from featurebyte import Entity, FeatureJobSetting, SnowflakeDetails
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.relationship import RelationshipType
-from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.node.schema import SnowflakeDetails, TableDetails
 from featurebyte.schema.feature import (
     DataCleaningOperationComparison,
     DataFeatureJobSettingComparison,
