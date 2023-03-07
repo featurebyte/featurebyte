@@ -24,7 +24,13 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.feature import FeatureBriefInfoList, ReadinessComparison, VersionComparison
+from featurebyte.schema.feature import (
+    DataCleaningOperationComparison,
+    DataFeatureJobSettingComparison,
+    FeatureBriefInfoList,
+    ReadinessComparison,
+    VersionComparison,
+)
 from featurebyte.schema.feature_list import ProductionReadyFractionComparison
 
 
@@ -239,6 +245,8 @@ class FeatureInfo(FeatureNamespaceInfo):
     dtype: DBVarType
     version: VersionComparison
     readiness: ReadinessComparison
+    data_feature_job_setting: DataFeatureJobSettingComparison
+    data_cleaning_operation: DataCleaningOperationComparison
     versions_info: Optional[FeatureBriefInfoList]
     metadata: Any
 

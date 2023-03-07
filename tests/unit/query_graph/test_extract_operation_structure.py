@@ -969,7 +969,7 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
             "filter": False,
             "node_names": {"input_1", "graph_1"},
             "node_name": "graph_1",
-            "transforms": ["graph"],
+            "transforms": [],
             "columns": [
                 {
                     "name": "a",

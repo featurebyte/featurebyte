@@ -4,12 +4,25 @@ Test for InfoService
 import pytest
 from bson import ObjectId
 
-from featurebyte import Entity, SnowflakeDetails
+from featurebyte import (
+    ColumnCleaningOperation,
+    DataCleaningOperation,
+    Entity,
+    MissingValueImputation,
+    SnowflakeDetails,
+)
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.feature import FeatureBriefInfo, ReadinessComparison, VersionComparison
+from featurebyte.schema.feature import (
+    DataCleaningOperationComparison,
+    DataFeatureJobSettingComparison,
+    FeatureBriefInfo,
+    FeatureNewVersionCreate,
+    ReadinessComparison,
+    VersionComparison,
+)
 from featurebyte.schema.info import (
     DataBriefInfo,
     DataColumnInfo,
@@ -38,7 +51,7 @@ def info_service_fixture(user, persistent):
 
 @pytest.mark.asyncio
 async def test_get_feature_store_info(info_service, feature_store):
-    """Test get_feature_sotre_info"""
+    """Test get_feature_store_info"""
     info = await info_service.get_feature_store_info(document_id=feature_store.id, verbose=False)
     expected_info = FeatureStoreInfo(
         name="sf_featurestore",
@@ -288,6 +301,16 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
         },
         "post_aggregation": None,
     }
+    data_feature_job_setting = [
+        {
+            "data_name": "sf_event_data",
+            "feature_job_setting": {
+                "blind_spot": "600s",
+                "frequency": "1800s",
+                "time_modulo_frequency": "300s",
+            },
+        }
+    ]
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[
@@ -305,6 +328,10 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
             default=production_ready_feature.version.to_str(),
         ),
         readiness=ReadinessComparison(this="PRODUCTION_READY", default="PRODUCTION_READY"),
+        data_cleaning_operation=DataCleaningOperationComparison(this=[], default=[]),
+        data_feature_job_setting=DataFeatureJobSettingComparison(
+            this=data_feature_job_setting, default=data_feature_job_setting
+        ),
         metadata=expected_metadata,
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
@@ -329,10 +356,9 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     )
 
 
-@pytest.mark.asyncio
-async def test_get_feature_info__complex_feature(info_service, feature_iet):
-    """Test get_feature_info"""
-    info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
+@pytest.fixture(name="expected_feature_iet_info")
+def expected_feature_iet_info_fixture(feature_iet):
+    """Expected complex feature info"""
     common_agg_parameters = {
         "filter": False,
         "keys": ["cust_id"],
@@ -390,7 +416,15 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
             "transforms": ["mul(value=-1)", "div", "add(value=0.1)", "log", "add"],
         },
     }
-    expected_info = FeatureInfo(
+    data_feature_job_setting = {
+        "data_name": "sf_event_data",
+        "feature_job_setting": {
+            "blind_spot": "10800s",
+            "frequency": "21600s",
+            "time_modulo_frequency": "10800s",
+        },
+    }
+    return FeatureInfo(
         name="iet_entropy_24h",
         entities=[
             EntityBriefInfo(name="customer", serving_names=["cust_id"], workspace_name="default")
@@ -407,12 +441,78 @@ async def test_get_feature_info__complex_feature(info_service, feature_iet):
             default=feature_iet.version.to_str(),
         ),
         readiness=ReadinessComparison(this="DRAFT", default="DRAFT"),
+        data_feature_job_setting={
+            "this": [data_feature_job_setting, data_feature_job_setting],
+            "default": [data_feature_job_setting, data_feature_job_setting],
+        },
+        data_cleaning_operation={"this": [], "default": []},
         metadata=expected_metadata,
-        created_at=info.created_at,
-        updated_at=info.updated_at,
+        created_at=feature_iet.created_at,
+        updated_at=feature_iet.updated_at,
         workspace_name="default",
     )
-    assert info.dict() == expected_info.dict()
+
+
+@pytest.mark.asyncio
+async def test_get_feature_info__complex_feature(
+    info_service, feature_iet, expected_feature_iet_info
+):
+    """Test get_feature_info"""
+    info = await info_service.get_feature_info(document_id=feature_iet.id, verbose=False)
+    expected = {
+        **expected_feature_iet_info.dict(),
+        "created_at": info.created_at,
+        "updated_at": info.updated_at,
+    }
+    assert info.dict() == expected
+
+
+@pytest.mark.asyncio
+async def test_get_feature_info__complex_feature_with_cdi(
+    info_service, feature_iet, expected_feature_iet_info, version_service
+):
+    """Test get_feature_info"""
+    new_version = await version_service.create_new_feature_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature_iet.id,
+            data_cleaning_operations=[
+                DataCleaningOperation(
+                    data_name="sf_event_data",
+                    column_cleaning_operations=[
+                        ColumnCleaningOperation(
+                            column_name="cust_id",
+                            cleaning_operations=[MissingValueImputation(imputed_value=-1)],
+                        ),
+                    ],
+                )
+            ],
+        )
+    )
+
+    info = await info_service.get_feature_info(document_id=new_version.id, verbose=False)
+    expected_version = expected_feature_iet_info.version
+    expected = {
+        **expected_feature_iet_info.dict(),
+        "created_at": info.created_at,
+        "updated_at": info.updated_at,
+        "data_cleaning_operation": {
+            "this": [
+                {
+                    "data_name": "sf_event_data",
+                    "column_cleaning_operations": [
+                        {
+                            "column_name": "cust_id",
+                            "cleaning_operations": [{"type": "missing", "imputed_value": -1}],
+                        }
+                    ],
+                }
+            ],
+            "default": [],
+        },
+        "version": {**expected_version.dict(), "this": new_version.version.to_str()},
+        "version_count": 2,
+    }
+    assert info.dict() == expected
 
 
 @pytest.mark.asyncio

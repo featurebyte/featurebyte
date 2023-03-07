@@ -150,7 +150,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
                 "name": None,
                 "node_names": {"project_1", "graph_1", "input_1", "project_2"},
                 "node_name": "graph_1",
-                "transforms": ["graph"],
+                "transforms": [],
                 "type": "derived",
                 "dtype": "FLOAT",
             }
@@ -287,7 +287,7 @@ def nested_output_graph_fixture(input_node_params):
                 "name": None,
                 "node_names": {"graph_1", "input_1"},
                 "node_name": "graph_1",
-                "transforms": ["graph"],
+                "transforms": [],
                 "type": "derived",
                 "dtype": "INT",
             }
@@ -377,7 +377,7 @@ def deep_nested_graph_fixture(input_node_params):
                 "name": None,
                 "node_names": {"graph_1"},
                 "node_name": "graph_1",
-                "transforms": ["graph"],
+                "transforms": [],
                 "type": "derived",
                 "dtype": "INT",
             }

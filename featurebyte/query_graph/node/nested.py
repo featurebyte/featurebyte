@@ -465,7 +465,7 @@ class BaseGraphNode(BasePrunableNode):
 
     @property
     def transform_info(self) -> str:
-        return self.type
+        return ""
 
     @property
     def output_node(self) -> NodeT:
