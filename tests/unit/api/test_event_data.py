@@ -260,7 +260,9 @@ class TestEventDataTestSuite(BaseDataTestSuite):
     """
     expected_clean_data_sql = """
     SELECT
-      CAST(CASE WHEN "col_int" IS NULL THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
+      CAST(CASE WHEN (
+        "col_int" IS NULL
+      ) THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
       "col_float" AS "col_float",
       "col_char" AS "col_char",
       "col_text" AS "col_text",

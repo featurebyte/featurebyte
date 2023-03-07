@@ -324,8 +324,8 @@ def test_get_value_node(input_node):
 @pytest.mark.parametrize(
     "parameters, expected",
     [
-        ({"descending": True}, "F_GET_RANK(dictionary, lookup, True)"),
-        ({"descending": False}, "F_GET_RANK(dictionary, lookup, False)"),
+        ({"descending": True}, "F_GET_RANK(dictionary, lookup, TRUE)"),
+        ({"descending": False}, "F_GET_RANK(dictionary, lookup, FALSE)"),
     ],
 )
 def test_get_rank_node(parameters, expected, input_node):
@@ -571,6 +571,8 @@ def test_datediff_resolves_correctly(dataframe):
         (float("nan"), "NULL"),
         (np.nan, "NULL"),
         (None, "NULL"),
+        (True, "TRUE"),
+        (False, "FALSE"),
     ],
 )
 def test_make_literal_value(value, expected_sql):

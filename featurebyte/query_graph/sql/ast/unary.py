@@ -62,7 +62,9 @@ class IsNullNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Is(this=self.expr.sql, expression=expressions.Null())
+        return expressions.Paren(
+            this=expressions.Is(this=self.expr.sql, expression=expressions.Null())
+        )
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> IsNullNode:
