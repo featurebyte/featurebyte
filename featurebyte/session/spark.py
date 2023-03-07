@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, List, Optional, OrderedDict, cast
 
 import collections
-import decimal
 import os
 
 import pandas as pd
@@ -254,11 +253,11 @@ class SparkSession(BaseSession):
             "BIGINT_TYPE": pa.int64(),
             "BINARY_TYPE": pa.large_binary(),
             "BOOLEAN_TYPE": pa.bool_(),
-            "DATE_TYPE": pa.string(),
+            "DATE_TYPE": pa.timestamp("ns", tz=None),
             "TIME_TYPE": pa.time32("ms"),
             "DOUBLE_TYPE": pa.float64(),
             "FLOAT_TYPE": pa.float32(),
-            "DECIMAL_TYPE": pa.float64(),
+            "DECIMAL_TYPE": pa.decimal128(38, 18),
             "INTERVAL_TYPE": pa.duration("ns"),
             "NULL_TYPE": pa.null(),
             "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
@@ -278,8 +277,29 @@ class SparkSession(BaseSession):
         return pyarrow_type
 
     @staticmethod
-    def _convert_decimal_to_float(row: Any) -> Any:
-        yield from (float(item) if isinstance(item, decimal.Decimal) else item for item in row)
+    def _process_batch_data(data: pd.DataFrame, schema: Schema) -> pd.DataFrame:
+        """
+        Process batch data before converting to PyArrow record batch.
+
+        Parameters
+        ----------
+        data: pd.DataFrame
+            Data to process
+        schema: Schema
+            Schema of the data
+
+        Returns
+        -------
+        pd.DataFrame
+            Processed data
+        """
+        for column in schema.names:
+            # Convert decimal columns to float
+            if isinstance(schema.field_by_name(column).type, pa.Decimal128Type):
+                data[column] = data[column].astype(float)
+            elif isinstance(schema.field_by_name(column).type, pa.TimestampType):
+                data[column] = pd.to_datetime(data[column])
+        return data
 
     @staticmethod
     def _read_batch(cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
@@ -301,10 +321,12 @@ class SparkSession(BaseSession):
             None if no more rows are available
         """
         results = cursor.fetchmany(batch_size)
-        data = None
-        if results:
-            data = [SparkSession._convert_decimal_to_float(row) for row in results]
-        return pa.record_batch(pd.DataFrame(data, columns=schema.names), schema=schema)
+        return pa.record_batch(
+            SparkSession._process_batch_data(
+                pd.DataFrame(results if results else None, columns=schema.names), schema
+            ),
+            schema=schema,
+        )
 
     @staticmethod
     def fetchall_arrow(cursor: Cursor) -> pa.Table:
