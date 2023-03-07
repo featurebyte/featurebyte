@@ -46,6 +46,6 @@ def test_escape_quote_char__snowflake(query, expected):
 )
 def test_escape_quote_char__spark(query, expected):
     """
-    Test escape_quote_char for SnowflakeAdapter
+    Test escape_quote_char for SparkAdapter
     """
     assert SparkAdapter.escape_quote_char(query) == expected
