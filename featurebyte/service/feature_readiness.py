@@ -30,6 +30,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.tabular_data import DataService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
+from featurebyte.service.version import VersionService
 
 
 class FeatureReadinessService(BaseService):
@@ -48,6 +49,7 @@ class FeatureReadinessService(BaseService):
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
         data_service: DataService,
+        version_service: VersionService,
     ):
         super().__init__(user, persistent, workspace_id)
         self.feature_service = feature_service
@@ -55,7 +57,7 @@ class FeatureReadinessService(BaseService):
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.production_ready_validator = ProductionReadyValidator(
-            self.feature_namespace_service, data_service
+            self.feature_namespace_service, data_service, version_service
         )
 
     async def update_feature_list_namespace(
@@ -233,7 +235,7 @@ class FeatureReadinessService(BaseService):
         readiness: FeatureReadiness
             Target feature readiness status
         ignore_guardrails: bool
-            Allow a user to specify if they want to  ignore any guardrails when updating this feature. This should
+            Allow a user to specify if they want to ignore any guardrails when updating this feature. This should
             currently only apply of the FeatureReadiness value is being updated to PRODUCTION_READY. This should
             be a no-op for all other scenarios.
         return_document: bool

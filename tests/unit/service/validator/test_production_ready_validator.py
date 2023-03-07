@@ -5,20 +5,36 @@ from typing import Any, Dict, List
 
 import pytest
 
-from featurebyte import DimensionView, EventView, FeatureJobSetting, MissingValueImputation
-from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte import DimensionView, EventView, Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(feature_namespace_service, app_container):
+def production_ready_validator_fixture(feature_namespace_service, app_container, version_service):
     """
     Get production ready validator
     """
     return ProductionReadyValidator(
         feature_namespace_service=feature_namespace_service,
         data_service=app_container.tabular_data_service,
+        version_service=version_service,
     )
+
+
+@pytest.fixture(name="source_version_creator")
+def source_version_creator_fixture(version_service):
+    """
+    Fixture that is a constructor to get source versions.
+    """
+
+    async def get_source_version(feature_name):
+        feature = Feature.get(feature_name)
+        source_feature = await version_service.create_new_feature_version_using_source_settings(
+            feature.id
+        )
+        return source_feature.node, source_feature.graph
+
+    return get_source_version
 
 
 @pytest.mark.asyncio
@@ -48,6 +64,7 @@ async def test_validate(
         feature_job_setting=updated_feature_job_setting,
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )["sum_30m"]
+    feature.save()
 
     # Update cleaning operations after feature has been created
     snowflake_event_data_with_entity["col_int"].update_critical_data_info(
@@ -95,48 +112,13 @@ async def test_assert_no_other_production_ready_feature__exists(
     assert "Found another feature version that is already" in str(exc)
 
 
-def test_get_feature_job_setting_from_graph(
-    production_ready_feature, feature_group_feature_job_setting
-):
-    """
-    Test retrieving feature job setting from a graph.
-    """
-    feature_job_setting = ProductionReadyValidator._get_feature_job_setting_from_graph(
-        production_ready_feature.node, production_ready_feature.graph
-    )
-    expected_feature_job_setting = FeatureJobSetting(**feature_group_feature_job_setting)
-    assert feature_job_setting.to_seconds() == expected_feature_job_setting.to_seconds()
-
-
-@pytest.mark.asyncio
-async def test_get_feature_job_setting_for_data_source(
-    production_ready_validator,
-    snowflake_event_data_with_entity,
-    snowflake_feature_store,
-    feature_group_feature_job_setting,
-):
-    """
-    Test _get_feature_job_setting_for_data_source
-    """
-    snowflake_feature_store.save()
-    snowflake_event_data_with_entity.save()
-    snowflake_event_data_with_entity.update_default_feature_job_setting(
-        feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
-    )
-
-    feature_job_setting = await production_ready_validator._get_feature_job_setting_for_data_source(
-        snowflake_event_data_with_entity.id
-    )
-    expected_feature_job_setting = FeatureJobSetting(**feature_group_feature_job_setting)
-    assert feature_job_setting == expected_feature_job_setting
-
-
 @pytest.mark.asyncio
 async def test_get_feature_job_setting_diffs__settings_differ(
     production_ready_validator,
     snowflake_feature_store,
     snowflake_event_data_with_entity,
     feature_group_feature_job_setting,
+    source_version_creator,
 ):
     """
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
@@ -161,15 +143,21 @@ async def test_get_feature_job_setting_diffs__settings_differ(
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     feature = feature_group["sum_30m"]
+    feature.save()
+
+    source_node, source_feature_version_graph = await source_version_creator(feature.name)
 
     # check if the settings match
-    differences = await production_ready_validator._get_feature_job_setting_diffs(
-        feature.node, feature.graph
+    refetch_feature = Feature.get(feature.name)
+    differences = await production_ready_validator._get_feature_job_setting_diffs_source_vs_curr(
+        source_node, source_feature_version_graph, refetch_feature.graph
     )
 
     # assert that there are differences
     assert differences == {
-        "default": FeatureJobSetting(frequency="30m", time_modulo_frequency="5m", blind_spot="10m"),
+        "default": FeatureJobSetting(
+            frequency="1800s", time_modulo_frequency="300s", blind_spot="600s"
+        ),
         "feature": FeatureJobSetting(
             frequency="1800s", time_modulo_frequency="300s", blind_spot="300s"
         ),
@@ -177,16 +165,16 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
 
 @pytest.mark.asyncio
-async def test_get_feature_job_setting_diffs__no_difference(
-    production_ready_validator, production_ready_feature
+async def test_get_feature_version_of_source__no_diff(
+    production_ready_feature, production_ready_validator
 ):
     """
-    Test _check_feature_job_setting_match
+    Test _get_feature_version_of_source - no diff returns None
     """
-    differences = await production_ready_validator._get_feature_job_setting_diffs(
-        production_ready_feature.node, production_ready_feature.graph
+    response = await production_ready_validator._get_feature_version_of_source(
+        production_ready_feature.name
     )
-    assert not differences
+    assert response is None
 
 
 @pytest.fixture(name="feature_from_dimension_data")
@@ -195,153 +183,6 @@ def feature_from_dimension_data_fixture(cust_id_entity, snowflake_dimension_data
     snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
     dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
     return dimension_view["col_float"].as_feature("FloatFeature")  # pylint: disable=no-member
-
-
-@pytest.mark.asyncio
-async def test_get_feature_job_setting_diffs__from_dimension_data_feature_has_no_result(
-    production_ready_validator, feature_from_dimension_data
-):
-    """
-    Test _check_feature_job_setting_match from dimension data has no result. This is because only features created
-    from event or item data will have feature job settings. As such, we can skip this validation for features
-    that are not created from item or event data.
-    """
-    differences = await production_ready_validator._get_feature_job_setting_diffs(
-        feature_from_dimension_data.node, feature_from_dimension_data.graph
-    )
-    assert not differences
-
-
-def test_get_input_event_data_id__event_data(production_ready_feature):
-    """
-    Test retrieving the input event data ID from event data backed feature.
-    """
-    input_event_data_id = ProductionReadyValidator._get_input_event_data_id(
-        production_ready_feature.node, production_ready_feature.graph
-    )
-    assert input_event_data_id is not None
-
-
-def test_get_input_event_data_id__dimension_data(feature_from_dimension_data):
-    """
-    Test retrieving input event data ID from dimension data backed feature - should return None.
-    """
-    input_event_data_id = ProductionReadyValidator._get_input_event_data_id(
-        feature_from_dimension_data.node, feature_from_dimension_data.graph
-    )
-    assert input_event_data_id is None
-
-
-def test_get_input_event_data_id__item_data(non_time_based_feature):
-    """
-    Test retrieving the input event data ID from item data
-    """
-    input_event_data_id = ProductionReadyValidator._get_input_event_data_id(
-        non_time_based_feature.node, non_time_based_feature.graph
-    )
-    assert input_event_data_id is not None
-
-
-def test_get_cleaning_node_from_feature_graph(feature_with_cleaning_operations):
-    """
-    Test _get_cleaning_node_from_feature_graph
-    """
-    cleaning_node = ProductionReadyValidator._get_cleaning_node_from_feature_graph(
-        feature_with_cleaning_operations.node, feature_with_cleaning_operations.graph
-    )
-    assert cleaning_node.parameters.graph.dict()["nodes"] == [
-        {
-            "name": "proxy_input_1",
-            "output_type": "frame",
-            "parameters": {"input_order": 0},
-            "type": "proxy_input",
-        },
-        {
-            "name": "project_1",
-            "output_type": "series",
-            "parameters": {"columns": ["col_float"]},
-            "type": "project",
-        },
-        {"name": "is_null_1", "output_type": "series", "parameters": {}, "type": "is_null"},
-        {
-            "name": "conditional_1",
-            "output_type": "series",
-            "parameters": {"value": 0},
-            "type": "conditional",
-        },
-        {
-            "name": "cast_1",
-            "output_type": "series",
-            "parameters": {"from_dtype": "FLOAT", "type": "float"},
-            "type": "cast",
-        },
-        {
-            "name": "assign_1",
-            "output_type": "frame",
-            "parameters": {"name": "col_float", "value": None},
-            "type": "assign",
-        },
-    ]
-
-
-@pytest.mark.asyncio
-async def test_get_cleaning_node_from_input_data(
-    feature_with_cleaning_operations, production_ready_validator
-):
-    """
-    Test _get_cleaning_node_from_input_data
-    """
-    cleaning_node = await production_ready_validator._get_cleaning_node_from_input_data(
-        feature_with_cleaning_operations.node, feature_with_cleaning_operations.graph
-    )
-    assert cleaning_node is not None
-    assert cleaning_node.parameters.type == GraphNodeType.CLEANING
-
-
-@pytest.fixture(name="cleaning_graph_node")
-def cleaning_graph_node_fixture(feature_with_cleaning_operations):
-    """
-    Get cleaning graph node
-    """
-    graph_node = ProductionReadyValidator._get_cleaning_node_from_feature_graph(
-        feature_with_cleaning_operations.node, feature_with_cleaning_operations.graph
-    )
-    assert graph_node is not None
-    return graph_node
-
-
-def test_diff_cleaning_nodes(cleaning_graph_node):
-    """
-    Test _diff_cleaning_nodes
-    """
-
-    response = ProductionReadyValidator._diff_cleaning_nodes(None, None)
-    assert not response
-
-    response = ProductionReadyValidator._diff_cleaning_nodes(None, cleaning_graph_node)
-    expected_node_names = [
-        "proxy_input_1",
-        "project_1",
-        "is_null_1",
-        "conditional_1",
-        "cast_1",
-        "assign_1",
-    ]
-    assert len(response) == 1
-    diff_b = response["feature"]
-    node_names = [node["name"] for node in diff_b["nodes"]]
-    assert node_names == expected_node_names
-
-    response = ProductionReadyValidator._diff_cleaning_nodes(cleaning_graph_node, None)
-    assert len(response) == 1
-    diff_a = response["default"]
-    node_names = [node["name"] for node in diff_a["nodes"]]
-    assert node_names == expected_node_names
-
-    response = ProductionReadyValidator._diff_cleaning_nodes(
-        cleaning_graph_node, cleaning_graph_node
-    )
-    assert not response
 
 
 def get_node_for_name(nodes: List[Dict[str, Any]], node_name: str) -> Dict[str, Any]:
@@ -358,6 +199,7 @@ async def test_get_cleaning_operations_diffs__with_two_different_nodes(
     snowflake_feature_store,
     production_ready_validator,
     feature_group_feature_job_setting,
+    source_version_creator,
 ):
     """
     Test diff_cleaning_nodes when the feature, and data, have different cleaning operations.
@@ -381,6 +223,7 @@ async def test_get_cleaning_operations_diffs__with_two_different_nodes(
         feature_names=["sum_30m"],
     )
     feature = feature_group["sum_30m"]
+    feature.save()
 
     # Update the event data to have a different cleaning operation
     snowflake_event_data_with_entity["col_int"].update_critical_data_info(
@@ -389,9 +232,11 @@ async def test_get_cleaning_operations_diffs__with_two_different_nodes(
         ]
     )
 
+    _, source_feature_version_graph = await source_version_creator(feature.name)
+
     # Check to see if the cleaning operations between the feature, and input data, match.
-    diff = await production_ready_validator._get_cleaning_operations_diffs(
-        feature.node, feature.graph
+    diff = await production_ready_validator._get_cleaning_operations_diff_vs_source(
+        source_feature_version_graph, feature.graph
     )
 
     # Assert that they are different.
