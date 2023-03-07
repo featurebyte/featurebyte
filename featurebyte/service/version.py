@@ -269,6 +269,11 @@ class VersionService(BaseService):
         Create new feature version based on feature job settings & cleaning operation from the source data
         (newly created feature won't be saved to the persistent)
 
+        Parameters
+        ----------
+        document_id: ObjectId
+            Feature id used to create new version
+
         Returns
         -------
         FeatureModel
