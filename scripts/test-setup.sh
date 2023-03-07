@@ -12,4 +12,4 @@ while [[ $(docker container inspect -f "{{ .State.Health.Status }}" spark-thrift
 done
 
 set -x
-docker exec -it spark-thrift /bin/bash -c "df -h /tmp"
+docker exec spark-thrift /bin/bash -c "df -h /tmp"
