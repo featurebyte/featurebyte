@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+import re
 from abc import abstractmethod
 
 from sqlglot import expressions
@@ -344,6 +345,33 @@ class BaseAdapter:
         """
         return True
 
+    @classmethod
+    @abstractmethod
+    def current_timestamp(cls) -> Expression:
+        """
+        Expression to get the current timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def escape_quote_char(cls, query: str) -> str:
+        """
+        Escape the quote character in the query
+
+        Parameters
+        ----------
+        query : str
+            Query to escape
+
+        Returns
+        -------
+        str
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -458,6 +486,15 @@ class SnowflakeAdapter(BaseAdapter):
             this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
         )
 
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return expressions.Anonymous(this="SYSDATE")
+
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        # Snowflake sql escapes ' with ''. Use regex to make it safe to call this more than once.
+        return re.sub("(?<!')'(?!')", "''", query)
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -470,10 +507,9 @@ class DatabricksAdapter(BaseAdapter):
         """
 
         FLOAT = "DOUBLE"
-        OBJECT = "MAP"
         TIMESTAMP = "TIMESTAMP"
         STRING = "STRING"
-        MAP = "MAP"
+        MAP = "MAP<STRING, DOUBLE>"
 
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
@@ -575,6 +611,15 @@ class DatabricksAdapter(BaseAdapter):
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
         # timestamps do not have timezone information
         return timestamp_expr
+
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return expressions.Anonymous(this="current_timestamp")
+
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        # Databricks sql escapes ' with \'. Use regex to make it safe to call this more than once.
+        return re.sub(r"(?<!\\)'", "\\'", query)
 
 
 class SparkAdapter(DatabricksAdapter):

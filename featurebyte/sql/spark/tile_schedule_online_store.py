@@ -8,6 +8,7 @@ from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
+from featurebyte.sql.spark.common import construct_create_delta_table_query
 
 
 class TileScheduleOnlineStore(BaseModel):
@@ -38,7 +39,7 @@ class TileScheduleOnlineStore(BaseModel):
         """
         Execute tile schedule online store operation
         """
-
+        # pylint: disable=too-many-locals
         select_sql = f"""
             SELECT
               RESULT_ID,
@@ -67,6 +68,11 @@ class TileScheduleOnlineStore(BaseModel):
 
             logger.debug(f"{f_name}, {fs_table}, {f_entity_columns}, {f_value_type}")
 
+            entity_columns = (
+                [col.replace('"', "") for col in f_entity_columns.split(",")]
+                if f_entity_columns
+                else []
+            )
             fs_table_exist_flag = True
             try:
                 await self._spark.execute_query(f"select * from {fs_table} limit 1")
@@ -74,13 +80,12 @@ class TileScheduleOnlineStore(BaseModel):
                 fs_table_exist_flag = False
             logger.debug(f"fs_table_exist_flag: {fs_table_exist_flag}")
 
+            entities_fname_str = ", ".join([f"`{col}`" for col in entity_columns + [f_name]])
+
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
-                columns = f_entity_columns.split(",")
-                columns.append(f_name)
-                columns_str = ", ".join(columns)
-                create_sql = (
-                    f"create table {fs_table} using delta as (select {columns_str} from ({f_sql}))"
+                create_sql = construct_create_delta_table_query(
+                    fs_table, f"select {entities_fname_str} from ({f_sql})"
                 )
                 await self._spark.execute_query(create_sql)
 
@@ -88,11 +93,11 @@ class TileScheduleOnlineStore(BaseModel):
                 # feature store table already exists, insert records with the input feature sql
                 entity_insert_cols = []
                 entity_filter_cols = []
-                for element in f_entity_columns.split(","):
-                    entity_insert_cols.append("b." + element)
-                    entity_filter_cols.append("a." + element + " = b." + element)
+                for element in entity_columns:
+                    entity_insert_cols.append(f"b.`{element}`")
+                    entity_filter_cols.append(f"a.`{element}` = b.`{element}`")
 
-                entity_insert_cols_str = ",".join(entity_insert_cols)
+                entity_insert_cols_str = ", ".join(entity_insert_cols)
                 entity_filter_cols_str = " AND ".join(entity_filter_cols)
 
                 # check whether feature value column exists, if not add the new column
@@ -112,13 +117,19 @@ class TileScheduleOnlineStore(BaseModel):
                 # """
 
                 # update or insert feature values for entities that are in entity universe
+                if entity_columns:
+                    on_condition_str = entity_filter_cols_str
+                    values_args = f"{entity_insert_cols_str}, b.`{f_name}`"
+                else:
+                    on_condition_str = "true"
+                    values_args = f"b.`{f_name}`"
                 merge_sql = f"""
                     merge into {fs_table} a using ({f_sql}) b
-                        on {entity_filter_cols_str}
+                        on {on_condition_str}
                         when matched then
                             update set a.{f_name} = b.{f_name}
                         when not matched then
-                            insert ({f_entity_columns}, {f_name})
-                                values ({entity_insert_cols_str}, b.{f_name})
+                            insert ({entities_fname_str})
+                                values ({values_args})
                 """
                 await self._spark.execute_query(merge_sql)

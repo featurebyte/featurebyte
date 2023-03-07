@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.enum import SourceType
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
@@ -156,10 +155,6 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        # Currently only Snowflake is supported as there is no abstraction on FeatureManager for
-        # different engines. To be fixed: https://featurebyte.atlassian.net/browse/DEV-810
-        if session.source_type != SourceType.SNOWFLAKE:
-            return
         feature_manager = FeatureManager(session)
 
         if feature.online_enabled:

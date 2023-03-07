@@ -11,6 +11,7 @@ from featurebyte.session.base import BaseSession
 from featurebyte.session.spark import SparkSession
 from featurebyte.sql.spark.tile_generate import TileGenerate
 from featurebyte.sql.spark.tile_generate_entity_tracking import TileGenerateEntityTracking
+from featurebyte.sql.spark.tile_schedule_online_store import TileScheduleOnlineStore
 from featurebyte.tile.base import BaseTileManager
 
 
@@ -50,7 +51,7 @@ class TileManagerSpark(BaseTileManager):
         # TODO: implement this
         return True
 
-    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> str:
+    async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
         """
         Populate feature store with the given tile_spec and timestamp string
 
@@ -60,13 +61,13 @@ class TileManagerSpark(BaseTileManager):
             the input TileSpec
         job_schedule_ts_str: str
             timestamp string of the job schedule
-
-        Returns
-        -------
-            generated sql string
         """
-        # TODO: implement this
-        return ""
+        executor = TileScheduleOnlineStore(
+            spark_session=self._session,
+            agg_id=tile_spec.aggregation_id,
+            job_schedule_ts_str=job_schedule_ts_str,
+        )
+        await executor.execute()
 
     async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
         """
