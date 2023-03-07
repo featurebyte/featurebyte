@@ -220,7 +220,7 @@ class Frame(FrozenFrame):
             column_name: str = key[1]
             column = self[column_name]
 
-            # check whether the mask has the same type as the column type
+            # check whether the mask has the expected types
             mask = key[0]
             if type(mask) not in {Series, FrozenSeries}:
                 class_name = type(column).__name__
