@@ -79,6 +79,11 @@ class ProductionReadyValidator:
         -------
         Optional[Tuple[Node, QueryGraph]]
             node and graph of the feature version of the source, or None if there are no changes detected
+
+        Raises
+        ------
+        DocumentError
+            raised if there is an error when trying to create new feature version
         """
         feature = Feature.get(feature_name)
         try:
@@ -91,6 +96,7 @@ class ProductionReadyValidator:
         except DocumentError as exc:
             if "No change detected on the new feature version" in str(exc):
                 return None
+            raise exc
 
     @staticmethod
     def _raise_error_if_diffs_present(
