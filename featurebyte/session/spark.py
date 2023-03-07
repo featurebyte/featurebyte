@@ -12,6 +12,7 @@ import os
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
+from pandas.core.dtypes.common import is_datetime64_dtype, is_float_dtype
 from pyarrow import Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
@@ -257,7 +258,7 @@ class SparkSession(BaseSession):
             "TIME_TYPE": pa.time32("ms"),
             "DOUBLE_TYPE": pa.float64(),
             "FLOAT_TYPE": pa.float32(),
-            "DECIMAL_TYPE": pa.decimal128(38, 18),
+            "DECIMAL_TYPE": pa.float64(),
             "INTERVAL_TYPE": pa.duration("ns"),
             "NULL_TYPE": pa.null(),
             "TIMESTAMP_TYPE": pa.timestamp("ns", tz=None),
@@ -295,9 +296,13 @@ class SparkSession(BaseSession):
         """
         for column in schema.names:
             # Convert decimal columns to float
-            if isinstance(schema.field_by_name(column).type, pa.Decimal128Type):
+            if schema.field_by_name(column).type == pa.float64() and not is_float_dtype(
+                data[column]
+            ):
                 data[column] = data[column].astype(float)
-            elif isinstance(schema.field_by_name(column).type, pa.TimestampType):
+            elif isinstance(
+                schema.field_by_name(column).type, pa.TimestampType
+            ) and not is_datetime64_dtype(data[column]):
                 data[column] = pd.to_datetime(data[column])
         return data
 
