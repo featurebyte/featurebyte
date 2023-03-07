@@ -1112,6 +1112,9 @@ class AggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: AggregateAsAtParameters
 
+    # class variable
+    _auto_convert_expression_to_variable: ClassVar[bool] = False
+
     @property
     def max_input_count(self) -> int:
         return 1
