@@ -524,16 +524,18 @@ def test_graph_flattening(test_dir):
     ]
 
 
+def insert_project_node(graph_node, input_node, columns):
+    """Insert a project node into a graph inside the graph node"""
+    return graph_node.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": columns},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+
+
 def test_graph_node_hash_insensitive_to_nodes_and_edges_ordering(input_node_params):
     """Test graph node hash is insensitive to nested nodes and edges ordering"""
-
-    def insert_project_node(graph_node, input_node, columns):
-        return graph_node.add_operation(
-            node_type=NodeType.PROJECT,
-            node_params={"columns": columns},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[input_node],
-        )
 
     def insert_add_node(graph_node, left_node, right_node):
         return graph_node.add_operation(
@@ -586,3 +588,42 @@ def test_graph_node_hash_insensitive_to_nodes_and_edges_ordering(input_node_para
     # check that the inserted nodes are the same (no new node is inserted)
     assert inserted_graph_node_2 == inserted_graph_node_1
     assert list(graph.nodes_map.keys()) == ["graph_1"]
+
+
+def test_graph_node_keep_only_required_target_columns(input_node_params):
+    """Test graph node keep only required target columns"""
+    graph = QueryGraph()
+    graph_node, _ = GraphNode.create(
+        node_type=NodeType.INPUT,
+        node_params=input_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+        graph_node_type=GraphNodeType.CLEANING,
+    )
+    input_node = graph_node.output_node
+    _ = graph_node.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "new_col", "value": 10},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node],
+    )
+    inserted_graph_node = graph.add_node(node=graph_node, input_nodes=[])
+    # introduce an edge into the graph (but never used for final output)
+    _ = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["new_col"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[inserted_graph_node],
+    )
+    proj_col_int_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["col_int"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[inserted_graph_node],
+    )
+
+    # check the graph node in the final pruned graph does not contain the assign node
+    pruned_graph, _ = graph.prune(target_node=proj_col_int_node, aggressive=True)
+    graph_node = pruned_graph.get_node_by_name("graph_1")
+    assert list(graph_node.parameters.graph.nodes_map.keys()) == ["input_1"]
+    assert graph_node.parameters.graph.edges == []

@@ -313,7 +313,9 @@ class QueryGraphModel(FeatureByteBaseModel):
         """
         return self.backward_edges_map.get(node.name, [])
 
-    def get_target_nodes_required_column_names(self, node_name: str) -> List[str]:
+    def get_target_nodes_required_column_names(
+        self, node_name: str, keep_target_node_names: Optional[Set[str]] = None
+    ) -> List[str]:
         """
         Get the target required column names of the given node.
         Current node output must have these columns, otherwise it will trigger error in processing the graph.
@@ -322,6 +324,8 @@ class QueryGraphModel(FeatureByteBaseModel):
         ----------
         node_name: str
             Node name
+        keep_target_node_names: Optional[Set[str]]
+            If provided, only use the target nodes with names in the set
 
         Returns
         -------
@@ -329,6 +333,11 @@ class QueryGraphModel(FeatureByteBaseModel):
         """
         assert node_name in self.edges_map, "Node name not found in edges_map"
         target_node_names = self.edges_map[node_name]
+        if keep_target_node_names:
+            target_node_names = [
+                node_name for node_name in target_node_names if node_name in keep_target_node_names
+            ]
+
         target_nodes = [self.get_node_by_name(node_name) for node_name in target_node_names]
         if target_nodes:
             # get the input column order from current node to the target nodes
