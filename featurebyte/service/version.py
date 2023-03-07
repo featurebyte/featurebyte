@@ -60,6 +60,7 @@ class VersionService(BaseService):
         self,
         feature: FeatureModel,
         data_feature_job_settings: Optional[list[DataFeatureJobSetting]],
+        use_source_settings: bool,
     ) -> dict[str, Node]:
         """
         Prepare group by node name to replacement node mapping by using the provided feature job setting
@@ -72,13 +73,16 @@ class VersionService(BaseService):
             Feature model
         data_feature_job_settings: Optional[list[DataFeatureJobSetting]]
             Feature job setting
+        use_source_settings: bool
+            Whether to use source data's default feature job setting
 
         Returns
         -------
         dict[str, Node]
         """
         node_name_to_replacement_node: dict[str, Node] = {}
-        if data_feature_job_settings:
+        data_feature_job_settings = data_feature_job_settings or []
+        if data_feature_job_settings or use_source_settings:
             data_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {
                 data_feature_job_setting.data_name: data_feature_job_setting.feature_job_setting
                 for data_feature_job_setting in data_feature_job_settings
@@ -106,8 +110,19 @@ class VersionService(BaseService):
                     if col.name == group_by_node.parameters.timestamp
                 )
                 assert timestamp_col.tabular_data_id is not None
-                data_name = data_id_to_doc[timestamp_col.tabular_data_id]["name"]
-                feature_job_setting = data_name_to_feature_job_setting.get(data_name)
+                data_doc = data_id_to_doc[timestamp_col.tabular_data_id]
+
+                # prepare feature job setting
+                feature_job_setting = None
+                if use_source_settings:
+                    # use the (event) data source's default feature job setting
+                    feature_job_setting_dict = data_doc["default_feature_job_setting"]
+                    if feature_job_setting_dict:
+                        feature_job_setting = FeatureJobSetting(**feature_job_setting_dict)
+                else:
+                    # use the provided feature job setting
+                    feature_job_setting = data_name_to_feature_job_setting.get(data_doc["name"])
+
                 if feature_job_setting:
                     # input node will be used when we need to support updating specific groupby node given event data ID
                     parameters = {
@@ -172,21 +187,25 @@ class VersionService(BaseService):
         feature: FeatureModel,
         data_feature_job_settings: Optional[list[DataFeatureJobSetting]],
         data_cleaning_operations: Optional[list[DataCleaningOperation]],
+        use_source_settings: bool,
     ) -> FeatureModel:
         node_name_to_replacement_node: dict[str, Node] = {}
 
         # prepare group by node replacement
         group_by_node_replacement = await self._prepare_group_by_node_name_to_replacement_node(
-            feature=feature, data_feature_job_settings=data_feature_job_settings
+            feature=feature,
+            data_feature_job_settings=data_feature_job_settings,
+            use_source_settings=use_source_settings,
         )
         node_name_to_replacement_node.update(group_by_node_replacement)
 
         # prepare view graph node replacement
-        if data_cleaning_operations:
+        if data_cleaning_operations or use_source_settings:
             view_node_name_replacement = (
                 await self.view_construction_service.prepare_view_node_name_to_replacement_node(
                     query_graph=feature.graph,
-                    data_cleaning_operations=data_cleaning_operations,
+                    data_cleaning_operations=data_cleaning_operations or [],
+                    use_source_settings=use_source_settings,
                 )
             )
             node_name_to_replacement_node.update(view_node_name_replacement)
@@ -221,6 +240,7 @@ class VersionService(BaseService):
     ) -> FeatureModel:
         """
         Create new feature version based on given source feature
+        (newly created feature will be saved to the persistent)
 
         Parameters
         ----------
@@ -233,11 +253,34 @@ class VersionService(BaseService):
         """
         feature = await self.feature_service.get_document(document_id=data.source_feature_id)
         new_feature = await self._create_new_feature_version(
-            feature, data.data_feature_job_settings, data.data_cleaning_operations
+            feature,
+            data.data_feature_job_settings,
+            data.data_cleaning_operations,
+            use_source_settings=False,
         )
         return await self.feature_service.create_document(
             data=FeatureCreate(**new_feature.dict(by_alias=True))
         )
+
+    async def create_new_feature_version_using_source_settings(
+        self, document_id: ObjectId
+    ) -> FeatureModel:
+        """
+        Create new feature version based on feature job settings & cleaning operation from the source data
+        (newly created feature won't be saved to the persistent)
+
+        Returns
+        -------
+        FeatureModel
+        """
+        feature = await self.feature_service.get_document(document_id=document_id)
+        new_feature = await self._create_new_feature_version(
+            feature,
+            data_feature_job_settings=None,
+            data_cleaning_operations=None,
+            use_source_settings=True,
+        )
+        return new_feature
 
     async def _create_new_feature_list_version(
         self,

@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError
 from featurebyte.models.feature_list import FeatureListNewVersionMode
+from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     DataFeatureJobSetting,
     FeatureJobSetting,
@@ -21,6 +22,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     DataCleaningOperation,
     MissingValueImputation,
 )
+from featurebyte.schema.event_data import EventDataServiceUpdate
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -686,3 +688,53 @@ async def test_create_new_feature_version__with_non_time_based_feature(
 
     # graph structure (edges) should be the same
     assert new_version.graph.edges == feature_non_time_based.graph.edges
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings(
+    version_service, event_data_service, feature, event_data
+):
+    """Test create new feature version using source settings"""
+    # check current feature settings
+    view_graph_params = feature.graph.get_node_by_name("graph_1").parameters
+    assert view_graph_params.metadata.column_cleaning_operations == []
+
+    group_by_params = feature.graph.get_node_by_name("groupby_1").parameters
+    assert group_by_params.blind_spot == 600
+    assert group_by_params.frequency == 1800
+    assert group_by_params.time_modulo_frequency == 300
+
+    # prepare event data before create new version from source settings
+    columns_info_with_cdi = []
+    for col in event_data.columns_info:
+        if col.name == "col_float":
+            col.critical_data_info = CriticalDataInfo(
+                cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+            )
+        columns_info_with_cdi.append(col)
+
+    await event_data_service.update_document(
+        document_id=event_data.id,
+        data=EventDataServiceUpdate(
+            default_feature_job_setting=FeatureJobSetting(
+                blind_spot="1h", frequency="2h", time_modulo_frequency="30m"
+            ),
+            columns_info=columns_info_with_cdi,
+        ),
+    )
+
+    # create new version from source settings & check the feature job setting & data cleaning operations
+    new_version = await version_service.create_new_feature_version_using_source_settings(
+        document_id=feature.id
+    )
+    view_graph_params = new_version.graph.get_node_by_name("graph_1").parameters
+    assert view_graph_params.metadata.column_cleaning_operations == [
+        ColumnCleaningOperation(
+            column_name="col_float", cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+        )
+    ]
+
+    group_by_params = new_version.graph.get_node_by_name("groupby_1").parameters
+    assert group_by_params.blind_spot == 3600
+    assert group_by_params.frequency == 7200
+    assert group_by_params.time_modulo_frequency == 1800

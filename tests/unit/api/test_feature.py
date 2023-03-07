@@ -1129,7 +1129,7 @@ def test_feature_definition(feature_with_clean_column_names):
 
 
 @pytest.mark.parametrize("main_data_from_event_data", [True, False])
-def test_feature_create_new_version__multiple_feature_job_setting(
+def test_feature_create_new_version__multiple_event_data(
     saved_event_data, snowflake_database_table_scd_data, cust_id_entity, main_data_from_event_data
 ):
     """Test create new version with multiple feature job settings"""

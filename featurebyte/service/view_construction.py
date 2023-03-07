@@ -124,6 +124,7 @@ class ViewConstructionService(BaseService):
         view_node_name_to_data_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]],
         create_view_kwargs: dict[str, Any],
         metadata_kwargs: dict[str, Any],
+        use_source_settings: bool,
     ) -> tuple[BaseGraphNode, list[ColumnInfo]]:
         # get the data document based on the data ID in input node
         data_id = input_node.parameters.id
@@ -134,10 +135,14 @@ class ViewConstructionService(BaseService):
         parameters_metadata = graph_node.parameters.metadata  # type: ignore
         assert isinstance(parameters_metadata, ViewMetadata)
         assert data_document.name is not None
-        column_clean_ops = data_name_to_column_cleaning_operations.get(
-            data_document.name,
-            parameters_metadata.column_cleaning_operations,
-        )
+        if use_source_settings:
+            column_clean_ops = data_document.table_data.column_cleaning_operations
+        else:
+            column_clean_ops = data_name_to_column_cleaning_operations.get(
+                data_document.name,
+                parameters_metadata.column_cleaning_operations,
+            )
+
         parameters_metadata = parameters_metadata.clone(
             view_mode=parameters_metadata.view_mode,
             column_cleaning_operations=column_clean_ops,
@@ -170,7 +175,10 @@ class ViewConstructionService(BaseService):
         return new_view_graph_node, new_view_columns_info
 
     async def prepare_view_node_name_to_replacement_node(
-        self, query_graph: QueryGraphModel, data_cleaning_operations: list[DataCleaningOperation]
+        self,
+        query_graph: QueryGraphModel,
+        data_cleaning_operations: list[DataCleaningOperation],
+        use_source_settings: bool,
     ) -> dict[str, Node]:
         """
         Prepare view graph node name to replacement node mapping by using the provided data cleaning and
@@ -182,6 +190,8 @@ class ViewConstructionService(BaseService):
             Feature model
         data_cleaning_operations: Optional[List[DataCleaningOperation]]
             Data cleaning operations
+        use_source_settings: bool
+            Whether to use source data's data cleaning operations
 
         Returns
         -------
@@ -231,6 +241,7 @@ class ViewConstructionService(BaseService):
                 view_node_name_to_data_info=view_node_name_to_data_info,
                 create_view_kwargs=create_view_kwargs,
                 metadata_kwargs=metadata_kwargs,
+                use_source_settings=use_source_settings,
             )
 
             # store the new view graph node, view columns info and data input node
@@ -266,7 +277,9 @@ class ViewConstructionService(BaseService):
         GraphNodeNameMap
         """
         node_name_to_replacement_node = await self.prepare_view_node_name_to_replacement_node(
-            query_graph=query_graph, data_cleaning_operations=data_cleaning_operations
+            query_graph=query_graph,
+            data_cleaning_operations=data_cleaning_operations,
+            use_source_settings=False,
         )
         updated_query_graph, node_name_map = QueryGraph(**query_graph.dict()).reconstruct(
             node_name_to_replacement_node=node_name_to_replacement_node,

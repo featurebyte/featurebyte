@@ -154,6 +154,17 @@ class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteWorkspaceBaseDocu
         return list(set(col.semantic_id for col in self.columns_info if col.semantic_id))
 
     @property
+    def table_data(self) -> BaseTableData:
+        """
+        Table data
+
+        Returns
+        -------
+        BaseTableData
+        """
+        return self._table_data_class(**self.json_dict())
+
+    @property
     @abstractmethod
     def primary_key_columns(self) -> List[str]:
         """
