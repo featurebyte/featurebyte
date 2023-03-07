@@ -221,14 +221,15 @@ jobs:
           make test-setup
           set +e
           make test-integration-spark
-          EXIT_CODE=$?
-          if [ $EXIT_CODE -ne 0 ]; then
-              echo "Spark Thrift Server logs:"
-              docker logs spark-thrift --tail 50000
-              exit $EXIT_CODE
-          fi
+          docker logs spark-thrift 2>&1 | tee spark-thrift.log
           make test-teardown
           mv .coverage .coverage.2
+      - name: Upload spark-thrift log file
+        uses: actions/upload-artifact@v3
+        with:
+          name: spark-thrift-logs
+          path: spark-thrift.log
+          retention-days: 5
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
