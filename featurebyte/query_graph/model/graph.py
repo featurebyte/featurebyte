@@ -314,7 +314,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self.backward_edges_map.get(node.name, [])
 
     def get_target_nodes_required_column_names(
-        self, node_name: str, keep_target_node_names: Optional[Set[str]] = None
+        self, node_name: str, keep_target_node_names: Optional[Set[str]]
     ) -> List[str]:
         """
         Get the target required column names of the given node.
