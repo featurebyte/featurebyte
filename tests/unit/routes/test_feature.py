@@ -237,11 +237,16 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "feature_job_setting": {
-                    "blind_spot": "1d",
-                    "frequency": "1d",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
                 "data_cleaning_operations": [
                     {
                         "data_name": "sf_event_data",
@@ -317,11 +322,16 @@ class TestFeatureApi(BaseWorkspaceApiTestSuite):
             f"{self.base_route}",
             json={
                 "source_feature_id": create_response_dict["_id"],
-                "feature_job_setting": {
-                    "blind_spot": "1d",
-                    "frequency": "1d",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
             },
         )
 

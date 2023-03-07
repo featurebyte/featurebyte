@@ -43,7 +43,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import DataFeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import DataCleaningOperation
 from featurebyte.query_graph.node.generic import (
     AliasNode,
@@ -648,7 +648,7 @@ class Feature(
     @typechecked
     def create_new_version(
         self,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        data_feature_job_settings: Optional[List[DataFeatureJobSetting]] = None,
         data_cleaning_operations: Optional[List[DataCleaningOperation]] = None,
     ) -> Feature:
         """
@@ -656,8 +656,8 @@ class Feature(
 
         Parameters
         ----------
-        feature_job_setting: Optional[FeatureJobSetting]
-            New feature job setting
+        data_feature_job_settings: Optional[List[DataFeatureJobSetting]]
+            List of data feature job settings to be applied to the feature
         data_cleaning_operations: Optional[List[DataCleaningOperation]]
             List of data cleaning operations to be applied to the feature
 
@@ -678,11 +678,16 @@ class Feature(
         >>> import featurebyte as fb
         >>> feature = fb.Feature.get("my_magic_feature")  # doctest: +SKIP
         >>> feature.create_new_version(
-        ...   feature_job_setting=FeatureJobSetting(
-        ...     blind_spot="10m",
-        ...     frequency="30m",
-        ...     time_modulo_frequency="5m",
-        ...   ),
+        ...   data_feature_job_settings=[
+        ...     fb.DataFeatureJobSetting(
+        ...       data_name="some_event_data_name",
+        ...       feature_job_setting=fb.FeatureJobSetting(
+        ...         blind_spot="10m",
+        ...         frequency="30m",
+        ...         time_modulo_frequency="5m",
+        ...       )
+        ...     )
+        ...   ]
         ... )  # doctest: +SKIP
 
 
@@ -710,7 +715,12 @@ class Feature(
             url=self._route,
             json={
                 "source_feature_id": str(self.id),
-                "feature_job_setting": feature_job_setting.dict() if feature_job_setting else None,
+                "data_feature_job_settings": [
+                    data_feature_job_setting.dict()
+                    for data_feature_job_setting in data_feature_job_settings
+                ]
+                if data_feature_job_settings
+                else None,
                 "data_cleaning_operations": [
                     clean_ops.dict() for clean_ops in data_cleaning_operations
                 ]

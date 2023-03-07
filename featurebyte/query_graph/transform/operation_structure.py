@@ -1,7 +1,7 @@
 """
 This module contains operation structure extraction related classes.
 """
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
@@ -138,11 +138,16 @@ class OperationStructureExtractor(
         proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
         **kwargs: Any,
     ) -> OperationStructureInfo:
-        state_params = {}
+        state_params: Dict[str, Any] = {"keep_all_source_columns": False}
+        if "keep_all_source_columns" in kwargs:
+            # if this parameter is set, then the operation structure will keep all the source columns
+            # even if they are not directly used in the operation (for example, event timestamp & entity columns
+            # used in group by node)
+            state_params["keep_all_source_columns"] = kwargs["keep_all_source_columns"]
         if proxy_input_operation_structures:
             state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
 
-        global_state = OperationStructureInfo(**state_params)  # type: ignore[arg-type]
+        global_state = OperationStructureInfo(**state_params)
         self._extract(
             node=node,
             branch_state=OperationStructureBranchState(),

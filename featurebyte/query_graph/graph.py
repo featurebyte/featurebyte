@@ -1,10 +1,23 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, DefaultDict, Dict, List, Literal, Tuple, TypedDict, cast
+from typing import (
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypedDict,
+    cast,
+)
 
 from collections import defaultdict
 
+from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.common.singleton import SingletonMeta
@@ -13,6 +26,7 @@ from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.graph import Edge, GraphNodeNameMap, QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.base import NodeT
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -24,6 +38,44 @@ class QueryGraph(QueryGraphModel):
     """
     Graph data structure
     """
+
+    def iterate_group_by_and_data_id_node_pairs(
+        self, target_node: Node
+    ) -> Iterator[Tuple[GroupByNode, Optional[ObjectId]]]:
+        """
+        Iterate all GroupBy nodes and their corresponding Data ID
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+
+        Yields
+        ------
+        Tuple[GroupByNode, Optional[ObjectId]]
+            GroupBy node and its corresponding EventData input node
+        """
+        operation_structure_info = OperationStructureExtractor(graph=self).extract(
+            node=target_node,
+            keep_all_source_columns=True,
+        )
+        for group_by_node in self.iterate_nodes(
+            target_node=target_node, node_type=NodeType.GROUPBY
+        ):
+            assert isinstance(group_by_node, GroupByNode)
+            group_by_op_struct = operation_structure_info.operation_structure_map[
+                group_by_node.name
+            ]
+            timestamp_col = next(
+                (
+                    col
+                    for col in group_by_op_struct.source_columns
+                    if col.name == group_by_node.parameters.timestamp
+                ),
+                None,
+            )
+            assert timestamp_col is not None, "Timestamp column not found"
+            yield group_by_node, timestamp_col.tabular_data_id
 
     def load(self, graph: QueryGraphModel) -> Tuple["QueryGraph", Dict[str, str]]:
         """

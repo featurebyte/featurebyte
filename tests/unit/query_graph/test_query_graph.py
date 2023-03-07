@@ -503,12 +503,3 @@ def invalid_query_graph_groupby_node_fixture(
         input_nodes=[node_input],
     )
     return graph, node_group_by
-
-
-def test_iterate_group_by_and_event_data_input_node_pairs(invalid_query_graph_groupby_node):
-    """Test iterate_group_by_and_event_data_input_node_pairs"""
-    graph, node_groupby = invalid_query_graph_groupby_node
-    with pytest.raises(ValueError) as exc:
-        list(graph.iterate_group_by_and_event_data_input_node_pairs(target_node=node_groupby))
-    expected_msg = "GroupBy node does not have valid EventData Input node!"
-    assert expected_msg in str(exc.value)

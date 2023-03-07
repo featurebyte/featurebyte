@@ -189,11 +189,16 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "feature_job_setting": {
-                    "blind_spot": "23h",
-                    "frequency": "24h",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "23h",
+                            "frequency": "24h",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
             },
         )
         new_feature_id = post_feature_response.json()["_id"]

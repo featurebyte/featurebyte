@@ -207,11 +207,16 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "feature_job_setting": {
-                    "blind_spot": "1d",
-                    "frequency": "1d",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
             },
         )
         feature_response_dict = feature_response.json()
@@ -332,11 +337,16 @@ class TestFeatureListApi(BaseWorkspaceApiTestSuite):  # pylint: disable=too-many
             "/feature",
             json={
                 "source_feature_id": feature_id,
-                "feature_job_setting": {
-                    "blind_spot": "1d",
-                    "frequency": "1d",
-                    "time_modulo_frequency": "1h",
-                },
+                "data_feature_job_settings": [
+                    {
+                        "data_name": "sf_event_data",
+                        "feature_job_setting": {
+                            "blind_spot": "1d",
+                            "frequency": "1d",
+                            "time_modulo_frequency": "1h",
+                        },
+                    }
+                ],
             },
         )
         assert feature_response.status_code == HTTPStatus.CREATED

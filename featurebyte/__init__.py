@@ -24,7 +24,10 @@ from featurebyte.enum import AggFunc, SourceType, StorageType
 from featurebyte.models.credential import Credential, UsernamePasswordCredential
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNewVersionMode
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     DataCleaningOperation,
@@ -53,6 +56,7 @@ __all__ = [
     "Feature",
     "FeatureGroup",
     "FeatureJobSetting",
+    "DataFeatureJobSetting",
     "FeatureJobSettingAnalysis",
     "FeatureList",
     "FeatureStore",

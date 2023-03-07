@@ -9,7 +9,10 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import RecordUpdateException
 from featurebyte.models.feature_list import FeatureListNewVersionMode
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.schema.feature_list import FeatureVersionInfo
 
 
@@ -56,9 +59,14 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     amt_sum_30m = feature_list["amt_sum_30m"]
     assert amt_sum_30m.feature_namespace.default_feature_id == amt_sum_30m.id
     amt_sum_30m_v1 = amt_sum_30m.create_new_version(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-        ),
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name="sf_event_data",
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
         data_cleaning_operations=None,
     )
     assert amt_sum_30m_v1.version.to_str() == f"{get_version()}_1"
@@ -120,9 +128,14 @@ def test_feature_list__as_default_version(feature_group):
 
     # create new feature version
     feature_list["amt_sum_30m"].create_new_version(
-        feature_job_setting=FeatureJobSetting(
-            blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
-        ),
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name="sf_event_data",
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="75m", frequency="30m", time_modulo_frequency="15m"
+                ),
+            )
+        ],
         data_cleaning_operations=None,
     )
 
