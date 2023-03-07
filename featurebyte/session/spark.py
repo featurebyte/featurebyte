@@ -13,7 +13,6 @@ import os
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
-from pandas import Series
 from pyarrow import Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
@@ -283,8 +282,9 @@ class SparkSession(BaseSession):
         yield from (float(item) if isinstance(item, decimal.Decimal) else item for item in row)
 
     @staticmethod
-    def _read_batch(cursor: Cursor, schema: Schema, batch_size=1000) -> pa.RecordBatch:
+    def _read_batch(cursor: Cursor, schema: Schema, batch_size: int = 1000) -> pa.RecordBatch:
         """
+        Fetch a batch of rows from a query result, returning them as a PyArrow record batch.
 
         Parameters
         ----------
