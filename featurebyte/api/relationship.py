@@ -93,13 +93,13 @@ class Relationship(ApiObject):
             return self.internal_updated_by
 
     @staticmethod
-    def _convert_relationship_info_model_df_to_named_df(df: pd.DataFrame) -> pd.DataFrame:
+    def _convert_relationship_info_model_df_to_named_df(dataframe: pd.DataFrame) -> pd.DataFrame:
         """
         Convert a dataframe of relationship info models to a dataframe with named columns
 
         Parameters
         ----------
-        df: pd.DataFrame
+        dataframe: pd.DataFrame
             A dataframe of relationship info models
 
         Returns
@@ -109,7 +109,7 @@ class Relationship(ApiObject):
         """
         # Get IDs of relationship info's
         relationship_info_ids = []
-        for _, row in df.iterrows():
+        for _, row in dataframe.iterrows():
             relationship_info_ids.append(row["id"])
         # Get named information for each relationship info using the info route.
         relationship_infos = []
@@ -124,8 +124,8 @@ class Relationship(ApiObject):
         new_df = pd.read_json(json.dumps(relationship_infos))
         # We need to convert the id to string to merge as the original type is ObjectId and won't merge with the str
         # id type in the new dataframe.
-        df["id"] = df["id"].astype("string")
-        joined_result = df.merge(new_df, on="id", how="left", suffixes=("_left", "_right"))
+        dataframe["id"] = dataframe["id"].astype("string")
+        joined_result = dataframe.merge(new_df, on="id", how="left", suffixes=("_left", "_right"))
         # Filter for the columns we want
         filtered_result = joined_result[
             [
