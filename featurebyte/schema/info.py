@@ -20,10 +20,7 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
-from featurebyte.query_graph.model.feature_job_setting import (
-    DataFeatureJobSetting,
-    FeatureJobSetting,
-)
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject

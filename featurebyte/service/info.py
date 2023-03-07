@@ -14,12 +14,13 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import DataModel
 from featurebyte.models.tabular_data import TabularDataModel
 from featurebyte.persistent import Persistent
-from featurebyte.query_graph.enum import GraphNodeType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.model.feature_job_setting import (
+    DataFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
-from featurebyte.schema.feature import DataFeatureJobSetting, FeatureBriefInfoList
+from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
     DataBriefInfoList,
     DimensionDataInfo,
@@ -516,21 +517,11 @@ class InfoService(BaseService):
         feature: FeatureModel, data_id_to_name: dict[ObjectId, str]
     ) -> list[DataFeatureJobSetting]:
         data_feature_job_settings = []
-        for group_by_node in feature.graph.iterate_nodes(
-            target_node=feature.node, node_type=NodeType.GROUPBY
+        for group_by_node, data_id in feature.graph.iterate_group_by_and_data_id_node_pairs(
+            target_node=feature.node
         ):
-            # find event data input node
-            data_name = None
-            for input_node in feature.graph.iterate_nodes(
-                target_node=group_by_node, node_type=NodeType.INPUT
-            ):
-                assert isinstance(input_node, InputNode), "Input node expected"
-                if input_node.parameters.type == TableDataType.EVENT_DATA:
-                    assert input_node.parameters.id is not None
-                    data_name = data_id_to_name[input_node.parameters.id]
-
-            assert data_name is not None, "Event data input node not found"
-            assert isinstance(group_by_node, GroupByNode), "GroupBy node expected"
+            assert data_id is not None, "Event data ID not found"
+            data_name = data_id_to_name[data_id]
             group_by_node_params = group_by_node.parameters
             data_feature_job_settings.append(
                 DataFeatureJobSetting(
