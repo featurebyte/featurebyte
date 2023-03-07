@@ -138,7 +138,6 @@ class Relationship(ApiObject):
                 "is_enabled",
                 "created_at_right",
                 "updated_at_right",
-                "updated_by_right",
             ]
         ]
         # Rename columns appropriately.
@@ -147,7 +146,6 @@ class Relationship(ApiObject):
                 "relationship_type_left": "relationship_type",
                 "created_at_right": "created_at",
                 "updated_at_right": "updated_at",
-                "updated_by_right": "updated_by",
             }
         )
 
@@ -168,7 +166,6 @@ class Relationship(ApiObject):
         - enabled (whether the relationship is enabled)
         - creation timestamp
         - update timestamp
-        - updated by
         - comments
 
         Parameters

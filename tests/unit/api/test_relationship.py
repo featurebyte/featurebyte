@@ -90,7 +90,6 @@ def assert_relationship_info(relationship_info_df):
     assert relationship_info_df["primary_entity_name"][0] == "customer"
     assert relationship_info_df["related_entity_name"][0] == "user"
     assert relationship_info_df["data_source_name"][0] == "sf_event_data"
-    assert relationship_info_df["updated_by"][0] == "default user"
     assert relationship_info_df["data_type"][0] == "event_data"
     assert not relationship_info_df["is_enabled"][0]
 
