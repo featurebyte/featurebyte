@@ -217,17 +217,14 @@ jobs:
           name: hive-udf
           path: featurebyte/sql/spark/
       - name: Run tests
+        continue-on-error: true
         run: |
           make test-setup
           set +e
           make test-integration-spark
           # capture the exit code from the test run before stashing logs
-          EXIT_CODE=$?
+          echo $? > status.txt
           docker logs spark-thrift 2>&1 | tee spark-thrift.log
-          # bail out now if the test run was a failure
-          if [ $EXIT_CODE -ne 0 ]; then
-            exit $EXIT_CODE
-          fi
           make test-teardown
           mv .coverage .coverage.2
       - name: Upload spark-thrift log file
@@ -236,6 +233,13 @@ jobs:
           name: spark-thrift-logs
           path: spark-thrift.log
           retention-days: 5
+      - name: Check test status
+        run: |
+          EXIT_CODE=$(cat status.txt)
+          # bail out now if the test run was a failure
+          if [ $EXIT_CODE -ne 0 ]; then
+            exit $EXIT_CODE
+          fi
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
