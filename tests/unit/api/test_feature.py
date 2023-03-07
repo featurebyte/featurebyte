@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from freezegun import freeze_time
 from pandas.testing import assert_frame_equal
 
-from featurebyte import MissingValueImputation
+from featurebyte import EventData, MissingValueImputation
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
@@ -1126,3 +1126,93 @@ def test_feature_definition(feature_with_clean_column_names):
     feature.save()
     assert feature.definition.strip() == expected
     assert redundant_clean_op not in expected
+
+
+@pytest.mark.parametrize("main_data_from_event_data", [True, False])
+def test_feature_create_new_version__multiple_feature_job_setting(
+    saved_event_data, snowflake_database_table_scd_data, cust_id_entity, main_data_from_event_data
+):
+    """Test create new version with multiple feature job settings"""
+    another_event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table_scd_data,
+        name="another_event_data",
+        event_id_column="col_int",
+        event_timestamp_column="effective_timestamp",
+        record_creation_date_column="end_timestamp",
+    )
+    another_event_data.save()
+
+    # label entity column
+    saved_event_data.cust_id.as_entity(cust_id_entity.name)
+    another_event_data.col_text.as_entity(cust_id_entity.name)
+
+    event_view = EventView.from_event_data(event_data=saved_event_data)
+    another_event_view = EventView.from_event_data(event_data=another_event_data)
+    if main_data_from_event_data:
+        event_view.join(
+            another_event_view,
+            on="col_int",
+            how="left",
+            rsuffix="_another",
+        )
+        event_view_used = event_view
+        entity_col_name = "cust_id"
+        main_data_name, non_main_data_name = saved_event_data.name, another_event_data.name
+    else:
+        another_event_view.join(
+            event_view,
+            on="col_int",
+            how="left",
+            rsuffix="_another",
+        )
+        event_view_used = another_event_view
+        entity_col_name = "col_text"
+        main_data_name, non_main_data_name = another_event_data.name, saved_event_data.name
+
+    feature = event_view_used.groupby(entity_col_name).aggregate_over(
+        method="count",
+        windows=["30m"],
+        feature_names=["count_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+    )["count_30m"]
+    feature.save()
+
+    # create new version with different feature job setting on another event data dataset
+    feature_job_setting = FeatureJobSetting(
+        blind_spot="20m", frequency="30m", time_modulo_frequency="5m"
+    )
+    with pytest.raises(RecordCreationException) as exc:
+        feature.create_new_version(
+            data_feature_job_settings=[
+                DataFeatureJobSetting(
+                    data_name=non_main_data_name,
+                    feature_job_setting=feature_job_setting,
+                ),
+            ],
+        )
+
+    # error expected as the group by is on event data dataset, but not on another event data dataset
+    expected_error = (
+        "Feature job setting does not result a new feature version. "
+        "This is because the new feature version is the same as the source feature."
+    )
+    assert expected_error in str(exc.value)
+
+    # create new version on event data & check group by params
+    new_version = feature.create_new_version(
+        data_feature_job_settings=[
+            DataFeatureJobSetting(
+                data_name=main_data_name, feature_job_setting=feature_job_setting
+            ),
+        ]
+    )
+    pruned_graph, _ = new_version.extract_pruned_graph_and_node()
+    expected_job_settings = feature_job_setting.to_seconds()
+    group_by_params = pruned_graph.get_node_by_name("groupby_1").parameters
+    assert group_by_params.blind_spot == expected_job_settings["blind_spot"]
+    assert group_by_params.frequency == expected_job_settings["frequency"]
+    assert group_by_params.time_modulo_frequency == expected_job_settings["time_modulo_frequency"]
