@@ -87,10 +87,10 @@ def assert_relationship_info(relationship_info_df):
     assert relationship_info_df.shape[0] == 1
     assert relationship_info_df["id"][0] is not None
     assert relationship_info_df["relationship_type"][0] == "child_parent"
-    assert relationship_info_df["primary_entity_name"][0] == "customer"
-    assert relationship_info_df["related_entity_name"][0] == "user"
-    assert relationship_info_df["data_source_name"][0] == "sf_event_data"
-    assert relationship_info_df["data_type"][0] == "event_data"
+    assert relationship_info_df["primary_entity"][0] == "customer"
+    assert relationship_info_df["related_entity"][0] == "user"
+    assert relationship_info_df["primary_data_source"][0] == "sf_event_data"
+    assert relationship_info_df["primary_data_type"][0] == "event_data"
     assert not relationship_info_df["is_enabled"][0]
 
 

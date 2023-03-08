@@ -12,7 +12,7 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.base_data import DataApiObject
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
@@ -44,7 +44,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, ApiObject):
         "blind_spot",
     ]
     _list_foreign_keys = [
-        ("event_data_id", DataApiObject, "event_data"),
+        ForeignKeyMapping("event_data_id", DataApiObject, "event_data"),
     ]
 
     @classmethod

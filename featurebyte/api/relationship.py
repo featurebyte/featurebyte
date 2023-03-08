@@ -3,16 +3,14 @@ Relationships API object
 """
 from typing import Literal, Optional
 
-import json
-from http import HTTPStatus
-
 import pandas as pd
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte import Entity
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.base_data import DataApiObject
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfo, RelationshipType
@@ -49,13 +47,19 @@ class Relationship(ApiObject):
     _list_schema = RelationshipInfo
     _list_fields = [
         "relationship_type",
-        "primary_entity_id",
-        "related_entity_id",
-        "primary_data_source_id",
+        "primary_entity",
+        "related_entity",
+        "primary_data_source",
+        "primary_data_type",
         "is_enabled",
-        "updated_by",
         "created_at",
         "updated_at",
+    ]
+    _list_foreign_keys = [
+        ForeignKeyMapping("primary_entity_id", Entity, "primary_entity"),
+        ForeignKeyMapping("related_entity_id", Entity, "related_entity"),
+        ForeignKeyMapping("primary_data_source_id", DataApiObject, "primary_data_source"),
+        ForeignKeyMapping("primary_data_source_id", DataApiObject, "primary_data_type", "type"),
     ]
 
     # pydantic instance variable (internal use)
@@ -91,68 +95,6 @@ class Relationship(ApiObject):
             return self.cached_model.updated_by
         except RecordRetrievalException:
             return self.internal_updated_by
-
-    @staticmethod
-    def _convert_relationship_info_model_df_to_named_df(dataframe: pd.DataFrame) -> pd.DataFrame:
-        """
-        Convert a dataframe of relationship info models to a dataframe with named columns
-
-        Parameters
-        ----------
-        dataframe: pd.DataFrame
-            A dataframe of relationship info models
-
-        Returns
-        -------
-        pd.DataFrame
-            A dataframe with named columns
-
-        Raises
-        ------
-        RecordRetrievalException
-            Raised if the relationship info cannot be retrieved
-        """
-        # Get IDs of relationship info's
-        relationship_info_ids = []
-        for _, row in dataframe.iterrows():
-            relationship_info_ids.append(row["id"])
-        # Get named information for each relationship info using the info route.
-        relationship_infos = []
-        client = Configurations().get_client()
-        for relationship_info_id in relationship_info_ids:
-            response = client.get(url=f"/relationship_info/{relationship_info_id}/info")
-            if response.status_code != HTTPStatus.OK:
-                raise RecordRetrievalException(response, "Failed to retrieve object info.")
-            relationship_infos.append(response.json())
-
-        # Convert info to dataframe
-        new_df = pd.read_json(json.dumps(relationship_infos))
-        # We need to convert the id to string to merge as the original type is ObjectId and won't merge with the str
-        # id type in the new dataframe.
-        dataframe["id"] = dataframe["id"].astype("string")
-        joined_result = dataframe.merge(new_df, on="id", how="left", suffixes=("_left", "_right"))
-        # Filter for the columns we want
-        filtered_result = joined_result[
-            [
-                "id",
-                "relationship_type_left",
-                "primary_entity_name",
-                "related_entity_name",
-                "data_source_name",
-                "data_type",
-                "is_enabled",
-                "created_at_right",
-                "updated_at_right",
-            ]
-        ]
-        # Rename columns appropriately.
-        return filtered_result.rename(
-            columns={
-                "relationship_type_left": "relationship_type",
-                "created_at_right": "created_at",
-                "updated_at_right": "updated_at",
-            }
-        )
 
     @classmethod
     @typechecked
@@ -203,10 +145,7 @@ class Relationship(ApiObject):
             list_responses = list_responses[
                 list_responses["relationship_type"] == relationship_type
             ]
-        if list_responses.shape[0] == 0:
-            return list_responses
-
-        return cls._convert_relationship_info_model_df_to_named_df(list_responses)
+        return list_responses
 
     @typechecked
     def enable(self, enable: bool) -> None:
