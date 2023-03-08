@@ -1106,6 +1106,8 @@ def test_feature_definition(feature_with_clean_column_names):
     from featurebyte import EventView
     from featurebyte import MissingValueImputation
 
+
+    # event_data name: "sf_event_data"
     event_data = EventData.get_by_id(ObjectId("6337f9651050ee7d5980660d"))
     event_view = EventView.from_event_data(
         event_data=event_data,

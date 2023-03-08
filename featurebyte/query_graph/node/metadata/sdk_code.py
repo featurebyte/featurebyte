@@ -98,6 +98,13 @@ class StatementStr(str):
     """
 
 
+class CommentStr(str):
+    """
+    CommentStr class is used to represent a comment in the code. The comment will be formatted and
+    prepended with `#`.
+    """
+
+
 class ObjectClass(BaseModel):
     """
     ObjectClass is used as a mock class object which are used to
@@ -229,7 +236,7 @@ class ClassEnum(Enum):
 
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
-StatementT = Union[StatementStr, Tuple[VariableNameStr, RightHandSide]]
+StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
 
 
 class CodeGenerationConfig(BaseModel):
@@ -378,7 +385,9 @@ class CodeGenerator(BaseModel):
                 if isinstance(right_hand_side, ObjectClass):
                     import_pairs.update(right_hand_side.extract_import())
                 statement_lines.append(f"{var_name} = {right_hand_side}")
-            else:
+            elif isinstance(statement, CommentStr):
+                statement_lines.append(f"\n# {statement}")
+            elif isinstance(statement, str):
                 statement_lines.append(statement)
         statements = "\n".join(statement_lines)
 

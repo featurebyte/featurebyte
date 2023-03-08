@@ -11,7 +11,7 @@ from abc import abstractmethod
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
@@ -117,7 +117,7 @@ class QueryObject(FeatureByteBaseModel):
         self,
         to_format: bool = False,
         to_use_saved_data: bool = False,
-        data_id_to_info: Optional[Dict[str, Dict[str, Any]]] = None,
+        data_id_to_info: Optional[Dict[PydanticObjectId, Dict[str, Any]]] = None,
     ) -> str:
         """
         Generate SDK codes this graph & node
@@ -128,7 +128,7 @@ class QueryObject(FeatureByteBaseModel):
             Whether to format generated code (require `black` python package)
         to_use_saved_data: bool
             Whether to use saved data in the SDK codes
-        data_id_to_info: Optional[Dict[str, Dict[str, Any]]]
+        data_id_to_info: Optional[Dict[PydanticObjectId, Dict[str, Any]]]
             Data ID to dictionary info that is not stored in the query graph
 
         Returns

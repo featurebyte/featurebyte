@@ -25,6 +25,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationConfig,
+    CommentStr,
     ObjectClass,
     StatementT,
     VariableNameGenerator,
@@ -137,6 +138,23 @@ class BaseInputNodeParameters(BaseModel):
         Dict[str, Any]
         """
 
+    @abstractmethod
+    def construct_comment(
+        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        """
+        Construct comment for the input node
+
+        Parameters
+        ----------
+        data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+            Data ID to data info mapping
+
+        Returns
+        -------
+        Optional[CommentStr]
+        """
+
 
 class GenericInputNodeParameters(BaseInputNodeParameters):
     """GenericParameters"""
@@ -150,6 +168,11 @@ class GenericInputNodeParameters(BaseInputNodeParameters):
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {}
+
+    def construct_comment(
+        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        return None
 
 
 class EventDataInputNodeParameters(BaseInputNodeParameters):
@@ -186,6 +209,16 @@ class EventDataInputNodeParameters(BaseInputNodeParameters):
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
+    def construct_comment(
+        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            data_name = data_id_to_info.get(self.id, {}).get("name")
+            if data_name:
+                output = CommentStr(f'event_data name: "{data_name}"')
+        return output
+
 
 class ItemDataInputNodeParameters(BaseInputNodeParameters):
     """ItemDataParameters"""
@@ -209,6 +242,19 @@ class ItemDataInputNodeParameters(BaseInputNodeParameters):
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
 
+    def construct_comment(
+        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id and self.event_data_id:
+            data_name = data_id_to_info.get(self.id, {}).get("name")
+            event_data_name = data_id_to_info.get(self.event_data_id, {}).get("name")
+            if data_name and event_data_name:
+                output = CommentStr(
+                    f'item_data name: "{data_name}", event_data name: "{event_data_name}"'
+                )
+        return output
+
 
 class DimensionDataInputNodeParameters(BaseInputNodeParameters):
     """DimensionDataParameters"""
@@ -227,6 +273,16 @@ class DimensionDataInputNodeParameters(BaseInputNodeParameters):
             "dimension_id_column": self.id_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
+
+    def construct_comment(
+        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            data_name = data_id_to_info.get(self.id, {}).get("name")
+            if data_name:
+                output = CommentStr(f'dimension_data name: "{data_name}"')
+        return output
 
 
 class SCDDataInputNodeParameters(BaseInputNodeParameters):
@@ -258,6 +314,16 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
             "current_flag_column": self.current_flag_column,
             "_id": ClassEnum.OBJECT_ID(self.id),
         }
+
+    def construct_comment(
+        self, data_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            data_name = data_id_to_info.get(self.id, {}).get("name")
+            if data_name:
+                output = CommentStr(f'scd_data name: "{data_name}"')
+        return output
 
 
 class InputNode(BaseNode):
@@ -344,8 +410,13 @@ class InputNode(BaseNode):
             variable_name_prefix=self.parameters.variable_name_prefix
         )
         data_id = self.parameters.id
+        data_info = config.data_id_to_info.get(data_id, {}) if data_id else {}
+        data_name = data_info.get("name")
         if config.to_use_saved_data and self.parameters.id:
             # to generate `*Data.get_by_id(ObjectId("<data_id>"))` statement
+            comment = self.parameters.construct_comment(data_id_to_info=config.data_id_to_info)
+            if comment:
+                statements.append(comment)
             object_id = ClassEnum.OBJECT_ID(self.parameters.id)
             right_op = data_class_enum(object_id, _method_name="get_by_id")
         else:
@@ -356,13 +427,11 @@ class InputNode(BaseNode):
             #     columns_info=[ColumnInfo(...), ...],
             #     ...
             # )` statement
-            data_info = config.data_id_to_info.get(data_id, {}) if data_id else {}
-            data_name = data_info.get("name", str(data_var_name))
             columns_info = data_info.get(
                 "columns_info", self.parameters.extract_columns_info_objects()
             )
             right_op = data_class_enum(
-                name=data_name,
+                name=data_name or str(data_var_name),
                 feature_store=self.parameters.extract_feature_store_object(
                     feature_store_name=config.feature_store_name
                 ),

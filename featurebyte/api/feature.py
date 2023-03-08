@@ -15,6 +15,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.data import Data
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
@@ -558,7 +559,19 @@ class Feature(
         -------
         str
         """
-        return CodeStr(self._generate_code(to_format=True, to_use_saved_data=True))
+        try:
+            # retrieve all the data used to construct this feature
+            data_id_to_doc = {
+                data_id: Data.get_by_id(data_id).dict() for data_id in self.tabular_data_ids
+            }
+        except RecordRetrievalException:
+            # data used to construct this feature has not been saved
+            data_id_to_doc = {}
+        return CodeStr(
+            self._generate_code(
+                to_format=True, to_use_saved_data=True, data_id_to_info=data_id_to_doc
+            )
+        )
 
     def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
         """
