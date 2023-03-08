@@ -1,6 +1,8 @@
 """
 This module contains session to Snowflake integration tests.
 """
+import asyncio
+import threading
 from collections import OrderedDict
 
 import numpy as np
@@ -137,3 +139,38 @@ async def test_register_udfs(session):
             }
         ),
     )
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_threadsafety(session, source_type):
+
+    table_name = "TEST_THREADSAFETY"
+
+    async def run(session_obj, value):
+        print(f"Inserting value {value}")
+        query = f"""
+            merge into {table_name} as target
+            using (select {value} as A) as source
+            on target.A = source.A
+            when matched then update set target.A = source.A
+            when not matched then insert (A) values (source.A)
+            """
+        await session_obj.execute_query(query)
+
+    if source_type == "spark":
+        await session.execute_query(f"create table {table_name} (A int) using delta")
+    else:
+        await session.execute_query(f"create table {table_name} (A int)")
+
+    threads = []
+    values = list(range(10))
+    for i in values:
+        t = threading.Thread(target=asyncio.run, args=(run(session, i),))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+
+    df = await session.execute_query(f"select * from {table_name}")
+    assert set(df["A"].tolist()) == set(values)
