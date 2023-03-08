@@ -107,6 +107,7 @@ class VersionService(BaseService):
                 # prepare feature job setting
                 assert event_data_id is not None, "Event data ID should not be None."
                 data_doc = data_id_to_doc[event_data_id]
+                feature_job_setting = None
                 if use_source_settings:
                     # use the (event) data source's default feature job setting
                     feature_job_setting_dict = data_doc["default_feature_job_setting"]
