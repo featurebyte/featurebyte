@@ -75,7 +75,9 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
 
 class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
     """
-    Implement operations to manipulate database column
+    FrozenSeries class used for representing a series in a query graph with the ability to perform
+    certain column related operations and expressions. This class is immutable as it does not support
+    in-place modification of the column in the query graph.
     """
 
     # documentation metadata
@@ -835,7 +837,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
 class Series(FrozenSeries):
     """
-    Series class
+    Series is a mutable version of FrozenSeries. It is used to represent a single column of a Frame.
+    This class supports in-place column modification, and is the primary interface for column.
     """
 
     @typechecked

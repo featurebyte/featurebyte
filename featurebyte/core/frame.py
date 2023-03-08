@@ -68,7 +68,9 @@ FrozenFrameT = TypeVar("FrozenFrameT", bound="FrozenFrame")
 
 class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
     """
-    FrozenFrame class
+    FrozenFrame class used for representing a table in the query graph with the ability to perform
+    column(s) subsetting and row filtering. This class is immutable as it does not support
+    in-place modification of the table in the query graph.
     """
 
     _series_class = FrozenSeries
@@ -182,7 +184,8 @@ class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
 
 class Frame(FrozenFrame):
     """
-    Implement operations to manipulate database table
+    Frame is a mutable version of the FrozenFrame class. It is used to represent a table in the query graph.
+    This class supports column assignment to the table.
     """
 
     _series_class = Series
