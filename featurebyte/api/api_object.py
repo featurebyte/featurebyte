@@ -15,7 +15,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 
 import operator
@@ -23,7 +22,6 @@ import time
 from functools import partial
 from http import HTTPStatus
 
-import lazy_object_proxy
 import pandas as pd
 from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
@@ -50,15 +48,6 @@ ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
-
-
-class ApiObjectProxy(lazy_object_proxy.Proxy):
-    """
-    Proxy with customized representation
-    """
-
-    def __repr__(self) -> str:
-        return repr(self.__wrapped__)
 
 
 class PrettyDict(Dict[str, Any]):
@@ -276,25 +265,6 @@ class ApiObject(FeatureByteBaseDocumentModel):
             ApiObject object of the given object ID
         """
         return cls._get_by_id(id)
-
-    @classmethod
-    def get_by_id_lazy(
-        cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> ApiObjectT:
-        """
-        Get the object from the persistent given the object ID (lazy version)
-
-        Parameters
-        ----------
-        id: ObjectId
-            Object ID value
-
-        Returns
-        -------
-        ApiObjectT
-            ApiObject object of the given object ID (lazy proxy)
-        """
-        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get_by_id, id)))
 
     @staticmethod
     def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
