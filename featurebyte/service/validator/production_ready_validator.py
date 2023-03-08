@@ -3,7 +3,7 @@ Production ready validator
 """
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from featurebyte import ColumnCleaningOperation, Feature, FeatureJobSetting
+from featurebyte import ColumnCleaningOperation, FeatureJobSetting
 from featurebyte.exception import DocumentError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
