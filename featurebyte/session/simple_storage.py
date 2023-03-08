@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import boto3
+from bson import ObjectId
 from smart_open import open as remote_open
 
 from featurebyte.models.credential import BaseStorageCredential, S3Credential
@@ -103,9 +104,10 @@ class FileSimpleStorage(SimpleStorage):
         self.base_url = f"file://{str(path)}"
 
     def test_connection(self) -> None:
-        with self.open(path="_conn_test", mode="w") as file_obj:
+        conn_test_filename = f"_conn_test_{ObjectId()}"
+        with self.open(path=conn_test_filename, mode="w") as file_obj:
             file_obj.write("OK")
-        self.delete_object(path="_conn_test")
+        self.delete_object(path=conn_test_filename)
 
     def delete_object(self, path: str) -> None:
         base_path = self.base_url.replace("file://", "")
