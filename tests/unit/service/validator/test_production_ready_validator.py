@@ -17,6 +17,7 @@ def production_ready_validator_fixture(feature_namespace_service, app_container,
         feature_namespace_service=feature_namespace_service,
         data_service=app_container.tabular_data_service,
         version_service=version_service,
+        feature_service=app_container.feature_service,
     )
 
 

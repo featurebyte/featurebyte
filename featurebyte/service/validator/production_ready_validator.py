@@ -11,6 +11,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.nested import BaseViewGraphNodeParameters
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.tabular_data import DataService
 from featurebyte.service.version import VersionService
@@ -26,10 +27,12 @@ class ProductionReadyValidator:
         feature_namespace_service: FeatureNamespaceService,
         data_service: DataService,
         version_service: VersionService,
+        feature_service: FeatureService,
     ):
         self.feature_namespace_service = feature_namespace_service
         self.data_service = data_service
         self.version_service = version_service
+        self.feature_service = feature_service
 
     async def validate(
         self, feature_name: str, graph: QueryGraph, ignore_guardrails: bool = False
@@ -85,13 +88,18 @@ class ProductionReadyValidator:
         DocumentError
             raised if there is an error when trying to create new feature version
         """
-        feature = Feature.get(feature_name)
+        features = await self.feature_service.list_documents(
+            query_filter={"name": feature_name},
+        )
+        feature = features["data"][0]
         try:
             new_feature = (
                 await self.version_service.create_new_feature_version_using_source_settings(
-                    feature.id
+                    feature["_id"]
                 )
             )
+            if new_feature is None:
+                return None
             return new_feature.node, new_feature.graph
         except DocumentError as exc:
             if "No change detected on the new feature version" in str(exc):

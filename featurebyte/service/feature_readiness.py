@@ -57,7 +57,7 @@ class FeatureReadinessService(BaseService):
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.production_ready_validator = ProductionReadyValidator(
-            self.feature_namespace_service, data_service, version_service
+            self.feature_namespace_service, data_service, version_service, feature_service
         )
 
     async def update_feature_list_namespace(
