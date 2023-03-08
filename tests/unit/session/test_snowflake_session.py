@@ -489,7 +489,7 @@ async def test_schema_initializer__all_missing(
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list[:1] == [
-        call("CREATE SCHEMA FEATUREBYTE"),
+        call('CREATE SCHEMA "FEATUREBYTE"'),
     ]
     # Should register custom functions and procedures
     counts = check_create_commands(session)
