@@ -141,7 +141,7 @@ async def test_register_udfs(session):
     )
 
 
-@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_threadsafety(session, source_type):
 
@@ -174,3 +174,20 @@ async def test_threadsafety(session, source_type):
 
     df = await session.execute_query(f"select * from {table_name}")
     assert set(df["A"].tolist()) == set(values)
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_threadsafety_api_object(event_data):
+    def run(data_obj, value):
+        df = data_obj.preview(limit=value)
+        assert df.shape[0] == value
+
+    threads = []
+    values = list(range(1, 11))
+    for i in values:
+        t = threading.Thread(target=run, args=(event_data, i))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
