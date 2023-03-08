@@ -129,6 +129,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     snowflake_event_data_with_entity,
     feature_group_feature_job_setting,
     source_version_creator,
+    feature_service,
 ):
     """
     Test _check_feature_job_setting_match returns a dictionary when the settings differ
@@ -158,7 +159,11 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     source_node, source_feature_version_graph = await source_version_creator(feature.name)
 
     # check if the settings match
-    refetch_feature = Feature.get(feature.name)
+    feature_docs = await feature_service.list_documents(query_filter={"name": feature.name})
+    feature_data = feature_docs["data"]
+    assert len(feature_data) == 1
+    feature_document = feature_data[0]
+    refetch_feature = Feature(**feature_document)
     differences = await production_ready_validator._get_feature_job_setting_diffs_source_vs_curr(
         source_node, source_feature_version_graph, refetch_feature.graph
     )
