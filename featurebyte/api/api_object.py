@@ -112,7 +112,7 @@ class ForeignKeyMapping:
     # Field name of the existing ID field in the list API response.
     foreign_key_field: str
     # Object class that we will be trying to retrieve the data from.
-    object_class: Any
+    object_class: type
     # New field name that we want to display in the list API response
     new_field_name: str
     # Field to display instead of `name` from the retrieved list API response.
