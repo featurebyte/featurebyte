@@ -9,15 +9,12 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(
-    feature_namespace_service, app_container, version_service, feature_service
-):
+def production_ready_validator_fixture(feature_namespace_service, version_service, feature_service):
     """
     Get production ready validator
     """
     return ProductionReadyValidator(
         feature_namespace_service=feature_namespace_service,
-        data_service=app_container.tabular_data_service,
         version_service=version_service,
         feature_service=feature_service,
     )

@@ -28,7 +28,6 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.tabular_data import DataService
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
 
@@ -48,7 +47,6 @@ class FeatureReadinessService(BaseService):
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
-        data_service: DataService,
         version_service: VersionService,
     ):
         super().__init__(user, persistent, workspace_id)
@@ -57,7 +55,7 @@ class FeatureReadinessService(BaseService):
         self.feature_list_service = feature_list_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.production_ready_validator = ProductionReadyValidator(
-            self.feature_namespace_service, data_service, version_service, feature_service
+            self.feature_namespace_service, version_service, feature_service
         )
 
     async def update_feature_list_namespace(

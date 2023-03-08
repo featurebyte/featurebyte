@@ -129,7 +129,6 @@ app_container_config.add_service_with_extra_deps(
         "feature_namespace_service",
         "feature_list_service",
         "feature_list_namespace_service",
-        "tabular_data_service",
         "version_service",
     ],
 )

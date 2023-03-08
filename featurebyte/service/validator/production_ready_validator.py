@@ -13,7 +13,6 @@ from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.nested import BaseViewGraphNodeParameters
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
-from featurebyte.service.tabular_data import DataService
 from featurebyte.service.version import VersionService
 
 
@@ -25,12 +24,10 @@ class ProductionReadyValidator:
     def __init__(
         self,
         feature_namespace_service: FeatureNamespaceService,
-        data_service: DataService,
         version_service: VersionService,
         feature_service: FeatureService,
     ):
         self.feature_namespace_service = feature_namespace_service
-        self.data_service = data_service
         self.version_service = version_service
         self.feature_service = feature_service
 
