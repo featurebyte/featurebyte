@@ -1,6 +1,7 @@
 """
 Test production ready validator
 """
+import textwrap
 
 import pytest
 
@@ -41,6 +42,15 @@ def source_version_creator_fixture(version_service, feature_service):
         return source_feature.node, source_feature.graph
 
     return get_source_version
+
+
+def format_exception_string_for_comparison(exception_str: str) -> str:
+    """
+    Formats exception string for comparison.
+    """
+    stripped = textwrap.dedent(exception_str).strip()
+    new_lines_removed = stripped.replace("\n", "")
+    return new_lines_removed.replace(" ", "")
 
 
 @pytest.mark.asyncio
@@ -93,10 +103,29 @@ async def test_validate(
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(ValueError) as exc:
         await production_ready_validator.validate("sum_30m", feature.id, feature.graph)
-    exception_str = str(exc.value)
-    assert "Discrepancies found between the current feature version" in exception_str
-    assert "feature_job_setting" in exception_str
-    assert "cleaning_operations" in exception_str
+    exception_str = format_exception_string_for_comparison(str(exc.value))
+    expected_exception_str = format_exception_string_for_comparison(
+        """
+        Discrepancies found between the current feature version you are trying to promote to PRODUCTION_READY,
+        and the input data.
+        {
+            'feature_job_setting': {
+                'default': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
+                'feature': FeatureJobSetting(blind_spot='300s', frequency='1800s', time_modulo_frequency='300s')
+            },
+            'cleaning_operations': {
+                'default': [ColumnCleaningOperation(column_name='col_int',
+                    cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]
+                )],
+                'feature': [ColumnCleaningOperation(column_name='col_int',
+                    cleaning_operations=[MissingValueImputation(imputed_value=2, type=missing)]
+                )]
+            }
+        }
+        Please fix these issues first before trying to promote your feature to PRODUCTION_READY.
+        """
+    )
+    assert exception_str == expected_exception_str
 
 
 @pytest.mark.asyncio

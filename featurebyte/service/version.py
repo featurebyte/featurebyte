@@ -81,6 +81,11 @@ class VersionService(BaseService):
         Returns
         -------
         dict[str, Node]
+
+        Raises
+        ------
+        NoFeatureJobSettingInSourceError
+            If the source data does not have a default feature job setting
         """
         node_name_to_replacement_node: dict[str, Node] = {}
         data_feature_job_settings = data_feature_job_settings or []
