@@ -253,7 +253,7 @@ class BaseTileManager(BaseModel, ABC):
         Raises
         -------
         TileScheduleNotSupportedError
-            if user_id, workspace_id or feature_store_id is not provided or task manager is not initialized
+            if workspace_id or feature_store_id is not provided or task manager is not initialized
 
         Returns
         -------
@@ -263,9 +263,9 @@ class BaseTileManager(BaseModel, ABC):
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
         job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
 
-        if not tile_spec.user_id or not tile_spec.workspace_id or not tile_spec.feature_store_id:
+        if not tile_spec.workspace_id or not tile_spec.feature_store_id:
             raise TileScheduleNotSupportedError(
-                "user_id, workspace_id and feature_store_id must be provided"
+                "workspace_id and feature_store_id must be provided"
             )
 
         if not self._task_manager:
