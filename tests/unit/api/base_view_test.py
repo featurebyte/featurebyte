@@ -1,12 +1,15 @@
 """
 Base View test suite
 """
+import textwrap
 import time
 from abc import abstractmethod
 
+import pandas as pd
 import pytest
 
-from featurebyte.core.series import Series
+from featurebyte.core.frame import FrozenFrame
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -39,6 +42,7 @@ class BaseViewTestSuite:
     factory_method = None
     view_class = None
     bool_col = col
+    expected_view_with_raw_accessor_sql = ""
 
     @pytest.fixture(name="view_under_test")
     def get_view_under_test_fixture(self, request):
@@ -449,3 +453,51 @@ class BaseViewTestSuite:
         Test join column (the primary key / natural key of the view) is part of inherited_columns
         """
         assert view_under_test.get_join_column() in view_under_test.inherited_columns
+
+    def test_raw_accessor(self, view_under_test, data_under_test):
+        """
+        Test raw accessor
+        """
+        assert view_under_test.raw.node.type == NodeType.INPUT
+        pd.testing.assert_series_equal(view_under_test.raw.dtypes, data_under_test.dtypes)
+
+        # check read operation is ok
+        raw_subset_frame = view_under_test.raw[[self.col]]
+        raw_subset_series = view_under_test.raw[self.col]
+        assert isinstance(raw_subset_frame, FrozenFrame)
+        assert isinstance(raw_subset_series, FrozenSeries)
+
+        # check write operation is not allowed
+        with pytest.raises(TypeError) as exc:
+            view_under_test.raw[self.col] = 1
+        assert "'FrozenFrame' object does not support item assignment" in str(exc.value)
+
+        mask = view_under_test.raw[self.col] > 1
+        with pytest.raises(TypeError) as exc:
+            view_under_test.raw[self.col][mask] = 1
+        assert "'FrozenSeries' object does not support item assignment" in str(exc.value)
+
+        # check operation between raw input and view
+        if self.view_type == ViewType.ITEM_VIEW:
+            with pytest.raises(ValueError) as exc:
+                view_under_test[self.col] = view_under_test.raw[self.col] + 1
+            assert "Row indices between " in str(exc.value) and "are not aligned!" in str(exc.value)
+        else:
+            # check normal use raw accessor with view
+            # assignment
+            view_under_test["new_col"] = view_under_test.raw[self.col] + 1
+            assert (
+                view_under_test.preview_sql().strip()
+                == textwrap.dedent(self.expected_view_with_raw_accessor_sql).strip()
+            )
+
+            # conditional assignment
+            view_under_test["new_col"][mask] = 0
+            assert view_under_test.node.type == NodeType.ASSIGN
+
+            view_under_test[mask, "new_col"] = 0
+            assert view_under_test.node.type == NodeType.ASSIGN
+
+            # check filtering
+            filtered_column = view_under_test[self.col][mask]
+            assert filtered_column.node.type == NodeType.FILTER

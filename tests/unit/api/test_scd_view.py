@@ -22,6 +22,24 @@ class TestSlowlyChangingView(BaseViewTestSuite):
     factory_method = SlowlyChangingView.from_slowly_changing_data
     view_class = SlowlyChangingView
     bool_col = "col_boolean"
+    expected_view_with_raw_accessor_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "is_active" AS "is_active",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
+      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("created_at" AS STRING) AS "created_at",
+      "cust_id" AS "cust_id",
+      (
+        "cust_id" + 1
+      ) AS "new_col"
+    FROM "sf_database"."sf_schema"."scd_table"
+    LIMIT 10
+    """
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.natural_key_column == view_under_test.natural_key_column

@@ -3,31 +3,29 @@ util.py contains common functions used across different classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from featurebyte.common.typing import Scalar, ScalarSequence
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 if TYPE_CHECKING:
-    from featurebyte.core.series import Series
-
-    SeriesT = TypeVar("SeriesT", bound=Series)
+    from featurebyte.core.series import FrozenSeries, FrozenSeriesT
 
 
 def series_unary_operation(
-    input_series: SeriesT,
+    input_series: FrozenSeriesT,
     node_type: NodeType,
     output_var_type: DBVarType,
     node_params: dict[str, Any],
     **kwargs: Any,
-) -> SeriesT:
+) -> FrozenSeriesT:
     """
     Apply an operation on the Series itself and return another Series
 
     Parameters
     ----------
-    input_series : SeriesT
+    input_series : FrozenSeriesT
         Series like input object
     node_type : NodeType
         Output node type
@@ -40,7 +38,7 @@ def series_unary_operation(
 
     Returns
     -------
-    SeriesT
+    FrozenSeriesT
     """
     node = input_series.graph.add_operation(
         node_type=node_type,
@@ -65,8 +63,8 @@ class SeriesBinaryOperator:
 
     def __init__(
         self,
-        input_series: SeriesT,
-        other: Scalar | SeriesT | ScalarSequence,
+        input_series: FrozenSeriesT,
+        other: Scalar | FrozenSeries | ScalarSequence,
     ):
         self.input_series = input_series
         self.other = other
@@ -85,7 +83,7 @@ class SeriesBinaryOperator:
         output_var_type: DBVarType,
         right_op: bool = False,
         additional_node_params: dict[str, Any] | None = None,
-    ) -> SeriesT:
+    ) -> FrozenSeriesT:
         """
         Perform the series binary operation.
 
@@ -102,7 +100,7 @@ class SeriesBinaryOperator:
 
         Returns
         -------
-        SeriesT
+        FrozenSeriesT
         """
         self.validate_inputs()
         return series_binary_operation(
@@ -117,22 +115,22 @@ class SeriesBinaryOperator:
 
 
 def series_binary_operation(
-    input_series: SeriesT,
-    other: Scalar | SeriesT | ScalarSequence,
+    input_series: FrozenSeriesT,
+    other: Scalar | FrozenSeries | ScalarSequence,
     node_type: NodeType,
     output_var_type: DBVarType,
     right_op: bool = False,
     additional_node_params: dict[str, Any] | None = None,
     **kwargs: Any,
-) -> SeriesT:
+) -> FrozenSeriesT:
     """
     Apply binary operation between a Series and another object
 
     Parameters
     ----------
-    input_series : SeriesT
+    input_series : FrozenSeriesT
         Series like input object
-    other: Scalar | SeriesT | ScalarSequence
+    other: Scalar | FrozenSeries | ScalarSequence
         right value of the binary operator
     node_type: NodeType
         binary operator node type
@@ -147,7 +145,7 @@ def series_binary_operation(
 
     Returns
     -------
-    SeriesT
+    FrozenSeriesT
     """
     node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
     if additional_node_params is not None:

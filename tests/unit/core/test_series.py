@@ -64,7 +64,7 @@ def test__getitem__type_not_supported(int_series):
     with pytest.raises(TypeError) as exc:
         _ = int_series[True]
     expected_msg = (
-        'type of argument "item" must be featurebyte.core.series.Series; got bool instead'
+        'type of argument "item" must be featurebyte.core.series.FrozenSeries; got bool instead'
     )
     assert expected_msg in str(exc.value)
 
@@ -278,7 +278,9 @@ def test__setitem__key_type_not_supported(int_series):
     """
     with pytest.raises(TypeError) as exc:
         int_series[1] = True
-    expected_msg = 'type of argument "key" must be featurebyte.core.series.Series; got int instead'
+    expected_msg = (
+        'type of argument "key" must be featurebyte.core.series.FrozenSeries; got int instead'
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -324,7 +326,10 @@ def test_logical_operators(bool_series, int_series):
 
     with pytest.raises(TypeError) as exc:
         _ = bool_series & "string"
-    expected_msg = 'type of argument "other" must be one of (bool, featurebyte.core.series.Series); got str instead'
+    expected_msg = (
+        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeries); '
+        "got str instead"
+    )
     assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:

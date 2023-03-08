@@ -337,7 +337,6 @@ class QueryGraphModel(FeatureByteBaseModel):
             target_node_names = [
                 node_name for node_name in target_node_names if node_name in keep_target_node_names
             ]
-
         target_nodes = [self.get_node_by_name(node_name) for node_name in target_node_names]
         if target_nodes:
             # get the input column order from current node to the target nodes

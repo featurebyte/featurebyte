@@ -14,9 +14,9 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.string import Side
 
 if TYPE_CHECKING:
-    from featurebyte.core.series import Series
+    from featurebyte.core.series import FrozenSeries
 else:
-    Series = TypeVar("Series")
+    FrozenSeries = TypeVar("FrozenSeries")
 
 
 class StrAccessorMixin:
@@ -25,7 +25,7 @@ class StrAccessorMixin:
     """
 
     @property
-    def str(self: Series) -> StringAccessor:  # type: ignore
+    def str(self: FrozenSeries) -> StringAccessor:  # type: ignore
         """
         str accessor object
 
@@ -38,7 +38,7 @@ class StrAccessorMixin:
 
 class StringAccessor:
     """
-    StringAccessor class used to manipulate string type Series object
+    StringAccessor class used to manipulate string type FrozenSeries object
     """
 
     # documentation metadata
@@ -48,25 +48,25 @@ class StringAccessor:
         accessor_name="str",
     )
 
-    def __init__(self, obj: Series):
+    def __init__(self, obj: FrozenSeries):
         if obj.dtype != DBVarType.VARCHAR:
             raise AttributeError("Can only use .str accessor with VARCHAR values!")
         self._obj = obj
 
-    def __getitem__(self, item: slice) -> Series:
+    def __getitem__(self, item: slice) -> FrozenSeries:
         if not isinstance(item, slice):
             raise TypeError(
                 f'type of argument "item" must be slice; got {type(item).__name__} instead'
             )
         return self.slice(start=item.start, stop=item.stop, step=item.step)
 
-    def len(self) -> Series:
+    def len(self) -> FrozenSeries:
         """
         Compute len of the string for each row
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -76,13 +76,13 @@ class StringAccessor:
             **self._obj.unary_op_series_params(),
         )
 
-    def lower(self) -> Series:
+    def lower(self) -> FrozenSeries:
         """
         Convert the string value into the lower case
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -92,13 +92,13 @@ class StringAccessor:
             **self._obj.unary_op_series_params(),
         )
 
-    def upper(self) -> Series:
+    def upper(self) -> FrozenSeries:
         """
         Convert the string value into the upper case
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -109,7 +109,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def strip(self, to_strip: Optional[str] = None) -> Series:
+    def strip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
         Trim the white space(s) on the left & right string boundaries
 
@@ -120,7 +120,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -131,7 +131,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def lstrip(self, to_strip: Optional[str] = None) -> Series:
+    def lstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
         Trim the white space(s) on the left string boundaries
 
@@ -142,7 +142,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -153,7 +153,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def rstrip(self, to_strip: Optional[str] = None) -> Series:
+    def rstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
         """
         Trim the white space(s) on the right string boundaries
 
@@ -164,7 +164,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -175,7 +175,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def replace(self, pat: str, repl: str) -> Series:
+    def replace(self, pat: str, repl: str) -> FrozenSeries:
         """
         Replace the substring within the original string
 
@@ -188,7 +188,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -199,7 +199,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> Series:
+    def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> FrozenSeries:
         """
         Pad the string up to the specified width size
 
@@ -214,7 +214,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -225,7 +225,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def contains(self, pat: str, case: bool = True) -> Series:
+    def contains(self, pat: str, case: bool = True) -> FrozenSeries:
         """
         Compute a boolean flag where each value is a result of test whether the substring is inside the value
 
@@ -238,7 +238,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
         """
         return series_unary_operation(
             input_series=self._obj,
@@ -251,7 +251,7 @@ class StringAccessor:
     @typechecked
     def slice(
         self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
-    ) -> Series:
+    ) -> FrozenSeries:
         """
         Slice substring from each element in the series
 
@@ -266,7 +266,7 @@ class StringAccessor:
 
         Returns
         -------
-        Series
+        FrozenSeries
 
         Raises
         ------
