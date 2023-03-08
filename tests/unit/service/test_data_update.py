@@ -413,9 +413,7 @@ def get_relationships():
     relationships = Relationship.list()
     expected_relationships = []
     for _, relationship in relationships.iterrows():
-        expected_relationships.append(
-            (relationship.primary_entity_name, relationship.related_entity_name)
-        )
+        expected_relationships.append((relationship.primary_entity, relationship.related_entity))
     return expected_relationships
 
 
