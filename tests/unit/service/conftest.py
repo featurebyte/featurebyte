@@ -4,6 +4,8 @@ Fixture for Service related unit tests
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
+from typing import Optional
+
 import json
 import os.path
 from unittest.mock import Mock, patch
@@ -271,31 +273,47 @@ async def context_fixture(test_dir, context_service, feature_store, entity):
         return context
 
 
-@pytest_asyncio.fixture(name="event_data")
-async def event_data_fixture(test_dir, feature_store, event_data_service, semantic_service):
-    """EventData model"""
+@pytest.fixture(name="event_data_factory")
+def event_data_factory_fixture(test_dir, feature_store, event_data_service, semantic_service):
+    """
+    EventData factory returns a function that can be used to create EventData models.
+    """
     _ = feature_store
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
-        event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
-        event_timestamp = await semantic_service.get_or_create_document(
-            name=SemanticType.EVENT_TIMESTAMP
-        )
-        columns_info = []
-        for col in event_data.columns_info:
-            col_dict = col.dict()
-            if col.name == "event_timestamp":
-                col_dict["semantic_id"] = event_timestamp.id
-            columns_info.append(col_dict)
 
-        event_data = await event_data_service.update_document(
-            document_id=event_data.id,
-            data=EventDataServiceUpdate(columns_info=columns_info),
-            return_document=True,
-        )
-        return event_data
+    async def factory(
+        remove_feature_job_setting: Optional[bool] = False,
+    ):
+        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
+        with open(fixture_path, encoding="utf") as fhandle:
+            payload = json.loads(fhandle.read())
+            payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
+            if remove_feature_job_setting:
+                payload["default_feature_job_setting"] = None
+            event_data = await event_data_service.create_document(data=EventDataCreate(**payload))
+            event_timestamp = await semantic_service.get_or_create_document(
+                name=SemanticType.EVENT_TIMESTAMP
+            )
+            columns_info = []
+            for col in event_data.columns_info:
+                col_dict = col.dict()
+                if col.name == "event_timestamp":
+                    col_dict["semantic_id"] = event_timestamp.id
+                columns_info.append(col_dict)
+
+            event_data = await event_data_service.update_document(
+                document_id=event_data.id,
+                data=EventDataServiceUpdate(columns_info=columns_info),
+                return_document=True,
+            )
+            return event_data
+
+    return factory
+
+
+@pytest_asyncio.fixture(name="event_data")
+async def event_data_fixture(event_data_factory):
+    """EventData model"""
+    return await event_data_factory()
 
 
 @pytest_asyncio.fixture(name="item_data")
@@ -336,15 +354,30 @@ async def scd_data_fixture(test_dir, feature_store, scd_data_service):
         return scd_data
 
 
+@pytest.fixture(name="feature_factory")
+def feature_factory_fixture(test_dir, feature_service):
+    """
+    Feature factory
+
+    Note that this will only create the feature, and might throw an error if used alone. You'll need to make sure that
+    you've created the event data and entity models first.
+    """
+
+    async def factory():
+        fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+        with open(fixture_path, encoding="utf") as fhandle:
+            payload = json.loads(fhandle.read())
+            feature = await feature_service.create_document(data=FeatureCreate(**payload))
+            return feature
+
+    return factory
+
+
 @pytest_asyncio.fixture(name="feature")
-async def feature_fixture(test_dir, event_data, entity, feature_service):
+async def feature_fixture(event_data, entity, feature_factory):
     """Feature model"""
     _ = event_data, entity
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        feature = await feature_service.create_document(data=FeatureCreate(**payload))
-        return feature
+    return await feature_factory()
 
 
 @pytest_asyncio.fixture(name="feature_iet")

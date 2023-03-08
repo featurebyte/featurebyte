@@ -86,11 +86,13 @@ async def test_validate(
     )
 
     # Verify that validate does not throw an error if ignore_guardrails is True
-    await production_ready_validator.validate("sum_30m", feature.graph, ignore_guardrails=True)
+    await production_ready_validator.validate(
+        feature.name, feature.id, feature.graph, ignore_guardrails=True
+    )
 
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(ValueError) as exc:
-        await production_ready_validator.validate("sum_30m", feature.graph)
+        await production_ready_validator.validate("sum_30m", feature.id, feature.graph)
     exception_str = str(exc.value)
     assert "Discrepancies found between the current feature version" in exception_str
     assert "feature_job_setting" in exception_str
@@ -187,7 +189,7 @@ async def test_get_feature_version_of_source__no_diff(
     Test _get_feature_version_of_source - no diff returns None
     """
     response = await production_ready_validator._get_feature_version_of_source(
-        production_ready_feature.name
+        production_ready_feature.id
     )
     assert response is None
 

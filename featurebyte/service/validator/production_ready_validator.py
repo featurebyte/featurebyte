@@ -3,8 +3,10 @@ Production ready validator
 """
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+from bson import ObjectId
+
 from featurebyte import ColumnCleaningOperation, FeatureJobSetting
-from featurebyte.exception import DocumentError
+from featurebyte.exception import NoChangesInFeatureVersionError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -32,7 +34,11 @@ class ProductionReadyValidator:
         self.feature_service = feature_service
 
     async def validate(
-        self, feature_name: str, graph: QueryGraph, ignore_guardrails: bool = False
+        self,
+        feature_name: str,
+        feature_id: ObjectId,
+        feature_graph: QueryGraph,
+        ignore_guardrails: bool = False,
     ) -> None:
         """
         Validate.
@@ -41,8 +47,10 @@ class ProductionReadyValidator:
         ----------
         feature_name: str
             feature name
-        graph: QueryGraph
-            graph
+        feature_id: ObjectId
+            feature id
+        feature_graph: QueryGraph
+            feature graph
         ignore_guardrails: bool
             parameter to determine whether to ignore guardrails
         """
@@ -50,56 +58,45 @@ class ProductionReadyValidator:
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
-            feature_version = await self._get_feature_version_of_source(feature_name)
-            if feature_version is None:
+            source_feature = await self._get_feature_version_of_source(feature_id)
+            if source_feature is None:
                 return
-            feature_version_source_node, feature_version_source_graph = feature_version
+            feature_version_source_node, feature_version_source_graph = source_feature
             feature_job_setting_diff = await self._get_feature_job_setting_diffs_source_vs_curr(
-                feature_version_source_node, feature_version_source_graph, graph
+                feature_version_source_node, feature_version_source_graph, feature_graph
             )
             cleaning_ops_diff = await self._get_cleaning_operations_diff_vs_source(
-                feature_version_source_graph, graph
+                feature_version_source_graph, feature_graph
             )
             ProductionReadyValidator._raise_error_if_diffs_present(
                 feature_job_setting_diff, cleaning_ops_diff
             )
 
     async def _get_feature_version_of_source(
-        self, feature_name: str
+        self, feature_id: ObjectId
     ) -> Optional[Tuple[Node, QueryGraph]]:
         """
         Get the diffs.
 
         Parameters
         ----------
-        feature_name: str
-            feature name
+        feature_id: ObjectId
+            feature id
 
         Returns
         -------
         Optional[Tuple[Node, QueryGraph]]
             node and graph of the feature version of the source, or None if there are no changes detected
-
-        Raises
-        ------
-        DocumentError
-            raised if there is an error when trying to create new feature version
         """
-        features = await self.feature_service.list_documents(
-            query_filter={"name": feature_name},
-        )
-        feature = features["data"][0]
         try:
-            new_feature = (
+            source_feature = (
                 await self.version_service.create_new_feature_version_using_source_settings(
-                    feature["_id"]
+                    feature_id
                 )
             )
-            return new_feature.node, new_feature.graph
-        except DocumentError as exc:
-            if "No change detected on the new feature version" in str(exc):
-                return None
-            raise exc
+            return source_feature.node, source_feature.graph
+        except NoChangesInFeatureVersionError:
+            return None
 
     @staticmethod
     def _raise_error_if_diffs_present(
