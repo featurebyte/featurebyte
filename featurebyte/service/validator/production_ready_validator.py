@@ -95,8 +95,6 @@ class ProductionReadyValidator:
                     feature["_id"]
                 )
             )
-            if new_feature is None:
-                return None
             return new_feature.node, new_feature.graph
         except DocumentError as exc:
             if "No change detected on the new feature version" in str(exc):
