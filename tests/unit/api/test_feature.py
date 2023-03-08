@@ -480,8 +480,8 @@ def test_get_feature(saved_feature):
     }
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_feature = Feature.get(name="random_name")
-        _ = lazy_feature.name
+        Feature.get(name="random_name")
+
     expected_msg = 'FeatureNamespace (name: "random_name") not found. Please save the FeatureNamespace object first.'
     assert expected_msg in str(exc.value)
 

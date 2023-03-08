@@ -223,8 +223,8 @@ def test_get__unexpected_retrieval_exception():
     """
     # check unexpected creation exception
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_feature_store = FeatureStore.get("some random name")
-        _ = lazy_feature_store.name
+        FeatureStore.get("some random name")
+
     expected_msg = 'FeatureStore (name: "some random name") not found. Please save the FeatureStore object first.'
     assert expected_msg in str(exc.value)
 
@@ -241,9 +241,7 @@ async def test_feature_store_create(
     feature_store_name_in_test = "sf_featurestore"
     # We expect to get an error here since we have not stored a feature store yet.
     with pytest.raises(RecordRetrievalException):
-        loaded_feature_store = FeatureStore.get(feature_store_name_in_test)
-        # This next line is required in order to actually "retrieve" the item since we lazy load.
-        _ = loaded_feature_store.saved
+        FeatureStore.get(feature_store_name_in_test)
 
     # before save
     persistent = mock_get_persistent.return_value
