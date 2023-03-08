@@ -14,7 +14,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 
 import operator
@@ -23,7 +22,6 @@ from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
 
-import lazy_object_proxy
 import pandas as pd
 from bson.objectid import ObjectId
 from cachetools import TTLCache, cachedmethod
@@ -33,6 +31,7 @@ from pydantic import Field
 from rich.pretty import pretty_repr
 from typeguard import typechecked
 
+from featurebyte.common.utils import construct_repr_string
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -49,19 +48,6 @@ ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ModelT = TypeVar("ModelT", bound=FeatureByteBaseDocumentModel)
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
-
-
-class ApiObjectProxy(lazy_object_proxy.Proxy):
-    """
-    Proxy with customized representation
-    """
-
-    def __repr__(self) -> str:
-        return (
-            f"<{self.__class__.__module__}.{self.__class__.__name__} at {hex(id(self))}>"
-            + "\n"
-            + repr(self.info())
-        )
 
 
 class PrettyDict(Dict[str, Any]):
@@ -141,7 +127,14 @@ class ApiObject(FeatureByteBaseDocumentModel):
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     def __repr__(self) -> str:
-        return repr(self.info())
+        info_repr = ""
+        try:
+            info_repr = repr(self.info())
+        except RecordCreationException:
+            # object has not been saved yet
+            pass
+
+        return construct_repr_string(self, info_repr)
 
     @property  # type: ignore
     @cachedmethod(cache=operator.attrgetter("_cache"), key=get_api_object_cache_key)
@@ -234,7 +227,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
-        Retrieve lazy object from the persistent given object name
+        Retrieve object from the persistent given object name
 
         Parameters
         ----------
@@ -246,7 +239,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             Retrieved object with the specified name
         """
-        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get, name)))
+        return cls._get(name)
 
     @classmethod
     def from_persistent_object_dict(
@@ -278,7 +271,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
         """
-        Get the lazy object from the persistent given the object ID
+        Get the object from the persistent given the object ID
 
         Parameters
         ----------
@@ -290,7 +283,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             ApiObject object of the given object ID
         """
-        return cast(ApiObjectT, ApiObjectProxy(partial(cls._get_by_id, id)))
+        return cls._get_by_id(id)
 
     @staticmethod
     def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:

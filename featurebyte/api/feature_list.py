@@ -657,9 +657,10 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
                     feature_store_id = TabularSource(
                         **feature_dict["tabular_source"]
                     ).feature_store_id
-                    feature_store_map[feature_store_id] = feature_store_map.get(
-                        feature_store_id, FeatureStore.get_by_id(feature_store_id)
-                    )
+                    if feature_store_id not in feature_store_map:
+                        feature_store_map[feature_store_id] = FeatureStore.get_by_id(
+                            feature_store_id
+                        )
                     feature_dict["feature_store"] = feature_store_map[feature_store_id]
 
                     # deserialize feature record into feature object

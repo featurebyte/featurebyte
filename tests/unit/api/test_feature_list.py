@@ -543,9 +543,12 @@ def test_get_feature_list(saved_feature_list):
 
     # check unexpected exception in get
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_feature_list = FeatureList.get(name="random_name")
-        _ = lazy_feature_list.name
-    expected_msg = 'FeatureListNamespace (name: "random_name") not found. Please save the FeatureListNamespace object first.'
+        FeatureList.get(name="random_name")
+
+    expected_msg = (
+        'FeatureListNamespace (name: "random_name") not found. '
+        "Please save the FeatureListNamespace object first."
+    )
     assert expected_msg in str(exc.value)
 
     # check audit log

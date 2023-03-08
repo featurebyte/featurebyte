@@ -687,8 +687,8 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_event_data = EventData.get("unknown_event_data")
-        _ = lazy_event_data.name
+        EventData.get("unknown_event_data")
+
     expected_msg = (
         'EventData (name: "unknown_event_data") not found. '
         "Please save the EventData object first."
@@ -704,8 +704,7 @@ def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, 
     """
     recent_schema = {"column": "INT"}
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    lazy_event_data = EventData.get_by_id(saved_event_data.id)
-    _ = lazy_event_data.id
+    event_data = EventData.get_by_id(saved_event_data.id)
     assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
 
     # this is ok as additional column should not break backward compatibility

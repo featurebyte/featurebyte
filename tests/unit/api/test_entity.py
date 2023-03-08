@@ -69,8 +69,8 @@ def test_entity__update_name(entity):
     # test update name (non-saved object)
     another_entity = Entity(name="AnotherCustomer", serving_names=["cust"])
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_entity = Entity.get("AnotherCustomer")
-        _ = lazy_entity.name
+        Entity.get("AnotherCustomer")
+
     expected_msg = (
         'Entity (name: "AnotherCustomer") not found. ' "Please save the Entity object first."
     )
@@ -214,8 +214,8 @@ def test_get_entity():
     # test unexpected retrieval exception for Entity.get
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
-            lazy_entity = Entity.get("anything")
-            _ = lazy_entity.name
+            Entity.get("anything")
+
     assert "Failed to retrieve the specified object." in str(exc.value)
 
     # test list entity names

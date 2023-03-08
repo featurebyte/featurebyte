@@ -55,8 +55,7 @@ def test_workspace__update_name(workspace):
     # test update name (non-saved object)
     another_workspace = Workspace(name="CreditCard")
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_workspace = Workspace.get("CreditCard")
-        _ = lazy_workspace.name
+        Workspace.get("CreditCard")
     expected_msg = (
         'Workspace (name: "CreditCard") not found. ' "Please save the Workspace object first."
     )
@@ -184,8 +183,7 @@ def test_get_workspace():
     # test unexpected retrieval exception for Workspace.get
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
-            lazy_workspace = Workspace.get("anything")
-            _ = lazy_workspace.name
+            Workspace.get("anything")
     assert "Failed to retrieve the specified object." in str(exc.value)
 
     # test list workspace names

@@ -359,8 +359,8 @@ def test_get_item_data(saved_item_data, snowflake_item_data):
     assert ItemData.get_by_id(id=loaded_data.id) == snowflake_item_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        lazy_event_data = ItemData.get("unknown_item_data")
-        _ = lazy_event_data.name
+        ItemData.get("unknown_item_data")
+
     expected_msg = (
         'ItemData (name: "unknown_item_data") not found. ' "Please save the ItemData object first."
     )
