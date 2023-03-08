@@ -279,6 +279,7 @@ class DataUpdateService(BaseService):
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
                     primary_data_source_id=PydanticObjectId(data_source_id),
                     is_enabled=True,
+                    updated_by=self.user.id,
                 )
             )
 
