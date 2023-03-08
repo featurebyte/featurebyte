@@ -408,7 +408,7 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
         )
 
 
-def get_relationships_and_assert_user(expected_user_id):
+def get_relationships():
     """
     Helper function to get relationships in (child, parent) format.
     """
@@ -416,7 +416,6 @@ def get_relationships_and_assert_user(expected_user_id):
     expected_relationships = []
     for _, relationship in relationships.iterrows():
         expected_relationships.append((relationship.primary_entity, relationship.related_entity))
-        assert relationship.updated_by == expected_user_id
     return expected_relationships
 
 
@@ -469,6 +468,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
     event_data_entity_initializer,
     entity_docs,
     user,
+    relationship_info_service,
     old_primary_entities,
     old_parent_entities,
     new_primary_entities,
@@ -495,7 +495,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
             initial_relationships.append((old_primary_entity, old_parent_entity))
 
     # Query database to get the current relationships persisted
-    relationships = get_relationships_and_assert_user(user.id)
+    relationships = get_relationships()
     assert_relationships_match(relationships, initial_relationships)
 
     # Call update entity relationship
@@ -507,6 +507,12 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
         new_parent_entities=convert_entity_name_to_ids(new_parent_entities, entity_docs),
     )
 
+    # Verify that relationships have correct updated by user IDs
+    result = await relationship_info_service.list_documents()
+    data = result["data"]
+    for relationship_info in data:
+        assert relationship_info["updated_by"] == user.id
+
     # Create list of expected relationships --> initial + additions - removals
     final_expected_relationships = initial_relationships.copy()
     final_expected_relationships.extend(expected_additions)
@@ -514,7 +520,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
         final_expected_relationships.remove(removed_relationship)
 
     # Verify the final relationships
-    final_relationships = get_relationships_and_assert_user(user.id)
+    final_relationships = get_relationships()
     assert_relationships_match(final_relationships, final_expected_relationships)
 
 
