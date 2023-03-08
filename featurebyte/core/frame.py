@@ -11,7 +11,7 @@ from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin, SampleMixin
-from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
@@ -97,13 +97,13 @@ class FrozenFrame(BaseFrame, OpsMixin, GetAttrMixin):
         """
         return {}
 
-    def _check_any_missing_column(self, item: str | list[str] | FrozenSeriesT) -> None:
+    def _check_any_missing_column(self, item: str | list[str] | FrozenSeries) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)
 
         Parameters
         ----------
-        item: str | list[str] | FrozenSeriesT
+        item: str | list[str] | FrozenSeries
             input column(s)
 
         Raises

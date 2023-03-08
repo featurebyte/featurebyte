@@ -64,8 +64,7 @@ def test__getitem__type_not_supported(int_series):
     with pytest.raises(TypeError) as exc:
         _ = int_series[True]
     expected_msg = (
-        'type of argument "item" must be featurebyte.core.series.FrozenSeries or one of its subclasses; '
-        "got bool instead"
+        'type of argument "item" must be featurebyte.core.series.FrozenSeries; got bool instead'
     )
     assert expected_msg in str(exc.value)
 
@@ -328,7 +327,7 @@ def test_logical_operators(bool_series, int_series):
     with pytest.raises(TypeError) as exc:
         _ = bool_series & "string"
     expected_msg = (
-        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeriesT); '
+        'type of argument "other" must be one of (bool, featurebyte.core.series.FrozenSeries); '
         "got str instead"
     )
     assert expected_msg in str(exc.value)

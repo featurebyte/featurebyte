@@ -96,7 +96,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return repr(self)
 
     @typechecked
-    def __getitem__(self: FrozenSeriesT, item: FrozenSeriesT) -> FrozenSeriesT:
+    def __getitem__(self: FrozenSeriesT, item: FrozenSeries) -> FrozenSeriesT:
         node = self._add_filter_operation(
             item=self, mask=item, node_output_type=NodeOutputType.SERIES
         )
@@ -110,7 +110,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         )
 
     def binary_op_series_params(
-        self: FrozenSeriesT, other: Scalar | FrozenSeriesT | ScalarSequence
+        self: FrozenSeriesT, other: Scalar | FrozenSeries | ScalarSequence
     ) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
@@ -118,7 +118,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Parameters
         ----------
-        other: Scalar | FrozenSeriesT | ScalarSequence
+        other: Scalar | FrozenSeries | ScalarSequence
             Other object
 
         Returns
@@ -207,7 +207,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
     def _binary_op(
         self: FrozenSeriesT,
-        other: Scalar | FrozenSeriesT | ScalarSequence,
+        other: Scalar | FrozenSeries | ScalarSequence,
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
@@ -243,14 +243,14 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         )
 
     def _binary_logical_op(
-        self: FrozenSeriesT, other: bool | FrozenSeriesT, node_type: NodeType
+        self: FrozenSeriesT, other: bool | FrozenSeries, node_type: NodeType
     ) -> FrozenSeriesT:
         """
         Apply binary logical operation between self & other objects
 
         Parameters
         ----------
-        other: bool | FrozenSeriesT
+        other: bool | FrozenSeries
             right value of the binary logical operator
         node_type: NodeType
             binary logical operator node type
@@ -274,22 +274,22 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __and__(self: FrozenSeriesT, other: Union[bool, FrozenSeriesT]) -> FrozenSeriesT:
+    def __and__(self: FrozenSeriesT, other: Union[bool, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_logical_op(other, NodeType.AND)
 
     @typechecked
-    def __or__(self: FrozenSeriesT, other: Union[bool, FrozenSeriesT]) -> FrozenSeriesT:
+    def __or__(self: FrozenSeriesT, other: Union[bool, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_logical_op(other, NodeType.OR)
 
     def _binary_relational_op(
-        self: FrozenSeriesT, other: int | float | str | bool | FrozenSeriesT, node_type: NodeType
+        self: FrozenSeriesT, other: int | float | str | bool | FrozenSeries, node_type: NodeType
     ) -> FrozenSeriesT:
         """
         Apply binary relational operation between self & other objects
 
         Parameters
         ----------
-        other: int | float | str | bool | FrozenSeriesT
+        other: int | float | str | bool | FrozenSeries
             right value of the binary relational operator
         node_type: NodeType
             binary relational operator node type
@@ -319,35 +319,39 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __eq__(self, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeries:  # type: ignore
+    def __eq__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.EQ)
 
     @typechecked
-    def __ne__(self, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeries:  # type: ignore
+    def __ne__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.NE)
 
     @typechecked
-    def __lt__(self, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeries:  # type: ignore
+    def __lt__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.LT)
 
     @typechecked
-    def __le__(self, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeries:  # type: ignore
+    def __le__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.LE)
 
     @typechecked
-    def __gt__(self, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeries:
+    def __gt__(
+        self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]
+    ) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GT)
 
     @typechecked
-    def __ge__(self, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeries:
+    def __ge__(
+        self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]
+    ) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GE)
 
     def _binary_arithmetic_op(
-        self,
+        self: FrozenSeriesT,
         other: int | float | str | FrozenSeries,
         node_type: NodeType,
         right_op: bool = False,
-    ) -> FrozenSeries:
+    ) -> FrozenSeriesT:
         """
         Apply binary arithmetic operation between self & other objects
 
@@ -362,7 +366,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Returns
         -------
-        FrozenSeries
+        FrozenSeriesT
             output of the binary arithmetic operation
 
         Raises
@@ -393,7 +397,9 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     @typechecked
-    def _date_diff_op(self, other: FrozenSeries, right_op: bool = False) -> FrozenSeries:
+    def _date_diff_op(
+        self: FrozenSeriesT, other: FrozenSeries, right_op: bool = False
+    ) -> FrozenSeriesT:
         """
         Apply date difference operation between two date Series
 
@@ -406,7 +412,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Returns
         -------
-        FrozenSeries
+        FrozenSeriesT
             output of the date difference operation
         """
         return self._binary_op(
@@ -419,8 +425,8 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
     @typechecked
     def _date_add_op(
-        self, other: Union[FrozenSeries, pd.Timedelta], right_op: bool = False
-    ) -> FrozenSeries:
+        self: FrozenSeriesT, other: Union[FrozenSeries, pd.Timedelta], right_op: bool = False
+    ) -> FrozenSeriesT:
         """
         Increment date by timedelta
 
@@ -433,7 +439,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Returns
         -------
-        FrozenSeries
+        FrozenSeriesT
             output of the date difference operation
         """
         if isinstance(other, pd.Timedelta):
@@ -447,7 +453,9 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         )
 
     @typechecked
-    def __add__(self, other: Union[int, float, str, pd.Timedelta, FrozenSeries]) -> FrozenSeries:
+    def __add__(
+        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
+    ) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
@@ -462,7 +470,9 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
     @typechecked
-    def __radd__(self, other: Union[int, float, str, pd.Timedelta, FrozenSeries]) -> FrozenSeries:
+    def __radd__(
+        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
+    ) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
@@ -479,37 +489,37 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
 
     @typechecked
-    def __sub__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __sub__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         if self.is_datetime and isinstance(other, FrozenSeries) and other.is_datetime:
             return self._date_diff_op(other)
         return self._binary_arithmetic_op(other, NodeType.SUB)
 
     @typechecked
-    def __rsub__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __rsub__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
     @typechecked
-    def __mul__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __mul__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MUL)
 
     @typechecked
-    def __rmul__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __rmul__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MUL, right_op=True)
 
     @typechecked
-    def __truediv__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __truediv__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.DIV)
 
     @typechecked
-    def __rtruediv__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __rtruediv__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
     @typechecked
-    def __mod__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __mod__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MOD)
 
     @typechecked
-    def __rmod__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __rmod__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MOD, right_op=True)
 
     def __invert__(self: FrozenSeriesT) -> FrozenSeriesT:
@@ -522,7 +532,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         )
 
     @typechecked
-    def __pow__(self, other: Union[int, float, FrozenSeries]) -> FrozenSeries:
+    def __pow__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self.pow(other)
 
     @property
@@ -575,9 +585,9 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
     @typechecked
     def astype(
-        self,
+        self: FrozenSeriesT,
         new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
-    ) -> FrozenSeries:
+    ) -> FrozenSeriesT:
         """
         Convert Series to have a new type
 
@@ -588,7 +598,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Returns
         -------
-        FrozenSeries
+        FrozenSeriesT
             A new Series with converted variable type
 
         Raises
@@ -660,13 +670,13 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         )
 
     @numeric_only
-    def pow(self: FrozenSeriesT, other: int | float | FrozenSeriesT) -> FrozenSeriesT:
+    def pow(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         """
         Computes the exponential power of the current Series
 
         Parameters
         ----------
-        other : int | float | Series
+        other : int | float | FrozenSeries
             Power to raise to
 
         Returns
@@ -753,22 +763,22 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
         return super().copy(*args, **kwargs, deep=True)
 
     def validate_isin_operation(
-        self: FrozenSeriesT, other: Union[FrozenSeriesT, Sequence[Union[bool, int, float, str]]]
+        self: FrozenSeriesT, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
     ) -> None:
         """
         Optional validation that can be added by subclasses if needed.
 
         Parameters
         ----------
-        other: Union[FrozenSeriesT, Sequence[Union[bool, int, float, str]]]
+        other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
             other input to check whether the current series is in
         """
         _ = other
 
     @typechecked
     def isin(
-        self, other: Union[FrozenSeries, ScalarSequence], right_op: bool = False
-    ) -> FrozenSeries:
+        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence], right_op: bool = False
+    ) -> FrozenSeriesT:
         """
         Identify if values in a series is in another series, or a pre-defined sequence.
 
@@ -781,7 +791,7 @@ class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAcces
 
         Returns
         -------
-        FrozenSeries
+        FrozenSeriesT
             updated series
 
         Raises
