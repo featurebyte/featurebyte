@@ -89,7 +89,6 @@ services:
     volumes:
       - ~/.featurebyte/data/spark/staging:/opt/spark/data/staging
       - spark-warehouse:/opt/spark/data/derby
-      - spark-tmp:/tmp
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
@@ -123,5 +122,4 @@ networks:
     external: true
 
 volumes:
-  spark-tmp:
   spark-warehouse:
