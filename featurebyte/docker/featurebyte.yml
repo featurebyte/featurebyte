@@ -47,8 +47,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
     volumes:
       - ./migration.py:/scripts/migration.py
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
-      - /tmp:/tmp
 
   featurebyte-worker:
     networks:
@@ -70,8 +70,8 @@ services:
       /bin/bash /scripts/entrypoint-worker.sh
     volumes:
       - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
-      - /tmp:/tmp
 
   spark-thrift:
     networks:
