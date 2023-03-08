@@ -42,7 +42,7 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8088
       WORKERS: 3
-      LOG_LEVEL: warning
+      LOG_LEVEL: debug
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
     volumes:
