@@ -285,6 +285,28 @@ def enforce_observation_set_row_order(function: Any) -> Any:
     return wrapper
 
 
+def construct_repr_string(obj: object, additional_info: Optional[str] = None) -> str:
+    """
+    Construct repr string for an object
+
+    Parameters
+    ----------
+    obj: object
+        Object to construct repr string for
+    additional_info: Optional[str]
+        Additional info to include in the repr string
+
+    Returns
+    -------
+    str
+    """
+    # construct representation string
+    repr_str = f"<{obj.__class__.__module__}.{obj.__class__.__name__} at {hex(id(obj))}>"
+    if additional_info:
+        repr_str += "\n" + additional_info
+    return repr_str
+
+
 class CodeStr(str):
     """
     Code string content that can be displayed in markdown format
