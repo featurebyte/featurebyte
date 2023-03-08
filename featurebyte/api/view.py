@@ -244,6 +244,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             if graph_node.parameters.type == self._view_graph_node_type:
                 view_input_node_names = self.graph.get_input_node_names(graph_node)
 
+        # first input node names must be the input node used to create the view
         assert len(view_input_node_names) >= 1, "View should have at least one input"
         input_node = self.graph.get_node_by_name(view_input_node_names[0])
         assert isinstance(input_node, InputNode)
