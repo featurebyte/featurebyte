@@ -219,7 +219,7 @@ class BaseTileManager(BaseModel, ABC):
 
         sql = await self._schedule_tiles_custom(
             tile_spec=tile_spec,
-            tile_type=TileType.ONLINE,
+            tile_type=TileType.OFFLINE,
             next_job_time=next_job_time,
             offline_minutes=offline_minutes,
         )
@@ -261,7 +261,7 @@ class BaseTileManager(BaseModel, ABC):
         """
 
         logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
-        job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+        job_id = f"{tile_type}_{tile_spec.aggregation_id}"
 
         if not tile_spec.workspace_id or not tile_spec.feature_store_id:
             raise TileScheduleNotSupportedError(
