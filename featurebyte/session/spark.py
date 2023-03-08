@@ -158,6 +158,10 @@ class SparkSession(BaseSession):
     def database_name(self) -> str:
         return self.featurebyte_catalog
 
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return False
+
     async def list_databases(self) -> list[str]:
         databases = await self.execute_query("SHOW CATALOGS")
         output = []

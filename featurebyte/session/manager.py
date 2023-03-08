@@ -131,10 +131,10 @@ class SessionManager(BaseModel):
             },
             sort_keys=True,
         )
-        if session_type == SourceType.SPARK:
-            get_session_func = get_new_session
-        else:
+        if SOURCE_TYPE_SESSION_MAP[session_type].is_threadsafe():
             get_session_func = get_session
+        else:
+            get_session_func = get_new_session
         session = await get_session_func(
             item=json_str,
             credential_params=json.dumps(credential_params, sort_keys=True),

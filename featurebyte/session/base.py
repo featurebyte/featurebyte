@@ -436,6 +436,14 @@ class BaseSession(BaseModel):
         str
         """
 
+    @classmethod
+    @abstractmethod
+    def is_threadsafe(cls) -> bool:
+        """
+        Whether the session object can be shared across threads. If True, SessionManager will cache
+        the session object once it is created.
+        """
+
 
 class SqlObjectType(StrEnum):
     """Enum for type of SQL objects to initialize in Snowflake"""

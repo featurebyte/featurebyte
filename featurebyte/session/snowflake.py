@@ -85,6 +85,10 @@ class SnowflakeSession(BaseSession):
     def database_name(self) -> str:
         return self.database
 
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return True
+
     async def list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names

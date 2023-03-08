@@ -43,6 +43,10 @@ class SQLiteSession(BaseSession):
     def schema_name(self) -> str:
         raise NotImplementedError()
 
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return False
+
     async def list_databases(self) -> list[str]:
         return []
 
