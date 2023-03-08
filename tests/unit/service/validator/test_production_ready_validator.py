@@ -9,7 +9,9 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 
 
 @pytest.fixture(name="production_ready_validator")
-def production_ready_validator_fixture(feature_namespace_service, app_container, version_service):
+def production_ready_validator_fixture(
+    feature_namespace_service, app_container, version_service, feature_service
+):
     """
     Get production ready validator
     """
@@ -17,21 +19,28 @@ def production_ready_validator_fixture(feature_namespace_service, app_container,
         feature_namespace_service=feature_namespace_service,
         data_service=app_container.tabular_data_service,
         version_service=version_service,
-        feature_service=app_container.feature_service,
+        feature_service=feature_service,
     )
 
 
 @pytest.fixture(name="source_version_creator")
-def source_version_creator_fixture(version_service):
+def source_version_creator_fixture(version_service, feature_service):
     """
     Fixture that is a constructor to get source versions.
     """
 
     async def get_source_version(feature_name):
-        feature = Feature.get(feature_name)
-        source_feature = await version_service.create_new_feature_version_using_source_settings(
-            feature.id
+        docs = await feature_service.list_documents(
+            query_filter={
+                "name": feature_name,
+            }
         )
+        feature = docs["data"][0]
+        source_feature = await version_service.create_new_feature_version_using_source_settings(
+            feature["_id"]
+        )
+        if source_feature is None:
+            return None
         return source_feature.node, source_feature.graph
 
     return get_source_version
