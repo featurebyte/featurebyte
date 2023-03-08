@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte import Relationship
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import PydanticObjectId, User
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.relationship import RelationshipType
