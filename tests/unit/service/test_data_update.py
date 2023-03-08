@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte import Relationship
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.relationship import RelationshipType
@@ -305,7 +305,6 @@ def event_data_entity_initializer_fixture(entity_service, relationship_info_serv
                     related_entity_id=PydanticObjectId(parent_id),
                     primary_data_source_id=PydanticObjectId(event_data.id),
                     is_enabled=True,
-                    updated_by=PydanticObjectId(DEFAULT_USER_ID),
                 )
             )
 
