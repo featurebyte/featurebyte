@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataModel, DataStatus
 from featurebyte.models.relationship import RelationshipType
@@ -279,7 +279,7 @@ class DataUpdateService(BaseService):
                     related_entity_id=PydanticObjectId(new_parent_entity_id),
                     primary_data_source_id=PydanticObjectId(data_source_id),
                     is_enabled=True,
-                    updated_by=PydanticObjectId(DEFAULT_USER_ID),
+                    updated_by=self.user.id,
                 )
             )
 

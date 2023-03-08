@@ -25,7 +25,7 @@ class RelationshipInfoCreate(FeatureByteBaseModel):
     related_entity_id: PydanticObjectId
     primary_data_source_id: PydanticObjectId
     is_enabled: bool
-    updated_by: PydanticObjectId
+    updated_by: Optional[PydanticObjectId]
 
 
 class RelationshipInfoList(PaginationMixin):
