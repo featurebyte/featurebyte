@@ -7,9 +7,9 @@ import pandas as pd
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte import Entity
 from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
 from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
