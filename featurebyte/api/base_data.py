@@ -12,7 +12,7 @@ from pandas import DataFrame
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject, SavableApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping, SavableApiObject
 from featurebyte.api.database_table import AbstractTableData, DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
@@ -215,7 +215,7 @@ class DataListMixin(ApiObject):
     _list_schema = TabularDataModel
     _list_fields = ["name", "type", "status", "entities", "created_at"]
     _list_foreign_keys = [
-        ("columns_info.entity_id", Entity, "entities"),
+        ForeignKeyMapping("columns_info.entity_id", Entity, "entities"),
     ]
 
     @classmethod

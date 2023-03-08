@@ -406,16 +406,14 @@ async def test_update_entity_relationship(  # pylint: disable=too-many-arguments
         )
 
 
-def get_relationships(entity_id_to_name):
+def get_relationships():
     """
     Helper function to get relationships in (child, parent) format.
     """
     relationships = Relationship.list()
     expected_relationships = []
     for _, relationship in relationships.iterrows():
-        primary_entity_name = entity_id_to_name[relationship.primary_entity_id]
-        related_entity_name = entity_id_to_name[relationship.related_entity_id]
-        expected_relationships.append((primary_entity_name, related_entity_name))
+        expected_relationships.append((relationship.primary_entity, relationship.related_entity))
     return expected_relationships
 
 
@@ -493,8 +491,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
             initial_relationships.append((old_primary_entity, old_parent_entity))
 
     # Query database to get the current relationships persisted
-    entity_id_to_name = map_entity_id_to_name(entity_docs)
-    relationships = get_relationships(entity_id_to_name)
+    relationships = get_relationships()
     assert_relationships_match(relationships, initial_relationships)
 
     # Call update entity relationship
@@ -513,7 +510,7 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
         final_expected_relationships.remove(removed_relationship)
 
     # Verify the final relationships
-    final_relationships = get_relationships(entity_id_to_name)
+    final_relationships = get_relationships()
     assert_relationships_match(final_relationships, final_expected_relationships)
 
 

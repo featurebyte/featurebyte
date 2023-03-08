@@ -3,10 +3,10 @@ Test relationships module
 """
 import pytest
 import pytest_asyncio
-from bson import ObjectId
 
+from featurebyte import Entity
 from featurebyte.api.relationship import Relationship
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
@@ -20,25 +20,32 @@ def relationship_info_service_fixture(app_container):
 
 
 @pytest.fixture(name="persistable_relationship_info")
-def persistable_relationship_info_fixture(relationship_info_service):
+def persistable_relationship_info_fixture(
+    relationship_info_service, snowflake_feature_store, snowflake_event_data
+):
     """
     Get a callback function that will persist a relationship info.
     """
-    primary_entity_id = PydanticObjectId(ObjectId())
+    snowflake_feature_store.save()
+    cust_entity = Entity(name="customer", serving_names=["cust_id"])
+    cust_entity.save()
+    user_entity = Entity(name="user", serving_names=["user_id"])
+    user_entity.save()
+    snowflake_event_data.save()
 
     async def save() -> RelationshipInfo:
         created_relationship = await relationship_info_service.create_document(
             RelationshipInfoCreate(
                 name="test_relationship",
                 relationship_type=RelationshipType.CHILD_PARENT,
-                primary_entity_id=primary_entity_id,
-                related_entity_id=PydanticObjectId(ObjectId()),
-                primary_data_source_id=PydanticObjectId(ObjectId()),
+                primary_entity_id=cust_entity.id,
+                related_entity_id=user_entity.id,
+                primary_data_source_id=snowflake_event_data.id,
                 is_enabled=False,
-                updated_by=PydanticObjectId(ObjectId()),
+                updated_by=PydanticObjectId(DEFAULT_USER_ID),
             )
         )
-        assert created_relationship.primary_entity_id == primary_entity_id
+        assert created_relationship.primary_entity_id == cust_entity.id
         return created_relationship
 
     return save
@@ -73,6 +80,20 @@ def test_accessing_persisted_relationship_info_attributes(persisted_relationship
     assert version_2.is_enabled
 
 
+def assert_relationship_info(relationship_info_df):
+    """
+    Helper function to assert state of relationship_info
+    """
+    assert relationship_info_df.shape[0] == 1
+    assert relationship_info_df["id"][0] is not None
+    assert relationship_info_df["relationship_type"][0] == "child_parent"
+    assert relationship_info_df["primary_entity"][0] == "customer"
+    assert relationship_info_df["related_entity"][0] == "user"
+    assert relationship_info_df["primary_data_source"][0] == "sf_event_data"
+    assert relationship_info_df["primary_data_type"][0] == "event_data"
+    assert not relationship_info_df["is_enabled"][0]
+
+
 @pytest.mark.asyncio
 async def test_relationships_list(persistable_relationship_info):
     """
@@ -82,23 +103,19 @@ async def test_relationships_list(persistable_relationship_info):
     assert relationships.shape[0] == 0
 
     persisted_relationship_info = await persistable_relationship_info()
-    primary_entity_id = persisted_relationship_info.primary_entity_id
     relationship_type = persisted_relationship_info.relationship_type
 
     # verify that there's one relationship that was created
     relationships = Relationship.list()
-    assert relationships.shape[0] == 1
-    assert relationships["primary_entity_id"][0] == primary_entity_id
+    assert_relationship_info(relationships)
 
     # apply relationship_type filter for existing filter using enum
     relationships = Relationship.list(relationship_type=relationship_type)
-    assert relationships.shape[0] == 1
-    assert relationships["primary_entity_id"][0] == primary_entity_id
+    assert_relationship_info(relationships)
 
     # apply relationship_type filter for existing filter using string
     relationships = Relationship.list(relationship_type="child_parent")
-    assert relationships.shape[0] == 1
-    assert relationships["primary_entity_id"][0] == primary_entity_id
+    assert_relationship_info(relationships)
 
     # apply relationship_type filter for non-existing filter
     with pytest.raises(TypeError):

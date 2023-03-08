@@ -36,6 +36,7 @@ from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
     ApiObject,
     ConflictResolution,
+    ForeignKeyMapping,
     SavableApiObject,
 )
 from featurebyte.api.base_data import DataApiObject
@@ -398,8 +399,8 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
         "created_at",
     ]
     _list_foreign_keys = [
-        ("entity_ids", Entity, "entities"),
-        ("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("entity_ids", Entity, "entities"),
+        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
     ]
 
     @property

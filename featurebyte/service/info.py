@@ -286,11 +286,13 @@ class InfoService(BaseService):
             document_id=relationship_info.related_entity_id
         )
         return RelationshipInfoInfo(
+            id=relationship_info.id,
             name=relationship_info.name,
             created_at=relationship_info.created_at,
             updated_at=relationship_info.updated_at,
             relationship_type=relationship_info.relationship_type,
             data_source_name=data_info.name,
+            data_type=data_info.type,
             primary_entity_name=primary_entity.name,
             related_entity_name=related_entity.name,
             updated_by=updated_user_name,

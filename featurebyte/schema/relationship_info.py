@@ -49,10 +49,12 @@ class RelationshipInfoInfo(FeatureByteBaseModel):
     RelationshipInfo info
     """
 
+    id: PydanticObjectId
     relationship_type: RelationshipType
     primary_entity_name: str
     related_entity_name: str
     data_source_name: str
+    data_type: str
     created_at: datetime
     updated_at: Optional[datetime]
     updated_by: str

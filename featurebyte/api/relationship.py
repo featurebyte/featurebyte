@@ -7,7 +7,9 @@ import pandas as pd
 from pydantic import Field
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import ApiObject, ForeignKeyMapping
+from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.entity import Entity
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
@@ -45,13 +47,19 @@ class Relationship(ApiObject):
     _list_schema = RelationshipInfo
     _list_fields = [
         "relationship_type",
-        "primary_entity_id",
-        "related_entity_id",
-        "primary_data_source_id",
+        "primary_entity",
+        "related_entity",
+        "primary_data_source",
+        "primary_data_type",
         "is_enabled",
-        "updated_by",
         "created_at",
         "updated_at",
+    ]
+    _list_foreign_keys = [
+        ForeignKeyMapping("primary_entity_id", Entity, "primary_entity"),
+        ForeignKeyMapping("related_entity_id", Entity, "related_entity"),
+        ForeignKeyMapping("primary_data_source_id", DataApiObject, "primary_data_source"),
+        ForeignKeyMapping("primary_data_source_id", DataApiObject, "primary_data_type", "type"),
     ]
 
     # pydantic instance variable (internal use)
@@ -100,12 +108,11 @@ class Relationship(ApiObject):
 
         - the relationship id
         - primary entity
-        - relate dentity
+        - related entity
         - data source
         - enabled (whether the relationship is enabled)
         - creation timestamp
         - update timestamp
-        - updated by
         - comments
 
         Parameters

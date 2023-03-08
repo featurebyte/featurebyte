@@ -11,7 +11,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -20,6 +19,7 @@ from typing import (
 
 import operator
 import time
+from dataclasses import dataclass
 from functools import partial
 from http import HTTPStatus
 
@@ -102,6 +102,25 @@ def get_api_object_cache_key(
     return hashkey(collection_name, obj.id, *args, **kwargs)
 
 
+@dataclass
+class ForeignKeyMapping:
+    """
+    ForeignKeyMapping contains information about a foreign key field mapping that we can use to map
+    IDs to their names in the list API response.
+    """
+
+    # Field name of the existing ID field in the list API response.
+    foreign_key_field: str
+    # Object class that we will be trying to retrieve the data from.
+    object_class: Any
+    # New field name that we want to display in the list API response
+    new_field_name: str
+    # Field to display instead of `name` from the retrieved list API response.
+    # By default, we will pull the `name` from the retrieved values. This will override that behaviour
+    # to pull a different field.
+    display_field_override: Optional[str] = None
+
+
 class ApiObject(FeatureByteBaseDocumentModel):
     """
     ApiObject contains common methods used to retrieve data
@@ -113,7 +132,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
     _list_schema = FeatureByteBaseDocumentModel
     _get_schema = FeatureByteBaseDocumentModel
     _list_fields = ["name", "created_at"]
-    _list_foreign_keys: List[Tuple[str, Any, str]] = []
+    _list_foreign_keys: List[ForeignKeyMapping] = []
 
     # global api object cache shared by all the ApiObject class & its child classes
     _cache: Any = TTLCache(maxsize=1024, ttl=1)
@@ -451,11 +470,17 @@ class ApiObject(FeatureByteBaseDocumentModel):
         DataFrame
         """
         # populate object names using foreign keys
-        for foreign_key_field, object_class, new_field_name in cls._list_foreign_keys:
-            object_list = object_class.list(include_id=True)
+        for foreign_key_mapping in cls._list_foreign_keys:
+            object_list = foreign_key_mapping.object_class.list(include_id=True)
             if object_list.shape[0] > 0:
                 object_list.index = object_list.id
-                object_map = object_list["name"].to_dict()
+                field_to_pull = (
+                    foreign_key_mapping.display_field_override
+                    if foreign_key_mapping.display_field_override
+                    else "name"
+                )
+                object_map = object_list[field_to_pull].to_dict()
+                foreign_key_field = foreign_key_mapping.foreign_key_field
                 if "." in foreign_key_field:
                     # foreign_key is a dict
                     foreign_key_field, object_id_field = foreign_key_field.split(".")
@@ -468,7 +493,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 new_field_values = item_list[foreign_key_field].apply(mapping_function)
             else:
                 new_field_values = [[]] * item_list.shape[0]
-            item_list[new_field_name] = new_field_values
+            item_list[foreign_key_mapping.new_field_name] = new_field_values
 
         return item_list
 
