@@ -163,6 +163,9 @@ async def test_threadsafety(session, source_type):
     table_name = "TEST_THREADSAFETY"
 
     async def run(session_obj, value):
+        """
+        Insert value into column A of the table
+        """
         print(f"Inserting value {value}")
         query = f"""
             merge into {table_name} as target

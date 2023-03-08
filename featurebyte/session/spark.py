@@ -92,6 +92,9 @@ class SparkSession(BaseSession):
         cursor.execute("SET TIME ZONE 'UTC'")
         cursor.close()
 
+    def __del__(self) -> None:
+        self._connection.close()
+
     def _initialize_storage(self) -> None:
         """
         Initialize storage object
