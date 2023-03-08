@@ -76,11 +76,11 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tiles_with_scheduler__tile_job_already_exists(
-    feature_store, session, tile_manager, scheduler_fixture
+async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
+    feature_store, tile_manager, scheduler_fixture
 ):
     """
-    Test generate_tiles with scheduler and tile job already exists
+    Test generate_tiles with scheduler - avoid duplicate tile job
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
     schedule_time = datetime.utcnow()
@@ -89,3 +89,24 @@ async def test_generate_tiles_with_scheduler__tile_job_already_exists(
 
     sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
     assert sql is None
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_generate_tiles_with_scheduler__tile_job_exists(
+    feature_store, tile_manager, scheduler_fixture
+):
+    """
+    Test generate_tiles with scheduler - test tile_job_exists
+    """
+    tile_scheduler, tile_spec, job_id = scheduler_fixture
+    schedule_time = datetime.utcnow()
+
+    exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
+    assert exists is False
+
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    assert sql is not None
+
+    exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
+    assert exists is True

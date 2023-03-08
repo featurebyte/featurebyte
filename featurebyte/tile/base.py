@@ -69,7 +69,6 @@ class BaseTileManager(BaseModel, ABC):
             )
             logger.debug(f"Done update_tile_entity_tracker for {tile_spec}")
 
-    @abstractmethod
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
         """
         Get existing tile jobs for the given tile_spec
@@ -79,10 +78,22 @@ class BaseTileManager(BaseModel, ABC):
         tile_spec: TileSpec
             the input TileSpec
 
+        Raises
+        -------
+        TileScheduleNotSupportedError
+            if task manager is not initialized
+
         Returns
         -------
             whether the tile jobs already exist
         """
+        if not self._task_manager:
+            raise TileScheduleNotSupportedError("Task manager is not initialized")
+
+        scheduler = TileScheduler(task_manager=self._task_manager)
+
+        job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+        return await scheduler.get_job_details(job_id=job_id) is not None
 
     @abstractmethod
     async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
