@@ -296,9 +296,14 @@ class BaseTileManager(BaseModel, ABC):
                 job_schedule_ts=next_job_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             )
 
+            interval_seconds = (
+                tile_spec.frequency_minute * 60
+                if tile_type == TileType.ONLINE
+                else offline_minutes * 60
+            )
             await scheduler.start_job_with_interval(
                 job_id=job_id,
-                interval_seconds=tile_spec.frequency_minute * 60,
+                interval_seconds=interval_seconds,
                 start_after=next_job_time,
                 instance=tile_schedule_ins,
                 user_id=tile_spec.user_id,
