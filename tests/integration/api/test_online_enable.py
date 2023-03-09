@@ -1,6 +1,8 @@
 """
 Integration test for online enabling features
 """
+from http import HTTPStatus
+
 import pytest
 
 from featurebyte import FeatureList
@@ -44,20 +46,23 @@ def online_enabled_feature_list_fixture(event_data, config):
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_online_enabled_features_have_scheduled_jobs(session, online_enabled_feature_list):
+async def test_online_enabled_features_have_scheduled_jobs(online_enabled_feature_list, config):
     """
     Test online enabled features have scheduled jobs
     """
     feature = online_enabled_feature_list[online_enabled_feature_list.feature_names[0]]
     tile_specs = ExtendedFeatureModel(**feature.dict()).tile_specs
     assert len(tile_specs) == 1
-    aggregation_id = tile_specs[0].aggregation_id
+
+    client = config.get_client()
+    response = client.get("/periodic_task")
 
     # There should be two scheduled jobs for the tile id - one for online tile and another for
     # offline tile (online store pre-computation job is triggered by the online tile task once tile
     # computation completes)
-    tasks = await session.execute_query(f"SHOW TASKS LIKE '%{aggregation_id}%'")
-    assert len(tasks) == 2
+    data = response.json()
+    assert response.status_code == HTTPStatus.OK
+    assert data["total"] == 2
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

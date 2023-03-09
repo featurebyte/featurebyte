@@ -11,6 +11,7 @@ from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationS
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
+from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.working_schema import drop_all_objects
 from featurebyte.utils.credential import get_credential
 
@@ -81,6 +82,17 @@ def migration_service_fixture(user, persistent):
     return service
 
 
+@pytest.fixture(name="periodic_service")
+def periodic_service_fixture(user, persistent):
+    """
+    Fixture for DataWarehouseMigrationServiceV8
+    """
+    service = PeriodicTaskService(
+        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+    )
+    return service
+
+
 @pytest_asyncio.fixture
 async def patch_list_tables_to_exclude_datasets(session, dataset_registration_helper):
     """
@@ -114,6 +126,7 @@ async def test_drop_all_and_recreate(
     deployed_feature_list,
     migration_service,
     feature_store,
+    periodic_service,
 ):
     """
     Test dropping all objects first then use WorkingSchemaService to restore it
@@ -128,11 +141,11 @@ async def test_drop_all_and_recreate(
         num_tables = len(await _list_objects("TABLES"))
         num_functions = len(await _list_objects("USER FUNCTIONS"))
         num_procedures = len(await _list_objects("USER PROCEDURES"))
-        num_tasks = len(await _list_objects("TASKS"))
-        return num_tables, num_functions, num_procedures, num_tasks
+
+        tasks_result = await periodic_service.list_documents()
+        return num_tables, num_functions, num_procedures, tasks_result["total"]
 
     async def _get_tasks():
-        df = await _list_objects("TASKS")
         # Filter tasks by aggregation ids of the feature list of this current test only (other
         # integration tests might manually schedule tasks without only enabling a corresponding
         # feature, and those tasks should excluded in the checks below)
@@ -142,9 +155,15 @@ async def test_drop_all_and_recreate(
                 feature=ExtendedFeatureModel(**deployed_feature_list[feature_name].dict())
             )
             feature_agg_ids.update([agg_id.upper() for agg_id in online_spec.aggregation_ids])
-        task_names = set(df["name"].str.upper().tolist())
+
+        tasks_result = await periodic_service.list_documents()
+        task_names = set()
+        task_ids = []
+        for task_data in tasks_result["data"]:
+            task_names.add(task_data["name"].upper())
+            task_ids.append(task_data["_id"])
         task_names = task_names.intersection(feature_agg_ids)
-        return sorted(task_names)
+        return sorted(task_names), task_ids
 
     async def _get_schema_metadata():
         df = await snowflake_session.execute_query("SELECT * FROM METADATA_SCHEMA")
@@ -157,7 +176,7 @@ async def test_drop_all_and_recreate(
     res = make_online_request(client, deployed_feature_list, entity_serving_names)
     assert res.status_code == 200
     expected_online_result = res.json()
-    original_tasks = await _get_tasks()
+    original_tasks, task_ids = await _get_tasks()
 
     # Check current object counts
     init_num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
@@ -168,6 +187,8 @@ async def test_drop_all_and_recreate(
 
     # Drop everything
     await drop_all_objects(snowflake_session)
+    for task_id in task_ids:
+        await periodic_service.delete_document(task_id)
 
     # Check objects are indeed dropped
     num_tables, num_functions, num_procedures, num_tasks = await _get_object_counts()
@@ -184,7 +205,7 @@ async def test_drop_all_and_recreate(
     await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})
 
     # Check tasks and metadata are restored
-    restored_tasks = await _get_tasks()
+    restored_tasks, _ = await _get_tasks()
     restored_metadata = await _get_schema_metadata()
     assert len(restored_tasks) == len(original_tasks)
     assert isinstance(restored_metadata["FEATURE_STORE_ID"], str)

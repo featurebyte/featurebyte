@@ -164,9 +164,7 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        feature_manager = FeatureManager(
-            session=session, task_manager=task_manager, use_snowflake_scheduling=False
-        )
+        feature_manager = FeatureManager(session=session, task_manager=task_manager)
 
         if feature.online_enabled:
             await feature_manager.online_enable(online_feature_spec)
