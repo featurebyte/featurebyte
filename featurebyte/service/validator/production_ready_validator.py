@@ -14,7 +14,6 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.nested import BaseViewGraphNodeParameters
-from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.version import VersionService
 
