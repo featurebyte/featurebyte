@@ -4,8 +4,17 @@ Test production ready validator
 import textwrap
 
 import pytest
+from bson import ObjectId
 
-from featurebyte import DimensionView, EventView, Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte import (
+    DimensionView,
+    EventData,
+    EventView,
+    Feature,
+    FeatureJobSetting,
+    MissingValueImputation,
+)
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
@@ -33,7 +42,9 @@ def source_version_creator_fixture(version_service, feature_service):
                 "name": feature_name,
             }
         )
-        feature = docs["data"][0]
+        data = docs["data"]
+        assert len(data) == 1
+        feature = data[0]
         source_feature = await version_service.create_new_feature_version_using_source_settings(
             feature["_id"]
         )
@@ -153,6 +164,34 @@ async def test_assert_no_other_production_ready_feature__exists(
     assert "Found another feature version that is already" in str(exc)
 
 
+@pytest.fixture(name="snowflake_event_data")
+def snowflake_event_data_fixture(snowflake_database_table):
+    """EventData object fixture"""
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_event_data_1",
+        event_id_column="col_int",
+        event_timestamp_column="event_timestamp",
+        record_creation_date_column="created_at",
+        _id=PydanticObjectId(ObjectId()),
+    )
+    assert event_data.frame.node.parameters.id == event_data.id
+    yield event_data
+
+
+@pytest.fixture(name="snowflake_event_data_with_entity")
+def snowflake_event_data_with_entity_fixture(
+    snowflake_event_data, cust_id_entity, mock_api_object_cache
+):
+    """
+    Entity fixture that sets cust_id in snowflake_event_data as an Entity
+    """
+    _ = mock_api_object_cache
+    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
+    snowflake_event_data.col_int.as_entity(cust_id_entity.name)
+    yield snowflake_event_data
+
+
 @pytest.mark.asyncio
 async def test_get_feature_job_setting_diffs__settings_differ(
     production_ready_validator,
@@ -174,17 +213,17 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
     # create a feature with a different feature job setting from the event data
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
-    updated_feature_job_setting = feature_group_feature_job_setting
-    assert feature_group_feature_job_setting["blind_spot"] == "10m"
+    updated_feature_job_setting = feature_group_feature_job_setting.copy()
+    assert updated_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
-        windows=["30m", "2h", "1d"],
+        windows=["60m"],
         feature_job_setting=updated_feature_job_setting,
-        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+        feature_names=["sum_60m"],
     )
-    feature = feature_group["sum_30m"]
+    feature = feature_group["sum_60m"]
     feature.save()
 
     source_node, source_feature_version_graph = await source_version_creator(feature.name)
