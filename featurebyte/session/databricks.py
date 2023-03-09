@@ -65,6 +65,10 @@ class DatabricksSession(BaseSession):
     def database_name(self) -> str:
         return self.featurebyte_catalog
 
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return True
+
     async def list_databases(self) -> list[str]:
         cursor = self._connection.cursor().catalogs()
         df_result = super().fetch_query_result_impl(cursor)

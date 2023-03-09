@@ -1,5 +1,5 @@
 """
-This module contains session to Snowflake integration tests.
+This module contains session to Spark integration tests.
 """
 from collections import OrderedDict
 

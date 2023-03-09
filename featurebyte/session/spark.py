@@ -92,6 +92,9 @@ class SparkSession(BaseSession):
         cursor.execute("SET TIME ZONE 'UTC'")
         cursor.close()
 
+    def __del__(self) -> None:
+        self._connection.close()
+
     def _initialize_storage(self) -> None:
         """
         Initialize storage object
@@ -157,6 +160,10 @@ class SparkSession(BaseSession):
     @property
     def database_name(self) -> str:
         return self.featurebyte_catalog
+
+    @classmethod
+    def is_threadsafe(cls) -> bool:
+        return False
 
     async def list_databases(self) -> list[str]:
         databases = await self.execute_query("SHOW CATALOGS")
