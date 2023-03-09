@@ -658,7 +658,7 @@ class SparkAdapter(DatabricksAdapter):
     def get_value_from_dictionary(
         cls, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
-        raise NotImplementedError()
+        return expressions.Bracket(this=dictionary_expression, expressions=[key_expression])
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:

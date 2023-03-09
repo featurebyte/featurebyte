@@ -112,7 +112,7 @@ def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_value_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
@@ -124,7 +124,8 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
         item_type_dimension_lookup_feature
     )
     assert isinstance(get_value_feature, Feature)
-    get_value_feature.name = "get_count_value_from_dictionary"
+    feature_name = "get_count_value_from_dictionary"
+    get_value_feature.name = feature_name
 
     # assert
     preview_params = {
@@ -133,14 +134,21 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
         "order_id": "T2",
     }
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+
+    # Note: Snowflake returns the count value 1 as a string because the value type has to be VARIANT
+    # when constructing the dictionary. Spark returns the count value 1 as an int which is more
+    # correct. Adding this cast here so that the test works for both backends, but ideally we should
+    # fix Snowflake to return the correct type when looking up values from a dictionary.
+    get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(int)
+
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: "1",
+        feature_name: 1,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_value_in_dictionary__target_is_scalar(event_data):
     """
     Test is in dictionary
@@ -159,14 +167,20 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     # perform get_value
     get_value_feature = dictionary_feature.cd.get_value("detail")
     assert isinstance(get_value_feature, Feature)
-    get_value_feature.name = "get_value_in_dictionary"
+    feature_name = "get_value_in_dictionary"
+    get_value_feature.name = feature_name
 
     # assert
     preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "350"}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
+
+    # Note: See notes above in test_get_value_from_dictionary__target_is_lookup_feature for why the
+    # casting is needed.
+    get_value_feature_preview[feature_name] = get_value_feature_preview[feature_name].astype(float)
+
     assert get_value_feature_preview.shape[0] == 1
     assert get_value_feature_preview.iloc[0].to_dict() == {
-        get_value_feature.name: "4.421000000000000e+01",
+        feature_name: 44.21,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
 
