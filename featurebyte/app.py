@@ -18,6 +18,7 @@ import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_a
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.item_data.api as item_data_api
+import featurebyte.routes.periodic_tasks.api as periodic_tasks_api
 import featurebyte.routes.relationship_info.api as relationship_info_api
 import featurebyte.routes.scd_data.api as scd_data_api
 import featurebyte.routes.semantic.api as semantic_api
@@ -109,6 +110,7 @@ def get_app() -> FastAPI:
         task_api,
         temp_data_api,
         workspace_api,
+        periodic_tasks_api,
     ]
     dependencies = _get_api_deps()
     for resource_api in resource_apis:

@@ -294,15 +294,13 @@ class SparkSession(BaseSession):
         pd.DataFrame
             Processed data
         """
-        for column in schema.names:
+        for i, column in enumerate(schema.names):
             # Convert decimal columns to float
-            if schema.field_by_name(column).type == pa.float64() and not is_float_dtype(
+            if schema.field(i).type == pa.float64() and not is_float_dtype(data[column]):
+                data[column] = data[column].astype(float)
+            elif isinstance(schema.field(i).type, pa.TimestampType) and not is_datetime64_dtype(
                 data[column]
             ):
-                data[column] = data[column].astype(float)
-            elif isinstance(
-                schema.field_by_name(column).type, pa.TimestampType
-            ) and not is_datetime64_dtype(data[column]):
                 data[column] = pd.to_datetime(data[column])
         return data
 

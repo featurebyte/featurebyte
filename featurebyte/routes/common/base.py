@@ -21,6 +21,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import Document
+from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
@@ -47,6 +48,7 @@ DocumentServiceT = TypeVar(
     FeatureJobSettingAnalysisService,
     WorkspaceService,
     RelationshipInfoService,
+    PeriodicTaskService,
 )
 
 

@@ -1,7 +1,10 @@
 """
 Periodic task schema
 """
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from typing import List
+
+from featurebyte.models.periodic_task import PeriodicTask
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class PeriodicTaskUpdate(BaseDocumentServiceUpdateSchema):
@@ -10,3 +13,11 @@ class PeriodicTaskUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     enabled: bool
+
+
+class PeriodicTaskList(PaginationMixin):
+    """
+    Schema for periodic task list
+    """
+
+    data: List[PeriodicTask]
