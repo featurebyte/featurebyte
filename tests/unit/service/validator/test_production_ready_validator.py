@@ -4,17 +4,8 @@ Test production ready validator
 import textwrap
 
 import pytest
-from bson import ObjectId
 
-from featurebyte import (
-    DimensionView,
-    EventData,
-    EventView,
-    Feature,
-    FeatureJobSetting,
-    MissingValueImputation,
-)
-from featurebyte.models.base import PydanticObjectId
+from featurebyte import DimensionView, EventView, Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
@@ -89,14 +80,14 @@ async def test_validate(
     event_view = EventView.from_event_data(snowflake_event_data_with_entity)
     updated_feature_job_setting = feature_group_feature_job_setting
     assert feature_group_feature_job_setting["blind_spot"] == "10m"
-    updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
+    updated_feature_job_setting["blind_spot"] = "3m"  # set a new value
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_int",
         method="sum",
-        windows=["30m", "2h", "1d"],
+        windows=["90m"],
         feature_job_setting=updated_feature_job_setting,
-        feature_names=["sum_30m", "sum_2h", "sum_1d"],
-    )["sum_30m"]
+        feature_names=["sum_90m"],
+    )["sum_90m"]
     feature.save()
 
     # Update cleaning operations after feature has been created
@@ -108,12 +99,14 @@ async def test_validate(
 
     # Verify that validate does not throw an error if ignore_guardrails is True
     await production_ready_validator.validate(
-        feature.name, feature.id, feature.graph, ignore_guardrails=True
+        feature.name, feature.id, feature.node, feature.graph, ignore_guardrails=True
     )
 
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(ValueError) as exc:
-        await production_ready_validator.validate("sum_30m", feature.id, feature.graph)
+        await production_ready_validator.validate(
+            "sum_90m", feature.id, feature.node, feature.graph
+        )
     exception_str = format_exception_string_for_comparison(str(exc.value))
     expected_exception_str = format_exception_string_for_comparison(
         """
@@ -122,7 +115,7 @@ async def test_validate(
         {
             'feature_job_setting': {
                 'default': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
-                'feature': FeatureJobSetting(blind_spot='300s', frequency='1800s', time_modulo_frequency='300s')
+                'feature': FeatureJobSetting(blind_spot='180s', frequency='1800s', time_modulo_frequency='300s')
             },
             'cleaning_operations': {
                 'default': [ColumnCleaningOperation(column_name='col_int',
@@ -162,34 +155,6 @@ async def test_assert_no_other_production_ready_feature__exists(
             production_ready_feature.name
         )
     assert "Found another feature version that is already" in str(exc)
-
-
-@pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table):
-    """EventData object fixture"""
-    event_data = EventData.from_tabular_source(
-        tabular_source=snowflake_database_table,
-        name="sf_event_data_1",
-        event_id_column="col_int",
-        event_timestamp_column="event_timestamp",
-        record_creation_date_column="created_at",
-        _id=PydanticObjectId(ObjectId()),
-    )
-    assert event_data.frame.node.parameters.id == event_data.id
-    yield event_data
-
-
-@pytest.fixture(name="snowflake_event_data_with_entity")
-def snowflake_event_data_with_entity_fixture(
-    snowflake_event_data, cust_id_entity, mock_api_object_cache
-):
-    """
-    Entity fixture that sets cust_id in snowflake_event_data as an Entity
-    """
-    _ = mock_api_object_cache
-    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_data.col_int.as_entity(cust_id_entity.name)
-    yield snowflake_event_data
 
 
 @pytest.mark.asyncio
@@ -234,8 +199,9 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     assert len(feature_data) == 1
     feature_document = feature_data[0]
     refetch_feature = Feature(**feature_document)
+    pruned_graph, _ = refetch_feature.extract_pruned_graph_and_node()
     differences = await production_ready_validator._get_feature_job_setting_diffs_source_vs_curr(
-        source_node, source_feature_version_graph, refetch_feature.graph
+        source_node, source_feature_version_graph, pruned_graph
     )
 
     # assert that there are differences

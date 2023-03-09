@@ -10,6 +10,7 @@ from featurebyte.exception import NoChangesInFeatureVersionError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.nested import BaseViewGraphNodeParameters
@@ -37,6 +38,7 @@ class ProductionReadyValidator:
         self,
         feature_name: str,
         feature_id: ObjectId,
+        feature_node: Node,
         feature_graph: QueryGraph,
         ignore_guardrails: bool = False,
     ) -> None:
@@ -49,6 +51,8 @@ class ProductionReadyValidator:
             feature name
         feature_id: ObjectId
             feature id
+        feature_node: Node
+            feature node
         feature_graph: QueryGraph
             feature graph
         ignore_guardrails: bool
@@ -58,15 +62,16 @@ class ProductionReadyValidator:
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
+            feature_graph_model, _ = feature_graph.prune(feature_node, True)
             source_feature = await self._get_feature_version_of_source(feature_id)
             if source_feature is None:
                 return
             feature_version_source_node, feature_version_source_graph = source_feature
             feature_job_setting_diff = await self._get_feature_job_setting_diffs_source_vs_curr(
-                feature_version_source_node, feature_version_source_graph, feature_graph
+                feature_version_source_node, feature_version_source_graph, feature_graph_model
             )
             cleaning_ops_diff = await self._get_cleaning_operations_diff_vs_source(
-                feature_version_source_graph, feature_graph
+                feature_version_source_graph, feature_graph_model
             )
             ProductionReadyValidator._raise_error_if_diffs_present(
                 feature_job_setting_diff, cleaning_ops_diff
@@ -185,7 +190,7 @@ class ProductionReadyValidator:
 
     @staticmethod
     async def _get_feature_job_setting_diffs_source_vs_curr(
-        source_node: Node, source_graph: QueryGraph, new_graph: QueryGraph
+        source_node: Node, source_graph: QueryGraph, new_graph: QueryGraphModel
     ) -> Dict[str, Any]:
         """
         Get feature job setting diffs between source and current.
@@ -196,7 +201,7 @@ class ProductionReadyValidator:
             source node
         source_graph: QueryGraph
             source graph
-        new_graph: QueryGraph
+        new_graph: QueryGraphModel
             new graph
 
         Returns
@@ -218,8 +223,6 @@ class ProductionReadyValidator:
                 )
             )
             if source_feature_job_setting != new_feature_job_setting:
-                # TODO: how to handle multiple group by nodes failing w/ different FJS?
-                # TODO: make sure we handle the error in no FJS
                 return {
                     "default": source_feature_job_setting,
                     "feature": new_feature_job_setting,
@@ -249,7 +252,7 @@ class ProductionReadyValidator:
         return view_metadata.column_cleaning_operations
 
     async def _get_cleaning_operations_diff_vs_source(
-        self, source_graph: QueryGraph, new_graph: QueryGraph
+        self, source_graph: QueryGraph, new_graph: QueryGraphModel
     ) -> Dict[str, Any]:
         """
         Get differences between cleaning operations in the graph and the data source.
@@ -258,7 +261,7 @@ class ProductionReadyValidator:
         ----------
         source_graph: QueryGraph
             source graph
-        new_graph: QueryGraph
+        new_graph: QueryGraphModel
             new graph
 
         Returns
