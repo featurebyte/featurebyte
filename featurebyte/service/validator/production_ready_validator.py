@@ -28,11 +28,9 @@ class ProductionReadyValidator:
         self,
         feature_namespace_service: FeatureNamespaceService,
         version_service: VersionService,
-        feature_service: FeatureService,
     ):
         self.feature_namespace_service = feature_namespace_service
         self.version_service = version_service
-        self.feature_service = feature_service
 
     async def validate(
         self,
