@@ -30,13 +30,13 @@ class ResponseException(Exception):
 
             if isinstance(field_value, list):
                 exc_info = " ".join(str(elem) for elem in field_value)
-            else:
+            elif field_value:
                 exc_info = str(field_value)
-
-            if resolution:
-                exc_info += resolution
         except JSONDecodeError:
             pass
+
+        if resolution:
+            exc_info += resolution
 
         if exc_info:
             super().__init__(exc_info, *args, **kwargs)
