@@ -53,8 +53,7 @@ public abstract class CountDictUDF extends GenericUDF {
     try {
       checkArgPrimitive(map_args, 0);
       checkArgGroups(map_args, 0, inputTypes, STRING_GROUP);
-      // TODO: not obtainDoubleConverter?
-      obtainDoubleConverter(map_args, 0, inputTypes, converters);
+      obtainStringConverter(map_args, 0, inputTypes, converters);
     } catch (UDFArgumentException e) {
       throw new UDFArgumentTypeException(0, "Map key must be a string");
     }

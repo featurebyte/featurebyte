@@ -13,33 +13,22 @@ import java.util.Map;
   value = "_FUNC_(counts, key) "
     + "- compute relative frequency of a key in a dictionary"
 )
-public class CountDictRelativeFrequency extends CountDictUDF {
+public class CountDictRelativeFrequency extends CountDictSingleStringArgumentUDF {
 
   final private DoubleWritable output = new DoubleWritable();
 
-  final private transient PrimitiveObjectInspector.PrimitiveCategory[] stringInputTypes = new PrimitiveObjectInspector.PrimitiveCategory[3];
-  final private transient ObjectInspectorConverters.Converter[] stringConverters = new ObjectInspectorConverters.Converter[1];
-
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-
     // Input arguments: dictionary, key of interest
     checkArgsSize(arguments, 2, 2);
     if (isNullOI(arguments[0])) {
       return nullOI;
     }
-
-    // Map
-    checkTypesAndInitialize(arguments);
-
-    // Key
     if (isNullOI(arguments[1])) {
       return nullOI;
     }
-    ObjectInspector[] args = {arguments[1]};
-    checkArgPrimitive(args, 0);
-    obtainStringConverter(args, 0, stringInputTypes, stringConverters);
-
+    // Map
+    checkTypesAndInitialize(arguments);
     return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
   }
 
@@ -49,7 +38,7 @@ public class CountDictRelativeFrequency extends CountDictUDF {
       return null;
     }
     Map<String, Object> counts = (Map<String, Object>) inputMapOI.getMap(arguments[0].get());
-    String key = stringConverters[0].convert(arguments[1].get()).toString();
+    String key = getStringArgument(arguments);
     if (!counts.containsKey(key)) {
       return null;
     }
