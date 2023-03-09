@@ -272,9 +272,9 @@ def test_aggregate_asat_sdk_code_generation(saved_scd_data, transaction_entity):
 
 
     # scd_data name: "sf_scd_data"
-    scd_data = SlowlyChangingData.get_by_id(ObjectId("6337f9651050ee7d123466cd"))
+    slowly_changing_data = SlowlyChangingData.get_by_id(ObjectId("6337f9651050ee7d123466cd"))
     scd_view = SlowlyChangingView.from_slowly_changing_data(
-        slowly_changing_data=scd_data,
+        slowly_changing_data=slowly_changing_data,
         view_mode="manual",
         drop_column_names=[],
         column_cleaning_operations=[],
