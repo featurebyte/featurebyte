@@ -1,7 +1,7 @@
 """
 FeatureByte Tile Scheduler
 """
-from typing import Any
+from typing import Any, Optional
 
 from datetime import datetime
 
@@ -40,7 +40,7 @@ class TileScheduler(BaseModel):
         interval_seconds: int,
         start_after: datetime,
         instance: Any,
-        user_id: ObjectId,
+        user_id: Optional[ObjectId],
         feature_store_id: ObjectId,
         workspace_id: ObjectId,
     ) -> None:
@@ -57,8 +57,8 @@ class TileScheduler(BaseModel):
             starting point for the interval calculation
         instance: Any
             instance of the class to be run
-        user_id: ObjectId
-            user id
+        user_id: Optional[ObjectId]
+            input user id
         feature_store_id: ObjectId
             feature store id
         workspace_id: ObjectId
@@ -70,7 +70,7 @@ class TileScheduler(BaseModel):
             module_path=instance.__class__.__module__,
             class_name=instance.__class__.__name__,
             instance_str=instance.json(),
-            user_id=user_id,
+            user_id=user_id if user_id else self._task_manager.user.id,
             feature_store_id=feature_store_id,
             workspace_id=workspace_id,
         )
@@ -93,7 +93,7 @@ class TileScheduler(BaseModel):
         """
         await self._task_manager.delete_periodic_task_by_name(job_id)
 
-    async def get_job_details(self, job_id: str) -> PeriodicTask:
+    async def get_job_details(self, job_id: str) -> Optional[PeriodicTask]:
         """
         Get Jobs from input job store
 

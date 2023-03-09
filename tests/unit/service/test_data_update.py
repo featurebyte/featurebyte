@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte import Relationship
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.relationship import RelationshipType
@@ -279,7 +279,9 @@ def map_entity_id_to_name(entity_docs):
 
 
 @pytest.fixture(name="event_data_entity_initializer")
-def event_data_entity_initializer_fixture(entity_service, relationship_info_service, event_data):
+def event_data_entity_initializer_fixture(
+    entity_service, relationship_info_service, event_data, user
+):
     """
     Fixture to initialize event data entities
     """
@@ -305,7 +307,7 @@ def event_data_entity_initializer_fixture(entity_service, relationship_info_serv
                     related_entity_id=PydanticObjectId(parent_id),
                     primary_data_source_id=PydanticObjectId(event_data.id),
                     is_enabled=True,
-                    updated_by=PydanticObjectId(DEFAULT_USER_ID),
+                    updated_by=user.id,
                 )
             )
 
@@ -460,11 +462,13 @@ def assert_relationships_match(relationship_list_a, relationship_list_b):
         ({"foo"}, {"bar"}, {"baz"}, {"qux"}, [("baz", "qux")], [("foo", "bar")]),
     ],
 )
-async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-locals
+async def test_update_entity_relationship__relationship_infos_added(  # pylint: disable=too-many-locals, too-many-arguments
     data_update_service,
     event_data,
     event_data_entity_initializer,
     entity_docs,
+    user,
+    relationship_info_service,
     old_primary_entities,
     old_parent_entities,
     new_primary_entities,
@@ -502,6 +506,12 @@ async def test_update_entity_relationship__relationship_infos_added(  # pylint: 
         new_primary_entities=convert_entity_name_to_ids(new_primary_entities, entity_docs),
         new_parent_entities=convert_entity_name_to_ids(new_parent_entities, entity_docs),
     )
+
+    # Verify that relationships have correct updated by user IDs
+    result = await relationship_info_service.list_documents()
+    data = result["data"]
+    for relationship_info in data:
+        assert relationship_info["updated_by"] == user.id
 
     # Create list of expected relationships --> initial + additions - removals
     final_expected_relationships = initial_relationships.copy()

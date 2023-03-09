@@ -51,11 +51,6 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
                     "msg": "field required",
                     "type": "value_error.missing",
                 },
-                {
-                    "loc": ["body", "updated_by"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
-                },
             ],
         ),
     ]

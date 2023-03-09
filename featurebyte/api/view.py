@@ -36,10 +36,10 @@ from featurebyte.common.join_utils import (
 )
 from featurebyte.common.model_util import validate_offset_string
 from featurebyte.common.typing import Scalar, ScalarSequence
-from featurebyte.core.frame import Frame
+from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
-from featurebyte.core.series import Series
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType, ViewMode
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
@@ -54,6 +54,8 @@ from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import BaseGraphNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -78,13 +80,15 @@ class ViewColumn(Series, SampleMixin):
             return None
         return self._parent.timestamp_column
 
-    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
+    def binary_op_series_params(
+        self, other: Scalar | FrozenSeries | ScalarSequence
+    ) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
         Parameters
         ----------
-        other: Scalar | Series | ScalarSequence
+        other: Scalar | FrozenSeries | ScalarSequence
             Other object
 
         Returns
@@ -226,6 +230,35 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return repr(self)
 
     @property
+    def raw(self) -> FrozenFrame:
+        """
+        Return the raw input data view (without any cleaning operations applied)
+
+        Returns
+        -------
+        FrozenFrame
+        """
+        view_input_node_names = []
+        for graph_node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GRAPH):
+            assert isinstance(graph_node, BaseGraphNode)
+            if graph_node.parameters.type == self._view_graph_node_type:
+                view_input_node_names = self.graph.get_input_node_names(graph_node)
+
+        # first input node names must be the input node used to create the view
+        assert len(view_input_node_names) >= 1, "View should have at least one input"
+        input_node = self.graph.get_node_by_name(view_input_node_names[0])
+        assert isinstance(input_node, InputNode)
+        return FrozenFrame(
+            node_name=input_node.name,
+            tabular_source=self.tabular_source,
+            feature_store=self.feature_store,
+            columns_info=[
+                ColumnInfo(name=col.name, dtype=col.dtype, entity_id=None, semantic_id=None)
+                for col in input_node.parameters.columns
+            ],
+        )
+
+    @property
     def entity_columns(self) -> list[str]:
         """
         List of entity columns
@@ -362,7 +395,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
+    def __getitem__(
+        self, item: Union[str, List[str], FrozenSeries]
+    ) -> Union[FrozenSeries, FrozenFrame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
@@ -370,7 +405,9 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
     @typechecked
     def __setitem__(
-        self, key: Union[str, Tuple[Series, str]], value: Union[int, float, str, bool, Series]
+        self,
+        key: Union[str, Tuple[FrozenSeries, str]],
+        value: Union[int, float, str, bool, FrozenSeries],
     ) -> None:
         key_to_check = key if not isinstance(key, tuple) else key[1]
         if key_to_check in self.protected_columns:

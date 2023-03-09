@@ -3,10 +3,11 @@ Test relationships module
 """
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
 from featurebyte import Entity
 from featurebyte.api.relationship import Relationship
-from featurebyte.models.base import DEFAULT_USER_ID, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.relationship import RelationshipInfo, RelationshipType
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 
@@ -42,7 +43,7 @@ def persistable_relationship_info_fixture(
                 related_entity_id=user_entity.id,
                 primary_data_source_id=snowflake_event_data.id,
                 is_enabled=False,
-                updated_by=PydanticObjectId(DEFAULT_USER_ID),
+                updated_by=PydanticObjectId(ObjectId()),
             )
         )
         assert created_relationship.primary_entity_id == cust_entity.id

@@ -38,6 +38,22 @@ class TestEventView(BaseViewTestSuite):
     factory_method = EventView.from_event_data
     view_class = EventView
     bool_col = "col_boolean"
+    expected_view_with_raw_accessor_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS STRING) AS "event_timestamp",
+      "cust_id" AS "cust_id",
+      (
+        "cust_id" + 1
+      ) AS "new_col"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
 
     def getitem_frame_params_assertions(self, row_subset, view_under_test):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting

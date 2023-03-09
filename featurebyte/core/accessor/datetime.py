@@ -11,7 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
-    from featurebyte.core.series import Series
+    from featurebyte.core.series import FrozenSeries
 
 
 class DtAccessorMixin:
@@ -20,7 +20,7 @@ class DtAccessorMixin:
     """
 
     @property
-    def dt(self: Series) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
+    def dt(self: FrozenSeries) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
         """
         dt accessor object
 
@@ -33,7 +33,7 @@ class DtAccessorMixin:
 
 class DatetimeAccessor:
     """
-    DatetimeAccessor class used to manipulate datetime-like type Series object.
+    DatetimeAccessor class used to manipulate datetime-like type FrozenSeries object.
 
     This allows you to access the datetime-like properties of the Series values via the `.dt` attribute and the
     regular Series methods. The result will be a Series with the same index as the original Series.
@@ -74,7 +74,7 @@ class DatetimeAccessor:
         accessor_name="dt",
     )
 
-    def __init__(self, obj: Series):
+    def __init__(self, obj: FrozenSeries):
         if obj.is_datetime:
             self._node_type = NodeType.DT_EXTRACT
             self._property_node_params_map = {

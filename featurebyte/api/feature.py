@@ -27,7 +27,7 @@ from featurebyte.common.utils import CodeStr, dataframe_from_json, enforce_obser
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.series import Series
+from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logger import logger
@@ -573,14 +573,16 @@ class Feature(
             )
         )
 
-    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
+    def binary_op_series_params(
+        self, other: Scalar | FrozenSeries | ScalarSequence
+    ) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
 
         Parameters
         ----------
-        other: other: Scalar | Series | ScalarSequence
+        other: other: Scalar | FrozenSeries | ScalarSequence
             Other object
 
         Returns
@@ -589,7 +591,7 @@ class Feature(
         """
         tabular_data_ids = set(self.tabular_data_ids)
         entity_ids = set(self.entity_ids)
-        if isinstance(other, Series):
+        if isinstance(other, FrozenSeries):
             tabular_data_ids = tabular_data_ids.union(getattr(other, "tabular_data_ids", []))
             entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
         return {"tabular_data_ids": sorted(tabular_data_ids), "entity_ids": sorted(entity_ids)}
@@ -822,14 +824,14 @@ class Feature(
         )
 
     def validate_isin_operation(
-        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        self, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
     ) -> None:
         """
         Validates whether a feature is a lookup feature
 
         Parameters
         ----------
-        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
             other
         """
         assert_is_lookup_feature(self.node_types_lineage)
