@@ -103,7 +103,7 @@ class SlowlyChangingView(View, GroupByMixin):
         if view_mode == ViewMode.AUTO and slowly_changing_data.record_creation_date_column:
             drop_column_names.append(slowly_changing_data.record_creation_date_column)
 
-        data_node = slowly_changing_data.frame.node
+        data_node = slowly_changing_data.frame.node  # pylint: disable=duplicate-code
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, slowly_changing_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []

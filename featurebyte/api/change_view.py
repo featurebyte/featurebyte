@@ -191,7 +191,7 @@ class ChangeView(View, GroupByMixin):
     @typechecked
     def from_slowly_changing_data(
         cls,
-        scd_data: SlowlyChangingData,
+        slowly_changing_data: SlowlyChangingData,
         track_changes_column: str,
         default_feature_job_setting: Optional[FeatureJobSetting] = None,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
@@ -204,7 +204,7 @@ class ChangeView(View, GroupByMixin):
 
         Parameters
         ----------
-        scd_data: SlowlyChangingData
+        slowly_changing_data: SlowlyChangingData
             data to create view from
         track_changes_column: str
             column to track changes for
@@ -229,7 +229,7 @@ class ChangeView(View, GroupByMixin):
         ChangeView
         """
         # Validate input
-        cls._validate_inputs(scd_data, track_changes_column, prefixes)
+        cls._validate_inputs(slowly_changing_data, track_changes_column, prefixes)
         cls._validate_view_mode_params(
             view_mode=view_mode,
             drop_column_names=drop_column_names,
@@ -244,19 +244,19 @@ class ChangeView(View, GroupByMixin):
             default_feature_job_setting
         )
         col_names = SCDTableData.get_new_column_names(
-            track_changes_column, scd_data.effective_timestamp_column, prefixes
+            track_changes_column, slowly_changing_data.effective_timestamp_column, prefixes
         )
         drop_column_names = drop_column_names or []
         if (
             view_mode == ViewMode.AUTO
-            and scd_data.record_creation_date_column
-            and scd_data.record_creation_date_column != track_changes_column
+            and slowly_changing_data.record_creation_date_column
+            and slowly_changing_data.record_creation_date_column != track_changes_column
         ):
-            drop_column_names.append(scd_data.record_creation_date_column)
+            drop_column_names.append(slowly_changing_data.record_creation_date_column)
 
-        data_node = scd_data.frame.node
+        data_node = slowly_changing_data.frame.node  # pylint disable=duplicate-code
         assert isinstance(data_node, InputNode)
-        scd_table_data = cast(SCDTableData, scd_data.table_data)
+        scd_table_data = cast(SCDTableData, slowly_changing_data.table_data)
         column_cleaning_operations = column_cleaning_operations or []
         (
             scd_table_data,
@@ -279,17 +279,17 @@ class ChangeView(View, GroupByMixin):
                 view_mode=view_mode,
                 drop_column_names=drop_column_names,
                 column_cleaning_operations=column_cleaning_operations,
-                data_id=scd_data.id,
+                data_id=slowly_changing_data.id,
             ),
         )
         inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
         return ChangeView(
-            feature_store=scd_data.feature_store,
-            tabular_source=scd_data.tabular_source,
+            feature_store=slowly_changing_data.feature_store,
+            tabular_source=slowly_changing_data.tabular_source,
             columns_info=columns_info,
             node_name=inserted_graph_node.name,
-            tabular_data_ids=[scd_data.id],
-            natural_key_column=scd_data.natural_key_column,
+            tabular_data_ids=[slowly_changing_data.id],
+            natural_key_column=slowly_changing_data.natural_key_column,
             effective_timestamp_column=col_names.new_valid_from_column_name,
             default_feature_job_setting=feature_job_setting,
         )

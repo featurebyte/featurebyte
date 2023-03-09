@@ -2,5 +2,5 @@
 from bson import ObjectId
 from featurebyte import SlowlyChangingData
 
-scd_data = SlowlyChangingData.get_by_id(ObjectId("{data_id}"))
-output = scd_data
+slowly_changing_data = SlowlyChangingData.get_by_id(ObjectId("{data_id}"))
+output = slowly_changing_data

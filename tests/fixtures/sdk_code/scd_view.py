@@ -3,9 +3,9 @@ from bson import ObjectId
 from featurebyte import SlowlyChangingData
 from featurebyte import SlowlyChangingView
 
-scd_data = SlowlyChangingData.get_by_id(ObjectId("{data_id}"))
+slowly_changing_data = SlowlyChangingData.get_by_id(ObjectId("{data_id}"))
 scd_view = SlowlyChangingView.from_slowly_changing_data(
-    slowly_changing_data=scd_data,
+    slowly_changing_data=slowly_changing_data,
     view_mode="manual",
     drop_column_names=[],
     column_cleaning_operations=[],
