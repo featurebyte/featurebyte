@@ -152,6 +152,7 @@ async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, ti
     cron = f"{next_job_time.minute} {next_job_time.hour} {next_job_time.day} * *"
 
     sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile, schedule_time=schedule_time)
+    assert sql is not None
 
     expected_sql = textwrap.dedent(
         f"""

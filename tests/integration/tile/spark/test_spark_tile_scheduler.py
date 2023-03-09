@@ -57,6 +57,7 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
 
     job_details = await tile_scheduler.get_job_details(job_id=job_id)
+    assert job_details is not None
     assert job_details.name == job_id
     assert job_details.start_after == next_job_time
     assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
@@ -71,3 +72,41 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 100
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
+    feature_store, tile_manager, scheduler_fixture
+):
+    """
+    Test generate_tiles with scheduler - avoid duplicate tile job
+    """
+    tile_scheduler, tile_spec, job_id = scheduler_fixture
+    schedule_time = datetime.utcnow()
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    assert sql is not None
+
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    assert sql is None
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_generate_tiles_with_scheduler__tile_job_exists(
+    feature_store, tile_manager, scheduler_fixture
+):
+    """
+    Test generate_tiles with scheduler - test tile_job_exists
+    """
+    tile_scheduler, tile_spec, job_id = scheduler_fixture
+    schedule_time = datetime.utcnow()
+
+    exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
+    assert exists is False
+
+    sql = await tile_manager.schedule_online_tiles(tile_spec=tile_spec, schedule_time=schedule_time)
+    assert sql is not None
+
+    exists = await tile_manager.tile_job_exists(tile_spec=tile_spec)
+    assert exists is True
