@@ -185,7 +185,7 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):

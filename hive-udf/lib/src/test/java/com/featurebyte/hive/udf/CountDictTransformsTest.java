@@ -105,4 +105,17 @@ public class CountDictTransformsTest {
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(0.30127179180036756, output.get());
   }
+
+  @Test
+  public void testCountDictRelativeFrequency() throws HiveException {
+    CountDictRelativeFrequency udf = new CountDictRelativeFrequency();
+    ObjectInspector[] arguments = {mapValueOI, stringValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(countDict),
+      new GenericUDF.DeferredJavaObject("apple"),
+    };
+    DoubleWritable output = (DoubleWritable) udf.evaluate(args);
+    assertEquals(0.10695187165775401, output.get());
+  }
 }
