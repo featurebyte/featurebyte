@@ -199,8 +199,10 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     feature_document = feature_data[0]
     refetch_feature = Feature(**feature_document)
     pruned_graph, _ = refetch_feature.extract_pruned_graph_and_node()
-    differences = await production_ready_validator._get_feature_job_setting_diffs_source_vs_curr(
-        source_node, source_feature_version_graph, pruned_graph
+    differences = (
+        await production_ready_validator._get_feature_job_setting_diffs_data_source_vs_new_feature(
+            source_node, source_feature_version_graph, pruned_graph
+        )
     )
 
     # assert that there are differences
