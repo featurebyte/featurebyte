@@ -7,8 +7,8 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 
-scd_data = SlowlyChangingData(
-    name="scd_data",
+slowly_changing_data = SlowlyChangingData(
+    name="slowly_changing_data",
     feature_store=FeatureStore(
         name="sf_featurestore",
         type="snowflake",
@@ -45,4 +45,4 @@ scd_data = SlowlyChangingData(
     current_flag_column="is_active",
     _id=ObjectId("{data_id}"),
 )
-output = scd_data
+output = slowly_changing_data

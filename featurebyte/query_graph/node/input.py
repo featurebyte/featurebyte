@@ -302,7 +302,7 @@ class SCDDataInputNodeParameters(BaseInputNodeParameters):
 
     @property
     def variable_name_prefix(self) -> str:
-        return "scd_data"
+        return "slowly_changing_data"
 
     def extract_other_constructor_parameters(self, data_info: Dict[str, Any]) -> Dict[str, Any]:
         return {
