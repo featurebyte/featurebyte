@@ -51,8 +51,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
     volumes:
       - ./migration.py:/scripts/migration.py
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
-      - /tmp:/tmp
     logging:
       driver: local
 
@@ -76,8 +76,8 @@ services:
       /bin/bash /scripts/entrypoint-worker.sh
     volumes:
       - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
-      - /tmp:/tmp
     logging:
       driver: local
 
@@ -97,7 +97,6 @@ services:
     volumes:
       - ~/.featurebyte/data/spark/staging:/opt/spark/data/staging
       - spark-warehouse:/opt/spark/data/derby
-      - spark-tmp:/tmp
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
@@ -133,5 +132,4 @@ networks:
     external: true
 
 volumes:
-  spark-tmp:
   spark-warehouse:
