@@ -7,7 +7,7 @@ from featurebyte import SlowlyChangingData
 
 scd_data = SlowlyChangingData.get_by_id(ObjectId("{data_id}"))
 change_view = ChangeView.from_slowly_changing_data(
-    scd_data=scd_data,
+    slowly_changing_data=scd_data,
     track_changes_column="col_int",
     default_feature_job_setting=None,
     prefixes=None,
