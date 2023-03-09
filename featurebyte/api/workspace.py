@@ -22,7 +22,7 @@ class Workspace(WorkspaceModel, SavableApiObject):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Workspace"])
+    __fbautodoc__ = FBAutoDoc(section=["Workspace"], proxy_class="featurebyte.Workspace")
 
     # class variables
     _route = "/workspace"
