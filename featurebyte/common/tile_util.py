@@ -41,7 +41,7 @@ def tile_manager_from_session(
     """
 
     if session.source_type == SourceType.SNOWFLAKE:
-        flag = True if not use_snowflake_scheduling else use_snowflake_scheduling
+        flag = use_snowflake_scheduling if use_snowflake_scheduling is not None else True
         return TileManagerSnowflake(
             session=session, task_manager=task_manager, use_snowflake_scheduling=flag
         )

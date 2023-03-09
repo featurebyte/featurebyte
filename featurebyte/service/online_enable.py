@@ -141,7 +141,9 @@ class OnlineEnableService(BaseService):
 
     @staticmethod
     async def update_data_warehouse_with_session(
-        session: BaseSession, feature: FeatureModel, task_manager: Optional[TaskManager] = None
+        session: BaseSession,
+        feature: FeatureModel,
+        task_manager: Optional[TaskManager] = None,
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -162,7 +164,9 @@ class OnlineEnableService(BaseService):
         if not online_feature_spec.is_online_store_eligible:
             return
 
-        feature_manager = FeatureManager(session=session, task_manager=task_manager)
+        feature_manager = FeatureManager(
+            session=session, task_manager=task_manager, use_snowflake_scheduling=False
+        )
 
         if feature.online_enabled:
             await feature_manager.online_enable(online_feature_spec)
