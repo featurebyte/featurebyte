@@ -13,6 +13,8 @@ services:
       - ~/.featurebyte/data/mongodb:/data/
     healthcheck:
       test: ["CMD", "mongosh", "--port=27022", "--eval", "rs.status()"]
+    logging:
+      driver: local
 
   redis:
     networks:
@@ -22,6 +24,8 @@ services:
     image: "redis:6.2.5"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+    logging:
+      driver: local
 
   featurebyte-server:
     networks:
@@ -42,13 +46,15 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8088
       WORKERS: 3
-      LOG_LEVEL: warning
+      LOG_LEVEL: info
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088/status"]
     volumes:
       - ./migration.py:/scripts/migration.py
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
-      - /tmp:/tmp
+    logging:
+      driver: local
 
   featurebyte-worker:
     networks:
@@ -70,8 +76,10 @@ services:
       /bin/bash /scripts/entrypoint-worker.sh
     volumes:
       - ./entrypoint-worker.sh:/scripts/entrypoint-worker.sh
+      - ~/.featurebyte/config.yaml:/app/.featurebyte/config.yaml
       - ~/.featurebyte/data/spark/staging:/data/staging
-      - /tmp:/tmp
+    logging:
+      driver: local
 
   spark-thrift:
     networks:
@@ -89,7 +97,6 @@ services:
     volumes:
       - ~/.featurebyte/data/spark/staging:/opt/spark/data/staging
       - spark-warehouse:/opt/spark/data/derby
-      - spark-tmp:/tmp
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
@@ -116,6 +123,8 @@ services:
         --conf spark.sql.hive.thriftServer.singleSession=false \
         --conf spark.hadoop.metastore.catalog.default=spark \
         --conf spark.sql.adaptive.enabled=true
+    logging:
+      driver: local
 
 networks:
   featurebyte:
@@ -123,5 +132,4 @@ networks:
     external: true
 
 volumes:
-  spark-tmp:
   spark-warehouse:

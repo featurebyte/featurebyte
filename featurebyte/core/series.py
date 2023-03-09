@@ -21,7 +21,8 @@ from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
-FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
+FrozenSeriesT = TypeVar("FrozenSeriesT", bound="FrozenSeries")
+FuncT = TypeVar("FuncT", bound=Callable[..., "FrozenSeriesT"])
 
 
 def numeric_only(func: FuncT) -> FuncT:
@@ -39,7 +40,7 @@ def numeric_only(func: FuncT) -> FuncT:
     """
 
     @wraps(func)
-    def wrapped(self: Series, *args: Any, **kwargs: Any) -> Series:
+    def wrapped(self: FrozenSeriesT, *args: Any, **kwargs: Any) -> FrozenSeriesT:
         op_name = func.__name__
         if not self.is_numeric:
             raise TypeError(f"{op_name} is only available to numeric Series; got {self.dtype}")
@@ -72,9 +73,11 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
             )
 
 
-class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
+class FrozenSeries(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
     """
-    Implement operations to manipulate database column
+    FrozenSeries class used for representing a series in a query graph with the ability to perform
+    certain column related operations and expressions. This class is immutable as it does not support
+    in-place modification of the column in the query graph.
     """
 
     # documentation metadata
@@ -93,7 +96,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return repr(self)
 
     @typechecked
-    def __getitem__(self, item: Series) -> Series:
+    def __getitem__(self: FrozenSeriesT, item: FrozenSeries) -> FrozenSeriesT:
         node = self._add_filter_operation(
             item=self, mask=item, node_output_type=NodeOutputType.SERIES
         )
@@ -106,14 +109,16 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             **self.unary_op_series_params(),
         )
 
-    def binary_op_series_params(self, other: Scalar | Series | ScalarSequence) -> dict[str, Any]:
+    def binary_op_series_params(
+        self: FrozenSeriesT, other: Scalar | FrozenSeries | ScalarSequence
+    ) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
 
         Parameters
         ----------
-        other: Scalar | Series | ScalarSequence
+        other: Scalar | FrozenSeries | ScalarSequence
             Other object
 
         Returns
@@ -175,41 +180,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 f"Conditionally updating '{self}' with value '{value}' is not supported!"
             )
 
-    @typechecked
-    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None, Series]) -> None:
-        if self.row_index_lineage != key.row_index_lineage:
-            raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
-        if key.dtype != DBVarType.BOOL:
-            raise TypeError("Only boolean Series filtering is supported!")
-
-        self._assert_assignment_valid(value)
-        node_params = {}
-        input_nodes = [self.node, key.node]
-        if isinstance(value, Series):
-            input_nodes.append(value.node)
-        else:
-            node_params = {"value": value}
-
-        node = self.graph.add_operation(
-            node_type=NodeType.CONDITIONAL,
-            node_params=node_params,
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=input_nodes,
-        )
-        self.node_name = node.name
-        if isinstance(value, float) and self.dtype != DBVarType.FLOAT:
-            # convert dtype to float if the assign value is float
-            self.__dict__["dtype"] = DBVarType.FLOAT
-
-        # For Series with a parent, apply the change to the parent (either an EventView or a
-        # FeatureGroup)
-        if self.parent is not None:
-            # Update the EventView column / Feature by doing an assign operation
-            self.parent[self.name] = self
-            # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
-            # readable column name during series preview
-            self.node_name = self.parent[self.name].node_name
-
     @staticmethod
     def _is_a_series_of_var_type(
         item: Any, var_type: Union[DBVarType, tuple[DBVarType, ...]]
@@ -236,19 +206,19 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return isinstance(item, Series) and any(item.dtype == var_type for var_type in var_type_lst)
 
     def _binary_op(
-        self,
-        other: Scalar | Series | ScalarSequence,
+        self: FrozenSeriesT,
+        other: Scalar | FrozenSeries | ScalarSequence,
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
         additional_node_params: dict[str, Any] | None = None,
-    ) -> Series:
+    ) -> FrozenSeriesT:
         """
         Apply binary operation between self & other objects
 
         Parameters
         ----------
-        other: Scalar | Series | ScalarSequence
+        other: Scalar | FrozenSeriesT | ScalarSequence
             right value of the binary operator
         node_type: NodeType
             binary operator node type
@@ -261,7 +231,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             output of the binary operation
         """
         series_operator = DefaultSeriesBinaryOperator(self, other)
@@ -272,20 +242,22 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             additional_node_params=additional_node_params,
         )
 
-    def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:
+    def _binary_logical_op(
+        self: FrozenSeriesT, other: bool | FrozenSeries, node_type: NodeType
+    ) -> FrozenSeriesT:
         """
         Apply binary logical operation between self & other objects
 
         Parameters
         ----------
-        other: bool | Series
+        other: bool | FrozenSeries
             right value of the binary logical operator
         node_type: NodeType
             binary logical operator node type
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             output of the binary logical operation
 
         Raises
@@ -302,29 +274,29 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __and__(self, other: Union[bool, Series]) -> Series:
+    def __and__(self: FrozenSeriesT, other: Union[bool, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_logical_op(other, NodeType.AND)
 
     @typechecked
-    def __or__(self, other: Union[bool, Series]) -> Series:
+    def __or__(self: FrozenSeriesT, other: Union[bool, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_logical_op(other, NodeType.OR)
 
     def _binary_relational_op(
-        self, other: int | float | str | bool | Series, node_type: NodeType
-    ) -> Series:
+        self: FrozenSeriesT, other: int | float | str | bool | FrozenSeries, node_type: NodeType
+    ) -> FrozenSeriesT:
         """
         Apply binary relational operation between self & other objects
 
         Parameters
         ----------
-        other: int | float | str | bool | Series
+        other: int | float | str | bool | FrozenSeries
             right value of the binary relational operator
         node_type: NodeType
             binary relational operator node type
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             output of the binary relational operation
 
         Raises
@@ -347,38 +319,45 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __eq__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
+    def __eq__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.EQ)
 
     @typechecked
-    def __ne__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
+    def __ne__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.NE)
 
     @typechecked
-    def __lt__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
+    def __lt__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.LT)
 
     @typechecked
-    def __le__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
+    def __le__(self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.LE)
 
     @typechecked
-    def __gt__(self, other: Union[int, float, str, bool, Series]) -> Series:
+    def __gt__(
+        self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]
+    ) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GT)
 
     @typechecked
-    def __ge__(self, other: Union[int, float, str, bool, Series]) -> Series:
+    def __ge__(
+        self: FrozenSeriesT, other: Union[int, float, str, bool, FrozenSeries]
+    ) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GE)
 
     def _binary_arithmetic_op(
-        self, other: int | float | str | Series, node_type: NodeType, right_op: bool = False
-    ) -> Series:
+        self: FrozenSeriesT,
+        other: int | float | str | FrozenSeries,
+        node_type: NodeType,
+        right_op: bool = False,
+    ) -> FrozenSeriesT:
         """
         Apply binary arithmetic operation between self & other objects
 
         Parameters
         ----------
-        other: int | float | str | Series
+        other: int | float | str | FrozenSeries
             right value of the binary arithmetic operator
         node_type: NodeType
             binary arithmetic operator node type
@@ -387,7 +366,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             output of the binary arithmetic operation
 
         Raises
@@ -398,7 +377,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.dtype not in supported_types:
             raise TypeError(f"{self} does not support operation '{node_type}'.")
-        if (isinstance(other, Series) and other.dtype in supported_types) or isinstance(
+        if (isinstance(other, FrozenSeries) and other.dtype in supported_types) or isinstance(
             other, (int, float)
         ):
             output_var_type = DBVarType.FLOAT
@@ -418,20 +397,22 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     @typechecked
-    def _date_diff_op(self, other: Series, right_op: bool = False) -> Series:
+    def _date_diff_op(
+        self: FrozenSeriesT, other: FrozenSeries, right_op: bool = False
+    ) -> FrozenSeriesT:
         """
         Apply date difference operation between two date Series
 
         Parameters
         ----------
-        other : Series
+        other : FrozenSeries
             right value of the operation
         right_op: bool
             whether the binary operation is from right object or not
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             output of the date difference operation
         """
         return self._binary_op(
@@ -443,20 +424,22 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
-    def _date_add_op(self, other: Union[Series, pd.Timedelta], right_op: bool = False) -> Series:
+    def _date_add_op(
+        self: FrozenSeriesT, other: Union[FrozenSeries, pd.Timedelta], right_op: bool = False
+    ) -> FrozenSeriesT:
         """
         Increment date by timedelta
 
         Parameters
         ----------
-        other : Series
+        other : FrozenSeries
             right value of the operation
         right_op: bool
             whether the binary operation is from right object or not
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             output of the date difference operation
         """
         if isinstance(other, pd.Timedelta):
@@ -470,7 +453,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
-    def __add__(self, other: Union[int, float, str, pd.Timedelta, Series]) -> Series:
+    def __add__(
+        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
+    ) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
@@ -485,7 +470,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
     @typechecked
-    def __radd__(self, other: Union[int, float, str, pd.Timedelta, Series]) -> Series:
+    def __radd__(
+        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
+    ) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
@@ -502,40 +489,40 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
 
     @typechecked
-    def __sub__(self, other: Union[int, float, Series]) -> Series:
-        if self.is_datetime and isinstance(other, Series) and other.is_datetime:
+    def __sub__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+        if self.is_datetime and isinstance(other, FrozenSeries) and other.is_datetime:
             return self._date_diff_op(other)
         return self._binary_arithmetic_op(other, NodeType.SUB)
 
     @typechecked
-    def __rsub__(self, other: Union[int, float, Series]) -> Series:
+    def __rsub__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
     @typechecked
-    def __mul__(self, other: Union[int, float, Series]) -> Series:
+    def __mul__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MUL)
 
     @typechecked
-    def __rmul__(self, other: Union[int, float, Series]) -> Series:
+    def __rmul__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MUL, right_op=True)
 
     @typechecked
-    def __truediv__(self, other: Union[int, float, Series]) -> Series:
+    def __truediv__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.DIV)
 
     @typechecked
-    def __rtruediv__(self, other: Union[int, float, Series]) -> Series:
+    def __rtruediv__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
     @typechecked
-    def __mod__(self, other: Union[int, float, Series]) -> Series:
+    def __mod__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MOD)
 
     @typechecked
-    def __rmod__(self, other: Union[int, float, Series]) -> Series:
+    def __rmod__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MOD, right_op=True)
 
-    def __invert__(self) -> Series:
+    def __invert__(self: FrozenSeriesT) -> FrozenSeriesT:
         return series_unary_operation(
             input_series=self,
             node_type=NodeType.NOT,
@@ -545,7 +532,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
-    def __pow__(self, other: Union[int, float, Series]) -> Series:
+    def __pow__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
         return self.pow(other)
 
     @property
@@ -570,13 +557,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         """
         return self.dtype in (DBVarType.INT, DBVarType.FLOAT)
 
-    def isnull(self) -> Series:
+    def isnull(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Returns a boolean Series indicating whether each value is missing
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -586,32 +573,21 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             **self.unary_op_series_params(),
         )
 
-    def notnull(self) -> Series:
+    def notnull(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Returns a boolean Series indicating whether each value is not null
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return ~self.isnull()
 
     @typechecked
-    def fillna(self, other: Scalar) -> None:
-        """
-        Replace missing values with the provided value in-place
-
-        Parameters
-        ----------
-        other: Scalar
-            Value to replace missing values
-        """
-        self[self.isnull()] = other
-
-    @typechecked
     def astype(
-        self, new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]]
-    ) -> Series:
+        self: FrozenSeriesT,
+        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+    ) -> FrozenSeriesT:
         """
         Convert Series to have a new type
 
@@ -622,7 +598,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             A new Series with converted variable type
 
         Raises
@@ -660,13 +636,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def abs(self) -> Series:
+    def abs(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Computes the absolute value of the current Series
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -677,13 +653,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def sqrt(self: Series) -> Series:
+    def sqrt(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Computes the square root of the current Series
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -694,18 +670,18 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def pow(self: Series, other: int | float | Series) -> Series:
+    def pow(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         """
         Computes the exponential power of the current Series
 
         Parameters
         ----------
-        other : int | float | Series
+        other : int | float | FrozenSeries
             Power to raise to
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return self._binary_op(
             other=other,
@@ -714,13 +690,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def log(self) -> Series:
+    def log(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Compute the natural logarithm of the Series
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -731,13 +707,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def exp(self) -> Series:
+    def exp(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Compute the exponential of the Series
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -748,13 +724,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def floor(self: Series) -> Series:
+    def floor(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Round the Series to the nearest equal or smaller integer
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -765,13 +741,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
-    def ceil(self: Series) -> Series:
+    def ceil(self: FrozenSeriesT) -> FrozenSeriesT:
         """
         Round the Series to the nearest equal or larger integer
 
         Returns
         -------
-        Series
+        FrozenSeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -781,39 +757,41 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             **self.unary_op_series_params(),
         )
 
-    def copy(self, *args: Any, **kwargs: Any) -> Series:
+    def copy(self: FrozenSeriesT, *args: Any, **kwargs: Any) -> FrozenSeriesT:
         # Copying a Series should prevent it from modifying the parent Frame
         kwargs.pop("deep", None)
         return super().copy(*args, **kwargs, deep=True)
 
     def validate_isin_operation(
-        self, other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        self: FrozenSeriesT, other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
     ) -> None:
         """
         Optional validation that can be added by subclasses if needed.
 
         Parameters
         ----------
-        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        other: Union[FrozenSeries, Sequence[Union[bool, int, float, str]]]
             other input to check whether the current series is in
         """
         _ = other
 
     @typechecked
-    def isin(self, other: Union[Series, ScalarSequence], right_op: bool = False) -> Series:
+    def isin(
+        self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence], right_op: bool = False
+    ) -> FrozenSeriesT:
         """
         Identify if values in a series is in another series, or a pre-defined sequence.
 
         Parameters
         ----------
-        other: Union[Series, Sequence[Union[bool, int, float, str]]]
+        other: Union[FrozenSeries, ScalarSequence]
             other input to check whether the current series is in
         right_op: bool
             right op
 
         Returns
         -------
-        Series
+        FrozenSeriesT
             updated series
 
         Raises
@@ -839,7 +817,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
         # convert to dictionary keys if the other input is a series.
         other_series = other
-        if isinstance(other, Series):
+        if isinstance(other, FrozenSeries):
             if other.dtype != DBVarType.OBJECT:
                 raise ValueError(
                     "we can only operate on other series if the other series is a dictionary series."
@@ -855,7 +833,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         # perform the is in check when the other series is an array
         additional_node_params = {}
         # we only need to assign value if we have been passed in a sequence.
-        if not isinstance(other, Series):
+        if not isinstance(other, FrozenSeries):
             additional_node_params["value"] = other
 
         return self._binary_op(
@@ -865,3 +843,59 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             right_op=right_op,
             additional_node_params=additional_node_params,
         )
+
+
+class Series(FrozenSeries):
+    """
+    Series is a mutable version of FrozenSeries. It is used to represent a single column of a Frame.
+    This class supports in-place column modification, and is the primary interface for column.
+    """
+
+    @typechecked
+    def __setitem__(
+        self, key: FrozenSeries, value: Union[int, float, str, bool, None, FrozenSeries]
+    ) -> None:
+        if self.row_index_lineage != key.row_index_lineage:
+            raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
+        if key.dtype != DBVarType.BOOL:
+            raise TypeError("Only boolean Series filtering is supported!")
+
+        self._assert_assignment_valid(value)
+        node_params = {}
+        input_nodes = [self.node, key.node]
+        if isinstance(value, Series):
+            input_nodes.append(value.node)
+        else:
+            node_params = {"value": value}
+
+        node = self.graph.add_operation(
+            node_type=NodeType.CONDITIONAL,
+            node_params=node_params,
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=input_nodes,
+        )
+        self.node_name = node.name
+        if isinstance(value, float) and self.dtype != DBVarType.FLOAT:
+            # convert dtype to float if the assign value is float
+            self.__dict__["dtype"] = DBVarType.FLOAT
+
+        # For Series with a parent, apply the change to the parent (either an EventView or a
+        # FeatureGroup)
+        if self.parent is not None:
+            # Update the EventView column / Feature by doing an assign operation
+            self.parent[self.name] = self
+            # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
+            # readable column name during series preview
+            self.node_name = self.parent[self.name].node_name
+
+    @typechecked
+    def fillna(self, other: Scalar) -> None:
+        """
+        Replace missing values with the provided value in-place
+
+        Parameters
+        ----------
+        other: Scalar
+            Value to replace missing values
+        """
+        self[self.isnull()] = other

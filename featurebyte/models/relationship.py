@@ -1,7 +1,7 @@
 """
 This module contains Relation mixin model
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from pydantic import Field, root_validator, validator
@@ -69,7 +69,7 @@ class RelationshipInfo(FeatureByteWorkspaceBaseDocumentModel):
     related_entity_id: PydanticObjectId
     primary_data_source_id: PydanticObjectId
     is_enabled: bool
-    updated_by: PydanticObjectId
+    updated_by: Optional[PydanticObjectId]
 
     class Settings:
         """

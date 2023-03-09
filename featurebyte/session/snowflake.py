@@ -321,7 +321,7 @@ class SnowflakeSchemaInitializer(BaseSchemaInitializer):
         return 16
 
     async def create_schema(self) -> None:
-        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        create_schema_query = f'CREATE SCHEMA "{self.session.schema_name}"'
         await self.session.execute_query(create_schema_query)
 
     @property

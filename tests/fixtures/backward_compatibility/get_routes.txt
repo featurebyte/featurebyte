@@ -16,3 +16,4 @@
 /tabular_data
 /task
 /workspace
+/periodic_task

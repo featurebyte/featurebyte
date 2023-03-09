@@ -40,22 +40,6 @@ class TileManagerSpark(BaseTileManager):
         """
         super().__init__(session=session, task_manager=task_manager, **kw)
 
-    async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
-        """
-        Get existing tile jobs for the given tile_spec
-
-        Parameters
-        ----------
-        tile_spec: TileSpec
-            the input TileSpec
-
-        Returns
-        -------
-            whether the tile jobs already exist
-        """
-        # TODO: implement this
-        return True
-
     async def populate_feature_store(self, tile_spec: TileSpec, job_schedule_ts_str: str) -> None:
         """
         Populate feature store with the given tile_spec and timestamp string

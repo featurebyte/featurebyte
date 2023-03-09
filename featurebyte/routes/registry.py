@@ -17,6 +17,7 @@ from featurebyte.routes.feature_list_namespace.controller import FeatureListName
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_data.controller import ItemDataController
+from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
 from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.routes.scd_data.controller import SCDDataController
 from featurebyte.routes.semantic.controller import SemanticController
@@ -43,6 +44,7 @@ from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.parent_serving import ParentEntityLookupService
+from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -155,6 +157,7 @@ app_container_config.add_basic_service("workspace_service", WorkspaceService)
 app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
+app_container_config.add_basic_service("periodic_task_service", PeriodicTaskService)
 
 app_container_config.add_controller(
     "relationship_info_controller",
@@ -286,4 +289,7 @@ app_container_config.add_controller(
 )
 app_container_config.add_controller(
     "workspace_controller", WorkspaceController, ["workspace_service", "info_service"]
+)
+app_container_config.add_controller(
+    "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]
 )
