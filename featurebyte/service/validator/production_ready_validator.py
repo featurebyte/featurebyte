@@ -39,7 +39,7 @@ class ProductionReadyValidator:
         ignore_guardrails: bool = False,
     ) -> None:
         """
-        Validate.
+        Validate whether it is ok to upgrade the feature being passed in to PRODUCTION_READY status.
 
         Parameters
         ----------
@@ -47,7 +47,7 @@ class ProductionReadyValidator:
             feature name
         feature_id: ObjectId
             feature id
-        feature_graph: QueryGraph
+        feature_graph: QueryGraphModel
             feature graph
         ignore_guardrails: bool
             parameter to determine whether to ignore guardrails
