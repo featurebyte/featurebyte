@@ -22,10 +22,17 @@ class ResponseException(Exception):
         exc_info = response.text
         try:
             response_dict = response.json()
+            field_value: Any = None
             for field in ["detail", "traceback"]:
                 if field in response_dict:
-                    exc_info = response_dict[field]
+                    field_value = response_dict[field]
                     break
+
+            if isinstance(field_value, list):
+                exc_info = " ".join(str(elem) for elem in field_value)
+            else:
+                exc_info = str(field_value)
+
             if resolution:
                 exc_info += resolution
         except JSONDecodeError:
