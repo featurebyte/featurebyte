@@ -115,7 +115,7 @@ class VersionService(BaseService):
                         feature_job_setting = FeatureJobSetting(**feature_job_setting_dict)
                     else:
                         raise NoFeatureJobSettingInSourceError(
-                            f"no feature job setting found in source " f"id {event_data_id}"
+                            f"No feature job setting found in source " f"id {event_data_id}"
                         )
                 else:
                     # use the provided feature job setting

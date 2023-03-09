@@ -96,16 +96,16 @@ async def test_validate(
         ]
     )
 
+    pruned_feature_graph, _ = feature.extract_pruned_graph_and_node()
+
     # Verify that validate does not throw an error if ignore_guardrails is True
     await production_ready_validator.validate(
-        feature.name, feature.id, feature.node, feature.graph, ignore_guardrails=True
+        feature.name, feature.id, pruned_feature_graph, ignore_guardrails=True
     )
 
     # Verify that validates throws an error without ignore_guardrails
     with pytest.raises(ValueError) as exc:
-        await production_ready_validator.validate(
-            "sum_90m", feature.id, feature.node, feature.graph
-        )
+        await production_ready_validator.validate("sum_90m", feature.id, pruned_feature_graph)
     exception_str = format_exception_string_for_comparison(str(exc.value))
     expected_exception_str = format_exception_string_for_comparison(
         """
@@ -221,7 +221,7 @@ async def test_get_feature_version_of_source__no_diff(
     """
     Test _get_feature_version_of_source - no diff returns None
     """
-    response = await production_ready_validator._get_feature_version_of_source(
+    response = await production_ready_validator._get_feature_version_with_source_settings(
         production_ready_feature.id
     )
     assert response is None

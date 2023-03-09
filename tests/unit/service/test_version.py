@@ -769,4 +769,4 @@ async def test_create_new_feature_version_using_source_settings__no_changes_in_f
 
     with pytest.raises(NoFeatureJobSettingInSourceError) as exc:
         await version_service.create_new_feature_version_using_source_settings(feature.id)
-    assert "no feature job setting found in source" in str(exc)
+    assert "No feature job setting found in source" in str(exc)

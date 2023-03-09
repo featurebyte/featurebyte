@@ -255,7 +255,7 @@ class FeatureReadinessService(BaseService):
             if document.name is None:
                 raise ValueError("feature document has no name")
             await self.production_ready_validator.validate(
-                document.name, document.id, document.node, document.graph, ignore_guardrails
+                document.name, document.id, document.graph, ignore_guardrails
             )
 
         if document.readiness != readiness:

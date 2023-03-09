@@ -35,8 +35,7 @@ class ProductionReadyValidator:
         self,
         feature_name: str,
         feature_id: ObjectId,
-        feature_node: Node,
-        feature_graph: QueryGraph,
+        feature_graph: QueryGraphModel,
         ignore_guardrails: bool = False,
     ) -> None:
         """
@@ -48,8 +47,6 @@ class ProductionReadyValidator:
             feature name
         feature_id: ObjectId
             feature id
-        feature_node: Node
-            feature node
         feature_graph: QueryGraph
             feature graph
         ignore_guardrails: bool
@@ -59,26 +56,28 @@ class ProductionReadyValidator:
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
-            feature_graph_model, _ = feature_graph.prune(feature_node, True)
-            source_feature = await self._get_feature_version_of_source(feature_id)
+            source_feature = await self._get_feature_version_with_source_settings(feature_id)
             if source_feature is None:
                 return
             feature_version_source_node, feature_version_source_graph = source_feature
-            feature_job_setting_diff = await self._get_feature_job_setting_diffs_source_vs_curr(
-                feature_version_source_node, feature_version_source_graph, feature_graph_model
+            feature_job_setting_diff = (
+                await self._get_feature_job_setting_diffs_data_source_vs_new_feature(
+                    feature_version_source_node, feature_version_source_graph, feature_graph
+                )
             )
-            cleaning_ops_diff = await self._get_cleaning_operations_diff_vs_source(
-                feature_version_source_graph, feature_graph_model
+            cleaning_ops_diff = await self._get_cleaning_operations_diff_data_source_vs_new_feature(
+                feature_version_source_graph, feature_graph
             )
             ProductionReadyValidator._raise_error_if_diffs_present(
                 feature_job_setting_diff, cleaning_ops_diff
             )
 
-    async def _get_feature_version_of_source(
+    async def _get_feature_version_with_source_settings(
         self, feature_id: ObjectId
     ) -> Optional[Tuple[Node, QueryGraph]]:
         """
-        Get the diffs.
+        Get the feature version of using source settings. This would create a feature version using the feature job
+        settings, and cleaning operations, that are currently stored in the source data.
 
         Parameters
         ----------
@@ -186,19 +185,20 @@ class ProductionReadyValidator:
         )
 
     @staticmethod
-    async def _get_feature_job_setting_diffs_source_vs_curr(
-        source_node: Node, source_graph: QueryGraph, new_graph: QueryGraphModel
+    async def _get_feature_job_setting_diffs_data_source_vs_new_feature(
+        data_source_node: Node, data_source_graph: QueryGraph, new_feature_graph: QueryGraphModel
     ) -> Dict[str, Any]:
         """
-        Get feature job setting diffs between source and current.
+        Get feature job setting diffs between the feature version created from source data, and the new feature
+        version that the user is trying to promote to PRODUCTION_READY.
 
         Parameters
         ----------
-        source_node: Node
+        data_source_node: Node
             source node
-        source_graph: QueryGraph
+        data_source_graph: QueryGraph
             source graph
-        new_graph: QueryGraphModel
+        new_feature_graph: QueryGraphModel
             new graph
 
         Returns
@@ -206,11 +206,11 @@ class ProductionReadyValidator:
         Dict[str, Any]
             feature job setting diffs
         """
-        for current_node in source_graph.iterate_nodes(
-            target_node=source_node, node_type=NodeType.GROUPBY
+        for current_node in data_source_graph.iterate_nodes(
+            target_node=data_source_node, node_type=NodeType.GROUPBY
         ):
             # Get corresponding group by node in new graph
-            new_group_by_node = new_graph.get_node_by_name(current_node.name)
+            new_group_by_node = new_feature_graph.get_node_by_name(current_node.name)
             source_feature_job_setting = (
                 ProductionReadyValidator._get_feature_job_setting_from_groupby_node(current_node)
             )
@@ -248,17 +248,18 @@ class ProductionReadyValidator:
         view_metadata = parameters.metadata
         return view_metadata.column_cleaning_operations
 
-    async def _get_cleaning_operations_diff_vs_source(
-        self, source_graph: QueryGraph, new_graph: QueryGraphModel
+    async def _get_cleaning_operations_diff_data_source_vs_new_feature(
+        self, data_source_feature_graph: QueryGraph, new_feature_graph: QueryGraphModel
     ) -> Dict[str, Any]:
         """
-        Get differences between cleaning operations in the graph and the data source.
+        Get cleaning operation diffs between the feature version created from source data, and the new feature
+        version that the user is trying to promote to PRODUCTION_READY.
 
         Parameters
         ----------
-        source_graph: QueryGraph
+        data_source_feature_graph: QueryGraph
             source graph
-        new_graph: QueryGraphModel
+        new_feature_graph: QueryGraphModel
             new graph
 
         Returns
@@ -266,11 +267,11 @@ class ProductionReadyValidator:
         Dict[str, Any]
             returns a dictionary with the difference in values in the cleaning operations
         """
-        for view_graph_node in source_graph.iterate_sorted_graph_nodes(
+        for view_graph_node in data_source_feature_graph.iterate_sorted_graph_nodes(
             graph_node_types=GraphNodeType.view_graph_node_types()
         ):
             # get node from new graph
-            new_view_graph_node = new_graph.get_node_by_name(view_graph_node.name)
+            new_view_graph_node = new_feature_graph.get_node_by_name(view_graph_node.name)
 
             # get cleaning operations from source and new graph
             source_cleaning_operations = self._get_cleaning_operations_from_view_graph_node(
