@@ -642,11 +642,13 @@ class SparkAdapter(DatabricksAdapter):
 
     @classmethod
     def object_keys(cls, dictionary_expression: Expression) -> Expression:
-        raise NotImplementedError()
+        return expressions.Anonymous(this="map_keys", expressions=[dictionary_expression])
 
     @classmethod
     def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
-        raise NotImplementedError()
+        return expressions.Anonymous(
+            this="array_contains", expressions=[array_expression, input_expression]
+        )
 
     @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:

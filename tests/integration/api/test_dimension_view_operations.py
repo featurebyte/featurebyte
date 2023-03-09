@@ -62,7 +62,7 @@ def test_dimension_lookup_features(dimension_view):
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_is_in_dictionary__target_is_dictionary_feature(
     item_type_dimension_lookup_feature, event_data
 ):
@@ -93,7 +93,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_is_in_dictionary__target_is_array(item_type_dimension_lookup_feature):
     """
     Test is in array
