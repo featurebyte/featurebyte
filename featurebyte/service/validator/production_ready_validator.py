@@ -33,8 +33,8 @@ class ProductionReadyValidator:
 
     async def validate(
         self,
-        feature_name: str,
-        feature_id: ObjectId,
+        new_feature_name: str,
+        new_feature_id: ObjectId,
         new_feature_graph: QueryGraphModel,
         ignore_guardrails: bool = False,
     ) -> None:
@@ -43,36 +43,35 @@ class ProductionReadyValidator:
 
         Parameters
         ----------
-        feature_name: str
+        new_feature_name: str
             feature name of the feature being promoted to PRODUCTION_READY
-        feature_id: ObjectId
+        new_feature_id: ObjectId
             feature id of the feature being promoted to PRODUCTION_READY
         new_feature_graph: QueryGraphModel
             feature graph of the feature being promoted to PRODUCTION_READY
         ignore_guardrails: bool
             parameter to determine whether to ignore guardrails
         """
-        await self._assert_no_other_production_ready_feature(feature_name)
+        await self._assert_no_other_production_ready_feature(new_feature_name)
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
             try:
                 source_feature = (
                     await self.version_service.create_new_feature_version_using_source_settings(
-                        feature_id
+                        new_feature_id
                     )
                 )
             except NoChangesInFeatureVersionError:
                 # We can return here since there are no changes in the feature version.
                 return
-            feature_version_source_graph = source_feature.graph
             feature_job_setting_diff = (
                 await self._get_feature_job_setting_diffs_data_source_vs_new_feature(
-                    source_feature.node, feature_version_source_graph, new_feature_graph
+                    source_feature.node, source_feature.graph, new_feature_graph
                 )
             )
             cleaning_ops_diff = await self._get_cleaning_operations_diff_data_source_vs_new_feature(
-                feature_version_source_graph, new_feature_graph
+                source_feature.graph, new_feature_graph
             )
             ProductionReadyValidator._raise_error_if_diffs_present(
                 feature_job_setting_diff, cleaning_ops_diff
