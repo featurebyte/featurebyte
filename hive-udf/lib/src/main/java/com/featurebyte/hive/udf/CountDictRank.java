@@ -66,6 +66,8 @@ public class CountDictRank extends CountDictSingleStringArgumentUDF {
     double previousValue = 0.0;
     for (int i = 0; i < sortedCounts.size(); i++) {
       double currentValue = convertMapValueAsDouble(sortedCounts.get(i).getValue());
+      // If values are the same, we will return the same rank. E.g. for {"a": 20, "b": 20, "c": 10},
+      // "a" and "b" will have the same rank 1, and "c" will have rank 3.
       if (i == 0 || currentValue != previousValue) {
         currentRank = i + 1.0;
         previousValue = currentValue;
