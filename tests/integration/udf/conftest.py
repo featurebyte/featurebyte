@@ -13,9 +13,7 @@ def to_object_fixture(source_type):
     Get function to construct a Map object from a dict for the given source_type from
     """
     if source_type == "snowflake":
-        to_object = snowflake_util.to_object
+        return snowflake_util.to_object
     elif source_type == "spark":
-        to_object = spark_util.to_object
-    else:
-        raise NotImplementedError()
-    return to_object
+        return spark_util.to_object
+    raise NotImplementedError()

@@ -46,13 +46,7 @@ public class CountDictRank extends CountDictSingleStringArgumentUDF {
       return null;
     }
     boolean isDescending = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector.get(arguments[2].get());
-    double direction;
-    if (isDescending) {
-      direction = -1.0;
-    }
-    else {
-      direction = 1.0;
-    }
+    double direction = isDescending ? -1.0 : 1.0;
     List<Map.Entry<String, Object>> sortedCounts =
       counts.entrySet()
         .stream()
