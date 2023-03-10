@@ -3,7 +3,7 @@ Custom nav module
 """
 from typing import Iterable, Mapping
 
-from mkdocs_gen_files import Nav
+from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
 
 class BetaWave3Nav(Nav):
@@ -29,7 +29,7 @@ class BetaWave3Nav(Nav):
     ]
 
     @classmethod
-    def _items(cls, data: Mapping, level: int) -> Iterable[Nav.Item]:
+    def _items(cls, data: Mapping, level: int) -> Iterable[Nav.Item]:  # type: ignore[type-arg]
         """
         Return nav section items sorted by title in alphabetical order
 
@@ -54,7 +54,7 @@ class BetaWave3Nav(Nav):
         else:
             # sort by alphabetical order for other levels
             items_with_key = [item for item in data.items() if item[0]]
-            items = sorted(items_with_key, key=lambda item: item[0])
+            items = sorted(items_with_key, key=lambda item: item[0])  # type: ignore[assignment, no-any-return]
 
         for key, value in items:
             yield cls.Item(level=level, title=key, filename=value.get(None))
