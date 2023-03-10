@@ -109,18 +109,18 @@ async def test_validate(
     exception_str = format_exception_string_for_comparison(str(exc.value))
     expected_exception_str = format_exception_string_for_comparison(
         """
-        Discrepancies found between the current feature version you are trying to promote to PRODUCTION_READY,
+        Discrepancies found between the new feature version you are trying to promote to PRODUCTION_READY,
         and the input data.
         {
             'feature_job_setting': {
-                'default': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
-                'feature': FeatureJobSetting(blind_spot='180s', frequency='1800s', time_modulo_frequency='300s')
+                'data_source': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
+                'new_feature': FeatureJobSetting(blind_spot='180s', frequency='1800s', time_modulo_frequency='300s')
             },
             'cleaning_operations': {
-                'default': [ColumnCleaningOperation(column_name='col_int',
+                'data_source': [ColumnCleaningOperation(column_name='col_int',
                     cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]
                 )],
-                'feature': [ColumnCleaningOperation(column_name='col_int',
+                'new_feature': [ColumnCleaningOperation(column_name='col_int',
                     cleaning_operations=[MissingValueImputation(imputed_value=2, type=missing)]
                 )]
             }
@@ -207,25 +207,43 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
     # assert that there are differences
     assert differences == {
-        "default": FeatureJobSetting(
+        "data_source": FeatureJobSetting(
             frequency="1800s", time_modulo_frequency="300s", blind_spot="600s"
         ),
-        "feature": FeatureJobSetting(
+        "new_feature": FeatureJobSetting(
             frequency="1800s", time_modulo_frequency="300s", blind_spot="300s"
         ),
     }
 
 
 @pytest.mark.asyncio
-async def test_get_feature_version_of_source__no_diff(
-    production_ready_feature, production_ready_validator
+async def test_validate__no_diff_in_feature_should_return_none(
+    snowflake_feature_store,
+    snowflake_event_data_with_entity,
+    production_ready_validator,
+    feature_group_feature_job_setting,
 ):
     """
-    Test _get_feature_version_of_source - no diff returns None
+    Test validate - no diff returns None
     """
-    response = await production_ready_validator._get_feature_version_with_source_settings(
-        production_ready_feature.id
+    # Create a feature that has same feature job setting and cleaning operations as it's data source
+    snowflake_feature_store.save()
+    snowflake_event_data_with_entity.save()
+    snowflake_event_data_with_entity.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
+
+    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=["60m"],
+        feature_names=["sum_60m"],
+    )["sum_60m"]
+    feature.save()
+
+    # Validate
+    response = await production_ready_validator.validate(feature.name, feature.id, feature.graph)
     assert response is None
 
 

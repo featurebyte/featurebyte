@@ -1,7 +1,7 @@
 """
 Production ready validator
 """
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, cast
 
 from bson import ObjectId
 
@@ -20,7 +20,7 @@ from featurebyte.service.version import VersionService
 
 class ProductionReadyValidator:
     """
-    Validator for checking whether it is valid to upgrade a feature to the PRODUCTION_READY status.
+    Validator for checking whether it is valid to promote a feature to the PRODUCTION_READY status.
     """
 
     def __init__(
@@ -35,20 +35,20 @@ class ProductionReadyValidator:
         self,
         feature_name: str,
         feature_id: ObjectId,
-        feature_graph: QueryGraphModel,
+        new_feature_graph: QueryGraphModel,
         ignore_guardrails: bool = False,
     ) -> None:
         """
-        Validate whether it is ok to upgrade the feature being passed in to PRODUCTION_READY status.
+        Validate whether it is ok to promote the feature being passed in to PRODUCTION_READY status.
 
         Parameters
         ----------
         feature_name: str
-            feature name
+            feature name of the feature being promoted to PRODUCTION_READY
         feature_id: ObjectId
-            feature id
-        feature_graph: QueryGraphModel
-            feature graph
+            feature id of the feature being promoted to PRODUCTION_READY
+        new_feature_graph: QueryGraphModel
+            feature graph of the feature being promoted to PRODUCTION_READY
         ignore_guardrails: bool
             parameter to determine whether to ignore guardrails
         """
@@ -56,48 +56,27 @@ class ProductionReadyValidator:
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
-            source_feature = await self._get_feature_version_with_source_settings(feature_id)
-            if source_feature is None:
+            try:
+                source_feature = (
+                    await self.version_service.create_new_feature_version_using_source_settings(
+                        feature_id
+                    )
+                )
+            except NoChangesInFeatureVersionError:
+                # We can return here since there are no changes in the feature version.
                 return
-            feature_version_source_node, feature_version_source_graph = source_feature
+            feature_version_source_graph = source_feature.graph
             feature_job_setting_diff = (
                 await self._get_feature_job_setting_diffs_data_source_vs_new_feature(
-                    feature_version_source_node, feature_version_source_graph, feature_graph
+                    source_feature.node, feature_version_source_graph, new_feature_graph
                 )
             )
             cleaning_ops_diff = await self._get_cleaning_operations_diff_data_source_vs_new_feature(
-                feature_version_source_graph, feature_graph
+                feature_version_source_graph, new_feature_graph
             )
             ProductionReadyValidator._raise_error_if_diffs_present(
                 feature_job_setting_diff, cleaning_ops_diff
             )
-
-    async def _get_feature_version_with_source_settings(
-        self, feature_id: ObjectId
-    ) -> Optional[Tuple[Node, QueryGraph]]:
-        """
-        Get the feature version of using source settings. This would create a feature version using the feature job
-        settings, and cleaning operations, that are currently stored in the source data.
-
-        Parameters
-        ----------
-        feature_id: ObjectId
-            feature id
-
-        Returns
-        -------
-        Optional[Tuple[Node, QueryGraph]]
-            node and graph of the feature version of the source, or None if there are no changes detected
-        """
-        try:
-            source_feature = (
-                await self.version_service.create_new_feature_version_using_source_settings(
-                    feature_id
-                )
-            )
-            return source_feature.node, source_feature.graph
-        except NoChangesInFeatureVersionError:
-            return None
 
     @staticmethod
     def _raise_error_if_diffs_present(
@@ -126,7 +105,7 @@ class ProductionReadyValidator:
         if cleaning_ops_diff:
             diff_format_dict["cleaning_operations"] = cleaning_ops_diff
         raise ValueError(
-            "Discrepancies found between the current feature version you are trying to promote to "
+            "Discrepancies found between the new feature version you are trying to promote to "
             "PRODUCTION_READY, and the input data.\n"
             f"{diff_format_dict}\n"
             "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
@@ -154,7 +133,7 @@ class ProductionReadyValidator:
                 feature_id = feature["_id"]
                 raise ValueError(
                     "Found another feature version that is already PRODUCTION_READY. Please "
-                    f"deprecate the feature {feature_name} with ID {feature_id} first before upgrading the current "
+                    f"deprecate the feature {feature_name} with ID {feature_id} first before promoting the new "
                     "version as there can only be one feature version that is production ready at any point in time."
                 )
 
@@ -221,8 +200,8 @@ class ProductionReadyValidator:
             )
             if source_feature_job_setting != new_feature_job_setting:
                 return {
-                    "default": source_feature_job_setting,
-                    "feature": new_feature_job_setting,
+                    "data_source": source_feature_job_setting,
+                    "new_feature": new_feature_job_setting,
                 }
         return {}
 
@@ -283,5 +262,8 @@ class ProductionReadyValidator:
 
             # compare cleaning operations
             if source_cleaning_operations != new_cleaning_operations:
-                return {"default": source_cleaning_operations, "feature": new_cleaning_operations}
+                return {
+                    "data_source": source_cleaning_operations,
+                    "new_feature": new_cleaning_operations,
+                }
         return {}
