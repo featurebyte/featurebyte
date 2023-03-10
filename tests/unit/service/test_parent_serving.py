@@ -231,7 +231,9 @@ async def test_get_join_steps__multiple_provided(
     parent_entity_lookup_service,
 ):
     """
-    Test looking up parent entity in two joins
+    Test looking up parent entity when more than one entity in the join path are provided. In this
+    case, to obtain entity D we can perform two joins from entity B. The join path must not involve
+    entity A (otherwise B would be duplicated and that would cause the generated sql to be invalid).
 
     a (provided) --> b (provided) --> c --> d (required)
     """
