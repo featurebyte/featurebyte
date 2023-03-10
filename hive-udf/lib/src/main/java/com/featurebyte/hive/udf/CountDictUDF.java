@@ -7,6 +7,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableVoidObjectInspector;
+import org.apache.hadoop.io.DoubleWritable;
 
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.NUMERIC_GROUP;
 import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP;
@@ -67,6 +68,10 @@ public abstract class CountDictUDF extends GenericUDF {
     }
 
     return inputMapOI;
+  }
+
+  protected double convertMapValueAsDouble(Object obj) {
+    return ((DoubleWritable) converters[1].convert(obj)).get();
   }
 
 }

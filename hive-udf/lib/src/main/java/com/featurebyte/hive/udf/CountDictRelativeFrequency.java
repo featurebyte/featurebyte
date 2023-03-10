@@ -42,11 +42,11 @@ public class CountDictRelativeFrequency extends CountDictSingleStringArgumentUDF
     if (!counts.containsKey(key)) {
       return null;
     }
-    double keyValue = ((DoubleWritable) converters[1].convert(counts.get(key))).get();
+    double keyValue = convertMapValueAsDouble(counts.get(key));
     double total = 0.0;
     for (Object value : counts.values()) {
       if (value != null) {
-        double doubleValue = ((DoubleWritable) converters[1].convert(value)).get();
+        double doubleValue = convertMapValueAsDouble(value);
         total += doubleValue;
       }
     }
