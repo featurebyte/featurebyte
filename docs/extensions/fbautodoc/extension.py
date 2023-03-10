@@ -556,9 +556,9 @@ class FBAutoDocProcessor(AutoDocProcessor):
             # get the resource descriptor
             # e.g. "featurebyte.api.feature.Feature", "featurebyte.api.feature.Feature::save"
             resource_descriptor = m.group(1)
-            # logger.info(
-            #     "Generating documentation", extra={"resource_descriptor": resource_descriptor}
-            # )
+            logger.info(
+                "Generating documentation", extra={"resource_descriptor": resource_descriptor}
+            )
 
             # populate resource path and name as autodoc title
             parent.clear()
