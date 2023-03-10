@@ -170,7 +170,7 @@ class ParentEntityLookupService(BaseService):
             (current_entity, current_path), pending = pending[0], pending[1:]
             updated_path = [current_entity] + current_path
 
-            if current_entity.id in available_entity_ids:
+            if current_entity.id in available_entity_ids and result is None:
                 # Do not exit early, continue to see if there are multiple join paths (can be
                 # detected when an entity is queued more than once)
                 result = updated_path

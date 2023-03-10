@@ -710,6 +710,30 @@ async def d_is_parent_of_b_fixture(
     )
 
 
+@pytest_asyncio.fixture(name="d_is_parent_of_c")
+async def d_is_parent_of_c_fixture(
+    entity_c,
+    entity_d,
+    entity_service,
+    event_data_service,
+    test_dir,
+    feature_store,
+):
+    """
+    Fixture to make D a parent of C
+    """
+    _ = feature_store
+    return await create_data_and_add_parent(
+        test_dir,
+        event_data_service,
+        entity_service,
+        child_entity=entity_c,
+        parent_entity=entity_d,
+        child_column="c",
+        parent_column="d",
+    )
+
+
 @pytest_asyncio.fixture(name="e_is_parent_of_c_and_d")
 async def e_is_parent_of_c_and_d_fixture(
     entity_c,
