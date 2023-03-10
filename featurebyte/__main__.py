@@ -295,16 +295,17 @@ def status(
                     unhealthy_containers = []
                     for container in docker.compose.ps():
                         health = container.state.health.status if container.state.health else "N/A"
-                        if health not in {"healthy', 'N/A"}:
+                        if health not in {"healthy", "N/A"}:
                             unhealthy_containers.append(container.name)
                     if len(unhealthy_containers) != 0:
                         for unhealthy_container in unhealthy_containers:
                             console.print(
                                 Text("Service: ")
                                 + Text(unhealthy_container, style="red")
-                                + Text(" is unhealthy. Waiting...", style=None)
+                                + Text(" is unhealthy. Waiting...", style="None")
                             )
                         time.sleep(10)
+                    break
 
     for app_name in ApplicationName:
         with get_docker_client(ApplicationName(app_name)) as docker:
