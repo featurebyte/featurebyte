@@ -32,6 +32,18 @@ class BetaWave3Nav(Nav):
     def _items(cls, data: Mapping, level: int) -> Iterable[Nav.Item]:
         """
         Return nav section items sorted by title in alphabetical order
+
+        Parameters
+        ----------
+        data: Mapping
+            The data to be sorted
+        level: int
+            The level of the data
+
+        Yields
+        ------
+        Iterable[Nav.Item]
+            The sorted items
         """
         if level == 0:
             # use customized order for root level
