@@ -213,7 +213,7 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
     """
     Test get relative frequency
@@ -233,7 +233,7 @@ def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_rank_from_dictionary__target_is_lookup_feature(
     item_type_dimension_lookup_feature, count_item_type_dictionary_feature
 ):
@@ -261,7 +261,7 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_feature):
     """
     Test get rank in dictionary
@@ -281,7 +281,7 @@ def test_get_rank_in_dictionary__target_is_scalar(count_item_type_dictionary_fea
     }
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_get_rank_in_dictionary__target_is_not_found(count_item_type_dictionary_feature):
     """
     Test get rank in dictionary, key is not found

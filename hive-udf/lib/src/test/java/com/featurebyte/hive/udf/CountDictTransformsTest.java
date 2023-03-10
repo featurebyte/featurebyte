@@ -5,6 +5,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -23,6 +24,7 @@ public class CountDictTransformsTest {
     PrimitiveObjectInspectorFactory.writableIntObjectInspector
   );
   final private ObjectInspector stringValueOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+  final private ObjectInspector boolValueOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
 
   public CountDictTransformsTest() {
     countDict = new HashMap<String, IntWritable>();
@@ -117,5 +119,19 @@ public class CountDictTransformsTest {
     };
     DoubleWritable output = (DoubleWritable) udf.evaluate(args);
     assertEquals(0.10695187165775401, output.get());
+  }
+
+  @Test
+  public void testCountDictRank() throws HiveException {
+    CountDictRank udf = new CountDictRank();
+    ObjectInspector[] arguments = {mapValueOI, stringValueOI, boolValueOI};
+    udf.initialize(arguments);
+    GenericUDF.DeferredObject[] args = {
+      new GenericUDF.DeferredJavaObject(countDict),
+      new GenericUDF.DeferredJavaObject("banana"),
+      new GenericUDF.DeferredJavaObject(new BooleanWritable(false)),
+    };
+    DoubleWritable output = (DoubleWritable) udf.evaluate(args);
+    assertEquals(6, output.get());
   }
 }
