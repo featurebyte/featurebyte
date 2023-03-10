@@ -47,8 +47,7 @@ class TileRegistry(TileCommon):
                 if input_column not in exist_columns:
                     exist_columns.append(input_column)
 
-                input_column_type = input_value_columns_types[i]
-                if input_column_type not in exist_columns_types:
+                    input_column_type = input_value_columns_types[i]
                     exist_columns_types.append(input_column_type)
 
             new_value_columns_str = ",".join(exist_columns)

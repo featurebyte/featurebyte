@@ -31,14 +31,6 @@ class TileMonitor(TileCommon):
         if not tile_table_exist_flag:
             logger.info(f"tile table {self.tile_id} does not exist")
         else:
-            col_names_df = await self._spark.execute_query(
-                f"select value_column_names from tile_registry where tile_id = '{self.tile_id}'"
-            )
-
-            if col_names_df is None or len(col_names_df) == 0:
-                return
-
-            existing_value_columns = col_names_df["value_column_names"].iloc[0]
 
             tile_sql = self.monitor_sql.replace("'", "''")
 
@@ -68,7 +60,7 @@ class TileMonitor(TileCommon):
                         {self.frequency_minute}
                     ) as INDEX,
                     {self.entity_column_names_str},
-                    {existing_value_columns}
+                    {",".join(self.value_column_names)}
                 from ({self.monitor_sql})
             """
 
@@ -76,15 +68,12 @@ class TileMonitor(TileCommon):
                 [f"a.`{c}` = b.`{c}`" for c in self.entity_column_names]
             )
             value_select_cols_str = " , ".join(
-                [f"b.{c} as OLD_{c}" for c in existing_value_columns.split(",")]
-            )
-            value_insert_cols_str = " , ".join(
-                [f"OLD_{c}" for c in existing_value_columns.split(",")]
+                [f"b.{c} as OLD_{c}" for c in self.value_column_names]
             )
             value_filter_cols_str = " OR ".join(
                 [
                     f"{c} != OLD_{c} or ({c} is not null and OLD_{c} is null)"
-                    for c in existing_value_columns.split(",")
+                    for c in self.value_column_names
                 ]
             )
 
@@ -139,19 +128,44 @@ class TileMonitor(TileCommon):
                 await tile_registry_ins.execute()
                 logger.info("\nEnd of calling tile_registry.execute\n\n")
 
+                # spark does not support insert with partial columns
+                # need to use merge for insertion
+                entity_column_names_str_src = " , ".join(
+                    [f"b.{c}" for c in self.entity_column_names_str.split(",")]
+                )
+                old_value_insert_cols_str_target = " , ".join(
+                    [f"OLD_{c}" for c in self.value_column_names]
+                )
+                value_insert_cols_str = " , ".join([f"b.{c}" for c in self.value_column_names])
+                old_value_insert_cols_str = " , ".join(
+                    [f"b.OLD_{c}" for c in self.value_column_names]
+                )
+
                 insert_sql = f"""
-                    insert into {monitor_table_name}
+                    MERGE into {monitor_table_name} a using ({compare_sql}) b
+                        ON a.INDEX = b.INDEX AND a.CREATED_AT = b.CREATED_AT
+                    WHEN NOT MATCHED THEN
+                        INSERT
                         (
                             {self.tile_start_date_column},
                             INDEX,
                             {self.entity_column_names_str},
-                            {existing_value_columns},
-                            {value_insert_cols_str},
+                            {",".join(self.value_column_names)},
+                            {old_value_insert_cols_str_target},
                             TILE_TYPE,
                             EXPECTED_CREATED_AT,
                             CREATED_AT
+                        ) VALUES
+                        (
+                            b.{self.tile_start_date_column},
+                            b.INDEX,
+                            {entity_column_names_str_src},
+                            {value_insert_cols_str},
+                            {old_value_insert_cols_str},
+                            b.TILE_TYPE,
+                            b.EXPECTED_CREATED_AT,
+                            b.CREATED_AT
                         )
-                        {compare_sql}
                 """
                 await self._spark.execute_query(insert_sql)
 
