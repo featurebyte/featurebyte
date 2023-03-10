@@ -1,10 +1,13 @@
 """
 Generate the code reference pages and navigation.
 """
+from typing import Dict, List, Optional
+
 import importlib
 import inspect
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from mkdocs_gen_files import open as gen_files_open
@@ -73,6 +76,65 @@ def get_classes_for_module(module_str):
         yield class_obj
 
 
+@dataclass
+class DocGroupValue:
+    """
+    Example
+    --------
+    DocGroupValue(
+        doc_group=['View', 'ItemView', 'validate_simple_aggregate_parameters'],
+        obj_type='method',
+        proxy_path='featurebyte.ItemView',
+    )
+    """
+
+    doc_group: List[str]
+    obj_type: str
+    proxy_path: str
+
+
+@dataclass
+class DocGroupKey:
+    """
+    Examples of DocGroupKey that will be generated from code
+    --------
+    DocGroupKey(
+        module_path='featurebyte.api.scd_view',
+        class_name='SlowlyChangingViewColumn'
+    )
+
+    DocGroupKey(
+        module_path='featurebyte.core.accessor.count_dict',
+        class_name='CountDictAccessor',
+        attribute_name='cosine_similarity'
+    )
+    """
+
+    module_path: str
+    class_name: str
+    attribute_name: Optional[str] = None
+
+    def get_path_to_join(self):
+        path_to_join = [self.module_path, self.class_name]
+        if self.attribute_name:
+            path_to_join.append(self.attribute_name)
+        return path_to_join
+
+    def __hash__(self) -> int:
+        return hash(".".join(self.get_path_to_join()))
+
+    def get_markdown_doc_path(self):
+        return str(Path(".".join(self.get_path_to_join()))) + ".md"
+
+    def get_obj_path(self, doc_group_value: DocGroupValue):
+        base_path = ".".join([self.module_path, self.class_name])
+        if self.attribute_name:
+            return "::".join([base_path, self.attribute_name])
+        if doc_group_value.proxy_path:
+            return "#".join([base_path, doc_group_value.proxy_path])
+        return base_path
+
+
 def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
     # proxy class is used for two purposes:
     #
@@ -99,7 +161,7 @@ def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
             class_doc_group = menu_section + [class_name]
         else:
             class_doc_group = menu_section
-        doc_groups[(module_path, class_name, None)] = (
+        doc_groups[DocGroupKey(module_path, class_name, None)] = DocGroupValue(
             class_doc_group,
             "class",
             proxy_path,
@@ -107,7 +169,7 @@ def add_class_to_doc_group(doc_groups, autodoc_config, menu_section, class_obj):
     else:
         proxy_path = ".".join([autodoc_config.proxy_class, autodoc_config.accessor_name])
         class_doc_group = menu_section
-        doc_groups[(module_path, class_name, None)] = (
+        doc_groups[DocGroupKey(module_path, class_name, None)] = DocGroupValue(
             menu_section + [autodoc_config.accessor_name],
             "class",
             autodoc_config.proxy_class,
@@ -151,7 +213,9 @@ def add_class_attributes_to_doc_groups(
                 member_doc_group = class_doc_group + [attribute_name]
         else:
             member_doc_group = class_doc_group + [attribute_name]
-        doc_groups[(class_obj.__module__, class_obj.__name__, attribute_name)] = (
+        doc_groups[
+            DocGroupKey(class_obj.__module__, class_obj.__name__, attribute_name)
+        ] = DocGroupValue(
             member_doc_group,
             attribute_type,
             member_proxy_path,
@@ -159,11 +223,11 @@ def add_class_attributes_to_doc_groups(
     return doc_groups
 
 
-def get_doc_groups():
+def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     """
     This returns a dictionary of doc groups.
     """
-    doc_groups = {}
+    doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
     for module_str in get_featurebyte_python_files():
         try:
             for class_obj in get_classes_for_module(module_str):
@@ -269,37 +333,22 @@ def generate_documentation_for_docs(doc_groups):
     # the documentation.
     reverse_lookup_map = {}
     # create documentation page for each object
-    # TODO: change some of this to a dataclass
-    for obj_tuple, value in doc_groups.items():
-        # obj_tuple = ('featurebyte.api.scd_view', 'SlowlyChangingViewColumn', None)
-        # obj_tuple = ('featurebyte.core.accessor.count_dict', 'CountDictAccessor', 'cosine_similarity')
-        (module_path, class_name, attribute_name) = obj_tuple
-        # doc_group = ['View', 'ItemView', 'validate_simple_aggregate_parameters']
-        # obj_type = 'method'
-        # proxy_path = 'featurebyte.ItemView'
-        (doc_group, obj_type, proxy_path) = value
-        if not attribute_name:
-            obj_tuple = (module_path, class_name)
-
-        path_components = module_path.split(".")
+    for doc_group_key, doc_group_value in doc_groups.items():
+        path_components = doc_group_key.module_path.split(".")
         if should_skip_path(path_components):
             continue
 
         # determine file path for documentation page
-        doc_path = str(Path(".".join(obj_tuple))) + ".md"
+        doc_path = doc_group_key.get_markdown_doc_path()
 
         # generate markdown for documentation page
-        obj_path = ".".join(obj_tuple[:2])
-        if attribute_name:
-            obj_path = "::".join([obj_path, attribute_name])
-        if proxy_path:
-            obj_path = "#".join([obj_path, proxy_path])
+        obj_path = doc_group_key.get_obj_path(doc_group_value)
 
         # add obj_path to reverse lookup map
         reverse_lookup_map = populate_reverse_lookup_map(reverse_lookup_map, obj_path, doc_path)
 
         # build string to write to file
-        format_str = build_markdown_format_str(obj_path, obj_type)
+        format_str = build_markdown_format_str(obj_path, doc_group_value.obj_type)
 
         # write documentation page to file
         full_doc_path = Path("reference", doc_path)
@@ -330,9 +379,7 @@ def populate_nav(nav, proxied_path_to_markdown_path, all_markdown_files):
         if ".str" in item.api_path:
             split_path = item.api_path.split(".str")
             function = split_path[1] if len(split_path) > 1 else ""
-            doc_path = "featurebyte.core.accessor.string.StringAccessor.md"
-            if function:
-                doc_path = f"featurebyte.core.accessor.string.StringAccessor{function}.md"
+            doc_path = f"featurebyte.core.accessor.string.StringAccessor{function}.md"
             nav[item.menu_header] = doc_path
             rendered.add(doc_path)
             continue
@@ -341,9 +388,7 @@ def populate_nav(nav, proxied_path_to_markdown_path, all_markdown_files):
         if ".cd" in item.api_path:
             split_path = item.api_path.split(".cd")
             function = split_path[1] if len(split_path) > 1 else ""
-            doc_path = "featurebyte.core.accessor.count_dict.CountDictAccessor.md"
-            if function:
-                doc_path = f"featurebyte.core.accessor.count_dict.CountDictAccessor{function}.md"
+            doc_path = f"featurebyte.core.accessor.count_dict.CountDictAccessor{function}.md"
             nav[item.menu_header] = doc_path
             rendered.add(doc_path)
             continue
