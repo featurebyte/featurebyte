@@ -7,7 +7,11 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentError
+from featurebyte.exception import (
+    DocumentError,
+    NoChangesInFeatureVersionError,
+    NoFeatureJobSettingInSourceError,
+)
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.persistent import Persistent
@@ -77,6 +81,11 @@ class VersionService(BaseService):
         Returns
         -------
         dict[str, Node]
+
+        Raises
+        ------
+        NoFeatureJobSettingInSourceError
+            If the source data does not have a default feature job setting
         """
         node_name_to_replacement_node: dict[str, Node] = {}
         data_feature_job_settings = data_feature_job_settings or []
@@ -104,6 +113,10 @@ class VersionService(BaseService):
                     feature_job_setting_dict = data_doc["default_feature_job_setting"]
                     if feature_job_setting_dict:
                         feature_job_setting = FeatureJobSetting(**feature_job_setting_dict)
+                    else:
+                        raise NoFeatureJobSettingInSourceError(
+                            f"No feature job setting found in source id {event_data_id}"
+                        )
                 else:
                     # use the provided feature job setting
                     feature_job_setting = data_name_to_feature_job_setting.get(data_doc["name"])
@@ -216,8 +229,8 @@ class VersionService(BaseService):
                 f"{actions_str} {do_str} not result a new feature version. "
                 "This is because the new feature version is the same as the source feature."
             )
-            raise DocumentError(error_message)
-        raise DocumentError("No change detected on the new feature version.")
+            raise NoChangesInFeatureVersionError(error_message)
+        raise NoChangesInFeatureVersionError("No change detected on the new feature version.")
 
     async def create_new_feature_version(
         self,
