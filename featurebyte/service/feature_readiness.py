@@ -242,11 +242,6 @@ class FeatureReadinessService(BaseService):
         Returns
         -------
         Optional[FeatureModel]
-
-        Raises
-        ------
-        ValueError
-            raised if the feature has no name
         """
         document = await self.feature_service.get_document(document_id=feature_id)
 
