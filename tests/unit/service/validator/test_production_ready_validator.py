@@ -109,18 +109,18 @@ async def test_validate(
     exception_str = format_exception_string_for_comparison(str(exc.value))
     expected_exception_str = format_exception_string_for_comparison(
         """
-        Discrepancies found between the new feature version you are trying to promote to PRODUCTION_READY,
+        Discrepancies found between the promoted feature version you are trying to promote to PRODUCTION_READY,
         and the input data.
         {
             'feature_job_setting': {
                 'data_source': FeatureJobSetting(blind_spot='600s', frequency='1800s', time_modulo_frequency='300s'),
-                'new_feature': FeatureJobSetting(blind_spot='180s', frequency='1800s', time_modulo_frequency='300s')
+                'promoted_feature': FeatureJobSetting(blind_spot='180s', frequency='1800s', time_modulo_frequency='300s')
             },
             'cleaning_operations': {
                 'data_source': [ColumnCleaningOperation(column_name='col_int',
                     cleaning_operations=[MissingValueImputation(imputed_value=0, type=missing)]
                 )],
-                'new_feature': [ColumnCleaningOperation(column_name='col_int',
+                'promoted_feature': [ColumnCleaningOperation(column_name='col_int',
                     cleaning_operations=[MissingValueImputation(imputed_value=2, type=missing)]
                 )]
             }
@@ -199,10 +199,8 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     feature_document = feature_data[0]
     refetch_feature = Feature(**feature_document)
     pruned_graph, _ = refetch_feature.extract_pruned_graph_and_node()
-    differences = (
-        await production_ready_validator._get_feature_job_setting_diffs_data_source_vs_new_feature(
-            source_node, source_feature_version_graph, pruned_graph
-        )
+    differences = await production_ready_validator._get_feature_job_setting_diffs_data_source_vs_promoted_feature(
+        source_node, source_feature_version_graph, pruned_graph
     )
 
     # assert that there are differences
@@ -210,7 +208,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
         "data_source": FeatureJobSetting(
             frequency="1800s", time_modulo_frequency="300s", blind_spot="600s"
         ),
-        "new_feature": FeatureJobSetting(
+        "promoted_feature": FeatureJobSetting(
             frequency="1800s", time_modulo_frequency="300s", blind_spot="300s"
         ),
     }
