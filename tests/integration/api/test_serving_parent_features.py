@@ -73,8 +73,8 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     event_data = EventData.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_EVENT",
-            database_name=session.database,
-            schema_name=session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_event_data",
         event_id_column="event_id",
@@ -87,8 +87,8 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     scd_data = SlowlyChangingData.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_SCD",
-            database_name=session.database,
-            schema_name=session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_scd_data",
         natural_key_column="scd_cust_id",
@@ -102,8 +102,8 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     dimension_data_1 = DimensionData.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
-            database_name=session.database,
-            schema_name=session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_dimension_data_1",
         dimension_id_column="city",
@@ -115,8 +115,8 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     dimension_data_2 = DimensionData.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
-            database_name=session.database,
-            schema_name=session.sf_schema,
+            database_name=session.database_name,
+            schema_name=session.schema_name,
         ),
         name=f"{table_prefix}_dimension_data_2",
         dimension_id_column="state",
@@ -139,7 +139,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize(
     "point_in_time, provided_entity, expected",
     [
@@ -200,7 +200,7 @@ def observations_set_with_expected_features_fixture():
     return observations_set_with_expected_features
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features(
     feature_list_with_child_entities,
     observations_set_with_expected_features,
@@ -216,7 +216,7 @@ def test_historical_features(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_historical_features_with_serving_names_mapping(
     feature_list_with_child_entities,
     observations_set_with_expected_features,
@@ -238,7 +238,7 @@ def test_historical_features_with_serving_names_mapping(
     pd.testing.assert_frame_equal(df, observations_set_with_expected_features, check_dtype=False)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 def test_online_features(config, feature_list_with_child_entities):
     """
     Test requesting online features
