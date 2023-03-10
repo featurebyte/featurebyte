@@ -52,7 +52,7 @@ public class CountDictRank extends CountDictSingleStringArgumentUDF {
         .stream()
         .sorted(
           Comparator
-            .comparing(e -> direction * convertMapValueAsDouble(((Map.Entry<String, Object>) e).getValue()))
+            .comparing(e -> direction * convertMapValueAsDouble(e.getValue()))
         )
         .collect(Collectors.toList());
 
