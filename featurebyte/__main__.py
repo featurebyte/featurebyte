@@ -6,6 +6,7 @@ from typing import Generator, List
 import os
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from enum import Enum
 
@@ -268,7 +269,9 @@ def logs(
 
 
 @app.command(name="status")
-def status() -> None:
+def status(
+    wait: bool = typer.Option(default=False, help="Wait for services to be healthy"),
+) -> None:
     """Get service status"""
     table = Table(title="Service Status", width=120)
     table.add_column("App", justify="left", style="cyan")
@@ -277,12 +280,34 @@ def status() -> None:
     table.add_column("Health", justify="center")
     health_colors = {
         "healthy": "green",
+        "starting": "yellow",
         "unhealthy": "red",
     }
     status_colors = {
         "running": "green",
         "exited": "red",
     }
+
+    if wait:
+        for app_name in ApplicationName:
+            with get_docker_client(ApplicationName(app_name)) as docker:
+                while True:
+                    unhealthy_containers = []
+                    for container in docker.compose.ps():
+                        health = container.state.health.status if container.state.health else "N/A"
+                        if health != "healthy" and health != "N/A":
+                            unhealthy_containers.append(container.name)
+                    if len(unhealthy_containers) == 0:
+                        break
+                    else:
+                        for unhealthy_container in unhealthy_containers:
+                            console.print(
+                                Text("Service: ")
+                                + Text(unhealthy_container, style="red")
+                                + Text(" is unhealthy. Waiting...", style=None)
+                            )
+                        time.sleep(10)
+
     for app_name in ApplicationName:
         with get_docker_client(ApplicationName(app_name)) as docker:
             containers = docker.compose.ps()
