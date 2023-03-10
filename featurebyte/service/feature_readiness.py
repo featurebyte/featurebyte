@@ -252,8 +252,7 @@ class FeatureReadinessService(BaseService):
 
         # If we are updating the feature readiness status to PRODUCTION_READY, perform some additional validation.
         if readiness == FeatureReadiness.PRODUCTION_READY:
-            if document.name is None:
-                raise ValueError("feature document has no name")
+            assert document.name is not None
             await self.production_ready_validator.validate(
                 document.name, document.id, document.graph, ignore_guardrails
             )
