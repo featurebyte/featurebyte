@@ -14,6 +14,6 @@ def to_object_fixture(source_type):
     """
     if source_type == "snowflake":
         return snowflake_util.to_object
-    elif source_type == "spark":
+    if source_type == "spark":
         return spark_util.to_object
     raise NotImplementedError()
