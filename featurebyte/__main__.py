@@ -288,9 +288,7 @@ def logs(
 
 
 @app.command(name="status")
-def status(
-    wait: bool = typer.Option(default=False, help="Wait for services to be healthy"),
-) -> None:
+def status() -> None:
     """Get service status"""
     table = Table(title="Service Status", width=120)
     table.add_column("App", justify="left", style="cyan")
