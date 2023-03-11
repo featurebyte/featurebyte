@@ -45,6 +45,7 @@ class FeatureManager(BaseModel):
         self,
         session: BaseSession,
         task_manager: Optional[TaskManager] = None,
+        use_snowflake_scheduling: Optional[bool] = False,
         **kw: Any,
     ) -> None:
         """
@@ -56,6 +57,8 @@ class FeatureManager(BaseModel):
             input session for datasource
         task_manager: Optional[TaskManager]
             input task manager
+        use_snowflake_scheduling: Optional[bool]
+            whether to use snowflake scheduling
         kw: Any
             constructor arguments
         """
@@ -63,7 +66,9 @@ class FeatureManager(BaseModel):
         self._session = session
         self._adapter = get_sql_adapter(session.source_type)
         self._tile_manager = tile_manager_from_session(
-            session=session, task_manager=task_manager, use_snowflake_scheduling=False
+            session=session,
+            task_manager=task_manager,
+            use_snowflake_scheduling=use_snowflake_scheduling,
         )
 
     async def online_enable(
