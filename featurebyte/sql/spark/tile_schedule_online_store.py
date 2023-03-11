@@ -42,6 +42,7 @@ class TileScheduleOnlineStore(BaseModel):
         # pylint: disable=too-many-locals
         select_sql = f"""
             SELECT
+              AGGREGATION_ID,
               RESULT_ID,
               SQL_QUERY,
               ONLINE_STORE_TABLE_NAME,
@@ -87,7 +88,7 @@ class TileScheduleOnlineStore(BaseModel):
                 create_sql = construct_create_delta_table_query(
                     table_name=fs_table,
                     table_query=f"select {entities_fname_str} from ({f_sql})",
-                    partition_keys=f_name,
+                    partition_keys=",".join(entity_columns),
                 )
                 await self._spark.execute_query(create_sql)
 
