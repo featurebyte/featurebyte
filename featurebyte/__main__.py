@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 
+import rich.spinner
 import typer
 from python_on_whales.docker_client import DockerClient
 from rich.align import Align
@@ -228,6 +229,24 @@ def start(
                 docker.compose.pull()
             __restore_docker_conf()  # Restore as early as possible
             docker.compose.up(services=get_service_names(app_name), detach=True)
+
+            # Wait for all services to be healthy
+            with console.status("Waiting for services to be healthy...") as status:
+                while True:
+                    unhealthy_containers = []
+                    for container in docker.compose.ps():
+                        health = container.state.health.status if container.state.health else "N/A"
+                        if health not in {"healthy", "N/A"}:
+                            unhealthy_containers.append(container.name)
+                    if len(unhealthy_containers) == 0:
+                        break
+                    statuses = (
+                        Text("Services: [")
+                        + Text(", ").join(map(lambda s: Text(s, style="red"), unhealthy_containers))
+                        + Text("] are unhealthy", style="None")
+                    )
+                    status.update(statuses)
+                    time.sleep(5)
     finally:
         __restore_docker_conf()
         __delete_docker_backup()
@@ -287,25 +306,6 @@ def status(
         "running": "green",
         "exited": "red",
     }
-
-    if wait:
-        for app_name in ApplicationName:
-            with get_docker_client(ApplicationName(app_name)) as docker:
-                while True:
-                    unhealthy_containers = []
-                    for container in docker.compose.ps():
-                        health = container.state.health.status if container.state.health else "N/A"
-                        if health not in {"healthy", "N/A"}:
-                            unhealthy_containers.append(container.name)
-                    if len(unhealthy_containers) != 0:
-                        for unhealthy_container in unhealthy_containers:
-                            console.print(
-                                Text("Service: ")
-                                + Text(unhealthy_container, style="red")
-                                + Text(" is unhealthy. Waiting...", style="None")
-                            )
-                        time.sleep(10)
-                    break
 
     for app_name in ApplicationName:
         with get_docker_client(ApplicationName(app_name)) as docker:
