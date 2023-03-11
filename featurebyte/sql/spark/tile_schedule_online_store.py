@@ -85,7 +85,9 @@ class TileScheduleOnlineStore(BaseModel):
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
                 create_sql = construct_create_delta_table_query(
-                    fs_table, f"select {entities_fname_str} from ({f_sql})"
+                    table_name=fs_table,
+                    table_query=f"select {entities_fname_str} from ({f_sql})",
+                    partition_keys=f_name,
                 )
                 await self._spark.execute_query(create_sql)
 
