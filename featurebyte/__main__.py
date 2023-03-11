@@ -10,7 +10,6 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 
-import rich.spinner
 import typer
 from python_on_whales.docker_client import DockerClient
 from rich.align import Align
@@ -231,7 +230,7 @@ def start(
             docker.compose.up(services=get_service_names(app_name), detach=True)
 
             # Wait for all services to be healthy
-            with console.status("Waiting for services to be healthy...") as status:
+            with console.status("Waiting for services to be healthy...") as spinner_status:
                 while True:
                     unhealthy_containers = []
                     for container in docker.compose.ps():
@@ -245,7 +244,7 @@ def start(
                         + Text(", ").join(map(lambda s: Text(s, style="red"), unhealthy_containers))
                         + Text("] are unhealthy", style="None")
                     )
-                    status.update(statuses)
+                    spinner_status.update(statuses)
                     time.sleep(5)
     finally:
         __restore_docker_conf()
