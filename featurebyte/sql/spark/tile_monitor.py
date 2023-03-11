@@ -60,7 +60,7 @@ class TileMonitor(TileCommon):
                         {self.frequency_minute}
                     ) as INDEX,
                     {self.entity_column_names_str},
-                    {",".join(self.value_column_names)}
+                    {self.value_column_names_str}
                 from ({self.monitor_sql})
             """
 
@@ -150,7 +150,7 @@ class TileMonitor(TileCommon):
                             {self.tile_start_date_column},
                             INDEX,
                             {self.entity_column_names_str},
-                            {",".join(self.value_column_names)},
+                            {self.value_column_names_str},
                             {old_value_insert_cols_str_target},
                             TILE_TYPE,
                             EXPECTED_CREATED_AT,
