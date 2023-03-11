@@ -290,15 +290,3 @@ class TileScheduleNotSupportedError(NotImplementedError):
     """
     Raise when the Tile Scheduling is not supported
     """
-
-
-class NoFeatureJobSettingInSourceError(Exception):
-    """
-    Raise when the input data does not have any feature job setting.
-    """
-
-
-class NoChangesInFeatureVersionError(DocumentError):
-    """
-    Raise when we try to create a new feature version, but there are no differences.
-    """

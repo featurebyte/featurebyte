@@ -133,7 +133,7 @@ async def test_online_serving_sql(features, session, config):
         # Check online_features route
         check_online_features_route(feature_list, config, df_historical, columns)
     finally:
-        feature_list.deploy(make_production_ready=False, enable=False)
+        feature_list.deploy(make_production_ready=True, enable=False)
 
 
 def check_online_features_route(feature_list, config, df_historical, columns):

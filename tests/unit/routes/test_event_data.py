@@ -308,11 +308,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
-            "default_feature_job_setting": {
-                "blind_spot": "10m",
-                "frequency": "30m",
-                "time_modulo_frequency": "5m",
-            },
+            "default_feature_job_setting": None,
             "status": "DRAFT",
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}

@@ -202,10 +202,7 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
             },
         )
         new_feature_id = post_feature_response.json()["_id"]
-        test_api_client.patch(
-            f"feature/{new_feature_id}",
-            json={"readiness": "PRODUCTION_READY", "ignore_guardrails": True},
-        )
+        test_api_client.patch(f"feature/{new_feature_id}", json={"readiness": "PRODUCTION_READY"})
 
         # create a new feature list version
         post_feature_list_response = test_api_client.post(

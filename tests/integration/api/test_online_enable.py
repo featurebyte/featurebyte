@@ -39,7 +39,7 @@ def online_enabled_feature_list_fixture(event_data, config):
 
     yield feature_list
 
-    feature_list.deploy(enable=False, make_production_ready=False)
+    feature_list.deploy(enable=False, make_production_ready=True)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
