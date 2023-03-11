@@ -244,10 +244,6 @@ async def test_monitor_tile__partial_columns(session):
     )
     await tile_generate_ins.execute()
 
-    await session.execute_query(
-        f"update tile_registry set VALUE_COLUMN_NAMES = 'VALUE,VALUE1,VALUE2' where tile_id = '{tile_id}'"
-    )
-
     tile_monitor_ins = TileMonitor(
         spark_session=session,
         featurebyte_database="TEST_DB_1",
