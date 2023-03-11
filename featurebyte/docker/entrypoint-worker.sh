@@ -42,7 +42,7 @@ _main() {
     exec gosu "${NON_PRIVUSER}:${NON_PRIVGROUP}" "$BASH_SOURCE" "$@"
   else
     # Running as normal user
-    celery --app featurebyte.worker.start.celery worker --loglevel=INFO
+    celery --app featurebyte.worker.start.celery worker --loglevel=DEBUG --beat --scheduler featurebyte.worker.schedulers.MongoScheduler
   fi
 }
 

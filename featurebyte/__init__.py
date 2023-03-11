@@ -12,6 +12,7 @@ from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_data import ItemData
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.scd_view import SlowlyChangingView
@@ -88,4 +89,5 @@ __all__ = [
     "Workspace",
     "ColumnCleaningOperation",
     "DataCleaningOperation",
+    "PeriodicTask",
 ]
