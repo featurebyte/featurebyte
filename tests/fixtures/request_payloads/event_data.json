@@ -70,11 +70,7 @@
             "semantic_id": null
         }
     ],
-    "default_feature_job_setting": {
-        "blind_spot": "10m",
-        "frequency": "30m",
-        "time_modulo_frequency": "5m"
-    },
+    "default_feature_job_setting": null,
     "event_id_column": "col_int",
     "event_timestamp_column": "event_timestamp",
     "name": "sf_event_data",

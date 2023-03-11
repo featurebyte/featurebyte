@@ -110,7 +110,6 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             await self.feature_readiness_service.update_feature(
                 feature_id=feature_id,
                 readiness=FeatureReadiness(data.readiness),
-                ignore_guardrails=bool(data.ignore_guardrails),
                 return_document=False,
             )
         return await self.get(document_id=feature_id)
