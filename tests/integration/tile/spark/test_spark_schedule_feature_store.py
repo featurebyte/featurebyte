@@ -122,11 +122,11 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
 
     sql = f"SELECT * FROM {feature_store_table_name} order by FEATURE_NAME, __FB_TILE_START_DATE_COLUMN"
     result = await session.execute_query(sql)
-    assert len(result) == 4
+    assert len(result) == 2
     assert result[feature_name].iloc[0] == 3
+    assert result[new_feature_name].iloc[0] == 3
     assert result[feature_name].iloc[1] == 6
-    assert result[new_feature_name].iloc[2] == 3
-    assert result[new_feature_name].iloc[3] == 6
+    assert result[new_feature_name].iloc[1] == 6
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)

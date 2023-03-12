@@ -3,6 +3,8 @@ Tile Generate online store Job Script for SP_TILE_SCHEDULE_ONLINE_STORE
 """
 from typing import Any
 
+import time
+
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
@@ -35,7 +37,7 @@ class TileScheduleOnlineStore(BaseModel):
         super().__init__(**kwargs)
         self._spark = spark_session
 
-    async def execute(self) -> None:
+    async def execute(self) -> None:  # pylint: disable=too-many-statements
         """
         Execute tile schedule online store operation
         """
@@ -130,12 +132,27 @@ class TileScheduleOnlineStore(BaseModel):
                     values_args = f"b.`{f_name}`"
                 merge_sql = f"""
                     merge into {fs_table} a using ({sql}) b
-                        on {on_condition_str} AND a.{partition_keys} = b.{partition_keys} AND a.{partition_keys} = '{f_name}'
+                        on {on_condition_str}
                         when matched then
                             update set a.{f_name} = b.{f_name}
                         when not matched then
                             insert ({entities_fname_str}, {partition_keys})
                                 values ({values_args}, '{f_name}')
                 """
-                logger.debug(f"merge_sql: {merge_sql}")
-                await self._spark.execute_query(merge_sql)
+
+                async def retry_merge(retry_num, index, m_sql):  # type: ignore[no-untyped-def]
+                    try:
+                        await self._spark.execute_query(m_sql)
+                        return True
+                    except Exception as err:  # pylint: disable=broad-exception-caught
+                        logger.warning(err)
+                        if index == retry_num - 1:
+                            raise err
+                    return False
+
+                retry_num = 3
+                for i in range(retry_num):
+                    result = await retry_merge(retry_num, i, merge_sql)
+                    if result:
+                        break
+                    time.sleep(1)
