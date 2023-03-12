@@ -84,9 +84,9 @@ class TileScheduleOnlineStore(BaseModel):
             entities_fname_str = ", ".join([f"`{col}`" for col in entity_columns + [f_name]])
 
             partition_keys = "FEATURE_NAME"
+            sql = f"select '{f_name}' as {partition_keys}, t.* from (select {entities_fname_str} from ({f_sql})) t"
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
-                sql = f"select '{f_name}' as {partition_keys}, t.* from (select {entities_fname_str} from ({f_sql})) t"
                 create_sql = construct_create_delta_table_query(
                     table_name=fs_table,
                     table_query=sql,
@@ -129,12 +129,13 @@ class TileScheduleOnlineStore(BaseModel):
                     on_condition_str = "true"
                     values_args = f"b.`{f_name}`"
                 merge_sql = f"""
-                    merge into {fs_table} a using ({f_sql}) b
-                        on {on_condition_str}
+                    merge into {fs_table} a using ({sql}) b
+                        on {on_condition_str} AND a.{partition_keys} = b.{partition_keys} AND a.{partition_keys} = '{f_name}'
                         when matched then
                             update set a.{f_name} = b.{f_name}
                         when not matched then
                             insert ({entities_fname_str}, {partition_keys})
                                 values ({values_args}, '{f_name}')
                 """
+                logger.debug(f"merge_sql: {merge_sql}")
                 await self._spark.execute_query(merge_sql)
