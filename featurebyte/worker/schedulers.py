@@ -1,6 +1,8 @@
 """
 Customized MongoDB Scheduler
 """
+from typing import Any
+
 import datetime
 
 from celery import schedules
@@ -13,7 +15,7 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
     Customized MongoDB Scheduler Entry
     """
 
-    def is_due(self):
+    def is_due(self) -> Any:
         if not self._task.enabled:
             return schedules.schedstate(False, 9999)  # move behind other tasks.
         if hasattr(self._task, "start_after") and self._task.start_after:
