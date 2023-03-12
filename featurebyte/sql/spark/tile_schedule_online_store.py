@@ -3,14 +3,12 @@ Tile Generate online store Job Script for SP_TILE_SCHEDULE_ONLINE_STORE
 """
 from typing import Any
 
-import time
-
 from pydantic.fields import PrivateAttr
 from pydantic.main import BaseModel
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
-from featurebyte.sql.spark.common import construct_create_delta_table_query
+from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql
 
 
 class TileScheduleOnlineStore(BaseModel):
@@ -37,14 +35,13 @@ class TileScheduleOnlineStore(BaseModel):
         super().__init__(**kwargs)
         self._spark = spark_session
 
-    async def execute(self) -> None:  # pylint: disable=too-many-statements
+    async def execute(self) -> None:
         """
         Execute tile schedule online store operation
         """
         # pylint: disable=too-many-locals
         select_sql = f"""
             SELECT
-              AGGREGATION_ID,
               RESULT_ID,
               SQL_QUERY,
               ONLINE_STORE_TABLE_NAME,
@@ -85,14 +82,10 @@ class TileScheduleOnlineStore(BaseModel):
 
             entities_fname_str = ", ".join([f"`{col}`" for col in entity_columns + [f_name]])
 
-            partition_keys = "FEATURE_NAME"
-            sql = f"select '{f_name}' as {partition_keys}, t.* from (select {entities_fname_str} from ({f_sql})) t"
             if not fs_table_exist_flag:
                 # feature store table does not exist, create table with the input feature sql
                 create_sql = construct_create_delta_table_query(
-                    table_name=fs_table,
-                    table_query=sql,
-                    partition_keys=partition_keys,
+                    fs_table, f"select {entities_fname_str} from ({f_sql})"
                 )
                 await self._spark.execute_query(create_sql)
 
@@ -131,28 +124,12 @@ class TileScheduleOnlineStore(BaseModel):
                     on_condition_str = "true"
                     values_args = f"b.`{f_name}`"
                 merge_sql = f"""
-                    merge into {fs_table} a using ({sql}) b
+                    merge into {fs_table} a using ({f_sql}) b
                         on {on_condition_str}
                         when matched then
                             update set a.{f_name} = b.{f_name}
                         when not matched then
-                            insert ({entities_fname_str}, {partition_keys})
-                                values ({values_args}, '{f_name}')
+                            insert ({entities_fname_str})
+                                values ({values_args})
                 """
-
-                async def retry_merge(retry_num, index, m_sql):  # type: ignore[no-untyped-def]
-                    try:
-                        await self._spark.execute_query(m_sql)
-                        return True
-                    except Exception as err:  # pylint: disable=broad-exception-caught
-                        logger.warning(err)
-                        if index == retry_num - 1:
-                            raise err
-                    return False
-
-                retry_num = 3
-                for i in range(retry_num):
-                    result = await retry_merge(retry_num, i, merge_sql)
-                    if result:
-                        break
-                    time.sleep(1)
+                await retry_sql(self._spark, merge_sql)
