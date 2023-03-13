@@ -379,6 +379,6 @@ class Catalog:
         Returns
         -------
         pd.DataFrame
-            Table of entities
+            Table of periodic tasks
         """
         return PeriodicTask.list(include_id=include_id)
