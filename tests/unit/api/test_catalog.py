@@ -85,7 +85,7 @@ def test_all_list_methods_are_exposed_in_catalog(methods_to_test):
     This will help to ensure that new API objects that have a list method are added to the Catalog.
     If we don't want to add them, we can add them to the excluded_children set.
     """
-    api_object_children = inheritors(ApiObject)
+    api_object_children = _inheritors(ApiObject)
     excluded_children = {SavableApiObject, DataListMixin, FeatureJobMixin, DataApiObject}
     assert len(api_object_children) == len(methods_to_test) + len(excluded_children)
 
@@ -118,9 +118,7 @@ def test_list_methods_have_same_parameters_as_delegated_list_method_call(methods
 
 def test_list_methods_call_the_correct_delegated_method(methods_to_test):
     """
-    Test catalog list methods have same parameters as underlying methods.
-
-    This will help to ensure that the Catalog list APIs are consistent with their API object List methods.
+    Test catalog list methods call the correct delegated method.
     """
     for method_item in methods_to_test:
         # Assert that the delegated list method is called
