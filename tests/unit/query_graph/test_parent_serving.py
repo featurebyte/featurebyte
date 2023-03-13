@@ -7,7 +7,7 @@ from featurebyte.query_graph.sql.parent_serving import construct_request_table_w
 
 
 def test_construct_request_table_with_parent_entities(parent_serving_preparation):
-    out = construct_request_table_with_parent_entities(
+    expr, updated_column_names = construct_request_table_with_parent_entities(
         "REQUEST_TABLE",
         request_table_columns=["a", "b"],
         join_steps=parent_serving_preparation.join_steps,
@@ -47,4 +47,5 @@ def test_construct_request_table_with_parent_entities(parent_serving_preparation
         ) AS REQ
         """
     ).strip()
-    assert out.sql(pretty=True) == expected
+    assert expr.sql(pretty=True) == expected
+    assert updated_column_names == ["COL_INT"]

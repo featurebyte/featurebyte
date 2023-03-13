@@ -3,6 +3,8 @@ SQL generation for looking up parent entities
 """
 from __future__ import annotations
 
+from typing import List, Tuple
+
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
@@ -22,7 +24,7 @@ def construct_request_table_with_parent_entities(
     request_table_columns: list[str],
     join_steps: list[JoinStep],
     feature_store_details: FeatureStoreDetails,
-) -> Select:
+) -> Tuple[Select, List[str]]:
     """
     Construct a query to join parent entities into the request table
 
@@ -40,13 +42,15 @@ def construct_request_table_with_parent_entities(
 
     Returns
     -------
-    Select
+    Tuple[Select, List[str]]
+        Tuple of sql query and list of parent entities column names that are joined
     """
     table_expr = select(
         *[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]
     ).from_(expressions.alias_(request_table_name, "REQ"))
 
     current_columns = request_table_columns[:]
+    new_columns = []
     for join_step in join_steps:
         table_expr = _apply_join_step(
             table_expr=table_expr,
@@ -55,8 +59,9 @@ def construct_request_table_with_parent_entities(
             current_columns=current_columns,
         )
         current_columns.append(join_step.parent_serving_name)
+        new_columns.append(join_step.parent_serving_name)
 
-    return table_expr
+    return table_expr, new_columns
 
 
 def _apply_join_step(
