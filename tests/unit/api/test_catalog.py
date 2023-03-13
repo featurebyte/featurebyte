@@ -122,9 +122,7 @@ def test_list_methods_call_the_correct_delegated_method(methods_to_test):
     """
     for method_item in methods_to_test:
         # Assert that the delegated list method is called
-        method_name = (
-            method_item.list_method_override if method_item.list_method_override else "list"
-        )
+        method_name = method_item.list_method_override or "list"
         with patch.object(method_item.class_object, method_name) as mocked_list:
             method_item.catalog_method()
             mocked_list.assert_called()
