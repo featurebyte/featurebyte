@@ -295,6 +295,7 @@ jobs:
           path: featurebyte/sql/spark/
       - name: Start local server
         run: |
+          export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
           make docker-dev
           poetry run featurebyte dataset import grocery
       - name: Test documentation
