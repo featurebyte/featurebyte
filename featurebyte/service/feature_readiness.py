@@ -245,13 +245,6 @@ class FeatureReadinessService(BaseService):
         """
         document = await self.feature_service.get_document(document_id=feature_id)
 
-        # If we are updating the feature readiness status to PRODUCTION_READY, perform some additional validation.
-        if readiness == FeatureReadiness.PRODUCTION_READY:
-            assert document.name is not None
-            await self.production_ready_validator.validate(
-                document.name, document.id, document.graph, ignore_guardrails
-            )
-
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
