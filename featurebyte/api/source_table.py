@@ -246,7 +246,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     def sample(
         self,
         size: int = 10,
-        seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
@@ -259,8 +258,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         ----------
         size: int
             Maximum number of rows to sample
-        seed: int
-            Seed to use for random sampling
         from_timestamp: Optional[datetime]
             Start of date range to sample from
         to_timestamp: Optional[datetime]
@@ -276,7 +273,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         """
         return self.frame.sample(  # type: ignore[misc]
             size=size,
-            seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             after_cleaning=after_cleaning,
@@ -287,7 +283,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     def describe(
         self,
         size: int = 0,
-        seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
@@ -300,8 +295,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         ----------
         size: int
             Maximum number of rows to sample
-        seed: int
-            Seed to use for random sampling
         from_timestamp: Optional[datetime]
             Start of date range to sample from
         to_timestamp: Optional[datetime]
@@ -317,7 +310,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         """
         return self.frame.describe(  # type: ignore[misc]
             size=size,
-            seed=seed,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             after_cleaning=after_cleaning,
