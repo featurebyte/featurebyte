@@ -70,6 +70,7 @@ class FeatureUpdate(FeatureByteBaseModel):
     """
 
     readiness: Optional[FeatureReadiness]
+    ignore_guardrails: Optional[bool]
 
 
 class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):

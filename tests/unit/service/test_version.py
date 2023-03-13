@@ -10,7 +10,11 @@ from bson import ObjectId
 from pydantic import ValidationError
 
 from featurebyte.common.model_util import get_version
-from featurebyte.exception import DocumentError
+from featurebyte.exception import (
+    DocumentError,
+    NoChangesInFeatureVersionError,
+    NoFeatureJobSettingInSourceError,
+)
 from featurebyte.models.feature_list import FeatureListNewVersionMode
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -738,3 +742,31 @@ async def test_create_new_feature_version_using_source_settings(
     assert group_by_params.blind_spot == 3600
     assert group_by_params.frequency == 7200
     assert group_by_params.time_modulo_frequency == 1800
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings__no_changes_throws_error(
+    version_service,
+    feature,
+):
+    """
+    Test that creating a new feature version using source that doesn't have a feature job setting will throw an error.
+    """
+    with pytest.raises(NoChangesInFeatureVersionError) as exc:
+        await version_service.create_new_feature_version_using_source_settings(feature.id)
+    assert "No change detected on the new feature version" in str(exc)
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings__no_changes_in_fjs_throws_error(
+    version_service, event_data_factory, feature_factory
+):
+    """
+    Test that creating a new feature version using source that doesn't have a feature job setting will throw an error.
+    """
+    await event_data_factory(True)
+    feature = await feature_factory()
+
+    with pytest.raises(NoFeatureJobSettingInSourceError) as exc:
+        await version_service.create_new_feature_version_using_source_settings(feature.id)
+    assert "No feature job setting found in source" in str(exc)

@@ -247,6 +247,11 @@ def saved_feature_fixture(
     """
     event_data_id_before = snowflake_event_data.id
     snowflake_feature_store.save()
+    snowflake_event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+        )
+    )
     snowflake_event_data.save()
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id

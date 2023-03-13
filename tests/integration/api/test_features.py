@@ -58,8 +58,8 @@ def test_features_without_entity(event_data):
             .reset_index(drop=True)
         )
     finally:
-        feature_list_1.deploy(enable=False, make_production_ready=True)
-        feature_list_2.deploy(enable=False, make_production_ready=True)
+        feature_list_1.deploy(enable=False, make_production_ready=False)
+        feature_list_2.deploy(enable=False, make_production_ready=False)
 
     pd.testing.assert_frame_equal(df_features_1, df_features_deployed_1)
     pd.testing.assert_frame_equal(df_features_2, df_features_deployed_2)
