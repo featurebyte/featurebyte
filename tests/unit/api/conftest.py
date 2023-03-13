@@ -60,14 +60,11 @@ def expected_item_data_table_preview_query() -> str:
 
 
 @pytest.fixture(name="snowflake_database_table")
-def snowflake_database_table_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store
-):
+def snowflake_database_table_fixture(snowflake_data_source):
     """
     SourceTable object fixture (using config object)
     """
-    _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_feature_store.get_table(
+    yield snowflake_data_source.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
@@ -93,11 +90,10 @@ def snowflake_event_data_fixture(
 
 
 @pytest.fixture(name="saved_event_data")
-def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
+def saved_event_data_fixture(snowflake_event_data):
     """
     Saved event data fixture
     """
-    snowflake_feature_store.save()
     previous_id = snowflake_event_data.id
     assert snowflake_event_data.saved is False
     snowflake_event_data.save()
@@ -125,11 +121,10 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
 
 
 @pytest.fixture(name="saved_dimension_data")
-def saved_dimension_data_fixture(snowflake_feature_store, snowflake_dimension_data):
+def saved_dimension_data_fixture(snowflake_dimension_data):
     """
     Saved dimension data fixture
     """
-    snowflake_feature_store.save()
     previous_id = snowflake_dimension_data.id
     assert snowflake_dimension_data.saved is False
     snowflake_dimension_data.save()
@@ -143,11 +138,10 @@ def saved_dimension_data_fixture(snowflake_feature_store, snowflake_dimension_da
 
 
 @pytest.fixture(name="saved_scd_data")
-def saved_scd_data_fixture(snowflake_feature_store, snowflake_scd_data):
+def saved_scd_data_fixture(snowflake_scd_data):
     """
     Saved SCD data fixture
     """
-    snowflake_feature_store.save()
     previous_id = snowflake_scd_data.id
     assert snowflake_scd_data.saved is False
     snowflake_scd_data.save()

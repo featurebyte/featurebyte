@@ -669,7 +669,7 @@ if TYPE_CHECKING:
     AllTableDataT = BaseTableData
     SpecificTableDataT = BaseTableData
 else:
-    AllTableDataT = Union[tuple(DATA_TABLES)]
+    AllTableDataT = Union[tuple(DATA_TABLES)]  # pylint: disable=invalid-name
     SpecificTableDataT = Annotated[Union[tuple(SPECIFIC_DATA_TABLES)], Field(discriminator="type")]
 
 

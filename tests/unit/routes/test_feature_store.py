@@ -12,6 +12,7 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import CredentialsError
 from featurebyte.schema.feature_store import FeatureStoreSample
@@ -262,7 +263,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
 
     @pytest.fixture(name="data_sample_payload")
     def data_sample_payload_fixture(
-        self, test_api_client_persistent, create_success_response, snowflake_feature_store
+        self, test_api_client_persistent, create_success_response, snowflake_feature_store_params
     ):
         """Payload for data sample"""
         _ = create_success_response
@@ -272,6 +273,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         data_response_dict = response.json()
+        snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
         return FeatureStoreSample(
             feature_store_name=snowflake_feature_store.name,
             graph={
