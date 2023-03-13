@@ -832,8 +832,30 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
         return self._list(include_id=include_id, params={"name": self.name})
 
     @classmethod
-    def list(cls, *args: Any, **kwargs: Any) -> pd.DataFrame:
-        return FeatureListNamespace.list(*args, **kwargs)
+    def list(
+        cls,
+        include_id: Optional[bool] = False,
+        entity: Optional[str] = None,
+        data: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        List saved feature lists
+
+        Parameters
+        ----------
+        include_id: Optional[bool]
+            Whether to include id in the list
+        entity: Optional[str]
+            Name of entity used to filter results
+        data: Optional[str]
+            Name of data used to filter results
+
+        Returns
+        -------
+        pd.DataFrame
+            Table of feature lists
+        """
+        return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
     def list_features(
         self, entity: Optional[str] = None, data: Optional[str] = None

@@ -241,7 +241,7 @@ class DataListMixin(ApiObject):
         return data_list
 
 
-class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrMixin):
+class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
     """
