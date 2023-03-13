@@ -35,16 +35,19 @@ class Catalog:
     @typechecked
     def list_features(
         include_id: Optional[bool] = False,
+        feature_list_id: Optional[ObjectId] = None,
         entity: Optional[str] = None,
         data: Optional[str] = None,
     ) -> pd.DataFrame:
         """
-        List saved features
+        List saved feature versions
 
         Parameters
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
+        feature_list_id: Optional[ObjectId] = None,
+            Include only features in specified feature list
         entity: Optional[str]
             Name of entity used to filter results
         data: Optional[str]
@@ -55,7 +58,9 @@ class Catalog:
         pd.DataFrame
             Table of features
         """
-        return Feature.list(include_id=include_id, entity=entity, data=data)
+        return Feature.list_versions(
+            include_id=include_id, feature_list_id=feature_list_id, entity=entity, data=data
+        )
 
     @staticmethod
     @typechecked
@@ -113,8 +118,6 @@ class Catalog:
     @typechecked
     def list_feature_lists(
         include_id: Optional[bool] = False,
-        entity: Optional[str] = None,
-        data: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -123,17 +126,13 @@ class Catalog:
         ----------
         include_id: Optional[bool]
             Whether to include id in the list
-        entity: Optional[str]
-            Name of entity used to filter results
-        data: Optional[str]
-            Name of data used to filter results
 
         Returns
         -------
         pd.DataFrame
             Table of feature lists
         """
-        return FeatureList.list(include_id=include_id, entity=entity, data=data)
+        return FeatureList.list_versions(include_id=include_id)
 
     @staticmethod
     @typechecked
