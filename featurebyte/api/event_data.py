@@ -3,7 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Literal, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type, Union
 
 from datetime import datetime
 
@@ -24,6 +24,9 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
+
+if TYPE_CHECKING:
+    from featurebyte.api.event_view import EventView
 
 
 class EventData(DataApiObject):
@@ -75,6 +78,27 @@ class EventData(DataApiObject):
             ],
         )
     )
+
+    def get_view(self) -> EventView:
+        """
+        Create an EventView object corresponding to the EventData
+
+        Returns
+        -------
+        EventView
+            The created EventView object
+
+        Example
+        -------
+        Create an EventView from an EventData
+
+        >>> import featurebyte
+        >>> event_data = featurebyte.EventData.get("GroceryInvoice")
+        >>> event_view = event_data.get_view()
+        """
+        from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
+
+        return EventView.from_event_data(event_data=self)
 
     @property
     def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:

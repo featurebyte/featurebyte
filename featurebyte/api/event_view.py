@@ -3,19 +3,17 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, cast
 
 import copy
 
 from pydantic import Field
-from typeguard import typechecked
 
-from featurebyte.api.event_data import EventData
-from featurebyte.api.feature import Feature
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
+from featurebyte.common.typing import assert_type
 from featurebyte.enum import TableDataType, ViewMode
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
@@ -27,6 +25,10 @@ from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ViewMetadata
+
+if TYPE_CHECKING:
+    from featurebyte.api.event_data import EventData
+    from featurebyte.api.feature import Feature
 
 
 class EventViewColumn(LaggableViewColumn):
@@ -85,7 +87,6 @@ class EventView(View, GroupByMixin):
         return super().protected_attributes + ["timestamp_column"]
 
     @classmethod
-    @typechecked
     def from_event_data(
         cls,
         event_data: EventData,
@@ -113,6 +114,10 @@ class EventView(View, GroupByMixin):
         EventView
             constructed EventView object
         """
+        from featurebyte.api.event_data import EventData  # pylint: disable=import-outside-toplevel
+
+        assert_type(event_data, EventData)
+
         cls._validate_view_mode_params(
             view_mode=view_mode,
             drop_column_names=drop_column_names,
@@ -394,7 +399,6 @@ class EventView(View, GroupByMixin):
             f"from the EventView columns: {sorted(self.columns)}"
         )
 
-    @typechecked
     def add_feature(
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
     ) -> None:
@@ -413,6 +417,10 @@ class EventView(View, GroupByMixin):
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
+        from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
+        assert_type(feature, Feature)
+
         # Validation
         self._validate_feature_addition(new_column_name, feature, entity_column)
 

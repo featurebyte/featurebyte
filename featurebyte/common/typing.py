@@ -3,7 +3,7 @@ Common utilities related to typing
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Sequence, Union, cast
+from typing import Any, Literal, Optional, Sequence, Type, Union, cast
 
 import pandas as pd
 from pandas.api.types import is_scalar
@@ -71,3 +71,24 @@ def get_or_default(value: Optional[Any], default_value: Any) -> Any:
     if value is not None:
         return value
     return default_value
+
+
+def assert_type(obj: Any, expected_type: Type[Any]) -> None:
+    """
+    Check that obj is of type expected_type. If not, raise a TypeError.
+
+    Parameters
+    ----------
+    obj: Any
+        Object to check
+    expected_type: Type[Any]
+        Expected type of obj
+
+    Raises
+    ------
+    TypeError
+        If obj is not of type expected_type
+    """
+    if not isinstance(obj, expected_type):
+        msg = f'type of argument "event_data" must be "{expected_type.__name__}; got {type(obj).__name__} instead'
+        raise TypeError(msg)

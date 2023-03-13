@@ -59,12 +59,16 @@ class TestEventView(BaseViewTestSuite):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
-def test_from_event_data(snowflake_event_data, mock_api_object_cache):
+@pytest.mark.parametrize("construct_from", ["view", "table"])
+def test_from_event_data(snowflake_event_data, mock_api_object_cache, construct_from):
     """
     Test from_event_data
     """
     _ = mock_api_object_cache
-    event_view_first = EventView.from_event_data(snowflake_event_data)
+    if construct_from == "view":
+        event_view_first = EventView.from_event_data(snowflake_event_data)
+    else:
+        event_view_first = snowflake_event_data.get_view()
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
