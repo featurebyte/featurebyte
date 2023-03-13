@@ -12,7 +12,6 @@ import pytest
 from featurebyte import (
     AggFunc,
     EventData,
-    EventView,
     FeatureJobSetting,
     FeatureList,
     ItemView,
@@ -153,7 +152,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
         )
     )
     event_data.cust_id.as_entity("customer")
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_group = event_view.groupby("cust_id").aggregate_over(
         method="count",
         windows=["2h", "24h"],
@@ -177,7 +176,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
 @pytest.fixture(name="event_view")
 def event_view_fixture(event_data):
     # create event view
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     assert event_view.columns == [
         "ËVENT_TIMESTAMP",
         "CREATED_AT",

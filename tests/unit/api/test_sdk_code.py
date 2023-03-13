@@ -1,9 +1,5 @@
 """Unit tests for SDK code generation"""
-from featurebyte.api.change_view import ChangeView
-from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
 from tests.util.helper import check_sdk_code_generation
@@ -11,7 +7,7 @@ from tests.util.helper import check_sdk_code_generation
 
 def test_sdk_code_generation__complex_arithmetic_expression(saved_event_data, update_fixtures):
     """Check SDK code generation for complex arithmetic expression"""
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     col_a, col_b = event_view["col_int"], event_view["col_float"]
     output = (
         (1 - col_a) * (col_b - 1) / (col_a + col_b)
@@ -32,7 +28,7 @@ def test_sdk_code_generation__complex_arithmetic_expression(saved_event_data, up
 
 def test_sdk_code_generation__complex_relational_expression(saved_event_data, update_fixtures):
     """SDK code generation for complex relational expression"""
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     col_a = event_view["col_int"]
     output = (
         (col_a > 1) & (col_a < 10) | (col_a == 1) | (col_a != 10) | (col_a >= 1) | (col_a <= 10)
@@ -49,7 +45,7 @@ def test_sdk_code_generation__complex_relational_expression(saved_event_data, up
 
 def test_sdk_code_generation__complex_math_expression(saved_event_data, update_fixtures):
     """SDK code generation for complex math expression"""
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     col_a, col_b = event_view["col_int"], event_view["col_float"]
     output = (
         (col_a > 10).astype(int)
@@ -70,7 +66,7 @@ def test_sdk_code_generation__complex_math_expression(saved_event_data, update_f
 
 def test_sdk_code_generation__complex_date_related_operations(saved_event_data, update_fixtures):
     """SDK code generation for complex date related operations"""
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     col_a = event_view["event_timestamp"]
     col_b = to_timedelta(event_view["col_int"], unit="hour")
     # create complex date property related operations
@@ -103,7 +99,7 @@ def test_sdk_code_generation__complex_date_related_operations(saved_event_data, 
 def test_sdk_code_generation__complex_string_related_operations(saved_event_data, update_fixtures):
     """SDK code generation for complex string related operations"""
     to_use_saved_data, to_format = True, True
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     col_a = event_view["col_text"]
     output = (
         col_a.str.len().astype(str)
@@ -131,7 +127,7 @@ def test_skd_code_generation__complex_feature(
     """SDK code generation for complex feature"""
     saved_item_data.event_id_col.as_entity(transaction_entity.name)
 
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     item_view = ItemView.from_item_data(item_data=saved_item_data, event_suffix="_event_view")
 
     # construct an item view feature referencing an event view column and join back to event view

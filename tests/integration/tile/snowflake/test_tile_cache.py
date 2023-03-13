@@ -4,7 +4,6 @@ Integration tests for SnowflakeTileCache
 import pandas as pd
 import pytest
 
-from featurebyte.api.event_view import EventView
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, TileCache
@@ -17,7 +16,7 @@ def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
     Should not be shared with other tests because of side effects after running on-demand tiles
     computation, get_historical_features(), etc.
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_group = event_view.groupby("ÜSER ID", category=groupby_category).aggregate_over(
         method="count",
         windows=["48h"],

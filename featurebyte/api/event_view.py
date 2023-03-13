@@ -3,7 +3,7 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import copy
 
@@ -14,17 +14,15 @@ from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.typing import assert_type
-from featurebyte.enum import TableDataType, ViewMode
+from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 
 if TYPE_CHECKING:
-    from featurebyte.api.event_data import EventData
     from featurebyte.api.feature import Feature
 
 
@@ -82,44 +80,6 @@ class EventView(View, GroupByMixin):
         list[str]
         """
         return super().protected_attributes + ["timestamp_column"]
-
-    @classmethod
-    def from_event_data(
-        cls,
-        event_data: EventData,
-        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-    ) -> EventView:
-        """
-        Construct an EventView object
-
-        Parameters
-        ----------
-        event_data: EventData
-            EventData object used to construct EventView object
-        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data and the record creation date column will be dropped
-        drop_column_names: Optional[List[str]]
-            List of column names to drop (manual mode only)
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only)
-
-        Returns
-        -------
-        EventView
-            constructed EventView object
-        """
-        from featurebyte.api.event_data import EventData  # pylint: disable=import-outside-toplevel
-
-        assert_type(event_data, EventData)
-
-        return event_data.get_view(
-            view_mode=view_mode,
-            drop_column_names=drop_column_names,
-            column_cleaning_operations=column_cleaning_operations,
-        )
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:

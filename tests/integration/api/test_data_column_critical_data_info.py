@@ -4,7 +4,6 @@ import pytest
 from featurebyte import (
     AggFunc,
     DisguisedValueImputation,
-    EventView,
     FeatureList,
     ItemView,
     MissingValueImputation,
@@ -60,7 +59,7 @@ def test_event_data_update_critical_data_info(event_data):
     assert event_data.frame.node.type == "input"
 
     # create feature group & preview
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
 
     # check equality between cleaning data's vs view's preview, sample & describe operations
     view_df = event_view.preview()

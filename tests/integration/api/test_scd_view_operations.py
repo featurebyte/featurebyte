@@ -10,7 +10,6 @@ import pytest
 from featurebyte import (
     DimensionView,
     EventData,
-    EventView,
     FeatureList,
     SlowlyChangingData,
     SlowlyChangingView,
@@ -111,18 +110,16 @@ async def test_scd_join_small(session, feature_store, source_type):
     table_prefix = "TEST_SCD_JOIN_SMALL"
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    event_view = EventView.from_event_data(
-        EventData.from_tabular_source(
-            tabular_source=feature_store.get_table(
-                table_name=f"{table_prefix}_EVENT",
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-            ),
-            name=f"{source_type}_{table_prefix}_EVENT_DATA",
-            event_id_column="event_id",
-            event_timestamp_column="ts",
-        )
-    )
+    event_view = EventData.from_tabular_source(
+        tabular_source=feature_store.get_table(
+            table_name=f"{table_prefix}_EVENT",
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+        ),
+        name=f"{source_type}_{table_prefix}_EVENT_DATA",
+        event_id_column="event_id",
+        event_timestamp_column="ts",
+    ).get_view()
     scd_view = SlowlyChangingView.from_slowly_changing_data(
         SlowlyChangingData.from_tabular_source(
             tabular_source=feature_store.get_table(
@@ -147,7 +144,7 @@ def test_event_view_join_scd_view__preview_view(event_data, scd_data, expected_d
     """
     Test joining an EventView with and SCDView
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
     event_view.join(scd_data, on="ÜSER ID")
     df = event_view.preview(1000)
@@ -172,7 +169,7 @@ def test_event_view_join_scd_view__preview_feature(event_data, scd_data):
     """
     Test joining an EventView with and SCDView
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     scd_data = SlowlyChangingView.from_slowly_changing_data(scd_data)
     event_view.join(scd_data, on="ÜSER ID")
 
@@ -207,7 +204,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     dimension_lookup_feature = dimension_view["item_name"].as_feature("Item Name Feature")
 
     # Window feature that depends on an SCD join
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view.join(scd_view, on="ÜSER ID")
     window_feature = event_view.groupby("ÜSER ID", "User Status").aggregate_over(
         method="count",
@@ -416,7 +413,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_data, scd_data):
     """
     Test aggregate_over using a key column joined from another view
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
 
     event_view.join(scd_view, on="ÜSER ID")

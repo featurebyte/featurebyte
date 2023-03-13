@@ -123,8 +123,7 @@ class ItemView(View, GroupByMixin):
         )
 
         event_data = EventData.get_by_id(item_data.event_data_id)
-        event_view = EventView.from_event_data(
-            event_data=event_data,
+        event_view = event_data.get_view(
             drop_column_names=event_drop_column_names,
             column_cleaning_operations=event_column_cleaning_operations,
             view_mode=view_mode,

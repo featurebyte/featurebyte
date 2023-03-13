@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import EventView, FeatureList
+from featurebyte import FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
@@ -30,7 +30,7 @@ def deployed_feature_list_fixture(event_data):
     """
     Fixture for a deployed feature list
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",

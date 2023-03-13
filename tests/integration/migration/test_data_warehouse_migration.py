@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte import EventView, Feature, FeatureList
+from featurebyte import Feature, FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
 from featurebyte.models.base import DEFAULT_WORKSPACE_ID
@@ -131,7 +131,7 @@ async def test_data_warehouse_migration_v6(
     Test data warehouse migration
     """
     _ = bad_feature_stores
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     features_1 = event_view.groupby("ÜSER ID").aggregate_over(
         method="count",
         windows=["7d"],

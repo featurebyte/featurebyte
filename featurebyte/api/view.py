@@ -177,8 +177,7 @@ class GroupByMixin:
         Examples
         --------
         Create GroupBy object from an event view
-        >>> import featurebyte as fb
-        >>> transactions_view = fb.EventView.from_event_data(transactions_data)  # doctest: +SKIP
+        >>> transactions_view = transactions_data.get_view()  # doctest: +SKIP
         >>> transactions_view.groupby("AccountID")  # doctest: +SKIP
         GroupBy(EventView(node.name=input_1), keys=['AccountID'])
         """

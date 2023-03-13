@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import EventView, FeatureList
+from featurebyte import FeatureList
 from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import get_online_store_retrieval_sql
@@ -20,7 +20,7 @@ def features_fixture(event_data, source_type):
     """
     Fixture for feature
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view["ÀMOUNT"].fillna(0)  # pylint: disable=no-member
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",

@@ -35,7 +35,6 @@ class TestEventView(BaseViewTestSuite):
     protected_columns = ["event_timestamp"]
     view_type = ViewType.EVENT_VIEW
     col = "cust_id"
-    factory_method = EventView.from_event_data
     view_class = EventView
     bool_col = "col_boolean"
     expected_view_with_raw_accessor_sql = """
@@ -59,16 +58,12 @@ class TestEventView(BaseViewTestSuite):
         assert row_subset.default_feature_job_setting == view_under_test.default_feature_job_setting
 
 
-@pytest.mark.parametrize("construct_from", ["view", "table"])
-def test_from_event_data(snowflake_event_data, mock_api_object_cache, construct_from):
+def test_from_event_data(snowflake_event_data, mock_api_object_cache):
     """
     Test from_event_data
     """
     _ = mock_api_object_cache
-    if construct_from == "view":
-        event_view_first = EventView.from_event_data(snowflake_event_data)
-    else:
-        event_view_first = snowflake_event_data.get_view()
+    event_view_first = snowflake_event_data.get_view()
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
@@ -86,7 +81,7 @@ def test_from_event_data(snowflake_event_data, mock_api_object_cache, construct_
             blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
         )
     )
-    event_view_second = EventView.from_event_data(snowflake_event_data)
+    event_view_second = snowflake_event_data.get_view()
     expected_view_columns_info = [
         col
         for col in snowflake_event_data.columns_info
@@ -695,7 +690,7 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
         )
 
     # create event view & the metadata
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     graph_metadata = event_view.node.parameters.metadata
     assert graph_metadata.column_cleaning_operations == [
         {
@@ -755,7 +750,7 @@ def test__validate_column_is_not_used(empty_event_view_builder):
 def test_sdk_code_generation(saved_event_data, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     check_sdk_code_generation(
         event_view,
         to_use_saved_data=to_use_saved_data,
@@ -776,7 +771,7 @@ def test_sdk_code_generation(saved_event_data, update_fixtures):
         ]
     )
 
-    event_view = EventView.from_event_data(event_data=saved_event_data)
+    event_view = saved_event_data.get_view()
     check_sdk_code_generation(
         event_view,
         to_use_saved_data=to_use_saved_data,

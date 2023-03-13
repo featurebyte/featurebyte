@@ -7,7 +7,6 @@ from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
 
 
@@ -28,7 +27,7 @@ def test_event_view_sample(event_data):
     Test sample for EventView
     """
     sample_kwargs = {"size": 10, "seed": 1234}
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     sample_df = event_view.sample(**sample_kwargs)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -56,7 +55,7 @@ def test_event_view_sample_seed(event_data):
     """
     Test sample for EventView using a different seed
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     sample_df = event_view.sample(size=10, seed=4321)
     assert sample_df.shape == (10, 8)
     assert sample_df["ËVENT_TIMESTAMP"].min() == pd.Timestamp("2001-01-01 22:23:02.000349+22:00")
@@ -68,7 +67,7 @@ def test_event_view_sample_with_date_range(event_data):
     """
     Test sample for EventView with date range
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     sample_params = {
         "size": 15,
         "seed": 1234,

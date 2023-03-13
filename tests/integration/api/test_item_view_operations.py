@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
-from featurebyte import AggFunc, EventView, FeatureList
+from featurebyte import AggFunc, FeatureList
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.item_view import ItemView
 
@@ -82,7 +82,7 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
     np.testing.assert_allclose(df["item_type_entropy"].values, [1.79175947, 1.09861229, 2.19722458])
 
     # check add_feature (note added feature value is the same as the preview above)
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view.add_feature(
         "most_frequent_item_type",
         item_aggregate_with_category_features["most_frequent_item_type"],

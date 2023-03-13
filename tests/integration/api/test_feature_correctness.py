@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.model_util import validate_job_setting_parameters
@@ -298,7 +297,7 @@ def test_aggregate_over(
     """
     Test that aggregate_over produces correct feature values
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
         frequency=feature_job_setting.frequency,
