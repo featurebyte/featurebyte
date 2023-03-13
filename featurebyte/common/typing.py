@@ -73,7 +73,7 @@ def get_or_default(value: Optional[Any], default_value: Any) -> Any:
     return default_value
 
 
-def assert_type(obj: Any, expected_type: Type[Any]) -> None:
+def runtime_assert_type(obj: Any, expected_type: Type[Any]) -> None:
     """
     Check that obj is of type expected_type. If not, raise a TypeError.
 

@@ -13,7 +13,7 @@ from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
-from featurebyte.common.typing import assert_type
+from featurebyte.common.typing import runtime_assert_type
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
@@ -335,7 +335,7 @@ class EventView(View, GroupByMixin):
         """
         from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
 
-        assert_type(feature, Feature)
+        runtime_assert_type(feature, Feature)
 
         # Validation
         self._validate_feature_addition(new_column_name, feature, entity_column)
