@@ -71,6 +71,9 @@ class ViewColumn(Series, SampleMixin):
     ViewColumn class that is the base class of columns returned from any View (e.g. EventView)
     """
 
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["ViewColumn"], proxy_class="featurebyte.ViewColumn")
+
     _parent: Optional[View] = PrivateAttr(default=None)
     tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
@@ -217,6 +220,11 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     """
     View class that is the base class of any View (e.g. EventView)
     """
+
+    __fbautodoc__ = FBAutoDoc(
+        section=["View"],
+        proxy_class="featurebyte.View",
+    )
 
     # class variables
     _view_graph_node_type: ClassVar[GraphNodeType]

@@ -563,3 +563,4 @@ spark-warehouse/
 metastore_db/
 pytest.xml*
 *.sqlite
+debug/

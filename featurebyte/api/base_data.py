@@ -42,7 +42,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"])
+    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.DataColumn")
 
     # pydantic instance variable (public)
     name: str
@@ -245,6 +245,12 @@ class DataApiObject(AbstractTableData, SavableApiObject, DataListMixin, GetAttrM
     """
     Base class for all Data objects
     """
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(
+        section=["Data"],
+        proxy_class="featurebyte.Data",
+    )
 
     _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
