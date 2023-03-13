@@ -2,6 +2,7 @@
 Tile Monitor Job for SP_TILE_MONITOR
 """
 from featurebyte.logger import logger
+from featurebyte.sql.spark.common import retry_sql
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
@@ -167,7 +168,7 @@ class TileMonitor(TileCommon):
                             b.CREATED_AT
                         )
                 """
-                await self._spark.execute_query(insert_sql)
+                await retry_sql(self._spark, insert_sql)
 
             insert_monitor_summary_sql = f"""
                 INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE, CREATED_AT)
@@ -178,4 +179,4 @@ class TileMonitor(TileCommon):
                     current_timestamp()
                 FROM ({compare_sql})
             """
-            await self._spark.execute_query(insert_monitor_summary_sql)
+            await retry_sql(self._spark, insert_monitor_summary_sql)

@@ -4,7 +4,7 @@ Databricks Tile Generate Job Script
 from typing import Optional
 
 from featurebyte.logger import logger
-from featurebyte.sql.spark.common import construct_create_delta_table_query
+from featurebyte.sql.spark.common import construct_create_delta_table_query, retry_sql
 from featurebyte.sql.spark.tile_common import TileCommon
 from featurebyte.sql.spark.tile_registry import TileRegistry
 
@@ -103,7 +103,7 @@ class TileGenerate(TileCommon):
                         insert ({insert_str})
                             values ({values_str})
             """
-            await self._spark.execute_query(merge_sql)
+            await retry_sql(self._spark, merge_sql)
 
         if self.last_tile_start_str:
             logger.debug("last_tile_start_str: ", self.last_tile_start_str)
@@ -131,7 +131,7 @@ class TileGenerate(TileCommon):
                         {self.tile_last_start_date_column}_{self.tile_type} = '{self.last_tile_start_str}'
                 WHERE TILE_ID = '{self.tile_id}'
             """
-            await self._spark.execute_query(update_tile_last_ind_sql)
+            await retry_sql(self._spark, update_tile_last_ind_sql)
 
     def _construct_tile_sql_with_index(self) -> str:
 

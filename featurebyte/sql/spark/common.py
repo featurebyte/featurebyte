@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-import time
+import asyncio
 
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
@@ -74,8 +74,8 @@ async def retry_sql(
             await session.execute_query(sql)
             break
         except Exception as err:  # pylint: disable=broad-exception-caught
-            logger.error(f"Problem with sql run {i}: {err}")
+            logger.warning(f"Problem with sql run {i} with sql: {sql}")
             if i == retry_num - 1:
                 raise err
 
-        time.sleep(sleep_interval)
+        await asyncio.sleep(sleep_interval)
