@@ -296,11 +296,9 @@ jobs:
       - name: Start local server
         run: |
           export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
-          make docker-build
-          poetry run featurebyte start --local
-          ls -la ~/.featurebyte
-          docker logs featurebyte-server
-          docker container ls -a
+          mkdir ~/.featurebyte
+          echo "profile:\n  - name: local\n  api_url: http://localhost:8088" > ~/.featurebyte/config.yaml
+          make docker-dev
           poetry run featurebyte datasets import grocery
       - name: Test documentation
         run: |
