@@ -23,13 +23,13 @@ from featurebyte.api.workspace import Workspace
 from featurebyte.models.relationship import RelationshipType
 
 
+@typechecked
 class Catalog:
     """
     Catalog API object contains a bunch of helpers to easily access and view objects within Featurebyte.
     """
 
     @staticmethod
-    @typechecked
     def list_features(
         include_id: Optional[bool] = False,
         feature_list_id: Optional[ObjectId] = None,
@@ -60,7 +60,6 @@ class Catalog:
         )
 
     @staticmethod
-    @typechecked
     def list_feature_namespaces(
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
@@ -86,7 +85,6 @@ class Catalog:
         return FeatureNamespace.list(include_id=include_id, entity=entity, data=data)
 
     @staticmethod
-    @typechecked
     def list_feature_list_namespaces(
         include_id: Optional[bool] = False,
         entity: Optional[str] = None,
@@ -112,7 +110,6 @@ class Catalog:
         return FeatureListNamespace.list(include_id=include_id, entity=entity, data=data)
 
     @staticmethod
-    @typechecked
     def list_feature_lists(
         include_id: Optional[bool] = False,
     ) -> pd.DataFrame:
@@ -132,7 +129,6 @@ class Catalog:
         return FeatureList.list_versions(include_id=include_id)
 
     @staticmethod
-    @typechecked
     def list_data(include_id: Optional[bool] = False, entity: Optional[str] = None) -> pd.DataFrame:
         """
         List saved data sources
@@ -152,7 +148,6 @@ class Catalog:
         return Data.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    @typechecked
     def list_dimension_data(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -174,7 +169,6 @@ class Catalog:
         return DimensionData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    @typechecked
     def list_item_data(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -196,7 +190,6 @@ class Catalog:
         return ItemData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    @typechecked
     def list_event_data(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -218,7 +211,6 @@ class Catalog:
         return EventData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    @typechecked
     def list_scd_data(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
@@ -240,7 +232,6 @@ class Catalog:
         return SlowlyChangingData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    @typechecked
     def list_relationships(
         include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
@@ -286,7 +277,6 @@ class Catalog:
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
     @staticmethod
-    @typechecked
     def list_feature_job_setting_analysis(
         include_id: Optional[bool] = False,
         event_data_id: Optional[ObjectId] = None,
@@ -309,7 +299,6 @@ class Catalog:
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
 
     @staticmethod
-    @typechecked
     def list_workspaces(include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved workspaces
@@ -327,7 +316,6 @@ class Catalog:
         return Workspace.list(include_id=include_id)
 
     @staticmethod
-    @typechecked
     def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved feature stores
@@ -345,7 +333,6 @@ class Catalog:
         return FeatureStore.list(include_id=include_id)
 
     @staticmethod
-    @typechecked
     def list_entities(include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved entities
@@ -363,7 +350,6 @@ class Catalog:
         return Entity.list(include_id=include_id)
 
     @staticmethod
-    @typechecked
     def list_periodic_tasks(include_id: Optional[bool] = False) -> pd.DataFrame:
         """
         List saved periodic tasks
