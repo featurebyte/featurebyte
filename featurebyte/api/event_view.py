@@ -18,13 +18,10 @@ from featurebyte.enum import TableDataType, ViewMode
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ViewMetadata
 
 if TYPE_CHECKING:
     from featurebyte.api.event_data import EventData
@@ -118,51 +115,10 @@ class EventView(View, GroupByMixin):
 
         assert_type(event_data, EventData)
 
-        cls._validate_view_mode_params(
+        return event_data.get_view(
             view_mode=view_mode,
             drop_column_names=drop_column_names,
             column_cleaning_operations=column_cleaning_operations,
-        )
-
-        # The input of view graph node is the data node. The final graph looks like this:
-        #    +-----------+     +----------------------------+
-        #    | InputNode + --> | GraphNode(type:event_view) +
-        #    +-----------+     +----------------------------+
-        drop_column_names = drop_column_names or []
-        if view_mode == ViewMode.AUTO and event_data.record_creation_date_column:
-            drop_column_names.append(event_data.record_creation_date_column)
-
-        data_node = event_data.frame.node
-        assert isinstance(data_node, InputNode)
-        event_table_data = cast(EventTableData, event_data.table_data)
-        (
-            event_table_data,
-            column_cleaning_operations,
-        ) = cls._prepare_table_data_and_column_cleaning_operations(
-            table_data=event_table_data,
-            column_cleaning_operations=column_cleaning_operations,
-            view_mode=view_mode,
-        )
-
-        view_graph_node, columns_info = event_table_data.construct_event_view_graph_node(
-            event_data_node=data_node,
-            drop_column_names=drop_column_names,
-            metadata=ViewMetadata(
-                view_mode=view_mode,
-                drop_column_names=drop_column_names,
-                column_cleaning_operations=column_cleaning_operations,
-                data_id=data_node.parameters.id,
-            ),
-        )
-        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
-        return EventView(
-            feature_store=event_data.feature_store,
-            tabular_source=event_data.tabular_source,
-            columns_info=columns_info,
-            node_name=inserted_graph_node.name,
-            tabular_data_ids=[event_data.id],
-            default_feature_job_setting=event_data.default_feature_job_setting,
-            event_id_column=event_data.event_id_column,
         )
 
     @property

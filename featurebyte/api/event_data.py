@@ -3,7 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Literal, Optional, Type, Union, cast
 
 from datetime import datetime
 
@@ -17,11 +17,15 @@ from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_data import EventDataModel
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
+from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
+from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.nested import ViewMetadata
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 
@@ -79,26 +83,80 @@ class EventData(DataApiObject):
         )
     )
 
-    def get_view(self) -> EventView:
+    def get_view(
+        self,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
+        drop_column_names: Optional[List[str]] = None,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+    ) -> EventView:
         """
-        Create an EventView object corresponding to the EventData
+        Construct an EventView object
+
+        Parameters
+        ----------
+        event_data: EventData
+            EventData object used to construct EventView object
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
+            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
+            from the data and the record creation date column will be dropped
+        drop_column_names: Optional[List[str]]
+            List of column names to drop (manual mode only)
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            Column cleaning operations to apply (manual mode only)
 
         Returns
         -------
         EventView
-            The created EventView object
-
-        Example
-        -------
-        Create an EventView from an EventData
-
-        >>> import featurebyte
-        >>> event_data = featurebyte.EventData.get("GroceryInvoice")
-        >>> event_view = event_data.get_view()
+            constructed EventView object
         """
         from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
 
-        return EventView.from_event_data(event_data=self)
+        EventView._validate_view_mode_params(
+            view_mode=view_mode,
+            drop_column_names=drop_column_names,
+            column_cleaning_operations=column_cleaning_operations,
+        )
+
+        # The input of view graph node is the data node. The final graph looks like this:
+        #    +-----------+     +----------------------------+
+        #    | InputNode + --> | GraphNode(type:event_view) +
+        #    +-----------+     +----------------------------+
+        drop_column_names = drop_column_names or []
+        if view_mode == ViewMode.AUTO and self.record_creation_date_column:
+            drop_column_names.append(self.record_creation_date_column)
+
+        data_node = self.frame.node
+        assert isinstance(data_node, InputNode)
+        event_table_data = cast(EventTableData, self.table_data)
+        (
+            event_table_data,
+            column_cleaning_operations,
+        ) = EventView._prepare_table_data_and_column_cleaning_operations(
+            table_data=event_table_data,
+            column_cleaning_operations=column_cleaning_operations,
+            view_mode=view_mode,
+        )
+
+        view_graph_node, columns_info = event_table_data.construct_event_view_graph_node(
+            event_data_node=data_node,
+            drop_column_names=drop_column_names,
+            metadata=ViewMetadata(
+                view_mode=view_mode,
+                drop_column_names=drop_column_names,
+                column_cleaning_operations=column_cleaning_operations,
+                data_id=data_node.parameters.id,
+            ),
+        )
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
+        return EventView(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            columns_info=columns_info,
+            node_name=inserted_graph_node.name,
+            tabular_data_ids=[self.id],
+            default_feature_job_setting=self.default_feature_job_setting,
+            event_id_column=self.event_id_column,
+        )
 
     @property
     def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:

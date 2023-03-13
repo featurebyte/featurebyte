@@ -3,12 +3,10 @@ from bson import ObjectId
 from featurebyte import ColumnCleaningOperation
 from featurebyte import DisguisedValueImputation
 from featurebyte import EventData
-from featurebyte import EventView
 from featurebyte import MissingValueImputation
 
 event_data = EventData.get_by_id(ObjectId("{data_id}"))
-event_view = EventView.from_event_data(
-    event_data=event_data,
+event_view = event_data.get_view(
     view_mode="manual",
     drop_column_names=["created_at"],
     column_cleaning_operations=[
