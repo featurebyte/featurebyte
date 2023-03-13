@@ -109,7 +109,7 @@ class EventData(DataApiObject):
         """
         from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
 
-        EventView._validate_view_mode_params(
+        EventView._validate_view_mode_params(  # pylint: disable=protected-access
             view_mode=view_mode,
             drop_column_names=drop_column_names,
             column_cleaning_operations=column_cleaning_operations,
@@ -129,7 +129,7 @@ class EventData(DataApiObject):
         (
             event_table_data,
             column_cleaning_operations,
-        ) = EventView._prepare_table_data_and_column_cleaning_operations(
+        ) = EventView._prepare_table_data_and_column_cleaning_operations(  # pylint: disable=protected-access
             table_data=event_table_data,
             column_cleaning_operations=column_cleaning_operations,
             view_mode=view_mode,

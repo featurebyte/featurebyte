@@ -135,10 +135,12 @@ class ObjectClass(BaseModel):
         params_str = ", ".join(params)
 
         if self.class_name is not None:
+            # Calling a class constructor or a classmethod
             if self.callable_name:
                 return f"{self.class_name}.{self.callable_name}({params_str})"
             return f"{self.class_name}({params_str})"
 
+        # Calling a function
         assert self.callable_name is not None
         return f"{self.callable_name}({params_str})"
 
@@ -249,6 +251,15 @@ def get_object_class_from_function_call(
 ) -> ObjectClass:
     """
     Get an instance of ObjectClass to represent a function call
+
+    Parameters
+    ----------
+    callable_name: str
+        Name of the callable, typically a function name
+    args: Any
+        Positional arguments for the function call
+    kwargs: Any
+        Keyword arguments for the function call
 
     Returns
     -------
