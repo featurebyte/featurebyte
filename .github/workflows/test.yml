@@ -297,6 +297,7 @@ jobs:
         run: |
           export FEATUREBYTE_NP_PASSWORD="${POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD}"
           make docker-dev
+          docker container ls -a
           poetry run featurebyte datasets import grocery
       - name: Test documentation
         run: |
