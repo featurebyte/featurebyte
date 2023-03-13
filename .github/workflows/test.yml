@@ -43,8 +43,7 @@ env:
   GCR_PYPI_LOCATION: us-central1
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64 # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  # Testing
-  FEATUREBYTE_HOME: "/tmp/featurebyte"
+
 jobs:
   build-jar:
     runs-on: ubuntu-latest
