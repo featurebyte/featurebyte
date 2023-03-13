@@ -1103,14 +1103,12 @@ def test_feature_definition(feature_with_clean_column_names):
     from bson import ObjectId
     from featurebyte import ColumnCleaningOperation
     from featurebyte import EventData
-    from featurebyte import EventView
     from featurebyte import MissingValueImputation
 
 
     # event_data name: "sf_event_data"
     event_data = EventData.get_by_id(ObjectId("6337f9651050ee7d5980660d"))
-    event_view = EventView.from_event_data(
-        event_data=event_data,
+    event_view = event_data.get_view(
         view_mode="manual",
         drop_column_names=["created_at"],
         column_cleaning_operations=[

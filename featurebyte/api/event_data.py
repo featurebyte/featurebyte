@@ -94,8 +94,6 @@ class EventData(DataApiObject):
 
         Parameters
         ----------
-        event_data: EventData
-            EventData object used to construct EventView object
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
             View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
             from the data and the record creation date column will be dropped
