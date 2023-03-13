@@ -7,22 +7,19 @@ import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
-from featurebyte import (
-    Data,
-    Entity,
-    Feature,
-    FeatureJobSettingAnalysis,
-    FeatureStore,
-    PeriodicTask,
-    Relationship,
-    Workspace,
-)
+from featurebyte.api.data import Data
 from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
-from featurebyte.api.feature import FeatureNamespace
+from featurebyte.api.feature import Feature, FeatureNamespace
+from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_data import ItemData
+from featurebyte.api.periodic_task import PeriodicTask
+from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.api.workspace import Workspace
 from featurebyte.models.relationship import RelationshipType
 
 
