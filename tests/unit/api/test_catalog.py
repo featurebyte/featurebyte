@@ -30,6 +30,9 @@ from featurebyte.api.workspace import Workspace
 
 @dataclass
 class ListMethodMetadata:
+    """
+    Data class to keep track of list methods to test.
+    """
 
     # Catalog method to test
     catalog_method: Callable
