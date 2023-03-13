@@ -79,7 +79,7 @@ class DimensionData(DataApiObject):
         _id: Optional[ObjectId] = None,
     ) -> DimensionData:
         """
-        Create DimensionData object from tabular source
+        Create DimensionData object from tabular source.
 
         Parameters
         ----------
