@@ -129,9 +129,11 @@ class Catalog:
         return FeatureList.list_versions(include_id=include_id)
 
     @staticmethod
-    def list_data(include_id: Optional[bool] = False, entity: Optional[str] = None) -> pd.DataFrame:
+    def list_tables(
+        include_id: Optional[bool] = False, entity: Optional[str] = None
+    ) -> pd.DataFrame:
         """
-        List saved data sources
+        List saved tables
 
         Parameters
         ----------
@@ -142,17 +144,17 @@ class Catalog:
 
         Returns
         -------
-        DataFrame
-            Table of data sources
+        pd.DataFrame
+            Dataframe of tables
         """
         return Data.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    def list_dimension_data(
+    def list_dimension_tables(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        List saved dimension data sources
+        List saved dimension table sources
 
         Parameters
         ----------
@@ -164,16 +166,16 @@ class Catalog:
         Returns
         -------
         DataFrame
-            Table of dimension data sources
+            Table of dimension table sources
         """
         return DimensionData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    def list_item_data(
+    def list_item_tables(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        List saved item data sources
+        List saved item table sources
 
         Parameters
         ----------
@@ -185,16 +187,16 @@ class Catalog:
         Returns
         -------
         DataFrame
-            Table of item data sources
+            Table of item table sources
         """
         return ItemData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    def list_event_data(
+    def list_event_tables(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        List saved event data sources
+        List saved event table sources
 
         Parameters
         ----------
@@ -206,16 +208,16 @@ class Catalog:
         Returns
         -------
         DataFrame
-            Table of event data sources
+            Table of event table sources
         """
         return EventData.list(include_id=include_id, entity=entity)
 
     @staticmethod
-    def list_scd_data(
+    def list_scd_tables(
         include_id: Optional[bool] = False, entity: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        List saved SCD data sources
+        List saved SCD table sources
 
         Parameters
         ----------
@@ -227,7 +229,7 @@ class Catalog:
         Returns
         -------
         DataFrame
-            Table of SCD data sources
+            Table of SCD table sources
         """
         return SlowlyChangingData.list(include_id=include_id, entity=entity)
 
