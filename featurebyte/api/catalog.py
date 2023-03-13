@@ -1,7 +1,7 @@
 """
 Catalog module
 """
-from typing import Optional
+from typing import Literal, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -9,20 +9,21 @@ from typeguard import typechecked
 
 from featurebyte import (
     Data,
-    DimensionData,
     Entity,
-    EventData,
     Feature,
     FeatureJobSettingAnalysis,
     FeatureStore,
-    ItemData,
     PeriodicTask,
     Relationship,
-    SlowlyChangingData,
     Workspace,
 )
+from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.event_data import EventData
 from featurebyte.api.feature import FeatureNamespace
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
+from featurebyte.api.item_data import ItemData
+from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.models.relationship import RelationshipType
 
 
 class Catalog:
@@ -245,7 +246,7 @@ class Catalog:
     @staticmethod
     @typechecked
     def list_relationships(
-        include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore[misc]
+        include_id: Optional[bool] = True, relationship_type: Optional[Literal[tuple(RelationshipType)]] = None  # type: ignore
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
