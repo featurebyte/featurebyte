@@ -5,7 +5,7 @@ import textwrap
 
 import pytest
 
-from featurebyte import DimensionView, EventView, Feature, FeatureJobSetting, MissingValueImputation
+from featurebyte import DimensionView, Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 
 
