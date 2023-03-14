@@ -358,9 +358,10 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="dimension_view"
         )
-        expression = ClassEnum.DIMENSION_VIEW(
-            _method_name="from_dimension_data",
-            dimension_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            f"{data_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,
             column_cleaning_operations=self.prepare_column_cleaning_operation_code_generation(

@@ -4,8 +4,6 @@ Test API View objects describe function
 import pandas as pd
 from pandas.testing import assert_series_equal
 
-from featurebyte.api.dimension_view import DimensionView
-
 
 def _to_utc_no_offset(date):
     """
@@ -168,7 +166,7 @@ def test_dimension_view_describe(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     describe_df = dimension_view.describe()
     assert describe_df.columns.tolist() == [
         "created_at",

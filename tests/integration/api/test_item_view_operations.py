@@ -4,7 +4,6 @@ import pytest
 from pandas.testing import assert_series_equal
 
 from featurebyte import AggFunc, FeatureList
-from featurebyte.api.dimension_view import DimensionView
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -192,7 +191,7 @@ def test_item_view_joined_with_dimension_view(
     original_item_preview = item_view.preview()
 
     # create dimension view
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     initial_dimension_columns = ["created_at", "item_id", "item_name", "item_type"]
     assert dimension_view.columns == initial_dimension_columns
 

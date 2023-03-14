@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import DimensionView, EventData, FeatureList, SlowlyChangingData
+from featurebyte import EventData, FeatureList, SlowlyChangingData
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from tests.util.helper import assert_preview_result_equal
 
@@ -192,7 +192,7 @@ def test_scd_lookup_feature(event_data, dimension_data, scd_data, scd_dataframe)
     scd_lookup_feature = scd_view["User Status"].as_feature("Current User Status")
 
     # Dimension lookup feature
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     dimension_lookup_feature = dimension_view["item_name"].as_feature("Item Name Feature")
 
     # Window feature that depends on an SCD join

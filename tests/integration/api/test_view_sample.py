@@ -6,8 +6,6 @@ import pytest
 from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.api.dimension_view import DimensionView
-
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 def test_event_data_sample(event_data):
@@ -130,7 +128,7 @@ def test_dimension_view_sample(dimension_data):
     """
     Test sample for DimensionView
     """
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     sample_df = dimension_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "created_at",
@@ -147,7 +145,7 @@ def test_dimension_view_sample_with_date_range(dimension_data):
     """
     Test sample for DimensionView with date range
     """
-    dimension_view = DimensionView.from_dimension_data(dimension_data)
+    dimension_view = dimension_data.get_view()
     with pytest.raises(ValidationError) as exc:
         dimension_view.sample(
             size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"

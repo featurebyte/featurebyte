@@ -21,7 +21,6 @@ class TestDimensionView(BaseViewTestSuite):
     protected_columns = ["col_int"]
     view_type = ViewType.DIMENSION_VIEW
     col = "cust_id"
-    factory_method = DimensionView.from_dimension_data
     view_class = DimensionView
     bool_col = "col_boolean"
     expected_view_with_raw_accessor_sql = """
@@ -98,7 +97,7 @@ def snowflake_dimension_view_with_entity(
     """
     _ = mock_api_object_cache
     snowflake_dimension_data["col_int"].as_entity(cust_id_entity.name)
-    view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    view = snowflake_dimension_data.get_view()
     return view
 
 
@@ -379,7 +378,7 @@ def test_multiple_as_feature__same_join(snowflake_dimension_view_with_entity):
 def test_sdk_code_generation(saved_dimension_data, update_fixtures):
     """Check SDK code generation"""
     to_use_saved_data = True
-    dimension_view = DimensionView.from_dimension_data(saved_dimension_data)
+    dimension_view = saved_dimension_data.get_view()
     check_sdk_code_generation(
         dimension_view,
         to_use_saved_data=to_use_saved_data,

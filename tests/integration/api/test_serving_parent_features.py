@@ -3,14 +3,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import (
-    DimensionData,
-    DimensionView,
-    Entity,
-    EventData,
-    FeatureList,
-    SlowlyChangingData,
-)
+from featurebyte import DimensionData, Entity, EventData, FeatureList, SlowlyChangingData
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
@@ -125,7 +118,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     dimension_data_2["state"].as_entity(state_entity.name)
     dimension_data_2["country"].as_entity(country_entity.name)
 
-    dimension_view = DimensionView.from_dimension_data(dimension_data_2)
+    dimension_view = dimension_data_2.get_view()
     feature = dimension_view["country"].as_feature("Country Name")
 
     feature_list = FeatureList([feature], name=f"{table_prefix}_feature_list")

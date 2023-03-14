@@ -295,9 +295,9 @@ def test_get_change_view__no_default_job_setting(snowflake_scd_data):
         change_view_test_helper(snowflake_scd_data, change_view)
 
 
-def test_from_slowly_changing_data__with_default_job_setting(snowflake_scd_data):
+def test_get_change_view__with_default_job_setting(snowflake_scd_data):
     """
-    Test from_slowly_changing_data - default job setting provided
+    Test get_change_view - default job setting provided
     """
     job_setting_provided = FeatureJobSetting(
         blind_spot="1h", time_modulo_frequency="1h", frequency="12h"
@@ -307,9 +307,10 @@ def test_from_slowly_changing_data__with_default_job_setting(snowflake_scd_data)
     change_view_test_helper(snowflake_scd_data, change_view)
 
 
-def test_from_slowly_changing_data__check_entity_id(snowflake_scd_data):
+def test_get_change_view__check_entity_id(snowflake_scd_data):
     """
-    Test from_slowly_changing_data - entity_id from the SCD data is correctly set
+    Test get_change_view:w
+     - entity_id from the SCD data is correctly set
     """
     entity_key = Entity(name="key_column", serving_names=["key_column"])
     entity_eff_ts = Entity(name="eff_timestamp", serving_names=["eff_timestamp"])
@@ -425,7 +426,7 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
     assert tile_infos[0].sql == expected
 
 
-def test_from_slowly_changing_data__keep_record_creation_date_column(
+def test_get_change_view__keep_record_creation_date_column(
     snowflake_scd_data, mock_api_object_cache
 ):
     """

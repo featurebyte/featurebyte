@@ -259,7 +259,7 @@ def snowflake_dimension_view_fixture(snowflake_dimension_data):
     """
     DimensionView fixture
     """
-    dimension_view = DimensionView.from_dimension_data(snowflake_dimension_data)
+    dimension_view = snowflake_dimension_data.get_view()
     yield dimension_view
 
 
