@@ -48,7 +48,6 @@ class BaseAggregator(ABC):
     def supported_views(self) -> List[Type[View]]:
         """
         Views that support this type of aggregation
-
         Returns
         -------
         List[Type[View]]
@@ -59,7 +58,6 @@ class BaseAggregator(ABC):
     def aggregation_method_name(self) -> str:
         """
         Aggregation method name for readable error message
-
         Returns
         -------
         str
@@ -86,6 +84,16 @@ class BaseAggregator(ABC):
             if value_column not in self.view.columns:
                 raise KeyError(f'Column "{value_column}" not found in {self.view}!')
 
+    @staticmethod
+    def _validate_fill_value_and_skip_fill_na(
+        fill_value: OptionalScalar, skip_fill_na: bool
+    ) -> None:
+        if fill_value is not None and skip_fill_na:
+            raise ValueError(
+                "Specifying both fill_value and skip_fill_na is not allowed;"
+                " try setting fill_value to None or skip_fill_na to False"
+            )
+
     def _project_feature_from_groupby_node(
         self,
         agg_method: AggFuncType,
@@ -94,6 +102,7 @@ class BaseAggregator(ABC):
         method: str,
         value_column: Optional[str],
         fill_value: OptionalScalar,
+        skip_fill_na: bool,
     ) -> Feature:
 
         # value_column is None for count-like aggregation method
@@ -113,7 +122,8 @@ class BaseAggregator(ABC):
             feature_dtype=var_type,
             entity_ids=self.entity_ids,
         )
-        self._fill_feature(feature, method, feature_name, fill_value)
+        if not skip_fill_na:
+            self._fill_feature(feature, method, feature_name, fill_value)
         return feature
 
     def _fill_feature(
@@ -125,7 +135,6 @@ class BaseAggregator(ABC):
     ) -> Feature:
         """
         Fill feature values as needed.
-
         Parameters
         ----------
         feature: Feature
@@ -136,11 +145,9 @@ class BaseAggregator(ABC):
             feature name
         fill_value: OptionalScalar
             value to fill
-
         Returns
         -------
         Feature
-
         Raises
         ------
         ValueError
