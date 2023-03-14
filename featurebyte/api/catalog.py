@@ -128,7 +128,6 @@ class Catalog(CatalogModel, SavableApiObject):
         activate_catalog(self.id)
         logger.debug(f"Current catalog is now: {self.name}")
 
-    @typechecked
     def update_name(self, name: str) -> None:
         """
         Change entity name
