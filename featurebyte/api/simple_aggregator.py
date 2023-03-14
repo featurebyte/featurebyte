@@ -34,29 +34,31 @@ class SimpleAggregator(BaseAggregator):
     def aggregate(
         self,
         value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        method: Optional[Literal[tuple(AggFunc)]] = None,  # type: ignore[misc]
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows
-
         Parameters
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: str
+        method: Optional[Literal[tuple(AggFunc)]]
             Aggregation method
         feature_name: str
             Output feature name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-
+        skip_fill_na: bool
+            Whether to skip filling NaN values
         Returns
         -------
         Feature
         """
         self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
         self.view.validate_simple_aggregate_parameters(
             keys=self.keys,
             value_column=value_column,
@@ -80,7 +82,7 @@ class SimpleAggregator(BaseAggregator):
 
         assert method is not None
         assert feature_name is not None
-        agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
+        agg_method = construct_agg_func(agg_func=method)
         feature = self._project_feature_from_groupby_node(
             agg_method=agg_method,
             feature_name=feature_name,
@@ -88,5 +90,6 @@ class SimpleAggregator(BaseAggregator):
             method=method,
             value_column=value_column,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
         return feature
