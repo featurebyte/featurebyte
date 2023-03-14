@@ -430,9 +430,10 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
                 **self.metadata.default_feature_job_setting
             )
 
-        expression = ClassEnum.CHANGE_VIEW(
-            _method_name="from_slowly_changing_data",
-            slowly_changing_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            f"{data_var_name}.get_change_view",
             track_changes_column=self.metadata.track_changes_column,
             default_feature_job_setting=feature_job_setting,
             prefixes=self.metadata.prefixes,

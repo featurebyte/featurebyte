@@ -3,7 +3,7 @@ ChangeView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, Tuple, cast
+from typing import Any, ClassVar, Optional, Tuple
 
 from datetime import datetime
 
@@ -14,15 +14,9 @@ from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import ViewMode
 from featurebyte.exception import ChangeViewNoJoinColumnError
 from featurebyte.query_graph.enum import GraphNodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.model.table import SCDTableData
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
-from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ChangeViewMetadata
 
 
 class ChangeViewColumn(LaggableViewColumn):
@@ -134,7 +128,7 @@ class ChangeView(View, GroupByMixin):
             )
 
     @staticmethod
-    def _validate_inputs(
+    def validate_inputs(
         scd_data: SlowlyChangingData,
         track_changes_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
@@ -186,113 +180,6 @@ class ChangeView(View, GroupByMixin):
             }
         )
         return params
-
-    @classmethod
-    @typechecked
-    def from_slowly_changing_data(
-        cls,
-        slowly_changing_data: SlowlyChangingData,
-        track_changes_column: str,
-        default_feature_job_setting: Optional[FeatureJobSetting] = None,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
-        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-    ) -> ChangeView:
-        """
-        Create a change view from SCD data.
-
-        Parameters
-        ----------
-        slowly_changing_data: SlowlyChangingData
-            data to create view from
-        track_changes_column: str
-            column to track changes for
-        default_feature_job_setting: Optional[FeatureJobSetting]
-            default feature job setting to set
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]]
-            Optional prefixes where each element indicates the prefix to add to the new column names for the name of
-            the column that we want to track. The first prefix will be used for the old, and the second for the new.
-            Pass a value of None instead of a string to indicate that the column name will be prefixed with the default
-            values of "past_", and "new_". At least one of the values must not be None. If two values are provided,
-            they must be different.
-        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data and the record creation date column will be dropped
-        drop_column_names: Optional[List[str]]
-            List of column names to drop (manual mode only)
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only)
-
-        Returns
-        -------
-        ChangeView
-        """
-        # Validate input
-        cls._validate_inputs(slowly_changing_data, track_changes_column, prefixes)
-        cls._validate_view_mode_params(
-            view_mode=view_mode,
-            drop_column_names=drop_column_names,
-            column_cleaning_operations=column_cleaning_operations,
-        )
-
-        # construct change view graph node from the scd data, the final graph looks like:
-        #       +---------------------+    +-----------------------------+
-        #       | InputNode(type:scd) | -->| GraphNode(type:change_view) |
-        #       +---------------------+    +-----------------------------+
-        feature_job_setting = ChangeView.get_default_feature_job_setting(
-            default_feature_job_setting
-        )
-        col_names = SCDTableData.get_new_column_names(
-            track_changes_column, slowly_changing_data.effective_timestamp_column, prefixes
-        )
-        drop_column_names = drop_column_names or []
-        if (
-            view_mode == ViewMode.AUTO
-            and slowly_changing_data.record_creation_date_column
-            and slowly_changing_data.record_creation_date_column != track_changes_column
-        ):
-            drop_column_names.append(slowly_changing_data.record_creation_date_column)
-
-        data_node = slowly_changing_data.frame.node  # pylint disable=duplicate-code
-        assert isinstance(data_node, InputNode)
-        scd_table_data = cast(SCDTableData, slowly_changing_data.table_data)
-        column_cleaning_operations = column_cleaning_operations or []
-        (
-            scd_table_data,
-            column_cleaning_operations,
-        ) = cls._prepare_table_data_and_column_cleaning_operations(
-            table_data=scd_table_data,
-            column_cleaning_operations=column_cleaning_operations,
-            view_mode=view_mode,
-        )
-
-        view_graph_node, columns_info = scd_table_data.construct_change_view_graph_node(
-            scd_data_node=data_node,
-            track_changes_column=track_changes_column,
-            prefixes=prefixes,
-            drop_column_names=drop_column_names,
-            metadata=ChangeViewMetadata(
-                track_changes_column=track_changes_column,
-                default_feature_job_setting=default_feature_job_setting,
-                prefixes=prefixes,
-                view_mode=view_mode,
-                drop_column_names=drop_column_names,
-                column_cleaning_operations=column_cleaning_operations,
-                data_id=slowly_changing_data.id,
-            ),
-        )
-        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
-        return ChangeView(
-            feature_store=slowly_changing_data.feature_store,
-            tabular_source=slowly_changing_data.tabular_source,
-            columns_info=columns_info,
-            node_name=inserted_graph_node.name,
-            tabular_data_ids=[slowly_changing_data.id],
-            natural_key_column=slowly_changing_data.natural_key_column,
-            effective_timestamp_column=col_names.new_valid_from_column_name,
-            default_feature_job_setting=feature_job_setting,
-        )
 
     @typechecked
     def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:

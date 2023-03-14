@@ -281,7 +281,7 @@ def snowflake_change_view(snowflake_scd_data):
     """
     ChangeView fixture
     """
-    change_view = ChangeView.from_slowly_changing_data(snowflake_scd_data, "col_int")
+    change_view = snowflake_scd_data.get_change_view("col_int")
     yield change_view
 
 
