@@ -85,11 +85,10 @@ class DimensionData(DataApiObject):
         DimensionView
             constructed DimensionView object
         """
-        from featurebyte.api.dimension_view import (
-            DimensionView,  # pylint: disable=import-outside-toplevel
-        )
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.dimension_view import DimensionView
 
-        DimensionView._validate_view_mode_params(
+        self._validate_view_mode_params(
             view_mode=view_mode,
             drop_column_names=drop_column_names,
             column_cleaning_operations=column_cleaning_operations,
@@ -110,7 +109,7 @@ class DimensionData(DataApiObject):
         (
             dimension_table_data,
             column_cleaning_operations,
-        ) = DimensionView._prepare_table_data_and_column_cleaning_operations(
+        ) = self._prepare_table_data_and_column_cleaning_operations(
             table_data=dimension_table_data,
             column_cleaning_operations=column_cleaning_operations,
             view_mode=view_mode,

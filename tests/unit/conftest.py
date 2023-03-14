@@ -15,7 +15,7 @@ from cachetools import TTLCache
 from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
-from featurebyte import FeatureJobSetting, ItemView, MissingValueImputation, SnowflakeDetails
+from featurebyte import FeatureJobSetting, MissingValueImputation, SnowflakeDetails
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity

@@ -127,7 +127,7 @@ class ItemData(DataApiObject):
         """
         from featurebyte.api.item_view import ItemView  # pylint: disable=import-outside-toplevel
 
-        ItemView._validate_view_mode_params(
+        self._validate_view_mode_params(
             view_mode=view_mode,
             drop_column_names=drop_column_names,
             column_cleaning_operations=column_cleaning_operations,
@@ -172,7 +172,7 @@ class ItemData(DataApiObject):
         (
             item_table_data,
             column_cleaning_operations,
-        ) = ItemView._prepare_table_data_and_column_cleaning_operations(
+        ) = self._prepare_table_data_and_column_cleaning_operations(
             table_data=item_table_data,
             column_cleaning_operations=column_cleaning_operations,
             view_mode=view_mode,

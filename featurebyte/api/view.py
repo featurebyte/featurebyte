@@ -40,7 +40,7 @@ from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.mixin import SampleMixin
 from featurebyte.core.series import FrozenSeries, Series
-from featurebyte.enum import DBVarType, ViewMode
+from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     ChangeViewNoJoinColumnError,
     NoJoinKeyFoundError,
@@ -50,9 +50,7 @@ from featurebyte.logger import logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.generic import JoinMetadata, ProjectNode
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import BaseGraphNode
@@ -63,7 +61,6 @@ else:
     GroupBy = TypeVar("GroupBy")
 
 ViewT = TypeVar("ViewT", bound="View")
-TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
 class ViewColumn(Series, SampleMixin):
@@ -302,71 +299,6 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
             return {self.get_join_column()}.union(self._get_additional_inherited_columns())
         except ChangeViewNoJoinColumnError:
             return additional_columns
-
-    @staticmethod
-    def _validate_view_mode_params(
-        view_mode: ViewMode,
-        drop_column_names: Optional[List[str]],
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
-        event_drop_column_names: Optional[List[str]] = None,
-        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-        event_join_column_names: Optional[List[str]] = None,
-    ) -> None:
-        """
-        Validate parameters passed from_*_data method
-
-        Parameters
-        ----------
-        view_mode: ViewMode
-            ViewMode
-        drop_column_names: Optional[List[str]]
-            List of column names to drop
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            List of column cleaning operations
-        event_drop_column_names: Optional[List[str]]
-            List of event column names to drop
-        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            List of event column cleaning operations
-        event_join_column_names: Optional[List[str]]
-            List of event join column names
-
-        Raises
-        ------
-        ValueError
-            If any of the parameters are passed in auto mode
-        """
-        manual_mode_only_params = {
-            "drop_column_names": drop_column_names,
-            "column_cleaning_operations": column_cleaning_operations,
-            "event_drop_column_names": event_drop_column_names,
-            "event_column_cleaning_operations": event_column_cleaning_operations,
-            "event_join_column_names": event_join_column_names,
-        }
-        non_empty_params = [name for name, value in manual_mode_only_params.items() if value]
-        if view_mode == ViewMode.AUTO and any(non_empty_params):
-            params = ", ".join(non_empty_params)
-            is_or_are = "is" if len(non_empty_params) == 1 else "are"
-            raise ValueError(f"{params} {is_or_are} only supported in manual mode")
-
-    @staticmethod
-    def _prepare_table_data_and_column_cleaning_operations(
-        table_data: TableDataT,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
-        view_mode: ViewMode,
-    ) -> Tuple[TableDataT, List[ColumnCleaningOperation]]:
-        column_cleaning_operations = column_cleaning_operations or []
-        if view_mode == ViewMode.MANUAL:
-            table_data = table_data.clone(column_cleaning_operations=column_cleaning_operations)
-        else:
-            column_cleaning_operations = [
-                ColumnCleaningOperation(
-                    column_name=col.name,
-                    cleaning_operations=col.critical_data_info.cleaning_operations,
-                )
-                for col in table_data.columns_info
-                if col.critical_data_info and col.critical_data_info.cleaning_operations
-            ]
-        return table_data, column_cleaning_operations
 
     def _get_additional_inherited_columns(self) -> set[str]:
         """
