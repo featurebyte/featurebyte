@@ -279,12 +279,12 @@ class Catalog:
         return Relationship.list(include_id=include_id, relationship_type=relationship_type)
 
     @staticmethod
-    def list_feature_job_setting_analysis(
+    def list_feature_job_setting_analyses(
         include_id: Optional[bool] = False,
         event_data_id: Optional[ObjectId] = None,
     ) -> pd.DataFrame:
         """
-        List saved feature job setting analysis
+        List saved feature job setting analyses
 
         Parameters
         ----------

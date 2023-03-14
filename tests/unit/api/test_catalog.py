@@ -40,27 +40,35 @@ class ListMethodMetadata:
     class_object: Any
     # List method override if we don't delegate to a `list` method.
     list_method_override: Optional[str] = None
+    # List method to patch
+    list_method_to_patch: Optional[str] = None
 
 
-@pytest.fixture(name="methods_to_test")
-def methods_to_test_fixture():
+def get_methods_to_test():
     return [
-        ListMethodMetadata(Catalog.list_features, Feature, "list_versions"),
+        ListMethodMetadata(Catalog.list_features, Feature, "_list_versions", "list_versions"),
         ListMethodMetadata(Catalog.list_feature_namespaces, FeatureNamespace),
         ListMethodMetadata(Catalog.list_feature_list_namespaces, FeatureListNamespace),
-        ListMethodMetadata(Catalog.list_feature_lists, FeatureList, "list_versions"),
+        ListMethodMetadata(
+            Catalog.list_feature_lists, FeatureList, "_list_versions", "list_versions"
+        ),
         ListMethodMetadata(Catalog.list_tables, Data),
         ListMethodMetadata(Catalog.list_dimension_tables, DimensionData),
         ListMethodMetadata(Catalog.list_item_tables, ItemData),
         ListMethodMetadata(Catalog.list_event_tables, EventData),
         ListMethodMetadata(Catalog.list_scd_tables, SlowlyChangingData),
         ListMethodMetadata(Catalog.list_relationships, Relationship),
-        ListMethodMetadata(Catalog.list_feature_job_setting_analysis, FeatureJobSettingAnalysis),
+        ListMethodMetadata(Catalog.list_feature_job_setting_analyses, FeatureJobSettingAnalysis),
         ListMethodMetadata(Catalog.list_workspaces, Workspace),
         ListMethodMetadata(Catalog.list_feature_stores, FeatureStore),
         ListMethodMetadata(Catalog.list_entities, Entity),
         ListMethodMetadata(Catalog.list_periodic_tasks, PeriodicTask),
     ]
+
+
+@pytest.fixture(name="methods_to_test")
+def methods_to_test_fixture():
+    return get_methods_to_test()
 
 
 def _inheritors(class_obj):
@@ -94,35 +102,39 @@ def test_all_list_methods_are_exposed_in_catalog(methods_to_test):
         assert delegated_class in api_object_children
 
 
-def test_list_methods_have_same_parameters_as_delegated_list_method_call(methods_to_test):
+@pytest.mark.parametrize(
+    "method_item",
+    get_methods_to_test(),
+)
+def test_list_methods_have_same_parameters_as_delegated_list_method_call(method_item):
     """
     Test catalog list methods have same parameters as underlying methods.
 
     This will help to ensure that the Catalog list APIs are consistent with their API object List methods.
     """
-    for method_item in methods_to_test:
-        catalog_list_method, underlying_class = method_item.catalog_method, method_item.class_object
-        # Check that the signatures match
-        catalog_list_method_signature = signature(catalog_list_method)
-        underlying_class_method = underlying_class.list
-        if method_item.list_method_override == "list_versions":
-            # Note that we use the method that is aliased here (i.e. the private method). Otherwise, the signature
-            # will also include the `cls` variable.
-            underlying_class_method = underlying_class._list_versions
-        underlying_class_list_method_signature = signature(underlying_class_method)
-        assert (
-            catalog_list_method_signature.parameters.keys()
-            == underlying_class_list_method_signature.parameters.keys()
-        ), f"catalog method: {catalog_list_method}, underlying_class {underlying_class}"
+    catalog_list_method, underlying_class = method_item.catalog_method, method_item.class_object
+    # Check that the signatures match
+    catalog_list_method_signature = signature(catalog_list_method)
+    underlying_class_method = underlying_class.list
+    if method_item.list_method_override:
+        underlying_class_method = getattr(underlying_class, method_item.list_method_override)
+    underlying_class_list_method_signature = signature(underlying_class_method)
+    assert (
+        catalog_list_method_signature.parameters.keys()
+        == underlying_class_list_method_signature.parameters.keys()
+    ), f"catalog method: {catalog_list_method}, underlying_class {underlying_class}"
 
 
-def test_list_methods_call_the_correct_delegated_method(methods_to_test):
+@pytest.mark.parametrize(
+    "method_item",
+    get_methods_to_test(),
+)
+def test_list_methods_call_the_correct_delegated_method(method_item):
     """
     Test catalog list methods call the correct delegated method.
     """
-    for method_item in methods_to_test:
-        # Assert that the delegated list method is called
-        method_name = method_item.list_method_override or "list"
-        with patch.object(method_item.class_object, method_name) as mocked_list:
-            method_item.catalog_method()
-            mocked_list.assert_called()
+    # Assert that the delegated list method is called
+    method_name = method_item.list_method_to_patch or "list"
+    with patch.object(method_item.class_object, method_name) as mocked_list:
+        method_item.catalog_method()
+        mocked_list.assert_called()
