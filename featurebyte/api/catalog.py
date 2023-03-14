@@ -20,12 +20,12 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.item_table import ItemTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
+from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.logger import logger
 from featurebyte.models.catalog import CatalogModel
-from featurebyte.api.scd_table import SCDTable
-from featurebyte.api.source_table import SourceTable
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
