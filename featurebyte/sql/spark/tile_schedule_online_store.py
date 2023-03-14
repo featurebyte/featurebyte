@@ -101,9 +101,15 @@ class TileScheduleOnlineStore(BaseModel):
                 entity_filter_cols_str = " AND ".join(entity_filter_cols)
 
                 # check whether feature value column exists, if not add the new column
-                try:
-                    await self._spark.execute_query(f"SELECT {f_name} FROM {fs_table} LIMIT 1")
-                except Exception:  # pylint: disable=broad-except
+                cols_df = await self._spark.execute_query(f"SHOW COLUMNS IN {fs_table}")
+                col_exists = False
+                if cols_df is not None:
+                    for _, row in cols_df.iterrows():
+                        if f_name == row["col_name"]:
+                            col_exists = True
+                            break
+
+                if not col_exists:
                     await self._spark.execute_query(
                         f"ALTER TABLE {fs_table} ADD COLUMN {f_name} {f_value_type}"
                     )
