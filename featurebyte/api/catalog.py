@@ -3,7 +3,7 @@ Catalog module
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -48,7 +48,7 @@ class Catalog(CatalogModel, SavableApiObject):
     _get_schema = CatalogModel
     _list_fields = ["name", "created_at", "active"]
 
-    def _get_create_payload(self) -> dict[str, Any]:
+    def _get_create_payload(self) -> Dict[str, Any]:
         data = CatalogCreate(**self.json_dict())
         return data.json_dict()
 
@@ -141,7 +141,7 @@ class Catalog(CatalogModel, SavableApiObject):
         self.update(update_payload={"name": name}, allow_update_local=True)
 
     @property
-    def name_history(self) -> list[dict[str, Any]]:
+    def name_history(self) -> List[Dict[str, Any]]:
         """
         List of name history entries
 
