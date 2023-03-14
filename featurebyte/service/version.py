@@ -39,23 +39,23 @@ class VersionService(BaseService):
     VersionService class is responsible for creating new feature version
     """
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
-        super().__init__(user, persistent, workspace_id)
-        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+        super().__init__(user, persistent, catalog_id)
+        self.data_service = DataService(user=user, persistent=persistent, catalog_id=catalog_id)
         self.feature_service = FeatureService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_list_service = FeatureListService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.view_construction_service = ViewConstructionService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
 
     async def _prepare_group_by_node_name_to_replacement_node(

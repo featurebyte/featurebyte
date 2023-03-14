@@ -8,7 +8,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.test import TestTaskPayload
@@ -35,7 +35,7 @@ def task_manager_fixture(celery_service):
     """Task manager fixture"""
     persistent = celery_service
     return TaskManager(
-        user=User(id=ObjectId()), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=User(id=ObjectId()), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
 
 
@@ -44,7 +44,7 @@ async def test_submit_task(task_manager):
     """Test task manager service"""
     payload = TestTaskPayload(
         user_id=task_manager.user.id,
-        workspace_id=DEFAULT_WORKSPACE_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
     )
     task_id = await task_manager.submit(payload=payload)
     task = await wait_for_async_task(task_manager, task_id)
@@ -56,7 +56,7 @@ async def test_schedule_interval_task(task_manager):
     """Test task manager service"""
     payload = TestTaskPayload(
         user_id=task_manager.user.id,
-        workspace_id=DEFAULT_WORKSPACE_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
     )
     task_id = await task_manager.schedule_interval_task(
         name="Run test task every 1 second",

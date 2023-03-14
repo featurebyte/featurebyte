@@ -77,10 +77,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
     document_class = FeatureModel
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
-        super().__init__(user=user, persistent=persistent, workspace_id=workspace_id)
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+        super().__init__(user=user, persistent=persistent, catalog_id=catalog_id)
         self.view_construction_service = ViewConstructionService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
@@ -126,7 +126,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                 "readiness": FeatureReadiness.DRAFT,
                 "version": await self._get_feature_version(data.name),
                 "user_id": self.user.id,
-                "workspace_id": self.workspace_id,
+                "catalog_id": self.catalog_id,
             }
         )
 
@@ -140,7 +140,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
             # check whether data has been saved at persistent storage
             data_service = DataService(
-                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
             for tabular_data_id in data.tabular_data_ids:
                 _ = await data_service.get_document(document_id=tabular_data_id)
@@ -158,7 +158,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             assert insert_id == document.id
 
             feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
             try:
                 feature_namespace = await feature_namespace_service.get_document(

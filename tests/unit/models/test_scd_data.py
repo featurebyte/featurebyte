@@ -7,7 +7,7 @@ import pytest
 from _pytest._code import ExceptionInfo
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.query_graph.node.schema import TableDetails
@@ -120,7 +120,7 @@ def get_base_expected_scd_data_model(scd_data_model, scd_columns_info):
         "effective_timestamp_column": "effective_at",
         "end_timestamp_column": "end_at",
         "current_flag_column": "enabled",
-        "workspace_id": DEFAULT_WORKSPACE_ID,
+        "catalog_id": DEFAULT_CATALOG_ID,
     }
 
 

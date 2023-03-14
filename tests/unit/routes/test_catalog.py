@@ -1,5 +1,5 @@
 """
-Tests for Workspace route
+Tests for Catalog route
 """
 from http import HTTPStatus
 
@@ -7,29 +7,29 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from tests.unit.routes.base import BaseApiTestSuite
 
 
-class TestWorkspaceApi(BaseApiTestSuite):
+class TestCatalogApi(BaseApiTestSuite):
     """
-    TestWorkspaceApi class
+    TestCatalogApi class
     """
 
-    class_name = "Workspace"
-    base_route = "/workspace"
+    class_name = "Catalog"
+    base_route = "/catalog"
     unknown_id = ObjectId()
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/workspace.json")
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/catalog.json")
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
-            f'Workspace (id: "{payload["_id"]}") already exists. '
-            'Get the existing object by `Workspace.get(name="grocery")`.',
+            f'Catalog (id: "{payload["_id"]}") already exists. '
+            'Get the existing object by `Catalog.get(name="grocery")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            'Workspace (name: "grocery") already exists. '
-            'Get the existing object by `Workspace.get(name="grocery")`.',
+            'Catalog (name: "grocery") already exists. '
+            'Get the existing object by `Catalog.get(name="grocery")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
@@ -51,7 +51,7 @@ class TestWorkspaceApi(BaseApiTestSuite):
                 "data_type": "event_data",
                 "data_id": str(ObjectId()),
             },
-            f'Workspace (id: "{unknown_id}") not found. Please save the Workspace object first.',
+            f'Catalog (id: "{unknown_id}") not found. Please save the Catalog object first.',
         )
     ]
 
@@ -61,27 +61,27 @@ class TestWorkspaceApi(BaseApiTestSuite):
         Create multiple entries to the persistent
         """
         test_api_client, _ = test_api_client_persistent
-        workspace_id1, workspace_id2, workspace_id3 = (
+        catalog_id1, catalog_id2, catalog_id3 = (
             str(ObjectId()),
             str(ObjectId()),
             str(ObjectId()),
         )
         res_grocery = test_api_client.post(
-            self.base_route, json={"_id": workspace_id1, "name": "grocery"}
+            self.base_route, json={"_id": catalog_id1, "name": "grocery"}
         )
         res_creditcard = test_api_client.post(
-            self.base_route, json={"_id": workspace_id2, "name": "creditcard"}
+            self.base_route, json={"_id": catalog_id2, "name": "creditcard"}
         )
         res_healthcare = test_api_client.post(
-            self.base_route, json={"_id": workspace_id3, "name": "healthcare"}
+            self.base_route, json={"_id": catalog_id3, "name": "healthcare"}
         )
         assert res_grocery.status_code == HTTPStatus.CREATED
         assert res_creditcard.status_code == HTTPStatus.CREATED
         assert res_healthcare.status_code == HTTPStatus.CREATED
-        assert res_grocery.json()["_id"] == workspace_id1
-        assert res_creditcard.json()["_id"] == workspace_id2
-        assert res_healthcare.json()["_id"] == workspace_id3
-        return [workspace_id1, workspace_id2, workspace_id3]
+        assert res_grocery.json()["_id"] == catalog_id1
+        assert res_creditcard.json()["_id"] == catalog_id2
+        assert res_healthcare.json()["_id"] == catalog_id3
+        return [catalog_id1, catalog_id2, catalog_id3]
 
     @pytest_asyncio.fixture()
     async def create_multiple_success_responses(self, test_api_client_persistent):
@@ -90,7 +90,7 @@ class TestWorkspaceApi(BaseApiTestSuite):
         self.setup_creation_route(test_api_client)
         output = []
         for index, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
-            # skip first payload since default workspace is created automatically
+            # skip first payload since default catalog is created automatically
             if index == 0:
                 continue
             # payload name is set here as we need the exact name value for test_list_200 test
@@ -103,9 +103,9 @@ class TestWorkspaceApi(BaseApiTestSuite):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
 
-        # default workspace
+        # default catalog
         payload = self.payload.copy()
-        payload["_id"] = str(DEFAULT_WORKSPACE_ID)
+        payload["_id"] = str(DEFAULT_CATALOG_ID)
         payload["name"] = "default"
         yield payload
 
@@ -124,13 +124,13 @@ class TestWorkspaceApi(BaseApiTestSuite):
 
     def test_update_200(self, create_success_response, test_api_client_persistent):
         """
-        Test workspace update (success)
+        Test catalog update (success)
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
-        workspace_id = response_dict["_id"]
+        catalog_id = response_dict["_id"]
         response = test_api_client.patch(
-            f"{self.base_route}/{workspace_id}", json={"name": "french grocery"}
+            f"{self.base_route}/{catalog_id}", json={"name": "french grocery"}
         )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
@@ -138,12 +138,12 @@ class TestWorkspaceApi(BaseApiTestSuite):
 
         # it is ok if the updated name is the same as the existing one
         response = test_api_client.patch(
-            f"{self.base_route}/{workspace_id}", json={"name": "french grocery"}
+            f"{self.base_route}/{catalog_id}", json={"name": "french grocery"}
         )
         assert response.status_code == HTTPStatus.OK
 
         # test get audit records
-        response = test_api_client.get(f"{self.base_route}/audit/{workspace_id}")
+        response = test_api_client.get(f"{self.base_route}/audit/{catalog_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 2
@@ -154,30 +154,30 @@ class TestWorkspaceApi(BaseApiTestSuite):
         ]
 
         # test get name history
-        response = test_api_client.get(f"{self.base_route}/history/name/{workspace_id}")
+        response = test_api_client.get(f"{self.base_route}/history/name/{catalog_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["name"] for doc in results] == ["french grocery", "grocery"]
 
     def test_update_404(self, test_api_client_persistent):
         """
-        Test workspace update (not found)
+        Test catalog update (not found)
         """
         test_api_client, _ = test_api_client_persistent
-        unknown_workspace_id = ObjectId()
+        unknown_catalog_id = ObjectId()
         response = test_api_client.patch(
-            f"{self.base_route}/{unknown_workspace_id}", json={"name": "random_name"}
+            f"{self.base_route}/{unknown_catalog_id}", json={"name": "random_name"}
         )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
             "detail": (
-                f'Workspace (id: "{unknown_workspace_id}") not found. Please save the Workspace object first.'
+                f'Catalog (id: "{unknown_catalog_id}") not found. Please save the Catalog object first.'
             )
         }
 
     def test_update_409(self, create_multiple_entries, test_api_client_persistent):
         """ "
-        Test workspace update (conflict)
+        Test catalog update (conflict)
         """
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.patch(
@@ -186,18 +186,18 @@ class TestWorkspaceApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json() == {
             "detail": (
-                'Workspace (name: "creditcard") already exists. '
-                'Get the existing object by `Workspace.get(name="creditcard")`.'
+                'Catalog (name: "creditcard") already exists. '
+                'Get the existing object by `Catalog.get(name="creditcard")`.'
             )
         }
 
     def test_update_422(self, test_api_client_persistent):
         """
-        Test workspace update (unprocessable workspace)
+        Test catalog update (unprocessable catalog)
         """
         test_api_client, _ = test_api_client_persistent
-        unknown_workspace_id = ObjectId()
-        response = test_api_client.patch(f"{self.base_route}/{unknown_workspace_id}")
+        unknown_catalog_id = ObjectId()
+        response = test_api_client.patch(f"{self.base_route}/{unknown_catalog_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [

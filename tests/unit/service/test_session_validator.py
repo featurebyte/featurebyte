@@ -8,7 +8,7 @@ import pytest
 from featurebyte import FeatureStore, SourceType
 from featurebyte.app import User
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
+from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.service.session_validator import SessionValidatorService, ValidateStatus
 from featurebyte.utils.credential import ConfigCredentialProvider
 
@@ -30,7 +30,7 @@ def get_session_validator_service_fixture(persistent, credential_provider):
     return SessionValidatorService(
         user=user,
         persistent=persistent,
-        workspace_id=DEFAULT_WORKSPACE_ID,
+        catalog_id=DEFAULT_CATALOG_ID,
         credential_provider=credential_provider,
     )
 

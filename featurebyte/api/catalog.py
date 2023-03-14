@@ -1,12 +1,15 @@
 """
 Catalog module
 """
-from typing import Literal, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, List, Literal, Optional
 
 import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
 
+from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.data import Data
 from featurebyte.api.dimension_data import DimensionData
 from featurebyte.api.entity import Entity
@@ -19,15 +22,133 @@ from featurebyte.api.item_data import ItemData
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_data import SlowlyChangingData
-from featurebyte.api.workspace import Workspace
+from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.config import activate_catalog, get_active_catalog_id
+from featurebyte.logger import logger
+from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.relationship import RelationshipType
+from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
 
 @typechecked
-class Catalog:
+class Catalog(CatalogModel, SavableApiObject):
     """
     Catalog API object contains a bunch of helpers to easily access and view objects within Featurebyte.
     """
+
+    # pylint: disable=too-many-public-methods
+
+    # documentation metadata
+    __fbautodoc__ = FBAutoDoc(section=["Catalog"], proxy_class="featurebyte.Catalog")
+
+    # class variables
+    _route = "/catalog"
+    _update_schema_class = CatalogUpdate
+    _list_schema = CatalogModel
+    _get_schema = CatalogModel
+    _list_fields = ["name", "created_at", "active"]
+
+    def _get_create_payload(self) -> Dict[str, Any]:
+        data = CatalogCreate(**self.json_dict())
+        return data.json_dict()
+
+    @classmethod
+    def activate_catalog(cls, name: str) -> None:
+        """
+        Activate catalog by name
+
+        Parameters
+        ----------
+        name: str
+            Name of catalog to activate
+        """
+        cls.get(name).activate()
+
+    @classmethod
+    def create(
+        cls,
+        name: str,
+    ) -> Catalog:
+        """
+        Create and activate catalog
+
+        Parameters
+        ----------
+        name: str
+            feature store name
+
+        Returns
+        -------
+        Catalog
+
+        Examples
+        --------
+        Create a new catalog
+
+        >>> from featurebyte import Catalog
+        >>> Catalog.create(  # doctest: +SKIP
+        ...     name="My Catalog"
+        ... )
+
+        List catalogs
+        >>> Catalog.list()  # doctest: +SKIP
+                                  id	             name	             created_at	active
+        0	63ef2ca50523266031b728dd	     My Catalog	2023-02-17 07:28:37.368   True
+        1	63eda344d0313fb925f7883a	          default	2023-02-17 07:03:26.267	 False
+        """
+        catalog = Catalog(name=name)
+        catalog.save()
+        catalog.activate()
+        return catalog
+
+    @classmethod
+    def get_active(cls) -> Catalog:
+        """
+        Get active catalog
+
+        Returns
+        -------
+        Catalog
+        """
+        return cls.get_by_id(get_active_catalog_id())
+
+    @classmethod
+    def _post_process_list(cls, item_list: pd.DataFrame) -> pd.DataFrame:
+        item_list = super()._post_process_list(item_list)
+
+        # add column to indicate whether catalog is active
+        item_list["active"] = item_list.id == get_active_catalog_id()
+
+        return item_list
+
+    def activate(self) -> None:
+        """
+        Activate catalog
+        """
+        activate_catalog(self.id)
+        logger.debug(f"Current catalog is now: {self.name}")
+
+    def update_name(self, name: str) -> None:
+        """
+        Change entity name
+
+        Parameters
+        ----------
+        name: str
+            New entity name
+        """
+        self.update(update_payload={"name": name}, allow_update_local=True)
+
+    @property
+    def name_history(self) -> List[Dict[str, Any]]:
+        """
+        List of name history entries
+
+        Returns
+        -------
+        list[dict[str, Any]]
+        """
+        return self._get_audit_history(field_name="name")
 
     @staticmethod
     def list_features(
@@ -301,9 +422,9 @@ class Catalog:
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_data_id=event_data_id)
 
     @staticmethod
-    def list_workspaces(include_id: Optional[bool] = False) -> pd.DataFrame:
+    def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
         """
-        List saved workspaces
+        List saved catalogs
 
         Parameters
         ----------
@@ -313,9 +434,9 @@ class Catalog:
         Returns
         -------
         pd.DataFrame
-            Table of workspaces
+            Table of catalogs
         """
-        return Workspace.list(include_id=include_id)
+        return Catalog.list(include_id=include_id)
 
     @staticmethod
     def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:

@@ -17,7 +17,6 @@ from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
 from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.api.scd_view import SlowlyChangingView
-from featurebyte.api.workspace import Workspace
 from featurebyte.common.utils import get_version
 from featurebyte.config import Configurations
 from featurebyte.core.series import Series
@@ -88,7 +87,6 @@ __all__ = [
     "FeatureListNewVersionMode",
     "FeatureVersionInfo",
     # others
-    "Workspace",
     "ColumnCleaningOperation",
     "DataCleaningOperation",
     "PeriodicTask",

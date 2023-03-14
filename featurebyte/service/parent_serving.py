@@ -29,11 +29,11 @@ class ParentEntityLookupService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
         entity_service: EntityService,
         data_service: DataService,
     ):
-        super().__init__(user, persistent, workspace_id)
+        super().__init__(user, persistent, catalog_id)
         self.entity_service = entity_service
         self.data_service = data_service
 

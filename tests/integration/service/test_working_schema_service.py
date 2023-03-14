@@ -8,7 +8,7 @@ from bson import ObjectId
 from featurebyte import FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV8
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineFeatureSpec
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from featurebyte.service.working_schema import drop_all_objects
@@ -75,7 +75,7 @@ def migration_service_fixture(user, persistent):
     Fixture for DataWarehouseMigrationServiceV8
     """
     service = DataWarehouseMigrationServiceV8(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     service.set_credential_callback(get_credential)
     return service

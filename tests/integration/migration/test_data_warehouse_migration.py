@@ -10,7 +10,7 @@ from bson import ObjectId
 from featurebyte import Feature, FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV6
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.utils.credential import get_credential
 
 
@@ -214,7 +214,7 @@ async def test_data_warehouse_migration_v6(
 
         # Run migration
         service = DataWarehouseMigrationServiceV6(
-            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         service.set_credential_callback(get_credential)
         await service.add_tile_value_types_column()

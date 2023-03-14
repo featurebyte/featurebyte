@@ -1,5 +1,5 @@
 """
-Workspace API payload schema
+Catalog API payload schema
 """
 from __future__ import annotations
 
@@ -14,38 +14,38 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.workspace import WorkspaceModel
+from featurebyte.models.catalog import CatalogModel
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
-class WorkspaceCreate(FeatureByteBaseModel):
+class CatalogCreate(FeatureByteBaseModel):
     """
-    Workspace creation schema
+    Catalog creation schema
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
 
 
-class WorkspaceList(PaginationMixin):
+class CatalogList(PaginationMixin):
     """
-    Paginated list of Workspace
+    Paginated list of Catalog
     """
 
-    data: List[WorkspaceModel]
+    data: List[CatalogModel]
 
 
-class WorkspaceUpdate(FeatureByteBaseModel):
+class CatalogUpdate(FeatureByteBaseModel):
     """
-    Workspace update schema
+    Catalog update schema
     """
 
     name: StrictStr
 
 
-class WorkspaceServiceUpdate(BaseDocumentServiceUpdateSchema):
+class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
-    Workspace service update schema
+    Catalog service update schema
     """
 
     name: Optional[str]

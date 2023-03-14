@@ -19,7 +19,7 @@ def request_features(entity_serving_names: Dict[str, Any]) -> pd.DataFrame:
     """
     response = requests.post(
         url="{{serving_url}}",
-        params={"workspace_id": "{{workspace_id}}"},
+        params={"catalog_id": "{{catalog_id}}"},
         headers={{headers}},
         json={"entity_serving_names": entity_serving_names},
     )

@@ -6,19 +6,19 @@ from http import HTTPStatus
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.relationship_info import RelationshipInfoUpdate
-from tests.unit.routes.base import BaseWorkspaceApiTestSuite
+from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
-class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
+class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
     """
     Test relationship info routes
     """
 
     class_name = "RelationshipInfo"
     base_route = "/relationship_info"
-    payload = BaseWorkspaceApiTestSuite.load_payload(
+    payload = BaseCatalogApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/relationship_info.json"
     )
     create_conflict_payload_expected_detail_pairs = [
@@ -77,7 +77,7 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
-    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
+    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
         """
@@ -92,7 +92,7 @@ class TestRelationshipInfoApi(BaseWorkspaceApiTestSuite):
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 

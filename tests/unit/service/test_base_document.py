@@ -11,7 +11,7 @@ import pytest
 
 from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.base import (
-    DEFAULT_WORKSPACE_ID,
+    DEFAULT_CATALOG_ID,
     FeatureByteBaseDocumentModel,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -41,7 +41,7 @@ class DocumentService(BaseDocumentService):
 @pytest.fixture(name="document_service")
 def document_service_fixture(user, persistent):
     """Fixture for DocumentService"""
-    return DocumentService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return DocumentService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.mark.asyncio
@@ -88,7 +88,7 @@ async def test_check_document_creation_conflict(
     persistent.find_one.return_value = {"_id": "conflict_id_val", "name": "conflict_name_val"}
     with pytest.raises(DocumentConflictError) as exc:
         await DocumentService(
-            user=Mock(), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=Mock(), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )._check_document_unique_constraint(
             query_filter=query_filter,
             conflict_signature=conflict_signature,
@@ -283,15 +283,15 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
-        ({}, {"workspace_id": "workspace_id"}),
-        ({"name": "some_name"}, {"name": "some_name", "workspace_id": "workspace_id"}),
+        ({}, {"catalog_id": "catalog_id"}),
+        ({"name": "some_name"}, {"name": "some_name", "catalog_id": "catalog_id"}),
         (
             {"search": "some_value"},
-            {"$text": {"$search": "some_value"}, "workspace_id": "workspace_id"},
+            {"$text": {"$search": "some_value"}, "catalog_id": "catalog_id"},
         ),
         (
             {"query_filter": {"field": {"$in": ["a", "b"]}}},
-            {"field": {"$in": ["a", "b"]}, "workspace_id": "workspace_id"},
+            {"field": {"$in": ["a", "b"]}, "catalog_id": "catalog_id"},
         ),
         (
             {
@@ -303,7 +303,7 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
                 "name": "some_name",
                 "$text": {"$search": "some_value"},
                 "field": {"$in": ["a", "b"]},
-                "workspace_id": "workspace_id",
+                "catalog_id": "catalog_id",
             },
         ),
     ],
@@ -312,7 +312,7 @@ def test_construct_list_query_filter(kwargs, expected):
     """Test construct_list_query_filter logic"""
     assert (
         BaseDocumentService._construct_list_query_filter(
-            Mock(is_workspace_specific=True, workspace_id="workspace_id"), **kwargs
+            Mock(is_catalog_specific=True, catalog_id="catalog_id"), **kwargs
         )
         == expected
     )

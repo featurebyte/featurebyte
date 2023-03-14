@@ -10,7 +10,7 @@ from bson import json_util
 from bson.objectid import ObjectId
 
 from featurebyte.migration.service.event_data import EventDataMigrationService
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.schema.event_data import EventDataCreate
 
 
@@ -22,7 +22,7 @@ async def test_migration_v1__when_event_data_collection_not_exists(user, persist
 
     # run migration (do nothing)
     event_data_migration_service = EventDataMigrationService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     await event_data_migration_service.change_collection_name_from_event_data_to_table_data()
 
@@ -42,7 +42,7 @@ async def test_migrate_all_records(
     )
 
     event_data_migration_service = EventDataMigrationService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     total_records = 15
     event_data_fixture_path = os.path.join(test_dir, "fixtures/migration/event_data")

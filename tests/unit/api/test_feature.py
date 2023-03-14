@@ -318,10 +318,8 @@ def test_info(saved_feature):
     expected_info = {
         "name": "sum_1d",
         "dtype": "FLOAT",
-        "entities": [
-            {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
-        ],
-        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}],
+        "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}],
         "data_feature_job_setting": {
             "this": [data_feature_job_setting],
             "default": [data_feature_job_setting],
@@ -330,7 +328,7 @@ def test_info(saved_feature):
         "default_version_mode": "AUTO",
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
-        "workspace_name": "default",
+        "catalog_name": "default",
     }
     assert info_dict.items() > expected_info.items(), info_dict
     assert "created_at" in info_dict, info_dict
@@ -481,7 +479,7 @@ def test_get_feature(saved_feature):
         "graph.edges",
         "graph.nodes",
         "dtype",
-        "workspace_id",
+        "catalog_id",
     }
 
     with pytest.raises(RecordRetrievalException) as exc:

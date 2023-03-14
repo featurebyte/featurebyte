@@ -50,7 +50,7 @@ UPDATE = "Update"
 VERSIONING = "Versioning"
 VIEW = "View"
 VIEW_COLUMN = "ViewColumn"
-WORKSPACE = "Workspace"
+CATALOG = "Catalog"
 
 
 def _get_data_layout() -> List[DocLayoutItem]:
@@ -161,9 +161,7 @@ def _get_data_layout() -> List[DocLayoutItem]:
         DocLayoutItem([DATA, INFO, "featurebyte.Data.table_data"], "featurebyte.Data.table_data"),
         DocLayoutItem([DATA, INFO, "featurebyte.Data.type"], "featurebyte.Data.type"),
         DocLayoutItem([DATA, INFO, "featurebyte.Data.updated_at"], "featurebyte.Data.updated_at"),
-        DocLayoutItem(
-            [DATA, INFO, "featurebyte.Data.workspace_id"], "featurebyte.Data.workspace_id"
-        ),
+        DocLayoutItem([DATA, INFO, "featurebyte.Data.catalog_id"], "featurebyte.Data.catalog_id"),
         DocLayoutItem(
             [DATA, INFO, "featurebyte.ItemData.default_feature_job_setting"],
             "featurebyte.ItemData.default_feature_job_setting",
@@ -368,8 +366,8 @@ def _get_feature_layout() -> List[DocLayoutItem]:
             "featurebyte.Feature.tabular_source",
         ),
         DocLayoutItem(
-            [FEATURE, LINEAGE, "featurebyte.Feature.workspace_id"],
-            "featurebyte.Feature.workspace_id",
+            [FEATURE, LINEAGE, "featurebyte.Feature.catalog_id"],
+            "featurebyte.Feature.catalog_id",
         ),
         DocLayoutItem(
             [FEATURE, SERVING, "featurebyte.Feature.get_feature_jobs_status"],
@@ -621,8 +619,8 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
             "featurebyte.FeatureList.updated_at",
         ),
         DocLayoutItem(
-            [FEATURE_LIST, INFO, "featurebyte.FeatureList.workspace_id"],
-            "featurebyte.FeatureList.workspace_id",
+            [FEATURE_LIST, INFO, "featurebyte.FeatureList.catalog_id"],
+            "featurebyte.FeatureList.catalog_id",
         ),
         DocLayoutItem(
             [FEATURE_LIST, LINEAGE, "featurebyte.FeatureList.id"], "featurebyte.FeatureList.id"
@@ -1126,66 +1124,54 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_workspace_layout() -> List[DocLayoutItem]:
+def _get_catalog_layout() -> List[DocLayoutItem]:
     """
-    The layout for the Workspace module.
+    The layout for the Catalog module.
 
     Returns
     -------
     List[DocLayoutItem]
-        The layout for the Workspace module.
+        The layout for the Catalog module.
     """
     return [
-        DocLayoutItem([WORKSPACE], "", "featurebyte.api.workspace.Workspace.md"),
+        DocLayoutItem([CATALOG], "", "featurebyte.api.catalog.Catalog.md"),
         DocLayoutItem(
-            [WORKSPACE, ACTIVATE, "featurebyte.Workspace.activate"],
-            "featurebyte.Workspace.activate",
+            [CATALOG, ACTIVATE, "featurebyte.Catalog.activate"],
+            "featurebyte.Catalog.activate",
         ),
         DocLayoutItem(
-            [WORKSPACE, ACTIVATE, "featurebyte.Workspace.activate_workspace"],
-            "featurebyte.Workspace.activate_workspace",
+            [CATALOG, ACTIVATE, "featurebyte.Catalog.activate_catalog"],
+            "featurebyte.Catalog.activate_catalog",
+        ),
+        DocLayoutItem([CATALOG, CATALOG, "featurebyte.Catalog.get"], "featurebyte.Catalog.get"),
+        DocLayoutItem(
+            [CATALOG, CATALOG, "featurebyte.Catalog.get_active"],
+            "featurebyte.Catalog.get_active",
         ),
         DocLayoutItem(
-            [WORKSPACE, CATALOG, "featurebyte.Workspace.get"], "featurebyte.Workspace.get"
+            [CATALOG, CATALOG, "featurebyte.Catalog.get_by_id"],
+            "featurebyte.Catalog.get_by_id",
         ),
+        DocLayoutItem([CATALOG, CATALOG, "featurebyte.Catalog.list"], "featurebyte.Catalog.list"),
         DocLayoutItem(
-            [WORKSPACE, CATALOG, "featurebyte.Workspace.get_active"],
-            "featurebyte.Workspace.get_active",
+            [CATALOG, CREATE, "featurebyte.Catalog.create"], "featurebyte.Catalog.create"
         ),
+        DocLayoutItem([CATALOG, CREATE, "featurebyte.Catalog.save"], "featurebyte.Catalog.save"),
         DocLayoutItem(
-            [WORKSPACE, CATALOG, "featurebyte.Workspace.get_by_id"],
-            "featurebyte.Workspace.get_by_id",
+            [CATALOG, INFO, "featurebyte.Catalog.created_at"],
+            "featurebyte.Catalog.created_at",
         ),
+        DocLayoutItem([CATALOG, INFO, "featurebyte.Catalog.info"], "featurebyte.Catalog.info"),
+        DocLayoutItem([CATALOG, INFO, "featurebyte.Catalog.name"], "featurebyte.Catalog.name"),
+        DocLayoutItem([CATALOG, INFO, "featurebyte.Catalog.saved"], "featurebyte.Catalog.saved"),
         DocLayoutItem(
-            [WORKSPACE, CATALOG, "featurebyte.Workspace.list"], "featurebyte.Workspace.list"
+            [CATALOG, INFO, "featurebyte.Catalog.updated_at"],
+            "featurebyte.Catalog.updated_at",
         ),
+        DocLayoutItem([CATALOG, LINEAGE, "featurebyte.Catalog.id"], "featurebyte.Catalog.id"),
         DocLayoutItem(
-            [WORKSPACE, CREATE, "featurebyte.Workspace.create"], "featurebyte.Workspace.create"
-        ),
-        DocLayoutItem(
-            [WORKSPACE, CREATE, "featurebyte.Workspace.save"], "featurebyte.Workspace.save"
-        ),
-        DocLayoutItem(
-            [WORKSPACE, INFO, "featurebyte.Workspace.created_at"],
-            "featurebyte.Workspace.created_at",
-        ),
-        DocLayoutItem(
-            [WORKSPACE, INFO, "featurebyte.Workspace.info"], "featurebyte.Workspace.info"
-        ),
-        DocLayoutItem(
-            [WORKSPACE, INFO, "featurebyte.Workspace.name"], "featurebyte.Workspace.name"
-        ),
-        DocLayoutItem(
-            [WORKSPACE, INFO, "featurebyte.Workspace.saved"], "featurebyte.Workspace.saved"
-        ),
-        DocLayoutItem(
-            [WORKSPACE, INFO, "featurebyte.Workspace.updated_at"],
-            "featurebyte.Workspace.updated_at",
-        ),
-        DocLayoutItem([WORKSPACE, LINEAGE, "featurebyte.Workspace.id"], "featurebyte.Workspace.id"),
-        DocLayoutItem(
-            [WORKSPACE, UPDATE, "featurebyte.Workspace.update_name"],
-            "featurebyte.Workspace.update_name",
+            [CATALOG, UPDATE, "featurebyte.Catalog.update_name"],
+            "featurebyte.Catalog.update_name",
         ),
     ]
 
@@ -1211,5 +1197,5 @@ def get_overall_layout() -> List[DocLayoutItem]:
         *_get_relationship_layout(),
         *_get_view_layout(),
         *_get_view_column_layout(),
-        *_get_workspace_layout(),
+        *_get_catalog_layout(),
     ]

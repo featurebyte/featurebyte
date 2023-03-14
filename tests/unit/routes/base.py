@@ -12,7 +12,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.schema.tabular_data import DataCreate
 
@@ -128,7 +128,7 @@ class BaseApiTestSuite:
                 self.list_unprocessable_params_expected_detail_pairs,
             )
 
-    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
+    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """Setup for post route"""
 
     @pytest_asyncio.fixture()
@@ -446,33 +446,33 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         assert [record["previous_values"] for record in response_dict["data"]] == [{}]
 
 
-class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
+class BaseCatalogApiTestSuite(BaseApiTestSuite):
     """
-    BaseWorkspaceApiTestSuite includes some checks for behaviour of objects that belong to workspaces
+    BaseCatalogApiTestSuite includes some checks for behaviour of objects that belong to catalogs
     """
 
-    @pytest.fixture(name="workspace_id")
-    def workspace_id_fixture(self, test_api_client_persistent):
+    @pytest.fixture(name="catalog_id")
+    def catalog_id_fixture(self, test_api_client_persistent):
         """
-        Create workspace
+        Create catalog
         """
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.post("/workspace", json={"name": "Test"})
+        response = test_api_client.post("/catalog", json={"name": "Test"})
         assert response.status_code == HTTPStatus.CREATED
         return ObjectId(response.json()["_id"])
 
     @pytest_asyncio.fixture()
-    async def create_success_response_non_default_workspace(
-        self, test_api_client_persistent, workspace_id
+    async def create_success_response_non_default_catalog(
+        self, test_api_client_persistent, catalog_id
     ):
-        """Create object with non default workspace"""
+        """Create object with non default catalog"""
         test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client, workspace_id=workspace_id)
+        self.setup_creation_route(test_api_client, catalog_id=catalog_id)
         payload = copy.deepcopy(self.payload)
         payload["_id"] = str(ObjectId())
-        payload["workspace_id"] = str(workspace_id)
+        payload["catalog_id"] = str(catalog_id)
         response = test_api_client.post(
-            f"{self.base_route}", params={"workspace_id": workspace_id}, json=payload
+            f"{self.base_route}", params={"catalog_id": catalog_id}, json=payload
         )
         assert response.status_code == HTTPStatus.CREATED, response.json()
         return response
@@ -480,65 +480,65 @@ class BaseWorkspaceApiTestSuite(BaseApiTestSuite):
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        # test default workspace id is captured in document
-        assert create_success_response.json()["workspace_id"] == str(DEFAULT_WORKSPACE_ID)
+        # test default catalog id is captured in document
+        assert create_success_response.json()["catalog_id"] == str(DEFAULT_CATALOG_ID)
 
-    def test_create_201_non_default_workspace(
+    def test_create_201_non_default_catalog(
         self,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
-        """Test creation (success) in non default workspace"""
-        response = create_success_response_non_default_workspace
+        """Test creation (success) in non default catalog"""
+        response = create_success_response_non_default_catalog
         result = response.json()
 
-        # check workspace id is updated correctly
-        assert result["workspace_id"] == str(workspace_id)
+        # check catalog id is updated correctly
+        assert result["catalog_id"] == str(catalog_id)
 
-    def test_list_200_non_default_workspace(
+    def test_list_200_non_default_catalog(
         self,
         test_api_client_persistent,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
-        """Test list in non default workspace"""
+        """Test list in non default catalog"""
         test_api_client, _ = test_api_client_persistent
-        custom_workspace_document_id = create_success_response_non_default_workspace.json()["_id"]
+        custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
 
-        # expect to see document in the workspace
-        response = test_api_client.get(f"{self.base_route}", params={"workspace_id": workspace_id})
+        # expect to see document in the catalog
+        response = test_api_client.get(f"{self.base_route}", params={"catalog_id": catalog_id})
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 1
-        assert results["data"][0]["_id"] == custom_workspace_document_id
+        assert results["data"][0]["_id"] == custom_catalog_document_id
 
-        # expect not to see document in the default workspace
+        # expect not to see document in the default catalog
         response = test_api_client.get(f"{self.base_route}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 0
 
-    def test_get_200_non_default_workspace(
+    def test_get_200_non_default_catalog(
         self,
         test_api_client_persistent,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
-        custom_workspace_document_id = create_success_response_non_default_workspace.json()["_id"]
+        custom_catalog_document_id = create_success_response_non_default_catalog.json()["_id"]
 
-        # expect to see document in the workspace
+        # expect to see document in the catalog
         response = test_api_client.get(
-            f"{self.base_route}/{custom_workspace_document_id}",
-            params={"workspace_id": workspace_id},
+            f"{self.base_route}/{custom_catalog_document_id}",
+            params={"catalog_id": catalog_id},
         )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["_id"] == custom_workspace_document_id
+        assert results["_id"] == custom_catalog_document_id
 
-        # expect not to see document in the default workspace
-        response = test_api_client.get(f"{self.base_route}/{custom_workspace_document_id}")
+        # expect not to see document in the default catalog
+        response = test_api_client.get(f"{self.base_route}/{custom_catalog_document_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -686,16 +686,14 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         }
 
 
-class BaseWorkspaceRelationshipApiTestSuite(
-    BaseRelationshipApiTestSuite, BaseWorkspaceApiTestSuite
-):
+class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCatalogApiTestSuite):
     """
-    BaseWorkspaceRelationshipApiTestSuite contains tests related to adding & removing parent object
-    for workspace-specific objects
+    BaseCatalogRelationshipApiTestSuite contains tests related to adding & removing parent object
+    for catalog-specific objects
     """
 
 
-class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
+class BaseDataApiTestSuite(BaseCatalogApiTestSuite):
     """
     BaseDataApiTestSuite contains tests related to data service
     """
@@ -734,7 +732,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
                 ),
             )
 
-    def setup_creation_route(self, api_client, workspace_id=DEFAULT_WORKSPACE_ID):
+    def setup_creation_route(self, api_client, catalog_id=DEFAULT_CATALOG_ID):
         """
         Setup for post route
         """
@@ -745,7 +743,7 @@ class BaseDataApiTestSuite(BaseWorkspaceApiTestSuite):
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(
-                f"/{api_object}", params={"workspace_id": workspace_id}, json=payload
+                f"/{api_object}", params={"catalog_id": catalog_id}, json=payload
             )
             assert response.status_code == HTTPStatus.CREATED
 

@@ -12,7 +12,7 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
-    FeatureByteWorkspaceBaseDocumentModel,
+    FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -113,7 +113,7 @@ class ConstructGraphMixin:
         return graph, inserted_input_node
 
 
-class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteWorkspaceBaseDocumentModel, ABC):
+class DataModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocumentModel, ABC):
     """
     DataModel schema
 

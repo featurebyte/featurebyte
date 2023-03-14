@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
@@ -27,7 +28,6 @@ from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
-from featurebyte.service.workspace import WorkspaceService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 DocumentServiceT = TypeVar(
@@ -46,7 +46,7 @@ DocumentServiceT = TypeVar(
     FeatureListService,
     FeatureListNamespaceService,
     FeatureJobSettingAnalysisService,
-    WorkspaceService,
+    CatalogService,
     RelationshipInfoService,
     PeriodicTaskService,
 )

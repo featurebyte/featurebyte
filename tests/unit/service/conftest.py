@@ -15,7 +15,7 @@ import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType, SourceType
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.entity import ParentEntity
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.schema.context import ContextCreate
@@ -70,83 +70,81 @@ def get_credential_fixture(config):
 @pytest.fixture(name="feature_store_service")
 def feature_store_service_fixture(user, persistent):
     """FeatureStore service"""
-    return FeatureStoreService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return FeatureStoreService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="entity_service")
 def entity_service_fixture(user, persistent):
     """Entity service"""
-    return EntityService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return EntityService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="semantic_service")
 def semantic_service_fixture(user, persistent):
     """Semantic service"""
-    return SemanticService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return SemanticService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="context_service")
 def context_service_fixture(user, persistent):
     """Context service"""
-    return ContextService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return ContextService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="event_data_service")
 def event_data_service_fixture(user, persistent):
     """EventData service"""
-    return EventDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return EventDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="item_data_service")
 def item_data_service_fixture(user, persistent):
     """ItemData service"""
-    return ItemDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return ItemDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="dimension_data_service")
 def dimension_data_service_fixture(user, persistent):
     """DimensionData service"""
-    return DimensionDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return DimensionDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="scd_data_service")
 def scd_data_service_fixture(user, persistent):
     """SCDData service"""
-    return SCDDataService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return SCDDataService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_namespace_service")
 def feature_namespace_service_fixture(user, persistent):
     """FeatureNamespaceService fixture"""
-    return FeatureNamespaceService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
-    )
+    return FeatureNamespaceService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_service")
 def feature_service_fixture(user, persistent):
     """FeatureService fixture"""
-    return FeatureService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return FeatureService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_list_namespace_service")
 def feature_list_namespace_service_fixture(user, persistent):
     """FeatureListNamespaceService fixture"""
     return FeatureListNamespaceService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
 
 
 @pytest.fixture(name="feature_list_service")
 def feature_list_service_fixture(user, persistent):
     """FeatureListService fixture"""
-    return FeatureListService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return FeatureListService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="data_update_service")
 def data_update_service_fixture(user, persistent):
     """DataUpdateService fixture"""
-    return DataUpdateService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return DataUpdateService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="feature_readiness_service")
@@ -209,7 +207,7 @@ def online_serving_service_fixture(app_container):
 @pytest.fixture(name="version_service")
 def version_service_fixture(user, persistent):
     """VersionService fixture"""
-    return VersionService(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    return VersionService(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
 
 
 @pytest.fixture(name="deploy_service")
@@ -473,7 +471,7 @@ async def insert_feature_into_persistent(test_dir, user, persistent, readiness, 
         payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
         payload["_id"] = ObjectId()
         payload["readiness"] = readiness
-        payload["workspace_id"] = DEFAULT_WORKSPACE_ID
+        payload["catalog_id"] = DEFAULT_CATALOG_ID
         if name:
             payload["name"] = name
         feature_id = await persistent.insert_one(

@@ -117,14 +117,14 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
     async def create_document(self, data: DocumentCreate) -> Document:
         # retrieve feature store to check the feature_store_id is valid
         _ = await FeatureStoreService(
-            user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+            user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
         ).get_document(document_id=data.tabular_source.feature_store_id)
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()
         payload_dict = {**data.json_dict(), "_id": data_doc_id}
-        if self.is_workspace_specific:
-            payload_dict = {**payload_dict, "workspace_id": self.workspace_id}
+        if self.is_catalog_specific:
+            payload_dict = {**payload_dict, "catalog_id": self.catalog_id}
 
         # create document for insertion
         document = self.document_class(

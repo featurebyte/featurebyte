@@ -1,5 +1,5 @@
 """
-This module contains Workspace related models
+This module contains Catalog related models
 """
 from __future__ import annotations
 
@@ -17,32 +17,32 @@ from featurebyte.models.base import (
 )
 
 
-class WorkspaceNameHistoryEntry(FeatureByteBaseModel):
+class CatalogNameHistoryEntry(FeatureByteBaseModel):
     """
     Model for an entry in name history
 
     created_at: datetime
         Datetime when the history entry is created
     name: StrictStr
-        Workspace name that just becomes history (no longer used) at the time of the history entry creation
+        Catalog name that just becomes history (no longer used) at the time of the history entry creation
     """
 
     created_at: datetime
     name: StrictStr
 
 
-class WorkspaceModel(FeatureByteBaseDocumentModel):
+class CatalogModel(FeatureByteBaseDocumentModel):
     """
-    Model for Workspace
+    Model for Catalog
 
     id: PydanticObjectId
-        Workspace id of the object
+        Catalog id of the object
     name: str
-        Name of the Workspace
+        Name of the catalog
     created_at: datetime
-        Datetime when the Workspace object was first saved or published
+        Datetime when the Catalog object was first saved or published
     updated_at: datetime
-        Datetime when the Workspace object was last updated
+        Datetime when the Catalog object was last updated
     """
 
     class Settings:
@@ -50,7 +50,7 @@ class WorkspaceModel(FeatureByteBaseDocumentModel):
         MongoDB settings
         """
 
-        collection_name: str = "workspace"
+        collection_name: str = "catalog"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),

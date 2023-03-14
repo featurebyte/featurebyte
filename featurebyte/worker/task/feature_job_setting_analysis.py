@@ -45,13 +45,13 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
         # retrieve event data
         event_data_service = EventDataService(
-            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
+            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
         event_data = await event_data_service.get_document(document_id=payload.event_data_id)
 
         # retrieve feature store
         feature_store_service = FeatureStoreService(
-            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
+            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
         feature_store = await feature_store_service.get_document(
             document_id=event_data.tabular_source.feature_store_id
@@ -96,7 +96,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
 
         self.update_progress(percent=95, message="Saving Analysis")
         feature_job_settings_analysis_service = FeatureJobSettingAnalysisService(
-            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
+            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
         analysis_doc = await feature_job_settings_analysis_service.create_document(
             data=analysis_doc
@@ -133,7 +133,7 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
 
         # retrieve analysis doc from persistent
         feature_job_settings_analysis_service = FeatureJobSettingAnalysisService(
-            user=self.user, persistent=persistent, workspace_id=self.payload.workspace_id
+            user=self.user, persistent=persistent, catalog_id=self.payload.catalog_id
         )
         analysis_doc = await feature_job_settings_analysis_service.get_document(
             document_id=payload.feature_job_setting_analysis_id

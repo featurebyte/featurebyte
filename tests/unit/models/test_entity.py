@@ -30,7 +30,7 @@ def test_entity_model():
         "parents",
         "tabular_data_ids",
         "primary_tabular_data_ids",
-        "workspace_id",
+        "catalog_id",
     }
     assert isinstance(entity_dict["_id"], ObjectId)
     assert isinstance(entity_dict["user_id"], ObjectId)

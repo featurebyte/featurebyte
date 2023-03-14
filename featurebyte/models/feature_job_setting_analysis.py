@@ -29,7 +29,7 @@ from pydantic import BaseModel, validator
 
 from featurebyte.models.base import (
     FeatureByteBaseModel,
-    FeatureByteWorkspaceBaseDocumentModel,
+    FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -45,7 +45,7 @@ class AnalysisResult(FeatureByteBaseModel):
     recommended_feature_job_setting: FeatureJobSetting
 
 
-class FeatureJobSettingAnalysisModel(FeatureByteWorkspaceBaseDocumentModel):
+class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     """
     FeatureJobSettingAnalysis persistent model
     """
