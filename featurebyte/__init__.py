@@ -1,4 +1,5 @@
 """Python Library for FeatureOps"""
+from featurebyte.api.catalog import Catalog
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.data import Data
 from featurebyte.api.dimension_data import DimensionData
@@ -45,6 +46,7 @@ version: str = get_version()
 
 
 __all__ = [
+    "Catalog",
     "ChangeView",
     "Credential",
     "Configurations",
