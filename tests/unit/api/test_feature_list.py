@@ -553,6 +553,7 @@ def test_get_feature_list(saved_feature_list):
     audit_history = saved_feature_list.audit()
     expected_audit_history = pd.DataFrame(
         [
+            ("catalog_id", str(DEFAULT_CATALOG_ID)),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
             ("feature_clusters", audit_history.new_value.iloc[2]),
@@ -565,7 +566,6 @@ def test_get_feature_list(saved_feature_list):
             ("user_id", None),
             ("version.name", saved_feature_list.version.name),
             ("version.suffix", None),
-            ("catalog_id", str(DEFAULT_CATALOG_ID)),
         ],
         columns=["field_name", "new_value"],
     )
