@@ -245,7 +245,7 @@ class Configurations:
                 "# featurebyte configuration\n\n"
                 "profile:\n"
                 "  - name: local\n"
-                "    api_url: http://localhost:8088\n\n"
+                "    api_url: http://127.0.0.1:8088\n\n"
                 "logging:\n"
                 "  level: INFO\n"
             )
