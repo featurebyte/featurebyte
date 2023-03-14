@@ -556,7 +556,7 @@ def test_get_feature_list(saved_feature_list):
             ("catalog_id", str(DEFAULT_CATALOG_ID)),
             ("created_at", saved_feature_list.created_at.isoformat()),
             ("deployed", False),
-            ("feature_clusters", audit_history.new_value.iloc[2]),
+            ("feature_clusters", audit_history.new_value.iloc[3]),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace_id)),
             ("name", "my_feature_list"),
