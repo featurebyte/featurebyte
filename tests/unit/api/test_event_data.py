@@ -941,7 +941,7 @@ def test_list_feature_job_setting_analysis(mock_list, saved_event_data):
     """
     Test list_feature_job_setting_analysis
     """
-    output = saved_event_data.list_feature_job_setting_analyses()
+    output = saved_event_data.list_feature_job_setting_analysis()
     mock_list.assert_called_once_with(event_data_id=saved_event_data.id)
     assert output == mock_list.return_value
 
