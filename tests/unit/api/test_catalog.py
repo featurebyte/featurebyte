@@ -1,6 +1,8 @@
 """
 Unit test for Catalog class
 """
+from __future__ import annotations
+
 from datetime import datetime
 from unittest import mock
 

@@ -153,6 +153,7 @@ def test_entity_update_name(entity):
             ("UPDATE", 'update: "customer"', "name", "customer", "Customer"),
             ("UPDATE", 'update: "customer"', "updated_at", None, entity.updated_at.isoformat()),
             ("INSERT", 'insert: "customer"', "ancestor_ids", np.nan, []),
+            ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(DEFAULT_CATALOG_ID)),
             ("INSERT", 'insert: "customer"', "created_at", np.nan, entity.created_at.isoformat()),
             ("INSERT", 'insert: "customer"', "name", np.nan, "customer"),
             ("INSERT", 'insert: "customer"', "parents", np.nan, []),
@@ -161,7 +162,6 @@ def test_entity_update_name(entity):
             ("INSERT", 'insert: "customer"', "tabular_data_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "customer"', "user_id", np.nan, None),
-            ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(DEFAULT_CATALOG_ID)),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
