@@ -36,6 +36,8 @@ class Catalog(CatalogModel, SavableApiObject):
     Catalog API object contains a bunch of helpers to easily access and view objects within Featurebyte.
     """
 
+    # pylint: disable=too-many-public-methods
+
     # documentation metadata
     __fbautodoc__ = FBAutoDoc(section=["Catalog"], proxy_class="featurebyte.Catalog")
 
