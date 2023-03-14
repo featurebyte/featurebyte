@@ -7,7 +7,6 @@ from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.item_view import ItemView
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -88,7 +87,7 @@ def test_item_view_sample(item_data):
     """
     Test sample for ItemView
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     sample_df = item_view.sample(size=10, seed=1234)
     assert sample_df.columns.tolist() == [
         "ËVENT_TIMESTAMP",
@@ -110,7 +109,7 @@ def test_item_view_sample_with_date_range(item_data):
     """
     Test sample for ItemView with date range
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     sample_params = {
         "size": 15,
         "seed": 1234,

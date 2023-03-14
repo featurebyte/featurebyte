@@ -1,5 +1,4 @@
 """Unit tests for SDK code generation"""
-from featurebyte.api.item_view import ItemView
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc
 from tests.util.helper import check_sdk_code_generation
@@ -128,7 +127,7 @@ def test_skd_code_generation__complex_feature(
     saved_item_data.event_id_col.as_entity(transaction_entity.name)
 
     event_view = saved_event_data.get_view()
-    item_view = ItemView.from_item_data(item_data=saved_item_data, event_suffix="_event_view")
+    item_view = saved_item_data.get_view(event_suffix="_event_view")
 
     # construct an item view feature referencing an event view column and join back to event view
     item_view.join_event_data_attributes(["col_float"])

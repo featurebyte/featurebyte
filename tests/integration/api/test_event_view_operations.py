@@ -14,7 +14,6 @@ from featurebyte import (
     EventData,
     FeatureJobSetting,
     FeatureList,
-    ItemView,
     SlowlyChangingView,
     SourceType,
     to_timedelta,
@@ -973,7 +972,7 @@ def get_non_time_based_feature_fixture(item_data):
 
     This is a non-time-based feature as it is built from ItemData.
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     return item_view.groupby("order_id").aggregate(
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",

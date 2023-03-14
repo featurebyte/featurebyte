@@ -306,9 +306,10 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="item_view"
         )
-        expression = ClassEnum.ITEM_VIEW(
-            _method_name="from_item_data",
-            item_data=input_var_name_expressions[0],
+        assert len(input_var_name_expressions) == 1
+        data_var_name = input_var_name_expressions[0]
+        expression = get_object_class_from_function_call(
+            callable_name=f"{data_var_name}.get_view",
             event_suffix=self.metadata.event_suffix,
             view_mode=ViewMode.MANUAL,
             drop_column_names=self.metadata.drop_column_names,

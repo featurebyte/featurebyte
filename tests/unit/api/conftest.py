@@ -254,7 +254,7 @@ def snowflake_item_view_fixture(snowflake_item_data):
     """
     ItemView fixture
     """
-    item_view = ItemView.from_item_data(snowflake_item_data, event_suffix="_event_table")
+    item_view = snowflake_item_data.get_view(event_suffix="_event_table")
     yield item_view
 
 

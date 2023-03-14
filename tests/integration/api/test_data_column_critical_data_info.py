@@ -5,7 +5,6 @@ from featurebyte import (
     AggFunc,
     DisguisedValueImputation,
     FeatureList,
-    ItemView,
     MissingValueImputation,
     StringValueImputation,
     UnexpectedValueImputation,
@@ -135,7 +134,7 @@ def test_item_data_update_critical_data_info(item_data):
     _ = item_data.preview()
 
     # check feature & preview
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     window_feature = item_view.groupby("ÜSER ID", category="item_type").aggregate_over(
         method="count",
         windows=["12h"],

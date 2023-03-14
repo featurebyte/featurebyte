@@ -5,7 +5,6 @@ from pandas.testing import assert_series_equal
 
 from featurebyte import AggFunc, FeatureList
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.item_view import ItemView
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -13,7 +12,7 @@ def test_expected_rows_and_columns(item_data, expected_joined_event_item_datafra
     """
     Test ItemView rows and columns are correct
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     df_preview = item_view.preview(limit=50)
     expected_columns = [
         "ËVENT_TIMESTAMP",
@@ -44,7 +43,7 @@ def item_aggregate_with_category_features(item_data):
     """
     Fixture for a FeatureList with features derived from item aggregation per category
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     feature = item_view.groupby("order_id", category="item_type").aggregate(
         method=AggFunc.COUNT, feature_name="my_item_feature"
     )
@@ -97,7 +96,7 @@ def test_item_view_ops(item_data, expected_joined_event_item_dataframe):
     """
     Test ItemView operations
     """
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
 
     # Add a new column
     item_view["item_type_upper"] = item_view["item_type"].str.upper()
@@ -179,7 +178,7 @@ def test_item_view_joined_with_dimension_view(
     Test joining an item view with a dimension view.
     """
     # create item view
-    item_view = ItemView.from_item_data(item_data)
+    item_view = item_data.get_view()
     item_columns = [
         "order_id",
         "item_id",

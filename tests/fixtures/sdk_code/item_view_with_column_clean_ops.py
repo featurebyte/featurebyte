@@ -2,15 +2,13 @@
 from bson import ObjectId
 from featurebyte import ColumnCleaningOperation
 from featurebyte import ItemData
-from featurebyte import ItemView
 from featurebyte import MissingValueImputation
 from featurebyte import StringValueImputation
 from featurebyte import UnexpectedValueImputation
 from featurebyte import ValueBeyondEndpointImputation
 
 item_data = ItemData.get_by_id(ObjectId("{data_id}"))
-item_view = ItemView.from_item_data(
-    item_data=item_data,
+item_view = item_data.get_view(
     event_suffix="_event_data",
     view_mode="manual",
     drop_column_names=[],
