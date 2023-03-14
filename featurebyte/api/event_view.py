@@ -13,7 +13,7 @@ from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
-from featurebyte.common.typing import runtime_assert_type
+from featurebyte.common.typing import validate_type_is_feature
 from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
@@ -333,9 +333,7 @@ class EventView(View, GroupByMixin):
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
-        from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
-
-        runtime_assert_type(feature, Feature)
+        validate_type_is_feature(feature, "feature")
 
         # Validation
         self._validate_feature_addition(new_column_name, feature, entity_column)

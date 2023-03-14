@@ -73,7 +73,7 @@ def get_or_default(value: Optional[Any], default_value: Any) -> Any:
     return default_value
 
 
-def runtime_assert_type(obj: Any, expected_type: Type[Any]) -> None:
+def validate_type_is(obj: Any, obj_name: str, expected_type: Type[Any]) -> None:
     """
     Check that obj is of type expected_type. If not, raise a TypeError.
 
@@ -81,6 +81,8 @@ def runtime_assert_type(obj: Any, expected_type: Type[Any]) -> None:
     ----------
     obj: Any
         Object to check
+    obj_name: str
+        Name of the object to check
     expected_type: Type[Any]
         Expected type of obj
 
@@ -90,5 +92,21 @@ def runtime_assert_type(obj: Any, expected_type: Type[Any]) -> None:
         If obj is not of type expected_type
     """
     if not isinstance(obj, expected_type):
-        msg = f'type of argument "event_data" must be "{expected_type.__name__}; got {type(obj).__name__} instead'
+        msg = f'type of argument "{obj_name}" must be {expected_type.__name__}; got {type(obj).__name__} instead'
         raise TypeError(msg)
+
+
+def validate_type_is_feature(obj: Any, obj_name: str) -> None:
+    """
+    Check that obj is of type expected_type. If not, raise a TypeError.
+
+    Parameters
+    ----------
+    obj: Any
+        Object to check
+    obj_name: str
+        Name of the object to check
+    """
+    from featurebyte.api.feature import Feature  # pylint: disable=import-outside-toplevel
+
+    validate_type_is(obj, obj_name, Feature)

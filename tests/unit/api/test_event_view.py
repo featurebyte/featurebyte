@@ -679,6 +679,19 @@ def test_add_feature(
     )
 
 
+def test_add_feature__wrong_type(snowflake_event_view):
+    """
+    Test add feature with invalid type
+    """
+    with pytest.raises(TypeError) as exc_info:
+        col = snowflake_event_view["col_int"]
+        snowflake_event_view.add_feature("new_col", col, "cust_id")
+    assert (
+        str(exc_info.value)
+        == 'type of argument "feature" must be Feature; got EventViewColumn instead'
+    )
+
+
 def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     snowflake_event_data_with_entity, feature_group_feature_job_setting
 ):
