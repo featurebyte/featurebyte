@@ -17,7 +17,7 @@ from featurebyte.enum import AggFunc
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
-    GroupbyNode,
+    GroupByNode,
     add_pruning_sensitive_operation,
 )
 
