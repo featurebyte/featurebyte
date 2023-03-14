@@ -4,6 +4,7 @@ Test production ready validator
 import textwrap
 
 import pytest
+from bson import ObjectId
 
 from featurebyte import DimensionView, EventView, Feature, FeatureJobSetting, MissingValueImputation
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
@@ -138,7 +139,9 @@ async def test_assert_no_other_production_ready_feature__does_not_exist(producti
 
     sum_30m is the name of the production_ready_feature used in the next test.
     """
-    await production_ready_validator._assert_no_other_production_ready_feature("sum_30m")
+    await production_ready_validator._assert_no_other_production_ready_feature(
+        ObjectId(), "sum_30m"
+    )
 
 
 @pytest.mark.asyncio
@@ -151,7 +154,22 @@ async def test_assert_no_other_production_ready_feature__exists(
     """
     with pytest.raises(ValueError) as exc:
         await production_ready_validator._assert_no_other_production_ready_feature(
-            production_ready_feature.name
+            ObjectId(), production_ready_feature.name
+        )
+    assert "Found another feature version that is already" in str(exc)
+
+
+@pytest.mark.asyncio
+async def test_assert_no_other_production_ready_feature__no_error_if_promoted_feature_is_currently_prod_ready(
+    production_ready_validator, production_ready_feature
+):
+    """
+    Test that assert throws an error if there are other production ready features with the same name.
+
+    """
+    with pytest.raises(ValueError) as exc:
+        await production_ready_validator._assert_no_other_production_ready_feature(
+            production_ready_feature.id, production_ready_feature.name
         )
     assert "Found another feature version that is already" in str(exc)
 

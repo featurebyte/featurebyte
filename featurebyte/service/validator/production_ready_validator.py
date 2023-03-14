@@ -52,7 +52,9 @@ class ProductionReadyValidator:
         ignore_guardrails: bool
             parameter to determine whether to ignore guardrails
         """
-        await self._assert_no_other_production_ready_feature(promoted_feature_name)
+        await self._assert_no_other_production_ready_feature(
+            promoted_feature_id, promoted_feature_name
+        )
         # We will skip these additional checks if the user explicit states that they want to ignore these
         # guardrails.
         if not ignore_guardrails:
@@ -112,12 +114,16 @@ class ProductionReadyValidator:
             "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
         )
 
-    async def _assert_no_other_production_ready_feature(self, feature_name: str) -> None:
+    async def _assert_no_other_production_ready_feature(
+        self, promoted_feature_id: ObjectId, feature_name: str
+    ) -> None:
         """
         Check to see if there are any other production ready features.
 
         Parameters
         ----------
+        promoted_feature_id: ObjectId
+            feature id of the feature being promoted to PRODUCTION_READY
         feature_name: str
             the name of the feature we are checking
 
@@ -132,11 +138,12 @@ class ProductionReadyValidator:
         for feature in results["data"]:
             if feature["readiness"] == FeatureReadiness.PRODUCTION_READY:
                 feature_id = feature["_id"]
-                raise ValueError(
-                    "Found another feature version that is already PRODUCTION_READY. Please "
-                    f"deprecate the feature {feature_name} with ID {feature_id} first before promoting the promoted "
-                    "version as there can only be one feature version that is production ready at any point in time."
-                )
+                if feature_id != promoted_feature_id:
+                    raise ValueError(
+                        "Found another feature version that is already PRODUCTION_READY. Please deprecate the feature "
+                        f"{feature_name} with ID {feature_id} first before promoting the promoted version as there can "
+                        "only be one feature version that is production ready at any point in time."
+                    )
 
     @staticmethod
     def _get_feature_job_setting_from_groupby_node(node: Node) -> FeatureJobSetting:
