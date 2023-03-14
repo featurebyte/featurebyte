@@ -7,7 +7,6 @@ import pytest
 
 from featurebyte.api.dimension_view import DimensionView
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.enum import DBVarType
 from featurebyte.exception import JoinViewMismatchError, RepeatedColumnNamesError
 from tests.unit.api.base_view_test import BaseViewTestSuite, ViewType
@@ -271,7 +270,7 @@ def test_as_feature_same_column_name(
     )
 
     snowflake_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = SlowlyChangingView.from_slowly_changing_data(snowflake_scd_data)
+    scd_view = snowflake_scd_data.get_view()
     feature_b = scd_view["col_float"].as_feature("FloatFeatureSCDView", offset="7d")
 
     new_feature = feature_b == feature_a

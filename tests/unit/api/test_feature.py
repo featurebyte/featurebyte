@@ -14,10 +14,8 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte import EventData, MissingValueImputation
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_list import FeatureGroup
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
@@ -967,7 +965,7 @@ def test_get_feature_jobs_status_feature_without_tile(
     """
     mock_execute_query.return_value = feature_job_logs[:0]
     saved_scd_data["col_text"].as_entity(cust_id_entity.name)
-    scd_view = SlowlyChangingView.from_slowly_changing_data(saved_scd_data)
+    scd_view = saved_scd_data.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature.save()
     job_status_result = feature.get_feature_jobs_status()

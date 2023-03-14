@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.api.scd_view import SlowlyChangingView
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
@@ -411,7 +410,7 @@ def test_aggregate_asat(
         (None, "count", "asat_count", lambda x: len(x)),
     ]
 
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     entity_column_name = "User Status"
     effective_timestamp_column = "Effective Timestamp"
 

@@ -21,11 +21,12 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, SCDTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ChangeViewMetadata
+from featurebyte.query_graph.node.nested import ChangeViewMetadata, ViewMetadata
 from featurebyte.schema.scd_data import SCDDataCreate, SCDDataUpdate
 
 if TYPE_CHECKING:
     from featurebyte.api.change_view import ChangeView
+    from featurebyte.api.scd_view import SlowlyChangingView
 
 
 class SlowlyChangingData(DataApiObject):
@@ -83,6 +84,85 @@ class SlowlyChangingData(DataApiObject):
             ],
         )
     )
+
+    def get_view(
+        self,
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
+        drop_column_names: Optional[List[str]] = None,
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+    ) -> SlowlyChangingView:
+        """
+        Construct an SlowlyChangingView object
+
+        Parameters
+        ----------
+        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
+            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
+            from the data and the record creation date column will be dropped
+        drop_column_names: Optional[List[str]]
+            List of column names to drop (manual mode only)
+        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
+            Column cleaning operations to apply (manual mode only)
+
+        Returns
+        -------
+        SlowlyChangingView
+            constructed SlowlyChangingView object
+        """
+        from featurebyte.api.scd_view import (
+            SlowlyChangingView,  # pylint: disable=import-outside-toplevel
+        )
+
+        SlowlyChangingView._validate_view_mode_params(
+            view_mode=view_mode,
+            drop_column_names=drop_column_names,
+            column_cleaning_operations=column_cleaning_operations,
+        )
+
+        # The input of view graph node is the data node. The final graph looks like this:
+        #    +-----------+     +--------------------------+
+        #    | InputNode + --> | GraphNode(type:scd_view) +
+        #    +-----------+     +--------------------------+
+        drop_column_names = drop_column_names or []
+        if view_mode == ViewMode.AUTO and self.record_creation_date_column:
+            drop_column_names.append(self.record_creation_date_column)
+
+        data_node = self.frame.node  # pylint: disable=duplicate-code
+        assert isinstance(data_node, InputNode)
+        scd_table_data = cast(SCDTableData, self.table_data)
+        column_cleaning_operations = column_cleaning_operations or []
+        (
+            scd_table_data,
+            column_cleaning_operations,
+        ) = SlowlyChangingView._prepare_table_data_and_column_cleaning_operations(
+            table_data=scd_table_data,
+            column_cleaning_operations=column_cleaning_operations,
+            view_mode=view_mode,
+        )
+
+        view_graph_node, columns_info = scd_table_data.construct_scd_view_graph_node(
+            scd_data_node=data_node,
+            drop_column_names=drop_column_names,
+            metadata=ViewMetadata(
+                view_mode=view_mode,
+                drop_column_names=drop_column_names,
+                column_cleaning_operations=column_cleaning_operations,
+                data_id=data_node.parameters.id,
+            ),
+        )
+        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
+        return SlowlyChangingView(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            columns_info=columns_info,
+            node_name=inserted_graph_node.name,
+            tabular_data_ids=[scd_table_data.id],
+            natural_key_column=self.natural_key_column,
+            surrogate_key_column=self.surrogate_key_column,
+            effective_timestamp_column=self.effective_timestamp_column,
+            end_timestamp_column=self.end_timestamp_column,
+            current_flag_column=self.current_flag_column,
+        )
 
     def get_change_view(
         self,

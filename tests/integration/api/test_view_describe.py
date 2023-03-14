@@ -5,7 +5,6 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.scd_view import SlowlyChangingView
 
 
 def _to_utc_no_offset(date):
@@ -195,7 +194,7 @@ def test_scd_view_describe(scd_data):
     """
     Test sample for DimensionView
     """
-    scd_view = SlowlyChangingView.from_slowly_changing_data(scd_data)
+    scd_view = scd_data.get_view()
     describe_df = scd_view.describe()
     assert describe_df.columns.tolist() == [
         "Effective Timestamp",
