@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from featurebyte.api.entity import Entity
-from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.scd_data import SCDDataModel
@@ -172,7 +172,7 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
     """
     Test SCDData creation using tabular source
     """
-    scd_data = SlowlyChangingData.from_tabular_source(
+    scd_data = SCDTable.from_tabular_source(
         tabular_source=snowflake_database_table_scd_data,
         name="sf_scd_data",
         natural_key_column="col_text",
@@ -199,7 +199,7 @@ def test_from_tabular_source(snowflake_database_table_scd_data, scd_data_dict):
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        SlowlyChangingData.from_tabular_source(
+        SCDTable.from_tabular_source(
             tabular_source=snowflake_database_table_scd_data,
             name=123,
             natural_key_column="col_text",
@@ -218,7 +218,7 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_dat
     Test SCDData creation failure due to duplicated dimension data name
     """
     with pytest.raises(DuplicatedRecordException) as exc:
-        SlowlyChangingData.from_tabular_source(
+        SCDTable.from_tabular_source(
             tabular_source=snowflake_database_table_scd_data,
             name="sf_scd_data",
             natural_key_column="col_text",
@@ -228,9 +228,7 @@ def test_from_tabular_source__duplicated_record(snowflake_database_table_scd_dat
             current_flag_column="is_active",
             record_creation_date_column="created_at",
         )
-    assert 'SlowlyChangingData (scd_data.name: "sf_scd_data") exists in saved record.' in str(
-        exc.value
-    )
+    assert 'SCDTable (scd_data.name: "sf_scd_data") exists in saved record.' in str(exc.value)
 
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_data):
@@ -238,8 +236,8 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table_scd_d
     Test SCDData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.base_data.Configurations"):
-            SlowlyChangingData.from_tabular_source(
+        with patch("featurebyte.api.base_table.Configurations"):
+            SCDTable.from_tabular_source(
                 tabular_source=snowflake_database_table_scd_data,
                 name="sf_scd_data",
                 natural_key_column="col_text",
@@ -328,7 +326,7 @@ def test_accessing_saved_scd_data_attributes(saved_scd_data):
     assert saved_scd_data.timestamp_column == "effective_timestamp"
 
     # check synchronization
-    cloned = SlowlyChangingData.get_by_id(id=saved_scd_data.id)
+    cloned = SCDTable.get_by_id(id=saved_scd_data.id)
     assert cloned.record_creation_date_column is None
     saved_scd_data.update_record_creation_date_column(
         record_creation_date_column="effective_timestamp"
@@ -339,7 +337,7 @@ def test_accessing_saved_scd_data_attributes(saved_scd_data):
 
 def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures):
     """Check SDK code generation for unsaved data"""
-    scd_data = SlowlyChangingData.from_tabular_source(
+    scd_data = SCDTable.from_tabular_source(
         tabular_source=snowflake_database_table_scd_data,
         name="sf_scd_data",
         natural_key_column="col_text",
@@ -352,7 +350,7 @@ def test_sdk_code_generation(snowflake_database_table_scd_data, update_fixtures)
     check_sdk_code_generation(
         scd_data.frame,
         to_use_saved_data=False,
-        fixture_path="tests/fixtures/sdk_code/scd_data.py",
+        fixture_path="tests/fixtures/sdk_code/scd_table.py",
         update_fixtures=update_fixtures,
         data_id=scd_data.id,
     )
@@ -363,7 +361,7 @@ def test_sdk_code_generation_on_saved_data(saved_scd_data, update_fixtures):
     check_sdk_code_generation(
         saved_scd_data.frame,
         to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/saved_scd_data.py",
+        fixture_path="tests/fixtures/sdk_code/saved_scd_table.py",
         update_fixtures=update_fixtures,
         data_id=saved_scd_data.id,
     )

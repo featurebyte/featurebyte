@@ -1,5 +1,5 @@
 """
-ItemData class
+ItemTable class
 """
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.base_table import SourceTableApiObject
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_table import EventTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
 from featurebyte.common.validator import construct_data_model_root_validator
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
     from featurebyte.api.item_view import ItemView
 
 
-class ItemData(DataApiObject):
+class ItemTable(SourceTableApiObject):
     """
-    ItemData is an object connected with an item table that has a ‘one to many’ relationship with an event table.
+    ItemTable is an object connected with an item table that has a ‘one to many’ relationship with an event table.
     Example:\n
     - Order item table -> Order table\n
     - Drug prescriptions -> Doctor visits.
@@ -41,22 +41,22 @@ class ItemData(DataApiObject):
     The table does not explicitly contain any timestamp, but is implicitly related to an event timestamp via its
     relationship with the event table.
 
-    To register a new ItemData, users are asked to provide:\n
+    To register a new ItemTable, users are asked to provide:\n
     - the name of the column of the item id\n
     - the name of the column of the event id\n
     - the name of the event data it is related to
 
-    The ItemData inherits the default FeatureJob setting of the Event data.
+    The ItemTable inherits the default FeatureJob setting of the Event data.
 
     Like for Event Data, users are strongly encouraged to annotate the data by tagging entities and defining:\n
     - the semantic of the data field\n
     - critical data information on the data quality that requires cleaning before feature engineering
 
-    To create features from an ItemData, users create an ItemView.
+    To create features from an ItemTable, users create an ItemView.
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.ItemData")
+    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.ItemTable")
 
     # class variables
     _route = "/item_data"
@@ -225,12 +225,12 @@ class ItemData(DataApiObject):
         if "event_data_id" in values:
             event_data_id = values["event_data_id"]
             try:
-                default_feature_job_setting = EventData.get_by_id(
+                default_feature_job_setting = EventTable.get_by_id(
                     event_data_id
                 ).default_feature_job_setting
             except RecordRetrievalException:
                 # Typically this shouldn't happen since event_data_id should be available if the
-                # ItemData was instantiated correctly. Currently, this occurs only in tests.
+                # ItemTable was instantiated correctly. Currently, this occurs only in tests.
                 return values
             values["default_feature_job_setting"] = default_feature_job_setting
         return values
@@ -238,7 +238,7 @@ class ItemData(DataApiObject):
     @property
     def event_id_column(self) -> str:
         """
-        Event ID column name of the EventData associated with the ItemData
+        Event ID column name of the EventTable associated with the ItemTable
 
         Returns
         -------
@@ -252,7 +252,7 @@ class ItemData(DataApiObject):
     @property
     def item_id_column(self) -> str:
         """
-        Item ID column name of the ItemData
+        Item ID column name of the ItemTable
 
         Returns
         -------
@@ -274,9 +274,9 @@ class ItemData(DataApiObject):
         event_data_name: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
-    ) -> ItemData:
+    ) -> ItemTable:
         """
-        Create ItemData object from tabular source
+        Create ItemTable object from tabular source
 
         Parameters
         ----------
@@ -289,7 +289,7 @@ class ItemData(DataApiObject):
         item_id_column: str
             Item ID column from the given tabular source
         event_data_name: str
-            Name of the EventData associated with this ItemData
+            Name of the EventTable associated with this ItemTable
         record_creation_date_column: Optional[str]
             Record creation datetime column from the given tabular source
         _id: Optional[ObjectId]
@@ -297,18 +297,18 @@ class ItemData(DataApiObject):
 
         Returns
         -------
-        EventData
+        EventTable
 
         Raises
         ------
         ValueError
-            If the associated EventData does not have event_id_column defined
+            If the associated EventTable does not have event_id_column defined
 
         Examples
         --------
-        Create ItemData from a table in the feature store
+        Create ItemTable from a table in the feature store
 
-        >>> order_items = ItemData.from_tabular_source(  # doctest: +SKIP
+        >>> order_items = ItemTable.from_tabular_source(  # doctest: +SKIP
         ...    name="Order Items",
         ...    tabular_source=feature_store.get_table(
         ...      database_name="DEMO",
@@ -321,14 +321,14 @@ class ItemData(DataApiObject):
         ...    record_creation_date_column="RECORD_AVAILABLE_AT",
         ... )
 
-        Get information about the ItemData
+        Get information about the ItemTable
 
         >>> order_items.info(verbose=True)  # doctest: +SKIP
         """
-        event_data = EventData.get(event_data_name)
-        if event_data.event_id_column is None:
-            raise ValueError("EventData without event_id_column is not supported")
-        event_data_id = event_data.id
+        event_table = EventTable.get(event_data_name)
+        if event_table.event_id_column is None:
+            raise ValueError("EventTable without event_id_column is not supported")
+        event_data_id = event_table.id
         return super().create(
             tabular_source=tabular_source,
             name=name,

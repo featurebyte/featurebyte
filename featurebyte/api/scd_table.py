@@ -1,5 +1,5 @@
 """
-SlowlyChangingData class
+SCDTable class
 """
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.base_data import DataApiObject
+from featurebyte.api.base_table import SourceTableApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_data_model_root_validator
@@ -29,9 +29,9 @@ if TYPE_CHECKING:
     from featurebyte.api.scd_view import SlowlyChangingView
 
 
-class SlowlyChangingData(DataApiObject):
+class SCDTable(SourceTableApiObject):
     """
-    SlowlyChangingData is a data source object connected with a Slowly Changing Dimension table of Type 2 in
+    SCDTable is a data source object connected with a Slowly Changing Dimension table of Type 2 in
     the data warehouse that has:\n
     - a natural key (key for which there is one unique active record)\n
     - a surrogate key (the primary key of the SCD)\n
@@ -43,11 +43,11 @@ class SlowlyChangingData(DataApiObject):
 
     To create an instance of this class, see the `from_tabular_source` method.
 
-    To build features, users can create SlowlyChangingViews from SlowlyChangingData.
+    To build features, users can create SlowlyChangingViews from SCDTable.
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.SlowlyChangingData")
+    __fbautodoc__ = FBAutoDoc(section=["Data"], proxy_class="featurebyte.SCDTable")
 
     # class variables
     _route = "/scd_data"
@@ -271,7 +271,7 @@ class SlowlyChangingData(DataApiObject):
     @property
     def natural_key_column(self) -> str:
         """
-        Natural key column name of the SlowlyChangingData
+        Natural key column name of the SCDTable
 
         Returns
         -------
@@ -285,7 +285,7 @@ class SlowlyChangingData(DataApiObject):
     @property
     def effective_timestamp_column(self) -> str:
         """
-        Effective timestamp column name of the SlowlyChangingData
+        Effective timestamp column name of the SCDTable
 
         Returns
         -------
@@ -299,7 +299,7 @@ class SlowlyChangingData(DataApiObject):
     @property
     def surrogate_key_column(self) -> Optional[str]:
         """
-        Surrogate key column name of the SlowlyChangingData
+        Surrogate key column name of the SCDTable
 
         Returns
         -------
@@ -313,7 +313,7 @@ class SlowlyChangingData(DataApiObject):
     @property
     def end_timestamp_column(self) -> Optional[str]:
         """
-        End timestamp column name of the SlowlyChangingData
+        End timestamp column name of the SCDTable
 
         Returns
         -------
@@ -327,7 +327,7 @@ class SlowlyChangingData(DataApiObject):
     @property
     def current_flag_column(self) -> Optional[str]:
         """
-        Current flag column name of the SlowlyChangingData
+        Current flag column name of the SCDTable
 
         Returns
         -------
@@ -341,7 +341,7 @@ class SlowlyChangingData(DataApiObject):
     @property
     def timestamp_column(self) -> Optional[str]:
         """
-        Timestamp column name of the SlowlyChangingData
+        Timestamp column name of the SCDTable
 
         Returns
         -------
@@ -362,9 +362,9 @@ class SlowlyChangingData(DataApiObject):
         current_flag_column: Optional[str] = None,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
-    ) -> SlowlyChangingData:
+    ) -> SCDTable:
         """
-        Create SlowlyChangingData object from tabular source
+        Create SCDTable object from tabular source
 
         Parameters
         ----------
@@ -389,13 +389,13 @@ class SlowlyChangingData(DataApiObject):
 
         Returns
         -------
-        SlowlyChangingData
+        SCDTable
 
         Examples
         --------
-        Create SlowlyChangingData from a table in the feature store
+        Create SCDTable from a table in the feature store
 
-        >>> user_profiles = SlowlyChangingData.from_tabular_source(  # doctest: +SKIP
+        >>> user_profiles = SCDTable.from_tabular_source(  # doctest: +SKIP
         ...    name="User Profiles",
         ...    tabular_source=feature_store.get_table(
         ...      database_name="DEMO",
@@ -410,7 +410,7 @@ class SlowlyChangingData(DataApiObject):
         ...    record_creation_date_column="RECORD_AVAILABLE_AT",
         ... )
 
-        Get information about the SlowlyChangingData
+        Get information about the SCDTable
 
         >>> user_profiles.info(verbose=True)  # doctest: +SKIP
         """

@@ -36,18 +36,18 @@ from featurebyte.query_graph.node.cleaning_operation import (
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
-DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
+SourceTableApiObjectT = TypeVar("SourceTableApiObjectT", bound="SourceTableApiObject")
 TableDataT = TypeVar("TableDataT", bound=BaseTableData)
 
 
-class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
+class SourceTableColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
     """
-    DataColumn class that is used to set metadata such as Entity column. It holds a reference to its
-    parent, which is a data object (e.g. EventData)
+    SourceTableColumn class that is used to set metadata such as Entity column. It holds a reference to its
+    parent, which is a data object (e.g. EventTable)
     """
 
     # documentation metadata
-    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.DataColumn")
+    __fbautodoc__ = FBAutoDoc(section=["Column"], proxy_class="featurebyte.SourceTableColumn")
 
     # pydantic instance variable (public)
     name: str
@@ -137,7 +137,7 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         Add missing value imputation & negative value imputation operations to a data column
 
         >>> import featurebyte as fb
-        >>> event_data = fb.EventData.get("Credit Card Transactions")  # doctest: +SKIP
+        >>> event_data = fb.EventTable.get("Credit Card Transactions")  # doctest: +SKIP
         >>> event_data["AMOUNT"].update_critical_data_info(  # doctest: +SKIP
         ...    cleaning_operations=[
         ...        fb.MissingValueImputation(imputed_value=0),
@@ -211,9 +211,9 @@ class DataColumn(FeatureByteBaseModel, ParentMixin, SampleMixin):
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 
-class DataListMixin(ApiObject):
+class TableListMixin(ApiObject):
     """
-    Mixin to implement data source list function
+    Mixin to implement source table list function
     """
 
     _route = "/tabular_data"
@@ -246,7 +246,7 @@ class DataListMixin(ApiObject):
         return data_list
 
 
-class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrMixin):
+class SourceTableApiObject(AbstractTableData, TableListMixin, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
     """
@@ -312,15 +312,15 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
     @classmethod
     @typechecked
     def create(
-        cls: Type[DataApiObjectT],
+        cls: Type[SourceTableApiObjectT],
         tabular_source: DatabaseTable,
         name: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
         **kwargs: Any,
-    ) -> DataApiObjectT:
+    ) -> SourceTableApiObjectT:
         """
-        Create derived instances of DataApiObject from tabular source
+        Create derived instances of SourceTableApiObject from tabular source
 
         Parameters
         ----------
@@ -333,11 +333,11 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
         _id: Optional[ObjectId]
             Identity value for constructed object
         **kwargs: Any
-            Additional parameters specific to variants of DataApiObject
+            Additional parameters specific to variants of SourceTableApiObject
 
         Returns
         -------
-        DataApiObjectT
+        SourceTableApiObjectT
 
         Raises
         ------
@@ -393,7 +393,7 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
         return {"feature_store": self.feature_store}
 
     @typechecked
-    def __getitem__(self, item: str) -> DataColumn:
+    def __getitem__(self, item: str) -> SourceTableColumn:
         """
         Retrieve column from the table
 
@@ -404,7 +404,7 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
 
         Returns
         -------
-        DataColumn
+        SourceTableColumn
 
         Raises
         ------
@@ -417,7 +417,7 @@ class DataApiObject(AbstractTableData, DataListMixin, SavableApiObject, GetAttrM
                 info = col
         if info is None:
             raise KeyError(f'Column "{item}" does not exist!')
-        output = DataColumn(name=item)
+        output = SourceTableColumn(name=item)
         output.set_parent(self)
         return output
 

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import EventData, FeatureList, SlowlyChangingData
+from featurebyte import EventTable, FeatureList, SCDTable
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 from tests.util.helper import assert_preview_result_equal
 
@@ -104,7 +104,7 @@ async def test_scd_join_small(session, feature_store, source_type):
     table_prefix = "TEST_SCD_JOIN_SMALL"
     await session.register_table(f"{table_prefix}_EVENT", df_events, temporary=False)
     await session.register_table(f"{table_prefix}_SCD", df_scd, temporary=False)
-    event_view = EventData.from_tabular_source(
+    event_view = EventTable.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_EVENT",
             database_name=session.database_name,
@@ -114,7 +114,7 @@ async def test_scd_join_small(session, feature_store, source_type):
         event_id_column="event_id",
         event_timestamp_column="ts",
     ).get_view()
-    scd_view = SlowlyChangingData.from_tabular_source(
+    scd_view = SCDTable.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_SCD",
             database_name=session.database_name,
@@ -383,7 +383,7 @@ def snowflake_scd_data_fixture_with_minimal_cols(source_type, scd_data_tabular_s
     """
     Fixture for a SlowlyChangingData in integration tests
     """
-    return SlowlyChangingData.from_tabular_source(
+    return SCDTable.from_tabular_source(
         tabular_source=scd_data_tabular_source,
         name=f"{source_type}_scd_data_with_minimal_cols",
         natural_key_column="User ID",

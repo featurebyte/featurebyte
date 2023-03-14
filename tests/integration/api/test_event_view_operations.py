@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AggFunc, EventData, FeatureJobSetting, FeatureList, SourceType, to_timedelta
+from featurebyte import AggFunc, EventTable, FeatureJobSetting, FeatureList, SourceType, to_timedelta
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.node.schema import ColumnSpec
@@ -136,7 +136,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
                 column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
                 mock_list_columns.return_value = column_specs
 
-    event_data = EventData.get_by_id(id=response.json()["_id"])
+    event_data = EventTable.get_by_id(id=response.json()["_id"])
     event_data.update_default_feature_job_setting(
         feature_job_setting=FeatureJobSetting(
             blind_spot="10m", frequency="30m", time_modulo_frequency="5m"

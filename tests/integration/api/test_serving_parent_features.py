@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 
-from featurebyte import DimensionData, Entity, EventData, FeatureList, SlowlyChangingData
+from featurebyte import DimensionTable, Entity, EventTable, FeatureList, SCDTable
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
 
@@ -63,7 +63,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     country_entity = Entity(name=f"{table_prefix}_country", serving_names=["country_id"])
     country_entity.save()
 
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_EVENT",
             database_name=session.database_name,
@@ -77,7 +77,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     event_data["event_id"].as_entity(event_entity.name)
     event_data["cust_id"].as_entity(customer_entity.name)
 
-    scd_data = SlowlyChangingData.from_tabular_source(
+    scd_data = SCDTable.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_SCD",
             database_name=session.database_name,
@@ -92,7 +92,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     scd_data["scd_cust_id"].as_entity(customer_entity.name)
     scd_data["scd_city"].as_entity(city_entity.name)
 
-    dimension_data_1 = DimensionData.from_tabular_source(
+    dimension_data_1 = DimensionTable.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_1",
             database_name=session.database_name,
@@ -105,7 +105,7 @@ async def feature_list_with_child_entities_fixture(session, feature_store):
     dimension_data_1["city"].as_entity(city_entity.name)
     dimension_data_1["state"].as_entity(state_entity.name)
 
-    dimension_data_2 = DimensionData.from_tabular_source(
+    dimension_data_2 = DimensionTable.from_tabular_source(
         tabular_source=feature_store.get_table(
             table_name=f"{table_prefix}_DIMENSION_2",
             database_name=session.database_name,

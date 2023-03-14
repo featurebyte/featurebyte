@@ -330,7 +330,8 @@ class QueryGraphModel(FeatureByteBaseModel):
         keep_target_node_names: Optional[Set[str]]
             If provided, only use the target nodes with names in the set
         available_column_names: List[str]
-            List of available input columns
+            List of available input columns. This is used to cater the case when the node output should keep all
+            the input columns (like filter node).
 
         Returns
         -------

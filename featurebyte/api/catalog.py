@@ -10,22 +10,22 @@ from bson import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
-from featurebyte.api.data import Data
-from featurebyte.api.dimension_data import DimensionData
+from featurebyte.api.dimension_table import DimensionTable
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_table import EventTable
 from featurebyte.api.feature import Feature, FeatureNamespace
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.api.feature_list import FeatureList, FeatureListNamespace
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.item_data import ItemData
+from featurebyte.api.item_table import ItemTable
 from featurebyte.api.periodic_task import PeriodicTask
 from featurebyte.api.relationship import Relationship
-from featurebyte.api.scd_data import SlowlyChangingData
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import activate_catalog, get_active_catalog_id
 from featurebyte.logger import logger
 from featurebyte.models.catalog import CatalogModel
+from featurebyte.api.scd_table import SCDTable
+from featurebyte.api.source_table import SourceTable
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.schema.catalog import CatalogCreate, CatalogUpdate
 
@@ -268,7 +268,7 @@ class Catalog(CatalogModel, SavableApiObject):
         pd.DataFrame
             Dataframe of tables
         """
-        return Data.list(include_id=include_id, entity=entity)
+        return SourceTable.list(include_id=include_id, entity=entity)
 
     @staticmethod
     def list_dimension_tables(
@@ -289,7 +289,7 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of dimension table sources
         """
-        return DimensionData.list(include_id=include_id, entity=entity)
+        return DimensionTable.list(include_id=include_id, entity=entity)
 
     @staticmethod
     def list_item_tables(
@@ -310,7 +310,7 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of item table sources
         """
-        return ItemData.list(include_id=include_id, entity=entity)
+        return ItemTable.list(include_id=include_id, entity=entity)
 
     @staticmethod
     def list_event_tables(
@@ -331,7 +331,7 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of event table sources
         """
-        return EventData.list(include_id=include_id, entity=entity)
+        return EventTable.list(include_id=include_id, entity=entity)
 
     @staticmethod
     def list_scd_tables(
@@ -352,7 +352,7 @@ class Catalog(CatalogModel, SavableApiObject):
         DataFrame
             Table of SCD table sources
         """
-        return SlowlyChangingData.list(include_id=include_id, entity=entity)
+        return SCDTable.list(include_id=include_id, entity=entity)
 
     @staticmethod
     def list_relationships(

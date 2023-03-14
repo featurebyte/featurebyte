@@ -13,7 +13,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_table import EventTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -123,7 +123,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     """
     Test EventData creation using tabular source
     """
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_id_column="col_int",
@@ -146,7 +146,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
 
     # user input validation
     with pytest.raises(TypeError) as exc:
-        EventData.from_tabular_source(
+        EventTable.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
             event_id_column="col_int",
@@ -162,14 +162,14 @@ def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_data
     """
     _ = saved_event_data
     with pytest.raises(DuplicatedRecordException) as exc:
-        EventData.from_tabular_source(
+        EventTable.from_tabular_source(
             tabular_source=snowflake_database_table,
             name="sf_event_data",
             event_id_column="col_int",
             event_timestamp_column="event_timestamp",
             record_creation_date_column="created_at",
         )
-    assert 'EventData (event_data.name: "sf_event_data") exists in saved record.' in str(exc.value)
+    assert 'EventTable (event_data.name: "sf_event_data") exists in saved record.' in str(exc.value)
 
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table):
@@ -177,8 +177,8 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     Test EventData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.base_data.Configurations"):
-            EventData.from_tabular_source(
+        with patch("featurebyte.api.base_table.Configurations"):
+            EventTable.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_event_data",
                 event_id_column="col_int",
@@ -199,7 +199,7 @@ def test_deserialization(
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event data object
     event_data_dict["feature_store"] = snowflake_feature_store
-    event_data = EventData.parse_obj(event_data_dict)
+    event_data = EventTable.parse_obj(event_data_dict)
     assert event_data.preview_sql() == expected_snowflake_table_preview_query
 
 
@@ -213,13 +213,13 @@ def test_deserialization__column_name_not_found(
     event_data_dict["feature_store"] = snowflake_feature_store
     event_data_dict["record_creation_date_column"] = "some_random_name"
     with pytest.raises(ValueError) as exc:
-        EventData.parse_obj(event_data_dict)
+        EventTable.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
     event_data_dict["record_creation_date_column"] = "created_at"
     event_data_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
-        EventData.parse_obj(event_data_dict)
+        EventTable.parse_obj(event_data_dict)
     assert 'Column "some_timestamp_column" not found in the table!' in str(exc.value)
 
 
@@ -296,7 +296,7 @@ def test_info__event_data_without_record_creation_date(
 ):
     """Test info on event data with record creation date is None"""
     snowflake_feature_store.save()
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_id_column="col_int",
@@ -419,7 +419,7 @@ def test_event_data__save__exceptions(saved_event_data):
     # test duplicated record exception when record exists
     with pytest.raises(ObjectHasBeenSavedError) as exc:
         saved_event_data.save()
-    expected_msg = f'EventData (id: "{saved_event_data.id}") has been saved before.'
+    expected_msg = f'EventTable (id: "{saved_event_data.id}") has been saved before.'
     assert expected_msg in str(exc.value)
 
 
@@ -493,7 +493,7 @@ def test_update_default_job_setting__saved_event_data(
     }
 
 
-@patch("featurebyte.api.event_data.EventData.post_async_task")
+@patch("featurebyte.api.event_table.EventTable.post_async_task")
 @patch("featurebyte.api.feature_job_setting_analysis.FeatureJobSettingAnalysis.get_by_id")
 def test_update_default_feature_job_setting__using_feature_job_analysis(
     mock_get_by_id,
@@ -557,7 +557,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis_no_creat
     assert "Creation date column is not available for the event data." in str(exc)
 
 
-@patch("featurebyte.api.event_data.EventData.post_async_task")
+@patch("featurebyte.api.event_table.EventTable.post_async_task")
 def test_update_default_feature_job_setting__using_feature_job_analysis_high_frequency(
     mock_post_async_task,
     saved_event_data,
@@ -640,7 +640,7 @@ async def test_update_default_job_setting__feature_job_setting_analysis_failure(
 
 def test_update_record_creation_date_column__unsaved_object(snowflake_database_table):
     """Test update record creation date column (unsaved event data)"""
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="event_data",
         event_id_column="col_int",
@@ -679,17 +679,17 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     snowflake_event_data.save()
 
     # load the event data from the persistent
-    loaded_event_data = EventData.get(snowflake_event_data.name)
+    loaded_event_data = EventTable.get(snowflake_event_data.name)
     assert loaded_event_data.saved is True
     assert loaded_event_data == snowflake_event_data
-    assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
+    assert EventTable.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
-        EventData.get("unknown_event_data")
+        EventTable.get("unknown_event_data")
 
     expected_msg = (
-        'EventData (name: "unknown_event_data") not found. '
-        "Please save the EventData object first."
+        'EventTable (name: "unknown_event_data") not found. '
+        "Please save the EventTable object first."
     )
     assert expected_msg in str(exc.value)
 
@@ -702,7 +702,7 @@ def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, 
     """
     recent_schema = {"column": "INT"}
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    event_data = EventData.get_by_id(saved_event_data.id)
+    event_data = EventTable.get_by_id(saved_event_data.id)
     assert mock_logger.warning.call_args.args[0] == "Table schema has been changed."
 
     # this is ok as additional column should not break backward compatibility
@@ -719,7 +719,7 @@ def test_get_event_data__schema_has_been_changed(mock_get_session, mock_logger, 
         "additional_column": "INT",
     }
     mock_get_session.return_value.list_table_schema.return_value = recent_schema
-    _ = EventData.get_by_id(saved_event_data.id)
+    _ = EventTable.get_by_id(saved_event_data.id)
 
 
 def test_default_feature_job_setting_history(saved_event_data):
@@ -889,7 +889,7 @@ def test_default_feature_job_setting_history(saved_event_data):
     }
 
 
-@patch("featurebyte.api.event_data.EventData.post_async_task")
+@patch("featurebyte.api.event_table.EventTable.post_async_task")
 @patch("featurebyte.api.feature_job_setting_analysis.FeatureJobSettingAnalysis.get_by_id")
 def test_create_new_feature_job_setting_analysis(
     mock_get_by_id,
@@ -994,7 +994,7 @@ def test_accessing_saved_event_data_attributes(saved_event_data):
     feature_job_setting = FeatureJobSetting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )
-    cloned = EventData.get_by_id(id=saved_event_data.id)
+    cloned = EventTable.get_by_id(id=saved_event_data.id)
     assert cloned.default_feature_job_setting is None
     saved_event_data.update_default_feature_job_setting(feature_job_setting=feature_job_setting)
     assert saved_event_data.default_feature_job_setting == feature_job_setting
@@ -1003,7 +1003,7 @@ def test_accessing_saved_event_data_attributes(saved_event_data):
 
 def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     """Check SDK code generation for unsaved data"""
-    event_data = EventData.from_tabular_source(
+    event_data = EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_id_column="col_int",
@@ -1013,7 +1013,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     check_sdk_code_generation(
         event_data.frame,
         to_use_saved_data=False,
-        fixture_path="tests/fixtures/sdk_code/event_data.py",
+        fixture_path="tests/fixtures/sdk_code/event_table.py",
         update_fixtures=update_fixtures,
         data_id=event_data.id,
     )
@@ -1024,7 +1024,7 @@ def test_sdk_code_generation_on_saved_data(saved_event_data, update_fixtures):
     check_sdk_code_generation(
         saved_event_data.frame,
         to_use_saved_data=True,
-        fixture_path="tests/fixtures/sdk_code/saved_event_data.py",
+        fixture_path="tests/fixtures/sdk_code/saved_event_table.py",
         update_fixtures=update_fixtures,
         data_id=saved_event_data.id,
     )

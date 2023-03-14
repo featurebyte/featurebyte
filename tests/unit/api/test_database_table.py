@@ -47,7 +47,7 @@ def test_sdk_code_generation(snowflake_database_table, update_fixtures):
     check_sdk_code_generation(
         snowflake_database_table.frame,
         to_use_saved_data=False,
-        fixture_path="tests/fixtures/sdk_code/generic_data.py",
+        fixture_path="tests/fixtures/sdk_code/generic_table.py",
         update_fixtures=update_fixtures,
         data_id=None,
     )

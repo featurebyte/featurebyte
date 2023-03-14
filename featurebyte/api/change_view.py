@@ -11,7 +11,7 @@ from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.lag import LaggableViewColumn
-from featurebyte.api.scd_data import SlowlyChangingData
+from featurebyte.api.scd_table import SCDTable
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import ChangeViewNoJoinColumnError
@@ -129,7 +129,7 @@ class ChangeView(View, GroupByMixin):
 
     @staticmethod
     def validate_inputs(
-        scd_data: SlowlyChangingData,
+        scd_data: SCDTable,
         track_changes_column: str,
         prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
     ) -> None:
@@ -142,7 +142,7 @@ class ChangeView(View, GroupByMixin):
 
         Parameters
         ----------
-        scd_data: SlowlyChangingData
+        scd_data: SCDTable
             data to create view from
         track_changes_column: str
             column to track changes for
@@ -162,7 +162,7 @@ class ChangeView(View, GroupByMixin):
             raise ValueError("Empty column provided. Please provide a valid column.")
         if track_changes_column not in scd_data.columns:
             raise ValueError(
-                "Column provided is not a column in the SlowlyChangingData provided. Please pick a column "
+                "Column provided is not a column in the SCDTable provided. Please pick a column "
                 f"from: {sorted(scd_data.columns)}."
             )
 

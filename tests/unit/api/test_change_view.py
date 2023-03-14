@@ -192,7 +192,7 @@ def test_validate_inputs(snowflake_scd_data):
     # column not in SCD data should error
     with pytest.raises(ValueError) as exc_info:
         ChangeView.validate_inputs(snowflake_scd_data, "random_col")
-    assert "Column provided is not a column in the SlowlyChangingData provided" in str(exc_info)
+    assert "Column provided is not a column in the SCDTable provided" in str(exc_info)
 
     # column in SCD data should be ok
     ChangeView.validate_inputs(snowflake_scd_data, "col_int")

@@ -9,11 +9,10 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte.api.base_data import DataColumn
-from featurebyte.api.dimension_view import DimensionView
+from featurebyte.api.base_table import SourceTableColumn
 from featurebyte.api.entity import Entity
-from featurebyte.api.event_data import EventData
-from featurebyte.api.item_data import ItemData
+from featurebyte.api.event_table import EventTable
+from featurebyte.api.item_table import ItemTable
 from featurebyte.models.feature_store import DataStatus
 
 
@@ -83,7 +82,7 @@ def snowflake_event_data_fixture(
     Snowflake EventData object fixture (using config object)
     """
     _ = mock_get_persistent
-    yield EventData.from_tabular_source(
+    yield EventTable.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_id_column="col_int",
@@ -109,7 +108,7 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
     # test list event data
-    event_data_list = EventData.list()
+    event_data_list = EventTable.list()
     assert_frame_equal(
         event_data_list,
         pd.DataFrame(
@@ -171,12 +170,12 @@ def snowflake_item_data_fixture(
     arbitrary_default_feature_job_setting,
 ):
     """
-    Snowflake ItemData object fixture (using config object)
+    Snowflake ItemTable object fixture (using config object)
     """
     _ = mock_get_persistent
     saved_event_data.update_default_feature_job_setting(arbitrary_default_feature_job_setting)
     saved_event_data["cust_id"].as_entity(cust_id_entity.name)
-    item_data = ItemData.from_tabular_source(
+    item_data = ItemTable.from_tabular_source(
         tabular_source=snowflake_database_table_item_data,
         name="sf_item_data",
         event_id_column="event_id_col",
@@ -211,7 +210,7 @@ def item_entity(item_entity_id):
 @pytest.fixture(name="saved_item_data")
 def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data, item_entity):
     """
-    Saved ItemData fixture
+    Saved ItemTable fixture
     """
     previous_id = snowflake_item_data.id
     assert snowflake_item_data.saved is False
@@ -223,12 +222,12 @@ def saved_item_data_fixture(snowflake_feature_store, snowflake_item_data, item_e
     assert isinstance(snowflake_item_data.tabular_source.feature_store_id, ObjectId)
 
     item_id_col = snowflake_item_data.item_id_col
-    assert isinstance(item_id_col, DataColumn)
+    assert isinstance(item_id_col, SourceTableColumn)
     snowflake_item_data.item_id_col.as_entity(item_entity.name)
     assert snowflake_item_data.item_id_col.info.entity_id == item_entity.id
 
     # test list event data
-    item_data_list = ItemData.list()
+    item_data_list = ItemTable.list()
     assert_frame_equal(
         item_data_list,
         pd.DataFrame(

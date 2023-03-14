@@ -208,10 +208,10 @@ class ClassEnum(Enum):
 
     # data
     DATABASE_TABLE = ("featurebyte.api.database_table", "DatabaseTable")
-    EVENT_DATA = ("featurebyte", "EventData")
-    ITEM_DATA = ("featurebyte", "ItemData")
-    DIMENSION_DATA = ("featurebyte", "DimensionData")
-    SCD_DATA = ("featurebyte", "SlowlyChangingData")
+    EVENT_TABLE = ("featurebyte", "EventTable")
+    ITEM_TABLE = ("featurebyte", "ItemTable")
+    DIMENSION_TABLE = ("featurebyte", "DimensionTable")
+    SCD_TABLE = ("featurebyte", "SCDTable")
 
     # view
     EVENT_VIEW = ("featurebyte", "EventView")

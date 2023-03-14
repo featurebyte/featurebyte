@@ -39,12 +39,12 @@ from featurebyte.api.api_object import (
     ForeignKeyMapping,
     SavableApiObject,
 )
-from featurebyte.api.base_data import DataApiObject
-from featurebyte.api.data import Data
+from featurebyte.api.base_table import SourceTableApiObject
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_job import FeatureJobMixin
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.source_table import SourceTable
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -400,7 +400,7 @@ class FeatureListNamespace(FrozenFeatureListNamespaceModel, ApiObject):
     ]
     _list_foreign_keys = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
-        ForeignKeyMapping("tabular_data_ids", DataApiObject, "data"),
+        ForeignKeyMapping("tabular_data_ids", SourceTableApiObject, "data"),
     ]
 
     @property
@@ -1173,7 +1173,7 @@ class FeatureList(BaseFeatureGroup, FrozenFeatureListModel, SavableApiObject, Fe
             for entity in info["entities"]
         }
         for tabular_source in info["tabular_data"]:
-            data = Data.get(tabular_source["name"])
+            data = SourceTable.get(tabular_source["name"])
             entity_columns = [
                 column for column in data.columns_info if column.entity_id in entities
             ]
