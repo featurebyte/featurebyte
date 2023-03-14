@@ -76,7 +76,7 @@ async def test_validate(
         ]
     )
 
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting
     assert feature_group_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "3m"  # set a new value
@@ -176,7 +176,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
     )
 
     # create a feature with a different feature job setting from the event data
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     updated_feature_job_setting = feature_group_feature_job_setting.copy()
     assert updated_feature_job_setting["blind_spot"] == "10m"
     updated_feature_job_setting["blind_spot"] = "5m"  # set a new value
@@ -231,7 +231,7 @@ async def test_validate__no_diff_in_feature_should_return_none(
         feature_job_setting=FeatureJobSetting(**feature_group_feature_job_setting)
     )
 
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",

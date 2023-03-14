@@ -595,7 +595,7 @@ def test_filtered_view_output(saved_scd_data, cust_id_entity):
     Fixture for a feature created from a ChangeView
     """
     saved_scd_data["col_text"].as_entity(cust_id_entity.name)
-    change_view = ChangeView.from_slowly_changing_data(saved_scd_data, "col_int")
+    change_view = saved_scd_data.get_change_view("col_int")
     mask = change_view.new_col_int > 10
     filtered_view = change_view[mask]
     output_sql = filtered_view.preview_sql()
