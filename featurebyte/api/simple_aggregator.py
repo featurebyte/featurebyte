@@ -3,7 +3,7 @@ This module contains simple aggregator related class
 """
 from __future__ import annotations
 
-from typing import List, Optional, Type, cast
+from typing import List, Literal, Optional, Type
 
 from featurebyte.api.base_aggregator import BaseAggregator
 from featurebyte.api.feature import Feature
