@@ -38,7 +38,7 @@ def node_fixture():
         def max_input_count(self) -> int:
             return 4
 
-        def _get_required_input_columns(self, input_index: int):
+        def _get_required_input_columns(self, input_index: int, available_column_names: List[str]):
             _ = input_index
             return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
 
@@ -69,7 +69,7 @@ def node_fixture():
 
 def test_get_required_input_columns(node):
     """Test get_required_input_columns"""
-    required_in_cols = node._get_required_input_columns(0)
+    required_in_cols = node._get_required_input_columns(0, [])
     assert set(required_in_cols) == {
         "required_column",
         "required_columns",

@@ -108,6 +108,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
         # reconstruct view graph node to remove unused column cleaning operations
         graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=feature.graph,
+            target_node=feature.node,
             data_cleaning_operations=[],
         )
         node = graph.get_node_by_name(node_name_map[feature.node_name])

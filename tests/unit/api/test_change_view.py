@@ -588,3 +588,29 @@ def test_raw_accessor(snowflake_scd_data):
     # check filtering
     filtered_column = change_view[column][mask]
     assert filtered_column.node.type == NodeType.FILTER
+
+
+def test_filtered_view_output(saved_scd_data, cust_id_entity):
+    """
+    Fixture for a feature created from a ChangeView
+    """
+    saved_scd_data["col_text"].as_entity(cust_id_entity.name)
+    change_view = ChangeView.from_slowly_changing_data(saved_scd_data, "col_int")
+    mask = change_view.new_col_int > 10
+    filtered_view = change_view[mask]
+    output_sql = filtered_view.preview_sql()
+    expected_sql = """
+    SELECT
+      "col_text" AS "col_text",
+      CAST("effective_timestamp" AS STRING) AS "new_effective_timestamp",
+      CAST(LAG("effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS STRING) AS "past_effective_timestamp",
+      "col_int" AS "new_col_int",
+      LAG("col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_col_int"
+    FROM "sf_database"."sf_schema"."scd_table"
+    WHERE
+      (
+        "col_int" > 10
+      )
+    LIMIT 10
+    """
+    assert output_sql.strip() == textwrap.dedent(expected_sql).strip()
