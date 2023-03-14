@@ -95,7 +95,7 @@ class WindowAggregator(BaseAggregator):
         )
         groupby_node = add_pruning_sensitive_operation(
             graph=self.view.graph,
-            node_cls=GroupbyNode,
+            node_cls=GroupByNode,
             node_params=node_params,
             input_node=self.view.node,
         )
