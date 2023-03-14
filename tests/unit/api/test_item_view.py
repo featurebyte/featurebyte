@@ -1030,3 +1030,30 @@ def test_sdk_code_generation(saved_item_data, saved_event_data, update_fixtures)
         update_fixtures=update_fixtures,
         data_id=saved_item_data.id,
     )
+
+
+def test_join_event_data_attributes__with_multiple_assignments(snowflake_item_view):
+    """
+    Test joining more columns from EventData after creating ItemView with multiple assignments
+    """
+    view = snowflake_item_view
+
+    mask = snowflake_item_view.event_id_col > 100
+    view["new_col"] = "new_column"
+    view["new_col"][mask] = "some_value"
+    view["new_col"][~mask] = "another_value"
+    view.join_event_data_attributes(["col_float"])
+
+    expected_columns = [
+        "event_id_col",
+        "item_id_col",
+        "item_type",
+        "item_amount",
+        "created_at",
+        "event_timestamp",
+        "event_timestamp_event_table",
+        "cust_id_event_table",
+        "new_col",
+        "col_float",
+    ]
+    assert view.columns == expected_columns
