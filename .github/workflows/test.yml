@@ -302,7 +302,7 @@ jobs:
         run: |
           make test-docs
   validate:
-    needs: ["test-unit", "test-integration-snowflake", "test-integration-spark"]
+    needs: ["test-unit", "test-integration-snowflake", "test-docs", "test-integration-spark"]
     runs-on: ubuntu-20.04
     timeout-minutes: 45
     strategy:
@@ -384,7 +384,7 @@ jobs:
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: ["build-jar", "test-unit", "test-integration-snowflake", "test-integration-spark","test-docs", "validate"]
+    needs: ["build-jar", "test-unit", "test-integration-snowflake", "test-integration-spark", "test-docs", "validate"]
     steps:
       - uses: actions/checkout@v3
         with:
