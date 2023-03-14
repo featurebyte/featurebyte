@@ -231,4 +231,3 @@ class WindowAggregator(BaseAggregator):
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
         }
-
