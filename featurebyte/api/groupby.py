@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from typeguard import typechecked
 
@@ -19,6 +19,7 @@ from featurebyte.api.simple_aggregator import SimpleAggregator
 from featurebyte.api.window_aggregator import WindowAggregator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.typing import OptionalScalar
+from featurebyte.enum import AggFunc
 
 
 class GroupBy:
