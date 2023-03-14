@@ -44,10 +44,10 @@ class WindowAggregator(BaseAggregator):
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
-
         Parameters
         ----------
         value_column: Optional[str]
@@ -66,7 +66,8 @@ class WindowAggregator(BaseAggregator):
             feature job setting parameters
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-
+        skip_fill_na: bool
+            Whether to skip filling NaN values
         Returns
         -------
         FeatureGroup
@@ -78,6 +79,8 @@ class WindowAggregator(BaseAggregator):
             windows=windows,
             feature_names=feature_names,
             feature_job_setting=feature_job_setting,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
         self.view.validate_aggregate_over_parameters(
             keys=self.keys,
@@ -112,6 +115,7 @@ class WindowAggregator(BaseAggregator):
                 method=method,
                 value_column=value_column,
                 fill_value=fill_value,
+                skip_fill_na=skip_fill_na,
             )
             items.append(feature)
         feature_group = FeatureGroup(items)
@@ -124,9 +128,12 @@ class WindowAggregator(BaseAggregator):
         windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
         feature_job_setting: Optional[Dict[str, str]],
+        fill_value: OptionalScalar,
+        skip_fill_na: bool,
     ) -> None:
 
         self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 
         if not isinstance(windows, list) or len(windows) == 0:
             raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
@@ -224,3 +231,4 @@ class WindowAggregator(BaseAggregator):
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
         }
+
