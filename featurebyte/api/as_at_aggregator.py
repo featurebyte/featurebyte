@@ -40,10 +40,10 @@ class AsAtAggregator(BaseAggregator):
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
+        skip_fill_na: bool = False,
     ) -> Feature:
         """
         Aggregate a column in SlowlyChangingView as at a point in time
-
         Parameters
         ----------
         value_column: Optional[str]
@@ -57,7 +57,6 @@ class AsAtAggregator(BaseAggregator):
             aggregation result will be as at the point in time adjusted by this offset. Format of
             offset is "{size}{unit}", where size is a positive integer and unit is one of the
             following:
-
             "ns": nanosecond
             "us": microsecond
             "ms": millisecond
@@ -66,12 +65,12 @@ class AsAtAggregator(BaseAggregator):
             "h": hour
             "d": day
             "w": week
-
         backward: bool
             Whether the offset should be applied backward or forward
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
-
+        skip_fill_na: bool
+            Whether to skip filling na values
         Returns
         -------
         Feature
@@ -81,6 +80,8 @@ class AsAtAggregator(BaseAggregator):
             value_column=value_column,
             feature_name=feature_name,
             offset=offset,
+            fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
         view = cast(SlowlyChangingView, self.view)
@@ -114,6 +115,7 @@ class AsAtAggregator(BaseAggregator):
             method=method,
             value_column=value_column,
             fill_value=fill_value,
+            skip_fill_na=skip_fill_na,
         )
 
     def _validate_parameters(
@@ -122,9 +124,12 @@ class AsAtAggregator(BaseAggregator):
         feature_name: Optional[str],
         value_column: Optional[str],
         offset: Optional[str],
+        fill_value: OptionalScalar,
+        skip_fill_na: bool,
     ) -> None:
 
         self._validate_method_and_value_column(method=method, value_column=value_column)
+        self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
 
         if method == AggFunc.LATEST:
             raise ValueError("latest aggregation method is not supported for aggregated_asat")
