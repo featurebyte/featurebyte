@@ -296,7 +296,7 @@ def snowflake_event_view_fixture(
     snowflake_event_data.update_default_feature_job_setting(
         feature_job_setting=arbitrary_default_feature_job_setting
     )
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    event_view = snowflake_event_data.get_view()
     yield event_view
 
 

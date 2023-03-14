@@ -585,7 +585,7 @@ def snowflake_event_view_fixture(
     """
     EventData object fixture
     """
-    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    event_view = snowflake_event_data.get_view()
     assert isinstance(event_view, EventView)
     expected_input_node = construct_node(
         name="input_2",
@@ -626,7 +626,7 @@ def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     """
     Snowflake event view with entity
     """
-    event_view = EventView.from_event_data(event_data=snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     yield event_view
 
 
@@ -637,9 +637,7 @@ def snowflake_event_view_entity_feature_job_fixture(
     """
     Snowflake event view with entity
     """
-    event_view = EventView.from_event_data(
-        event_data=snowflake_event_data_with_entity_and_feature_job
-    )
+    event_view = snowflake_event_data_with_entity_and_feature_job.get_view()
     yield event_view
 
 
@@ -726,7 +724,7 @@ def feature_with_cleaning_operations_fixture(
             MissingValueImputation(imputed_value=0.0),
         ]
     )
-    event_view = EventView.from_event_data(snowflake_event_data)
+    event_view = snowflake_event_data.get_view()
     feature_group = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",

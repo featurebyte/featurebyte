@@ -181,7 +181,7 @@ def run_groupby_and_get_tile_table_identifier(
             Entity(name=by_key, serving_names=[by_key]).save()
         if isinstance(event_data_or_event_view, EventData):
             event_data_or_event_view[by_key].as_entity(by_key)
-            event_view = EventView.from_event_data(event_data=event_data_or_event_view)
+            event_view = event_data_or_event_view.get_view()
 
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate_over(**aggregate_kwargs)

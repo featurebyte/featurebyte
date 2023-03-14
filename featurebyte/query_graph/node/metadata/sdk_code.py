@@ -112,11 +112,11 @@ class ObjectClass(BaseModel):
     - import objects
     """
 
-    module_path: str
-    class_name: str
+    module_path: Optional[str]
+    class_name: Optional[str]
     positional_args: List[Any]
     keyword_args: Dict[str, Any]
-    method_name: Optional[str] = Field(default=None)
+    callable_name: Optional[str] = Field(default=None)
 
     def __str__(self) -> str:
         params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
@@ -132,9 +132,17 @@ class ObjectClass(BaseModel):
             else:
                 params.append(f"{key}={value}")
 
-        if self.method_name:
-            return f"{self.class_name}.{self.method_name}({', '.join(params)})"
-        return f"{self.class_name}({', '.join(params)})"
+        params_str = ", ".join(params)
+
+        if self.class_name is not None:
+            # Calling a class constructor or a classmethod
+            if self.callable_name:
+                return f"{self.class_name}.{self.callable_name}({params_str})"
+            return f"{self.class_name}({params_str})"
+
+        # Calling a function
+        assert self.callable_name is not None
+        return f"{self.callable_name}({params_str})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -154,7 +162,11 @@ class ObjectClass(BaseModel):
 
     @classmethod
     def _extract_import(cls, obj: ObjectClass) -> Set[Tuple[str, str]]:
-        output = {(obj.module_path, obj.class_name)}
+        if obj.module_path is not None:
+            assert obj.class_name is not None
+            output = {(obj.module_path, obj.class_name)}
+        else:
+            output = set()
         for pos_arg in obj.positional_args:
             output.update(cls._extract_import_helper(pos_arg))
         for val_arg in obj.keyword_args.values():
@@ -228,10 +240,36 @@ class ClassEnum(Enum):
         return ObjectClass(
             module_path=module_path,
             class_name=class_name,
-            method_name=_method_name,
+            callable_name=_method_name,
             positional_args=args,
             keyword_args=kwargs,
         )
+
+
+def get_object_class_from_function_call(
+    callable_name: str, *args: Any, **kwargs: Any
+) -> ObjectClass:
+    """
+    Get an instance of ObjectClass to represent a function call
+
+    Parameters
+    ----------
+    callable_name: str
+        Name of the callable, typically a function name
+    args: Any
+        Positional arguments for the function call
+    kwargs: Any
+        Keyword arguments for the function call
+
+    Returns
+    -------
+    ObjectClass
+    """
+    return ObjectClass(
+        positional_args=args,
+        keyword_args=kwargs,
+        callable_name=callable_name,
+    )
 
 
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]

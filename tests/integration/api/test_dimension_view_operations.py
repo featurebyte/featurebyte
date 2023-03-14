@@ -5,7 +5,7 @@ Integration tests related to DimensionView
 import pandas as pd
 import pytest
 
-from featurebyte import EventView, Feature, ItemView
+from featurebyte import Feature, ItemView
 from featurebyte.common.typing import is_scalar_nan
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
@@ -70,7 +70,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_group = event_view.groupby("CUST_ID", category="ÜSER ID").aggregate_over(
         value_column="PRODUCT_ACTION",
         method="latest",
@@ -154,7 +154,7 @@ def test_get_value_in_dictionary__target_is_scalar(event_data):
     Test is in dictionary
     """
     # get dictionary feature
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     feature_name = "SUM_AMOUNT_DICT_30d"
     feature_group = event_view.groupby("CUST_ID", category="PRODUCT_ACTION").aggregate_over(
         value_column="ÀMOUNT",

@@ -3,30 +3,27 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
 import copy
 
 from pydantic import Field
-from typeguard import typechecked
 
-from featurebyte.api.event_data import EventData
-from featurebyte.api.feature import Feature
 from featurebyte.api.lag import LaggableViewColumn
 from featurebyte.api.view import GroupByMixin, View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.join_utils import join_tabular_data_ids
-from featurebyte.enum import TableDataType, ViewMode
+from featurebyte.common.typing import validate_type_is_feature
+from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.query_graph.model.table import EventTableData
-from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
-from featurebyte.query_graph.node.nested import ViewMetadata
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 
 class EventViewColumn(LaggableViewColumn):
@@ -83,82 +80,6 @@ class EventView(View, GroupByMixin):
         list[str]
         """
         return super().protected_attributes + ["timestamp_column"]
-
-    @classmethod
-    @typechecked
-    def from_event_data(
-        cls,
-        event_data: EventData,
-        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-    ) -> EventView:
-        """
-        Construct an EventView object
-
-        Parameters
-        ----------
-        event_data: EventData
-            EventData object used to construct EventView object
-        view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL]
-            View mode to use (manual or auto), when auto, the view will be constructed with cleaning operations
-            from the data and the record creation date column will be dropped
-        drop_column_names: Optional[List[str]]
-            List of column names to drop (manual mode only)
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]]
-            Column cleaning operations to apply (manual mode only)
-
-        Returns
-        -------
-        EventView
-            constructed EventView object
-        """
-        cls._validate_view_mode_params(
-            view_mode=view_mode,
-            drop_column_names=drop_column_names,
-            column_cleaning_operations=column_cleaning_operations,
-        )
-
-        # The input of view graph node is the data node. The final graph looks like this:
-        #    +-----------+     +----------------------------+
-        #    | InputNode + --> | GraphNode(type:event_view) +
-        #    +-----------+     +----------------------------+
-        drop_column_names = drop_column_names or []
-        if view_mode == ViewMode.AUTO and event_data.record_creation_date_column:
-            drop_column_names.append(event_data.record_creation_date_column)
-
-        data_node = event_data.frame.node
-        assert isinstance(data_node, InputNode)
-        event_table_data = cast(EventTableData, event_data.table_data)
-        (
-            event_table_data,
-            column_cleaning_operations,
-        ) = cls._prepare_table_data_and_column_cleaning_operations(
-            table_data=event_table_data,
-            column_cleaning_operations=column_cleaning_operations,
-            view_mode=view_mode,
-        )
-
-        view_graph_node, columns_info = event_table_data.construct_event_view_graph_node(
-            event_data_node=data_node,
-            drop_column_names=drop_column_names,
-            metadata=ViewMetadata(
-                view_mode=view_mode,
-                drop_column_names=drop_column_names,
-                column_cleaning_operations=column_cleaning_operations,
-                data_id=data_node.parameters.id,
-            ),
-        )
-        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node])
-        return EventView(
-            feature_store=event_data.feature_store,
-            tabular_source=event_data.tabular_source,
-            columns_info=columns_info,
-            node_name=inserted_graph_node.name,
-            tabular_data_ids=[event_data.id],
-            default_feature_job_setting=event_data.default_feature_job_setting,
-            event_id_column=event_data.event_id_column,
-        )
 
     @property
     def _getitem_frame_params(self) -> dict[str, Any]:
@@ -394,7 +315,6 @@ class EventView(View, GroupByMixin):
             f"from the EventView columns: {sorted(self.columns)}"
         )
 
-    @typechecked
     def add_feature(
         self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
     ) -> None:
@@ -413,6 +333,8 @@ class EventView(View, GroupByMixin):
         entity_column: Optional[str]
             The entity column to use in the EventView. The type of this entity should match the entity of the feature.
         """
+        validate_type_is_feature(feature, "feature")
+
         # Validation
         self._validate_feature_addition(new_column_name, feature, entity_column)
 

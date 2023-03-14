@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 import pytz
 
-from featurebyte import EventView, ItemView
+from featurebyte import ItemView
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
@@ -108,7 +108,7 @@ def test_event_view_lookup_features(event_data, transaction_data_upper_case):
     Test lookup features from EventView are time based
     """
     check_lookup_feature_is_time_aware(
-        view=EventView.from_event_data(event_data),
+        view=event_data.get_view(),
         df=transaction_data_upper_case,
         primary_key_column="TRANSACTION_ID",
         primary_key_value="T42",

@@ -689,7 +689,7 @@ def test_composite_features(snowflake_event_data_with_entity):
     # make col_binary as an entity column
     snowflake_event_data_with_entity.col_binary.as_entity("binary")
 
-    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    event_view = snowflake_event_data_with_entity.get_view()
     feature_job_setting = {
         "blind_spot": "10m",
         "frequency": "30m",
@@ -1040,7 +1040,7 @@ def feature_with_clean_column_names_fixture(saved_event_data, cust_id_entity):
         )
 
     saved_event_data.cust_id.as_entity(cust_id_entity.name)
-    event_view = EventView.from_event_data(saved_event_data)
+    event_view = saved_event_data.get_view()
     feature = event_view.groupby("cust_id").aggregate_over(
         value_column="col_float",
         method="sum",
@@ -1108,14 +1108,12 @@ def test_feature_definition(feature_with_clean_column_names):
     from bson import ObjectId
     from featurebyte import ColumnCleaningOperation
     from featurebyte import EventData
-    from featurebyte import EventView
     from featurebyte import MissingValueImputation
 
 
     # event_data name: "sf_event_data"
     event_data = EventData.get_by_id(ObjectId("6337f9651050ee7d5980660d"))
-    event_view = EventView.from_event_data(
-        event_data=event_data,
+    event_view = event_data.get_view(
         view_mode="manual",
         drop_column_names=["created_at"],
         column_cleaning_operations=[
@@ -1166,8 +1164,8 @@ def test_feature_create_new_version__multiple_event_data(
     saved_event_data.cust_id.as_entity(cust_id_entity.name)
     another_event_data.col_text.as_entity(cust_id_entity.name)
 
-    event_view = EventView.from_event_data(event_data=saved_event_data)
-    another_event_view = EventView.from_event_data(event_data=another_event_data)
+    event_view = saved_event_data.get_view()
+    another_event_view = another_event_data.get_view()
     if main_data_from_event_data:
         event_view.join(
             another_event_view,

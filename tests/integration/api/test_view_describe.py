@@ -5,7 +5,6 @@ import pandas as pd
 from pandas.testing import assert_series_equal
 
 from featurebyte.api.dimension_view import DimensionView
-from featurebyte.api.event_view import EventView
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SlowlyChangingView
 
@@ -21,7 +20,7 @@ def test_event_view_describe(event_data):
     """
     Test describe for EventView
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
 
     describe_df = event_view.describe()
     assert describe_df.columns.tolist() == [
@@ -70,7 +69,7 @@ def test_event_view_describe_with_date_range(event_data):
     """
     Test describe for EventView with date range
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     sample_params = {
         "from_timestamp": "2001-10-10",
         "to_timestamp": "2001-10-14",

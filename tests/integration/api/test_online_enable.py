@@ -3,7 +3,7 @@ Integration test for online enabling features
 """
 import pytest
 
-from featurebyte import EventView, FeatureList, ItemView
+from featurebyte import FeatureList, ItemView
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.schema.feature_list import FeatureListGetOnlineFeatures
 
@@ -15,7 +15,7 @@ def online_enabled_feature_list_fixture(event_data, config):
 
     To avoid side effects, this should not be shared with other tests.
     """
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     event_view["ÀMOUNT"] = event_view["ÀMOUNT"] + 12345
 
     # Aggregate using a different entity than "ÜSER ID". Otherwise, it will be creating a feature

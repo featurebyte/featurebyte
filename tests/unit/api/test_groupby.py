@@ -34,7 +34,7 @@ def test_constructor(snowflake_event_data, keys, expected_keys):
         # mark the column as entity
         snowflake_event_data[column].as_entity(column)
 
-    snowflake_event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    snowflake_event_view = snowflake_event_data.get_view()
     grouped = GroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
     assert grouped.serving_names == expected_serving_names

@@ -183,7 +183,7 @@ def _check_event_data_with_critical_data_info(event_data):
         LIMIT 10
     """
     ).strip()
-    event_view = EventView.from_event_data(event_data)
+    event_view = event_data.get_view()
     assert event_view.preview_sql() == expected_view_query
 
 
@@ -200,7 +200,7 @@ def _check_remove_critical_data_info(event_data):
             assert column_info.critical_data_info is None
 
     assert event_data.frame.node.type == NodeType.INPUT
-    event_view = EventView.from_event_data(event_data=event_data)
+    event_view = event_data.get_view()
     assert event_view.node.type == NodeType.GRAPH
     assert event_view.node.parameters.graph.edges == [
         {"source": "proxy_input_1", "target": "project_1"}
