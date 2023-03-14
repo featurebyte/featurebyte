@@ -172,9 +172,12 @@ class FilterNode(BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        if input_index == 1:
-            return self._assert_empty_required_input_columns()
-        return available_column_names
+        # the first input is the input view and the second input is the mask view
+        if input_index == 0:
+            # for the input view, all columns are required, otherwise it may drop some columns
+            # during the preview (where the final output is a filter node)
+            return available_column_names
+        return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,

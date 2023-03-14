@@ -148,12 +148,16 @@ def add_pruning_sensitive_operation(
     node_params: Dict[str, Any]
         Node parameters
     input_node: NodeT
-        Input node
+        Input node to the aggregation node
 
     Returns
     -------
     PruningSensitiveNodeT
     """
+    # prepare input operation structure to extract available column names
+    operation_structure_info = OperationStructureExtractor(graph=graph).extract(node=input_node)
+    input_operation_structure = operation_structure_info.operation_structure_map[input_node.name]
+
     # create a temporary node & prune the graph before deriving additional parameters based on
     # the pruned graph
     temp_node = node_cls(name="temp", parameters=node_params)
@@ -161,7 +165,10 @@ def add_pruning_sensitive_operation(
         graph=graph,
         node=input_node,
         target_columns=list(
-            temp_node.get_required_input_columns(input_index=0, available_column_names=[])
+            temp_node.get_required_input_columns(
+                input_index=0,
+                available_column_names=input_operation_structure.output_column_names,
+            )
         ),
         aggressive=True,
     )

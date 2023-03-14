@@ -522,7 +522,9 @@ class BaseGraphNode(BasePrunableNode):
             target_input_node_names = self.parameters.graph.get_input_node_names(target_node)
             input_index = target_input_node_names.index(proxy_input_node.name)
             required_input_columns.update(
-                target_node.get_required_input_columns(input_index, available_column_names=[])
+                target_node.get_required_input_columns(
+                    input_index=input_index, available_column_names=available_column_names
+                )
             )
         return list(required_input_columns)
 
