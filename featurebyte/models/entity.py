@@ -16,7 +16,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.relationship import Parent, WorkspaceRelationship
+from featurebyte.models.relationship import CatalogRelationship, Parent
 
 
 class EntityNameHistoryEntry(FeatureByteBaseModel):
@@ -47,7 +47,7 @@ class ParentEntity(Parent):
     data_id: PydanticObjectId
 
 
-class EntityRelationship(WorkspaceRelationship):
+class EntityRelationship(CatalogRelationship):
     """
     Model for entity relationship
 

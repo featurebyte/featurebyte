@@ -28,7 +28,7 @@ class AbstractTaskManager:
     AbstractTaskManager defines interface for TaskManager
     """
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId) -> None:
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId) -> None:
         """
         TaskManager constructor
 
@@ -38,12 +38,12 @@ class AbstractTaskManager:
             User
         persistent: Persistent
             Persistent
-        workspace_id: ObjectId
-            Workspace ID
+        catalog_id: ObjectId
+            Catalog ID
         """
         self.user = user
         self.persistent = persistent
-        self.workspace_id = workspace_id
+        self.catalog_id = catalog_id
 
     @abstractmethod
     async def submit(self, payload: BaseTaskPayload) -> TaskId:
@@ -232,7 +232,7 @@ class TaskManager(AbstractTaskManager):
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         await periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
@@ -275,7 +275,7 @@ class TaskManager(AbstractTaskManager):
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         await periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
@@ -296,7 +296,7 @@ class TaskManager(AbstractTaskManager):
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         return await periodic_task_service.get_document(document_id=periodic_task_id)
 
@@ -316,7 +316,7 @@ class TaskManager(AbstractTaskManager):
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
 
         result = await periodic_task_service.list_documents(
@@ -343,7 +343,7 @@ class TaskManager(AbstractTaskManager):
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         await periodic_task_service.delete_document(document_id=periodic_task_id)
 
@@ -359,7 +359,7 @@ class TaskManager(AbstractTaskManager):
         periodic_task_service = PeriodicTaskService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         result = await periodic_task_service.list_documents(
             page=1,

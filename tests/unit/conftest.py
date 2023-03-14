@@ -32,7 +32,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.enum import AggFunc, DBVarType, InternalName
 from featurebyte.feature_manager.manager import FeatureManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, VersionIdentifier
+from featurebyte.models.base import DEFAULT_CATALOG_ID, VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.relationship import RelationshipType
@@ -1179,12 +1179,12 @@ def app_container_fixture(persistent):
     Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
     """
     user = User()
-    task_manager = TaskManager(user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID)
+    task_manager = TaskManager(user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID)
     return AppContainer.get_instance(
         user=user,
         persistent=persistent,
         temp_storage=LocalTempStorage(),
         task_manager=task_manager,
         storage=LocalTempStorage(),
-        workspace_id=DEFAULT_WORKSPACE_ID,
+        container_id=DEFAULT_CATALOG_ID,
     )

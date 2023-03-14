@@ -19,7 +19,7 @@ from featurebyte.migration.service.feature_namespace import FeatureNamespaceMigr
 from featurebyte.migration.service.item_data import ItemDataMigrationService
 from featurebyte.migration.service.mixin import MigrationServiceMixin
 from featurebyte.migration.service.scd_data import SCDDataMigrationService
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
 
@@ -50,9 +50,9 @@ class EntityMigrationService(EntityService, MigrationServiceMixin):
             assert "tabular_data_ids" in doc
             assert "primary_tabular_data_ids" in doc
 
-    @migrate(version=9, description="Add field workspace_id")
-    async def add_field_workspace_id(self) -> None:
-        """Add workspace_id field"""
+    @migrate(version=9, description="Add field catalog_id")
+    async def add_field_catalog_id(self) -> None:
+        """Add catalog_id field"""
 
         for migrate_service_class in [
             EntityMigrationService,
@@ -68,10 +68,10 @@ class EntityMigrationService(EntityService, MigrationServiceMixin):
             FeatureJobSettingAnalysisMigrationService,
         ]:
             migrate_service = migrate_service_class(  # type: ignore
-                user=self.user, persistent=self.persistent, workspace_id=self.workspace_id
+                user=self.user, persistent=self.persistent, catalog_id=self.catalog_id
             )
             assert isinstance(migrate_service, BaseDocumentService)
-            assert migrate_service.is_workspace_specific
+            assert migrate_service.is_catalog_specific
 
             # sample first 10 records before migration
             sample_docs_before, total_before = await self.persistent.find(
@@ -90,5 +90,5 @@ class EntityMigrationService(EntityService, MigrationServiceMixin):
             sample_docs_after_map = {doc["_id"]: doc for doc in sample_docs_after}
             assert total_before == total_after
             for doc in sample_docs_after_map.values():
-                assert "workspace_id" in doc
-                assert doc["workspace_id"] == DEFAULT_WORKSPACE_ID
+                assert "catalog_id" in doc
+                assert doc["catalog_id"] == DEFAULT_CATALOG_ID

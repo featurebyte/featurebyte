@@ -19,7 +19,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, PydanticObjectId
+from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -161,7 +161,7 @@ def test_entity_update_name(entity):
             ("INSERT", 'insert: "customer"', "tabular_data_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "customer"', "user_id", np.nan, None),
-            ("INSERT", 'insert: "customer"', "workspace_id", np.nan, str(DEFAULT_WORKSPACE_ID)),
+            ("INSERT", 'insert: "customer"', "catalog_id", np.nan, str(DEFAULT_CATALOG_ID)),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
@@ -265,7 +265,7 @@ def get_insert_tabular_data_helper_fixture(mongo_persistent):
             "columns_info": [ColumnInfo(name=col_name, dtype=DBVarType.INT).json_dict()],
             "dimension_id_column": col_name,
             "version": {"name": "name_val", "suffix": None},
-            "workspace_id": DEFAULT_WORKSPACE_ID,
+            "catalog_id": DEFAULT_CATALOG_ID,
         }
         user_id = ObjectId()
         _ = await persistent.insert_one(

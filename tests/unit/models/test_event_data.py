@@ -6,7 +6,7 @@ import datetime
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -97,7 +97,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
                 "table_name": "table",
             },
         },
-        "workspace_id": DEFAULT_WORKSPACE_ID,
+        "catalog_id": DEFAULT_CATALOG_ID,
     }
     assert event_data.dict() == expected_event_data_dict
     event_data_json = event_data.json(by_alias=True)

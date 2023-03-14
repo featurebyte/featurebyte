@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.service.task_manager import TaskManager
 from tests.util.task import LongRunningPayload
 
@@ -22,14 +22,14 @@ class TestTaskStatusApi:
     def task_manager(self, user_id, persistent):
         """Task manager fixture"""
         yield TaskManager(
-            user=User(id=user_id), persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=User(id=user_id), persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
 
     @pytest_asyncio.fixture
     async def task_status_id(self, user_id, task_manager):
         """Task status id"""
         return await task_manager.submit(
-            payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+            payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
         )
 
     def test_get_200(self, test_api_client_persistent, task_status_id, user_id):
@@ -63,7 +63,7 @@ class TestTaskStatusApi:
         expected_task_ids = []
         for _ in range(3):
             task_id = await task_manager.submit(
-                payload=LongRunningPayload(user_id=user_id, workspace_id=DEFAULT_WORKSPACE_ID)
+                payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
             )
             expected_task_ids.append(task_id)
         test_api_client, _ = test_api_client_persistent

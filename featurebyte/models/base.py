@@ -17,7 +17,7 @@ from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
-DEFAULT_WORKSPACE_ID = ObjectId("63eda344d0313fb925f7883a")
+DEFAULT_CATALOG_ID = ObjectId("63eda344d0313fb925f7883a")
 
 
 class PydanticObjectId(ObjectId):
@@ -317,19 +317,19 @@ class VersionIdentifier(BaseModel):
         return version_identifier
 
 
-class FeatureByteWorkspaceBaseDocumentModel(FeatureByteBaseDocumentModel):
+class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
     """
-    FeatureByte Workspace-specific BaseDocumentModel
+    FeatureByte Catalog-specific BaseDocumentModel
     """
 
-    workspace_id: PydanticObjectId
+    catalog_id: PydanticObjectId
 
     @root_validator(pre=True)
     @classmethod
-    def _validate_workspace_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        workspace_id = values.get("workspace_id")
-        if workspace_id is None:
-            values["workspace_id"] = DEFAULT_WORKSPACE_ID
+    def _validate_catalog_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        catalog_id = values.get("catalog_id")
+        if catalog_id is None:
+            values["catalog_id"] = DEFAULT_CATALOG_ID
         return values
 
 

@@ -31,9 +31,9 @@ class ViewConstructionService(BaseService):
     This service will retrieve the data from the data service and construct the view graph nodes.
     """
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
-        super().__init__(user, persistent, workspace_id)
-        self.data_service = DataService(user=user, persistent=persistent, workspace_id=workspace_id)
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
+        super().__init__(user, persistent, catalog_id)
+        self.data_service = DataService(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @staticmethod
     def _get_additional_keyword_parameters_pairs(

@@ -64,7 +64,7 @@ class FeatureJobSettingAnalysisService(
         event_data_service = EventDataService(
             user=self.user,
             persistent=self.persistent,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
         )
         event_data = await event_data_service.get_document(document_id=data.event_data_id)
         if not event_data.record_creation_date_column:
@@ -73,7 +73,7 @@ class FeatureJobSettingAnalysisService(
         return FeatureJobSettingAnalysisTaskPayload(
             **data.dict(),
             user_id=self.user.id,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
             output_document_id=output_document_id,
         )
 
@@ -103,6 +103,6 @@ class FeatureJobSettingAnalysisService(
         return FeatureJobSettingAnalysisBackTestTaskPayload(
             **data.dict(),
             user_id=self.user.id,
-            workspace_id=self.workspace_id,
+            catalog_id=self.catalog_id,
             output_document_id=output_document_id,
         )

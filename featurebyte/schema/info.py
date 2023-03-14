@@ -49,7 +49,7 @@ class EntityBriefInfo(BaseBriefInfo):
     """
 
     serving_names: List[str]
-    workspace_name: str
+    catalog_name: str
 
 
 class EntityInfo(EntityBriefInfo, BaseInfo):
@@ -79,7 +79,7 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         -------
         EntityBriefInfoList
         """
-        entity_project = DictProject(rule=("data", ["name", "serving_names", "workspace_name"]))
+        entity_project = DictProject(rule=("data", ["name", "serving_names", "catalog_name"]))
         return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
 
 
@@ -89,7 +89,7 @@ class DataBriefInfo(BaseBriefInfo):
     """
 
     status: DataStatus
-    workspace_name: str
+    catalog_name: str
 
 
 class DataBriefInfoList(FeatureByteBaseModel):
@@ -113,7 +113,7 @@ class DataBriefInfoList(FeatureByteBaseModel):
         -------
         DataBriefInfoList
         """
-        data_project = DictProject(rule=("data", ["name", "status", "workspace_name"]))
+        data_project = DictProject(rule=("data", ["name", "status", "catalog_name"]))
         return DataBriefInfoList(__root__=data_project.project(paginated_data))
 
 
@@ -225,7 +225,7 @@ class NamespaceInfo(BaseInfo):
     tabular_data: DataBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
-    workspace_name: str
+    catalog_name: str
 
 
 class FeatureNamespaceInfo(NamespaceInfo):
@@ -293,7 +293,7 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         FeatureBriefInfoList
         """
         feature_list_project = DictProject(
-            rule=("data", ["version", "readiness_distribution", "created_at", "workspace_id"])
+            rule=("data", ["version", "readiness_distribution", "created_at", "catalog_id"])
         )
         return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
 
@@ -334,32 +334,32 @@ class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     recommendation: FeatureJobSetting
-    workspace_name: str
+    catalog_name: str
 
 
-class WorkspaceBriefInfo(BaseBriefInfo):
+class CatalogBriefInfo(BaseBriefInfo):
     """
-    Workspace brief info schema
-    """
-
-
-class WorkspaceInfo(WorkspaceBriefInfo, BaseInfo):
-    """
-    Workspace info schema
+    Catalog brief info schema
     """
 
 
-class WorkspaceBriefInfoList(FeatureByteBaseModel):
+class CatalogInfo(CatalogBriefInfo, BaseInfo):
     """
-    Paginated list of workspace brief info
+    Catalog info schema
     """
 
-    __root__: List[WorkspaceBriefInfo]
+
+class CatalogBriefInfoList(FeatureByteBaseModel):
+    """
+    Paginated list of Catalog brief info
+    """
+
+    __root__: List[CatalogBriefInfo]
 
     @classmethod
-    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> WorkspaceBriefInfoList:
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> CatalogBriefInfoList:
         """
-        Construct workspace brief info list from paginated data
+        Construct Catalog brief info list from paginated data
 
         Parameters
         ----------
@@ -368,7 +368,7 @@ class WorkspaceBriefInfoList(FeatureByteBaseModel):
 
         Returns
         -------
-        WorkspaceBriefInfoList
+        CatalogBriefInfoList
         """
-        workspace_project = DictProject(rule=("data", ["name"]))
-        return WorkspaceBriefInfoList(__root__=workspace_project.project(paginated_data))
+        catalog_project = DictProject(rule=("data", ["name"]))
+        return CatalogBriefInfoList(__root__=catalog_project.project(paginated_data))

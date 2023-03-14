@@ -29,12 +29,12 @@ class DefaultVersionModeService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
         feature_namespace_service: FeatureNamespaceService,
         feature_readiness_service: FeatureReadinessService,
         feature_list_namespace_service: FeatureListNamespaceService,
     ):
-        super().__init__(user, persistent, workspace_id)
+        super().__init__(user, persistent, catalog_id)
         self.feature_namespace_service = feature_namespace_service
         self.feature_readiness_service = feature_readiness_service
         self.feature_list_namespace_service = feature_list_namespace_service

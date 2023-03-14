@@ -20,7 +20,7 @@ from featurebyte.exception import (
 from featurebyte.logger import logger
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
-    FeatureByteWorkspaceBaseDocumentModel,
+    FeatureByteCatalogBaseDocumentModel,
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
@@ -48,16 +48,16 @@ class BaseDocumentService(
 
     document_class: Type[Document]
 
-    def __init__(self, user: Any, persistent: Persistent, workspace_id: ObjectId):
+    def __init__(self, user: Any, persistent: Persistent, catalog_id: ObjectId):
         self.user = user
         self.persistent = persistent
-        self.workspace_id = workspace_id
+        self.catalog_id = catalog_id
         self._allow_to_use_raw_query_filter = False
 
     def allow_use_raw_query_filter(self) -> None:
         """
         Activate use of raw query filter.
-        This should be used ONLY when there is need to access all documents regardless of workspace membership.
+        This should be used ONLY when there is need to access all documents regardless of catalog membership.
         Valid use cases are data migration or data restoration.
         """
         logger.warning(RAW_QUERY_FILTER_WARNING)
@@ -86,15 +86,15 @@ class BaseDocumentService(
         return "".join(elem.title() for elem in self.collection_name.split("_"))
 
     @property
-    def is_workspace_specific(self) -> bool:
+    def is_catalog_specific(self) -> bool:
         """
-        Whether service operates on workspace specific documents
+        Whether service operates on catalog specific documents
 
         Returns
         -------
         bool
         """
-        return issubclass(self.document_class, FeatureByteWorkspaceBaseDocumentModel)
+        return issubclass(self.document_class, FeatureByteCatalogBaseDocumentModel)
 
     @staticmethod
     def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
@@ -127,8 +127,8 @@ class BaseDocumentService(
         Document
         """
         kwargs = self._extract_additional_creation_kwargs(data)
-        if self.is_workspace_specific:
-            kwargs = {**kwargs, "workspace_id": self.workspace_id}
+        if self.is_catalog_specific:
+            kwargs = {**kwargs, "catalog_id": self.catalog_id}
 
         document = self.document_class(
             **{
@@ -181,9 +181,9 @@ class BaseDocumentService(
             if not self._allow_to_use_raw_query_filter:
                 raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
             return kwargs
-        # inject workspace_id into filter if document is workspace specific
-        if self.is_workspace_specific:
-            kwargs = {**kwargs, "workspace_id": self.workspace_id}
+        # inject catalog_id into filter if document is catalog specific
+        if self.is_catalog_specific:
+            kwargs = {**kwargs, "catalog_id": self.catalog_id}
         return kwargs
 
     async def get_document(
@@ -320,9 +320,9 @@ class BaseDocumentService(
             output["version"] = kwargs["version"]
         if kwargs.get("search"):
             output["$text"] = {"$search": kwargs["search"]}
-        # inject workspace_id into filter if document is workspace specific
-        if self.is_workspace_specific:
-            output["workspace_id"] = self.workspace_id
+        # inject catalog_id into filter if document is catalog specific
+        if self.is_catalog_specific:
+            output["catalog_id"] = self.catalog_id
 
         return output
 
@@ -634,9 +634,9 @@ class BaseDocumentService(
         DocumentConflictError
             When there is a conflict with existing document(s) stored at the persistent
         """
-        # for workspace specific document type constraint uniqueness checking to the workspace
-        if self.is_workspace_specific:
-            query_filter = {**query_filter, "workspace_id": self.workspace_id}
+        # for catalog specific document type constraint uniqueness checking to the catalog
+        if self.is_catalog_specific:
+            query_filter = {**query_filter, "catalog_id": self.catalog_id}
 
         conflict_doc = await self.persistent.find_one(
             collection_name=self.collection_name,

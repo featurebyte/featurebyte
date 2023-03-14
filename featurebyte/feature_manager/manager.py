@@ -87,7 +87,7 @@ class FeatureManager(BaseModel):
                 # enable online tiles scheduled job
                 tile_spec.user_id = feature_spec.feature.user_id
                 tile_spec.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
-                tile_spec.workspace_id = feature_spec.feature.workspace_id
+                tile_spec.catalog_id = feature_spec.feature.catalog_id
 
                 await self._tile_manager.schedule_online_tiles(
                     tile_spec=tile_spec, schedule_time=schedule_time

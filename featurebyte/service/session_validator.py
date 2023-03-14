@@ -36,15 +36,15 @@ class SessionValidatorService:
         self,
         user: Any,
         persistent: Persistent,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
         credential_provider: ConfigCredentialProvider,
     ):
         self.user = user
         self.persistent = persistent
-        self.workspace_id = workspace_id
+        self.catalog_id = catalog_id
         self.credential_provider = credential_provider
         self.feature_store_service = FeatureStoreService(
-            user=self.user, persistent=self.persistent, workspace_id=workspace_id
+            user=self.user, persistent=self.persistent, catalog_id=catalog_id
         )
 
     @classmethod

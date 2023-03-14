@@ -42,7 +42,7 @@ class TileScheduler(BaseModel):
         instance: Any,
         user_id: Optional[ObjectId],
         feature_store_id: ObjectId,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
     ) -> None:
         """
         Start job with Interval seconds
@@ -61,8 +61,8 @@ class TileScheduler(BaseModel):
             input user id
         feature_store_id: ObjectId
             feature store id
-        workspace_id: ObjectId
-            workspace id
+        catalog_id: ObjectId
+            catalog id
         """
 
         payload = TileTaskPayload(
@@ -72,7 +72,7 @@ class TileScheduler(BaseModel):
             instance_str=instance.json(),
             user_id=user_id if user_id else self._task_manager.user.id,
             feature_store_id=feature_store_id,
-            workspace_id=workspace_id,
+            catalog_id=catalog_id,
         )
 
         await self._task_manager.schedule_interval_task(

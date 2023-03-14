@@ -117,7 +117,7 @@ def test_info(saved_analysis):
             "frequency": "180s",
             "time_modulo_frequency": "61s",
         },
-        "workspace_name": "default",
+        "catalog_name": "default",
     }
 
 

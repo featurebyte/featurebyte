@@ -10,20 +10,20 @@ import pytest_asyncio
 from bson import ObjectId
 from requests import Response
 
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
-from tests.unit.routes.base import BaseWorkspaceApiTestSuite
+from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
-class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
+class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
     """
     TestFeatureListNamespaceApi
     """
 
     class_name = "FeatureListNamespace"
     base_route = "/feature_list_namespace"
-    payload = BaseWorkspaceApiTestSuite.load_payload(
+    payload = BaseCatalogApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_namespace.json"
     )
     create_conflict_payload_expected_detail_pairs = []
@@ -51,7 +51,7 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
         user = Mock()
         user.id = user_id
         feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         document = await feature_list_namespace_service.create_document(
             data=FeatureListNamespaceModel(**self.payload)
@@ -74,12 +74,12 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
         """Test creation (success) ID is None"""
 
     @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_workspace(
+    def test_create_201_non_default_catalog(
         self,
-        workspace_id,
-        create_success_response_non_default_workspace,
+        catalog_id,
+        create_success_response_non_default_catalog,
     ):
-        """Test creation (success) in non default workspace"""
+        """Test creation (success) in non default catalog"""
 
     async def setup_get_info(self, api_client):
         """Setup for get_info route testing"""
@@ -104,7 +104,7 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
         user = Mock()
         user.id = user_id
         feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         output = []
         for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
@@ -267,10 +267,10 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "entities": [
-                {"name": "customer", "serving_names": ["cust_id"], "workspace_name": "default"}
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "default"}
             ],
             "tabular_data": [
-                {"name": "sf_event_data", "status": "DRAFT", "workspace_name": "default"}
+                {"name": "sf_event_data", "status": "DRAFT", "catalog_name": "default"}
             ],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
@@ -278,7 +278,7 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
             "version_count": 1,
             "feature_count": 2,
             "status": "DRAFT",
-            "workspace_name": "default",
+            "catalog_name": "default",
         }
 
         verbose_response = test_api_client.get(
@@ -287,15 +287,15 @@ class TestFeatureListNamespaceApi(BaseWorkspaceApiTestSuite):
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text
 
     @pytest_asyncio.fixture
-    async def create_success_response_non_default_workspace(
-        self, test_api_client_persistent, user_id, workspace_id
+    async def create_success_response_non_default_catalog(
+        self, test_api_client_persistent, user_id, catalog_id
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
         _, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
         feature_list_namespace_service = FeatureListNamespaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         document = await feature_list_namespace_service.create_document(
             data=FeatureListNamespaceModel(**self.payload)

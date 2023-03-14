@@ -20,7 +20,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     """
 
     user_id: Optional[PydanticObjectId]
-    workspace_id: PydanticObjectId
+    catalog_id: PydanticObjectId
     output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
     output_collection_name: ClassVar[Optional[str]] = None
     command: ClassVar[Optional[Enum]] = None

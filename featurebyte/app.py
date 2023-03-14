@@ -7,6 +7,7 @@ import uvicorn
 from bson import ObjectId
 from fastapi import Depends, FastAPI, Request
 
+import featurebyte.routes.catalog.api as catalog_api
 import featurebyte.routes.context.api as context_api
 import featurebyte.routes.dimension_data.api as dimension_data_api
 import featurebyte.routes.entity.api as entity_api
@@ -25,10 +26,9 @@ import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.tabular_data.api as tabular_data_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
-import featurebyte.routes.workspace.api as workspace_api
 from featurebyte.common.utils import get_version
 from featurebyte.middleware import request_handler
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID, User
+from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.schema import APIServiceStatus
 from featurebyte.service.task_manager import TaskManager
@@ -62,7 +62,7 @@ def _get_api_deps() -> Callable[[Request], None]:
         request.state.get_credential = ConfigCredentialProvider().get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-        workspace_id = ObjectId(request.query_params.get("workspace_id", DEFAULT_WORKSPACE_ID))
+        catalog_id = ObjectId(request.query_params.get("catalog_id", DEFAULT_CATALOG_ID))
         request.state.app_container = AppContainer.get_instance(
             user=request.state.user,
             persistent=request.state.persistent,
@@ -70,10 +70,10 @@ def _get_api_deps() -> Callable[[Request], None]:
             task_manager=TaskManager(
                 user=request.state.user,
                 persistent=request.state.persistent,
-                workspace_id=workspace_id,
+                catalog_id=catalog_id,
             ),
             storage=get_storage(),
-            workspace_id=workspace_id,
+            container_id=catalog_id,
         )
 
     return _dep_injection_func
@@ -109,7 +109,7 @@ def get_app() -> FastAPI:
         tabular_data_api,
         task_api,
         temp_data_api,
-        workspace_api,
+        catalog_api,
         periodic_tasks_api,
     ]
     dependencies = _get_api_deps()

@@ -15,7 +15,7 @@ from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, 
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.models.base import (
-    DEFAULT_WORKSPACE_ID,
+    DEFAULT_CATALOG_ID,
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     User,
@@ -138,7 +138,7 @@ async def migrate_method_generator(
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
         migrate_service = migrate_service_class(
-            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
             if not include_data_warehouse_migrations:
@@ -195,7 +195,7 @@ async def run_migration(
         Whether to include data warehouse migrations
     """
     schema_metadata_service = SchemaMetadataService(
-        user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+        user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
     )
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA

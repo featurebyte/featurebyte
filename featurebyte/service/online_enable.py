@@ -39,26 +39,24 @@ class OnlineEnableService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
         session_manager_service: SessionManagerService,
     ):
-        super().__init__(user, persistent, workspace_id)
+        super().__init__(user, persistent, catalog_id)
         self.feature_service = FeatureService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.session_manager_service = session_manager_service
         self.feature_store_service = FeatureStoreService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_namespace_service = FeatureNamespaceService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
         self.feature_list_service = FeatureListService(
-            user=user, persistent=persistent, workspace_id=workspace_id
+            user=user, persistent=persistent, catalog_id=catalog_id
         )
-        self._task_manager = TaskManager(
-            user=user, persistent=persistent, workspace_id=workspace_id
-        )
+        self._task_manager = TaskManager(user=user, persistent=persistent, catalog_id=catalog_id)
 
     @classmethod
     def _extract_online_enabled_feature_ids(

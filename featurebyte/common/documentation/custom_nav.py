@@ -25,7 +25,7 @@ class BetaWave3Nav(Nav):
         "Relationship",
         "View",
         "ViewColumn",
-        "Workspace",
+        "Catalog",
     ]
 
     @classmethod

@@ -4,6 +4,7 @@ Registrations module.
 This contains all the dependencies that we want to register in order to get our fast API app up and running.
 """
 from featurebyte.routes.app_container_config import AppContainerConfig
+from featurebyte.routes.catalog.controller import CatalogController
 from featurebyte.routes.context.controller import ContextController
 from featurebyte.routes.dimension_data.controller import DimensionDataController
 from featurebyte.routes.entity.controller import EntityController
@@ -22,7 +23,7 @@ from featurebyte.routes.relationship_info.controller import RelationshipInfoCont
 from featurebyte.routes.scd_data.controller import SCDDataController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.tabular_data.controller import TabularDataController
-from featurebyte.routes.workspace.controller import WorkspaceController
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
@@ -56,7 +57,6 @@ from featurebyte.service.tabular_data import DataService
 from featurebyte.service.user_service import UserService
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
-from featurebyte.service.workspace import WorkspaceService
 from featurebyte.utils.credential import ConfigCredentialProvider
 
 app_container_config = AppContainerConfig()
@@ -153,7 +153,7 @@ app_container_config.add_basic_service("version_service", VersionService)
 app_container_config.add_basic_service("entity_relationship_service", EntityRelationshipService)
 app_container_config.add_basic_service("semantic_relationship_service", SemanticRelationshipService)
 app_container_config.add_basic_service("info_service", InfoService)
-app_container_config.add_basic_service("workspace_service", WorkspaceService)
+app_container_config.add_basic_service("catalog_service", CatalogService)
 app_container_config.add_basic_service("relationship_info_service", RelationshipInfoService)
 app_container_config.add_basic_service("user_service", UserService)
 app_container_config.add_basic_service("view_construction_service", ViewConstructionService)
@@ -288,7 +288,7 @@ app_container_config.add_controller(
     ],
 )
 app_container_config.add_controller(
-    "workspace_controller", WorkspaceController, ["workspace_service", "info_service"]
+    "catalog_controller", CatalogController, ["catalog_service", "info_service"]
 )
 app_container_config.add_controller(
     "periodic_task_controller", PeriodicTaskController, ["periodic_task_service"]

@@ -40,13 +40,13 @@ class FeatureReadinessService(BaseService):
         self,
         user: Any,
         persistent: Persistent,
-        workspace_id: ObjectId,
+        catalog_id: ObjectId,
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_list_service: FeatureListService,
         feature_list_namespace_service: FeatureListNamespaceService,
     ):
-        super().__init__(user, persistent, workspace_id)
+        super().__init__(user, persistent, catalog_id)
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_list_service = feature_list_service

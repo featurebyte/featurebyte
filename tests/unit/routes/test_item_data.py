@@ -8,7 +8,7 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.enum import SemanticType
-from featurebyte.models.base import DEFAULT_WORKSPACE_ID
+from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.table import ItemTableData
@@ -107,7 +107,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
         user = mock.Mock()
         user.id = user_id
         semantic_service = SemanticService(
-            user=user, persistent=persistent, workspace_id=DEFAULT_WORKSPACE_ID
+            user=user, persistent=persistent, catalog_id=DEFAULT_CATALOG_ID
         )
         item_id_semantic = await semantic_service.get_or_create_document(name=SemanticType.ITEM_ID)
 
@@ -150,7 +150,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
             "semantics": ["item_id"],
             "column_count": 6,
             "event_data_name": "sf_event_data",
-            "workspace_name": "default",
+            "catalog_name": "default",
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
