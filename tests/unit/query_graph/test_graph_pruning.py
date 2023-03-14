@@ -299,7 +299,9 @@ def test_join_with_assign_node__join_node_parameters_pruning(
     pruned_graph, _, _ = prune_query_graph(
         graph=global_graph,
         node=join_node,
-        target_columns=groupby_node._get_required_input_columns(input_index=0),
+        target_columns=groupby_node._get_required_input_columns(
+            input_index=0, available_column_names=[]
+        ),
         aggressive=True,
     )
     pruned_join_node = pruned_graph.get_node_by_name("join_1")

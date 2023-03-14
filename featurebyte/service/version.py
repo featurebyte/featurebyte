@@ -189,6 +189,7 @@ class VersionService(BaseService):
             view_node_name_replacement = (
                 await self.view_construction_service.prepare_view_node_name_to_replacement_node(
                     query_graph=feature.graph,
+                    target_node=feature.node,
                     data_cleaning_operations=data_cleaning_operations or [],
                     use_source_settings=use_source_settings,
                 )
